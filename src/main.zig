@@ -1,14 +1,19 @@
-const std      = @import( "std" );
-const stdAlloc = std.mem.Allocator;
-const logMsg   = @import( "printLog.zig" ).logMsg;
+//! By convention, main.zig is where your main function lives in the case that
+//! you are building an executable. If you are making a library, the convention
+//! is to delete this file and start with root.zig instead.
+
+const std = @import( "std" );
+const h = @import( "header.zig" );
 
 pub fn main() !void
 {
-	logMsg( .DEBUG, 1, "This is a debug message",    .{ .file = @src(), .line = @line() });
-	logMsg( .INFO,  0, "This is an info message",    .{ .file = @src(), .line = @line() });
-	logMsg( .ERROR, 2, "This is an error message",   .{ .file = @src(), .line = @line() });
-	logMsg( .FUNCT, 0, "This is a function message", .{ .file = @src(), .line = @line() });
-	logMsg( .TRACE, 0, "This is a trace message",    .{ .file = @src(), .line = @line() });
+	h.initEpoch();
+
+	h.logMsg( .DEBUG, 0, "This is a debug message",    @src() );
+	h.logMsg( .INFO,  1, "This is an info message",    @src() );
+	h.logMsg( .ERROR, 2, "This is an error message",   @src() );
+	h.logMsg( .FUNCT, 3, "This is a function message", @src() );
+	h.logMsg( .TRACE, 4, "This is a trace message",    @src() );
 }
 
 test "simple test"
