@@ -20,7 +20,7 @@ pub fn build( b: *std.Build ) void
   // some compilation options, such as optimization mode and linked system libraries.
   // Every executable or library we compile will be based on one or more modules.
   const lib_mod = b.createModule(
-	.{
+  .{
     // `root_source_file` is the Zig "entry point" of the module. If a module
     // only contains e.g. external object files, you can make this `null`.
     // In this case the main source file is merely a path, however, in more
@@ -32,7 +32,7 @@ pub fn build( b: *std.Build ) void
 
   // We will also create a module for our other entry point, 'main.zig'.
   const exe_mod = b.createModule(
-	.{
+  .{
     // `root_source_file` is the Zig "entry point" of the module. If a module
     // only contains e.g. external object files, you can make this `null`.
     // In this case the main source file is merely a path, however, in more
@@ -51,7 +51,7 @@ pub fn build( b: *std.Build ) void
   // This creates a `std.Build.Step.Compile`, which is the build step responsible
   // for actually invoking the compiler.
   const lib = b.addLibrary(
-	.{
+  .{
     .linkage = .static,
     .name    = "ZiguezonEngine",
     .root_module = lib_mod,
@@ -65,7 +65,7 @@ pub fn build( b: *std.Build ) void
   // This creates another `std.Build.Step.Compile`, but this one builds an executable
   // rather than a static library.
   const exe = b.addExecutable(
-	.{
+  .{
     .name = "ZiguezonEngine",
     .root_module = exe_mod,
   });

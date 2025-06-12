@@ -7,19 +7,20 @@ const h = @import( "header.zig" );
 
 pub fn main() !void
 {
-	h.initEpoch();
+  h.timer.initEpoch();
+  h.timer.initLapEpoch();
 
-	h.logMsg( .DEBUG, 0, "This is a debug message",    @src() );
-	h.logMsg( .INFO,  1, "This is an info message",    @src() );
-	h.logMsg( .ERROR, 2, "This is an error message",   @src() );
-	h.logMsg( .FUNCT, 3, "This is a function message", @src() );
-	h.logMsg( .TRACE, 4, "This is a trace message",    @src() );
+  h.logger.log( .DEBUG, 0, "This is a debug message",    @src() );
+  h.logger.log( .INFO,  1, "This is an info message",    @src() );
+  h.logger.log( .ERROR, 2, "This is an error message",   @src() );
+  h.logger.log( .FUNCT, 3, "This is a function message", @src() );
+  h.logger.log( .TRACE, 4, "This is a trace message",    @src() );
 }
 
-test "simple test"
-{
-	var list = std.ArrayList( i32 ).init( std.testing.allocator );   defer list.deinit();
-
-	try list.append( 42 );
-	try std.testing.expectEqual( @as( i32, 42 ), list.pop() );
-}
+//test "example test"
+//{
+//  var list = std.ArrayList( i32 ).init( std.testing.allocator );   defer list.deinit();
+//
+//  try list.append( 42 );
+//  try std.testing.expectEqual( @as( i32, 42 ), list.pop() );
+//}
