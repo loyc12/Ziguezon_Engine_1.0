@@ -43,8 +43,13 @@ const SHOW_MSG_SRC   : bool = true;  // If true, messages will include the sourc
 
 // ================================ CORE FUNCTIONS ================================
 
-// This function is used to print debug messages based on the inputed DebugPrint level.
-pub fn log( level : LogLevel, id : u32, message : [] const u8, callLocation : ?std.builtin.SourceLocation ) void
+pub fn qlog( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [] const u8) void
+{
+  // Call the log function with no arguments
+  log( level, id, callLocation, message, .{} );
+}
+
+pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [] const u8, args : anytype ) void
 {
   // LOG EXAMPLE :
   // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main) - This is a debug message
@@ -99,9 +104,15 @@ pub fn log( level : LogLevel, id : u32, message : [] const u8, callLocation : ?s
   logChar( '-' ); // Print a separator character
 
   // Prints the actual message
-  G_LOG_FILE.writer().print( "{s}\n", .{ message }) catch | err |
+  G_LOG_FILE.writer().print( message, args ) catch | err |
   {
     std.debug.print( "Failed to write message: {}\n", .{ err });
+    return;
+  };
+
+  G_LOG_FILE.writer().print( "\n", .{} ) catch | err |
+  {
+    std.debug.print( "Failed to write newline: {}\n", .{ err });
     return;
   };
 }

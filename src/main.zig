@@ -5,21 +5,15 @@
 const std = @import( "std" );
 const h   = @import( "headers.zig" );
 
+const eng = @import( "core/engine.zig" );
+
 pub fn main() !void
 {
-  h.timer.initTimer();
-  h.logger.initFile();
-  defer h.logger.deinitFile();
+  eng.G_NG.changeState( .LAUNCHED );
 
-  while( true )
-  {
-    h.logger.log( .TRACE, 1, "This is a trace message",   @src() );
-    h.logger.log( .DEBUG, 2, "This is a debug message",   @src() );
-    h.logger.log( .WARN , 3, "This is a warning message", @src() );
-    h.logger.log( .INFO , 4, "This is an info message",   @src() );
-    h.logger.log( .ERROR, 5, "This is an error message",  @src() );
-  }
+  eng.G_NG.runGameLoop();
 
+  eng.G_NG.changeState( .CLOSED );
 }
 
 //test "example test"

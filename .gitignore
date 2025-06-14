@@ -3,8 +3,8 @@ ZiguezonEngine
 *.log
 
 # Zig
-zig_cache*
-.zig_cache*
+zig-cache*
+.zig-cache*
 zig-out*
 .zig-out*
 
