@@ -4,8 +4,7 @@ var G_EPOCH     : i128 = 0; // Global epoch variable
 var G_LAP_EPOCH : i128 = 0; // Global lap time variable
 
 // These functions are used to initialize the time variables
-pub fn initEpoch()    void { G_EPOCH     = std.time.nanoTimestamp(); }
-pub fn initLapEpoch() void { G_LAP_EPOCH = std.time.nanoTimestamp(); }
+pub fn initTimer() void { G_EPOCH     = std.time.nanoTimestamp(); G_LAP_EPOCH = std.time.nanoTimestamp(); }
 
 // These functions are used to get the current time variables
 pub fn getEpoch()    i128 { return G_EPOCH; }
