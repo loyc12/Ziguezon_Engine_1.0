@@ -1,4 +1,5 @@
 const std = @import( "std" );
+const rlz = @import( "raylib_zig" );
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -15,6 +16,19 @@ pub fn build( b: *std.Build ) void
   // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
   // set a preferred release mode, allowing the user to decide how to optimize.
   const optimize = b.standardOptimizeOption(.{} );
+
+  // This creates a dependency on the raylib_zig package, which is a Zig wrapper
+  // around the raylib C library. The `raylib_zig` package is expected to be
+  // available in the Zig package registry, or in the local filesystem if the
+  const raylib_dep = b.dependency("raylib_zig",
+  .{
+    .target   = target,
+    .optimize = optimize,
+  });
+
+  const raylib = raylib_dep.module( "raylib" );
+  const raylib_artifact = raylib_dep.artifact( "raylib" );
+
 
   // This creates a "module", which represents a collection of source files alongside
   // some compilation options, such as optimization mode and linked system libraries.
@@ -57,6 +71,10 @@ pub fn build( b: *std.Build ) void
     .root_module = lib_mod,
   });
 
+  // Adding raylib as a dependency to the library.
+  lib.linkLibrary( raylib_artifact );
+  lib.root_module.addImport( "raylib", raylib );
+
   // This declares intent for the library to be installed into the standard
   // location when the user invokes the "install" step (the default step when
   // running `zig build`).
@@ -70,10 +88,14 @@ pub fn build( b: *std.Build ) void
     .root_module = exe_mod,
   });
 
+  // Adding raylib as a dependency to the executable.
+  exe.linkLibrary( raylib_artifact );
+  exe.root_module.addImport( "raylib", raylib );
+
   // This declares intent for the executable to be installed into the
   // standard location when the user invokes the "install" step (the default
   // step when running `zig build`).
-  b.installArtifact(exe);
+  b.installArtifact( exe );
 
   // This *creates* a Run step in the build graph, to be executed when another
   // step is evaluated that depends on it. The next line below will establish
@@ -93,7 +115,7 @@ pub fn build( b: *std.Build ) void
   // This creates a build step. It will be visible in the `zig build --help` menu,
   // and can be selected like this: `zig build run`
   // This will evaluate the `run` step rather than the default, which is "install".
-  const run_step = b.step( "run", "Run the app" );
+  const run_step = b.step( "run", "Run ZiguezonEngine" );
   run_step.dependOn( &run_cmd.step );
 
   // Creates a step for unit testing. This only builds the test executable

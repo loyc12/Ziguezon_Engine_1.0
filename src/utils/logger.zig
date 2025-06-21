@@ -230,7 +230,7 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
     try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
 
     setCol( c.GRAY ); // Set the color to gray for the function name
-    try G_LOG_FILE.writer().print( "( {s} ) ", .{ loc.fn_name });
+    try G_LOG_FILE.writer().print( "({s}) ", .{ loc.fn_name });
   }
   else // If the call location is undefined, print "UNDEFINED"
   {
