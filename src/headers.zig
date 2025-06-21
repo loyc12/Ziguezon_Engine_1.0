@@ -1,7 +1,8 @@
 pub const std = @import( "std" );
 
-pub const timer  = @import( "utils/timer.zig" );
+pub const col    = @import( "utils/colour.zig" );
 pub const logger = @import( "utils/logger.zig" );
+pub const timer  = @import( "utils/timer.zig" );
 
 // ================================ SHORTHANDS ================================
 // These are shorthand imports for commonly used modules in the project.
@@ -18,13 +19,13 @@ var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
 
 pub fn initAll() void
 {
-  qlog( .INFO, 0, @src(), "Initializing all subsystems" );
-
   // Initialize the timer
   timer.initTimer();
 
   // Initialize the logger file if needed
   logger.initFile();
+
+  qlog( .INFO, 0, @src(), "Initialized all subsystems" );
 }
 
 pub fn deinitAll() void

@@ -139,7 +139,6 @@ pub const engine = struct
   {
     h.qlog( .INFO, 0, @src(), "Initializing the engine..." );
 
-    h.initAll();
     self.state = .STARTED;
 
     h.qlog( .INFO, 0, @src(), "Hello, world !" );
@@ -149,7 +148,6 @@ pub const engine = struct
   {
     h.qlog( .INFO, 0, @src(), "Deinitializing the engine..." );
 
-    h.deinitAll();
     self.state = .CLOSED;
 
     h.qlog( .INFO, 0, @src(), "Goodbye..." );
@@ -174,29 +172,29 @@ pub const engine = struct
     h.qlog( .INFO, 0, @src(), "Starting the game loop..." );
 
     var i: i32 = 0;
-    while( i < 100 )
+    while( i < 10 ) // DEBUG : have this loop until closure instead
     {
-      h.log( .DEBUG, 0, @src(), "Starting iteration {d} of the loop", .{ i } );
+      h.log( .INFO, 0, @src(), "! Loop {d}", .{ i } );
       i += 1;
 
       if( @intFromEnum( self.state ) >= @intFromEnum( e_state.LAUNCHED ) )
       {
         // ================ INPUT LOGIC ================
-        self.getInputs();
+        self.update();
 
         // ================ GAME LOGIC ================
         if( self.state == .LAUNCHED )
         {
-          self.updateLogic();
+          self.tick();
         }
 
         // ================ GRAPHICS LOGIC ================
-        self.renderGraphics();
+        self.render();
       }
     }
   }
 
-  fn getInputs( self : *engine ) void
+  fn update( self : *engine ) void
   {
     h.qlog( .DEBUG, 0, @src(), "Getting inputs..." );
 
@@ -206,7 +204,7 @@ pub const engine = struct
     _ = self; // DEBUG
   }
 
-  fn updateLogic( self : *engine ) void
+  fn tick( self : *engine ) void
   {
     h.qlog( .DEBUG, 0, @src(), "Updating game logic..." );
     // This function is used to update the game logic, such as processing input, updating the game state, etc.
@@ -215,10 +213,10 @@ pub const engine = struct
     _ = self; // DEBUG
   }
 
-  fn renderGraphics( self : *engine ) void
+  fn render( self : *engine ) void
   {
-    h.qlog( .DEBUG, 0, @src(), "Rendering graphics..." );
-    // This function is used to render the graphics, such as drawing the game, updating the screen, etc.
+    h.qlog( .DEBUG, 0, @src(), "Rendering visuals..." );
+    // This function is used to render the visuals, such as drawing the game, updating the screen, etc.
     // For now, it does nothing.
 
     _ = self; // DEBUG

@@ -9,11 +9,13 @@ const eng = @import( "core/engine.zig" );
 
 pub fn main() !void
 {
+  h.initAll();
   eng.G_NG.changeState( .LAUNCHED );
 
   eng.G_NG.runGameLoop();
 
   eng.G_NG.changeState( .CLOSED );
+  h.deinitAll();
 }
 
 //test "example test"

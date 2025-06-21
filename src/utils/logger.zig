@@ -1,5 +1,6 @@
 const std   = @import( "std" );
 const timer = @import( "timer.zig" );
+const c     = @import( "colour.zig" );
 
 // This file defines helper functions to conditionally print debug info based on the following enum's value
 // NOTE : this essentially implements a shittier version of std.log...
@@ -31,15 +32,15 @@ pub const LogLevel = enum
 // Global configuration variables for the debug logging system
 const G_LOG_LVL : LogLevel = LogLevel.DEBUG; // Set the global log level for debug printing
 
-const USE_LOG_FILE   : bool = false;                     // If true, log messages will be written to a file instead of stdout/stderr
-const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
-var   G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to write log messages in ( default is stderr )
-var   G_IsFileOpened : bool = false;                     // Flag to check if the log file is opened ( and different from stderr )
-
 const SHOW_ID_MSGS   : bool = true;  // If true, messages with id will not be omitted
 const SHOW_TIMESTAMP : bool = true;  // If true, messages will include a timestamp of the system clock
 const SHOW_LAPTIME   : bool = false; // If true, the timestamp, if present, will be the time since the last message instead of the system clock
 const SHOW_MSG_SRC   : bool = true;  // If true, messages will include the source file, line number, and function name of the call location
+
+const USE_LOG_FILE   : bool = false;                     // If true, log messages will be written to a file instead of stdout/stderr
+const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
+var   G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to write log messages in ( default is stderr )
+var   G_IsFileOpened : bool = false;                     // Flag to check if the log file is opened ( and different from stderr )
 
 // ================================ CORE FUNCTIONS ================================
 
@@ -103,16 +104,23 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
 
   logChar( '-' ); // Print a separator character
 
+  // If the message starts with '!', set the color to red
+  if( message.len >= 0 )
+  {
+    switch ( message[ 0 ])
+    {
+      '!' => setCol( c.RED ),
+      '?' => setCol( c.YELLOW ),
+      '@' => setCol( c.CYAN ),
+      '#' => setCol( c.GREEN ),
+      else => setCol( c.RESET ),
+    }
+  }
+
   // Prints the actual message
-  G_LOG_FILE.writer().print( message, args ) catch | err |
+  G_LOG_FILE.writer().print( message ++ "\n", args ) catch | err |
   {
     std.debug.print( "Failed to write message: {}\n", .{ err });
-    return;
-  };
-
-  G_LOG_FILE.writer().print( "\n", .{} ) catch | err |
-  {
-    std.debug.print( "Failed to write newline: {}\n", .{ err });
     return;
   };
 }
@@ -129,7 +137,10 @@ pub fn initFile() void
     std.debug.print( "Failed to create or open log file '{s}': {}\nLogging to stderr isntead\n", .{ LOG_FILE_NAME, err });
     return;
   };
+  std.debug.print( c.YELOW ++ "Logging to file '{s}'\n" ++ c.RESET, .{ LOG_FILE_NAME });
   G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
+
+  qlog( .INFO, 0, @src(), "Logfile initialized\n" );
 }
 
 pub fn deinitFile() void
@@ -139,33 +150,56 @@ pub fn deinitFile() void
   // If we are using a log file, close it
   if( G_IsFileOpened )
   {
+    qlog( .INFO, 0, @src(), "Logfile deinitialized\n\n\n" );
     G_LOG_FILE.close();
     G_IsFileOpened = false; // Set the flag to false as we closed the file
   }
 }
 
-fn logChar( c : u8 ) void // Print the character followed by a space
+fn logChar( char : u8 ) void // Print the character followed by a space
 {
-  G_LOG_FILE.writer().print( "{c} ", .{ c }) catch | err |
+  G_LOG_FILE.writer().print( "{c} ", .{ char }) catch | err |
   {
     std.debug.print( "Failed to write character: {}\n", .{ err });
     return;
   };
 }
 
+fn setCol( col : []const u8 ) void // Set the ANSI color for the log file
+{
+  if( comptime USE_LOG_FILE ){ return; } // If writing in a file, do not set the color
+
+  // If we are writing in a terminal, set the color
+  G_LOG_FILE.writer().print( "{s}", .{ col }) catch | err |
+  {
+    std.debug.print( "Failed to set ANSI color to {s}: {}\n", .{ col, err });
+    return;
+  };
+}
+
 fn logLevel( level: LogLevel ) !void
 {
-  var lvl : []const u8 = undefined; // Variable to hold the log level string
+
   switch ( level )
   {
-    LogLevel.NONE  => lvl = "NONE ",
-    LogLevel.ERROR => lvl = "ERROR",
-    LogLevel.WARN  => lvl = "WARN ",
-    LogLevel.INFO  => lvl = "INFO ",
-    LogLevel.DEBUG => lvl = "DEBUG",
-    LogLevel.TRACE => lvl = "TRACE",
+    LogLevel.NONE  => setCol( c.RESET ),
+    LogLevel.ERROR => setCol( c.RED   ),
+    LogLevel.WARN  => setCol( c.YELOW ),
+    LogLevel.INFO  => setCol( c.GREEN ),
+    LogLevel.DEBUG => setCol( c.CYAN  ),
+    LogLevel.TRACE => setCol( c.GRAY  ),
   }
-  try G_LOG_FILE.writer().print( "[{s}] ", .{ lvl }); // Print the log level string followed by a space
+  const lvl : []const u8 = switch ( level )
+  {
+    LogLevel.NONE  => "NONE ",
+    LogLevel.ERROR => "[ERROR]",
+    LogLevel.WARN  => "[WARN ]",
+    LogLevel.INFO  => "[INFO ]",
+    LogLevel.DEBUG => "[DEBUG]",
+    LogLevel.TRACE => "[TRACE]",
+  };
+  // Print the log level string followed by a space
+  try G_LOG_FILE.writer().print( "{s} ", .{ lvl });
 }
 
 fn logTime() !void
@@ -180,6 +214,8 @@ fn logTime() !void
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
 
+  setCol( c.GRAY ); // Set the color to gray for the timestamp
+
   // Print the time in seconds and nanoseconds
   try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
 }
@@ -188,14 +224,17 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 {
   if( comptime !SHOW_MSG_SRC ){ return; } // If we are not showing the source location, do nothing
 
-  if( callLocation )| loc |
+  if( callLocation )| loc | // If the call location is defined, print the file, line, and function name
   {
-    // If the call location is defined, print the file, line, and function name
-    try G_LOG_FILE.writer().print( "{s}:{d} ( {s} ) ", .{ loc.file, loc.line, loc.fn_name });
+    setCol( c.BLUE ); // Set the color to blue for the source location
+    try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
+
+    setCol( c.GRAY ); // Set the color to gray for the function name
+    try G_LOG_FILE.writer().print( "( {s} ) ", .{ loc.fn_name });
   }
-  else
+  else // If the call location is undefined, print "UNDEFINED"
   {
-    // If the call location is undefined, print "UNDEFINED"
+    setCol( c.YELOW ); // Set the color to red for the undefined location
     try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
   }
 }
