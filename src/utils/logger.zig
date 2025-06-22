@@ -140,7 +140,7 @@ pub fn initFile() void
   std.debug.print( c.YELOW ++ "Logging to file '{s}'\n" ++ c.RESET, .{ LOG_FILE_NAME });
   G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
 
-  qlog( .INFO, 0, @src(), "Logfile initialized\n" );
+  qlog( .INFO, 0, @src(), "Logfile initialized\n\n" );
 }
 
 pub fn deinitFile() void
@@ -150,7 +150,7 @@ pub fn deinitFile() void
   // If we are using a log file, close it
   if( G_IsFileOpened )
   {
-    qlog( .INFO, 0, @src(), "Logfile deinitialized\n\n\n" );
+    qlog( .INFO, 0, @src(), "Logfile deinitialized\n\n" );
     G_LOG_FILE.close();
     G_IsFileOpened = false; // Set the flag to false as we closed the file
   }
