@@ -5,42 +5,40 @@ const h   = @import( "../headers.zig" );
 
 pub var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
 
-const e_state = enum
+const e_state = enum // These values represent the different states of the engine.
 {
   CLOSED, // The engine is closed and cannot be used
-  CLOSING,
+  //CLOSING,
 
-  STARTING,
+  //STARTING,
   STARTED, // The engine is started and ready to be used
-  STOPPING,
+  //STOPPING,
 
-  LAUNCHING,
-  LAUNCHED, // The engine is launched and running
-  PAUSING,
+  //LAUNCHING,
+  LAUNCHED, // The engine is launched but paused ( not ticking, only rendering and geting inputs )
+  //PAUSING,
 
-  RESUMING,
-  PAUSED, // The engine is paused and can be resumed
-
-  SAVING, // The engine is saving the game state
+  //RESUMING,
+  PLAYING, // The engine is playing and running the full game loop
 };
 
 // ================================ CORE FUNCTIONS ================================
 
-pub fn isAccessibleState( state : e_state ) bool { return state == .CLOSED or state == .STARTED or state == .LAUNCHED or state == .PAUSED; }
-
+//pub fn isAccessibleState( state : e_state ) bool { return state == .CLOSED or state == .STARTED or state == .LAUNCHED or state == .TICKING; }
 pub const engine = struct
 {
   state : e_state = .CLOSED, // The current state of the engine
+  timeScale : f32 = 1.0, // The time scale of the engine ( used to speed up or slow down the game )
 
   // ================================ STATE MANAGEMENT ================================
 
   pub fn changeState( self : *engine, targetState : e_state ) void
   {
-    if( !isAccessibleState( targetState ) or !isAccessibleState( self.state ))
-    {
-      h.log( .ERROR, 0, @src(), "Cannot change state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState ) });
-      return;
-    }
+    //if( !isAccessibleState( targetState ) or !isAccessibleState( self.state ))
+    //{
+    //  h.log( .ERROR, 0, @src(), "Cannot change state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState ) });
+    //  return;
+    //}
 
     if( targetState == self.state )
     {
@@ -48,84 +46,36 @@ pub const engine = struct
       return;
     }
 
-    if( @intFromEnum( targetState ) < @intFromEnum( self.state ) )
+    if( @intFromEnum( targetState ) > @intFromEnum( self.state ) )
     {
-      h.log( .INFO, 0, @src(), "Decreasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
+      h.log( .INFO, 0, @src(), "Increasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
 
       switch( self.state )
       {
-        .STARTED =>
-        {
-          h.qlog( .INFO, 0, @src(), "Closing the engine..." );
-          self.state = .STOPPING;
-
-          // Deinitialize all subsystems
-          self.deinit();
-        },
-
-        .LAUNCHED =>
-        {
-          h.qlog( .INFO, 0, @src(), "Stopping the game loop..." );
-          self.state = .STOPPING;
-
-          // Stop the game loop
-          self.state = .STARTED;
-          // TODO : Save the game state to a file
-        },
-
-        .PAUSED =>
-        {
-          h.qlog( .INFO, 0, @src(), "Resuming the game loop..." );
-          self.state = .RESUMING;
-
-          // Resume the game loop and restore the game state
-          self.state = .STARTED;
-        },
+        .CLOSED   => self.start(),
+        .STARTED  => self.launch(),
+        .LAUNCHED => self.play(),
 
         else =>
         {
-          h.log( .ERROR, 0, @src(), "How did you get here ???", .{});
+          h.qlog( .ERROR, 0, @src(), "How did you get here ???");
           return;
         },
       }
     }
     else
     {
-      h.log( .INFO, 0, @src(), "Increasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
+      h.log( .INFO, 0, @src(), "Decreasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
 
       switch( self.state )
       {
-        .CLOSED =>
-        {
-          h.qlog( .INFO, 0, @src(), "Starting the engine..." );
-          self.state = .STARTING;
-
-          // Initialize all subsystems
-          self.init();
-        },
-
-        .STARTED =>
-        {
-          h.qlog( .INFO, 0, @src(), "Launching the game loop..." );
-          self.state = .LAUNCHING;
-
-          // Start the game loop and load the game state
-          self.state = .LAUNCHED;
-          // TODO : Load the game state from a file or database
-        },
-
-        .LAUNCHED =>
-        {
-          h.qlog( .INFO, 0, @src(), "Pausing the game loop..." );
-          self.state = .PAUSING;
-
-          // Pause the game loop temporarily
-          self.state = .PAUSED;
-        },
+        .PLAYING  => self.pause(),
+        .LAUNCHED => self.stop(),
+        .STARTED  => self.close(),
 
         else =>
         {
-          h.log( .ERROR, 0, @src(), "How did you get here ???", .{});
+          h.qlog( .ERROR, 0, @src(), "How did you get here ???");
           return;
         },
       }
@@ -135,60 +85,94 @@ pub const engine = struct
     if( self.state != targetState ){ self.changeState( targetState ); }
   }
 
-  fn init( self : *engine ) void
+  fn start( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Initializing the engine..." );
+    h.qlog( .INFO, 0, @src(), "Starting the engine..." );
+
+    // Initialize the engine here (e.g. load resources, initialize subsystems, etc.)
 
     self.state = .STARTED;
+  }
 
+  fn launch( self : *engine ) void
+  {
+    h.qlog( .INFO, 0, @src(), "Launching the game..." );
+
+    // Prepare the engine for gameplay (e.g. load game data, initialize game state, etc.)
+
+    h.rl.setTargetFPS( 60 ); // Set the target FPS for the game
+    h.rl.initWindow( 2048, 1024, "Ziguezon Engine - Game Window" ); // Initialize the game window
+
+    self.state = .LAUNCHED;
+  }
+
+  fn play( self : *engine ) void
+  {
+    h.qlog( .INFO, 0, @src(), "Resuming the game..." );
+
+    // Start the game loop or resume gameplay
+
+    self.state = .PLAYING;
+  }
+
+  pub fn togglePause( self : *engine ) void
+  {
+    switch( self.state )
+    {
+      .LAUNCHED => self.play(),
+      .PLAYING  => self.pause(),
+      else =>
+      {
+        h.log( .WARN, 0, @src(), "Cannot toggle pause in current state ( {s} )", .{ @tagName( self.state ) });
+        return;
+      },
+    }
+  }
+
+  fn pause( self : *engine ) void
+  {
+    h.qlog( .INFO, 0, @src(), "Pausing the game..." );
+
+    // Pause the game logic (e.g. stop updating game state, freeze animations, etc.)
+
+    self.state = .LAUNCHED;
+  }
+
+  fn stop( self : *engine ) void
+  {
+    h.qlog( .INFO, 0, @src(), "Stopping the game..." );
+
+    self.state = .STARTED;
     h.qlog( .INFO, 0, @src(), "Hello, world !" );
   }
 
-  fn deinit( self : *engine ) void
+  fn close( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Deinitializing the engine..." );
+    h.qlog( .INFO, 0, @src(), "Closing the engine..." );
 
     self.state = .CLOSED;
-
     h.qlog( .INFO, 0, @src(), "Goodbye..." );
   }
 
-  //pub fn saveAll( self: *engine ) void
-  //{
-  //  const tmpState = self.state; // Store the current state temporarily
-  //  self.state = .SAVING;
-  //
-  //  // Save the game state to a file or database
-  //  h.qlog( .INFO, 0, @src(), "Saving game state..." );
-  //  // TODO : Implement the actual saving logic here
-  //
-  //  self.state = tmpState;
-  //}
-
   // ================================ GAME LOOP ================================
 
-  pub fn runGameLoop( self : *engine ) void
+  pub fn loopLogic( self : *engine ) void
   {
     h.qlog( .INFO, 0, @src(), "Starting the game loop..." );
 
-    var i: i32 = 0;
-    while( i < 10 ) // DEBUG : have this loop until closure instead
+    while( !h.rl.windowShouldClose() )
     {
-      h.log( .INFO, 0, @src(), "! Loop {d}", .{ i } );
-      i += 1;
+      h.qlog( .DEBUG, 0, @src(), "! Looping" );
 
-      if( @intFromEnum( self.state ) >= @intFromEnum( e_state.LAUNCHED ) )
+      if( @intFromEnum( self.state ) >= @intFromEnum( e_state.LAUNCHED ))
       {
-        // ================ INPUT LOGIC ================
+        // Capturing and reacting to input events directly ( works when paused )
         self.update();
 
-        // ================ GAME LOGIC ================
-        if( self.state == .LAUNCHED )
-        {
-          self.tick();
-        }
+        // Running the game logic ( forzen when paused )
+        if( @intFromEnum( self.state ) >= @intFromEnum( e_state.PLAYING )){ self.tick(); }
 
-        // ================ GRAPHICS LOGIC ================
+        // Rendering the game visuals
         self.render();
       }
     }
@@ -197,11 +181,11 @@ pub const engine = struct
   fn update( self : *engine ) void
   {
     h.qlog( .DEBUG, 0, @src(), "Getting inputs..." );
-
     // This function is used to get input from the user, such as keyboard or mouse input.
     // For now, it does nothing.
 
-    _ = self; // DEBUG
+    // Toggle pause if the P key is pressed
+    if( h.rl.isKeyPressed( h.rl.KeyboardKey.p )){ self.togglePause(); }
   }
 
   fn tick( self : *engine ) void
@@ -216,8 +200,13 @@ pub const engine = struct
   fn render( self : *engine ) void
   {
     h.qlog( .DEBUG, 0, @src(), "Rendering visuals..." );
-    // This function is used to render the visuals, such as drawing the game, updating the screen, etc.
-    // For now, it does nothing.
+    // This function is used to render the game visuals, such as drawing sprites, backgrounds, etc.
+    // It uses raylib's drawing functions to draw the game visuals on the screen.
+
+    h.rl.beginDrawing();     // Begin the drawing process
+    defer h.rl.endDrawing(); // End the drawing process
+
+    h.rl.clearBackground( h.rl.Color.black ); // Clear the background with a black color
 
     _ = self; // DEBUG
   }

@@ -3,7 +3,6 @@
 //! is to delete this file and start with root.zig instead.
 
 const std = @import( "std" );
-const rlz = @import( "raylib_zig" );
 const h   = @import( "headers.zig" );
 
 const eng = @import( "core/engine.zig" );
@@ -11,30 +10,13 @@ const eng = @import( "core/engine.zig" );
 pub fn main() !void
 {
   h.initAll();
+  defer h.deinitAll();
+
   eng.G_NG.changeState( .LAUNCHED );
 
-  rlz.init( .{
-    .window_title = "Zig Game Engine",
-    .window_width = 800,
-    .window_height = 600,
-    .window_flags = .{ .resizable, .vsync_hint },
-  }) catch |err| {
-    h.log( .ERROR, 0, @src(), "Failed to initialize Raylib: {}", .{ err });
-    return err;
-  };
-  defer rlz.deinit();
-  rlz.setTargetFPS( 60 );
-
-  rlz.openWindow() catch |err| {
-    h.log( .ERROR, 0, @src(), "Failed to open window: {}", .{ err });
-    return err;
-  };
-  defer rlz.closeWindow();
-
-  eng.G_NG.runGameLoop();
+  eng.G_NG.loopLogic();
 
   eng.G_NG.changeState( .CLOSED );
-  h.deinitAll();
 }
 
 //test "example test"

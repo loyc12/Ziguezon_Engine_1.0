@@ -20,7 +20,7 @@ pub fn build( b: *std.Build ) void
   // This creates a dependency on the raylib_zig package, which is a Zig wrapper
   // around the raylib C library. The `raylib_zig` package is expected to be
   // available in the Zig package registry, or in the local filesystem if the
-  const raylib_dep = b.dependency("raylib_zig",
+  const raylib_dep = b.dependency( "raylib_zig",
   .{
     .target   = target,
     .optimize = optimize,
