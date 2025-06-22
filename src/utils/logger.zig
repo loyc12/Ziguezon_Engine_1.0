@@ -30,17 +30,18 @@ pub const LogLevel = enum
 };
 
 // Global configuration variables for the debug logging system
-const G_LOG_LVL : LogLevel = LogLevel.DEBUG; // Set the global log level for debug printing
+pub const G_LOG_LVL : LogLevel = LogLevel.DEBUG; // Set the global log level for debug printing
 
-const SHOW_ID_MSGS   : bool = true;  // If true, messages with id will not be omitted
-const SHOW_TIMESTAMP : bool = true;  // If true, messages will include a timestamp of the system clock
-const SHOW_LAPTIME   : bool = false; // If true, the timestamp, if present, will be the time since the last message instead of the system clock
-const SHOW_MSG_SRC   : bool = true;  // If true, messages will include the source file, line number, and function name of the call location
+pub const SHOW_ID_MSGS   : bool = true;  // If true, messages with id will not be omitted
+pub const SHOW_TIMESTAMP : bool = true;  // If true, messages will include a timestamp of the system clock
+pub const SHOW_LAPTIME   : bool = false; // If true, the timestamp, if present, will be the time since the last message instead of the system clock
+pub const SHOW_MSG_SRC   : bool = true;  // If true, messages will include the source file, line number, and function name of the call location
+pub const ADD_PREC_NL    : bool = true;  // If true, a newline will be before the actual message, to make it more readable
 
-const USE_LOG_FILE   : bool = false;                     // If true, log messages will be written to a file instead of stdout/stderr
-const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
-var   G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to write log messages in ( default is stderr )
-var   G_IsFileOpened : bool = false;                     // Flag to check if the log file is opened ( and different from stderr )
+pub const USE_LOG_FILE   : bool = false;                     // If true, log messages will be written to a file instead of stdout/stderr
+pub const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
+var       G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to write log messages in ( default is stderr )
+var       G_IsFileOpened : bool = false;                     // Flag to check if the log file is opened ( and different from stderr )
 
 // ================================ CORE FUNCTIONS ================================
 
@@ -93,7 +94,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
     return;
   };
 
-  logChar( '-' ); // Print a separator character
+  logChar( ':' ); // Print a separator character
 
   // Shows the file location if SHOW_MSG_SRC is true
   logLoc( callLocation ) catch | err |
@@ -102,7 +103,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
     return;
   };
 
-  logChar( '-' ); // Print a separator character
+  logChar( ':' ); // Print a separator character
 
   // If the message starts with '!', set the color to red
   if( message.len >= 0 )
@@ -110,11 +111,23 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
     switch ( message[ 0 ])
     {
       '!' => setCol( c.RED ),
-      '?' => setCol( c.YELLOW ),
-      '@' => setCol( c.CYAN ),
-      '#' => setCol( c.GREEN ),
+      '@' => setCol( c.MAGEN ),
+      '#' => setCol( c.YELOW ),
+      '$' => setCol( c.GREEN ),
+      '%' => setCol( c.BLUE ),
+      '&' => setCol( c.CYAN ),
       else => setCol( c.RESET ),
     }
+  }
+
+  if( comptime ADD_PREC_NL )
+  {
+    // If ADD_PREC_NL is true, print a newline before the actual message
+    G_LOG_FILE.writer().print( "\n > ", .{} ) catch | err |
+    {
+      std.debug.print( "Failed to write newline: {}\n", .{ err });
+      return;
+    };
   }
 
   // Prints the actual message
@@ -230,7 +243,7 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
     try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
 
     setCol( c.GRAY ); // Set the color to gray for the function name
-    try G_LOG_FILE.writer().print( "({s}) ", .{ loc.fn_name });
+    try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
   }
   else // If the call location is undefined, print "UNDEFINED"
   {
@@ -238,3 +251,17 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
     try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
   }
 }
+
+// =============================== SHORTHAND LOGGING ================================
+
+pub fn logLapTime() void
+{
+  const now : i128 = timer.getLapTime();
+
+  const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
+  const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
+
+  log( .INFO, 0, @src(), "@ Lap time : {d}.{d:0>9} ", .{ sec, nano });
+}
+
+

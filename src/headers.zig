@@ -14,7 +14,12 @@ pub const log  = logger.log;  // for argument-formatting logging
 pub const qlog = logger.qlog; // for quick logging ( no args )
 
 const engine = @import( "core/engine.zig" ).engine;
-var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
+pub var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
+
+// ================================ RAYLIB SHORTHANDS ================================
+// These are shorthand imports for raylib's types and functions to make the code cleaner.
+
+pub const vec2 = rl.Vector2; // Shorthand for raylib's Vector2 type
 
 // ================================ INITIALIZATION ================================
 

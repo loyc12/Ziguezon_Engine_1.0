@@ -1,5 +1,6 @@
 const std = @import( "std" );
 const h   = @import( "../headers.zig" );
+const ntm = @import( "entityManager.zig" );
 
 // ================================ DEFINITIONS ================================
 
@@ -18,6 +19,8 @@ pub const engine = struct
 {
   state : e_state = .CLOSED, // The current state of the engine
   timeScale : f32 = 1.0, // The time scale of the engine ( used to speed up or slow down the game )
+
+  entityManager : ntm.entityManager = undefined,
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {
@@ -86,7 +89,8 @@ pub const engine = struct
   {
     h.qlog( .INFO, 0, @src(), "Starting the engine..." );
 
-    // Initialize the engine here (e.g. load resources, initialize subsystems, etc.)
+    // Initialize the engine here ( e.g. load resources, initialize subsystems, etc. )
+    self.entityManager.init( h.alloc ); // Initialize the entity manager with the default allocator
 
     self.state = .STARTED;
     h.qlog( .INFO, 0, @src(), "Hello, world !\n\n" );
@@ -96,8 +100,7 @@ pub const engine = struct
   {
     h.qlog( .INFO, 0, @src(), "Launching the game..." );
 
-    // Prepare the engine for gameplay (e.g. load game data, initialize game state, etc.)
-
+    // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
     h.rl.setTargetFPS( 60 ); // Set the target FPS for the game
     h.rl.initWindow( 2048, 1024, "Ziguezon Engine - Game Window" ); // Initialize the game window
 
@@ -142,12 +145,22 @@ pub const engine = struct
   {
     h.qlog( .INFO, 0, @src(), "Stopping the game..." );
 
+    if( h.rl.isWindowReady() )
+    {
+      h.qlog( .INFO, 0, @src(), "Closing the game window..." );
+      h.rl.closeWindow(); // Close the game window if it is ready
+    }
+
     self.state = .STARTED;
   }
 
   fn close( self : *engine ) void
   {
     h.qlog( .INFO, 0, @src(), "Closing the engine..." );
+
+    // Deinitialize the engine (e.g. free resources, close windows, etc.)
+    self.entityManager.deinit(); // Deinitialize the entity manager
+    self.entityManager = undefined; // Reset the entity manager
 
     self.state = .CLOSED;
     h.qlog( .INFO, 0, @src(), "Goodbye...\n\n" );
@@ -161,7 +174,8 @@ pub const engine = struct
 
     while( !h.rl.windowShouldClose() )
     {
-      h.qlog( .DEBUG, 0, @src(), "! Looping" );
+      if( comptime h.logger.SHOW_LAPTIME ){ h.qlog( .DEBUG, 0, @src(), "! Looping" ); }
+      else { h.logger.logLapTime(); }
 
       if( @intFromEnum( self.state ) >= @intFromEnum( e_state.LAUNCHED ))
       {
