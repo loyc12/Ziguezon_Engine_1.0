@@ -30,7 +30,7 @@ pub const LogLevel = enum
 };
 
 // Global configuration variables for the debug logging system
-pub const G_LOG_LVL : LogLevel = LogLevel.DEBUG; // Set the global log level for debug printing
+pub const G_LOG_LVL : LogLevel = LogLevel.TRACE; // Set the global log level for debug printing
 
 pub const SHOW_ID_MSGS   : bool = true;  // If true, messages with id will not be omitted
 pub const SHOW_TIMESTAMP : bool = true;  // If true, messages will include a timestamp of the system clock
@@ -65,14 +65,14 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   // If the message is IDed and SHOW_ID_MSGS is false, do nothing
   if( comptime !SHOW_ID_MSGS and id != 0 ) return;
 
-  if( level == .TRACE ) return; // TODO : Implement the trace system, to log/unlog functions when they are called and exited
+  // TODO : Implement the trace system properly, to log/unlog functions when they are called and exited
 
   // ================ LOGGING LOGIC ================
 
   // Show the log level as a string
   logLevel( level ) catch | err |
   {
-    std.debug.print( "Failed to write log level: {}\n", .{ err });
+    std.debug.print( "Failed to write log level : {}\n", .{ err });
     return;
   };
 
@@ -81,7 +81,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   {
     G_LOG_FILE.writer().print( "{d:0>4} ", .{ id }) catch | err |
     {
-      std.debug.print( "Failed to write message id: {}\n", .{ err });
+      std.debug.print( "Failed to write message id : {}\n", .{ err });
       return;
     };
   }
@@ -90,7 +90,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   // Shows the time of the message relative to the system clock if SHOW_TIMESTAMP is true
   logTime() catch | err |
   {
-    std.debug.print( "Failed to write timestamp: {}\n", .{ err });
+    std.debug.print( "Failed to write timestamp : {}\n", .{ err });
     return;
   };
 
@@ -99,7 +99,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   // Shows the file location if SHOW_MSG_SRC is true
   logLoc( callLocation ) catch | err |
   {
-    std.debug.print( "Failed to write source location: {}\n", .{ err });
+    std.debug.print( "Failed to write source location : {}\n", .{ err });
     return;
   };
 
@@ -125,7 +125,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
     // If ADD_PREC_NL is true, print a newline before the actual message
     G_LOG_FILE.writer().print( "\n > ", .{} ) catch | err |
     {
-      std.debug.print( "Failed to write newline: {}\n", .{ err });
+      std.debug.print( "Failed to write newline : {}\n", .{ err });
       return;
     };
   }
@@ -133,7 +133,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   // Prints the actual message
   G_LOG_FILE.writer().print( message ++ "\n", args ) catch | err |
   {
-    std.debug.print( "Failed to write message: {}\n", .{ err });
+    std.debug.print( "Failed to write message : {}\n", .{ err });
     return;
   };
 }
@@ -173,7 +173,7 @@ fn logChar( char : u8 ) void // Print the character followed by a space
 {
   G_LOG_FILE.writer().print( "{c} ", .{ char }) catch | err |
   {
-    std.debug.print( "Failed to write character: {}\n", .{ err });
+    std.debug.print( "Failed to write character : {}\n", .{ err });
     return;
   };
 }
@@ -185,7 +185,7 @@ fn setCol( col : []const u8 ) void // Set the ANSI color for the log file
   // If we are writing in a terminal, set the color
   G_LOG_FILE.writer().print( "{s}", .{ col }) catch | err |
   {
-    std.debug.print( "Failed to set ANSI color to {s}: {}\n", .{ col, err });
+    std.debug.print( "Failed to set ANSI color to {s} : {}\n", .{ col, err });
     return;
   };
 }

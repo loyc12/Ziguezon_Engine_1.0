@@ -38,7 +38,7 @@ pub const entity = struct
 
   pub fn renderSelf( self : *const entity ) void
   {
-    h.log( .DEBUG, 0, @src(), "Rendering entity {d} at position ({d}, {d}) with shape {s}", .{ self.id, self.pos.x, self.pos.y, @tagName( self.shape ) });
+    h.log( .TRACE, 0, @src(), "Rendering entity {d} at position {d}:{d} with shape {s}", .{ self.id, self.pos.x, self.pos.y, @tagName( self.shape ) });
 
     switch( self.shape )
     {
@@ -94,36 +94,55 @@ pub const entity = struct
     }
   }
 
+  pub fn getDistSqrTo( self : *const entity, other : *const entity ) f32
+  {
+    const dist = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y, };
+    return ( dist.x * dist.x ) + ( dist.y * dist.y );
+  }
+  pub fn getdistTo( self : *const entity, other : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating distance between entity {d} and {d}", .{ self.id, other.id });
+    return @sqrt( self.getDistSqrTo( other ) );
+  }
+
   // NOTE : Assumes that the entities are axis-aligned rectangles
   pub fn getOverlap( self : *const entity, other : *const entity ) ?h.vec2
   {
-    h.log( .DEBUG, 0, @src(), "Checking overlap between entity {d} and entity {d}", .{ self.id, other.id });
+    h.log( .TRACE, 0, @src(), "Checking overlap between entity {d} and {d}", .{ self.id, other.id });
 
     if( self.id == other.id ) // Check if the entities are the same
     {
-      h.log( .DEBUG, 0, @src(), "Entities are the same : returning" );
+      h.qlog( .DEBUG, 0, @src(), "Entities are the same : returning" );
       return null;
     }
     if( !self.active or !other.active ) // Check if either entity is inactive
     {
-      h.log( .DEBUG, 0, @src(), "One of the entities is inactive : returning" );
+      h.qlog( .DEBUG, 0, @src(), "One of the entities is inactive : returning" );
       return null;
     }
     if( self.shape == .NONE or other.shape == .NONE ) // Check if either entity has no shape defined
     {
-      h.log( .DEBUG, 0, @src(), "One of the entities has no shape defined : returning" );
+      h.qlog( .DEBUG, 0, @src(), "One of the entities has no shape defined : returning" );
       return null;
     }
-    if( self.pos == other.pos ) // Check if the entities are at the same position
+    if( self.pos.x == other.pos.x and self.pos.y == other.pos.y ) // Check if the entities are at the same position
     {
-      h.log( .DEBUG, 0, @src(), "Entities are at the same position : returning" );
+      h.qlog( .DEBUG, 0, @src(), "Entities are at the same position : returning" );
       return h.vec2{ .x = 0, .y = 0 }; // No overlap direction possible
     }
+     // Check if the entities are too far apart to overlap
+    if((( self.scale.x + other.scale.x ) * ( self.scale.x + other.scale.x )) +
+       (( self.scale.y + other.scale.y ) * ( self.scale.y + other.scale.y )) <
+        self.getDistSqrTo( other ))
+      {
+        h.qlog( .DEBUG, 0, @src(), "Entities are too far apart to overlap : returning" );
+        return null;
+      }
 
     // Find the directions of the overlap ( relative to self )
-    const dist = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y };
-    const dir  = h.vec2{ .x = if( dist.x > 0 ) 1 else if ( dist.x < 0 ) -1 else 0,
-                         .y = if( dist.y > 0 ) 1 else if ( dist.y < 0 ) -1 else 0 };
+    const offset = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y };
+    const dir  = h.vec2{ .x = if( offset.x > 0 ) 1 else if ( offset.x < 0 ) -1 else 0,
+                         .y = if( offset.y > 0 ) 1 else if ( offset.y < 0 ) -1 else 0 };
 
     // Find the edges of each entities bounding box
     // NOTE : This assumes that the entities are axis-aligned rectangles // TODO : Add support for other shapes
@@ -139,13 +158,13 @@ pub const entity = struct
     if( dir.x > 0 and selfEdge.x < otherEdge.x or
         dir.x < 0 and selfEdge.x > otherEdge.x )
     {
-      h.log( .DEBUG, 0, @src(), "No overlap detected in X direction : returning" );
+      h.qlog( .TRACE, 0, @src(), "No overlap detected in X direction : returning" );
       return null;
     }
     if( dir.y > 0 and selfEdge.y < otherEdge.y or
         dir.y < 0 and selfEdge.y > otherEdge.y )
     {
-      h.log( .DEBUG, 0, @src(), "No overlap detected in Y direction : returning" );
+      h.qlog( .TRACE, 0, @src(), "No overlap detected in Y direction : returning" );
       return null;
     }
 
@@ -160,7 +179,7 @@ pub const entity = struct
            else 0,
     };
 
-    h.log( .DEBUG, 0, @src(), "Overlap of magniture {d}:{d} detected", .{ overlap.x, overlap.y });
+    h.log( .TRACE, 0, @src(), "Overlap of magniture {d}:{d} detected", .{ overlap.x, overlap.y });
     return overlap;
   }
 };

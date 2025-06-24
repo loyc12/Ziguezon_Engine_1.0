@@ -224,6 +224,11 @@ pub const engine = struct
     // Get the delta time and apply the time scale
     const scaledDeltaTime = h.rl.getFrameTime() * self.timeScale;
     h.log( .DEBUG, 0, @src(), "Delta time : {d} seconds", .{ scaledDeltaTime });
+
+    // Check for collisions between all active entities and the following ones
+    self.entityManager.collideActiveEntities();
+
+
   }
 
   fn render( self : *engine ) void

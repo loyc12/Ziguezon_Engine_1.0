@@ -316,4 +316,27 @@ pub const entityManager = struct
     // Iterate through all entities and render them if they are active
     for( self.entities.items )| entity |{ if( entity.active ){ entity.renderSelf(); }}
   }
+  pub fn collideActiveEntities( self : *entityManager ) void // TODO : have this take in a collider construct and pass it to entity.collide()
+  {
+    // Iterate through all entities and check for collisions if they are active
+    for( self.entities.items )| entity |{ if( entity.active )
+    {
+      // Prevent segfaulting with the last entity in the list
+      if( entity.id == self.maxID ){ continue; } // TODO : make sure maxID is always up to date
+
+      // Iterate through all remaining entities ( those following the current one in the list ) to check for collisions
+      for( self.entities.items[ entity.id + 1 .. ])| otherEntity |
+      {
+         // Check for collision between the two entities
+        if( otherEntity.active )
+        {
+          const overlap = entity.getOverlap( &otherEntity ) orelse continue; // Get the overlap vector between the two entities, or continue if there is no overlap
+          {
+            h.log( .DEBUG, 0, @src(), "Collision detected between entity {d} and {d} with magnitude {d}:{d}", .{ entity.id, otherEntity.id, overlap.x, overlap.y });
+
+          }
+        } // TODO : implement and replace with collideWith()
+      }
+    }}
+  }
 };

@@ -29,7 +29,7 @@ pub fn main() !void
     .{
       .id     = 1,
       .active = true,
-      .pos    = .{ .x = 150, .y = 150 },
+      .pos    = .{ .x = 99, .y = 99 },
       .rotPos = 0.0,
       .shape  = .RECT,
       .scale  = .{ .x = 50, .y = 50 },
@@ -40,7 +40,7 @@ pub fn main() !void
     .{
       .id     = 2,
       .active = true,
-      .pos    = .{ .x = 250, .y = 250 },
+      .pos    = .{ .x = 150, .y = 150 },
       .rotPos = 0.0,
       .shape  = .CIRC,
       .scale  = .{ .x = 50, .y = 50 },
@@ -51,7 +51,7 @@ pub fn main() !void
     .{
       .id     = 3,
       .active = true,
-      .pos    = .{ .x = 350, .y = 350 },
+      .pos    = .{ .x = 400, .y = 400 },
       .rotPos = 0.0,
       .shape  = .DIAM,
       .scale  = .{ .x = 50, .y = 50 },
