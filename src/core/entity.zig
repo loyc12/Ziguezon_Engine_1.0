@@ -99,28 +99,34 @@ pub const entity = struct
   {
     h.log( .DEBUG, 0, @src(), "Checking overlap between entity {d} and entity {d}", .{ self.id, other.id });
 
-    // Check if either entity has no shape defined
-    if ( self.shape == .NONE or other.shape == .NONE )
+    if( self.id == other.id ) // Check if the entities are the same
     {
-      h.log( .DEBUG, 0, @src(), "One of the entities has no shape defined" );
+      h.log( .DEBUG, 0, @src(), "Entities are the same : returning" );
       return null;
     }
-
-    // Find the quadrant where other is located relative to self
-    const dist = h.vec2{ .x = other.pos.x - self.pos.x,
-                         .y = other.pos.y - self.pos.y };
-
-    if( dist.x == 0 and dist.y == 0 )
+    if( !self.active or !other.active ) // Check if either entity is inactive
     {
-      h.log( .DEBUG, 0, @src(), "Entities are at the same position, returning zero vector" );
-      return h.vec2{ .x = 0, .y = 0 }; // No overlap direction to find
+      h.log( .DEBUG, 0, @src(), "One of the entities is inactive : returning" );
+      return null;
+    }
+    if( self.shape == .NONE or other.shape == .NONE ) // Check if either entity has no shape defined
+    {
+      h.log( .DEBUG, 0, @src(), "One of the entities has no shape defined : returning" );
+      return null;
+    }
+    if( self.pos == other.pos ) // Check if the entities are at the same position
+    {
+      h.log( .DEBUG, 0, @src(), "Entities are at the same position : returning" );
+      return h.vec2{ .x = 0, .y = 0 }; // No overlap direction possible
     }
 
-    // Find the direction of the overlap ( relative to self )
+    // Find the directions of the overlap ( relative to self )
+    const dist = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y };
     const dir  = h.vec2{ .x = if( dist.x > 0 ) 1 else if ( dist.x < 0 ) -1 else 0,
                          .y = if( dist.y > 0 ) 1 else if ( dist.y < 0 ) -1 else 0 };
 
-    // Check if self overlaps with other based on its direction
+    // Find the edges of each entities bounding box
+    // NOTE : This assumes that the entities are axis-aligned rectangles // TODO : Add support for other shapes
     const selfEdge = h.vec2{
       .x = self.pos.x + ( dir.x * self.scale.x ),
       .y = self.pos.y + ( dir.y * self.scale.y )};
@@ -129,18 +135,33 @@ pub const entity = struct
       .x = other.pos.x - ( dir.x * other.scale.x ),
       .y = other.pos.y - ( dir.y * other.scale.y )};
 
-    if (( dir.x != 0 and selfEdge.x < otherEdge.x ) or
-        ( dir.y != 0 and selfEdge.y < otherEdge.y ))
+    // Check for lack of overlap in either axis, based on respective directions
+    if( dir.x > 0 and selfEdge.x < otherEdge.x or
+        dir.x < 0 and selfEdge.x > otherEdge.x )
     {
-      h.log( .DEBUG, 0, @src(), "No overlap detected" );
-      return null; // No overlap detected
+      h.log( .DEBUG, 0, @src(), "No overlap detected in X direction : returning" );
+      return null;
+    }
+    if( dir.y > 0 and selfEdge.y < otherEdge.y or
+        dir.y < 0 and selfEdge.y > otherEdge.y )
+    {
+      h.log( .DEBUG, 0, @src(), "No overlap detected in Y direction : returning" );
+      return null;
     }
 
-    h.log( .DEBUG, 0, @src(), "Overlap detected in top-right quadrant" );
-    return h.vec2{
-      .x = ( self.pos.x + ( dir.x * self.scale.x )) - ( other.pos.x - ( dir.x * other.scale.x )),
-      .y = ( self.pos.y + ( dir.x * self.scale.y )) - ( other.pos.y - ( dir.x * other.scale.y )),
+    // If we reach here, there is an overlap in both axes
+    // Find the overlap vector ( the magniture of the overlap in each axis )
+    const overlap = h.vec2{
+      .x = if(      dir.x > 0 ) selfEdge.x  - otherEdge.x
+           else if( dir.x < 0 ) otherEdge.x - selfEdge.x
+           else 0,
+      .y = if(      dir.y > 0 ) selfEdge.y  - otherEdge.y
+           else if( dir.y < 0 ) otherEdge.y - selfEdge.y
+           else 0,
     };
+
+    h.log( .DEBUG, 0, @src(), "Overlap of magniture {d}:{d} detected", .{ overlap.x, overlap.y });
+    return overlap;
   }
 };
 
