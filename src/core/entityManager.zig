@@ -11,6 +11,8 @@ pub const entityManager = struct
 
   // ================================ HELPER FUNCTIONS ================================
 
+  // ================ ID PROPERTIES ================
+
   pub fn getNewID( self : *entityManager ) u32
   {
     // Increment the global maxID and return it as the new ID
@@ -38,6 +40,8 @@ pub const entityManager = struct
     }
     return true; // ID is valid
   }
+
+  // ================ INDEX FUNCTIONS ================
 
   fn getIndex( self : *entityManager, id : u32 ) ?usize
   {
@@ -111,19 +115,25 @@ pub const entityManager = struct
     h.log( .INFO, 0, @src(), "Entity manager deinitialized", .{});
   }
 
-  pub fn getNewEnitity( self : *entityManager, position : ?h.vec2 ) ntt.entity
+  pub fn addEntity( self : *entityManager, newEntity : ntt.entity ) ?ntt.entity
   {
-    const pos = if( position )| p | p else h.vec2{ 0, 0 }; // Default to ( 0, 0 ) if no position is provided
 
-    const newEntity = ntt.entity// Create a new entity with a unique ID, active status, and position
+    if( !self.isInit )
     {
-      .id = self.getNewID(),
-      .active = true,
-      .position = pos,
+      h.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      return null; // If the entity manager is not initialized, log a warning and return null
+    }
+
+    var tmp = newEntity; // Create a temporary variable to hold the new entity
+    tmp.id  = self.getNewID(); // Assign a new ID to the entity
+
+    self.entities.append( tmp ) catch | err |
+    {
+      h.log( .ERROR, 0, @src(), "Failed to add entity: {}", .{ err });
+      return null; // If the entity cannot be added, log an error and return null
     };
 
-    self.entities.append( newEntity ); // Append the new entity to the list of entities
-    return newEntity;                  // Return the newly created entity
+    return newEntity;
   }
 
   pub fn getEntity( self : *entityManager, id : u32 ) ?ntt.entity
@@ -136,8 +146,7 @@ pub const entityManager = struct
       h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
-
-    return self.entities[ index ]; // Return the entity at the found index
+    return self.entities[ index ];
   }
 
   pub fn delEntity( self : *entityManager, id : u32 ) void
@@ -150,13 +159,12 @@ pub const entityManager = struct
       h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found, log a warning and return
     }
-
-    // Remove the entity at the found index from the list of entities
     self.entities.removeAt( index );
     h.log( .INFO, 0, @src(), "Entity with ID {d} deleted", .{ id });
   }
 
-  // ================================ ACCESSORS ================================
+  // ================================ INDIVIDUAL ACCESSORS / MUTATORS ================================
+
   pub fn setActivity( self : *entityManager, id : u32, active : bool ) void
   {
     // Find the index of the entity with the given ID
@@ -166,9 +174,21 @@ pub const entityManager = struct
       h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found
     }
-
-    self.entities[ index ].active = active; // Set the activity status of the entity at the found index
+    self.entities[ index ].active = active;
   }
+  pub fn isActive( self : *entityManager, id : u32 ) bool
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return false; // If the entity is not found, log a warning and return false
+    }
+    return self.entities[ index ].active;
+  }
+
+  // ================ POSITION PROPERTIES ================
 
   pub fn setPosition( self : *entityManager, id : u32, position : h.vec2 ) void
   {
@@ -177,9 +197,123 @@ pub const entityManager = struct
     if( index == null )
     {
       h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return; // If the entity is not found, log a warning and return
+    }
+    self.entities[ index ].pos = position;
+  }
+  pub fn getPosition( self : *entityManager, id : u32 ) ?h.vec2
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return null; // If the entity is not found, log a warning and return null
+    }
+    return self.entities[ index ].pos;
+  }
+
+  // ================ ROTATION PROPERTIES ================
+
+  pub fn setRotation( self : *entityManager, id : u32, rotation : f16 ) void
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return; // If the entity is not found, log a warning and return
+    }
+    self.entities[ index ].rotPos = rotation;
+  }
+  pub fn getRotation( self : *entityManager, id : u32 ) ?f16
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return null; // If the entity is not found, log a warning and return null
+    }
+    return self.entities[ index ].rotPos;
+  }
+
+  // ================ SHAPE PROPERTIES ================
+
+  pub fn setShape( self : *entityManager, id : u32, shape : ntt.e_shape ) void
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found
     }
+    self.entities[ index ].shape = shape;
+  }
+  pub fn getShape( self : *entityManager, id : u32 ) ?ntt.e_shape
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return null; // If the entity is not found, log a warning and return null
+    }
+    return self.entities[ index ].shape;
+  }
 
-    self.entities[ index ].position = position; // Set the position of the entity at the found index
+  pub fn setScale( self : *entityManager, id : u32, scale : h.vec2 ) void
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return; // If the entity is not found
+    }
+    self.entities[ index ].scale = scale;
+  }
+  pub fn getScale( self : *entityManager, id : u32 ) ?h.vec2
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return null; // If the entity is not found, log a warning and return null
+    }
+    return self.entities[ index ].scale;
+  }
+
+  pub fn setColour( self : *entityManager, id : u32, colour : h.rl.Color ) void
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return; // If the entity is not found
+    }
+    self.entities[ index ].colour = colour;
+  }
+  pub fn getColour( self : *entityManager, id : u32 ) ?h.rl.Color
+  {
+    // Find the index of the entity with the given ID
+    const index = self.getIndex( id );
+    if( index == null )
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      return null; // If the entity is not found, log a warning and return null
+    }
+    return self.entities[ index ].colour;
+  }
+
+  // ================================ RENDER FUNCTIONS ================================
+
+  pub fn renderActiveEntities( self : *entityManager ) void // TODO : have this take in a renderer construct and pass it to entity.render()
+  {
+    // Iterate through all entities and render them if they are active
+    for( self.entities.items )| entity |{ if( entity.active ){ entity.renderSelf(); }}
   }
 };

@@ -14,6 +14,50 @@ pub fn main() !void
 
   eng.G_NG.changeState( .LAUNCHED );
 
+  _ = eng.G_NG.entityManager.addEntity(
+    .{
+      .id     = 0,
+      .active = true,
+      .pos    = .{ .x = 50, .y = 50 },
+      .rotPos = 0.0,
+      .shape  = .TRIA,
+      .scale  = .{ .x = 50, .y = 50 },
+      .colour = h.rl.Color.red,
+    });
+
+  _ = eng.G_NG.entityManager.addEntity(
+    .{
+      .id     = 1,
+      .active = true,
+      .pos    = .{ .x = 150, .y = 150 },
+      .rotPos = 0.0,
+      .shape  = .RECT,
+      .scale  = .{ .x = 50, .y = 50 },
+      .colour = h.rl.Color.blue,
+    });
+
+  _ = eng.G_NG.entityManager.addEntity(
+    .{
+      .id     = 2,
+      .active = true,
+      .pos    = .{ .x = 250, .y = 250 },
+      .rotPos = 0.0,
+      .shape  = .CIRC,
+      .scale  = .{ .x = 50, .y = 50 },
+      .colour = h.rl.Color.green,
+    });
+
+  _ = eng.G_NG.entityManager.addEntity(
+    .{
+      .id     = 3,
+      .active = true,
+      .pos    = .{ .x = 350, .y = 350 },
+      .rotPos = 0.0,
+      .shape  = .DIAM,
+      .scale  = .{ .x = 50, .y = 50 },
+      .colour = h.rl.Color.yellow,
+    });
+
   eng.G_NG.loopLogic();
 
   eng.G_NG.changeState( .CLOSED );

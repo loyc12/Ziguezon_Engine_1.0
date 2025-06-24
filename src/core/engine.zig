@@ -6,6 +6,8 @@ const ntm = @import( "entityManager.zig" );
 
 pub var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
 
+pub const DEF_SCREEN_DIMS = h.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
+
 pub const e_state = enum // These values represent the different states of the engine.
 {
   CLOSED,   // The engine is uninitialized
@@ -21,6 +23,7 @@ pub const engine = struct
   timeScale : f32 = 1.0, // The time scale of the engine ( used to speed up or slow down the game )
 
   entityManager : ntm.entityManager = undefined,
+  mainCamera    : h.rl.Camera2D     = undefined,
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {
@@ -92,6 +95,17 @@ pub const engine = struct
     // Initialize the engine here ( e.g. load resources, initialize subsystems, etc. )
     self.entityManager.init( h.alloc ); // Initialize the entity manager with the default allocator
 
+    self.mainCamera = h.rl.Camera2D{
+      .offset = // TODO : make sure the offset stay accurate when the window is resized
+      .{
+        .x = DEF_SCREEN_DIMS.x / 2,
+        .y = DEF_SCREEN_DIMS.y / 2
+      },
+      .target = .{ .x = 0, .y = 0 },
+      .rotation = 0.0,
+      .zoom = 1.0,
+    };
+
     self.state = .STARTED;
     h.qlog( .INFO, 0, @src(), "Hello, world !\n\n" );
   }
@@ -102,7 +116,7 @@ pub const engine = struct
 
     // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
     h.rl.setTargetFPS( 60 ); // Set the target FPS for the game
-    h.rl.initWindow( 2048, 1024, "Ziguezon Engine - Game Window" ); // Initialize the game window
+    h.rl.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
 
     h.log( .INFO, 0, @src(), "Window initialized with size {d}x{d}\n\n", .{ h.rl.getScreenWidth(), h.rl.getScreenHeight() });
 
@@ -160,7 +174,9 @@ pub const engine = struct
 
     // Deinitialize the engine (e.g. free resources, close windows, etc.)
     self.entityManager.deinit(); // Deinitialize the entity manager
+
     self.entityManager = undefined; // Reset the entity manager
+    self.mainCamera    = undefined; // Reset the main camera
 
     self.state = .CLOSED;
     h.qlog( .INFO, 0, @src(), "Goodbye...\n\n" );
@@ -221,7 +237,11 @@ pub const engine = struct
 
     h.rl.clearBackground( h.rl.Color.black ); // Clear the background with a black color
 
-    _ = self; // DEBUG
+    // Begin the 2D mode with the camera
+    h.rl.beginMode2D( self.mainCamera );
+    defer h.rl.endMode2D(); // End the 2D mode
+
+    self.entityManager.renderActiveEntities(); // Render all active entities
   }
 
 };
