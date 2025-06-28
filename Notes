@@ -1,5 +1,3 @@
 TODO :
 
 Make entities id and index always match
-  OR
-fix entity obtention/deletion based on id ( and not index)

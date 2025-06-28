@@ -238,13 +238,14 @@ pub const engine = struct
     // This function is used to update the game logic, such as processing input, updating the game state, etc.
 
     // Get the delta time and apply the time scale
-    const scaledDeltaTime = h.rl.getFrameTime() * self.timeScale;
-    h.log( .DEBUG, 0, @src(), "Delta time : {d} seconds", .{ scaledDeltaTime });
+    const sdt = h.rl.getFrameTime() * self.timeScale;
+    h.log( .DEBUG, 0, @src(), "Delta time : {d} seconds", .{ sdt });
 
     // Check for collisions between all active entities and the following ones
-    self.entityManager.collideActiveEntities();
 
-    h.OnTick( self ); // Allows for custom game logic updates
+    h.OnTick( self, sdt ); // Allows for custom game logic updates
+
+    self.entityManager.tickActiveEntities( sdt ); // Tick all active entities with the delta time
   }
 
   fn render( self : *engine ) void

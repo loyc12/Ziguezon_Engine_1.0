@@ -19,8 +19,8 @@ pub const entity = struct
   // ================ POSITION PROPERTIES ================
 
   pos : h.vec2, // Position of the entity in 2D space
-//vel : h.vec2, // Velocity of the entity in 2D space
-//acc : h.vec2, // Acceleration of the entity in 2D space
+  vel : h.vec2, // Velocity of the entity in 2D space
+  acc : h.vec2, // Acceleration of the entity in 2D space
 
   // ================ ROTATION PROPERTIES ================
 
@@ -34,9 +34,19 @@ pub const entity = struct
   scale  : h.vec2,     // Scale of the entity in X and Y
   colour : h.rl.Color, // Colour of the entity ( used for rendering )
 
-  // ================ HELPER FUNCTIONS ================
+  // ================ DISTANCE FUNCTIONS ================
 
-  pub fn getDistSqrTo( self : *const entity, other : *const entity ) f32
+  pub fn getXDistTo( self : *const entity, other : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating X distance between entity {d} and {d}", .{ self.id, other.id });
+    return @abs( other.pos.x - self.pos.x );
+  }
+  pub fn getYDistTo( self : *const entity, other : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating Y distance between entity {d} and {d}", .{ self.id, other.id });
+    return @abs( other.pos.y - self.pos.y );
+  }
+  pub fn getSqrDistTo( self : *const entity, other : *const entity ) f32
   {
     h.log( .TRACE, 0, @src(), "Calculating squared distance between entity {d} and {d}", .{ self.id, other.id });
     const dist = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y, };
@@ -50,6 +60,96 @@ pub const entity = struct
   {
     h.log( .TRACE, 0, @src(), "Calculating cartesian distance between entity {d} and {d}", .{ self.id, other.id });
     return @abs( other.pos.x - self.pos.x ) + @abs( other.pos.y - self.pos.y ); // NOTE : taxicab distance
+  }
+
+  // ================ KEYPOINTS FUNCTIONS ================
+
+  pub fn getLeftSide( self : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating left side of entity {d}", .{ self.id });
+    return self.pos.x - self.scale.x;
+  }
+  pub fn getRightSide( self : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating right side of entity {d}", .{ self.id });
+    return self.pos.x + self.scale.x;
+  }
+  pub fn getTopSide( self : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating top side of entity {d}", .{ self.id });
+    return self.pos.y - self.scale.y;
+  }
+  pub fn getBottomSide( self : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating bottom side of entity {d}", .{ self.id });
+    return self.pos.y + self.scale.y;
+  }
+
+  pub fn getTopLeft( self : *const entity ) h.vec2
+  {
+    h.log( .TRACE, 0, @src(), "Calculating top left corner of entity {d}", .{ self.id });
+    return h.vec2{ .x = self.pos.x - self.scale.x, .y = self.pos.y - self.scale.y };
+  }
+  pub fn getTopRight( self : *const entity ) h.vec2
+  {
+    h.log( .TRACE, 0, @src(), "Calculating top right corner of entity {d}", .{ self.id });
+    return h.vec2{ .x = self.pos.x + self.scale.x, .y = self.pos.y - self.scale.y };
+  }
+  pub fn getBottomLeft( self : *const entity ) h.vec2
+  {
+    h.log( .TRACE, 0, @src(), "Calculating bottom left corner of entity {d}", .{ self.id });
+    return h.vec2{ .x = self.pos.x - self.scale.x, .y = self.pos.y + self.scale.y };
+  }
+  pub fn getBottomRight( self : *const entity ) h.vec2
+  {
+    h.log( .TRACE, 0, @src(), "Calculating bottom right corner of entity {d}", .{ self.id });
+    return h.vec2{ .x = self.pos.x + self.scale.x, .y = self.pos.y + self.scale.y };
+  }
+
+  pub fn setLeftSide( self : *entity, newLeftSide : f32 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting left side of entity {d} to {d}", .{ self.id, newLeftSide });
+    self.pos.x = newLeftSide + self.scale.x;
+  }
+  pub fn setRightSide( self : *entity, newRightSide : f32 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting right side of entity {d} to {d}", .{ self.id, newRightSide });
+    self.pos.x = newRightSide - self.scale.x;
+  }
+  pub fn setTopSide( self : *entity, newTopSide : f32 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting top side of entity {d} to {d}", .{ self.id, newTopSide });
+    self.pos.y = newTopSide + self.scale.y;
+  }
+  pub fn setBottomSide( self : *entity, newBottomSide : f32 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting bottom side of entity {d} to {d}", .{ self.id, newBottomSide });
+    self.pos.y = newBottomSide - self.scale.y;
+  }
+
+  pub fn setTopLeft( self : *entity, newTopLeft : h.vec2 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting top left corner of entity {d} to {d}:{d}", .{ self.id, newTopLeft.x, newTopLeft.y });
+    self.pos.x = newTopLeft.x + self.scale.x;
+    self.pos.y = newTopLeft.y + self.scale.y;
+  }
+  pub fn setTopRight( self : *entity, newTopRight : h.vec2 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting top right corner of entity {d} to {d}:{d}", .{ self.id, newTopRight.x, newTopRight.y });
+    self.pos.x = newTopRight.x - self.scale.x;
+    self.pos.y = newTopRight.y + self.scale.y;
+  }
+  pub fn setBottomLeft( self : *entity, newBottomLeft : h.vec2 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting bottom left corner of entity {d} to {d}:{d}", .{ self.id, newBottomLeft.x, newBottomLeft.y });
+    self.pos.x = newBottomLeft.x + self.scale.x;
+    self.pos.y = newBottomLeft.y - self.scale.y;
+  }
+  pub fn setBottomRight( self : *entity, newBottomRight : h.vec2 ) void
+  {
+    h.log( .TRACE, 0, @src(), "Setting bottom right corner of entity {d} to {d}:{d}", .{ self.id, newBottomRight.x, newBottomRight.y });
+    self.pos.x = newBottomRight.x - self.scale.x;
+    self.pos.y = newBottomRight.y - self.scale.y;
   }
 
   // ================ CORE FUNCTIONS ================

@@ -10,7 +10,7 @@ pub fn OnEntityRender( entity : *const ntt.entity ) void // Called by entity.ren
   return;
 }
 
-pub fn OnEntityCollide( e1 : *ntt.entity, e2 : *ntt.entity ) void // Called by entityManager.collideTogether() // NOTE : Implement this
+pub fn OnEntityCollide( e1 : *ntt.entity, e2 : *ntt.entity ) void // Called by entityManager.collideEntities() // NOTE : Implement this
 {
   // Prevent unused variable warning
   _ = e1;
