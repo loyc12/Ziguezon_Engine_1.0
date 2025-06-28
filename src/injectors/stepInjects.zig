@@ -25,9 +25,6 @@ var   P1_MV_FAC  : f32 = 0.0; // Player 1 movement direction
 var   P2_MV_FAC  : f32 = 0.0; // Player 2 movement direction
 const MV_FAC_CAP : f32 = 16.0; // Movement factor cap, to prevent excessive speed
 
-fn min(a: f32, b: f32) f32 { return if ( a < b ) a else b; }
-fn max(a: f32, b: f32) f32 { return if ( a > b ) a else b; }
-
 pub fn OnUpdate( ng : *eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
@@ -36,19 +33,21 @@ pub fn OnUpdate( ng : *eng.engine ) void // Called by engine.update() ( every fr
   if( ng.state == .PLAYING )
   {
     // Move entity 1 with A and D keys
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.d     )){ P1_MV_FAC = min( P1_MV_FAC + 1,  MV_FAC_CAP ); }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.a     )){ P1_MV_FAC = max( P1_MV_FAC - 1, -MV_FAC_CAP ); }
+    if( h.rl.isKeyDown( h.rl.KeyboardKey.d     )){ P1_MV_FAC = @min( P1_MV_FAC + 1,  MV_FAC_CAP ); }
+    if( h.rl.isKeyDown( h.rl.KeyboardKey.a     )){ P1_MV_FAC = @max( P1_MV_FAC - 1, -MV_FAC_CAP ); }
     if( h.rl.isKeyDown( h.rl.KeyboardKey.w     )){ P1_MV_FAC = 0; }
     if( h.rl.isKeyDown( h.rl.KeyboardKey.space )){ P1_MV_FAC = 0; }
 
 
     // Move entity 2 with side arrow keys
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.right )){ P2_MV_FAC = min( P2_MV_FAC + 1,  MV_FAC_CAP ); }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.left  )){ P2_MV_FAC = max( P2_MV_FAC - 1, -MV_FAC_CAP ); }
+    if( h.rl.isKeyDown( h.rl.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + 1,  MV_FAC_CAP ); }
+    if( h.rl.isKeyDown( h.rl.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - 1, -MV_FAC_CAP ); }
     if( h.rl.isKeyDown( h.rl.KeyboardKey.up    )){ P2_MV_FAC = 0; }
     if( h.rl.isKeyDown( h.rl.KeyboardKey.enter )){ P2_MV_FAC = 0; }
   }
 }
+
+
 
 pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engine.tick() ( every frame, when not paused )
 {
@@ -217,6 +216,8 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
   }
   else { h.qlog( .WARN, 0, @src(), "Entity with ID 4 not found" ); }
 }
+
+
 
 pub fn OnRenderWorld( ng : *eng.engine ) void // Called by engine.render()
 {
