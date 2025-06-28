@@ -34,11 +34,31 @@ pub const entity = struct
   scale  : h.vec2,     // Scale of the entity in X and Y
   colour : h.rl.Color, // Colour of the entity ( used for rendering )
 
-  // ================ FUNCTIONS ================
+  // ================ HELPER FUNCTIONS ================
+
+  pub fn getDistSqrTo( self : *const entity, other : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating squared distance between entity {d} and {d}", .{ self.id, other.id });
+    const dist = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y, };
+    return ( dist.x * dist.x ) + ( dist.y * dist.y );
+  }
+  pub fn getDistTo( self : *const entity, other : *const entity ) f32
+  {
+    return @sqrt( self.getDistSqrTo( other ) );
+  }
+  pub fn getCartDistTo( self : *const entity, other : *const entity ) f32
+  {
+    h.log( .TRACE, 0, @src(), "Calculating cartesian distance between entity {d} and {d}", .{ self.id, other.id });
+    return @abs( other.pos.x - self.pos.x ) + @abs( other.pos.y - self.pos.y ); // NOTE : taxicab distance
+  }
+
+  // ================ CORE FUNCTIONS ================
 
   pub fn renderSelf( self : *const entity ) void
   {
     h.log( .TRACE, 0, @src(), "Rendering entity {d} at position {d}:{d} with shape {s}", .{ self.id, self.pos.x, self.pos.y, @tagName( self.shape ) });
+
+    h.OnEntityRender( self ); // Call the entity render injector
 
     switch( self.shape )
     {
@@ -94,17 +114,6 @@ pub const entity = struct
     }
   }
 
-  pub fn getDistSqrTo( self : *const entity, other : *const entity ) f32
-  {
-    const dist = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y, };
-    return ( dist.x * dist.x ) + ( dist.y * dist.y );
-  }
-  pub fn getdistTo( self : *const entity, other : *const entity ) f32
-  {
-    h.log( .TRACE, 0, @src(), "Calculating distance between entity {d} and {d}", .{ self.id, other.id });
-    return @sqrt( self.getDistSqrTo( other ) );
-  }
-
   // NOTE : Assumes that the entities are axis-aligned rectangles
   pub fn getOverlap( self : *const entity, other : *const entity ) ?h.vec2
   {
@@ -130,14 +139,13 @@ pub const entity = struct
       h.qlog( .DEBUG, 0, @src(), "Entities are at the same position : returning" );
       return h.vec2{ .x = 0, .y = 0 }; // No overlap direction possible
     }
-     // Check if the entities are too far apart to overlap
-    if((( self.scale.x + other.scale.x ) * ( self.scale.x + other.scale.x )) +
-       (( self.scale.y + other.scale.y ) * ( self.scale.y + other.scale.y )) <
-        self.getDistSqrTo( other ))
-      {
-        h.qlog( .DEBUG, 0, @src(), "Entities are too far apart to overlap : returning" );
-        return null;
-      }
+    // Check if the entities are too far apart to overlap
+
+    if( self.scale.x + self.scale.y + other.scale.x + other.scale.y < self.getCartDistTo( other ) )
+    {
+      h.qlog( .DEBUG, 0, @src(), "Entities are too far apart to possibly overlap : returning" );
+      return null;
+    }
 
     // Find the directions of the overlap ( relative to self )
     const offset = h.vec2{ .x = other.pos.x - self.pos.x, .y = other.pos.y - self.pos.y };
@@ -158,13 +166,13 @@ pub const entity = struct
     if( dir.x > 0 and selfEdge.x < otherEdge.x or
         dir.x < 0 and selfEdge.x > otherEdge.x )
     {
-      h.qlog( .TRACE, 0, @src(), "No overlap detected in X direction : returning" );
+      h.qlog( .DEBUG, 0, @src(), "No overlap detected in X direction : returning" );
       return null;
     }
     if( dir.y > 0 and selfEdge.y < otherEdge.y or
         dir.y < 0 and selfEdge.y > otherEdge.y )
     {
-      h.qlog( .TRACE, 0, @src(), "No overlap detected in Y direction : returning" );
+      h.qlog( .DEBUG, 0, @src(), "No overlap detected in Y direction : returning" );
       return null;
     }
 
@@ -179,7 +187,7 @@ pub const entity = struct
            else 0,
     };
 
-    h.log( .TRACE, 0, @src(), "Overlap of magniture {d}:{d} detected", .{ overlap.x, overlap.y });
+    h.log( .DEBUG, 0, @src(), "Overlap of magniture {d}:{d} detected", .{ overlap.x, overlap.y });
     return overlap;
   }
 };

@@ -7,6 +7,8 @@ const ntm = @import( "entityManager.zig" );
 pub var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
 
 pub const DEF_SCREEN_DIMS = h.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
+pub const DEF_TARGET_FPS  = 60; // Default target FPS for the game
+//pub const DEF_TICK_RATE   = 30; // Default tick rate for the game ( in seconds ) // TODO : USE ME
 
 pub const e_state = enum // These values represent the different states of the engine.
 {
@@ -27,24 +29,27 @@ pub const engine = struct
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {
+    h.qlog( .TRACE, 0, @src(), "Setting time scale to {d}", .{ newTimeScale });
     if( newTimeScale < 0 )
     {
-      h.log( .WARN, 0, @src(), "Cannot set time scale to {d}, must be a positive value", .{ newTimeScale });
+      h.log( .WARN, 0, @src(), "Cannot set time scale to {d}: clamping to 0", .{ newTimeScale });
       self.timeScale = 0.0; // Clamping the time scale to 0
       return;
     }
 
     self.timeScale = newTimeScale;
-    h.log( .INFO, 0, @src(), "Time scale set to {d}", .{ self.timeScale });
+    h.log( .DEBUG, 0, @src(), "Time scale set to {d}", .{ self.timeScale });
   }
 
   // ================================ ENGINE STATE ================================
 
   pub fn changeState( self : *engine, targetState : e_state ) void
   {
+    h.qlog( .TRACE, 0, @src(), "Changing state" );
+
     if( targetState == self.state )
     {
-      h.log( .INFO, 0, @src(), "State is already {s}, no change needed", .{ @tagName( self.state ) });
+      h.log( .WARN, 0, @src(), "State is already {s}, no change needed", .{ @tagName( self.state ) });
       return;
     }
 
@@ -90,7 +95,7 @@ pub const engine = struct
 
   fn start( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Starting the engine..." );
+    h.qlog( .TRACE, 0, @src(), "Starting the engine..." );
 
     // Initialize the engine here ( e.g. load resources, initialize subsystems, etc. )
     self.entityManager.init( h.alloc ); // Initialize the entity manager with the default allocator
@@ -105,30 +110,33 @@ pub const engine = struct
       .rotation = 0.0,
       .zoom = 1.0,
     };
-
-    self.state = .STARTED;
     h.qlog( .INFO, 0, @src(), "Hello, world !\n\n" );
+
+    h.OnStart( self ); // Allows for custom initialization
+    self.state = .STARTED;
   }
 
   fn launch( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Launching the game..." );
+    h.qlog( .TRACE, 0, @src(), "Launching the game..." );
 
     // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
-    h.rl.setTargetFPS( 60 ); // Set the target FPS for the game
+    h.rl.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
     h.rl.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
 
-    h.log( .INFO, 0, @src(), "Window initialized with size {d}x{d}\n\n", .{ h.rl.getScreenWidth(), h.rl.getScreenHeight() });
+    h.log( .DEBUG, 0, @src(), "Window initialized with size {d}x{d}\n\n", .{ h.rl.getScreenWidth(), h.rl.getScreenHeight() });
 
+    h.OnLaunch( self ); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
   fn play( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Resuming the game..." );
+    h.qlog( .TRACE, 0, @src(), "Resuming the game..." );
 
     // Start the game loop or resume gameplay
 
+    h.OnPlay( self ); // Allows for custom initialization
     self.state = .PLAYING;
   }
 
@@ -148,16 +156,17 @@ pub const engine = struct
 
   fn pause( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Pausing the game..." );
+    h.qlog( .TRACE, 0, @src(), "Pausing the game..." );
 
     // Pause the game logic (e.g. stop updating game state, freeze animations, etc.)
 
+    h.OnPause( self ); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
   fn stop( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Stopping the game..." );
+    h.qlog( .TRACE, 0, @src(), "Stopping the game..." );
 
     if( h.rl.isWindowReady() )
     {
@@ -165,12 +174,13 @@ pub const engine = struct
       h.rl.closeWindow(); // Close the game window if it is ready
     }
 
+    h.OnStop( self ); // Allows for custom initialization
     self.state = .STARTED;
   }
 
   fn close( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Closing the engine..." );
+    h.qlog( .TRACE, 0, @src(), "Closing the engine..." );
 
     // Deinitialize the engine (e.g. free resources, close windows, etc.)
     self.entityManager.deinit(); // Deinitialize the entity manager
@@ -178,8 +188,10 @@ pub const engine = struct
     self.entityManager = undefined; // Reset the entity manager
     self.mainCamera    = undefined; // Reset the main camera
 
+    h.qlog( .INFO, 0, @src(), "Goodbye, cruel world...\n\n" );
+
+    h.OnClose( self ); // Allows for custom deinitialization
     self.state = .CLOSED;
-    h.qlog( .INFO, 0, @src(), "Goodbye...\n\n" );
   }
 
   // ================================ GAME LOOP ================================
@@ -187,9 +199,12 @@ pub const engine = struct
   pub fn loopLogic( self : *engine ) void
   {
     h.qlog( .INFO, 0, @src(), "Starting the game loop..." );
+    h.OnLoopStart( self ); // Allows for custom initialization
 
     while( !h.rl.windowShouldClose() )
     {
+      h.OnLoopIter( self ); // Allows for custom initialization
+
       if( comptime h.logger.SHOW_LAPTIME ){ h.qlog( .DEBUG, 0, @src(), "! Looping" ); }
       else { h.logger.logLapTime(); }
 
@@ -205,20 +220,21 @@ pub const engine = struct
         self.render();
       }
     }
+    h.qlog( .INFO, 0, @src(), "Game loop done" );
+    h.OnLoopEnd( self ); // Allows for custom deinitialization
   }
 
   fn update( self : *engine ) void
   {
-    h.qlog( .DEBUG, 0, @src(), "Getting inputs..." );
+    h.qlog( .TRACE, 0, @src(), "Getting inputs..." );
     // This function is used to get input from the user, such as keyboard or mouse input.
 
-    // Toggle pause if the P key is pressed
-    if( h.rl.isKeyPressed( h.rl.KeyboardKey.p )){ self.togglePause(); }
+    h.OnUpdate( self ); // Allows for custom input handling
   }
 
-  fn tick( self : *engine ) void
+  fn tick( self : *engine ) void // TODO : use tick rate instead of frame time
   {
-    h.qlog( .DEBUG, 0, @src(), "Updating game logic..." );
+    h.qlog( .TRACE, 0, @src(), "Updating game logic..." );
     // This function is used to update the game logic, such as processing input, updating the game state, etc.
 
     // Get the delta time and apply the time scale
@@ -228,25 +244,32 @@ pub const engine = struct
     // Check for collisions between all active entities and the following ones
     self.entityManager.collideActiveEntities();
 
-
+    h.OnTick( self ); // Allows for custom game logic updates
   }
 
   fn render( self : *engine ) void
   {
-    h.qlog( .DEBUG, 0, @src(), "Rendering visuals..." );
+    h.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
     // This function is used to render the game visuals, such as drawing sprites, backgrounds, etc.
     // It uses raylib's drawing functions to draw the game visuals on the screen.
 
     h.rl.beginDrawing();     // Begin the drawing process
-    defer h.rl.endDrawing(); // End the drawing process
+    defer h.rl.endDrawing(); // End the drawing process when the function returns
 
-    h.rl.clearBackground( h.rl.Color.black ); // Clear the background with a black color
+     // Clear the background with a black color
+    h.rl.clearBackground( h.rl.Color.black );
 
-    // Begin the 2D mode with the camera
-    h.rl.beginMode2D( self.mainCamera );
-    defer h.rl.endMode2D(); // End the 2D mode
+    h.rl.beginMode2D( self.mainCamera ); // World Rendering mode
+    {
+      h.OnRenderWorld( self ); // Allows for custom rendering of the world
 
-    self.entityManager.renderActiveEntities(); // Render all active entities
+      self.entityManager.renderActiveEntities(); // Render all active entities
+    }
+
+    h.rl.endMode2D(); // UI Rendering mode
+    {
+      h.OnRenderOverlay( self ); // Allows for custom rendering of the overlay
+    }
   }
 
 };
