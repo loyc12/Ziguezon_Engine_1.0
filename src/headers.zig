@@ -129,8 +129,8 @@ pub const OnStop  = @import( "injectors/stateInjects.zig" ).OnStop;
 pub const OnClose = @import( "injectors/stateInjects.zig" ).OnClose;
 
 
-// ================================ VECTOR MATHS ================================
-// These are shorthand imports for raylib's types and functions to make the code cleaner.
+// ================================ VECTOR ADDONS ================================
+// These are additional raylib vector math functions that are useful for game development.
 
 pub const vec2 = rl.Vector2; // Shorthand for raylib's Vector2 type
 
@@ -167,3 +167,9 @@ pub fn rotVec2Deg( a : vec2, angle : f32 ) vec2 // NOTE : Angles in degrees
     .y = ( a.x * sinAngle ) + ( a.y * cosAngle ),
   };
 }
+
+// ================================ RAYLIB ADDONS ================================
+
+pub fn getScreenWidth()  f32 { return @floatFromInt( rl.getScreenWidth()  ); }
+pub fn getScreenHeight() f32 { return @floatFromInt( rl.getScreenHeight() ); }
+pub fn getScreenSize() vec2  { return vec2{ .x = getScreenWidth(), .y = getScreenHeight(), }; }

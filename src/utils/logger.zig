@@ -22,15 +22,15 @@ pub const LogLevel = enum
   // This means each value prints all values below it.
 
   NONE,  // No output ( deactivates the debug print system entirely )
-  ERROR, // Error messages only
-  WARN,  // Warnings about potential issues
-  INFO,  // Informational messages
-  DEBUG, // Debug messages ( e.g. variable values, state changes )
-  TRACE, // Detailed tracing of execution flow
+  ERROR, // Error messages ( critical issues that prevent normal execution )
+  WARN,  // Warnings   ( non critical issues that do not prevent normal execution )
+  INFO,  // Long term informational messages ( key events in the program )
+  DEBUG, // tracing of abnormal execution flow ( unhappy path ) and short term debugging messages
+  TRACE, // Tracing of normal execution flow   ( happy path )
 };
 
 // Global configuration variables for the debug logging system
-pub const G_LOG_LVL : LogLevel = LogLevel.TRACE; // Set the global log level for debug printing
+pub const G_LOG_LVL : LogLevel = .DEBUG; // Set the global log level for debug printing
 
 pub const SHOW_ID_MSGS   : bool = true;  // If true, messages with id will not be omitted
 pub const SHOW_TIMESTAMP : bool = true;  // If true, messages will include a timestamp of the system clock

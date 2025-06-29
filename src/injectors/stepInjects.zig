@@ -21,9 +21,14 @@ pub fn OnLoopEnd( ng : *eng.engine ) void // Called by engine.loopLogic()
   return;
 }
 
-var   P1_MV_FAC  : f32 = 0.0; // Player 1 movement direction
-var   P2_MV_FAC  : f32 = 0.0; // Player 2 movement direction
-const MV_FAC_CAP : f32 = 16.0; // Movement factor cap, to prevent excessive speed
+var   P1_MV_FAC   : f32 = 0.0;   // Player 1 movement direction
+var   P2_MV_FAC   : f32 = 0.0;   // Player 2 movement direction
+const MV_FAC_CAP  : f32 = 16.0;  // Movement factor cap, to prevent excessive speed
+
+const B_BASE_VEL  : f32 = 500.0; // Base velocity of the ball when it is launched
+const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball
+
+var   Scores : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 
 pub fn OnUpdate( ng : *eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
@@ -47,17 +52,12 @@ pub fn OnUpdate( ng : *eng.engine ) void // Called by engine.update() ( every fr
   }
 }
 
-
-
 pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engine.tick() ( every frame, when not paused )
 {
   _ = scaledDeltaTime; // Prevent unused variable warning
 
-  const sWidth  : f32 = @floatFromInt( h.rl.getScreenWidth() );
-  const sHeight : f32 = @floatFromInt( h.rl.getScreenHeight() );
-
-  const halfWidth  : f32 = sWidth  / 2.0;
-  const halfHeight : f32 = sHeight / 2.0;
+  const hWidth  : f32 = h.getScreenWidth()  / 2.0;
+  const hHeight : f32 = h.getScreenHeight() / 2.0;
 
   const barHalfWidth : f32 = 16.0;  // Half the width of the separator bar
   const playerSpeed  : f32 = 64.0; // Speed of the players
@@ -70,55 +70,20 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
 
   if( ng.entityManager.getEntity( 1 ))| p1 |
   {
-    // Move player 1 based on the movement direction
-    p1.vel.x = P1_MV_FAC * playerSpeed;
+    p1.vel.x = P1_MV_FAC * playerSpeed;    // Set p1's velocity based on the movement direction
+    p1.clampInX( -hWidth, -barHalfWidth ); // Clamp p1's position to the left side
+    if( p1.vel.x == 0 ) { P1_MV_FAC = 0; } // Reset movement direction if p1's velocity was clamped
 
-    // Clamp p1's position
-    if( p1.getLeftSide() <= -halfWidth )
-    {
-      p1.setLeftSide( -halfWidth );
-      if( p1.vel.x < 0 )
-      {
-        p1.vel.x  = 0; // Stop moving left if it hits the left edge
-        P1_MV_FAC = 0; // Reset movement direction
-      }
-    }
-    if( p1.getRightSide() >= -barHalfWidth )
-    {
-      p1.setRightSide( -barHalfWidth );
-      if( p1.vel.x > 0 )
-      {
-        p1.vel.x  = 0; // Stop moving right if it hits the center barrier
-        P1_MV_FAC = 0; // Reset movement direction
-      }
-    }
   }
   else { h.qlog( .WARN, 0, @src(), "Entity with ID 1 not found" ); }
 
   if( ng.entityManager.getEntity( 2 ))| p2 |
   {
-    // Move player 2 based on the movement direction
-    p2.vel.x = P2_MV_FAC * playerSpeed;
 
-    // Clamp p2's position
-    if( p2.getLeftSide() <= barHalfWidth )
-    {
-      p2.setLeftSide( barHalfWidth );
-      if( p2.vel.x < 0 )
-      {
-        p2.vel.x = 0; // Stop moving left if it hits the center barrier
-        P2_MV_FAC = 0; // Reset movement direction
-      }
-    }
-    if( p2.getRightSide() >= halfWidth )
-    {
-      p2.setRightSide( halfWidth );
-      if( p2.vel.x > 0 )
-      {
-        p2.vel.x = 0; // Stop moving right if it hits the right edge
-        P2_MV_FAC = 0; // Reset movement direction
-      }
-    }
+    p2.vel.x = P2_MV_FAC * playerSpeed;    // Set p2's velocity based on the movement direction
+    p2.clampInX( barHalfWidth, hWidth );   // Clamp p2's position to the right side
+    if( p2.vel.x == 0 ) { P2_MV_FAC = 0; } // Reset movement direction if p2's velocity was clamped
+
   }
   else { h.qlog( .WARN, 0, @src(), "Entity with ID 2 not found" ); }
 
@@ -127,52 +92,73 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
 
   if( ng.entityManager.getEntity( 4 ))| ball |
   {
-    ball.acc.y = 512.0; // Accelerate the ball downwards
+    ball.acc.y = B_BASE_GRAV; // Set the ball's vertical acceleration to the base gravity
 
     // Clamping to top and bottom of the screen
-    if( ball.getBottomSide() >= halfHeight ) // Respawn the ball if it goes below the bottom of the screen
+    if( ball.getBottomSide() >= hHeight ) // Scoring a point if the ball goes below the bottom of the screen
     {
       h.qlog( .DEBUG, 0, @src(), "Ball hit the bottom edge" );
+      ball.vel.y = -B_BASE_VEL; // Reset ball vertical velocity to the base velocity
+      ball.pos.y = 0.0; // Reset ball height to the middle of the screen
 
-      // Reset the ball's position and speed
-      ball.pos.x = -256;
-      ball.pos.y = -halfHeight / 2;
-      ball.vel.x = 0;
-      ball.vel.y = 0;
+      if( ball.pos.x < 0 ) // Player 2 scores a point
+      {
+        h.log( .INFO, 0, @src(), "Player 2 scores a point! : {d}:{d}", .{ Scores[ 0 ], Scores[ 1 ] });
+        Scores[ 1 ] += 1;
+
+        // Set the ball to be thrown towards player 1
+        ball.vel.x = -B_BASE_VEL;
+        ball.pos.x = hWidth / 2; // Set the ball horizontal position to the middle of player 2's field
+      }
+      else if( ball.pos.x > 0 ) // Player 1 scores a point
+      {
+        h.log( .INFO, 0, @src(), "Player 1 scores a point! : {d}:{d}", .{ Scores[ 0 ], Scores[ 1 ] });
+        Scores[ 0 ] += 1;
+
+        // Set the ball to be thrown towards player 2
+        ball.vel.x = B_BASE_VEL;
+        ball.pos.x = -hWidth / 2; // Reset ball horizontal position to the middle of player 1's field
+      }
+      else // If the ball is in the middle of the screen, reset its horizontal position
+      {
+        h.qlog( .WARN, 0, @src(), "No player scored, throwing ball to Player 1" );
+        ball.vel.x = -B_BASE_VEL; // Set the ball horizontal velocity to the base velocity
+        ball.pos.x = hWidth / 2; // Reset ball horizontal position to the middle of player 1's field
+      }
     }
-    else if( ball.getTopSide() <= -halfHeight ) // Bounce the ball if it goes above the top of the screen
+    else if( ball.getTopSide() <= -hHeight ) // Bounce the ball if it goes above the top of the screen
     {
       h.qlog( .DEBUG, 0, @src(), "Ball hit the top edge" );
-      ball.setTopSide( -halfHeight );
+      ball.setTopSide( -hHeight );
 
       if( ball.vel.y < 0 )
       {
-        ball.vel.y *= -wallBounceFactor; // Reverse the vertical velocity and apply bounce factor to slow it down
-        ball.vel.x *=  wallBounceFactor; // Apply bounce factor to horizontal velocity as well
+        ball.vel.y *= -wallBounceFactor;
+        ball.vel.x *=  wallBounceFactor;
       }
     }
 
     // Clamping to left and right edges of the screen
-    if( ball.getRightSide() >= halfWidth ) // Bounce the ball if it goes past the right edge
+    if( ball.getRightSide() >= hWidth ) // Bounce the ball if it goes past the right edge
     {
       h.qlog( .DEBUG, 0, @src(), "Ball hit the right edge" );
-      ball.setRightSide( halfWidth );
+      ball.setRightSide( hWidth );
 
       if( ball.vel.x > 0 )
       {
-        ball.vel.x *= -wallBounceFactor; // Reverse the horizontal velocity and apply bounce factor to slow it down
-        ball.vel.y *=  wallBounceFactor; // Apply bounce factor to vertical velocity as well
+        ball.vel.x *= -wallBounceFactor;
+        ball.vel.y *=  wallBounceFactor;
       }
     }
-    else if( ball.getLeftSide() <= -halfWidth ) // Bounce the ball if it goes past the left edge
+    else if( ball.getLeftSide() <= -hWidth ) // Bounce the ball if it goes past the left edge
     {
       h.qlog( .DEBUG, 0, @src(), "Ball hit the left edge" );
-      ball.setLeftSide( -halfWidth );
+      ball.setLeftSide( -hWidth );
 
       if( ball.vel.x < 0 )
       {
-        ball.vel.x *= -wallBounceFactor; // Reverse the horizontal velocity and apply bounce factor to slow it down
-        ball.vel.y *=  wallBounceFactor; // Apply bounce factor to vertical velocity as well
+        ball.vel.x *= -wallBounceFactor;
+        ball.vel.y *=  wallBounceFactor;
       }
     }
 
@@ -222,14 +208,32 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
 pub fn OnRenderWorld( ng : *eng.engine ) void // Called by engine.render()
 {
   _ = ng; // Prevent unused variable warning
+
+  // Declare the buffers to hold the formatted scores
+  var s1_buff : [ 8 ]u8 = undefined;
+  var s2_buff : [ 8 ]u8 = undefined;
+
+  // Convert the scores to strings
+  const s1 = std.fmt.bufPrint(&s1_buff, "{d}", .{Scores[0]}) catch |err| {
+      h.log(.ERROR, 0, @src(), "Failed to format score for player 1: {}", .{err});
+      return;
+  };
+  const s2 = std.fmt.bufPrint(&s2_buff, "{d}", .{Scores[1]}) catch |err| {
+      h.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{err});
+      return;
+  };
+
+  // Draw each player's score in the middle of their respective fields
+  h.rl.drawText( s1, ( h.rl.getScreenWidth() / 4 ),     h.rl.getScreenHeight() / 2, 64, h.rl.Color.blue );
+  h.rl.drawText( s2, ( h.rl.getScreenWidth() / 4 ) * 3, h.rl.getScreenHeight() / 2, 64, h.rl.Color.red );
+
   return;
 }
 
 pub fn OnRenderOverlay( ng : *eng.engine ) void // Called by engine.render()
 {
-  if( ng.state == .LAUNCHED )
+  if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
   {
-    // Semi-transparent black background, to gray out the game
     h.rl.drawRectangle( 0, 0, h.rl.getScreenWidth(), h.rl.getScreenHeight(), h.rl.Color.init( 0, 0, 0, 128 ));
   }
 }
