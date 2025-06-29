@@ -208,32 +208,39 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
 pub fn OnRenderWorld( ng : *eng.engine ) void // Called by engine.render()
 {
   _ = ng; // Prevent unused variable warning
-
-  // Declare the buffers to hold the formatted scores
-  var s1_buff : [ 8 ]u8 = undefined;
-  var s2_buff : [ 8 ]u8 = undefined;
-
-  // Convert the scores to strings
-  const s1 = std.fmt.bufPrint(&s1_buff, "{d}", .{Scores[0]}) catch |err| {
-      h.log(.ERROR, 0, @src(), "Failed to format score for player 1: {}", .{err});
-      return;
-  };
-  const s2 = std.fmt.bufPrint(&s2_buff, "{d}", .{Scores[1]}) catch |err| {
-      h.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{err});
-      return;
-  };
-
-  // Draw each player's score in the middle of their respective fields
-  h.rl.drawText( s1, ( h.rl.getScreenWidth() / 4 ),     h.rl.getScreenHeight() / 2, 64, h.rl.Color.blue );
-  h.rl.drawText( s2, ( h.rl.getScreenWidth() / 4 ) * 3, h.rl.getScreenHeight() / 2, 64, h.rl.Color.red );
-
   return;
 }
 
 pub fn OnRenderOverlay( ng : *eng.engine ) void // Called by engine.render()
 {
+  // Declare the buffers to hold the formatted scores
+  var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score
+  var s2_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 2's score
+
+  // Convert the scores to strings
+  const s1_slice = std.fmt.bufPrint(&s1_buff, "{d}", .{ Scores[ 0 ]}) catch |err|
+  {
+      h.log(.ERROR, 0, @src(), "Failed to format score for player 1: {}", .{err});
+      return;
+  };
+  const s2_slice  = std.fmt.bufPrint(&s2_buff, "{d}", .{ Scores[ 1 ]}) catch |err|
+  {
+      h.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{err});
+      return;
+  };
+
+  // Null terminate the strings
+  s1_buff[ s1_slice.len ] = 0;
+  s2_buff[ s2_slice.len ] = 0;
+  h.log( .DEBUG, 0, @src(), "Player 1 score: {s}\nPlayer 2 score: {s}", .{ s1_slice, s2_slice });
+
+  // Draw each player's score in the middle of their respective fields
+  h.rl.drawText( &s1_buff, @divTrunc( h.rl.getScreenWidth(), 4 ),     @divTrunc( h.rl.getScreenHeight(), 2 ), 64, h.rl.Color.blue );
+  h.rl.drawText( &s2_buff, @divTrunc( h.rl.getScreenWidth(), 4 ) * 3, @divTrunc( h.rl.getScreenHeight(), 2 ), 64, h.rl.Color.red );
+
   if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
   {
     h.rl.drawRectangle( 0, 0, h.rl.getScreenWidth(), h.rl.getScreenHeight(), h.rl.Color.init( 0, 0, 0, 128 ));
   }
+
 }
