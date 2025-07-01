@@ -1,6 +1,6 @@
 const std = @import( "std" );
 const h   = @import( "../headers.zig" );
-const ntt = @import( "entity.zig" );
+const ntt = @import( "entity/entityCore.zig" );
 
 pub const entityManager = struct
 {

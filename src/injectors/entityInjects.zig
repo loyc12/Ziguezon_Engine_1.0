@@ -2,7 +2,7 @@ const std = @import( "std" );
 const h   = @import( "../headers.zig" );
 const eng = @import( "../core/engine.zig" );
 const ntm = @import( "../core/entityManager.zig" );
-const ntt = @import( "../core/entity.zig" );
+const ntt = @import( "../core/entity/entityCore.zig" );
 
 pub fn OnEntityRender( entity : *const ntt.entity ) void // Called by entity.renderSelf()
 {

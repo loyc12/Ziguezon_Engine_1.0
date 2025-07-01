@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const h   = @import( "../headers.zig" );
 const eng = @import( "../core/engine.zig" );
-const ntt = @import( "../core/entity.zig" );
+const ntt = @import( "../core/entity/entityCore.zig" );
 
 pub fn OnLoopStart( ng : *eng.engine ) void // Called by engine.loopLogic()
 {
