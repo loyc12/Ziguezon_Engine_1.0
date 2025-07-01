@@ -2,24 +2,27 @@ const std    = @import( "std" );
 const h      = @import( "../../headers.zig" );
 
 const entity = @import( "entityCore.zig" ).entity;
-const nttPos = @import( "entityPos.zig" );
 
 // ================ RENDER FUNCTIONS ================
 
 pub fn clampInScreen( e1 : *entity ) void
 {
   h.log( .TRACE, 0, @src(), "Clamping entity {d} on screen", .{ e1.id });
+
   const sw : f32 = h.getScreenWidth();
   const sh : f32 = h.getScreenHeight();
-  nttPos.clampInArea( e1, -sw / 2, sw / 2, -sh / 2, sh / 2 );
+
+  e1.clampInArea( h.vec2{ .x = -sw / 2, .y = -sh / 2 }, h.vec2{ .x = sw / 2,  .y = sh / 2 } );
 }
 
 pub fn isOnScreen( e1 : *const entity ) bool
 {
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is on screen", .{ e1.id });
+
   const sw : f32 = h.getScreenWidth();
   const sh : f32 = h.getScreenHeight();
-  return nttPos.isOnRange( e1, -sw / 2, sw / 2, -sh / 2, sh / 2 );
+
+  return e1.isOnRange( h.vec2{ .x = -sw / 2, .y = -sh / 2 }, h.vec2{ .x = sw / 2,  .y = sh / 2 } );
 }
 
 // This function renders the entity to the screen.

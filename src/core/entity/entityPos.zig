@@ -32,7 +32,7 @@ pub fn getCartDistTo( e1 : *const entity, e2 : *const entity ) f32
   return @abs( e2.pos.x - e1.pos.x ) + @abs( e2.pos.y - e1.pos.y ); // NOTE : taxicab distance
 }
 
-// ================ POSITION FUNCTIONS ================
+// ================ POSITION ACCESSORS ================
 // These functions calculate the sides of the entity's bounding box based on its position and scale.
 // These assume that the entity is an axis-aligned rectangle, meaning that its sides are parallel to the X and Y axes.
 // The sides are defined as follows:
@@ -40,22 +40,22 @@ pub fn getCartDistTo( e1 : *const entity, e2 : *const entity ) f32
 // BOTTOM = +Y   // RIGHT  = +X
 
 // These functions return the sides of the entity's bounding box.
-pub fn getLeftSide( e1 : *const entity ) f32
+pub fn getLeftX( e1 : *const entity ) f32
 {
   h.log( .TRACE, 0, @src(), "Calculating left side of entity {d}", .{ e1.id });
   return e1.pos.x - e1.scale.x;
 }
-pub fn getRightSide( e1 : *const entity ) f32
+pub fn getRightX( e1 : *const entity ) f32
 {
   h.log( .TRACE, 0, @src(), "Calculating right side of entity {d}", .{ e1.id });
   return e1.pos.x + e1.scale.x;
 }
-pub fn getTopSide( e1 : *const entity ) f32
+pub fn getTopY( e1 : *const entity ) f32
 {
   h.log( .TRACE, 0, @src(), "Calculating top side of entity {d}", .{ e1.id });
   return e1.pos.y - e1.scale.y;
 }
-pub fn getBottomSide( e1 : *const entity ) f32
+pub fn getBottomY( e1 : *const entity ) f32
 {
   h.log( .TRACE, 0, @src(), "Calculating bottom side of entity {d}", .{ e1.id });
   return e1.pos.y + e1.scale.y;
@@ -83,52 +83,54 @@ pub fn getBottomRight( e1 : *const entity ) h.vec2
   return h.vec2{ .x = e1.pos.x + e1.scale.x, .y = e1.pos.y + e1.scale.y };
 }
 
+// ================ POSITION SETTERS ================
 // These functions set the sides of the entity's bounding box.
-pub fn setLeftSide( e1 : *entity, newLeftSide : f32 ) void
+
+pub fn setLeftX( e1 : *entity, leftX : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting left side of entity {d} to {d}", .{ e1.id, newLeftSide });
-  e1.pos.x = newLeftSide + e1.scale.x;
+  h.log( .TRACE, 0, @src(), "Setting left side of entity {d} to {d}", .{ e1.id, leftX });
+  e1.pos.x = leftX + e1.scale.x;
 }
-pub fn setRightSide( e1 : *entity, newRightSide : f32 ) void
+pub fn setRightX( e1 : *entity, rightX : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting right side of entity {d} to {d}", .{ e1.id, newRightSide });
-  e1.pos.x = newRightSide - e1.scale.x;
+  h.log( .TRACE, 0, @src(), "Setting right side of entity {d} to {d}", .{ e1.id, rightX });
+  e1.pos.x = rightX - e1.scale.x;
 }
-pub fn setTopSide( e1 : *entity, newTopSide : f32 ) void
+pub fn setTopY( e1 : *entity, topY : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting top side of entity {d} to {d}", .{ e1.id, newTopSide });
-  e1.pos.y = newTopSide + e1.scale.y;
+  h.log( .TRACE, 0, @src(), "Setting top side of entity {d} to {d}", .{ e1.id, topY });
+  e1.pos.y = topY + e1.scale.y;
 }
-pub fn setBottomSide( e1 : *entity, newBottomSide : f32 ) void
+pub fn setBottomY( e1 : *entity, bottomY : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting bottom side of entity {d} to {d}", .{ e1.id, newBottomSide });
-  e1.pos.y = newBottomSide - e1.scale.y;
+  h.log( .TRACE, 0, @src(), "Setting bottom side of entity {d} to {d}", .{ e1.id, bottomY });
+  e1.pos.y = bottomY - e1.scale.y;
 }
 
 // These functions set the corners of the entity's bounding box.
-pub fn setTopLeft( e1 : *entity, newTopLeft : h.vec2 ) void
+pub fn setTopLeft( e1 : *entity, topLeftPos : h.vec2 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting top left corner of entity {d} to {d}:{d}", .{ e1.id, newTopLeft.x, newTopLeft.y });
-  e1.pos.x = newTopLeft.x + e1.scale.x;
-  e1.pos.y = newTopLeft.y + e1.scale.y;
+  h.log( .TRACE, 0, @src(), "Setting top left corner of entity {d} to {d}:{d}", .{ e1.id, topLeftPos.x, topLeftPos.y });
+  e1.pos.x = topLeftPos.x + e1.scale.x;
+  e1.pos.y = topLeftPos.y + e1.scale.y;
 }
-pub fn setTopRight( e1 : *entity, newTopRight : h.vec2 ) void
+pub fn setTopRight( e1 : *entity, topRightPos : h.vec2 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting top right corner of entity {d} to {d}:{d}", .{ e1.id, newTopRight.x, newTopRight.y });
-  e1.pos.x = newTopRight.x - e1.scale.x;
-  e1.pos.y = newTopRight.y + e1.scale.y;
+  h.log( .TRACE, 0, @src(), "Setting top right corner of entity {d} to {d}:{d}", .{ e1.id, topRightPos.x, topRightPos.y });
+  e1.pos.x = topRightPos.x - e1.scale.x;
+  e1.pos.y = topRightPos.y + e1.scale.y;
 }
-pub fn setBottomLeft( e1 : *entity, newBottomLeft : h.vec2 ) void
+pub fn setBottomLeft( e1 : *entity, bottomLeftPos : h.vec2 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting bottom left corner of entity {d} to {d}:{d}", .{ e1.id, newBottomLeft.x, newBottomLeft.y });
-  e1.pos.x = newBottomLeft.x + e1.scale.x;
-  e1.pos.y = newBottomLeft.y - e1.scale.y;
+  h.log( .TRACE, 0, @src(), "Setting bottom left corner of entity {d} to {d}:{d}", .{ e1.id, bottomLeftPos.x, bottomLeftPos.y });
+  e1.pos.x = bottomLeftPos.x + e1.scale.x;
+  e1.pos.y = bottomLeftPos.y - e1.scale.y;
 }
-pub fn setBottomRight( e1 : *entity, newBottomRight : h.vec2 ) void
+pub fn setBottomRight( e1 : *entity, bottomRightPos : h.vec2 ) void
 {
-  h.log( .TRACE, 0, @src(), "Setting bottom right corner of entity {d} to {d}:{d}", .{ e1.id, newBottomRight.x, newBottomRight.y });
-  e1.pos.x = newBottomRight.x - e1.scale.x;
-  e1.pos.y = newBottomRight.y - e1.scale.y;
+  h.log( .TRACE, 0, @src(), "Setting bottom right corner of entity {d} to {d}:{d}", .{ e1.id, bottomRightPos.x, bottomRightPos.y });
+  e1.pos.x = bottomRightPos.x - e1.scale.x;
+  e1.pos.y = bottomRightPos.y - e1.scale.y;
 }
 
 // ================ CLAMPING FUNCTIONS ================
@@ -136,63 +138,81 @@ pub fn setBottomRight( e1 : *entity, newBottomRight : h.vec2 ) void
 // They also set the velocity to 0 if the entity was moving in the direction of the clamped side.
 
 // These functions clamp the entity's sides to a given range, preventing it from going out of bounds in that direction.
-pub fn clampLeftSide( e1 : *entity, minLeftSide : f32 ) void
+pub fn clampLeftX( e1 : *entity, minLeftX : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Clamping left side of entity {d} to {d}", .{ e1.id, minLeftSide });
-  if( getLeftSide( e1 ) < minLeftSide )
+  h.log( .TRACE, 0, @src(), "Clamping left side of entity {d} to {d}", .{ e1.id, minLeftX });
+  if( getLeftX( e1 ) < minLeftX )
   {
-    setLeftSide( e1, minLeftSide );
+    setLeftX( e1, minLeftX );
     if ( e1.vel.x < 0 ){ e1.vel.x = 0; }
   }
 }
-pub fn clampRightSide( e1 : *entity, maxRightSide : f32 ) void
+pub fn clampRightX( e1 : *entity, maxRightX : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Clamping right side of entity {d} to {d}", .{ e1.id, maxRightSide });
-  if( getRightSide( e1 ) > maxRightSide )
+  h.log( .TRACE, 0, @src(), "Clamping right side of entity {d} to {d}", .{ e1.id, maxRightX });
+  if( getRightX( e1 ) > maxRightX )
   {
-    setRightSide( e1, maxRightSide );
+    setRightX( e1, maxRightX );
     if ( e1.vel.x > 0 ){ e1.vel.x = 0; }
   }
 }
-pub fn clampTopSide( e1 : *entity, minTopSide : f32 ) void
+pub fn clampTopY( e1 : *entity, minTopY : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Clamping top side of entity {d} to {d}", .{ e1.id, minTopSide });
-  if( getTopSide( e1 ) < minTopSide )
+  h.log( .TRACE, 0, @src(), "Clamping top side of entity {d} to {d}", .{ e1.id, minTopY });
+  if( getTopY( e1 ) < minTopY )
   {
-    setTopSide( e1, minTopSide );
+    setTopY( e1, minTopY );
     if ( e1.vel.y < 0 ){ e1.vel.y = 0; }
   }
 }
-pub fn clampBottomSide( e1 : *entity, maxBottomSide : f32 ) void
+pub fn clampBottomY( e1 : *entity, maxBottomY : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Clamping bottom side of entity {d} to {d}", .{ e1.id, maxBottomSide });
-  if( getBottomSide( e1 ) > maxBottomSide )
+  h.log( .TRACE, 0, @src(), "Clamping bottom side of entity {d} to {d}", .{ e1.id, maxBottomY });
+  if( getBottomY( e1 ) > maxBottomY )
   {
-    setBottomSide( e1, maxBottomSide );
+    setBottomY( e1, maxBottomY );
     if ( e1.vel.y > 0 ){ e1.vel.y = 0; }
   }
 }
 
-// These functions clamp the entity's position to a given range on the X and Y axes.
+// These functions clamp the entity's hitbox in a given range on the X and Y axes.
 pub fn clampInX( e1 : *entity, minX : f32, maxX : f32 ) void
 {
   h.log( .TRACE, 0, @src(), "Clamping entity {d} on X axis to range {d}:{d}", .{ e1.id, minX, maxX });
-  clampLeftSide(  e1, minX );
-  clampRightSide(  e1,maxX );
+  clampLeftX(  e1, minX );
+  clampRightX(  e1,maxX );
 }
 pub fn clampInY( e1 : *entity, minY : f32, maxY : f32 ) void
 {
   h.log( .TRACE, 0, @src(), "Clamping entity {d} on Y axis to range {d}:{d}", .{ e1.id, minY, maxY });
-  clampTopSide(    e1, minY );
-  clampBottomSide( e1, maxY );
+  clampTopY(    e1, minY );
+  clampBottomY( e1, maxY );
+}
+pub fn clampInArea( e1 : *entity, minPos : h.vec2, maxPos : h.vec2 ) void
+{
+  h.log( .TRACE, 0, @src(), "Clamping entity {d} in area {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
+  clampInX( e1, minPos.x, maxPos.x );
+  clampInY( e1, minPos.y, maxPos.y );
 }
 
-// This function clamps the entity's position to a given area defined by min and max coordinates.
-pub fn clampInArea( e1 : *entity, minX : f32, maxX : f32, minY : f32, maxY : f32 ) void
+// These functions clamp the entity's hitbox on a given range on the X axis ( can overlap only partially ).
+pub fn clampOnX( e1 : *entity, minX : f32, maxX : f32 ) void
 {
-  h.log( .TRACE, 0, @src(), "Clamping entity {d} in area {d}:{d} to {d}:{d}", .{ e1.id, minX, maxX, minY, maxY });
-  clampInX(  e1,minX, maxX );
-  clampInY(  e1,minY, maxY );
+  h.log( .TRACE, 0, @src(), "Clamping entity {d} on X axis to range {d}:{d}", .{ e1.id, minX, maxX });
+  clampLeftX(  e1, minX - ( 2 * e1.scale.x ));
+  clampRightX( e1, maxX + ( 2 * e1.scale.x ));
+}
+pub fn clampOnY( e1 : *entity, minY : f32, maxY : f32 ) void
+{
+  h.log( .TRACE, 0, @src(), "Clamping entity {d} on Y axis to range {d}:{d}", .{ e1.id, minY, maxY });
+  clampTopY(    e1, minY - ( 2 * e1.scale.y ));
+  clampBottomY( e1, maxY + ( 2 * e1.scale.y ));
+}
+pub fn clampOnArea( e1 : *entity, minPos : h.vec2, maxPos : h.vec2 ) void
+{
+  h.log( .TRACE, 0, @src(), "Clamping entity {d} in area {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
+  clampOnX( e1, minPos.x, maxPos.x );
+  clampOnY( e1, minPos.y, maxPos.y );
 }
 
 // ================ RANGE FUNCTIONS ================
@@ -202,41 +222,64 @@ pub fn clampInArea( e1 : *entity, minX : f32, maxX : f32, minY : f32, maxY : f32
 pub fn isInRangeX( e1 : *const entity, minX : f32, maxX : f32 ) bool
 {
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is in range X:{d}:{d}", .{ e1.id, minX, maxX });
-  return( getLeftSide( e1 ) >= minX and getRightSide( e1 ) <= maxX );
+  return( getLeftX( e1 ) >= minX and getRightX( e1 ) <= maxX );
 }
 pub fn isInRangeY( e1 : *const entity, minY : f32, maxY : f32 ) bool
 {
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is in range Y:{d}:{d}", .{ e1.id, minY, maxY });
-  return( .getTopSide( e1 ) >= minY and getBottomSide( e1 ) <= maxY );
+  return( .getTopY( e1 ) >= minY and getBottomY( e1 ) <= maxY );
 }
-pub fn isInRange( e1 : *const entity, minX : f32, maxX : f32, minY : f32, maxY : f32 ) bool
+pub fn isInRange( e1 : *const entity, minPos : h.vec2, maxPos : h.vec2 ) bool
 {
-  h.log( .TRACE, 0, @src(), "Checking if entity {d} is in range {d}:{d} to {d}:{d}", .{ e1.id, minX, maxX, minY, maxY });
-  return(( isInRangeX( e1, minX, maxX ) and isInRangeY( e1, minY, maxY )));
+  h.log( .TRACE, 0, @src(), "Checking if entity {d} is in range {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
+  return(( isInRangeX( e1, minPos.x, maxPos.x ) and isInRangeY( e1, minPos.y, maxPos.y )));
 }
 
 // An entity is considered to be on e1, range if its bounding box overlaps with the range.
 pub fn isOnRangeX( e1 : *const entity, minX : f32, maxX : f32 ) bool
 {
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is on range X:{d}:{d}", .{ e1.id, minX, maxX });
-  return( getRightSide( e1 ) >= minX and getLeftSide( e1 ) <= maxX );
+  return( getRightX( e1 ) >= minX and getLeftX( e1 ) <= maxX );
 }
 pub fn isOnRangeY( e1 : *const entity, minY : f32, maxY : f32 ) bool
 {
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is on range Y:{d}:{d}", .{ e1.id, minY, maxY });
-  return( getBottomSide( e1) >= minY and getTopSide( e1 ) <= maxY );
+  return( getBottomY( e1) >= minY and getTopY( e1 ) <= maxY );
 }
-pub fn isOnRange( e1 : *const entity, minX : f32, maxX : f32, minY : f32, maxY : f32 ) bool
+pub fn isOnRange( e1 : *const entity, minPos : h.vec2, maxPos : h.vec2 ) bool
 {
-  h.log( .TRACE, 0, @src(), "Checking if entity {d} is on range {d}:{d} to {d}:{d}", .{ e1.id, minX, maxX, minY, maxY });
-  return(( isOnRangeX( e1, minX, maxX ) and isOnRangeY( e1, minY, maxY )));
+  h.log( .TRACE, 0, @src(), "Checking if entity {d} is on range {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
+  return(( isOnRangeX( e1, minPos.x, maxPos.x ) and isOnRangeY( e1, minPos.y, maxPos.y )));
 }
 
-// ================ OVERLAP FUNCTIONS ================
+// ================ COLLISION FUNCTIONS ================
+
+pub fn isOverlapping( e1 : *const entity, e2 : *const entity ) bool
+{
+  h.log( .TRACE, 0, @src(), "Checking if entity {d} overlaps with {d}", .{ e1.id, e2.id });
+
+  // Check if either entity has no shape defined
+  if( e1.shape == .NONE or e2.shape == .NONE )
+  {
+    h.qlog( .DEBUG, 0, @src(), "One of the entities has no shape defined : returning" );
+    return false;
+  }
+
+  // Check for overlap
+  const linearDists = h.vec2{ .x = @abs( e2.pos.x - e1.pos.x ), .y = @abs( e2.pos.y - e1.pos.y )};
+  if( linearDists.x > ( e1.scale.x + e2.scale.x ) or linearDists.y > ( e1.scale.y + e2.scale.y ))
+  {
+    return false; // No overlap in at least one axis
+  }
+
+  h.qlog( .TRACE, 0, @src(), "Entities are overlapping : returning" );
+  return true; // Overlap detected in both axes
+}
 
 // This function checks if the entity overlaps with another entity and returns the overlap vector if they do.
 // The overlap vector is the magnitude of the overlap in each axis, relative to the first entity.
 // NOTE : This function assumes that the entities are axis-aligned rectangles
+// NOTE : Use isOverlapping() if you simply want to check for collision without needing the overlap vector.
 pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?h.vec2
 {
   h.log( .TRACE, 0, @src(), "Checking overlap between entity {d} and {d}", .{ e1.id, e2.id });
@@ -275,7 +318,8 @@ pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?h.vec2
                         .y = if( offset.y > 0 ) 1 else if ( offset.y < 0 ) -1 else 0 };
 
   // Find the edges of each entities bounding box
-  // NOTE : This assumes that the entities are axis-aligned rectangles // TODO : Add support for e2 shapes
+  // NOTE : This assumes that the entities are axis-aligned rectangles
+  // TODO : Add support for e2 shapes
   const selfEdge = h.vec2{
     .x = e1.pos.x + ( dir.x * e1.scale.x ),
     .y = e1.pos.y + ( dir.y * e1.scale.y )};

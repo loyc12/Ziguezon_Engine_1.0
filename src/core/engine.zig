@@ -194,6 +194,15 @@ pub const engine = struct
     self.state = .CLOSED;
   }
 
+  pub fn isLaunched( self : *const engine ) bool
+  {
+    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.LAUNCHED ));
+  }
+  pub fn isUnpaused( self : *const engine ) bool
+  {
+    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.PLAYING ));
+  }
+
   // ================================ GAME LOOP ================================
 
   pub fn loopLogic( self : *engine ) void
@@ -208,13 +217,13 @@ pub const engine = struct
       if( comptime h.logger.SHOW_LAPTIME ){ h.qlog( .DEBUG, 0, @src(), "! Looping" ); }
       else { h.logger.logLapTime(); }
 
-      if( @intFromEnum( self.state ) >= @intFromEnum( e_state.LAUNCHED ))
+      if( self.isLaunched())
       {
         // Capturing and reacting to input events directly ( works when paused )
         self.update();
 
-        // Running the game logic ( forzen when paused )
-        if( @intFromEnum( self.state ) >= @intFromEnum( e_state.PLAYING )){ self.tick(); }
+        // Running the game logic ( is unpaused )
+        if( self.isPlaying() ){ self.tick(); }
 
         // Rendering the game visuals
         self.render();
