@@ -62,6 +62,19 @@ _ = ng.entityManager.addEntity( // separator
     .scale  = .{ .x = 32, .y = 32 },
     .colour = h.rl.Color.white,
   });
+
+  _ = ng.entityManager.addEntity( // ball 2 ( debug )
+  .{
+    .id     = 5,
+    .active = true,
+    .pos    = .{ .x = 0, .y = 0 },
+    .vel    = .{ .x = 0, .y = 0 },
+    .acc    = .{ .x = 0, .y = 0 },
+    .rotPos = 0.0,
+    .shape  = .CIRC,
+    .scale  = .{ .x = 32, .y = 32 },
+    .colour = h.rl.Color.gray,
+  });
 }
 
 pub fn OnPlay( ng : *eng.engine ) void // Called by engine.play()

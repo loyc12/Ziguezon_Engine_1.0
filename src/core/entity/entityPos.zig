@@ -214,13 +214,13 @@ pub fn clampOnArea( e1 : *entity, minPos : h.vec2, maxPos : h.vec2 ) void
   clampOnX( e1, minPos.x, maxPos.x );
   clampOnY( e1, minPos.y, maxPos.y );
 }
+
 pub fn clampOnPoint( e1 : *entity, pos : h.vec2 ) void
 {
   h.log( .TRACE, 0, @src(), "Clamping entity {d} on point {d}:{d}", .{ e1.id, pos.x, pos.y });
   clampOnX( e1, pos.x - ( 2 * e1.scale.x ), pos.x + ( 2 * e1.scale.x ));
   clampOnY( e1, pos.y - ( 2 * e1.scale.y ), pos.y + ( 2 * e1.scale.y ));
 }
-
 pub fn clampOnEntity( e1 : *entity, e2 : *const entity ) void
 {
   h.log( .TRACE, 0, @src(), "Clamping entity {d} on entity {d}", .{ e1.id, e2.id });
@@ -265,6 +265,7 @@ pub fn isOnRange( e1 : *const entity, minPos : h.vec2, maxPos : h.vec2 ) bool
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is on range {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
   return(( isOnRangeX( e1, minPos.x, maxPos.x ) and isOnRangeY( e1, minPos.y, maxPos.y )));
 }
+
 pub fn isOnPoint( e1 : *const entity, pos : h.vec2 ) bool
 {
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is on point {d}:{d}", .{ e1.id, pos.x, pos.y });

@@ -79,9 +79,13 @@ pub const entity = struct
   pub fn clampInY(    self : *entity, minY : f32, maxY : f32 ) void { nttPos.clampInY( self, minY, maxY ); }
   pub fn clampInArea( self : *entity, minPos : h.vec2, maxPos : h.vec2 ) void { nttPos.clampInArea( self, minPos, maxPos ); }
 
-  pub fn clampOnX(    self : *entity, minX : f32, maxX : f32 ) void { nttPos.clampOnX( self, minX, maxX ); }
-  pub fn clampOnY(    self : *entity, minY : f32, maxY : f32 ) void { nttPos.clampOnY( self, minY, maxY ); }
-  pub fn clampOnArea( self : *entity, minPos : h.vec2, maxPos : h.vec2 ) void { nttPos.clampOnArea( self, minPos, maxPos ); }
+  pub fn clampOnX(     self : *entity, minX : f32, maxX : f32 ) void { nttPos.clampOnX( self, minX, maxX ); }
+  pub fn clampOnY(     self : *entity, minY : f32, maxY : f32 ) void { nttPos.clampOnY( self, minY, maxY ); }
+  pub fn clampOnArea(  self : *entity, minPos : h.vec2, maxPos : h.vec2 ) void { nttPos.clampOnArea( self, minPos, maxPos ); }
+
+  pub fn clampOnPoint(  self : *entity, point : h.vec2 ) void { nttPos.clampOnPoint( self, point ); }
+  pub fn clampOnEntity( self : *entity, other : *const entity ) void { nttPos.clampOnEntity( self, other ); }
+
   // RANGE FUNCTIONS
   pub fn isInRangeX( self : *const entity, minX : f32, maxX : f32 ) bool { return nttPos.isInRangeX( self, minX, maxX ); }
   pub fn isInRangeY( self : *const entity, minY : f32, maxY : f32 ) bool { return nttPos.isInRangeY( self, minY, maxY ); }
@@ -90,6 +94,8 @@ pub const entity = struct
   pub fn isOnRangeX( self : *const entity, minX : f32, maxX : f32 ) bool { return nttPos.isOnRangeX( self, minX, maxX ); }
   pub fn isOnRangeY( self : *const entity, minY : f32, maxY : f32 ) bool { return nttPos.isOnRangeY( self, minY, maxY ); }
   pub fn isOnRange(  self : *const entity, minPos : h.vec2, maxPos : h.vec2 ) bool { return nttPos.isOnRange( self, minPos, maxPos ); }
+
+  pub fn isOnPoint(  self : *const entity, point : h.vec2 ) bool { return nttPos.isOnPoint( self, point ); }
 
   // COLLISION FUNCTIONS
   pub fn isOverlapping( self : *const entity, other : *const entity ) bool { return nttPos.isOverlapping( self, other ); }

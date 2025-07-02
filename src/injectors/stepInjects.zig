@@ -194,6 +194,15 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
     // Add player 2's velocity to the ball's velocity
     ball.vel.x += p2.vel.x * wallBounceFactor;
   }
+
+  var ball2 = ng.entityManager.getEntity( 5 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( Ball2 ) not found" );
+    return;
+  };
+
+  // Update the ball2 position to follow the ball
+  ball2.clampOnEntity( ball ); // Clamp ball2's position to the ball's position
 }
 
 
