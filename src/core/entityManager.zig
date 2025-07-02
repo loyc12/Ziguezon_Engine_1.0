@@ -4,9 +4,8 @@ const ntt = @import( "entity/entityCore.zig" );
 
 pub const entityManager = struct
 {
-  isInit : bool = false, // Flag to check if the entity manager is initialized
-  maxID  : u32 = 0,      // Global variable to keep track of the maximum ID assigned
-
+  isInit   : bool = false, // Flag to check if the entity manager is initialized
+  maxID    : u32 = 0,      // Global variable to keep track of the maximum ID assigned
   entities : std.ArrayList( ntt.entity ) = undefined, // List to store all entities
 
   // ================================ HELPER FUNCTIONS ================================
@@ -17,8 +16,8 @@ pub const entityManager = struct
   {
     if( !self.isInit )
     {
-      h.log( .WARN, 0, @src(), "Entity manager is not initialized : returning id 0", .{});
-      return 0; // If the entity manager is not initialized, log a warning and return 0
+      h.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0", .{});
+      return 0;
     }
 
     // Increment the global maxID and return it as the new ID
@@ -34,7 +33,7 @@ pub const entityManager = struct
 
   pub fn isIdValid( self : *entityManager, id : u32 ) bool
   {
-    if( id <= 0 ) // Check if the ID is 0
+    if( id <= 0 )
     {
       h.log( .WARN, 0, @src(), "Entity ID cannot be 0", .{});
       return false; // ID cannot be 0
@@ -53,7 +52,7 @@ pub const entityManager = struct
   {
     if( !self.isInit )
     {
-      h.log( .WARN, 0, @src(), "Entity manager is not initialized : returning null", .{});
+      h.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning null", .{});
       return null; // If the entity manager is not initialized, log a warning and return null
     }
 
@@ -64,12 +63,10 @@ pub const entityManager = struct
     }
 
     // Find the index of the entity with the given ID
-    for( self.entities.items, 0..) | entity, index |
+    for( self.entities.items, 0.. )| entity, index |
     {
-      if( entity.id == id ) // If the entity ID matches the given ID
-      {
-        return index; // Return the index of the entity
-      }
+      // return the index of the first ( and normally only ) entity with the given ID
+      if( entity.id == id ){ return index; }
     }
 
     h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ id });
@@ -388,7 +385,7 @@ pub const entityManager = struct
   pub fn renderActiveEntities( self : *entityManager ) void // TODO : have this take in a renderer construct and pass it to entity.render()
   {
     // Iterate through all entities and render them if they are active
-    for( self.entities.items )| entity |{ if( entity.active ){ entity.renderSelf(); }}
+    for( self.entities.items )| entity |{ entity.renderSelf(); }
   }
 
   // ================================ TICK FUNCTIONS ================================

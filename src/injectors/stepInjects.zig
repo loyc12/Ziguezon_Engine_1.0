@@ -65,9 +65,6 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
   const wallBounceFactor   : f32 = 0.90;  // Bounce factor for the ball when hitting walls
   const playerBounceFactor : f32 = 1.03;  // Bounce factor for the ball when hitting players
 
-
-
-
   var p1 = ng.entityManager.getEntity( 1 ) orelse
   {
     h.qlog( .WARN, 0, @src(), "Entity with ID 1 ( P1 ) not found" );

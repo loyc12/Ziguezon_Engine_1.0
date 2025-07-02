@@ -36,8 +36,8 @@ pub fn getCartDistTo( e1 : *const entity, e2 : *const entity ) f32
 // These functions calculate the sides of the entity's bounding box based on its position and scale.
 // These assume that the entity is an axis-aligned rectangle, meaning that its sides are parallel to the X and Y axes.
 // The sides are defined as follows:
-// TOP    = -Y   // LEFT   = -X
-// BOTTOM = +Y   // RIGHT  = +X
+// TOP    = -Y   // LEFT  = -X
+// BOTTOM = +Y   // RIGHT = +X
 
 // These functions return the sides of the entity's bounding box.
 pub fn getLeftX( e1 : *const entity ) f32
@@ -214,9 +214,23 @@ pub fn clampOnArea( e1 : *entity, minPos : h.vec2, maxPos : h.vec2 ) void
   clampOnX( e1, minPos.x, maxPos.x );
   clampOnY( e1, minPos.y, maxPos.y );
 }
+pub fn clampOnPoint( e1 : *entity, pos : h.vec2 ) void
+{
+  h.log( .TRACE, 0, @src(), "Clamping entity {d} on point {d}:{d}", .{ e1.id, pos.x, pos.y });
+  clampOnX( e1, pos.x - ( 2 * e1.scale.x ), pos.x + ( 2 * e1.scale.x ));
+  clampOnY( e1, pos.y - ( 2 * e1.scale.y ), pos.y + ( 2 * e1.scale.y ));
+}
+
+pub fn clampOnEntity( e1 : *entity, e2 : *const entity ) void
+{
+  h.log( .TRACE, 0, @src(), "Clamping entity {d} on entity {d}", .{ e1.id, e2.id });
+  clampOnX( e1, getLeftX( e2 ), getRightX( e2 ));
+  clampOnY( e1, getTopY( e2 ), getBottomY( e2 ));
+}
 
 // ================ RANGE FUNCTIONS ================
 // These functions check if the entity is entirely or partially within a given range.
+// NOTE : These assume that the entity is an axis-aligned rectangle
 
 // An entity is considered to be in range if its bounding box is entirely within the range.
 pub fn isInRangeX( e1 : *const entity, minX : f32, maxX : f32 ) bool
@@ -250,6 +264,11 @@ pub fn isOnRange( e1 : *const entity, minPos : h.vec2, maxPos : h.vec2 ) bool
 {
   h.log( .TRACE, 0, @src(), "Checking if entity {d} is on range {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
   return(( isOnRangeX( e1, minPos.x, maxPos.x ) and isOnRangeY( e1, minPos.y, maxPos.y )));
+}
+pub fn isOnPoint( e1 : *const entity, pos : h.vec2 ) bool
+{
+  h.log( .TRACE, 0, @src(), "Checking if entity {d} is on point {d}:{d}", .{ e1.id, pos.x, pos.y });
+  return( getLeftX( e1 ) <= pos.x and getRightX( e1 ) >= pos.x and getTopY( e1 ) <= pos.y and getBottomY( e1 ) >= pos.y );
 }
 
 // ================ COLLISION FUNCTIONS ================

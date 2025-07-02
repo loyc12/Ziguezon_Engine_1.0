@@ -4,7 +4,7 @@ const ntm = @import( "entityManager.zig" );
 
 // ================================ DEFINITIONS ================================
 
-pub var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
+pub var G_NG : engine = .{}; // Global engine instance
 
 pub const DEF_SCREEN_DIMS = h.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
 pub const DEF_TARGET_FPS  = 60; // Default target FPS for the game
@@ -14,15 +14,15 @@ pub const e_state = enum // These values represent the different states of the e
 {
   CLOSED,   // The engine is uninitialized
   STARTED,  // The engine is initialized, but no window is created yet
-  LAUNCHED, // The game is plaused ( only inputs and render are occuring )
+  LAUNCHED, // The game is paused ( only inputs and render are occuring )
   PLAYING,  // The game is ticking and can be played
 };
 
 //pub fn isAccessibleState( state : e_state ) bool { return state == .CLOSED or state == .STARTED or state == .LAUNCHED or state == .TICKING; }
 pub const engine = struct
 {
-  state : e_state = .CLOSED, // The current state of the engine
-  timeScale : f32 = 1.0, // The time scale of the engine ( used to speed up or slow down the game )
+  state : e_state = .CLOSED,
+  timeScale : f32 = 1.0, // Used to speed up or slow down the game
 
   entityManager : ntm.entityManager = undefined,
   mainCamera    : h.rl.Camera2D     = undefined,
@@ -217,18 +217,19 @@ pub const engine = struct
       if( comptime h.logger.SHOW_LAPTIME ){ h.qlog( .DEBUG, 0, @src(), "! Looping" ); }
       else { h.logger.logLapTime(); }
 
-      if( self.isLaunched())
+      if( self.isLaunched() )
       {
         // Capturing and reacting to input events directly ( works when paused )
         self.update();
 
         // Running the game logic ( is unpaused )
-        if( self.isPlaying() ){ self.tick(); }
+        if( self.isUnpaused() ){ self.tick(); }
 
         // Rendering the game visuals
         self.render();
       }
     }
+
     h.qlog( .INFO, 0, @src(), "Game loop done" );
     h.OnLoopEnd( self ); // Allows for custom deinitialization
   }
@@ -248,7 +249,7 @@ pub const engine = struct
 
     // Get the delta time and apply the time scale
     const sdt = h.rl.getFrameTime() * self.timeScale;
-    h.log( .DEBUG, 0, @src(), "Delta time : {d} seconds", .{ sdt });
+    h.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ sdt });
 
     // Check for collisions between all active entities and the following ones
 
