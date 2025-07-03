@@ -1,3 +1,40 @@
-TODO :
+GAME DEV ROADMAP
 
-Make entities id and index always match
+
+======== Micro Projects ========
+
+Pong              ( Ping         ) - DONE
+Snake             ( Couleuvre    ) -
+Flappy Bird       ( Floppy Disk  ) -
+Asteroid          ( Meteroid     ) -
+Tetris            ( Pentomis     ) -
+Brick Breaker     ( Wall Puncher ) -
+Space Invader     ( Sky Attacker ) -
+Paint             ( Colorant     ) -
+Maze Builder      ( Labyrinth    ) -
+
+
+======== Starter Projects ========
+
+Apo Surviver       ( Hydro - RPG )
+Asteroid miner   ( Orbiter - RPG )
+Platformer         ( Dazel - RPG )
+
+Tower Defense              ( RTS )
+
+Civ-like          ( Polity - TBS )
+Fire-Emblem / Advance Wars ( TBS )
+Hex Empire                 ( TBS )
+
+
+======== Medium Projects ========
+
+City Builder               ( RTS )
+Colony Sim game            ( RTS )
+
+Satisfactory / Factorio    ( TBS )
+
+DOOM-like                  ( FPS )
+
+Terraria               ( Sandbox )
+
