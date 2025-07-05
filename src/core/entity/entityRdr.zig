@@ -1,7 +1,8 @@
-const std    = @import( "std" );
-const h      = @import( "../../headers.zig" );
+const std = @import( "std" );
+const h   = @import( "defs" );
+const inj = @import( "gameInjects" );
 
-const entity = @import( "entityCore.zig" ).entity;
+const entity = h.ntt.entity;
 
 // ================ RENDER FUNCTIONS ================
 
@@ -42,13 +43,13 @@ pub fn renderEntity( self : *const entity ) void
     return;
   }
 
-  h.OnEntityRender( self ); // Call the entity render injector
+  h.tryCall( inj, "OnEntityRender", .{ self });
 
   switch( self.shape )
   {
     .TRIA =>
     {
-      h.rl.drawTriangle(
+      h.ray.drawTriangle(
         .{ .x = self.pos.x,                .y = self.pos.y - self.scale.y }, // P0
         .{ .x = self.pos.x - self.scale.x, .y = self.pos.y + self.scale.y }, // P2
         .{ .x = self.pos.x + self.scale.x, .y = self.pos.y + self.scale.y }, // P1
@@ -57,13 +58,13 @@ pub fn renderEntity( self : *const entity ) void
 
     .RECT =>
     {
-      h.rl.drawTriangle(
+      h.ray.drawTriangle(
         .{ .x = self.pos.x + self.scale.x, .y = self.pos.y + self.scale.y }, // P0
         .{ .x = self.pos.x + self.scale.x, .y = self.pos.y - self.scale.y }, // P1
         .{ .x = self.pos.x - self.scale.x, .y = self.pos.y - self.scale.y }, // P2
         self.colour );
 
-      h.rl.drawTriangle(
+      h.ray.drawTriangle(
         .{ .x = self.pos.x - self.scale.x, .y = self.pos.y - self.scale.y }, // P2
         .{ .x = self.pos.x - self.scale.x, .y = self.pos.y + self.scale.y }, // P3
         .{ .x = self.pos.x + self.scale.x, .y = self.pos.y + self.scale.y }, // P0
@@ -72,13 +73,13 @@ pub fn renderEntity( self : *const entity ) void
 
     .DIAM =>
     {
-      h.rl.drawTriangle(
+      h.ray.drawTriangle(
         .{ .x = self.pos.x,                .y = self.pos.y - self.scale.y }, // P0
         .{ .x = self.pos.x - self.scale.x, .y = self.pos.y                }, // P1
         .{ .x = self.pos.x,                .y = self.pos.y + self.scale.y }, // P2
         self.colour );
 
-      h.rl.drawTriangle(
+      h.ray.drawTriangle(
         .{ .x = self.pos.x,                .y = self.pos.y + self.scale.y }, // P2
         .{ .x = self.pos.x + self.scale.x, .y = self.pos.y                }, // P3
         .{ .x = self.pos.x,                .y = self.pos.y - self.scale.y }, // P0
@@ -87,7 +88,7 @@ pub fn renderEntity( self : *const entity ) void
 
     .CIRC => // TODO : add ellipse support as well
     {
-      h.rl.drawCircle(
+      h.ray.drawCircle(
         @intFromFloat( self.pos.x ),
         @intFromFloat( self.pos.y ),
         ( self.scale.x + self.scale.y ) / 2, // Use average of X and Y scale for radius

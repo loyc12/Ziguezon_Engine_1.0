@@ -1,5 +1,5 @@
 const std    = @import( "std" );
-const h      = @import( "../../headers.zig" );
+const h      = @import( "defs" );
 
 pub const e_shape = enum
 {
@@ -31,7 +31,7 @@ pub const entity = struct
 
   shape  : e_shape,    // Shape of the entity
   scale  : h.vec2,     // Scale of the entity in X and Y
-  colour : h.rl.Color, // Colour of the entity ( used for rendering )
+  colour : h.ray.Color, // Colour of the entity ( used for rendering )
 
   // ================ POSITION FUNCTIONS ================
   const nttPos = @import( "entityPos.zig" );

@@ -1,8 +1,9 @@
 pub const std = @import( "std" );
-pub const rl  = @import( "raylib" );
+pub const ray  = @import( "raylib" );
 
 pub const col    = @import( "utils/colour.zig" );
 pub const logger = @import( "utils/logger.zig" );
+pub const misc   = @import( "utils/misc.zig" );
 pub const timer  = @import( "utils/timer.zig" );
 
 
@@ -14,9 +15,13 @@ pub const alloc = std.heap.smp_allocator;
 pub const log  = logger.log;  // for argument-formatting logging
 pub const qlog = logger.qlog; // for quick logging ( no args )
 
-const engine = @import( "core/engine.zig" ).engine;
-pub var G_NG : engine = .{ .state = .CLOSED }; // Global engine instance
+pub const tryCall = misc.tryCall; // For calling functions that may not exist
 
+pub const eng = @import( "core/engine.zig" );
+pub const ntm = @import( "core/entityManager.zig" );
+pub const ntt = @import( "core/entity/entityCore.zig" );
+
+pub var G_NG : eng.engine = .{}; // Global engine instance
 
 // ================================ INITIALIZATION ================================
 
@@ -104,35 +109,10 @@ pub fn renorm( val : anytype, srcMin : @TypeOf( val ), srcMax : @TypeOf( val ), 
 }
 
 
-// ================================ GAME INJECTORS ================================
-// These are the injectors that allow you to hook into the game engine's lifecycle / gameloop.
-
-pub const OnEntityRender  = @import( "injectors/entityInjects.zig" ).OnEntityRender;
-pub const OnEntityCollide = @import( "injectors/entityInjects.zig" ).OnEntityCollide;
-
-pub const OnLoopStart = @import( "injectors/stepInjects.zig" ).OnLoopStart;
-pub const OnLoopIter  = @import( "injectors/stepInjects.zig" ).OnLoopIter;
-pub const OnLoopEnd   = @import( "injectors/stepInjects.zig" ).OnLoopEnd;
-
-pub const OnUpdate = @import( "injectors/stepInjects.zig" ).OnUpdate;
-pub const OnTick   = @import( "injectors/stepInjects.zig" ).OnTick;
-
-pub const OnRenderWorld   = @import( "injectors/stepInjects.zig" ).OnRenderWorld;
-pub const OnRenderOverlay = @import( "injectors/stepInjects.zig" ).OnRenderOverlay;
-
-pub const OnStart  = @import( "injectors/stateInjects.zig" ).OnStart;
-pub const OnLaunch = @import( "injectors/stateInjects.zig" ).OnLaunch;
-pub const OnPlay   = @import( "injectors/stateInjects.zig" ).OnPlay;
-
-pub const OnPause = @import( "injectors/stateInjects.zig" ).OnPause;
-pub const OnStop  = @import( "injectors/stateInjects.zig" ).OnStop;
-pub const OnClose = @import( "injectors/stateInjects.zig" ).OnClose;
-
-
 // ================================ VECTOR ADDONS ================================
 // These are additional raylib vector math functions that are useful for game development.
 
-pub const vec2 = rl.Vector2; // Shorthand for raylib's Vector2 type
+pub const vec2 = ray.Vector2; // Shorthand for raylib's Vector2 type
 
 pub const DtR = std.math.degreesToRadians; // Shorthand for degrees to radians conversion
 pub const RtD = std.math.radiansToDegrees; // Shorthand for radians to degrees conversion
@@ -170,6 +150,6 @@ pub fn rotVec2Deg( a : vec2, angle : f32 ) vec2 // NOTE : Angles in degrees
 
 // ================================ RAYLIB ADDONS ================================
 
-pub fn getScreenWidth()  f32 { return @floatFromInt( rl.getScreenWidth()  ); }
-pub fn getScreenHeight() f32 { return @floatFromInt( rl.getScreenHeight() ); }
+pub fn getScreenWidth()  f32 { return @floatFromInt( ray.getScreenWidth()  ); }
+pub fn getScreenHeight() f32 { return @floatFromInt( ray.getScreenHeight() ); }
 pub fn getScreenSize() vec2  { return vec2{ .x = getScreenWidth(), .y = getScreenHeight(), }; }

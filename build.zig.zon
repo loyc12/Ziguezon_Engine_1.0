@@ -43,6 +43,7 @@
     },
     .paths = .{
       "src",
+      //"exampleGames",
       "build.zig",
       "build.zig.zon",
       "LICENSE",

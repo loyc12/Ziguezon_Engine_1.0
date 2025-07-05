@@ -1,6 +1,6 @@
 const std = @import( "std" );
-const h   = @import( "../headers.zig" );
-const ntm = @import( "entityManager.zig" );
+const h   = @import( "defs" );
+const inj = @import( "gameInjects" );
 
 // ================================ DEFINITIONS ================================
 
@@ -23,9 +23,10 @@ pub const engine = struct
 {
   state : e_state = .CLOSED,
   timeScale : f32 = 1.0, // Used to speed up or slow down the game
+  sdt : f32       = 0.0, // Latest scaled delta time ( from last frame )
 
-  entityManager : ntm.entityManager = undefined,
-  mainCamera    : h.rl.Camera2D     = undefined,
+  entityManager : h.ntm.entityManager = undefined,
+  mainCamera    : h.ray.Camera2D      = undefined,
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {
@@ -100,7 +101,7 @@ pub const engine = struct
     // Initialize the engine here ( e.g. load resources, initialize subsystems, etc. )
     self.entityManager.init( h.alloc ); // Initialize the entity manager with the default allocator
 
-    self.mainCamera = h.rl.Camera2D{
+    self.mainCamera = h.ray.Camera2D{
       .offset = // TODO : make sure the offset stay accurate when the window is resized
       .{
         .x = DEF_SCREEN_DIMS.x / 2,
@@ -112,7 +113,7 @@ pub const engine = struct
     };
     h.qlog( .INFO, 0, @src(), "Hello, world !\n\n" );
 
-    h.OnStart( self ); // Allows for custom initialization
+    h.tryCall( inj, "OnStart", .{ self }); // Allows for custom initialization
     self.state = .STARTED;
   }
 
@@ -121,12 +122,12 @@ pub const engine = struct
     h.qlog( .TRACE, 0, @src(), "Launching the game..." );
 
     // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
-    h.rl.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
-    h.rl.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
+    h.ray.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
+    h.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
 
-    h.log( .DEBUG, 0, @src(), "Window initialized with size {d}x{d}\n\n", .{ h.rl.getScreenWidth(), h.rl.getScreenHeight() });
+    h.log( .DEBUG, 0, @src(), "Window initialized with size {d}x{d}\n\n", .{ h.ray.getScreenWidth(), h.ray.getScreenHeight() });
 
-    h.OnLaunch( self ); // Allows for custom initialization
+    h.tryCall( inj, "OnLaunch", .{ self }); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
@@ -136,7 +137,7 @@ pub const engine = struct
 
     // Start the game loop or resume gameplay
 
-    h.OnPlay( self ); // Allows for custom initialization
+    h.tryCall( inj, "OnPlay", .{ self }); // Allows for custom initialization
     self.state = .PLAYING;
   }
 
@@ -160,7 +161,7 @@ pub const engine = struct
 
     // Pause the game logic (e.g. stop updating game state, freeze animations, etc.)
 
-    h.OnPause( self ); // Allows for custom initialization
+    h.tryCall( inj, "OnPause", .{ self }); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
@@ -168,13 +169,13 @@ pub const engine = struct
   {
     h.qlog( .TRACE, 0, @src(), "Stopping the game..." );
 
-    if( h.rl.isWindowReady() )
+    if( h.ray.isWindowReady() )
     {
       h.qlog( .INFO, 0, @src(), "Closing the game window..." );
-      h.rl.closeWindow(); // Close the game window if it is ready
+      h.ray.closeWindow(); // Close the game window if it is ready
     }
 
-    h.OnStop( self ); // Allows for custom initialization
+    h.tryCall( inj, "OnStop", .{ self }); // Allows for custom initialization
     self.state = .STARTED;
   }
 
@@ -190,7 +191,7 @@ pub const engine = struct
 
     h.qlog( .INFO, 0, @src(), "Goodbye, cruel world...\n\n" );
 
-    h.OnClose( self ); // Allows for custom deinitialization
+    h.tryCall( inj, "OnClose", .{ self }); // Allows for custom deinitialization
     self.state = .CLOSED;
   }
 
@@ -208,11 +209,11 @@ pub const engine = struct
   pub fn loopLogic( self : *engine ) void
   {
     h.qlog( .INFO, 0, @src(), "Starting the game loop..." );
-    h.OnLoopStart( self ); // Allows for custom initialization
+    h.tryCall( inj, "OnLoopStart", .{ self }); // Allows for custom initialization
 
-    while( !h.rl.windowShouldClose() )
+    while( !h.ray.windowShouldClose() )
     {
-      h.OnLoopIter( self ); // Allows for custom initialization
+      h.tryCall( inj, "OnLoopIter", .{ self }); // Allows for custom initialization
 
       if( comptime h.logger.SHOW_LAPTIME ){ h.qlog( .DEBUG, 0, @src(), "! Looping" ); }
       else { h.logger.logLapTime(); }
@@ -231,7 +232,7 @@ pub const engine = struct
     }
 
     h.qlog( .INFO, 0, @src(), "Game loop done" );
-    h.OnLoopEnd( self ); // Allows for custom deinitialization
+    h.tryCall( inj, "OnLoopEnd", .{ self }); // Allows for custom deinitialization
   }
 
   fn update( self : *engine ) void
@@ -239,7 +240,7 @@ pub const engine = struct
     h.qlog( .TRACE, 0, @src(), "Getting inputs..." );
     // This function is used to get input from the user, such as keyboard or mouse input.
 
-    h.OnUpdate( self ); // Allows for custom input handling
+    h.tryCall( inj, "OnUpdate", .{ self }); // Allows for custom input handling
   }
 
   fn tick( self : *engine ) void // TODO : use tick rate instead of frame time
@@ -248,12 +249,12 @@ pub const engine = struct
     // This function is used to update the game logic, such as processing input, updating the game state, etc.
 
     // Get the delta time and apply the time scale
-    const sdt = h.rl.getFrameTime() * self.timeScale;
+    const sdt = h.ray.getFrameTime() * self.timeScale;
     h.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ sdt });
 
     // Check for collisions between all active entities and the following ones
 
-    h.OnTick( self, sdt ); // Allows for custom game logic updates
+    h.tryCall( inj, "OnTick", .{ self }); // Allows for custom game logic updates
 
     self.entityManager.tickActiveEntities( sdt ); // Tick all active entities with the delta time
   }
@@ -264,22 +265,22 @@ pub const engine = struct
     // This function is used to render the game visuals, such as drawing sprites, backgrounds, etc.
     // It uses raylib's drawing functions to draw the game visuals on the screen.
 
-    h.rl.beginDrawing();     // Begin the drawing process
-    defer h.rl.endDrawing(); // End the drawing process when the function returns
+    h.ray.beginDrawing();     // Begin the drawing process
+    defer h.ray.endDrawing(); // End the drawing process when the function returns
 
      // Clear the background with a black color
-    h.rl.clearBackground( h.rl.Color.black );
+    h.ray.clearBackground( h.ray.Color.black );
 
-    h.rl.beginMode2D( self.mainCamera ); // World Rendering mode
+    h.ray.beginMode2D( self.mainCamera ); // World Rendering mode
     {
-      h.OnRenderWorld( self ); // Allows for custom rendering of the world
+      h.tryCall( inj, "OnRenderWorld", .{ self }); // Allows for custom rendering of the world
 
       self.entityManager.renderActiveEntities(); // Render all active entities
     }
 
-    h.rl.endMode2D(); // UI Rendering mode
+    h.ray.endMode2D(); // UI Rendering mode
     {
-      h.OnRenderOverlay( self ); // Allows for custom rendering of the overlay
+      h.tryCall( inj, "OnRenderOverlay", .{ self }); // Allows for custom rendering of the overlay
     }
   }
 

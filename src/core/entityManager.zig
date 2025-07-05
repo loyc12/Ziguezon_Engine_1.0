@@ -1,12 +1,11 @@
 const std = @import( "std" );
-const h   = @import( "../headers.zig" );
-const ntt = @import( "entity/entityCore.zig" );
+const h   = @import( "defs" );
 
 pub const entityManager = struct
 {
   isInit   : bool = false, // Flag to check if the entity manager is initialized
   maxID    : u32 = 0,      // Global variable to keep track of the maximum ID assigned
-  entities : std.ArrayList( ntt.entity ) = undefined, // List to store all entities
+  entities : std.ArrayList( h.ntt.entity ) = undefined, // List to store all entities
 
   // ================================ HELPER FUNCTIONS ================================
 
@@ -111,7 +110,7 @@ pub const entityManager = struct
       return;
     }
 
-    self.entities = std.ArrayList( ntt.entity ).init( allocator  ); // Initialize the entity manager by allocating memory for the list of entities
+    self.entities = std.ArrayList( h.ntt.entity ).init( allocator  ); // Initialize the entity manager by allocating memory for the list of entities
     self.maxID = 0;
 
     self.isInit = true;
@@ -137,7 +136,7 @@ pub const entityManager = struct
     h.log( .INFO, 0, @src(), "Entity manager deinitialized", .{});
   }
 
-  pub fn addEntity( self : *entityManager, newEntity : ntt.entity ) ?*ntt.entity
+  pub fn addEntity( self : *entityManager, newEntity : h.ntt.entity ) ?*h.ntt.entity
   {
     h.qlog( .TRACE, 0, @src(), "Adding new entity" );
 
@@ -160,7 +159,7 @@ pub const entityManager = struct
     return &self.entities.items[ self.entities.items.len - 1 ];
   }
 
-  pub fn getEntity( self : *entityManager, id : u32 ) ?*ntt.entity
+  pub fn getEntity( self : *entityManager, id : u32 ) ?*h.ntt.entity
   {
     h.log( .TRACE, 0, @src(), "Getting entity with ID {d}", .{ id });
 
@@ -311,7 +310,7 @@ pub const entityManager = struct
 
   // ================ SHAPE PROPERTIES ================
 
-  pub fn setShape( self : *entityManager, id : u32, shape : ntt.e_shape ) void
+  pub fn setShape( self : *entityManager, id : u32, shape : h.ntt.e_shape ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -322,7 +321,7 @@ pub const entityManager = struct
     }
     self.entities[ index ].shape = shape;
   }
-  pub fn getShape( self : *entityManager, id : u32 ) ?ntt.e_shape
+  pub fn getShape( self : *entityManager, id : u32 ) ?h.ntt.e_shape
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -357,7 +356,7 @@ pub const entityManager = struct
     return self.entities[ index ].scale;
   }
 
-  pub fn setColour( self : *entityManager, id : u32, colour : h.rl.Color ) void
+  pub fn setColour( self : *entityManager, id : u32, colour : h.ray.Color ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -368,7 +367,7 @@ pub const entityManager = struct
     }
     self.entities[ index ].colour = colour;
   }
-  pub fn getColour( self : *entityManager, id : u32 ) ?h.rl.Color
+  pub fn getColour( self : *entityManager, id : u32 ) ?h.ray.Color
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );

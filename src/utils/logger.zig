@@ -1,6 +1,5 @@
-const std   = @import( "std" );
-const timer = @import( "timer.zig" );
-const c     = @import( "colour.zig" );
+const std = @import( "std" );
+const h   = @import( "defs" );
 
 // This file defines helper functions to conditionally print debug info based on the following enum's value
 // NOTE : this essentially implements a shittier version of std.log...
@@ -110,13 +109,13 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   {
     switch ( message[ 0 ])
     {
-      '!' => setCol( c.RED ),
-      '@' => setCol( c.MAGEN ),
-      '#' => setCol( c.YELOW ),
-      '$' => setCol( c.GREEN ),
-      '%' => setCol( c.BLUE ),
-      '&' => setCol( c.CYAN ),
-      else => setCol( c.RESET ),
+      '!'  => setCol( h.col.RED ),
+      '@'  => setCol( h.col.MAGEN ),
+      '#'  => setCol( h.col.YELOW ),
+      '$'  => setCol( h.col.GREEN ),
+      '%'  => setCol( h.col.BLUE ),
+      '&'  => setCol( h.col.CYAN ),
+      else => setCol( h.col.RESET ),
     }
   }
 
@@ -150,7 +149,7 @@ pub fn initFile() void
     std.debug.print( "Failed to create or open log file '{s}': {}\nLogging to stderr isntead\n", .{ LOG_FILE_NAME, err });
     return;
   };
-  std.debug.print( c.YELOW ++ "Logging to file '{s}'\n" ++ c.RESET, .{ LOG_FILE_NAME });
+  std.debug.print( h.col.YELOW ++ "Logging to file '{s}'\n" ++ h.col.RESET, .{ LOG_FILE_NAME });
   G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
 
   qlog( .INFO, 0, @src(), "Logfile initialized\n\n" );
@@ -195,12 +194,12 @@ fn logLevel( level: LogLevel ) !void
 
   switch ( level )
   {
-    LogLevel.NONE  => setCol( c.RESET ),
-    LogLevel.ERROR => setCol( c.RED   ),
-    LogLevel.WARN  => setCol( c.YELOW ),
-    LogLevel.INFO  => setCol( c.GREEN ),
-    LogLevel.DEBUG => setCol( c.CYAN  ),
-    LogLevel.TRACE => setCol( c.GRAY  ),
+    LogLevel.NONE  => setCol( h.col.RESET ),
+    LogLevel.ERROR => setCol( h.col.RED   ),
+    LogLevel.WARN  => setCol( h.col.YELOW ),
+    LogLevel.INFO  => setCol( h.col.GREEN ),
+    LogLevel.DEBUG => setCol( h.col.CYAN  ),
+    LogLevel.TRACE => setCol( h.col.GRAY  ),
   }
   const lvl : []const u8 = switch ( level )
   {
@@ -221,13 +220,13 @@ fn logTime() !void
 
   var now : i128 = undefined; // Get the elapsed time since the epoch
 
-  if( SHOW_LAPTIME ){ now = timer.getLapTime(); }     // Get the lap time if SHOW_LAPTIME is true
-  else              { now = timer.getElapsedTime(); } // Get the elapsed time since the epoch
+  if( SHOW_LAPTIME ){ now = h.timer.getLapTime(); }     // Get the lap time if SHOW_LAPTIME is true
+  else              { now = h.timer.getElapsedTime(); } // Get the elapsed time since the epoch
 
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
 
-  setCol( c.GRAY ); // Set the color to gray for the timestamp
+  setCol( h.col.GRAY ); // Set the color to gray for the timestamp
 
   // Print the time in seconds and nanoseconds
   try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
@@ -239,15 +238,15 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 
   if( callLocation )| loc | // If the call location is defined, print the file, line, and function name
   {
-    setCol( c.BLUE ); // Set the color to blue for the source location
+    setCol( h.col.BLUE ); // Set the color to blue for the source location
     try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
 
-    setCol( c.GRAY ); // Set the color to gray for the function name
+    setCol( h.col.GRAY ); // Set the color to gray for the function name
     try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
   }
   else // If the call location is undefined, print "UNDEFINED"
   {
-    setCol( c.YELOW ); // Set the color to red for the undefined location
+    setCol( h.col.YELOW ); // Set the color to red for the undefined location
     try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
   }
 }
@@ -256,7 +255,7 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 
 pub fn logLapTime() void
 {
-  const now : i128 = timer.getLapTime();
+  const now : i128 = h.timer.getLapTime();
 
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));

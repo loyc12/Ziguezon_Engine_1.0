@@ -1,21 +1,19 @@
 const std = @import( "std" );
-const h   = @import( "../headers.zig" );
-const eng = @import( "../core/engine.zig" );
-const ntt = @import( "../core/entity/entityCore.zig" );
+const h   = @import( "defs" );
 
-pub fn OnLoopStart( ng : *eng.engine ) void // Called by engine.loopLogic()
+pub fn OnLoopStart( ng : *h.eng.engine ) void // Called by engine.loopLogic()
 {
   _ = ng; // Prevent unused variable warning
   return;
 }
 
-pub fn OnLoopIter( ng : *eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
+pub fn OnLoopIter( ng : *h.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
 {
   _ = ng; // Prevent unused variable warning
   return;
 }
 
-pub fn OnLoopEnd( ng : *eng.engine ) void // Called by engine.loopLogic()
+pub fn OnLoopEnd( ng : *h.eng.engine ) void // Called by engine.loopLogic()
 {
   _ = ng; // Prevent unused variable warning
   return;
@@ -30,32 +28,30 @@ const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball
 
 var   Scores : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 
-pub fn OnUpdate( ng : *eng.engine ) void // Called by engine.update() ( every frame, no exception )
+pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
-  if( h.rl.isKeyPressed( h.rl.KeyboardKey.p )){ ng.togglePause(); }
+  if( h.ray.isKeyPressed( h.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   if( ng.state == .PLAYING )
   {
     // Move entity 1 with A and D keys
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.d     )){ P1_MV_FAC = @min( P1_MV_FAC + 1,  MV_FAC_CAP ); }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.a     )){ P1_MV_FAC = @max( P1_MV_FAC - 1, -MV_FAC_CAP ); }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.w     )){ P1_MV_FAC = 0; }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.space )){ P1_MV_FAC = 0; }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.d     )){ P1_MV_FAC = @min( P1_MV_FAC + 1,  MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.a     )){ P1_MV_FAC = @max( P1_MV_FAC - 1, -MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.w     )){ P1_MV_FAC = 0; }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.space )){ P1_MV_FAC = 0; }
 
 
     // Move entity 2 with side arrow keys
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + 1,  MV_FAC_CAP ); }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - 1, -MV_FAC_CAP ); }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.up    )){ P2_MV_FAC = 0; }
-    if( h.rl.isKeyDown( h.rl.KeyboardKey.enter )){ P2_MV_FAC = 0; }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + 1,  MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - 1, -MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.up    )){ P2_MV_FAC = 0; }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.enter )){ P2_MV_FAC = 0; }
   }
 }
 
-pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
 {
-  _ = scaledDeltaTime; // Prevent unused variable warning
-
   const hWidth  : f32 = h.getScreenWidth()  / 2.0;
   const hHeight : f32 = h.getScreenHeight() / 2.0;
 
@@ -207,13 +203,13 @@ pub fn OnTick( ng : *eng.engine, scaledDeltaTime : f32 ) void // Called by engin
 
 
 
-pub fn OnRenderWorld( ng : *eng.engine ) void // Called by engine.render()
+pub fn OnRenderWorld( ng : *h.eng.engine ) void // Called by engine.render()
 {
   _ = ng; // Prevent unused variable warning
   return;
 }
 
-pub fn OnRenderOverlay( ng : *eng.engine ) void // Called by engine.render()
+pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
 {
   // Declare the buffers to hold the formatted scores
   var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score
@@ -237,12 +233,12 @@ pub fn OnRenderOverlay( ng : *eng.engine ) void // Called by engine.render()
   h.log( .DEBUG, 0, @src(), "Player 1 score: {s}\nPlayer 2 score: {s}", .{ s1_slice, s2_slice });
 
   // Draw each player's score in the middle of their respective fields
-  h.rl.drawText( &s1_buff, @divTrunc( h.rl.getScreenWidth(), 4 ),     @divTrunc( h.rl.getScreenHeight(), 2 ), 64, h.rl.Color.blue );
-  h.rl.drawText( &s2_buff, @divTrunc( h.rl.getScreenWidth(), 4 ) * 3, @divTrunc( h.rl.getScreenHeight(), 2 ), 64, h.rl.Color.red );
+  h.ray.drawText( &s1_buff, @divTrunc( h.ray.getScreenWidth(), 4 ),     @divTrunc( h.ray.getScreenHeight(), 2 ), 64, h.ray.Color.blue );
+  h.ray.drawText( &s2_buff, @divTrunc( h.ray.getScreenWidth(), 4 ) * 3, @divTrunc( h.ray.getScreenHeight(), 2 ), 64, h.ray.Color.red );
 
   if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
   {
-    h.rl.drawRectangle( 0, 0, h.rl.getScreenWidth(), h.rl.getScreenHeight(), h.rl.Color.init( 0, 0, 0, 128 ));
+    h.ray.drawRectangle( 0, 0, h.ray.getScreenWidth(), h.ray.getScreenHeight(), h.ray.Color.init( 0, 0, 0, 128 ));
   }
 
 }

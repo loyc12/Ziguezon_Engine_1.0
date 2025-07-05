@@ -1,7 +1,7 @@
 const std     = @import( "std" );
-const h       = @import( "../../headers.zig" );
+const h       = @import( "defs" );
 
-const entity  = @import( "entityCore.zig" ).entity;
+const entity  = h.ntt.entity;
 
 // ================ DISTANCE FUNCTIONS ================
 // These functions calculate the distance between two entities in various ways.

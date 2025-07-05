@@ -32,16 +32,16 @@ pub fn build( b: *std.Build ) void
   // This creates a "module", which represents a collection of source files alongside
   // some compilation options, such as optimization mode and linked system libraries.
   // Every executable or library we compile will be based on one or more modules.
-  const lib_mod = b.createModule(
-  .{
-    // `root_source_file` is the Zig "entry point" of the module. If a module
-    // only contains e.g. external object files, you can make this `null`.
-    // In this case the main source file is merely a path, however, in more
-    // complicated build scripts, this could be a generated file.
-    .root_source_file = b.path( "src/root.zig" ),
-    .target   = target,
-    .optimize = optimize,
-  });
+  //const lib_mod = b.createModule(
+  //.{
+  //  // `root_source_file` is the Zig "entry point" of the module. If a module
+  //  // only contains e.g. external object files, you can make this `null`.
+  //  // In this case the main source file is merely a path, however, in more
+  //  // complicated build scripts, this could be a generated file.
+  //  .root_source_file = b.path( "src/root.zig" ),
+  //  .target   = target,
+  //  .optimize = optimize,
+  //});
 
   // We will also create a module for our other entry point, 'main.zig'.
   const exe_mod = b.createModule(
@@ -58,26 +58,26 @@ pub fn build( b: *std.Build ) void
   // Modules can depend on one another using the `std.Build.Module.addImport` function.
   // This is what allows Zig source code to use `@import("foo")` where 'foo' is not a
   // file path. In this case, we set up `exe_mod` to import `lib_mod`.
-  exe_mod.addImport( "ZiguezonEngine_lib", lib_mod );
+  //exe_mod.addImport( "ZiguezonEngine_lib", lib_mod );
 
   // Now, we will create a static library based on the module we created above.
   // This creates a `std.Build.Step.Compile`, which is the build step responsible
   // for actually invoking the compiler.
-  const lib = b.addLibrary(
-  .{
-    .linkage = .static,
-    .name    = "ZiguezonEngine",
-    .root_module = lib_mod,
-  });
+  //const lib = b.addLibrary(
+  //.{
+  //  .linkage = .static,
+  //  .name    = "ZiguezonEngine",
+  //  .root_module = lib_mod,
+  //});
 
   // Adding raylib as a dependency to the library.
-  lib.linkLibrary( raylib_artifact );
-  lib.root_module.addImport( "raylib", raylib );
+  //lib.linkLibrary( raylib_artifact );
+  //lib.root_module.addImport( "raylib", raylib );
 
   // This declares intent for the library to be installed into the standard
   // location when the user invokes the "install" step (the default step when
   // running `zig build`).
-  b.installArtifact( lib );
+  //b.installArtifact( lib );
 
   // This creates another `std.Build.Step.Compile`, but this one builds an executable
   // rather than a static library.
@@ -90,6 +90,31 @@ pub fn build( b: *std.Build ) void
   // Adding raylib as a dependency to the executable.
   exe.linkLibrary( raylib_artifact );
   exe.root_module.addImport( "raylib", raylib );
+
+  // Adding the game injectors module, which contains the hook functions
+  // that will be called at various points in the game loop
+  const game_injects = b.createModule(
+  .{
+    .root_source_file = b.path( "exampleGames/ping/funcs.zig" ),
+    .target   = target,
+    .optimize = optimize,
+  });
+  //game_injects.addImport( "raylib", raylib );
+  //game_injects.addImport( "defs", defs );
+  exe.root_module.addImport( "gameInjects", game_injects );
+
+  // Adding a shortcut to header.zig, so that we can use `@import( "defs" )`
+  // in our source code to access the defs.
+  const defs = b.createModule(
+  .{
+    .root_source_file = b.path( "src/defs.zig" ),
+    .target   = target,
+    .optimize = optimize,
+  });
+  defs.addImport( "raylib", raylib );
+  defs.addImport( "defs", defs );
+  defs.addImport( "gameInjects", game_injects );
+  exe.root_module.addImport( "defs", defs );
 
   // This declares intent for the executable to be installed into the
   // standard location when the user invokes the "install" step (the default
@@ -119,16 +144,16 @@ pub fn build( b: *std.Build ) void
 
   // Creates a step for unit testing. This only builds the test executable
   // but does not run it.
-  const lib_unit_tests     = b.addTest(.{ .root_module = lib_mod });
-  const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
+  //const lib_unit_tests     = b.addTest(.{ .root_module = lib_mod });
+  //const run_lib_unit_tests = b.addRunArtifact( lib_unit_tests );
 
   const exe_unit_tests     = b.addTest(.{ .root_module = exe_mod });
-  const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
+  const run_exe_unit_tests = b.addRunArtifact( exe_unit_tests );
 
   // Similar to creating the run step earlier, this exposes a `test` step to
   // the `zig build --help` menu, providing a way for the user to request
   // running the unit tests.
   const test_step = b.step( "test", "Run unit tests" );
-  test_step.dependOn( &run_lib_unit_tests.step );
+  //test_step.dependOn( &run_lib_unit_tests.step );
   test_step.dependOn( &run_exe_unit_tests.step );
 }

@@ -3,26 +3,21 @@
 //! is to delete this file and start with root.zig instead.
 
 const std = @import( "std" );
-const h   = @import( "headers.zig" );
-
-const eng = @import( "core/engine.zig" );
+const h   = @import( "defs" );
 
 pub fn main() !void
 {
   h.initAll();
   defer h.deinitAll();
 
-  eng.G_NG.changeState( .LAUNCHED );
+  h.eng.G_NG.changeState( .LAUNCHED );
 
-  eng.G_NG.loopLogic();
+  h.eng.G_NG.loopLogic();
 
-  eng.G_NG.changeState( .CLOSED );
+  h.eng.G_NG.changeState( .CLOSED );
 }
 
-//test "example test"
-//{
-//  var list = std.ArrayList( i32 ).init( std.testing.allocator );   defer list.deinit();
-//
-//  try list.append( 42 );
-//  try std.testing.expectEqual( @as( i32, 42 ), list.pop() );
-//}
+test "example test"
+{
+  h.misc.testTryCall();
+}

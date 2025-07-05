@@ -1,14 +1,13 @@
 const std = @import( "std" );
-const h   = @import( "../headers.zig" );
-const eng = @import( "../core/engine.zig" );
+const h   = @import( "defs" );
 
-pub fn OnStart( ng : *eng.engine ) void // Called by engine.start()
+pub fn OnStart( ng : *h.eng.engine ) void // Called by engine.start()
 {
   _ = ng; // Prevent unused variable warning
   return;
 }
 
-pub fn OnLaunch( ng : *eng.engine ) void // Called by engine.launch()
+pub fn OnLaunch( ng : *h.eng.engine ) void // Called by engine.launch()
 {
 
   _ = ng.entityManager.addEntity( // player 1
@@ -21,7 +20,7 @@ pub fn OnLaunch( ng : *eng.engine ) void // Called by engine.launch()
     .rotPos = 0.0,
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 32 },
-    .colour = h.rl.Color.blue,
+    .colour = h.ray.Color.blue,
   });
 
 _ = ng.entityManager.addEntity( // player 2
@@ -34,7 +33,7 @@ _ = ng.entityManager.addEntity( // player 2
     .rotPos = 0.0,
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 32 },
-    .colour = h.rl.Color.red,
+    .colour = h.ray.Color.red,
   });
 
 _ = ng.entityManager.addEntity( // separator
@@ -47,7 +46,7 @@ _ = ng.entityManager.addEntity( // separator
     .rotPos = 0.0,
     .shape  = .RECT,
     .scale  = .{ .x = 16, .y = 1024 },
-    .colour = h.rl.Color.dark_gray,
+    .colour = h.ray.Color.dark_gray,
   });
 
   _ = ng.entityManager.addEntity( // ball
@@ -60,7 +59,7 @@ _ = ng.entityManager.addEntity( // separator
     .rotPos = 0.0,
     .shape  = .CIRC,
     .scale  = .{ .x = 32, .y = 32 },
-    .colour = h.rl.Color.white,
+    .colour = h.ray.Color.white,
   });
 
   _ = ng.entityManager.addEntity( // ball 2 ( debug )
@@ -73,29 +72,29 @@ _ = ng.entityManager.addEntity( // separator
     .rotPos = 0.0,
     .shape  = .CIRC,
     .scale  = .{ .x = 32, .y = 32 },
-    .colour = h.rl.Color.gray,
+    .colour = h.ray.Color.gray,
   });
 }
 
-pub fn OnPlay( ng : *eng.engine ) void // Called by engine.play()
+pub fn OnPlay( ng : *h.eng.engine ) void // Called by engine.play()
 {
   _ = ng; // Prevent unused variable warning
   return;
 }
 
-pub fn OnPause( ng : *eng.engine ) void // Called by engine.pause()
+pub fn OnPause( ng : *h.eng.engine ) void // Called by engine.pause()
 {
   _ = ng; // Prevent unused variable warning
   return;
 }
 
-pub fn OnStop( ng : *eng.engine ) void // Called by engine.stop()
+pub fn OnStop( ng : *h.eng.engine ) void // Called by engine.stop()
 {
   _ = ng; // Prevent unused variable warning
   return;
 }
 
-pub fn OnClose( ng : *eng.engine ) void // Called by engine.close()
+pub fn OnClose( ng : *h.eng.engine ) void // Called by engine.close()
 {
   _ = ng; // Prevent unused variable warning
   return;
