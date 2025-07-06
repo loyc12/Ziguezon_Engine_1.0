@@ -1,11 +1,7 @@
 const std = @import( "std" );
 const h   = @import( "defs" );
 
-pub fn OnStart( ng : *h.eng.engine ) void // Called by engine.start()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
+// ================================ STATE INJECTION FUNCTIONS ================================
 
 pub fn OnLaunch( ng : *h.eng.engine ) void // Called by engine.launch()
 {
@@ -75,28 +71,3 @@ _ = ng.entityManager.addEntity( // separator
     .colour = h.ray.Color.gray,
   });
 }
-
-pub fn OnPlay( ng : *h.eng.engine ) void // Called by engine.play()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
-
-pub fn OnPause( ng : *h.eng.engine ) void // Called by engine.pause()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
-
-pub fn OnStop( ng : *h.eng.engine ) void // Called by engine.stop()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
-
-pub fn OnClose( ng : *h.eng.engine ) void // Called by engine.close()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
-

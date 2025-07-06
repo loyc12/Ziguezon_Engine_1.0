@@ -1,6 +1,5 @@
 const std = @import( "std" );
 const h   = @import( "defs" );
-const inj = @import( "gameInjects" );
 
 const entity = h.ntt.entity;
 
@@ -42,8 +41,6 @@ pub fn renderEntity( self : *const entity ) void
     h.log( .TRACE, 0, @src(), "Entity {d} is out of range and will not be rendered", .{ self.id });
     return;
   }
-
-  h.tryCall( inj, "OnEntityRender", .{ self });
 
   switch( self.shape )
   {

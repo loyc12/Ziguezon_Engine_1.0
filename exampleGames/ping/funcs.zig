@@ -1,27 +1,10 @@
-const injEntity = @import( "entityInjects.zig" );
+const gameState = @import( "stateInjects.zig" );
 
-  pub const OnEntityRender = injEntity.OnEntityRender;
-
-
-const injStep = @import( "stepInjects.zig" );
-
-  pub const OnLoopStart     = injStep.OnLoopStart;
-  pub const OnLoopIter      = injStep.OnLoopIter;
-  pub const OnLoopEnd       = injStep.OnLoopEnd;
-
-  pub const OnUpdate        = injStep.OnUpdate;
-  pub const OnTick          = injStep.OnTick;
-
-  pub const OnRenderWorld   = injStep.OnRenderWorld;
-  pub const OnRenderOverlay = injStep.OnRenderOverlay;
+  pub const OnLaunch = gameState.OnLaunch;
 
 
-const injState = @import( "stateInjects.zig" );
+const gameStep = @import( "stepInjects.zig" );
 
-  pub const OnStart  = injState.OnStart;
-  pub const OnLaunch = injState.OnLaunch;
-  pub const OnPlay   = injState.OnPlay;
-
-  pub const OnPause  = injState.OnPause;
-  pub const OnStop   = injState.OnStop;
-  pub const OnClose  = injState.OnClose;
+  pub const OnUpdate        = gameStep.OnUpdate;
+  pub const OnTick          = gameStep.OnTick;
+  pub const OnRenderOverlay = gameStep.OnRenderOverlay;

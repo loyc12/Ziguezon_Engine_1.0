@@ -1,23 +1,7 @@
 const std = @import( "std" );
 const h   = @import( "defs" );
 
-pub fn OnLoopStart( ng : *h.eng.engine ) void // Called by engine.loopLogic()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
-
-pub fn OnLoopIter( ng : *h.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
-
-pub fn OnLoopEnd( ng : *h.eng.engine ) void // Called by engine.loopLogic()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
+// ================================ GLOBAL GAME VARIABLES ================================
 
 var   P1_MV_FAC   : f32 = 0.0;   // Player 1 movement direction
 var   P2_MV_FAC   : f32 = 0.0;   // Player 2 movement direction
@@ -27,6 +11,9 @@ const B_BASE_VEL  : f32 = 500.0; // Base velocity of the ball when it is launche
 const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball
 
 var   Scores : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
+
+
+// ================================ STEP INJECTION FUNCTIONS ================================
 
 pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
@@ -202,12 +189,6 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
 }
 
 
-
-pub fn OnRenderWorld( ng : *h.eng.engine ) void // Called by engine.render()
-{
-  _ = ng; // Prevent unused variable warning
-  return;
-}
 
 pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
 {

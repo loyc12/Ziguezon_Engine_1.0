@@ -1,10 +1,7 @@
 const std = @import( "std" );
 const h   = @import( "defs" );
-const inj = @import( "gameInjects" );
 
 // ================================ DEFINITIONS ================================
-
-pub var G_NG : engine = .{}; // Global engine instance
 
 pub const DEF_SCREEN_DIMS = h.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
 pub const DEF_TARGET_FPS  = 60; // Default target FPS for the game
@@ -113,7 +110,7 @@ pub const engine = struct
     };
     h.qlog( .INFO, 0, @src(), "Hello, world !\n\n" );
 
-    h.tryCall( inj, "OnStart", .{ self }); // Allows for custom initialization
+    h.tryHook( .OnStart, .{ self }); // Allows for custom initialization
     self.state = .STARTED;
   }
 
@@ -127,7 +124,7 @@ pub const engine = struct
 
     h.log( .DEBUG, 0, @src(), "Window initialized with size {d}x{d}\n\n", .{ h.ray.getScreenWidth(), h.ray.getScreenHeight() });
 
-    h.tryCall( inj, "OnLaunch", .{ self }); // Allows for custom initialization
+    h.tryHook( .OnLaunch, .{ self }); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
@@ -137,7 +134,7 @@ pub const engine = struct
 
     // Start the game loop or resume gameplay
 
-    h.tryCall( inj, "OnPlay", .{ self }); // Allows for custom initialization
+    h.tryHook( .OnPlay, .{ self }); // Allows for custom initialization
     self.state = .PLAYING;
   }
 
@@ -161,7 +158,7 @@ pub const engine = struct
 
     // Pause the game logic (e.g. stop updating game state, freeze animations, etc.)
 
-    h.tryCall( inj, "OnPause", .{ self }); // Allows for custom initialization
+    h.tryHook( .OnPause, .{ self }); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
@@ -175,7 +172,7 @@ pub const engine = struct
       h.ray.closeWindow(); // Close the game window if it is ready
     }
 
-    h.tryCall( inj, "OnStop", .{ self }); // Allows for custom initialization
+    h.tryHook( .OnStop, .{ self }); // Allows for custom initialization
     self.state = .STARTED;
   }
 
@@ -191,7 +188,7 @@ pub const engine = struct
 
     h.qlog( .INFO, 0, @src(), "Goodbye, cruel world...\n\n" );
 
-    h.tryCall( inj, "OnClose", .{ self }); // Allows for custom deinitialization
+    h.tryHook( .OnClose, .{ self }); // Allows for custom deinitialization
     self.state = .CLOSED;
   }
 
@@ -209,11 +206,11 @@ pub const engine = struct
   pub fn loopLogic( self : *engine ) void
   {
     h.qlog( .INFO, 0, @src(), "Starting the game loop..." );
-    h.tryCall( inj, "OnLoopStart", .{ self }); // Allows for custom initialization
+    h.tryHook( .OnLoopStart, .{ self }); // Allows for custom initialization
 
     while( !h.ray.windowShouldClose() )
     {
-      h.tryCall( inj, "OnLoopIter", .{ self }); // Allows for custom initialization
+      h.tryHook( .OnLoopIter, .{ self }); // Allows for custom initialization
 
       if( comptime h.logger.SHOW_LAPTIME ){ h.qlog( .DEBUG, 0, @src(), "! Looping" ); }
       else { h.logger.logLapTime(); }
@@ -232,7 +229,7 @@ pub const engine = struct
     }
 
     h.qlog( .INFO, 0, @src(), "Game loop done" );
-    h.tryCall( inj, "OnLoopEnd", .{ self }); // Allows for custom deinitialization
+    h.tryHook( .OnLoopEnd, .{ self }); // Allows for custom deinitialization
   }
 
   fn update( self : *engine ) void
@@ -240,7 +237,7 @@ pub const engine = struct
     h.qlog( .TRACE, 0, @src(), "Getting inputs..." );
     // This function is used to get input from the user, such as keyboard or mouse input.
 
-    h.tryCall( inj, "OnUpdate", .{ self }); // Allows for custom input handling
+    h.tryHook( .OnUpdate, .{ self }); // Allows for custom input handling
   }
 
   fn tick( self : *engine ) void // TODO : use tick rate instead of frame time
@@ -254,7 +251,7 @@ pub const engine = struct
 
     // Check for collisions between all active entities and the following ones
 
-    h.tryCall( inj, "OnTick", .{ self }); // Allows for custom game logic updates
+    h.tryHook( .OnTick, .{ self }); // Allows for custom game logic updates
 
     self.entityManager.tickActiveEntities( sdt ); // Tick all active entities with the delta time
   }
@@ -273,14 +270,14 @@ pub const engine = struct
 
     h.ray.beginMode2D( self.mainCamera ); // World Rendering mode
     {
-      h.tryCall( inj, "OnRenderWorld", .{ self }); // Allows for custom rendering of the world
+      h.tryHook( .OnRenderWorld, .{ self }); // Allows for custom rendering of the world
 
       self.entityManager.renderActiveEntities(); // Render all active entities
     }
 
     h.ray.endMode2D(); // UI Rendering mode
     {
-      h.tryCall( inj, "OnRenderOverlay", .{ self }); // Allows for custom rendering of the overlay
+      h.tryHook( .OnRenderOverlay, .{ self }); // Allows for custom rendering of the overlay
     }
   }
 

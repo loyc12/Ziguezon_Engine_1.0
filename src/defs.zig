@@ -3,7 +3,6 @@ pub const ray  = @import( "raylib" );
 
 pub const col    = @import( "utils/colour.zig" );
 pub const logger = @import( "utils/logger.zig" );
-pub const misc   = @import( "utils/misc.zig" );
 pub const timer  = @import( "utils/timer.zig" );
 
 
@@ -15,34 +14,18 @@ pub const alloc = std.heap.smp_allocator;
 pub const log  = logger.log;  // for argument-formatting logging
 pub const qlog = logger.qlog; // for quick logging ( no args )
 
-pub const tryCall = misc.tryCall; // For calling functions that may not exist
+//pub const tryCall = misc.tryCall; // For calling functions that may not exist
+
+pub const ghk = @import( "core/gameHooks.zig" );
+pub var G_HK : ghk.gameHooks = .{}; // Global game hooks instance
+pub fn initHooks( module : anytype ) void { G_HK.initHooks( module ); }
+pub fn tryHook( tag : ghk.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 pub const eng = @import( "core/engine.zig" );
+pub var G_NG : eng.engine = .{}; // Global game engine instance
+
 pub const ntm = @import( "core/entityManager.zig" );
 pub const ntt = @import( "core/entity/entityCore.zig" );
-
-pub var G_NG : eng.engine = .{}; // Global engine instance
-
-// ================================ INITIALIZATION ================================
-
-pub fn initAll() void
-{
-  // Initialize the timer
-  timer.initTimer();
-
-  // Initialize the log file if needed
-  logger.initFile();
-
-  qlog( .INFO, 0, @src(), "Initialized all subsystems" );
-}
-
-pub fn deinitAll() void
-{
-  qlog( .INFO, 0, @src(), "Deinitializing all subsystems" );
-
-  // Deinitialize the log file if present
-  logger.deinitFile();
-}
 
 
 // ================================ MATHS ADDONS ================================

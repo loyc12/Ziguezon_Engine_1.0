@@ -4,7 +4,7 @@ const h   = @import( "defs" );
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-var DRAW_TEST : bool = false; // Example input-toggled flag
+var DRAW_TEST : bool = true; // Example input-toggled flag
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -35,15 +35,14 @@ pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every 
   if( h.ray.isKeyPressed( h.ray.KeyboardKey.t ))
   {
     DRAW_TEST = !DRAW_TEST;
-    h.qlog( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
+    h.log( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
   }
 }
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTick( ng : *h.eng.engine, scaledDeltaTime : f32 ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
 {
-  _ = ng;              // Prevent unused variable warning
-  _ = scaledDeltaTime; // Prevent unused variable warning
+  _ = ng; // Prevent unused variable warning
 }
 
 // NOTE : This is where you should render all world-position relative effects
@@ -59,7 +58,7 @@ pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
 {
   if( DRAW_TEST ) // Example of a flag toggled feature
   {
-    h.ray.drawText( &"TEST", @divTrunc( h.ray.getScreenWidth(), 2 ), @divTrunc( h.ray.getScreenHeight(), 2 ), 64, h.ray.Color.GREEN );
+    h.ray.drawText( "TEST", @divTrunc( h.ray.getScreenWidth(), 2 ), @divTrunc( h.ray.getScreenHeight(), 2 ), 64, h.ray.Color.green );
   }
 
   if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused

@@ -6,105 +6,77 @@ const rlz = @import( "raylib_zig" );
 // runner.
 pub fn build( b: *std.Build ) void
 {
-  // Standard target options allows the person running `zig build` to choose
-  // what target to build for. Here we do not override the defaults, which
-  // means any target is allowed, and the default is native. Other options
-  // for restricting supported target set are available.
-  const target = b.standardTargetOptions(.{} );
+  // ================================ BUILD CONFIGURATION ================================
 
-  // Standard optimization options allow the person running `zig build` to select
-  // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
-  // set a preferred release mode, allowing the user to decide how to optimize.
+  // This is the "standard" build target, which is the default target for the
+  // current platform and architecture. It is used to compile the code for the
+  // current platform and architecture, and it is the default target for the
+  // build system.
+  const target = b.standardTargetOptions(.{} );
   const optimize = b.standardOptimizeOption(.{} );
 
-  // This creates a dependency on the raylib_zig package, which is a Zig wrapper
-  // around the raylib C library. The `raylib_zig` package is expected to be
-  // available in the Zig package registry, or in the local filesystem if the
-  const raylib_dep = b.dependency( "raylib_zig",
-  .{
-    .target   = target,
-    .optimize = optimize,
-  });
+  // This is a build option that allows the user to specify the path to the
+  // game hook implementations. It is used to allow the user to specify a custom
+  // path to the game hook implementations, which can be useful for testing or
+  // development purposes.
+  const tmp_game_hooks_path = b.option(
+    []const u8,
+    "game_hooks_path",
+    "Path to the game hook implementations (e.g., exampleGames/ping/funcs.zig)"
+  );
 
-  const raylib = raylib_dep.module( "raylib" );
-  const raylib_artifact = raylib_dep.artifact( "raylib" );
+  // This sets the default path for the game hooks module to the template
+  const game_hooks_path = if( tmp_game_hooks_path )| path | path else "exampleGames/_template/funcs.zig";
 
-  // This creates a "module", which represents a collection of source files alongside
-  // some compilation options, such as optimization mode and linked system libraries.
-  // Every executable or library we compile will be based on one or more modules.
-  //const lib_mod = b.createModule(
-  //.{
-  //  // `root_source_file` is the Zig "entry point" of the module. If a module
-  //  // only contains e.g. external object files, you can make this `null`.
-  //  // In this case the main source file is merely a path, however, in more
-  //  // complicated build scripts, this could be a generated file.
-  //  .root_source_file = b.path( "src/root.zig" ),
-  //  .target   = target,
-  //  .optimize = optimize,
-  //});
 
-  // We will also create a module for our other entry point, 'main.zig'.
+  // ================================ EXECUTABLE ================================
+
+  // This creates a module for the executable itself
   const exe_mod = b.createModule(
   .{
-    // `root_source_file` is the Zig "entry point" of the module. If a module
-    // only contains e.g. external object files, you can make this `null`.
-    // In this case the main source file is merely a path, however, in more
-    // complicated build scripts, this could be a generated file.
     .root_source_file = b.path( "src/main.zig" ),
     .target   = target,
     .optimize = optimize,
   });
 
-  // Modules can depend on one another using the `std.Build.Module.addImport` function.
-  // This is what allows Zig source code to use `@import("foo")` where 'foo' is not a
-  // file path. In this case, we set up `exe_mod` to import `lib_mod`.
-  //exe_mod.addImport( "ZiguezonEngine_lib", lib_mod );
-
-  // Now, we will create a static library based on the module we created above.
-  // This creates a `std.Build.Step.Compile`, which is the build step responsible
-  // for actually invoking the compiler.
-  //const lib = b.addLibrary(
-  //.{
-  //  .linkage = .static,
-  //  .name    = "ZiguezonEngine",
-  //  .root_module = lib_mod,
-  //});
-
-  // Adding raylib as a dependency to the library.
-  //lib.linkLibrary( raylib_artifact );
-  //lib.root_module.addImport( "raylib", raylib );
-
-  // This declares intent for the library to be installed into the standard
-  // location when the user invokes the "install" step (the default step when
-  // running `zig build`).
-  //b.installArtifact( lib );
-
-  // This creates another `std.Build.Step.Compile`, but this one builds an executable
-  // rather than a static library.
+  // This adds the executable module to the build graph,
+  // which is the main entry point of the application.
   const exe = b.addExecutable(
   .{
     .name = "ZiguezonEngine",
     .root_module = exe_mod,
   });
 
-  // Adding raylib as a dependency to the executable.
-  exe.linkLibrary( raylib_artifact );
-  exe.root_module.addImport( "raylib", raylib );
+  // This declares the intent to install the executable artifact,
+  // which is the binary that will be built by the build system.
+  b.installArtifact( exe );
 
-  // Adding the game injectors module, which contains the hook functions
-  // that will be called at various points in the game loop
-  const game_injects = b.createModule(
+
+  // ================================ LIBRARIES ================================
+
+  // This creates a dependency on the raylib_zig package, which is a Zig wrapper
+  // around the raylib C library. The `raylib_zig` package is expected to be
+  // available in the Zig package registry, or in the local filesystem if the
+  // user has specified a local path to it.
+  const raylib_dep = b.dependency( "raylib_zig",
   .{
-    .root_source_file = b.path( "exampleGames/ping/funcs.zig" ),
     .target   = target,
     .optimize = optimize,
   });
-  //game_injects.addImport( "raylib", raylib );
-  //game_injects.addImport( "defs", defs );
-  exe.root_module.addImport( "gameInjects", game_injects );
 
-  // Adding a shortcut to header.zig, so that we can use `@import( "defs" )`
-  // in our source code to access the defs.
+  // This imports the raylib module from the raylib_zig package
+  const raylib = raylib_dep.module( "raylib" );
+
+  // This links the raylib library to the executable,
+  // allowing it to use the raylib functions and types.
+  exe.linkLibrary( raylib_dep.artifact( "raylib" ) );
+  exe.root_module.addImport( "raylib", raylib );
+
+  // ================================ INTERNAL MODULES ================================
+
+  // This adds defs.zig as a module, which contains common definitions and utilities
+  // used throughout the project. This module is expected to be in the `src/` directory,
+  // and it is used to provide a simple way to access commonly used src definitions
   const defs = b.createModule(
   .{
     .root_source_file = b.path( "src/defs.zig" ),
@@ -113,47 +85,48 @@ pub fn build( b: *std.Build ) void
   });
   defs.addImport( "raylib", raylib );
   defs.addImport( "defs", defs );
-  defs.addImport( "gameInjects", game_injects );
   exe.root_module.addImport( "defs", defs );
 
-  // This declares intent for the executable to be installed into the
-  // standard location when the user invokes the "install" step (the default
-  // step when running `zig build`).
-  b.installArtifact( exe );
+  // This adds the game hooks module, which is expected to contain the game-specific
+  // hook implementations. The `hook_path` variable is used to specify the path to
+  // the game hook implementations, allowing the user to specify a custom path.
+  const game_hooks = b.createModule(
+  .{
+    .root_source_file = b.path( game_hooks_path ), // NOTE : This path is user defined at build time
+    .target   = target,
+    .optimize = optimize,
+  });
+  game_hooks.addImport( "raylib", raylib );
+  game_hooks.addImport( "defs", defs );
+  exe.root_module.addImport( "gameHooks", game_hooks );
 
-  // This *creates* a Run step in the build graph, to be executed when another
-  // step is evaluated that depends on it. The next line below will establish
-  // such a dependency.
+
+  // ================================ COMMANDS ================================
+
+  // This creates a Run step in the build graph, to be executed when call, or if
+  // another step is evaluated that depends on it ( similar to Makefile targets ).
   const run_cmd = b.addRunArtifact( exe );
-
-  // By making the run step depend on the install step, it will be run from the
-  // installation directory rather than directly from within the cache directory.
-  // This is not necessary, however, if the application depends on other installed
-  // files, this ensures they will be present and in the expected location.
   run_cmd.step.dependOn( b.getInstallStep() );
-
-  // This allows the user to pass arguments to the application in the build
-  // command itself, like this: `zig build run -- arg1 arg2 etc`
   if( b.args )| args |{ run_cmd.addArgs( args ); }
-
-  // This creates a build step. It will be visible in the `zig build --help` menu,
-  // and can be selected like this: `zig build run`
-  // This will evaluate the `run` step rather than the default, which is "install".
   const run_step = b.step( "run", "Run ZiguezonEngine" );
   run_step.dependOn( &run_cmd.step );
 
-  // Creates a step for unit testing. This only builds the test executable
-  // but does not run it.
-  //const lib_unit_tests     = b.addTest(.{ .root_module = lib_mod });
-  //const run_lib_unit_tests = b.addRunArtifact( lib_unit_tests );
+
+  // This creates a step for the ping game
+  const run_ping_cmd = b.addRunArtifact( exe );
+  run_ping_cmd.step.dependOn( b.getInstallStep() );
+  run_ping_cmd.addArg( "exampleGames/ping/funcs.zig" );
+  if( b.args )| args |{ run_cmd.addArgs( args ); }
+  const run_ping_step = b.step( "ping", "Run the ping example game" );
+  run_ping_step.dependOn( &run_ping_cmd.step );
+
+  // ================================ TESTS ================================
 
   const exe_unit_tests     = b.addTest(.{ .root_module = exe_mod });
   const run_exe_unit_tests = b.addRunArtifact( exe_unit_tests );
 
-  // Similar to creating the run step earlier, this exposes a `test` step to
-  // the `zig build --help` menu, providing a way for the user to request
-  // running the unit tests.
+  // Similar to creating the run step earlier, this exposes a `test` step to the `zig build --help` menu,
+  // providing a way for the user to request running the unit tests instead of the main application.
   const test_step = b.step( "test", "Run unit tests" );
-  //test_step.dependOn( &run_lib_unit_tests.step );
   test_step.dependOn( &run_exe_unit_tests.step );
 }
