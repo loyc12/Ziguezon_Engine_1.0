@@ -85,6 +85,7 @@ pub const entity = struct
 
   pub fn clampOnPoint(  self : *entity, point : h.vec2 ) void { nttPos.clampOnPoint( self, point ); }
   pub fn clampOnEntity( self : *entity, other : *const entity ) void { nttPos.clampOnEntity( self, other ); }
+  pub fn clampNearEntity( self : *entity, other : *const entity, maxOffset : h.vec2 ) void { nttPos.clampNearEntity( self, other, maxOffset ); }
 
   // RANGE FUNCTIONS
   pub fn isInRangeX( self : *const entity, minX : f32, maxX : f32 ) bool { return nttPos.isInRangeX( self, minX, maxX ); }

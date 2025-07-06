@@ -60,9 +60,9 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
     return;
   };
 
-  var ball = ng.entityManager.getEntity( 4 ) orelse
+  var ball = ng.entityManager.getEntity( 5 ) orelse
   {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 4 ( Ball ) not found" );
+    h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( Ball ) not found" );
     return;
   };
 
@@ -178,14 +178,14 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
     ball.vel.x += p2.vel.x * wallBounceFactor;
   }
 
-  var ball2 = ng.entityManager.getEntity( 5 ) orelse
+  var ballShadow = ng.entityManager.getEntity( 4 ) orelse
   {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( Ball2 ) not found" );
+    h.qlog( .WARN, 0, @src(), "Entity with ID 4 ( BallShadow ) not found" );
     return;
   };
 
-  // Update the ball2 position to follow the ball
-  ball2.clampOnEntity( ball ); // Clamp ball2's position to the ball's position
+  // Update the shadows position to follow the ball
+  ballShadow.clampNearEntity( ball, .{ .x = 2.0, .y = 2.0 } ); // Clamp the shadow to be near the ball
 }
 
 

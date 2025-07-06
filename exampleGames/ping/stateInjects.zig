@@ -32,7 +32,7 @@ _ = ng.entityManager.addEntity( // player 2
     .colour = h.ray.Color.red,
   });
 
-_ = ng.entityManager.addEntity( // separator
+  _ = ng.entityManager.addEntity( // separator
   .{
     .id     = 3,
     .active = true,
@@ -45,7 +45,7 @@ _ = ng.entityManager.addEntity( // separator
     .colour = h.ray.Color.dark_gray,
   });
 
-  _ = ng.entityManager.addEntity( // ball
+  _ = ng.entityManager.addEntity( // ball shaddow
   .{
     .id     = 4,
     .active = true,
@@ -54,11 +54,11 @@ _ = ng.entityManager.addEntity( // separator
     .acc    = .{ .x = 0, .y = 0 },
     .rotPos = 0.0,
     .shape  = .CIRC,
-    .scale  = .{ .x = 32, .y = 32 },
-    .colour = h.ray.Color.white,
+    .scale  = .{ .x = 24, .y = 24 },
+    .colour = h.ray.Color.gray,
   });
 
-  _ = ng.entityManager.addEntity( // ball 2 ( debug )
+  _ = ng.entityManager.addEntity( // ball
   .{
     .id     = 5,
     .active = true,
@@ -67,7 +67,7 @@ _ = ng.entityManager.addEntity( // separator
     .acc    = .{ .x = 0, .y = 0 },
     .rotPos = 0.0,
     .shape  = .CIRC,
-    .scale  = .{ .x = 32, .y = 32 },
-    .colour = h.ray.Color.gray,
+    .scale  = .{ .x = 24, .y = 24 },
+    .colour = h.ray.Color.white,
   });
 }

@@ -218,14 +218,21 @@ pub fn clampOnArea( e1 : *entity, minPos : h.vec2, maxPos : h.vec2 ) void
 pub fn clampOnPoint( e1 : *entity, pos : h.vec2 ) void
 {
   h.log( .TRACE, 0, @src(), "Clamping entity {d} on point {d}:{d}", .{ e1.id, pos.x, pos.y });
-  clampOnX( e1, pos.x - ( 2 * e1.scale.x ), pos.x + ( 2 * e1.scale.x ));
-  clampOnY( e1, pos.y - ( 2 * e1.scale.y ), pos.y + ( 2 * e1.scale.y ));
+  clampOnX( e1, pos.x, pos.x );
+  clampOnY( e1, pos.y, pos.y );
 }
 pub fn clampOnEntity( e1 : *entity, e2 : *const entity ) void
 {
   h.log( .TRACE, 0, @src(), "Clamping entity {d} on entity {d}", .{ e1.id, e2.id });
   clampOnX( e1, getLeftX( e2 ), getRightX( e2 ));
   clampOnY( e1, getTopY( e2 ), getBottomY( e2 ));
+}
+pub fn clampNearEntity( e1 : *entity, e2 : *const entity, masOffset : h.vec2 ) void
+{
+  h.log( .TRACE, 0, @src(), "Clamping entity {d} near entity {d}", .{ e1.id, e2.id });
+  // This function clamps the entity to be near another entity, allowing for partial overlap.
+  clampInX( e1, getLeftX( e2 ) - masOffset.x, getRightX( e2 ) + masOffset.x );
+  clampInY( e1, getTopY( e2 ) - masOffset.y, getBottomY( e2 ) + masOffset.y );
 }
 
 // ================ RANGE FUNCTIONS ================

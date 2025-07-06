@@ -108,17 +108,14 @@ pub fn build( b: *std.Build ) void
   const run_cmd = b.addRunArtifact( exe );
   run_cmd.step.dependOn( b.getInstallStep() );
   if( b.args )| args |{ run_cmd.addArgs( args ); }
-  const run_step = b.step( "run", "Run ZiguezonEngine" );
+
+  const run_step = b.step( "run", "Run the template project" );
   run_step.dependOn( &run_cmd.step );
 
-
   // This creates a step for the ping game
-  const run_ping_cmd = b.addRunArtifact( exe );
-  run_ping_cmd.step.dependOn( b.getInstallStep() );
-  run_ping_cmd.addArg( "exampleGames/ping/funcs.zig" );
-  if( b.args )| args |{ run_cmd.addArgs( args ); }
-  const run_ping_step = b.step( "ping", "Run the ping example game" );
-  run_ping_step.dependOn( &run_ping_cmd.step );
+  const ping_step = b.step( "ping", "Run the ping game" );
+  const ping_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/ping/funcs.zig" });
+  ping_step.dependOn( &ping_cli_cmd.step );
 
   // ================================ TESTS ================================
 
