@@ -54,21 +54,21 @@ pub const gameHooks = struct
     }
 
     // Attempt to set each hook individually
-    if( @hasDecl( module, "OnLoopStart" ))     self.OnLoopStart     = @field( module, "OnLoopStart" );
-    if( @hasDecl( module, "OnLoopIter" ))      self.OnLoopIter      = @field( module, "OnLoopIter" );
-    if( @hasDecl( module, "OnLoopEnd" ))       self.OnLoopEnd       = @field( module, "OnLoopEnd" );
+    if( @hasDecl( module, "OnLoopStart"     )) self.OnLoopStart     = @field( module, "OnLoopStart"     );
+    if( @hasDecl( module, "OnLoopIter"      )) self.OnLoopIter      = @field( module, "OnLoopIter"      );
+    if( @hasDecl( module, "OnLoopEnd"       )) self.OnLoopEnd       = @field( module, "OnLoopEnd"       );
 
-    if( @hasDecl( module, "OnUpdate" ))        self.OnUpdate        = @field( module, "OnUpdate" );
-    if( @hasDecl( module, "OnTick" ))          self.OnTick          = @field( module, "OnTick" );
-    if( @hasDecl( module, "OnRenderWorld" ))   self.OnRenderWorld   = @field( module, "OnRenderWorld" );
+    if( @hasDecl( module, "OnUpdate"        )) self.OnUpdate        = @field( module, "OnUpdate"        );
+    if( @hasDecl( module, "OnTick"          )) self.OnTick          = @field( module, "OnTick"          );
+    if( @hasDecl( module, "OnRenderWorld"   )) self.OnRenderWorld   = @field( module, "OnRenderWorld"   );
     if( @hasDecl( module, "OnRenderOverlay" )) self.OnRenderOverlay = @field( module, "OnRenderOverlay" );
 
-    if( @hasDecl( module, "OnStart" ))         self.OnStart         = @field( module, "OnStart" );
-    if( @hasDecl( module, "OnLaunch" ))        self.OnLaunch        = @field( module, "OnLaunch" );
-    if( @hasDecl( module, "OnPlay" ))          self.OnPlay          = @field( module, "OnPlay" );
-    if( @hasDecl( module, "OnPause" ))         self.OnPause         = @field( module, "OnPause" );
-    if( @hasDecl( module, "OnStop" ))          self.OnStop          = @field( module, "OnStop" );
-    if( @hasDecl( module, "OnClose" ))         self.OnClose         = @field( module, "OnClose" );
+    if( @hasDecl( module, "OnStart"         )) self.OnStart         = @field( module, "OnStart"         );
+    if( @hasDecl( module, "OnLaunch"        )) self.OnLaunch        = @field( module, "OnLaunch"        );
+    if( @hasDecl( module, "OnPlay"          )) self.OnPlay          = @field( module, "OnPlay"          );
+    if( @hasDecl( module, "OnPause"         )) self.OnPause         = @field( module, "OnPause"         );
+    if( @hasDecl( module, "OnStop"          )) self.OnStop          = @field( module, "OnStop"          );
+    if( @hasDecl( module, "OnClose"         )) self.OnClose         = @field( module, "OnClose"         );
 
     self.logHookValidities();
   }
