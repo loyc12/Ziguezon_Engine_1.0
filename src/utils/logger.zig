@@ -42,15 +42,17 @@ pub const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to writ
 var       G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to write log messages in ( default is stderr )
 var       G_IsFileOpened : bool = false;                     // Flag to check if the log file is opened ( and different from stderr )
 
+// TODO : have each log level be printed in its own file, on top of the shared main one
+
 // ================================ CORE FUNCTIONS ================================
 
-pub fn qlog( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [] const u8) void
+pub fn qlog( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
 {
   // Call the log function with no arguments
   log( level, id, callLocation, message, .{} );
 }
 
-pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [] const u8, args : anytype ) void
+pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [:0] const u8, args : anytype ) void
 {
   // LOG EXAMPLE :
   // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main) - This is a debug message

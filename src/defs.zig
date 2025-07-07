@@ -136,3 +136,15 @@ pub fn rotVec2Deg( a : vec2, angle : f32 ) vec2 // NOTE : Angles in degrees
 pub fn getScreenWidth()  f32 { return @floatFromInt( ray.getScreenWidth()  ); }
 pub fn getScreenHeight() f32 { return @floatFromInt( ray.getScreenHeight() ); }
 pub fn getScreenSize() vec2  { return vec2{ .x = getScreenWidth(), .y = getScreenHeight(), }; }
+
+pub fn drawText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, color : ray.Color ) void
+{
+  ray.drawText( text, @intFromFloat( posX ), @intFromFloat( posY ), @intFromFloat( fontSize ), color );
+}
+pub fn drawCenteredText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, color : ray.Color ) void
+{
+  const textHalfWidth  = @as( f32, @floatFromInt( ray.measureText( text, @intFromFloat( fontSize )))) / 2.0;
+  const textHalfHeight = fontSize / 2.0;
+
+  drawText( text, posX - textHalfWidth, posY - textHalfHeight, fontSize, color );
+}

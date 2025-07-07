@@ -22,11 +22,11 @@ pub fn build( b: *std.Build ) void
   const tmp_game_hooks_path = b.option(
     []const u8,
     "game_hooks_path",
-    "Path to the game hook implementations (e.g., exampleGames/ping/funcs.zig)"
+    "Path to the gameHooks implementations (e.g., exampleGames/ping/gameHooks.zig)"
   );
 
   // This sets the default path for the game hooks module to the template
-  const game_hooks_path = if( tmp_game_hooks_path )| path | path else "exampleGames/_template/funcs.zig";
+  const game_hooks_path = if( tmp_game_hooks_path )| path | path else "exampleGames/_template/gameHooks.zig";
 
 
   // ================================ EXECUTABLE ================================
@@ -114,7 +114,7 @@ pub fn build( b: *std.Build ) void
 
   // This creates a step for the ping game
   const ping_step = b.step( "ping", "Run the ping game" );
-  const ping_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/ping/funcs.zig" });
+  const ping_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/ping/gameHooks.zig" });
   ping_step.dependOn( &ping_cli_cmd.step );
 
   // ================================ TESTS ================================

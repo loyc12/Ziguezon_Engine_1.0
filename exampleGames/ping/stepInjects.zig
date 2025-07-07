@@ -10,7 +10,9 @@ const MV_FAC_CAP  : f32 = 16.0;  // Movement factor cap, to prevent excessive sp
 const B_BASE_VEL  : f32 = 500.0; // Base velocity of the ball when it is launched
 const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball
 
-var   Scores : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
+const WIN_SCORE : u8 = 8;              // Score needed to win the game
+var   SCORES    : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
+var   WINNER    : u8 = 0;              // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -18,7 +20,15 @@ var   Scores : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
-  if( h.ray.isKeyPressed( h.ray.KeyboardKey.p )){ ng.togglePause(); }
+  if( h.ray.isKeyPressed( h.ray.KeyboardKey.p ))
+  {
+    ng.togglePause();
+    if( WINNER != 0 )
+    {
+      SCORES = .{ 0, 0 }; // Reset scores if the game is restarted
+      WINNER = 0;         // Reset winner
+    }
+  }
 
   if( ng.state == .PLAYING )
   {
@@ -34,6 +44,22 @@ pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every 
     if( h.ray.isKeyDown( h.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - 1, -MV_FAC_CAP ); }
     if( h.ray.isKeyDown( h.ray.KeyboardKey.up    )){ P2_MV_FAC = 0; }
     if( h.ray.isKeyDown( h.ray.KeyboardKey.enter )){ P2_MV_FAC = 0; }
+  }
+
+  if( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE )
+  {
+    ng.changeState( .LAUNCHED ); // Pause the game on victory
+
+    if( SCORES[ 0 ] >= WIN_SCORE )
+    {
+      WINNER = 1; // Player 1 wins
+      h.log( .INFO, 0, @src(), "Player 1 wins! : {d} to {d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
+    }
+    else if( SCORES[ 1 ] >= WIN_SCORE )
+    {
+      WINNER = 2; // Player 2 wins
+      h.log( .INFO, 0, @src(), "Player 2 wins! : {d} to {d}", .{ SCORES[ 1 ], SCORES[ 0 ] });
+    }
   }
 }
 
@@ -89,8 +115,8 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
 
     if( ball.pos.x < 0 ) // Player 2 scores a point
     {
-      h.log( .INFO, 0, @src(), "Player 2 scores a point! : {d}:{d}", .{ Scores[ 0 ], Scores[ 1 ] });
-      Scores[ 1 ] += 1;
+      h.log( .INFO, 0, @src(), "Player 2 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
+      SCORES[ 1 ] += 1;
 
       // Set the ball to be thrown towards player 1
       ball.vel.x = -B_BASE_VEL;
@@ -98,8 +124,8 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
     }
     else if( ball.pos.x > 0 ) // Player 1 scores a point
     {
-      h.log( .INFO, 0, @src(), "Player 1 scores a point! : {d}:{d}", .{ Scores[ 0 ], Scores[ 1 ] });
-      Scores[ 0 ] += 1;
+      h.log( .INFO, 0, @src(), "Player 1 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
+      SCORES[ 0 ] += 1;
 
       // Set the ball to be thrown towards player 2
       ball.vel.x =  B_BASE_VEL;
@@ -197,14 +223,14 @@ pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
   var s2_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 2's score
 
   // Convert the scores to strings
-  const s1_slice = std.fmt.bufPrint(&s1_buff, "{d}", .{ Scores[ 0 ]}) catch |err|
+  const s1_slice = std.fmt.bufPrint(&s1_buff, "{d}", .{ SCORES[ 0 ]}) catch | err |
   {
       h.log(.ERROR, 0, @src(), "Failed to format score for player 1: {}", .{err});
       return;
   };
-  const s2_slice  = std.fmt.bufPrint(&s2_buff, "{d}", .{ Scores[ 1 ]}) catch |err|
+  const s2_slice  = std.fmt.bufPrint(&s2_buff, "{d}", .{ SCORES[ 1 ]}) catch | err |
   {
-      h.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{err});
+      h.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{ err });
       return;
   };
 
@@ -214,12 +240,24 @@ pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
   h.log( .DEBUG, 0, @src(), "Player 1 score: {s}\nPlayer 2 score: {s}", .{ s1_slice, s2_slice });
 
   // Draw each player's score in the middle of their respective fields
-  h.ray.drawText( &s1_buff, @divTrunc( h.ray.getScreenWidth(), 4 ),     @divTrunc( h.ray.getScreenHeight(), 2 ), 64, h.ray.Color.blue );
-  h.ray.drawText( &s2_buff, @divTrunc( h.ray.getScreenWidth(), 4 ) * 3, @divTrunc( h.ray.getScreenHeight(), 2 ), 64, h.ray.Color.red );
+  h.drawCenteredText( &s1_buff, h.getScreenWidth() * 0.25, h.getScreenHeight() * 0.5, 64, h.ray.Color.blue );
+  h.drawCenteredText( &s2_buff, h.getScreenWidth() * 0.75, h.getScreenHeight() * 0.5, 64, h.ray.Color.red );
 
   if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
   {
     h.ray.drawRectangle( 0, 0, h.ray.getScreenWidth(), h.ray.getScreenHeight(), h.ray.Color.init( 0, 0, 0, 128 ));
+  }
+
+  if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )
+  {
+    const winner_msg = if( WINNER == 1 ) "Player 1 wins!" else "Player 2 wins!";
+    h.drawCenteredText( winner_msg,           h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 192, 128, h.ray.Color.green );
+    h.drawCenteredText( "Press P to restart", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ),       64,  h.ray.Color.yellow );
+    h.drawCenteredText( "Press ESC to exit",  h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) + 128, 64,  h.ray.Color.yellow );
+  }
+  else if( ng.state == .LAUNCHED ) // If the game is paused, display the resume message
+  {
+    h.drawCenteredText( "Press P to resume", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 256, 64, h.ray.Color.yellow );
   }
 
 }
