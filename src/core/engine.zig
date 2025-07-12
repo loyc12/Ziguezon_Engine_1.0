@@ -237,7 +237,7 @@ pub const engine = struct
     h.qlog( .TRACE, 0, @src(), "Getting inputs..." );
     // This function is used to get input from the user, such as keyboard or mouse input.
 
-    h.tryHook( .OnUpdate, .{ self }); // Allows for custom input handling
+    h.tryHook( .OnUpdateStep, .{ self }); // Allows for custom input handling
   }
 
   fn tick( self : *engine ) void // TODO : use tick rate instead of frame time
@@ -251,9 +251,11 @@ pub const engine = struct
 
     // Check for collisions between all active entities and the following ones
 
-    h.tryHook( .OnTick, .{ self }); // Allows for custom game logic updates
+    h.tryHook( .OnTickStep, .{ self }); // Allows for custom game logic updates
 
     self.entityManager.tickActiveEntities( sdt ); // Tick all active entities with the delta time
+
+    h.tryHook( .OffTickStep, .{ self }); // Allows for custom game logic updates
   }
 
   fn render( self : *engine ) void
@@ -273,6 +275,8 @@ pub const engine = struct
       h.tryHook( .OnRenderWorld, .{ self }); // Allows for custom rendering of the world
 
       self.entityManager.renderActiveEntities(); // Render all active entities
+
+      h.tryHook( .OffRenderWorld, .{ self }); // Allows for custom rendering of the world
     }
 
     h.ray.endMode2D(); // UI Rendering mode

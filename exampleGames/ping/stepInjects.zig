@@ -3,9 +3,12 @@ const h   = @import( "defs" );
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
+const BALL_ID : u32 = 16; // ID of the ball entity
+
 var   P1_MV_FAC   : f32 = 0.0;   // Player 1 movement direction
 var   P2_MV_FAC   : f32 = 0.0;   // Player 2 movement direction
-const MV_FAC_CAP  : f32 = 16.0;  // Movement factor cap, to prevent excessive speed
+const MV_FAC_STEP : f32 = 1.0;   // Movement factor step ( size of increment / decrement )
+const MV_FAC_CAP  : f32 = 32.0;  // Movement factor cap, to prevent excessive speed
 
 const B_BASE_VEL  : f32 = 500.0; // Base velocity of the ball when it is launched
 const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball
@@ -14,36 +17,132 @@ const WIN_SCORE : u8 = 8;              // Score needed to win the game
 var   SCORES    : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 var   WINNER    : u8 = 0;              // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet
 
-
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
+pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
-  if( h.ray.isKeyPressed( h.ray.KeyboardKey.p ))
+  if( h.ray.isKeyPressed( h.ray.KeyboardKey.p ) or h.ray.isKeyPressed( h.ray.KeyboardKey.enter ))
   {
     ng.togglePause();
     if( WINNER != 0 )
     {
+      // Reset the scores
       SCORES = .{ 0, 0 }; // Reset scores if the game is restarted
       WINNER = 0;         // Reset winner
+
+      // Reset the ball position and velocity
+      var ball = ng.entityManager.getEntity( BALL_ID ) orelse
+      {
+        h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ BALL_ID });
+        return;
+      };
+
+      ball.pos = .{ .x = 0, .y = 0 };
+      ball.vel = .{ .x = 0, .y = 0 };
+
+      // Reset the positions of the ball shadows
+      var ballShadow4 = ng.entityManager.getEntity( 4 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 4 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow5 = ng.entityManager.getEntity( 5 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow6 = ng.entityManager.getEntity( 6 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 6 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow7 = ng.entityManager.getEntity( 7 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 7 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow8 = ng.entityManager.getEntity( 8 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 8 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow9 = ng.entityManager.getEntity( 9 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 9 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow10 = ng.entityManager.getEntity( 10 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 10 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow11 = ng.entityManager.getEntity( 11 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 11 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow12 = ng.entityManager.getEntity( 12 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 12 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow13 = ng.entityManager.getEntity( 13 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 13 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow14 = ng.entityManager.getEntity( 14 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 14 ( BallShadow ) not found" );
+        return;
+      };
+
+      var ballShadow15 = ng.entityManager.getEntity( 15 ) orelse
+      {
+        h.qlog( .WARN, 0, @src(), "Entity with ID 15 ( BallShadow ) not found" );
+        return;
+      };
+
+      ballShadow4.cpyEntityPos( ball );
+      ballShadow5.cpyEntityPos( ball );
+      ballShadow6.cpyEntityPos( ball );
+      ballShadow7.cpyEntityPos( ball );
+      ballShadow8.cpyEntityPos( ball );
+      ballShadow9.cpyEntityPos( ball );
+      ballShadow10.cpyEntityPos( ball );
+      ballShadow11.cpyEntityPos( ball );
+      ballShadow12.cpyEntityPos( ball );
+      ballShadow13.cpyEntityPos( ball );
+      ballShadow14.cpyEntityPos( ball );
+      ballShadow15.cpyEntityPos( ball );
+
+      h.qlog( .INFO, 0, @src(), "Match restarted" );
     }
   }
 
   if( ng.state == .PLAYING )
   {
     // Move entity 1 with A and D keys
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.d     )){ P1_MV_FAC = @min( P1_MV_FAC + 1,  MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.a     )){ P1_MV_FAC = @max( P1_MV_FAC - 1, -MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.w     )){ P1_MV_FAC = 0; }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.space )){ P1_MV_FAC = 0; }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.d )){ P1_MV_FAC = @min( P1_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.a )){ P1_MV_FAC = @max( P1_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.s ) or h.ray.isKeyDown( h.ray.KeyboardKey.space )){ P1_MV_FAC = 0; }
 
 
     // Move entity 2 with side arrow keys
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + 1,  MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - 1, -MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.up    )){ P2_MV_FAC = 0; }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.enter )){ P2_MV_FAC = 0; }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
+    if( h.ray.isKeyDown( h.ray.KeyboardKey.down ) or h.ray.isKeyDown( h.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
   }
 
   if( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE )
@@ -63,16 +162,116 @@ pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every 
   }
 }
 
-pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
 {
+  var ball = ng.entityManager.getEntity( BALL_ID ) orelse
+  {
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ BALL_ID });
+    return;
+  };
+
+   // Set the ball's vertical acceleration to the base gravity
+  ball.acc.y = B_BASE_GRAV;
+
+  var ballShadow4 = ng.entityManager.getEntity( 4 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 4 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow5 = ng.entityManager.getEntity( 5 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow6 = ng.entityManager.getEntity( 6 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 6 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow7 = ng.entityManager.getEntity( 7 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 7 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow8 = ng.entityManager.getEntity( 8 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 8 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow9 = ng.entityManager.getEntity( 9 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 9 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow10 = ng.entityManager.getEntity( 10 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 10 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow11 = ng.entityManager.getEntity( 11 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 11 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow12 = ng.entityManager.getEntity( 12 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 12 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow13 = ng.entityManager.getEntity( 13 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 13 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow14 = ng.entityManager.getEntity( 14 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 14 ( BallShadow ) not found" );
+    return;
+  };
+
+  var ballShadow15 = ng.entityManager.getEntity( 15 ) orelse
+  {
+    h.qlog( .WARN, 0, @src(), "Entity with ID 15 ( BallShadow ) not found" );
+    return;
+  };
+
+  // Update the position of the ball shadows
+  ballShadow4.cpyEntityPos( ballShadow5 );
+  ballShadow5.cpyEntityPos( ballShadow6 );
+  ballShadow6.cpyEntityPos( ballShadow7 );
+  ballShadow7.cpyEntityPos( ballShadow8 );
+  ballShadow8.cpyEntityPos( ballShadow9 );
+  ballShadow9.cpyEntityPos( ballShadow10 );
+  ballShadow10.cpyEntityPos( ballShadow11 );
+  ballShadow11.cpyEntityPos( ballShadow12 );
+  ballShadow12.cpyEntityPos( ballShadow13 );
+  ballShadow13.cpyEntityPos( ballShadow14 );
+  ballShadow14.cpyEntityPos( ballShadow15 );
+  ballShadow15.cpyEntityPos( ball );
+}
+
+pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+{
+  // ================ VARIABLES AND CONSTANTS ================
+
   const hWidth  : f32 = h.getScreenWidth()  / 2.0;
   const hHeight : f32 = h.getScreenHeight() / 2.0;
 
-  const barHalfWidth : f32 = 16.0;  // Half the width of the separator bar
+  const barHalfWidth : f32 = 16.0; // Half the width of the separator bar
   const playerSpeed  : f32 = 64.0; // Speed of the players
 
-  const wallBounceFactor   : f32 = 0.90;  // Bounce factor for the ball when hitting walls
-  const playerBounceFactor : f32 = 1.03;  // Bounce factor for the ball when hitting players
+  const wallBounceFactor   : f32 = 0.90; // Bounce factor for the ball when hitting walls
+  const playerBounceFactor : f32 = 1.03; // Bounce factor for the ball when hitting players
 
   var p1 = ng.entityManager.getEntity( 1 ) orelse
   {
@@ -86,9 +285,9 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
     return;
   };
 
-  var ball = ng.entityManager.getEntity( 5 ) orelse
+  var ball = ng.entityManager.getEntity( BALL_ID ) orelse
   {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( Ball ) not found" );
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ BALL_ID });
     return;
   };
 
@@ -103,11 +302,10 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
   if( p2.vel.x == 0 ) { P2_MV_FAC = 0; } // Reset movement direction if p2's velocity was clamped
 
 
-  // ================ UPDATING THE BALL POSITION ================
-  ball.acc.y = B_BASE_GRAV; // Set the ball's vertical acceleration to the base gravity
+  // ================ CLAMPING THE BALL POSITION ================
 
   // Clamping to top and bottom of the screen
-  if( ball.getBottomY() >= hHeight ) // Scoring a point if the ball goes below the bottom of the screen
+  if( ball.pos.y >= hHeight ) // Scoring a point if the ball goes below the bottom of the screen
   {
     h.qlog( .DEBUG, 0, @src(), "Ball hit the bottom edge" );
     ball.vel.y = -B_BASE_VEL; // Reset ball vertical velocity to the base velocity
@@ -174,7 +372,7 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
     }
   }
 
-  // ================ COLLISION DETECTION ================
+  // ================ BALL-PLAYER COLLISIONS ================
 
   // Check if the ball is overlapping with player 1
   if( ball.isOverlapping( p1 ))
@@ -204,16 +402,7 @@ pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every fram
     ball.vel.x += p2.vel.x * wallBounceFactor;
   }
 
-  var ballShadow = ng.entityManager.getEntity( 4 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 4 ( BallShadow ) not found" );
-    return;
-  };
-
-  // Update the shadows position to follow the ball
-  ballShadow.clampNearEntity( ball, .{ .x = 2.0, .y = 2.0 } ); // Clamp the shadow to be near the ball
 }
-
 
 
 pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
@@ -251,13 +440,13 @@ pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
   if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )
   {
     const winner_msg = if( WINNER == 1 ) "Player 1 wins!" else "Player 2 wins!";
-    h.drawCenteredText( winner_msg,           h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 192, 128, h.ray.Color.green );
-    h.drawCenteredText( "Press P to restart", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ),       64,  h.ray.Color.yellow );
-    h.drawCenteredText( "Press ESC to exit",  h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) + 128, 64,  h.ray.Color.yellow );
+    h.drawCenteredText( winner_msg,               h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 192, 128, h.ray.Color.green );
+    h.drawCenteredText( "Press Enter to restart", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ),       64,  h.ray.Color.yellow );
+    h.drawCenteredText( "Press Escape to exit",   h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) + 128, 64,  h.ray.Color.yellow );
   }
   else if( ng.state == .LAUNCHED ) // If the game is paused, display the resume message
   {
-    h.drawCenteredText( "Press P to resume", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 256, 64, h.ray.Color.yellow );
+    h.drawCenteredText( "Press Enter to resume", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 256, 64, h.ray.Color.yellow );
   }
 
 }

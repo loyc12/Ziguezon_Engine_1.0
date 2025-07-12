@@ -86,6 +86,12 @@ pub fn getBottomRight( e1 : *const entity ) h.vec2
 // ================ POSITION SETTERS ================
 // These functions set the sides of the entity's bounding box.
 
+pub fn cpyEntityPos( e1 : *entity, e2 : *const entity ) void
+{
+  h.log( .TRACE, 0, @src(), "Copying position from entity {d} to entity {d}", .{ e2.id, e1.id });
+  e1.pos = e2.pos;
+}
+
 pub fn setLeftX( e1 : *entity, leftX : f32 ) void
 {
   h.log( .TRACE, 0, @src(), "Setting left side of entity {d} to {d}", .{ e1.id, leftX });

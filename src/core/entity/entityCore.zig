@@ -58,6 +58,8 @@ pub const entity = struct
 
   // POSITION SETTERS
   pub fn setCenter( self : *entity, newPos : h.vec2 ) void { self.pos = newPos; }
+  pub fn setPos(    self : *entity, newPos : h.vec2 ) void { self.pos = newPos; }
+  pub fn cpyEntityPos( self : *entity, other : *const entity ) void { nttPos.cpyEntityPos( self, other ); }
 
   pub fn setLeftX(   self : *entity, leftX   : f32 ) void { nttPos.setLeftX(   self, leftX ); }
   pub fn setRightX(  self : *entity, rightX  : f32 ) void { nttPos.setRightX(  self, rightX ); }
@@ -83,8 +85,8 @@ pub const entity = struct
   pub fn clampOnY(     self : *entity, minY : f32, maxY : f32 ) void { nttPos.clampOnY( self, minY, maxY ); }
   pub fn clampOnArea(  self : *entity, minPos : h.vec2, maxPos : h.vec2 ) void { nttPos.clampOnArea( self, minPos, maxPos ); }
 
-  pub fn clampOnPoint(  self : *entity, point : h.vec2 ) void { nttPos.clampOnPoint( self, point ); }
-  pub fn clampOnEntity( self : *entity, other : *const entity ) void { nttPos.clampOnEntity( self, other ); }
+  pub fn clampOnPoint(    self : *entity, point : h.vec2 ) void { nttPos.clampOnPoint( self, point ); }
+  pub fn clampOnEntity(   self : *entity, other : *const entity ) void { nttPos.clampOnEntity( self, other ); }
   pub fn clampNearEntity( self : *entity, other : *const entity, maxOffset : h.vec2 ) void { nttPos.clampNearEntity( self, other, maxOffset ); }
 
   // RANGE FUNCTIONS

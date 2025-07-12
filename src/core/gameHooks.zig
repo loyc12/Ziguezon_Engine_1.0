@@ -1,49 +1,69 @@
 const std = @import( "std" );
 const h   = @import( "defs" );
 
+// ================================ GAME HOOKS ================================
+
+// This enum defines the tags for each game hook
+// These tags are used to identify which hook to call in the gameHooks struct
 pub const hookTag = enum( u8 )
 {
-  OnLoopStart     = 0,  // Called at the start of the game loop
-  OnLoopIter      = 1,  // Called for each iteration of the game loop
-  OnLoopEnd       = 2,  // Called at the end of the game loop
+  // Engine state hooks
+  OnStart  = 0, // Called when the engine starts
+  OnLaunch = 1, // Called when the engine is launched
+  OnPlay   = 2, // Called when the engine starts playing
 
-  OnUpdate        = 3,  // Called every frame for updates
-  OnTick          = 4,  // Called every tick for logic updates
-  OnRenderWorld   = 5,  // Called to render the world
-  OnRenderOverlay = 6,  // Called to render overlays
-
-  OnStart         = 7,  // Called when the engine starts
-  OnLaunch        = 8,  // Called when the engine is launched
-  OnPlay          = 9,  // Called when the engine starts playing
-  OnPause         = 10, // Called when the engine is paused
-  OnStop          = 11, // Called when the engine stops
-  OnClose         = 12, // Called when the engine is closed
-};
-
-pub const gameHooks = struct
-{
-  // This struct contains a slot for each possible game hook
-  // Each are function pointers that can be set with `engine.setHook()`
+  OnPause  = 3, // Called when the engine is paused
+  OnStop   = 4, // Called when the engine stops
+  OnClose  = 5, // Called when the engine is closed
 
   // Engine step hooks
-  OnLoopStart : ?*const fn ( *h.eng.engine ) void = null,
-  OnLoopIter  : ?*const fn ( *h.eng.engine ) void = null,
-  OnLoopEnd   : ?*const fn ( *h.eng.engine ) void = null,
+  OnLoopStart      = 10, // Called at the start of the game loop
+  OnLoopEnd        = 11, // Called at the end of the game loop
+  OnLoopIter       = 12, // Called for each iteration of the game loop ( at the start )
+  OffLoopIter      = 13, // Called for each iteration of the game loop ( at the end )
 
-  OnUpdate : ?*const fn ( *h.eng.engine ) void = null,
-  OnTick   : ?*const fn ( *h.eng.engine ) void = null,
+  OnUpdateStep     = 20, // Called every frame for updates ( at the start )
+  OffUpdateStep    = 21, // Called every frame for updates ( at the end )
+  OnTickStep       = 22, // Called every tick for logic updates ( at the start )
+  OffTickStep      = 23, // Called every tick for logic updates ( at the end  )
 
-  OnRenderWorld   : ?*const fn ( *h.eng.engine ) void = null,
-  OnRenderOverlay : ?*const fn ( *h.eng.engine ) void = null,
+  OnRenderWorld    = 24, // Called to render the world ( at the start )
+  OffRenderWorld   = 25, // Called to render the world ( at the end  )
+  OnRenderOverlay  = 26, // Called to render overlays ( at the start )
+  OffRenderOverlay = 27, // Called to render overlays ( at the end )
 
+};
+
+// This struct contains a slot for each possible game hook
+// Each are function pointers that can be set with `gameHooks.initHooks()`
+pub const gameHooks = struct
+{
   // Engine state hooks
   OnStart  : ?*const fn ( *h.eng.engine ) void = null,
   OnLaunch : ?*const fn ( *h.eng.engine ) void = null,
   OnPlay   : ?*const fn ( *h.eng.engine ) void = null,
+
   OnPause  : ?*const fn ( *h.eng.engine ) void = null,
   OnStop   : ?*const fn ( *h.eng.engine ) void = null,
   OnClose  : ?*const fn ( *h.eng.engine ) void = null,
 
+  // Engine step hooks
+  OnLoopStart : ?*const fn ( *h.eng.engine ) void = null,
+  OnLoopEnd   : ?*const fn ( *h.eng.engine ) void = null,
+  OnLoopIter  : ?*const fn ( *h.eng.engine ) void = null,
+  OffLoopIter : ?*const fn ( *h.eng.engine ) void = null,
+
+  OnUpdateStep  : ?*const fn ( *h.eng.engine ) void = null,
+  OffUpdateStep : ?*const fn ( *h.eng.engine ) void = null,
+  OnTickStep    : ?*const fn ( *h.eng.engine ) void = null,
+  OffTickStep   : ?*const fn ( *h.eng.engine ) void = null,
+
+  OnRenderWorld    : ?*const fn ( *h.eng.engine ) void = null,
+  OffRenderWorld   : ?*const fn ( *h.eng.engine ) void = null,
+  OnRenderOverlay  : ?*const fn ( *h.eng.engine ) void = null,
+  OffRenderOverlay : ?*const fn ( *h.eng.engine ) void = null,
+
+  // Initializes the game hooks from a given module
   pub fn initHooks( self : *gameHooks, module : anytype ) void
   {
     if( @typeInfo( module ) != .@"struct" )
@@ -54,25 +74,34 @@ pub const gameHooks = struct
     }
 
     // Attempt to set each hook individually
-    if( @hasDecl( module, "OnLoopStart"     )) self.OnLoopStart     = @field( module, "OnLoopStart"     );
-    if( @hasDecl( module, "OnLoopIter"      )) self.OnLoopIter      = @field( module, "OnLoopIter"      );
-    if( @hasDecl( module, "OnLoopEnd"       )) self.OnLoopEnd       = @field( module, "OnLoopEnd"       );
+    // Engine state hooks
+    if( @hasDecl( module, "OnStart"  )) self.OnStart  = @field( module, "OnStart"  );
+    if( @hasDecl( module, "OnLaunch" )) self.OnLaunch = @field( module, "OnLaunch" );
+    if( @hasDecl( module, "OnPlay"   )) self.OnPlay   = @field( module, "OnPlay"   );
+    if( @hasDecl( module, "OnPause"  )) self.OnPause  = @field( module, "OnPause"  );
+    if( @hasDecl( module, "OnStop"   )) self.OnStop   = @field( module, "OnStop"   );
+    if( @hasDecl( module, "OnClose"  )) self.OnClose  = @field( module, "OnClose"  );
 
-    if( @hasDecl( module, "OnUpdate"        )) self.OnUpdate        = @field( module, "OnUpdate"        );
-    if( @hasDecl( module, "OnTick"          )) self.OnTick          = @field( module, "OnTick"          );
-    if( @hasDecl( module, "OnRenderWorld"   )) self.OnRenderWorld   = @field( module, "OnRenderWorld"   );
-    if( @hasDecl( module, "OnRenderOverlay" )) self.OnRenderOverlay = @field( module, "OnRenderOverlay" );
+    // Engine step hooks
+    if( @hasDecl( module, "OnLoopStart" )) self.OnLoopStart = @field( module, "OnLoopStart" );
+    if( @hasDecl( module, "OnLoopEnd"   )) self.OnLoopEnd   = @field( module, "OnLoopEnd"   );
+    if( @hasDecl( module, "OnLoopIter"  )) self.OnLoopIter  = @field( module, "OnLoopIter"  );
+    if( @hasDecl( module, "OffLoopIter" )) self.OffLoopIter = @field( module, "OffLoopIter" );
 
-    if( @hasDecl( module, "OnStart"         )) self.OnStart         = @field( module, "OnStart"         );
-    if( @hasDecl( module, "OnLaunch"        )) self.OnLaunch        = @field( module, "OnLaunch"        );
-    if( @hasDecl( module, "OnPlay"          )) self.OnPlay          = @field( module, "OnPlay"          );
-    if( @hasDecl( module, "OnPause"         )) self.OnPause         = @field( module, "OnPause"         );
-    if( @hasDecl( module, "OnStop"          )) self.OnStop          = @field( module, "OnStop"          );
-    if( @hasDecl( module, "OnClose"         )) self.OnClose         = @field( module, "OnClose"         );
+    if( @hasDecl( module, "OnUpdateStep"  )) self.OnUpdateStep  = @field( module, "OnUpdateStep"  );
+    if( @hasDecl( module, "OffUpdateStep" )) self.OffUpdateStep = @field( module, "OffUpdateStep" );
+    if( @hasDecl( module, "OnTickStep"    )) self.OnTickStep    = @field( module, "OnTickStep"    );
+    if( @hasDecl( module, "OffTickStep"   )) self.OffTickStep   = @field( module, "OffTickStep"   );
+
+    if( @hasDecl( module, "OnRenderWorld"    )) self.OnRenderWorld    = @field( module, "OnRenderWorld"    );
+    if( @hasDecl( module, "OffRenderWorld"   )) self.OffRenderWorld   = @field( module, "OffRenderWorld"   );
+    if( @hasDecl( module, "OnRenderOverlay"  )) self.OnRenderOverlay  = @field( module, "OnRenderOverlay"  );
+    if( @hasDecl( module, "OffRenderOverlay" )) self.OffRenderOverlay = @field( module, "OffRenderOverlay" );
 
     self.logHookValidities();
   }
 
+  // Logs the validity of each game hook
   pub fn logHookValidities( self : *const gameHooks ) void
   {
     // Loop through each field in the gameHooks struct
@@ -94,26 +123,35 @@ pub const gameHooks = struct
     }
   }
 
+  // Attempts to call a game hook with the given tag and arguments
   pub fn tryHook( self : *const gameHooks, tag : hookTag, args : anytype ) void
   {
     // Check if the hook exists
     const optFunc = switch( tag )
     {
-      .OnLoopStart     => self.OnLoopStart,
-      .OnLoopIter      => self.OnLoopIter,
-      .OnLoopEnd       => self.OnLoopEnd,
+      // Engine state hooks
+      .OnStart  => self.OnStart,
+      .OnLaunch => self.OnLaunch,
+      .OnPlay   => self.OnPlay,
+      .OnPause  => self.OnPause,
+      .OnStop   => self.OnStop,
+      .OnClose  => self.OnClose,
 
-      .OnUpdate        => self.OnUpdate,
-      .OnTick          => self.OnTick,
-      .OnRenderWorld   => self.OnRenderWorld,
-      .OnRenderOverlay => self.OnRenderOverlay,
+      // Engine step hooks
+      .OnLoopStart => self.OnLoopStart,
+      .OnLoopEnd   => self.OnLoopEnd,
+      .OnLoopIter  => self.OnLoopIter,
+      .OffLoopIter => self.OffLoopIter,
 
-      .OnStart         => self.OnStart,
-      .OnLaunch        => self.OnLaunch,
-      .OnPlay          => self.OnPlay,
-      .OnPause         => self.OnPause,
-      .OnStop          => self.OnStop,
-      .OnClose         => self.OnClose,
+      .OnUpdateStep  => self.OnUpdateStep,
+      .OffUpdateStep => self.OffUpdateStep,
+      .OnTickStep    => self.OnTickStep,
+      .OffTickStep   => self.OffTickStep,
+
+      .OnRenderWorld    => self.OnRenderWorld,
+      .OffRenderWorld   => self.OffRenderWorld,
+      .OnRenderOverlay  => self.OnRenderOverlay,
+      .OffRenderOverlay => self.OffRenderOverlay,
     };
 
     // Call the function if it exists

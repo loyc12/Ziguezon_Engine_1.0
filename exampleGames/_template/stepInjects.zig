@@ -15,18 +15,25 @@ pub fn OnLoopStart( ng : *h.eng.engine ) void // Called by engine.loopLogic()
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OnLoopIter( ng : *h.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
-{
-  _ = ng; // Prevent unused variable warning
-}
-
 pub fn OnLoopEnd( ng : *h.eng.engine ) void // Called by engine.loopLogic()
 {
   _ = ng; // Prevent unused variable warning
 }
 
+pub fn OnLoopIter( ng : *h.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
+{
+  _ = ng; // Prevent unused variable warning
+}
+
+pub fn OffLoopIter( ng : *h.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
+{
+  _ = ng; // Prevent unused variable warning
+}
+
+
+
 // NOTE : This is where you should capture inputs to update global flags
-pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
+pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
   if( h.ray.isKeyPressed( h.ray.KeyboardKey.p )){ ng.togglePause(); }
@@ -39,17 +46,34 @@ pub fn OnUpdate( ng : *h.eng.engine ) void // Called by engine.update() ( every 
   }
 }
 
-// NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTick( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OffUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
   _ = ng; // Prevent unused variable warning
 }
+
+// NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
+pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+{
+  _ = ng; // Prevent unused variable warning
+}
+
+pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+{
+  _ = ng; // Prevent unused variable warning
+}
+
+
 
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *h.eng.engine ) void // Called by engine.render()
 {
   // NOTE : All active entities are rendered after the function is called, so no need to render them here.
 
+  _ = ng; // Prevent unused variable warning
+}
+
+pub fn OffRenderWorld( ng : *h.eng.engine ) void // Called by engine.render()
+{
   _ = ng; // Prevent unused variable warning
 }
 
@@ -65,4 +89,9 @@ pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
   {
     h.ray.drawRectangle( 0, 0, h.ray.getScreenWidth(), h.ray.getScreenHeight(), h.ray.Color.init( 0, 0, 0, 128 ));
   }
+}
+
+pub fn OffRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
+{
+  _ = ng; // Prevent unused variable warning
 }
