@@ -1,6 +1,23 @@
 const std = @import( "std" );
 const h   = @import( "defs" );
 
+pub fn cpyEntityPosViaID( ng : *h.eng.engine , dstID : u32, srcID : u32, ) void
+{
+  const src = ng.entityManager.getEntity( srcID ) orelse
+  {
+    h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ srcID });
+    return;
+  };
+
+  const dst = ng.entityManager.getEntity( dstID ) orelse
+  {
+    h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ dstID });
+    return;
+  };
+
+  dst.cpyEntityPos( src );
+}
+
 // ================================ GLOBAL GAME VARIABLES ================================
 
 const BALL_ID : u32 = 16; // ID of the ball entity
@@ -42,90 +59,7 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
       ball.vel = .{ .x = 0, .y = 0 };
 
       // Reset the positions of the ball shadows
-      var ballShadow4 = ng.entityManager.getEntity( 4 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 4 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow5 = ng.entityManager.getEntity( 5 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow6 = ng.entityManager.getEntity( 6 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 6 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow7 = ng.entityManager.getEntity( 7 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 7 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow8 = ng.entityManager.getEntity( 8 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 8 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow9 = ng.entityManager.getEntity( 9 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 9 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow10 = ng.entityManager.getEntity( 10 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 10 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow11 = ng.entityManager.getEntity( 11 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 11 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow12 = ng.entityManager.getEntity( 12 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 12 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow13 = ng.entityManager.getEntity( 13 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 13 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow14 = ng.entityManager.getEntity( 14 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 14 ( BallShadow ) not found" );
-        return;
-      };
-
-      var ballShadow15 = ng.entityManager.getEntity( 15 ) orelse
-      {
-        h.qlog( .WARN, 0, @src(), "Entity with ID 15 ( BallShadow ) not found" );
-        return;
-      };
-
-      ballShadow4.cpyEntityPos( ball );
-      ballShadow5.cpyEntityPos( ball );
-      ballShadow6.cpyEntityPos( ball );
-      ballShadow7.cpyEntityPos( ball );
-      ballShadow8.cpyEntityPos( ball );
-      ballShadow9.cpyEntityPos( ball );
-      ballShadow10.cpyEntityPos( ball );
-      ballShadow11.cpyEntityPos( ball );
-      ballShadow12.cpyEntityPos( ball );
-      ballShadow13.cpyEntityPos( ball );
-      ballShadow14.cpyEntityPos( ball );
-      ballShadow15.cpyEntityPos( ball );
+      for( 4..16 )| i |{ cpyEntityPosViaID( ng, @intCast( i ), BALL_ID ); }
 
       h.qlog( .INFO, 0, @src(), "Match restarted" );
     }
@@ -173,71 +107,8 @@ pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every 
    // Set the ball's vertical acceleration to the base gravity
   ball.acc.y = B_BASE_GRAV;
 
-  var ballShadow4 = ng.entityManager.getEntity( 4 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 4 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow5 = ng.entityManager.getEntity( 5 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 5 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow6 = ng.entityManager.getEntity( 6 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 6 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow7 = ng.entityManager.getEntity( 7 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 7 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow8 = ng.entityManager.getEntity( 8 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 8 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow9 = ng.entityManager.getEntity( 9 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 9 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow10 = ng.entityManager.getEntity( 10 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 10 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow11 = ng.entityManager.getEntity( 11 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 11 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow12 = ng.entityManager.getEntity( 12 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 12 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow13 = ng.entityManager.getEntity( 13 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 13 ( BallShadow ) not found" );
-    return;
-  };
-
-  var ballShadow14 = ng.entityManager.getEntity( 14 ) orelse
-  {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 14 ( BallShadow ) not found" );
-    return;
-  };
+  // Swaps the positions of the ball shadows repeatedly
+  for( 4..15 )| i |{ cpyEntityPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
 
   var ballShadow15 = ng.entityManager.getEntity( 15 ) orelse
   {
@@ -245,18 +116,6 @@ pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every 
     return;
   };
 
-  // Update the position of the ball shadows
-  ballShadow4.cpyEntityPos( ballShadow5 );
-  ballShadow5.cpyEntityPos( ballShadow6 );
-  ballShadow6.cpyEntityPos( ballShadow7 );
-  ballShadow7.cpyEntityPos( ballShadow8 );
-  ballShadow8.cpyEntityPos( ballShadow9 );
-  ballShadow9.cpyEntityPos( ballShadow10 );
-  ballShadow10.cpyEntityPos( ballShadow11 );
-  ballShadow11.cpyEntityPos( ballShadow12 );
-  ballShadow12.cpyEntityPos( ballShadow13 );
-  ballShadow13.cpyEntityPos( ballShadow14 );
-  ballShadow14.cpyEntityPos( ballShadow15 );
   ballShadow15.cpyEntityPos( ball );
 }
 

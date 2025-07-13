@@ -5,7 +5,7 @@ const h   = @import( "defs" );
 
 pub const DEF_SCREEN_DIMS = h.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
 pub const DEF_TARGET_FPS  = 60; // Default target FPS for the game
-//pub const DEF_TICK_RATE   = 30; // Default tick rate for the game ( in seconds ) // TODO : USE ME
+//pub const DEF_TARGET_TPS   = 30; // Default tick rate for the game ( in seconds ) // TODO : USE ME
 
 pub const e_state = enum // These values represent the different states of the engine.
 {
@@ -20,7 +20,10 @@ pub const engine = struct
 {
   state : e_state = .CLOSED,
   timeScale : f32 = 1.0, // Used to speed up or slow down the game
-  sdt : f32       = 0.0, // Latest scaled delta time ( from last frame )
+  sdt : f32 = 0.0, // Latest scaled delta time ( from last frame )
+
+  // The game timer is initialized with the current time
+//gameTimer : h.timer.timer = h.timer.getNewTimer(), // TODO : Use this to control when to tick or not ( see DEF_TARGET_TPS )
 
   entityManager : h.ntm.entityManager = undefined,
   mainCamera    : h.ray.Camera2D      = undefined,
@@ -86,7 +89,6 @@ pub const engine = struct
         },
       }
     }
-
     // Recursively calling changeState to pass through all intermediate state changes ( if needed )
     if( self.state != targetState ){ self.changeState( targetState ); }
   }
@@ -108,7 +110,7 @@ pub const engine = struct
       .rotation = 0.0,
       .zoom = 1.0,
     };
-    h.qlog( .INFO, 0, @src(), "Hello, world !\n\n" );
+    h.qlog( .INFO, 0, @src(), "$ Hello, world !\n" );
 
     h.tryHook( .OnStart, .{ self }); // Allows for custom initialization
     self.state = .STARTED;
@@ -122,7 +124,7 @@ pub const engine = struct
     h.ray.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
     h.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
 
-    h.log( .DEBUG, 0, @src(), "Window initialized with size {d}x{d}\n\n", .{ h.ray.getScreenWidth(), h.ray.getScreenHeight() });
+    h.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ h.ray.getScreenWidth(), h.ray.getScreenHeight() });
 
     h.tryHook( .OnLaunch, .{ self }); // Allows for custom initialization
     self.state = .LAUNCHED;
@@ -168,7 +170,7 @@ pub const engine = struct
 
     if( h.ray.isWindowReady() )
     {
-      h.qlog( .INFO, 0, @src(), "Closing the game window..." );
+      h.qlog( .INFO, 0, @src(), "# Closing the game window..." );
       h.ray.closeWindow(); // Close the game window if it is ready
     }
 
@@ -186,7 +188,7 @@ pub const engine = struct
     self.entityManager = undefined; // Reset the entity manager
     self.mainCamera    = undefined; // Reset the main camera
 
-    h.qlog( .INFO, 0, @src(), "Goodbye, cruel world...\n\n" );
+    h.qlog( .INFO, 0, @src(), "# Goodbye, cruel world...\n" );
 
     h.tryHook( .OnClose, .{ self }); // Allows for custom deinitialization
     self.state = .CLOSED;

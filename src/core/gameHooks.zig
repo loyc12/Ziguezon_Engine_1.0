@@ -17,15 +17,15 @@ pub const hookTag = enum( u8 )
   OnClose  = 5, // Called when the engine is closed
 
   // Engine step hooks
-  OnLoopStart      = 10, // Called at the start of the game loop
-  OnLoopEnd        = 11, // Called at the end of the game loop
-  OnLoopIter       = 12, // Called for each iteration of the game loop ( at the start )
-  OffLoopIter      = 13, // Called for each iteration of the game loop ( at the end )
+  OnLoopStart  = 10, // Called at the start of the game loop
+  OnLoopEnd    = 11, // Called at the end of the game loop
+  OnLoopIter   = 12, // Called for each iteration of the game loop ( at the start )
+  OffLoopIter  = 13, // Called for each iteration of the game loop ( at the end )
 
-  OnUpdateStep     = 20, // Called every frame for updates ( at the start )
-  OffUpdateStep    = 21, // Called every frame for updates ( at the end )
-  OnTickStep       = 22, // Called every tick for logic updates ( at the start )
-  OffTickStep      = 23, // Called every tick for logic updates ( at the end  )
+  OnUpdateStep   = 20, // Called every frame for updates ( at the start )
+  OffUpdateStep  = 21, // Called every frame for updates ( at the end )
+  OnTickStep     = 22, // Called every tick for logic updates ( at the start )
+  OffTickStep    = 23, // Called every tick for logic updates ( at the end  )
 
   OnRenderWorld    = 24, // Called to render the world ( at the start )
   OffRenderWorld   = 25, // Called to render the world ( at the end  )
@@ -36,6 +36,7 @@ pub const hookTag = enum( u8 )
 
 // This struct contains a slot for each possible game hook
 // Each are function pointers that can be set with `gameHooks.initHooks()`
+// NOTE : Using *fn instead of simply module.fn to avoid storing the entire module, which has an unknown type
 pub const gameHooks = struct
 {
   // Engine state hooks

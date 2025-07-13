@@ -7,26 +7,29 @@ const gh = @import( "gameHooks" );
 
 pub fn initAll() void
 {
-  // Initialize the game hooks
-  h.initHooks( gh );
+  h.qlog( .INFO, 0, @src(), "# Initializing all subsystems..." );
 
   // Initialize the timer
-  h.timer.initTimer();
+  h.timer.initGlobalTimer();
+
+  // Initialize the game hooks
+  h.initHooks( gh );
 
   // Initialize the log file if needed
   h.logger.initFile();
 
-  h.qlog( .INFO, 0, @src(), "Initialized all subsystems" );
+  h.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
 }
 
 pub fn deinitAll() void
 {
-  h.qlog( .INFO, 0, @src(), "Deinitializing all subsystems" );
+  h.qlog( .INFO, 0, @src(), "# Deinitializing all subsystems..." );
 
   // Deinitialize the log file if present
   h.logger.deinitFile();
-}
 
+  h.qlog( .INFO, 0, @src(), "$ Deinitialized all subsystems\n" );
+}
 
 // ================================ MAIN FUNCTION ================================
 // This is the entry point of the application
