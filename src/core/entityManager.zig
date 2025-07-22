@@ -416,7 +416,7 @@ pub const entityManager = struct
 
   pub fn collideActiveEntities( self : *entityManager, sdt : f32 ) void
   {
-    _ = sdt; // Prevent unused variable warning
+    _ = sdt; // Prevent unused variable warning // TODO : use sdt in collision detection
 
     // Iterate through all entities and check for collisions if they are active
     for( self.entities.items, 0 .. )| entity, index |{ if( entity.active ) // Using index rather than id, since there is no guarantee that the id will always be index + 1

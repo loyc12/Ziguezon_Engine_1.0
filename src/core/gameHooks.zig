@@ -158,8 +158,7 @@ pub const gameHooks = struct
     // Call the function if it exists
     if( optFunc )| func |
     {
-      h.log( .DEBUG, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
-
+      // h.log( .DEBUG, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
       switch( args.len )
       {
         1 => func( args[ 0 ] ),
@@ -167,6 +166,6 @@ pub const gameHooks = struct
       }
       return;
     }
-    else { h.log( .WARN, 0, @src(), "Game hook '{s}' is not set", .{ @tagName( tag ) }); }
+    //else { h.log( .WARN, 0, @src(), "Game hook '{s}' is not set", .{ @tagName( tag ) }); }
   }
 };

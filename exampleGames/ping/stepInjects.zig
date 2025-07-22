@@ -24,8 +24,8 @@ const BALL_ID : u32 = 16; // ID of the ball entity
 
 var   P1_MV_FAC   : f32 = 0.0;   // Player 1 movement direction
 var   P2_MV_FAC   : f32 = 0.0;   // Player 2 movement direction
-const MV_FAC_STEP : f32 = 1.0;   // Movement factor step ( size of increment / decrement )
-const MV_FAC_CAP  : f32 = 32.0;  // Movement factor cap, to prevent excessive speed
+const MV_FAC_STEP : f32 = 0.5;   // Movement factor step ( size of increment / decrement )
+const MV_FAC_CAP  : f32 = 16.0;  // Movement factor cap, to prevent excessive speed
 
 const B_BASE_VEL  : f32 = 500.0; // Base velocity of the ball when it is launched
 const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball

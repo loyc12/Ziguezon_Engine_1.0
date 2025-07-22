@@ -4,7 +4,7 @@ const h   = @import( "defs" );
 // ================================ DEFINITIONS ================================
 
 pub const DEF_SCREEN_DIMS = h.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
-pub const DEF_TARGET_FPS  = 60; // Default target FPS for the game
+pub const DEF_TARGET_FPS  = 120; // Default target FPS for the game
 //pub const DEF_TARGET_TPS   = 30; // Default tick rate for the game ( in seconds ) // TODO : USE ME
 
 pub const e_state = enum // These values represent the different states of the engine.
@@ -90,6 +90,7 @@ pub const engine = struct
       }
     }
     // Recursively calling changeState to pass through all intermediate state changes ( if needed )
+    // TODO : use switch continue instead of recursion
     if( self.state != targetState ){ self.changeState( targetState ); }
   }
 
@@ -248,14 +249,15 @@ pub const engine = struct
     // This function is used to update the game logic, such as processing input, updating the game state, etc.
 
     // Get the delta time and apply the time scale
-    const sdt = h.ray.getFrameTime() * self.timeScale;
-    h.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ sdt });
+    self.sdt = h.ray.getFrameTime() * self.timeScale;
+    //h.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ self.sdt });
 
     // Check for collisions between all active entities and the following ones
 
     h.tryHook( .OnTickStep, .{ self }); // Allows for custom game logic updates
 
-    self.entityManager.tickActiveEntities( sdt ); // Tick all active entities with the delta time
+    //self.entityManager.collideActiveEntities( self.sdt ); // Apply colision logic between all active entities
+    self.entityManager.tickActiveEntities( self.sdt ); // Tick all active entities with the delta time
 
     h.tryHook( .OffTickStep, .{ self }); // Allows for custom game logic updates
   }
