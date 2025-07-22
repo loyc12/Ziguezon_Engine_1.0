@@ -117,6 +117,11 @@ pub fn build( b: *std.Build ) void
   const ping_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/ping/gameHooks.zig" });
   ping_step.dependOn( &ping_cli_cmd.step );
 
+  // This creates a step for the floppy game
+  const floppy_step = b.step( "floppy", "Run the floppy game" );
+  const floppy_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/floppy/gameHooks.zig" });
+  floppy_step.dependOn( &floppy_cli_cmd.step );
+
   // ================================ TESTS ================================
 
   const exe_unit_tests     = b.addTest(.{ .root_module = exe_mod });

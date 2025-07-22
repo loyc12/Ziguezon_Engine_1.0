@@ -32,7 +32,7 @@ pub fn renderEntity( self : *const entity ) void
 
   if( !self.active ) // Check if the entity is active
   {
-    h.log( .DEBUG, 0, @src(), "Entity {d} is inactive and will not be rendered", .{ self.id });
+    h.log( .TRACE, 0, @src(), "Entity {d} is inactive and will not be rendered", .{ self.id });
     return;
   }
   if( !isOnScreen( self )) // Check if the entity is on screen

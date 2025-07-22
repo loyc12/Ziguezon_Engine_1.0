@@ -38,7 +38,7 @@ pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 {
   switch( @typeInfo( @TypeOf( a )))
   {
-    .Float, .comptime_float, .Int, .comptime_int =>
+    .float, .comptime_float, .int, .comptime_int =>
     {
       if( a < b )
       {
@@ -61,7 +61,7 @@ pub fn clmp( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
 {
   switch( @typeInfo( @TypeOf( val )))
   {
-    .Float, .comptime_float, .Int, .comptime_int =>
+    .float, .comptime_float, .int, .comptime_int =>
       return if ( val < min ) min else if ( val > max ) max else val,
 
     else => @compileError( "clmp() only supports Int and Float types" ),
@@ -71,7 +71,7 @@ pub fn norm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
 {
   switch( @typeInfo( @TypeOf( val ))) // Normalizes a value to the range ( 0.0, 1.0 )
   {
-    .Float, .comptime_float => return ( val - min ) / ( max - min ),
+    .float, .comptime_float => return ( val - min ) / ( max - min ),
     else => @compileError( "norm() only supports Float types" ),
   }
 }
@@ -79,7 +79,7 @@ pub fn denorm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeO
 {
   switch( @typeInfo( @TypeOf( val ))) // Denormalizes a value from the range ( 0.0, 1.0 )
   {
-    .Float, .comptime_float => return ( val * ( max - min )) + min,
+    .float, .comptime_float => return ( val * ( max - min )) + min,
     else => @compileError( "denorm() only supports Float types" ),
   }
 }
@@ -87,7 +87,7 @@ pub fn renorm( val : anytype, srcMin : @TypeOf( val ), srcMax : @TypeOf( val ), 
 {
   switch( @typeInfo( @TypeOf( val ))) // Renormalizes a value from a src range to a dst range
   {
-    .Float, .comptime_float => return norm( denorm( val, srcMin, srcMax ), dstMin, dstMax ),
+    .float, .comptime_float => return norm( denorm( val, srcMin, srcMax ), dstMin, dstMax ),
     else => @compileError( "renorm() only supports Float types" ),
   }
 }

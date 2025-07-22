@@ -12,26 +12,27 @@ pub const e_shape = enum
 
 pub const entity = struct
 {
-  id     : u32,  // Unique identifier for the entity
-  active : bool, // Whether the entity is active or not
-
-  // ================ POSITION PROPERTIES ================
-
-  pos : h.vec2, // Position of the entity in 2D space
-  vel : h.vec2, // Velocity of the entity in 2D space
-  acc : h.vec2, // Acceleration of the entity in 2D space
-
-  // ================ ROTATION PROPERTIES ================
-
-  rotPos : f16, // Rotation of the entity in radians
-//rotVel : f16, // Angular velocity of the entity in radians per second
-//rotAcc : f16, // Angular acceleration of the entity in radians per second squared
+  id     : u32  = 0,    // Unique identifier for the entity
+  active : bool = true, // Whether the entity is active or not
 
   // ================ SHAPE PROPERTIES ================
 
-  shape  : e_shape,    // Shape of the entity
-  scale  : h.vec2,     // Scale of the entity in X and Y
-  colour : h.ray.Color, // Colour of the entity ( used for rendering )
+  scale  : h.vec2,                          // Scale of the entity in X and Y
+  colour : h.ray.Color = h.ray.Color.white, // Colour of the entity ( used for rendering )
+  shape  : e_shape     = .NONE,             // Shape of the entity
+
+  // ================ POSITION PROPERTIES ================
+
+  pos : h.vec2,                       // Position of the entity in 2D space
+  vel : h.vec2 = .{ .x = 0, .y = 0 }, // Velocity of the entity in 2D space
+  acc : h.vec2 = .{ .x = 0, .y = 0 }, // Acceleration of the entity in 2D space
+
+  // ================ ROTATION PROPERTIES ================
+
+  rotPos : f16 = 0, // Rotation of the entity in radians
+//rotVel : f16 = 0, // Angular velocity of the entity in radians per second
+//rotAcc : f16 = 0, // Angular acceleration of the entity in radians per second squared
+
 
   // ================ POSITION FUNCTIONS ================
   const nttPos = @import( "entityPos.zig" );

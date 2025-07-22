@@ -1,0 +1,147 @@
+const std      = @import( "std" );
+const h        = @import( "defs" );
+const stateInj = @import( "stateInjects.zig" );
+
+// ================================ HELPER FUNCTIONS ================================
+
+
+// ================================ GLOBAL GAME VARIABLES ================================
+
+const GRAVITY    : f32 = 1000.0;   // Base gravity of the disk
+const JUMP_FORCE : f32 = 100000.0; // Force applied when the disk jumps
+const MAX_VEL_Y  : f32 = 1000.0;   // Maximum vertical velocity of the disk
+
+//var SCROLL_SPEED : f32 = 100.0; // Base speed of the pillars
+var SCORE        : u8  = 0;     // Score of the player
+
+var IS_GAME_OVER  : bool = false; // Flag to check if the game is over ( hit bottom of screen or pillar )
+var IS_JUMPING    : bool = false; // Flag to check if the disk is jumping
+
+// ================================ STEP INJECTION FUNCTIONS ================================
+
+pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
+{
+  // Toggle pause if the P key is pressed
+  if( h.ray.isKeyPressed( h.ray.KeyboardKey.p ) or h.ray.isKeyPressed( h.ray.KeyboardKey.enter ))
+  {
+    ng.togglePause();
+
+    if( IS_GAME_OVER )
+    {
+      SCORE         = 0;
+      IS_GAME_OVER  = false;
+      IS_JUMPING    = false;
+
+      var disk = ng.entityManager.getEntity( stateInj.DISK_ID ) orelse
+      {
+        h.log( .WARN, 0, @src(), "Entity with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+        return;
+      };
+
+      disk.pos.y = 0;
+      disk.vel.y = 0;
+
+      h.qlog( .INFO, 0, @src(), "Game reseted" );
+    }
+  }
+
+  if( ng.state == .PLAYING ) // If the game is launched, check for input
+  {
+    if( IS_GAME_OVER ){ ng.changeState( .LAUNCHED ); return; }
+
+    if( h.ray.isKeyPressed( h.ray.KeyboardKey.space ) or h.ray.isKeyPressed( h.ray.KeyboardKey.up ) or h.ray.isKeyPressed( h.ray.KeyboardKey.w ))
+    {
+      IS_JUMPING = true;
+      h.log( .DEBUG, 0, @src(), "Disk {d} jumped", .{ stateInj.DISK_ID });
+    }
+  }
+}
+
+pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+{
+  var disk = ng.entityManager.getEntity( stateInj.DISK_ID ) orelse
+  {
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+    return;
+  };
+
+  disk.vel.y = h.clmp( disk.vel.y, -MAX_VEL_Y, MAX_VEL_Y );
+
+  if( IS_JUMPING ) // Apply jump force
+  {
+    disk.acc.y = -JUMP_FORCE;
+
+    if( disk.vel.y < 0 ){ disk.vel.y = 0; }
+
+    IS_JUMPING = false;
+
+    // NOTE : TESTS SCORE
+    SCORE += 1;
+  }
+  else{ disk.acc.y = GRAVITY; } // Apply gravity
+}
+
+pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+{
+  const hHeight : f32 = h.getScreenHeight() / 2.0;
+
+  var disk = ng.entityManager.getEntity( stateInj.DISK_ID ) orelse
+  {
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.DISK_ID });
+    return;
+  };
+
+  // ================ CLAMPING THE DISK POSITIONS ================
+
+  disk.clampTopY( -hHeight );
+
+  if( disk.getBottomY() > hHeight )
+  {
+    h.log( .DEBUG, 0, @src(), "Disk {d} has fallen off the screen", .{ disk.id });
+    IS_GAME_OVER = true;
+    return;
+  }
+
+  // ================ DISK-PILLAR COLLISIONS ================
+}
+
+
+pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
+{
+  // Declare the buffer to hold the formatted scores
+  var s_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 };
+
+  // Convert the score to strings
+  const s_slice = std.fmt.bufPrint( &s_buff, "{d}", .{ SCORE }) catch | err |
+  {
+      h.log(.ERROR, 0, @src(), "Failed to format score : {}", .{err});
+      return;
+  };
+
+  // Null terminate the string
+  s_buff[ s_slice.len ] = 0;
+  h.log( .DEBUG, 0, @src(), "Score: {s}", .{ s_slice });
+
+  // Draw each the score in the middle of the screen
+  h.drawCenteredText( &s_buff, h.getScreenWidth() * 0.8, h.getScreenHeight() * 0.5, 128, h.ray.Color.yellow );
+
+  if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
+  {
+    h.ray.drawRectangle( 0, 0, h.ray.getScreenWidth(), h.ray.getScreenHeight(), h.ray.Color.init( 0, 0, 0, 128 ));
+  }
+
+  if( IS_GAME_OVER ) // If there is a winner, display the winner message ( not grayed out )
+  {
+    const winner_msg = "Womp Womp..."; // TODO : Change message based on score
+    h.drawCenteredText( winner_msg,               h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 192, 128, h.ray.Color.green );
+    h.drawCenteredText( "Press Enter to restart", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ),       64,  h.ray.Color.yellow );
+    h.drawCenteredText( "Press Escape to exit",   h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) + 128, 64,  h.ray.Color.yellow );
+  }
+  else if( ng.state == .LAUNCHED ) // If the game is paused, display the resume message
+  {
+    h.drawCenteredText( "Press Enter to resume",   h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 256, 64, h.ray.Color.yellow );
+    h.drawCenteredText( "Press Escape to exit",    h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 128, 64, h.ray.Color.yellow );
+    h.drawCenteredText( "Press W, Up or Space to", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) + 128, 64, h.ray.Color.yellow );
+    h.drawCenteredText( "jump during the game",    h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) + 256, 64, h.ray.Color.yellow );
+  }
+}

@@ -1,5 +1,6 @@
-const std = @import( "std" );
-const h   = @import( "defs" );
+const std      = @import( "std" );
+const h        = @import( "defs" );
+const stateInj = @import( "stateInjects.zig" );
 
 // ================================ HELPER FUNCTIONS ================================
 
@@ -43,9 +44,13 @@ pub fn emitParticles( ng : *h.eng.engine, pos : h.vec2, dPos : h.vec2, vel : h.v
   }
 }
 
-// ================================ GLOBAL GAME VARIABLES ================================
+pub fn emitParticlesOnBounce( ng : *h.eng.engine, ball : *h.ntt.entity ) void
+{
+  // Emit particles at the ball's position relative to the ball's post-bounce velocity
+  emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 )}, .{ .x = 128, .y = 32 }, 8, h.ray.Color.yellow );
+}
 
-const BALL_ID : u32 = 16; // ID of the ball entity
+// ================================ GLOBAL GAME VARIABLES ================================
 
 var   P1_MV_FAC   : f32 = 0.0;   // Player 1 movement direction
 var   P2_MV_FAC   : f32 = 0.0;   // Player 2 movement direction
@@ -67,6 +72,7 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
   if( h.ray.isKeyPressed( h.ray.KeyboardKey.p ) or h.ray.isKeyPressed( h.ray.KeyboardKey.enter ))
   {
     ng.togglePause();
+
     if( WINNER != 0 )
     {
       // Reset the scores
@@ -74,9 +80,9 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
       WINNER = 0;         // Reset winner
 
       // Reset the ball position and velocity
-      var ball = ng.entityManager.getEntity( BALL_ID ) orelse
+      var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
       {
-        h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ BALL_ID });
+        h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
         return;
       };
 
@@ -84,9 +90,9 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
       ball.vel = .{ .x = 0, .y = 0 };
 
       // Reset the positions of the ball shadows
-      for( 4..16 )| i |{ cpyEntityPosViaID( ng, @intCast( i ), BALL_ID ); }
+      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
 
-      h.qlog( .INFO, 0, @src(), "Match restarted" );
+      h.qlog( .INFO, 0, @src(), "Match reseted" );
     }
   }
 
@@ -123,25 +129,40 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
 
 pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
 {
-  var ball = ng.entityManager.getEntity( BALL_ID ) orelse
+  var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ BALL_ID });
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 
-   // Set the ball's vertical acceleration to the base gravity
   ball.acc.y = B_BASE_GRAV;
 
   // Swaps the positions of the ball shadows repeatedly
-  for( 4..15 )| i |{ cpyEntityPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
+  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
 
-  var ballShadow15 = ng.entityManager.getEntity( 15 ) orelse
+  cpyEntityPosViaID( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
+
+  if( ng.entityManager.getMaxID() == stateInj.BALL_ID ){ return; } // If the ball is the last entity, no particles exist, so we can skip the rest of the function
+
+  for( stateInj.BALL_ID + 1 .. 1 + ng.entityManager.getMaxID() )| i |
   {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 15 ( BallShadow ) not found" );
-    return;
-  };
+    const part = ng.entityManager.getEntity( @intCast( i )) orelse
+    {
+      h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ i });
+      continue;
+    };
 
-  ballShadow15.cpyEntityPos( ball );
+    if( part.active == false ){ continue; } // Skip inactive entities
+
+    if( part.getTopY() >= h.getScreenHeight() / 2 )
+    {
+      // If the particle is above the top of the screen, set it to inactive
+      part.active = false;
+      continue;
+    }
+
+    part.acc.y = B_BASE_GRAV; // Apply gravity to all remaining particles
+  }
 }
 
 pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
@@ -157,21 +178,21 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
   const wallBounceFactor   : f32 = 0.90; // Bounce factor for the ball when hitting walls
   const playerBounceFactor : f32 = 1.03; // Bounce factor for the ball when hitting players
 
-  var p1 = ng.entityManager.getEntity( 1 ) orelse
+  var p1 = ng.entityManager.getEntity( stateInj.P1_ID ) orelse
   {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 1 ( P1 ) not found" );
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( P1 ) not found", .{ stateInj.P1_ID } );
     return;
   };
 
-  var p2 = ng.entityManager.getEntity( 2 ) orelse
+  var p2 = ng.entityManager.getEntity( stateInj.P2_ID ) orelse
   {
-    h.qlog( .WARN, 0, @src(), "Entity with ID 2 ( P2 ) not found" );
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( P2 ) not found", .{ stateInj.P2_ID } );
     return;
   };
 
-  var ball = ng.entityManager.getEntity( BALL_ID ) orelse
+  var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ BALL_ID });
+    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 
@@ -229,6 +250,8 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
     {
       ball.vel.y *= -wallBounceFactor;
       ball.vel.x *=  wallBounceFactor;
+
+      emitParticlesOnBounce( ng, ball );
     }
   }
 
@@ -242,6 +265,8 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
     {
       ball.vel.x *= -wallBounceFactor;
       ball.vel.y *=  wallBounceFactor;
+
+      emitParticlesOnBounce( ng, ball );
     }
   }
   else if( ball.getLeftX() <= -hWidth ) // Bounce the ball if it goes past the left edge
@@ -253,6 +278,8 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
     {
       ball.vel.x *= -wallBounceFactor;
       ball.vel.y *=  wallBounceFactor;
+
+      emitParticlesOnBounce( ng, ball );
     }
   }
 
@@ -268,11 +295,9 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
     // Dividing by bounceFactor to accelerate the ball after each player bounce
     if( ball.vel.y > 0 ){ ball.vel.y = -ball.vel.y * playerBounceFactor; }
 
-    // Add player 1's velocity to the ball's velocity
     ball.vel.x += p1.vel.x * wallBounceFactor;
 
-    // Emit particles at the ball's position
-    emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = 0, .y = -32 }, .{ .x = 32, .y = 32 }, 8, h.ray.Color.yellow );
+    emitParticlesOnBounce( ng, ball );
   }
 
   // Check if the ball is overlapping with player 2
@@ -285,11 +310,9 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
     // Dividing by bounceFactor to accelerate the ball after each player bounce
     if( ball.vel.y > 0 ){ ball.vel.y = -ball.vel.y * playerBounceFactor; }
 
-    // Add player 2's velocity to the ball's velocity
     ball.vel.x += p2.vel.x * wallBounceFactor;
 
-    // Emit particles at the ball's position
-    emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = 0, .y = -32 }, .{ .x = 32, .y = 32 }, 8, h.ray.Color.yellow );
+    emitParticlesOnBounce( ng, ball );
   }
 
 }
@@ -338,5 +361,4 @@ pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
   {
     h.drawCenteredText( "Press Enter to resume", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 256, 64, h.ray.Color.yellow );
   }
-
 }

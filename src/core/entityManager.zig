@@ -149,6 +149,11 @@ pub const entityManager = struct
     var tmp = newEntity; // Create a temporary variable to hold the new entity
     tmp.id  = self.getNewID(); // Assign a new ID to the entity
 
+    if( newEntity.id != 0 and newEntity.id != tmp.id )
+    {
+      h.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ newEntity.id, tmp.id });
+    }
+
     self.entities.append( tmp ) catch | err |
     {
       h.log( .ERROR, 0, @src(), "Failed to add entity: {}", .{ err });
