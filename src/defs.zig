@@ -4,6 +4,7 @@ pub const ray  = @import( "raylib" );
 pub const col    = @import( "utils/colour.zig" );
 pub const logger = @import( "utils/logger.zig" );
 pub const timer  = @import( "utils/timer.zig" );
+pub const rng    = @import( "utils/rng.zig" );
 
 
 // ================================ SHORTHANDS ================================

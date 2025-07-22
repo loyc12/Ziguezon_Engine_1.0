@@ -1,6 +1,8 @@
 const std = @import( "std" );
 const h   = @import( "defs" );
 
+// ================================ HELPER FUNCTIONS ================================
+
 pub fn cpyEntityPosViaID( ng : *h.eng.engine , dstID : u32, srcID : u32, ) void
 {
   const src = ng.entityManager.getEntity( srcID ) orelse
@@ -16,6 +18,29 @@ pub fn cpyEntityPosViaID( ng : *h.eng.engine , dstID : u32, srcID : u32, ) void
   };
 
   dst.cpyEntityPos( src );
+}
+
+pub fn emitParticles( ng : *h.eng.engine, pos : h.vec2, dPos : h.vec2, vel : h.vec2, dVel : h.vec2, count : u32, colour : h.ray.Color ) void
+{
+  // Emit particles at the given position with the given colour
+  for( 0 .. count )| i |
+  {
+    _ = i; // Prevent unused variable warning\
+
+    const particle = ng.entityManager.createDefaultEntity();
+    if( particle == null )
+    {
+      h.qlog( .WARN, 0, @src(), "Failed to create particle entity" );
+      return;
+    }
+
+    var tmp : *h.ntt.entity = particle.?;
+
+    tmp.pos = ng.rng.getVec2Scaled( dPos, pos ); // Set the particle position
+    tmp.vel = ng.rng.getVec2Scaled( dVel, vel ); // Set the particle velocity
+    tmp.colour = colour; // Set the particle colour
+    tmp.scale = .{ .x = 4, .y = 4 }; // Set the particle size
+  }
 }
 
 // ================================ GLOBAL GAME VARIABLES ================================
@@ -245,6 +270,9 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
 
     // Add player 1's velocity to the ball's velocity
     ball.vel.x += p1.vel.x * wallBounceFactor;
+
+    // Emit particles at the ball's position
+    emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = 0, .y = -32 }, .{ .x = 32, .y = 32 }, 8, h.ray.Color.yellow );
   }
 
   // Check if the ball is overlapping with player 2
@@ -259,6 +287,9 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
 
     // Add player 2's velocity to the ball's velocity
     ball.vel.x += p2.vel.x * wallBounceFactor;
+
+    // Emit particles at the ball's position
+    emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = 0, .y = -32 }, .{ .x = 32, .y = 32 }, 8, h.ray.Color.yellow );
   }
 
 }

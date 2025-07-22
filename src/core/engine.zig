@@ -22,6 +22,8 @@ pub const engine = struct
   timeScale : f32 = 1.0, // Used to speed up or slow down the game
   sdt : f32 = 0.0, // Latest scaled delta time ( from last frame )
 
+  rng : h.rng.randomiser = undefined, // Random number generator for the game
+
   // The game timer is initialized with the current time
 //gameTimer : h.timer.timer = h.timer.getNewTimer(), // TODO : Use this to control when to tick or not ( see DEF_TARGET_TPS )
 
@@ -97,8 +99,9 @@ pub const engine = struct
   fn start( self : *engine ) void
   {
     h.qlog( .TRACE, 0, @src(), "Starting the engine..." );
+    // Initialize the engine (e.g. allocate resources, set up the game state, etc.)
 
-    // Initialize the engine here ( e.g. load resources, initialize subsystems, etc. )
+    self.rng.randInit(); // Initialize the random number generator with the current time
     self.entityManager.init( h.alloc ); // Initialize the entity manager with the default allocator
 
     self.mainCamera = h.ray.Camera2D{

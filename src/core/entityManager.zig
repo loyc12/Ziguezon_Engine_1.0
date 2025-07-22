@@ -159,6 +159,32 @@ pub const entityManager = struct
     return &self.entities.items[ self.entities.items.len - 1 ];
   }
 
+    pub fn createDefaultEntity( self : *entityManager ) ?*h.ntt.entity
+  {
+    h.qlog( .TRACE, 0, @src(), "Creating default entity" );
+
+    if( !self.isInit )
+    {
+      h.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      return null; // If the entity manager is not initialized, log a warning and return null
+    }
+
+    return self.addEntity( h.ntt.entity{
+      .id     = 0, // ID will be assigned by the entity manager
+      .active = true,
+
+      .pos    = h.vec2{ .x = 0.0, .y = 0.0 },
+      .vel    = h.vec2{ .x = 0.0, .y = 0.0 },
+      .acc    = h.vec2{ .x = 0.0, .y = 0.0 },
+
+      .rotPos = 0.0,
+
+      .shape  = h.ntt.e_shape.RECT,
+      .scale  = h.vec2{ .x = 1.0, .y = 1.0 },
+      .colour = h.ray.Color{ .r = 255, .g = 255, .b = 255, .a = 255 },
+    });
+  }
+
   pub fn getEntity( self : *entityManager, id : u32 ) ?*h.ntt.entity
   {
     h.log( .TRACE, 0, @src(), "Getting entity with ID {d}", .{ id });
