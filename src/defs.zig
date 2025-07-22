@@ -25,7 +25,7 @@ pub fn tryHook( tag : ghk.hookTag, args : anytype ) void { G_HK.tryHook( tag, ar
 pub const eng = @import( "core/engine.zig" );
 pub var G_NG : eng.engine = .{}; // Global game engine instance
 
-pub const ntm = @import( "core/entityManager.zig" );
+pub const ntm = @import( "core/entity/entityManager.zig" );
 pub const ntt = @import( "core/entity/entityCore.zig" );
 
 

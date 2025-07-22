@@ -1,5 +1,5 @@
 const std = @import( "std" );
-const h   = @import( "defs" );
+const def = @import( "defs" );
 
 pub var G_TIMER : timer =
 .{
@@ -145,6 +145,6 @@ pub const timer = struct
     if( self.epoch == 0 or self.cutoff == 0 ) return 0.0; // No cutoff or epoch set
 
     const elapsed = self.getElapsedTime();
-    return h.lerp( self.epoch, self.cutoff, elapsed );
+    return def.lerp( self.epoch, self.cutoff, elapsed );
   }
 };

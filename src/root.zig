@@ -3,7 +3,7 @@
 //! start with main.zig instead.
 //!
 const std = @import( "std" );
-const h   = @import( "defs" );
+const def = @import( "defs" );
 
 // TODO : swap these out for a proper test suite
 

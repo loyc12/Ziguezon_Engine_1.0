@@ -1,11 +1,11 @@
 const std = @import( "std" );
-const h   = @import( "defs" );
+const def = @import( "defs" );
 
 pub const entityManager = struct
 {
   isInit   : bool = false, // Flag to check if the entity manager is initialized
   maxID    : u32 = 0,      // Global variable to keep track of the maximum ID assigned
-  entities : std.ArrayList( h.ntt.entity ) = undefined, // List to store all entities
+  entities : std.ArrayList( def.ntt.entity ) = undefined, // List to store all entities
 
   // ================================ HELPER FUNCTIONS ================================
 
@@ -15,7 +15,7 @@ pub const entityManager = struct
   {
     if( !self.isInit )
     {
-      h.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0", .{});
+      def.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0", .{});
       return 0;
     }
 
@@ -34,12 +34,12 @@ pub const entityManager = struct
   {
     if( id <= 0 )
     {
-      h.log( .WARN, 0, @src(), "Entity ID cannot be 0", .{});
+      def.log( .WARN, 0, @src(), "Entity ID cannot be 0", .{});
       return false; // ID cannot be 0
     }
     if( id > self.maxID )
     {
-      h.log( .WARN, 0, @src(), "Entity ID {d} is greater than maxID {d}", .{ id, self.maxID });
+      def.log( .WARN, 0, @src(), "Entity ID {d} is greater than maxID {d}", .{ id, self.maxID });
       return false; // ID cannot be greater than maxID
     }
     return true; // ID is valid
@@ -51,13 +51,13 @@ pub const entityManager = struct
   {
     if( !self.isInit )
     {
-      h.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning null", .{});
+      def.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning null", .{});
       return null; // If the entity manager is not initialized, log a warning and return null
     }
 
     if( !self.isIdValid( id )) // Check if the ID is valid
     {
-      h.log( .WARN, 0, @src(), "Entity ID {d} is not valid", .{ id });
+      def.log( .WARN, 0, @src(), "Entity ID {d} is not valid", .{ id });
       return null; // If the ID is not valid, log a warning and return null
     }
 
@@ -68,7 +68,7 @@ pub const entityManager = struct
       if( entity.id == id ){ return index; }
     }
 
-    h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ id });
+    def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ id });
     return null; // If the entity is not found, log a warning and return null
   }
 
@@ -77,22 +77,22 @@ pub const entityManager = struct
     // Check if the index is valid
     if( self.entities.len == 0 ) // If there are no entities, return false
     {
-      h.log( .WARN, 0, @src(), "No entities available", .{});
+      def.log( .WARN, 0, @src(), "No entities available", .{});
       return false; // No entities to check against
     }
     if( index == null ) // If the index is null, return false
     {
-      h.log( .WARN, 0, @src(), "Index is null", .{});
+      def.log( .WARN, 0, @src(), "Index is null", .{});
       return false; // Index cannot be null
     }
     if( index < 0 ) // If the index is negative, return false
     {
-      h.log( .WARN, 0, @src(), "Index {d} is negative", .{ index });
+      def.log( .WARN, 0, @src(), "Index {d} is negative", .{ index });
       return false; // Index cannot be negative
     }
     if( index >= self.entities.items.len ) // If the index is out of bounds, return false
     {
-      h.log( .WARN, 0, @src(), "Index {d} is out of bounds ( 0 to {d} )", .{ index, self.entities.len });
+      def.log( .WARN, 0, @src(), "Index {d} is out of bounds ( 0 to {d} )", .{ index, self.entities.len });
       return false; // Index cannot be greater than or equal to the length of entities
     }
     return true; // Index is valid
@@ -102,30 +102,30 @@ pub const entityManager = struct
 
   pub fn init( self : *entityManager, allocator : std.mem.Allocator ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Initializing entity manager" );
+    def.qlog( .TRACE, 0, @src(), "Initializing entity manager" );
 
     if( self.isInit )
     {
-      h.log( .WARN, 0, @src(), "Entity manager is already initialized", .{});
+      def.log( .WARN, 0, @src(), "Entity manager is already initialized", .{});
       return;
     }
 
-    self.entities = std.ArrayList( h.ntt.entity ).init( allocator  ); // Initialize the entity manager by allocating memory for the list of entities
+    self.entities = std.ArrayList( def.ntt.entity ).init( allocator  ); // Initialize the entity manager by allocating memory for the list of entities
     self.maxID = 0;
 
     self.isInit = true;
-    h.log( .INFO, 0, @src(), "Entity manager initialized", .{});
+    def.log( .INFO, 0, @src(), "Entity manager initialized", .{});
 
     return;
   }
 
   pub fn deinit( self : *entityManager ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Deinitializing entity manager" );
+    def.qlog( .TRACE, 0, @src(), "Deinitializing entity manager" );
 
     if( !self.isInit )
     {
-      h.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
       return;
     }
 
@@ -133,16 +133,16 @@ pub const entityManager = struct
     self.maxID = 0;
 
     self.isInit = false;
-    h.log( .INFO, 0, @src(), "Entity manager deinitialized", .{});
+    def.log( .INFO, 0, @src(), "Entity manager deinitialized", .{});
   }
 
-  pub fn addEntity( self : *entityManager, newEntity : h.ntt.entity ) ?*h.ntt.entity
+  pub fn addEntity( self : *entityManager, newEntity : def.ntt.entity ) ?*def.ntt.entity
   {
-    h.qlog( .TRACE, 0, @src(), "Adding new entity" );
+    def.qlog( .TRACE, 0, @src(), "Adding new entity" );
 
     if( !self.isInit )
     {
-      h.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
       return null; // If the entity manager is not initialized, log a warning and return null
     }
 
@@ -151,12 +151,12 @@ pub const entityManager = struct
 
     if( newEntity.id != 0 and newEntity.id != tmp.id )
     {
-      h.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ newEntity.id, tmp.id });
+      def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ newEntity.id, tmp.id });
     }
 
     self.entities.append( tmp ) catch | err |
     {
-      h.log( .ERROR, 0, @src(), "Failed to add entity: {}", .{ err });
+      def.log( .ERROR, 0, @src(), "Failed to add entity: {}", .{ err });
       return null; // If the entity cannot be added, log an error and return null
     };
 
@@ -164,40 +164,40 @@ pub const entityManager = struct
     return &self.entities.items[ self.entities.items.len - 1 ];
   }
 
-    pub fn createDefaultEntity( self : *entityManager ) ?*h.ntt.entity
+    pub fn createDefaultEntity( self : *entityManager ) ?*def.ntt.entity
   {
-    h.qlog( .TRACE, 0, @src(), "Creating default entity" );
+    def.qlog( .TRACE, 0, @src(), "Creating default entity" );
 
     if( !self.isInit )
     {
-      h.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
       return null; // If the entity manager is not initialized, log a warning and return null
     }
 
-    return self.addEntity( h.ntt.entity{
+    return self.addEntity( def.ntt.entity{
       .id     = 0, // ID will be assigned by the entity manager
       .active = true,
 
-      .pos    = h.vec2{ .x = 0.0, .y = 0.0 },
-      .vel    = h.vec2{ .x = 0.0, .y = 0.0 },
-      .acc    = h.vec2{ .x = 0.0, .y = 0.0 },
+      .pos    = def.vec2{ .x = 0.0, .y = 0.0 },
+      .vel    = def.vec2{ .x = 0.0, .y = 0.0 },
+      .acc    = def.vec2{ .x = 0.0, .y = 0.0 },
 
       .rotPos = 0.0,
 
-      .shape  = h.ntt.e_shape.RECT,
-      .scale  = h.vec2{ .x = 1.0, .y = 1.0 },
-      .colour = h.ray.Color{ .r = 255, .g = 255, .b = 255, .a = 255 },
+      .shape  = def.ntt.e_shape.RECT,
+      .scale  = def.vec2{ .x = 1.0, .y = 1.0 },
+      .colour = def.ray.Color{ .r = 255, .g = 255, .b = 255, .a = 255 },
     });
   }
 
-  pub fn getEntity( self : *entityManager, id : u32 ) ?*h.ntt.entity
+  pub fn getEntity( self : *entityManager, id : u32 ) ?*def.ntt.entity
   {
-    h.log( .TRACE, 0, @src(), "Getting entity with ID {d}", .{ id });
+    def.log( .TRACE, 0, @src(), "Getting entity with ID {d}", .{ id });
 
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id ) orelse
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     };
 
@@ -211,11 +211,11 @@ pub const entityManager = struct
 
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found, log a warning and return
     }
     self.entities.removeAt( index );
-    h.log( .INFO, 0, @src(), "Entity with ID {d} deleted", .{ id });
+    def.log( .INFO, 0, @src(), "Entity with ID {d} deleted", .{ id });
   }
 
   // ================================ INDIVIDUAL ACCESSORS / MUTATORS ================================
@@ -226,7 +226,7 @@ pub const entityManager = struct
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found
     }
     self.entities[ index ].active = active;
@@ -237,7 +237,7 @@ pub const entityManager = struct
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return false; // If the entity is not found, log a warning and return false
     }
     return self.entities[ index ].active;
@@ -245,70 +245,70 @@ pub const entityManager = struct
 
   // ================ POSITION PROPERTIES ================
 
-  pub fn setPosition( self : *entityManager, id : u32, position : h.vec2 ) void
+  pub fn setPosition( self : *entityManager, id : u32, position : def.vec2 ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found, log a warning and return
     }
     self.entities[ index ].pos = position;
   }
-  pub fn getPosition( self : *entityManager, id : u32 ) ?h.vec2
+  pub fn getPosition( self : *entityManager, id : u32 ) ?def.vec2
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].pos;
   }
 
-  pub fn setVelocity( self : *entityManager, id : u32, velocity : h.vec2 ) void
+  pub fn setVelocity( self : *entityManager, id : u32, velocity : def.vec2 ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found, log a warning and return
     }
     self.entities[ index ].vel = velocity;
   }
-  pub fn getVelocity( self : *entityManager, id : u32 ) ?h.vec2
+  pub fn getVelocity( self : *entityManager, id : u32 ) ?def.vec2
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].vel;
   }
 
-  pub fn setAcceleration( self : *entityManager, id : u32, acceleration : h.vec2 ) void
+  pub fn setAcceleration( self : *entityManager, id : u32, acceleration : def.vec2 ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found, log a warning and return
     }
     self.entities[ index ].acc = acceleration;
   }
-  pub fn getAcceleration( self : *entityManager, id : u32 ) ?h.vec2
+  pub fn getAcceleration( self : *entityManager, id : u32 ) ?def.vec2
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].acc;
@@ -322,7 +322,7 @@ pub const entityManager = struct
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found, log a warning and return
     }
     self.entities[ index ].rotPos = rotation;
@@ -333,7 +333,7 @@ pub const entityManager = struct
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].rotPos;
@@ -341,70 +341,70 @@ pub const entityManager = struct
 
   // ================ SHAPE PROPERTIES ================
 
-  pub fn setShape( self : *entityManager, id : u32, shape : h.ntt.e_shape ) void
+  pub fn setShape( self : *entityManager, id : u32, shape : def.ntt.e_shape ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found
     }
     self.entities[ index ].shape = shape;
   }
-  pub fn getShape( self : *entityManager, id : u32 ) ?h.ntt.e_shape
+  pub fn getShape( self : *entityManager, id : u32 ) ?def.ntt.e_shape
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].shape;
   }
 
-  pub fn setScale( self : *entityManager, id : u32, scale : h.vec2 ) void
+  pub fn setScale( self : *entityManager, id : u32, scale : def.vec2 ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found
     }
     self.entities[ index ].scale = scale;
   }
-  pub fn getScale( self : *entityManager, id : u32 ) ?h.vec2
+  pub fn getScale( self : *entityManager, id : u32 ) ?def.vec2
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].scale;
   }
 
-  pub fn setColour( self : *entityManager, id : u32, colour : h.ray.Color ) void
+  pub fn setColour( self : *entityManager, id : u32, colour : def.ray.Color ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return; // If the entity is not found
     }
     self.entities[ index ].colour = colour;
   }
-  pub fn getColour( self : *entityManager, id : u32 ) ?h.ray.Color
+  pub fn getColour( self : *entityManager, id : u32 ) ?def.ray.Color
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
     if( index == null )
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].colour;
@@ -464,9 +464,9 @@ pub const entityManager = struct
           // Get the overlap vector between the two entities, or continue if there is no overlap
           const overlap = entity.getOverlap( &otherEntity ) orelse continue; // TODO : swap this will "collideTogether( e1, e2 )" when implemented
           {
-            h.log( .DEBUG, 0, @src(), "Collision detected between entity {d} and {d} with magnitude {d}:{d}", .{ entity.id, otherEntity.id, overlap.x, overlap.y });
-            h.log( .DEBUG, 0, @src(), "Entity {d} position: {d}:{d}, Entity {d} position: {d}:{d}", .{ entity.id, entity.pos.x, entity.pos.y, otherEntity.id, otherEntity.pos.x, otherEntity.pos.y });
-            h.log( .DEBUG, 0, @src(), "Entity {d} scale:    {d}:{d}, Entity {d} scale:    {d}:{d}", .{ entity.id, entity.scale.x, entity.scale.y, otherEntity.id, otherEntity.scale.x, otherEntity.scale.y });
+            def.log( .DEBUG, 0, @src(), "Collision detected between entity {d} and {d} with magnitude {d}:{d}", .{ entity.id, otherEntity.id, overlap.x, overlap.y });
+            def.log( .DEBUG, 0, @src(), "Entity {d} position: {d}:{d}, Entity {d} position: {d}:{d}", .{ entity.id, entity.pos.x, entity.pos.y, otherEntity.id, otherEntity.pos.x, otherEntity.pos.y });
+            def.log( .DEBUG, 0, @src(), "Entity {d} scale:    {d}:{d}, Entity {d} scale:    {d}:{d}", .{ entity.id, entity.scale.x, entity.scale.y, otherEntity.id, otherEntity.scale.x, otherEntity.scale.y });
           }
         } // TODO : implement and replace with collideWith()
       }

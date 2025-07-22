@@ -1,5 +1,5 @@
 const std = @import( "std" );
-const h   = @import( "defs" );
+const def = @import( "defs" );
 
 // ================================ GAME HOOKS ================================
 
@@ -40,29 +40,29 @@ pub const hookTag = enum( u8 )
 pub const gameHooks = struct
 {
   // Engine state hooks
-  OnStart  : ?*const fn ( *h.eng.engine ) void = null,
-  OnLaunch : ?*const fn ( *h.eng.engine ) void = null,
-  OnPlay   : ?*const fn ( *h.eng.engine ) void = null,
+  OnStart  : ?*const fn ( *def.eng.engine ) void = null,
+  OnLaunch : ?*const fn ( *def.eng.engine ) void = null,
+  OnPlay   : ?*const fn ( *def.eng.engine ) void = null,
 
-  OnPause  : ?*const fn ( *h.eng.engine ) void = null,
-  OnStop   : ?*const fn ( *h.eng.engine ) void = null,
-  OnClose  : ?*const fn ( *h.eng.engine ) void = null,
+  OnPause  : ?*const fn ( *def.eng.engine ) void = null,
+  OnStop   : ?*const fn ( *def.eng.engine ) void = null,
+  OnClose  : ?*const fn ( *def.eng.engine ) void = null,
 
   // Engine step hooks
-  OnLoopStart : ?*const fn ( *h.eng.engine ) void = null,
-  OnLoopEnd   : ?*const fn ( *h.eng.engine ) void = null,
-  OnLoopIter  : ?*const fn ( *h.eng.engine ) void = null,
-  OffLoopIter : ?*const fn ( *h.eng.engine ) void = null,
+  OnLoopStart : ?*const fn ( *def.eng.engine ) void = null,
+  OnLoopEnd   : ?*const fn ( *def.eng.engine ) void = null,
+  OnLoopIter  : ?*const fn ( *def.eng.engine ) void = null,
+  OffLoopIter : ?*const fn ( *def.eng.engine ) void = null,
 
-  OnUpdateStep  : ?*const fn ( *h.eng.engine ) void = null,
-  OffUpdateStep : ?*const fn ( *h.eng.engine ) void = null,
-  OnTickStep    : ?*const fn ( *h.eng.engine ) void = null,
-  OffTickStep   : ?*const fn ( *h.eng.engine ) void = null,
+  OnUpdateStep  : ?*const fn ( *def.eng.engine ) void = null,
+  OffUpdateStep : ?*const fn ( *def.eng.engine ) void = null,
+  OnTickStep    : ?*const fn ( *def.eng.engine ) void = null,
+  OffTickStep   : ?*const fn ( *def.eng.engine ) void = null,
 
-  OnRenderWorld    : ?*const fn ( *h.eng.engine ) void = null,
-  OffRenderWorld   : ?*const fn ( *h.eng.engine ) void = null,
-  OnRenderOverlay  : ?*const fn ( *h.eng.engine ) void = null,
-  OffRenderOverlay : ?*const fn ( *h.eng.engine ) void = null,
+  OnRenderWorld    : ?*const fn ( *def.eng.engine ) void = null,
+  OffRenderWorld   : ?*const fn ( *def.eng.engine ) void = null,
+  OnRenderOverlay  : ?*const fn ( *def.eng.engine ) void = null,
+  OffRenderOverlay : ?*const fn ( *def.eng.engine ) void = null,
 
   // Initializes the game hooks from a given module
   pub fn initHooks( self : *gameHooks, module : anytype ) void
@@ -70,7 +70,7 @@ pub const gameHooks = struct
     if( @typeInfo( module ) != .@"struct" )
     {
       //@compileError( "gameHooks.initHooks() expects a struct ( module ) type" );
-      h.log( .ERROR, 0, @src(), "gameHooks.initHooks() expects a struct ( module ) type, got {s}", .{ @typeName( module ) });
+      def.log( .ERROR, 0, @src(), "gameHooks.initHooks() expects a struct ( module ) type, got {s}", .{ @typeName( module ) });
       return;
     }
 
@@ -115,11 +115,11 @@ pub const gameHooks = struct
       if( fieldPtr )| func |
       {
         _ = func;
-        h.log( .DEBUG, 0, @src(), "Game hook for '{s}' is set", .{ fieldName });
+        def.log( .DEBUG, 0, @src(), "Game hook for '{s}' is set", .{ fieldName });
       }
       else
       {
-        h.log( .DEBUG, 0, @src(), "! Game hook for '{s}' is NOT set", .{ fieldName });
+        def.log( .DEBUG, 0, @src(), "! Game hook for '{s}' is NOT set", .{ fieldName });
       }
     }
   }
@@ -158,7 +158,7 @@ pub const gameHooks = struct
     // Call the function if it exists
     if( optFunc )| func |
     {
-      // h.log( .DEBUG, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
+      // def.log( .DEBUG, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
       switch( args.len )
       {
         1 => func( args[ 0 ] ),
@@ -166,6 +166,6 @@ pub const gameHooks = struct
       }
       return;
     }
-    //else { h.log( .WARN, 0, @src(), "Game hook '{s}' is not set", .{ @tagName( tag ) }); }
+    //else { def.log( .WARN, 0, @src(), "Game hook '{s}' is not set", .{ @tagName( tag ) }); }
   }
 };

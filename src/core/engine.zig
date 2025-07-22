@@ -1,9 +1,9 @@
 const std = @import( "std" );
-const h   = @import( "defs" );
+const def = @import( "defs" );
 
 // ================================ DEFINITIONS ================================
 
-pub const DEF_SCREEN_DIMS = h.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
+pub const DEF_SCREEN_DIMS = def.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
 pub const DEF_TARGET_FPS  = 120; // Default target FPS for the game
 //pub const DEF_TARGET_TPS   = 30; // Default tick rate for the game ( in seconds ) // TODO : USE ME
 
@@ -22,44 +22,44 @@ pub const engine = struct
   timeScale : f32 = 1.0, // Used to speed up or slow down the game
   sdt : f32 = 0.0, // Latest scaled delta time ( from last frame )
 
-  rng : h.rng.randomiser = undefined, // Random number generator for the game
+  rng : def.rng.randomiser = undefined, // Random number generator for the game
 
   // The game timer is initialized with the current time
-//gameTimer : h.timer.timer = h.timer.getNewTimer(), // TODO : Use this to control when to tick or not ( see DEF_TARGET_TPS )
+//gameTimer : def.timer.timer = def.timer.getNewTimer(), // TODO : Use this to control when to tick or not ( see DEF_TARGET_TPS )
 
-  entityManager : h.ntm.entityManager = undefined,
-  mainCamera    : h.ray.Camera2D      = undefined,
+  entityManager : def.ntm.entityManager = undefined,
+  mainCamera    : def.ray.Camera2D      = undefined,
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Setting time scale to {d}", .{ newTimeScale });
+    def.qlog( .TRACE, 0, @src(), "Setting time scale to {d}", .{ newTimeScale });
     if( newTimeScale < 0 )
     {
-      h.log( .WARN, 0, @src(), "Cannot set time scale to {d}: clamping to 0", .{ newTimeScale });
+      def.log( .WARN, 0, @src(), "Cannot set time scale to {d}: clamping to 0", .{ newTimeScale });
       self.timeScale = 0.0; // Clamping the time scale to 0
       return;
     }
 
     self.timeScale = newTimeScale;
-    h.log( .DEBUG, 0, @src(), "Time scale set to {d}", .{ self.timeScale });
+    def.log( .DEBUG, 0, @src(), "Time scale set to {d}", .{ self.timeScale });
   }
 
   // ================================ ENGINE STATE ================================
 
   pub fn changeState( self : *engine, targetState : e_state ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Changing state" );
+    def.qlog( .TRACE, 0, @src(), "Changing state" );
 
     if( targetState == self.state )
     {
-      h.log( .WARN, 0, @src(), "State is already {s}, no change needed", .{ @tagName( self.state ) });
+      def.log( .WARN, 0, @src(), "State is already {s}, no change needed", .{ @tagName( self.state ) });
       return;
     }
 
     // If the target state is higher than the current state, we are increasing the state
     if( @intFromEnum( targetState ) > @intFromEnum( self.state ) )
     {
-      h.log( .INFO, 0, @src(), "Increasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
+      def.log( .INFO, 0, @src(), "Increasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
 
       switch( self.state )
       {
@@ -69,14 +69,14 @@ pub const engine = struct
 
         else =>
         {
-          h.qlog( .ERROR, 0, @src(), "How did you get here ???");
+          def.qlog( .ERROR, 0, @src(), "How did you get here ???");
           return;
         },
       }
     }
     else // If the target state is lower than the current state, we are decreasing the state
     {
-      h.log( .INFO, 0, @src(), "Decreasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
+      def.log( .INFO, 0, @src(), "Decreasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
 
       switch( self.state )
       {
@@ -86,7 +86,7 @@ pub const engine = struct
 
         else =>
         {
-          h.qlog( .ERROR, 0, @src(), "How did you get here ???");
+          def.qlog( .ERROR, 0, @src(), "How did you get here ???");
           return;
         },
       }
@@ -98,13 +98,13 @@ pub const engine = struct
 
   fn start( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Starting the engine..." );
+    def.qlog( .TRACE, 0, @src(), "Starting the engine..." );
     // Initialize the engine (e.g. allocate resources, set up the game state, etc.)
 
     self.rng.randInit(); // Initialize the random number generator with the current time
-    self.entityManager.init( h.alloc ); // Initialize the entity manager with the default allocator
+    self.entityManager.init( def.alloc ); // Initialize the entity manager with the default allocator
 
-    self.mainCamera = h.ray.Camera2D{
+    self.mainCamera = def.ray.Camera2D{
       .offset = // TODO : make sure the offset stay accurate when the window is resized
       .{
         .x = DEF_SCREEN_DIMS.x / 2,
@@ -114,33 +114,33 @@ pub const engine = struct
       .rotation = 0.0,
       .zoom = 1.0,
     };
-    h.qlog( .INFO, 0, @src(), "$ Hello, world !\n" );
+    def.qlog( .INFO, 0, @src(), "$ Hello, world !\n" );
 
-    h.tryHook( .OnStart, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnStart, .{ self }); // Allows for custom initialization
     self.state = .STARTED;
   }
 
   fn launch( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Launching the game..." );
+    def.qlog( .TRACE, 0, @src(), "Launching the game..." );
 
     // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
-    h.ray.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
-    h.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
+    def.ray.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
+    def.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
 
-    h.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ h.ray.getScreenWidth(), h.ray.getScreenHeight() });
+    def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.ray.getScreenWidth(), def.ray.getScreenHeight() });
 
-    h.tryHook( .OnLaunch, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnLaunch, .{ self }); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
   fn play( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Resuming the game..." );
+    def.qlog( .TRACE, 0, @src(), "Resuming the game..." );
 
     // Start the game loop or resume gameplay
 
-    h.tryHook( .OnPlay, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnPlay, .{ self }); // Allows for custom initialization
     self.state = .PLAYING;
   }
 
@@ -152,7 +152,7 @@ pub const engine = struct
       .PLAYING  => self.pause(),
       else =>
       {
-        h.log( .WARN, 0, @src(), "Cannot toggle pause in current state ({s})", .{ @tagName( self.state ) });
+        def.log( .WARN, 0, @src(), "Cannot toggle pause in current state ({s})", .{ @tagName( self.state ) });
         return;
       },
     }
@@ -160,31 +160,31 @@ pub const engine = struct
 
   fn pause( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Pausing the game..." );
+    def.qlog( .TRACE, 0, @src(), "Pausing the game..." );
 
     // Pause the game logic (e.g. stop updating game state, freeze animations, etc.)
 
-    h.tryHook( .OnPause, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnPause, .{ self }); // Allows for custom initialization
     self.state = .LAUNCHED;
   }
 
   fn stop( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Stopping the game..." );
+    def.qlog( .TRACE, 0, @src(), "Stopping the game..." );
 
-    if( h.ray.isWindowReady() )
+    if( def.ray.isWindowReady() )
     {
-      h.qlog( .INFO, 0, @src(), "# Closing the game window..." );
-      h.ray.closeWindow(); // Close the game window if it is ready
+      def.qlog( .INFO, 0, @src(), "# Closing the window..." );
+      def.ray.closeWindow(); // Close the game window if it is ready
     }
 
-    h.tryHook( .OnStop, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnStop, .{ self }); // Allows for custom initialization
     self.state = .STARTED;
   }
 
   fn close( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Closing the engine..." );
+    def.qlog( .TRACE, 0, @src(), "Closing the engine..." );
 
     // Deinitialize the engine (e.g. free resources, close windows, etc.)
     self.entityManager.deinit(); // Deinitialize the entity manager
@@ -192,9 +192,9 @@ pub const engine = struct
     self.entityManager = undefined; // Reset the entity manager
     self.mainCamera    = undefined; // Reset the main camera
 
-    h.qlog( .INFO, 0, @src(), "# Goodbye, cruel world...\n" );
+    def.qlog( .INFO, 0, @src(), "# Goodbye, cruel world...\n" );
 
-    h.tryHook( .OnClose, .{ self }); // Allows for custom deinitialization
+    def.tryHook( .OnClose, .{ self }); // Allows for custom deinitialization
     self.state = .CLOSED;
   }
 
@@ -211,15 +211,15 @@ pub const engine = struct
 
   pub fn loopLogic( self : *engine ) void
   {
-    h.qlog( .INFO, 0, @src(), "Starting the game loop..." );
-    h.tryHook( .OnLoopStart, .{ self }); // Allows for custom initialization
+    def.qlog( .INFO, 0, @src(), "Starting the game loop..." );
+    def.tryHook( .OnLoopStart, .{ self }); // Allows for custom initialization
 
-    while( !h.ray.windowShouldClose() )
+    while( !def.ray.windowShouldClose() )
     {
-      h.tryHook( .OnLoopIter, .{ self }); // Allows for custom initialization
+      def.tryHook( .OnLoopIter, .{ self }); // Allows for custom initialization
 
-      if( comptime h.logger.SHOW_LAPTIME ){ h.qlog( .DEBUG, 0, @src(), "! Looping" ); }
-      else { h.logger.logLapTime(); }
+      if( comptime def.logger.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
+      else { def.logger.logLapTime(); }
 
       if( self.isLaunched() )
       {
@@ -234,61 +234,61 @@ pub const engine = struct
       }
     }
 
-    h.qlog( .INFO, 0, @src(), "Game loop done" );
-    h.tryHook( .OnLoopEnd, .{ self }); // Allows for custom deinitialization
+    def.qlog( .INFO, 0, @src(), "Game loop done" );
+    def.tryHook( .OnLoopEnd, .{ self }); // Allows for custom deinitialization
   }
 
   fn update( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Getting inputs..." );
+    def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
     // This function is used to get input from the user, such as keyboard or mouse input.
 
-    h.tryHook( .OnUpdateStep, .{ self }); // Allows for custom input handling
+    def.tryHook( .OnUpdateStep, .{ self }); // Allows for custom input handling
   }
 
   fn tick( self : *engine ) void // TODO : use tick rate instead of frame time
   {
-    h.qlog( .TRACE, 0, @src(), "Updating game logic..." );
+    def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
     // This function is used to update the game logic, such as processing input, updating the game state, etc.
 
     // Get the delta time and apply the time scale
-    self.sdt = h.ray.getFrameTime() * self.timeScale;
-    //h.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ self.sdt });
+    self.sdt = def.ray.getFrameTime() * self.timeScale;
+    //def.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ self.sdt });
 
     // Check for collisions between all active entities and the following ones
 
-    h.tryHook( .OnTickStep, .{ self }); // Allows for custom game logic updates
+    def.tryHook( .OnTickStep, .{ self }); // Allows for custom game logic updates
 
     //self.entityManager.collideActiveEntities( self.sdt ); // Apply colision logic between all active entities
     self.entityManager.tickActiveEntities( self.sdt ); // Tick all active entities with the delta time
 
-    h.tryHook( .OffTickStep, .{ self }); // Allows for custom game logic updates
+    def.tryHook( .OffTickStep, .{ self }); // Allows for custom game logic updates
   }
 
   fn render( self : *engine ) void
   {
-    h.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
+    def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
     // This function is used to render the game visuals, such as drawing sprites, backgrounds, etc.
     // It uses raylib's drawing functions to draw the game visuals on the screen.
 
-    h.ray.beginDrawing();     // Begin the drawing process
-    defer h.ray.endDrawing(); // End the drawing process when the function returns
+    def.ray.beginDrawing();     // Begin the drawing process
+    defer def.ray.endDrawing(); // End the drawing process when the function returns
 
      // Clear the background with a black color
-    h.ray.clearBackground( h.ray.Color.black );
+    def.ray.clearBackground( def.ray.Color.black );
 
-    h.ray.beginMode2D( self.mainCamera ); // World Rendering mode
+    def.ray.beginMode2D( self.mainCamera ); // World Rendering mode
     {
-      h.tryHook( .OnRenderWorld, .{ self }); // Allows for custom rendering of the world
+      def.tryHook( .OnRenderWorld, .{ self }); // Allows for custom rendering of the world
 
       self.entityManager.renderActiveEntities(); // Render all active entities
 
-      h.tryHook( .OffRenderWorld, .{ self }); // Allows for custom rendering of the world
+      def.tryHook( .OffRenderWorld, .{ self }); // Allows for custom rendering of the world
     }
 
-    h.ray.endMode2D(); // UI Rendering mode
+    def.ray.endMode2D(); // UI Rendering mode
     {
-      h.tryHook( .OnRenderOverlay, .{ self }); // Allows for custom rendering of the overlay
+      def.tryHook( .OnRenderOverlay, .{ self }); // Allows for custom rendering of the overlay
     }
   }
 

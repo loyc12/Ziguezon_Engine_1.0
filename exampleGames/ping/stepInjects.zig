@@ -1,27 +1,27 @@
 const std      = @import( "std" );
-const h        = @import( "defs" );
+const def      = @import( "defs" );
 const stateInj = @import( "stateInjects.zig" );
 
 // ================================ HELPER FUNCTIONS ================================
 
-pub fn cpyEntityPosViaID( ng : *h.eng.engine , dstID : u32, srcID : u32, ) void
+pub fn cpyEntityPosViaID( ng : *def.eng.engine , dstID : u32, srcID : u32, ) void
 {
   const src = ng.entityManager.getEntity( srcID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ srcID });
+    def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ srcID });
     return;
   };
 
   const dst = ng.entityManager.getEntity( dstID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ dstID });
+    def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ dstID });
     return;
   };
 
   dst.cpyEntityPos( src );
 }
 
-pub fn emitParticles( ng : *h.eng.engine, pos : h.vec2, dPos : h.vec2, vel : h.vec2, dVel : h.vec2, count : u32, colour : h.ray.Color ) void
+pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel : def.vec2, dVel : def.vec2, count : u32, colour : def.ray.Color ) void
 {
   // Emit particles at the given position with the given colour
   for( 0 .. count )| i |
@@ -31,11 +31,11 @@ pub fn emitParticles( ng : *h.eng.engine, pos : h.vec2, dPos : h.vec2, vel : h.v
     const particle = ng.entityManager.createDefaultEntity();
     if( particle == null )
     {
-      h.qlog( .WARN, 0, @src(), "Failed to create particle entity" );
+      def.qlog( .WARN, 0, @src(), "Failed to create particle entity" );
       return;
     }
 
-    var tmp : *h.ntt.entity = particle.?;
+    var tmp : *def.ntt.entity = particle.?;
 
     tmp.pos = ng.rng.getVec2Scaled( dPos, pos ); // Set the particle position
     tmp.vel = ng.rng.getVec2Scaled( dVel, vel ); // Set the particle velocity
@@ -44,10 +44,10 @@ pub fn emitParticles( ng : *h.eng.engine, pos : h.vec2, dPos : h.vec2, vel : h.v
   }
 }
 
-pub fn emitParticlesOnBounce( ng : *h.eng.engine, ball : *h.ntt.entity ) void
+pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
-  emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 )}, .{ .x = 128, .y = 32 }, 8, h.ray.Color.yellow );
+  emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 )}, .{ .x = 128, .y = 32 }, 8, def.ray.Color.yellow );
 }
 
 // ================================ GLOBAL GAME VARIABLES ================================
@@ -66,10 +66,10 @@ var   WINNER    : u8 = 0;              // The winner of the game, 1 for player 1
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( every frame, no exception )
+pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
-  if( h.ray.isKeyPressed( h.ray.KeyboardKey.p ) or h.ray.isKeyPressed( h.ray.KeyboardKey.enter ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
   {
     ng.togglePause();
 
@@ -82,7 +82,7 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
       // Reset the ball position and velocity
       var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
       {
-        h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+        def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
         return;
       };
 
@@ -92,22 +92,22 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
       // Reset the positions of the ball shadows
       for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
 
-      h.qlog( .INFO, 0, @src(), "Match reseted" );
+      def.qlog( .INFO, 0, @src(), "Match reseted" );
     }
   }
 
   if( ng.state == .PLAYING )
   {
     // Move entity 1 with A and D keys
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.d )){ P1_MV_FAC = @min( P1_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.a )){ P1_MV_FAC = @max( P1_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.s ) or h.ray.isKeyDown( h.ray.KeyboardKey.space )){ P1_MV_FAC = 0; }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.d )){ P1_MV_FAC = @min( P1_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.a )){ P1_MV_FAC = @max( P1_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.space )){ P1_MV_FAC = 0; }
 
 
     // Move entity 2 with side arrow keys
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
-    if( h.ray.isKeyDown( h.ray.KeyboardKey.down ) or h.ray.isKeyDown( h.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.down ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
   }
 
   if( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE )
@@ -117,21 +117,21 @@ pub fn OnUpdateStep( ng : *h.eng.engine ) void // Called by engine.update() ( ev
     if( SCORES[ 0 ] >= WIN_SCORE )
     {
       WINNER = 1; // Player 1 wins
-      h.log( .INFO, 0, @src(), "Player 1 wins! : {d} to {d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
+      def.log( .INFO, 0, @src(), "Player 1 wins! : {d} to {d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
     }
     else if( SCORES[ 1 ] >= WIN_SCORE )
     {
       WINNER = 2; // Player 2 wins
-      h.log( .INFO, 0, @src(), "Player 2 wins! : {d} to {d}", .{ SCORES[ 1 ], SCORES[ 0 ] });
+      def.log( .INFO, 0, @src(), "Player 2 wins! : {d} to {d}", .{ SCORES[ 1 ], SCORES[ 0 ] });
     }
   }
 }
 
-pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OnTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
 {
   var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 
@@ -148,13 +148,13 @@ pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every 
   {
     const part = ng.entityManager.getEntity( @intCast( i )) orelse
     {
-      h.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ i });
+      def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ i });
       continue;
     };
 
     if( part.active == false ){ continue; } // Skip inactive entities
 
-    if( part.getTopY() >= h.getScreenHeight() / 2 )
+    if( part.getTopY() >= def.getScreenHeight() / 2 )
     {
       // If the particle is above the top of the screen, set it to inactive
       part.active = false;
@@ -165,12 +165,12 @@ pub fn OnTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every 
   }
 }
 
-pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
 {
   // ================ VARIABLES AND CONSTANTS ================
 
-  const hWidth  : f32 = h.getScreenWidth()  / 2.0;
-  const hHeight : f32 = h.getScreenHeight() / 2.0;
+  const hWidth  : f32 = def.getScreenWidth()  / 2.0;
+  const hHeight : f32 = def.getScreenHeight() / 2.0;
 
   const barHalfWidth : f32 = 16.0; // Half the width of the separator bar
   const playerSpeed  : f32 = 64.0; // Speed of the players
@@ -180,19 +180,19 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
 
   var p1 = ng.entityManager.getEntity( stateInj.P1_ID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} ( P1 ) not found", .{ stateInj.P1_ID } );
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( P1 ) not found", .{ stateInj.P1_ID } );
     return;
   };
 
   var p2 = ng.entityManager.getEntity( stateInj.P2_ID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} ( P2 ) not found", .{ stateInj.P2_ID } );
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( P2 ) not found", .{ stateInj.P2_ID } );
     return;
   };
 
   var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
   {
-    h.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 
@@ -212,13 +212,13 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
   // Clamping to top and bottom of the screen
   if( ball.pos.y >= hHeight ) // Scoring a point if the ball goes below the bottom of the screen
   {
-    h.qlog( .DEBUG, 0, @src(), "Ball hit the bottom edge" );
+    def.qlog( .DEBUG, 0, @src(), "Ball hit the bottom edge" );
     ball.vel.y = -B_BASE_VEL; // Reset ball vertical velocity to the base velocity
     ball.pos.y =  0.0; // Reset ball height to the middle of the screen
 
     if( ball.pos.x < 0 ) // Player 2 scores a point
     {
-      h.log( .INFO, 0, @src(), "Player 2 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
+      def.log( .INFO, 0, @src(), "Player 2 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
       SCORES[ 1 ] += 1;
 
       // Set the ball to be thrown towards player 1
@@ -227,7 +227,7 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
     }
     else if( ball.pos.x > 0 ) // Player 1 scores a point
     {
-      h.log( .INFO, 0, @src(), "Player 1 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
+      def.log( .INFO, 0, @src(), "Player 1 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
       SCORES[ 0 ] += 1;
 
       // Set the ball to be thrown towards player 2
@@ -236,14 +236,14 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
     }
     else // If the ball is in the middle of the screen, reset its horizontal position
     {
-      h.qlog( .WARN, 0, @src(), "No player scored, throwing ball to Player 1" );
+      def.qlog( .WARN, 0, @src(), "No player scored, throwing ball to Player 1" );
       ball.vel.x = -B_BASE_VEL; // Set the ball horizontal velocity to the base velocity
       ball.pos.x =  hWidth / 2; // Reset ball horizontal position to the middle of player 1's field
     }
   }
   else if( ball.getTopY() <= -hHeight ) // Bounce the ball if it goes above the top of the screen
   {
-    h.qlog( .DEBUG, 0, @src(), "Ball hit the top edge" );
+    def.qlog( .DEBUG, 0, @src(), "Ball hit the top edge" );
     ball.setTopY( -hHeight );
 
     if( ball.vel.y < 0 )
@@ -258,7 +258,7 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
   // Clamping to left and right edges of the screen
   if( ball.getRightX() >= hWidth ) // Bounce the ball if it goes past the right edge
   {
-    h.qlog( .DEBUG, 0, @src(), "Ball hit the right edge" );
+    def.qlog( .DEBUG, 0, @src(), "Ball hit the right edge" );
     ball.setRightX( hWidth );
 
     if( ball.vel.x > 0 )
@@ -271,7 +271,7 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
   }
   else if( ball.getLeftX() <= -hWidth ) // Bounce the ball if it goes past the left edge
   {
-    h.qlog( .DEBUG, 0, @src(), "Ball hit the left edge" );
+    def.qlog( .DEBUG, 0, @src(), "Ball hit the left edge" );
     ball.setLeftX( -hWidth );
 
     if( ball.vel.x < 0 )
@@ -288,7 +288,7 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
   // Check if the ball is overlapping with player 1
   if( ball.isOverlapping( p1 ))
   {
-    h.qlog( .DEBUG, 0, @src(), "Ball collided with player 1" );
+    def.qlog( .DEBUG, 0, @src(), "Ball collided with player 1" );
 
     ball.setBottomY( p1.getTopY() );
 
@@ -303,7 +303,7 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
   // Check if the ball is overlapping with player 2
   if( ball.isOverlapping( p2 ))
   {
-    h.qlog( .DEBUG, 0, @src(), "Ball collided with player 2" );
+    def.qlog( .DEBUG, 0, @src(), "Ball collided with player 2" );
 
     ball.setBottomY( p2.getTopY() );
 
@@ -318,7 +318,7 @@ pub fn OffTickStep( ng : *h.eng.engine ) void // Called by engine.tick() ( every
 }
 
 
-pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
+pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
 {
   // Declare the buffers to hold the formatted scores
   var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score
@@ -327,38 +327,38 @@ pub fn OnRenderOverlay( ng : *h.eng.engine ) void // Called by engine.render()
   // Convert the scores to strings
   const s1_slice = std.fmt.bufPrint(&s1_buff, "{d}", .{ SCORES[ 0 ]}) catch | err |
   {
-      h.log(.ERROR, 0, @src(), "Failed to format score for player 1: {}", .{err});
+      def.log(.ERROR, 0, @src(), "Failed to format score for player 1: {}", .{err});
       return;
   };
   const s2_slice  = std.fmt.bufPrint(&s2_buff, "{d}", .{ SCORES[ 1 ]}) catch | err |
   {
-      h.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{ err });
+      def.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{ err });
       return;
   };
 
   // Null terminate the strings
   s1_buff[ s1_slice.len ] = 0;
   s2_buff[ s2_slice.len ] = 0;
-  h.log( .DEBUG, 0, @src(), "Player 1 score: {s}\nPlayer 2 score: {s}", .{ s1_slice, s2_slice });
+  def.log( .DEBUG, 0, @src(), "Player 1 score: {s}\nPlayer 2 score: {s}", .{ s1_slice, s2_slice });
 
   // Draw each player's score in the middle of their respective fields
-  h.drawCenteredText( &s1_buff, h.getScreenWidth() * 0.25, h.getScreenHeight() * 0.5, 64, h.ray.Color.blue );
-  h.drawCenteredText( &s2_buff, h.getScreenWidth() * 0.75, h.getScreenHeight() * 0.5, 64, h.ray.Color.red );
+  def.drawCenteredText( &s1_buff, def.getScreenWidth() * 0.25, def.getScreenHeight() * 0.5, 64, def.ray.Color.blue );
+  def.drawCenteredText( &s2_buff, def.getScreenWidth() * 0.75, def.getScreenHeight() * 0.5, 64, def.ray.Color.red );
 
   if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
   {
-    h.ray.drawRectangle( 0, 0, h.ray.getScreenWidth(), h.ray.getScreenHeight(), h.ray.Color.init( 0, 0, 0, 128 ));
+    def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
   }
 
   if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )
   {
     const winner_msg = if( WINNER == 1 ) "Player 1 wins!" else "Player 2 wins!";
-    h.drawCenteredText( winner_msg,               h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 192, 128, h.ray.Color.green );
-    h.drawCenteredText( "Press Enter to restart", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ),       64,  h.ray.Color.yellow );
-    h.drawCenteredText( "Press Escape to exit",   h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) + 128, 64,  h.ray.Color.yellow );
+    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.ray.Color.green );
+    def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.ray.Color.yellow );
+    def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.ray.Color.yellow );
   }
   else if( ng.state == .LAUNCHED ) // If the game is paused, display the resume message
   {
-    h.drawCenteredText( "Press Enter to resume", h.getScreenWidth() * 0.5, ( h.getScreenHeight() * 0.5 ) - 256, 64, h.ray.Color.yellow );
+    def.drawCenteredText( "Press Enter to resume", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.ray.Color.yellow );
   }
 }

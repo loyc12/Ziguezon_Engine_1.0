@@ -1,5 +1,5 @@
 const std    = @import( "std" );
-const h      = @import( "defs" );
+const def    = @import( "defs" );
 
 pub const e_shape = enum
 {
@@ -17,15 +17,15 @@ pub const entity = struct
 
   // ================ SHAPE PROPERTIES ================
 
-  scale  : h.vec2,                          // Scale of the entity in X and Y
-  colour : h.ray.Color = h.ray.Color.white, // Colour of the entity ( used for rendering )
+  scale  : def.vec2,                          // Scale of the entity in X and Y
+  colour : def.ray.Color = def.ray.Color.white, // Colour of the entity ( used for rendering )
   shape  : e_shape     = .NONE,             // Shape of the entity
 
   // ================ POSITION PROPERTIES ================
 
-  pos : h.vec2,                       // Position of the entity in 2D space
-  vel : h.vec2 = .{ .x = 0, .y = 0 }, // Velocity of the entity in 2D space
-  acc : h.vec2 = .{ .x = 0, .y = 0 }, // Acceleration of the entity in 2D space
+  pos : def.vec2,                       // Position of the entity in 2D space
+  vel : def.vec2 = .{ .x = 0, .y = 0 }, // Velocity of the entity in 2D space
+  acc : def.vec2 = .{ .x = 0, .y = 0 }, // Acceleration of the entity in 2D space
 
   // ================ ROTATION PROPERTIES ================
 
@@ -45,21 +45,21 @@ pub const entity = struct
   pub fn getCartDistTo( self : *const entity, other : *const entity ) f32 { return nttPos.getCartDistTo( self, other ); }
 
   // POSITION ACCESSORS
-  pub fn getCenter( self : *const entity ) h.vec2 { return self.pos ;}
+  pub fn getCenter( self : *const entity ) def.vec2 { return self.pos ;}
 
   pub fn getLeftX(   self : *const entity ) f32 { return nttPos.getLeftX(   self ); }
   pub fn getRightX(  self : *const entity ) f32 { return nttPos.getRightX(  self ); }
   pub fn getTopY(    self : *const entity ) f32 { return nttPos.getTopY(    self ); }
   pub fn getBottomY( self : *const entity ) f32 { return nttPos.getBottomY( self ); }
 
-  pub fn getTopLeft(     self : *const entity ) h.vec2 { return nttPos.getTopLeft(     self ); }
-  pub fn getTopRight(    self : *const entity ) h.vec2 { return nttPos.getTopRight(    self ); }
-  pub fn getBottomLeft(  self : *const entity ) h.vec2 { return nttPos.getBottomLeft(  self ); }
-  pub fn getBottomRight( self : *const entity ) h.vec2 { return nttPos.getBottomRight( self ); }
+  pub fn getTopLeft(     self : *const entity ) def.vec2 { return nttPos.getTopLeft(     self ); }
+  pub fn getTopRight(    self : *const entity ) def.vec2 { return nttPos.getTopRight(    self ); }
+  pub fn getBottomLeft(  self : *const entity ) def.vec2 { return nttPos.getBottomLeft(  self ); }
+  pub fn getBottomRight( self : *const entity ) def.vec2 { return nttPos.getBottomRight( self ); }
 
   // POSITION SETTERS
-  pub fn setCenter( self : *entity, newPos : h.vec2 ) void { self.pos = newPos; }
-  pub fn setPos(    self : *entity, newPos : h.vec2 ) void { self.pos = newPos; }
+  pub fn setCenter( self : *entity, newPos : def.vec2 ) void { self.pos = newPos; }
+  pub fn setPos(    self : *entity, newPos : def.vec2 ) void { self.pos = newPos; }
   pub fn cpyEntityPos( self : *entity, other : *const entity ) void { nttPos.cpyEntityPos( self, other ); }
 
   pub fn setLeftX(   self : *entity, leftX   : f32 ) void { nttPos.setLeftX(   self, leftX ); }
@@ -67,10 +67,10 @@ pub const entity = struct
   pub fn setTopY(    self : *entity, topY    : f32 ) void { nttPos.setTopY(    self, topY ); }
   pub fn setBottomY( self : *entity, bottomY : f32 ) void { nttPos.setBottomY( self, bottomY ); }
 
-  pub fn setTopLeft(     self : *entity, topLeftPos     : h.vec2 ) void { nttPos.setTopLeft(     self, topLeftPos ); }
-  pub fn setTopRight(    self : *entity, topRightPos    : h.vec2 ) void { nttPos.setTopRight(    self, topRightPos ); }
-  pub fn setBottomLeft(  self : *entity, bottomLeftPos  : h.vec2 ) void { nttPos.setBottomLeft(  self, bottomLeftPos ); }
-  pub fn setBottomRight( self : *entity, bottomRightPos : h.vec2 ) void { nttPos.setBottomRight( self, bottomRightPos ); }
+  pub fn setTopLeft(     self : *entity, topLeftPos     : def.vec2 ) void { nttPos.setTopLeft(     self, topLeftPos ); }
+  pub fn setTopRight(    self : *entity, topRightPos    : def.vec2 ) void { nttPos.setTopRight(    self, topRightPos ); }
+  pub fn setBottomLeft(  self : *entity, bottomLeftPos  : def.vec2 ) void { nttPos.setBottomLeft(  self, bottomLeftPos ); }
+  pub fn setBottomRight( self : *entity, bottomRightPos : def.vec2 ) void { nttPos.setBottomRight( self, bottomRightPos ); }
 
   // CLAMPING FUNCTIONS
   pub fn clampLeftX(   self : *entity, minLeftX   : f32 ) void { nttPos.clampLeftX(   self, minLeftX ); }
@@ -80,30 +80,30 @@ pub const entity = struct
 
   pub fn clampInX(    self : *entity, minX : f32, maxX : f32 ) void { nttPos.clampInX( self, minX, maxX ); }
   pub fn clampInY(    self : *entity, minY : f32, maxY : f32 ) void { nttPos.clampInY( self, minY, maxY ); }
-  pub fn clampInArea( self : *entity, minPos : h.vec2, maxPos : h.vec2 ) void { nttPos.clampInArea( self, minPos, maxPos ); }
+  pub fn clampInArea( self : *entity, minPos : def.vec2, maxPos : def.vec2 ) void { nttPos.clampInArea( self, minPos, maxPos ); }
 
   pub fn clampOnX(     self : *entity, minX : f32, maxX : f32 ) void { nttPos.clampOnX( self, minX, maxX ); }
   pub fn clampOnY(     self : *entity, minY : f32, maxY : f32 ) void { nttPos.clampOnY( self, minY, maxY ); }
-  pub fn clampOnArea(  self : *entity, minPos : h.vec2, maxPos : h.vec2 ) void { nttPos.clampOnArea( self, minPos, maxPos ); }
+  pub fn clampOnArea(  self : *entity, minPos : def.vec2, maxPos : def.vec2 ) void { nttPos.clampOnArea( self, minPos, maxPos ); }
 
-  pub fn clampOnPoint(    self : *entity, point : h.vec2 ) void { nttPos.clampOnPoint( self, point ); }
+  pub fn clampOnPoint(    self : *entity, point : def.vec2 ) void { nttPos.clampOnPoint( self, point ); }
   pub fn clampOnEntity(   self : *entity, other : *const entity ) void { nttPos.clampOnEntity( self, other ); }
-  pub fn clampNearEntity( self : *entity, other : *const entity, maxOffset : h.vec2 ) void { nttPos.clampNearEntity( self, other, maxOffset ); }
+  pub fn clampNearEntity( self : *entity, other : *const entity, maxOffset : def.vec2 ) void { nttPos.clampNearEntity( self, other, maxOffset ); }
 
   // RANGE FUNCTIONS
   pub fn isInRangeX( self : *const entity, minX : f32, maxX : f32 ) bool { return nttPos.isInRangeX( self, minX, maxX ); }
   pub fn isInRangeY( self : *const entity, minY : f32, maxY : f32 ) bool { return nttPos.isInRangeY( self, minY, maxY ); }
-  pub fn isInRange(  self : *const entity, minPos : h.vec2, maxPos : h.vec2 ) bool { return nttPos.isInRange( self, minPos, maxPos ); }
+  pub fn isInRange(  self : *const entity, minPos : def.vec2, maxPos : def.vec2 ) bool { return nttPos.isInRange( self, minPos, maxPos ); }
 
   pub fn isOnRangeX( self : *const entity, minX : f32, maxX : f32 ) bool { return nttPos.isOnRangeX( self, minX, maxX ); }
   pub fn isOnRangeY( self : *const entity, minY : f32, maxY : f32 ) bool { return nttPos.isOnRangeY( self, minY, maxY ); }
-  pub fn isOnRange(  self : *const entity, minPos : h.vec2, maxPos : h.vec2 ) bool { return nttPos.isOnRange( self, minPos, maxPos ); }
+  pub fn isOnRange(  self : *const entity, minPos : def.vec2, maxPos : def.vec2 ) bool { return nttPos.isOnRange( self, minPos, maxPos ); }
 
-  pub fn isOnPoint(  self : *const entity, point : h.vec2 ) bool { return nttPos.isOnPoint( self, point ); }
+  pub fn isOnPoint(  self : *const entity, point : def.vec2 ) bool { return nttPos.isOnPoint( self, point ); }
 
   // COLLISION FUNCTIONS
   pub fn isOverlapping( self : *const entity, other : *const entity ) bool { return nttPos.isOverlapping( self, other ); }
-  pub fn getOverlap(    self : *const entity, other : *const entity ) ?h.vec2 { return nttPos.getOverlap( self, other ); }
+  pub fn getOverlap(    self : *const entity, other : *const entity ) ?def.vec2 { return nttPos.getOverlap( self, other ); }
 
   // ================ RENDER FUNCTIONS ================
   const nttRdr = @import( "entityRdr.zig" );
