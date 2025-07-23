@@ -258,12 +258,12 @@ pub const engine = struct
     self.sdt = def.ray.getFrameTime() * self.timeScale;
     //def.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ self.sdt });
 
-    def.tryHook( .OnTickStep, .{ self }); // Allows for custom game logic updates
+    def.tryHook( .OnTickStep, .{ self });
     {
-    //self.entityManager.collideActiveEntities( self.sdt ); // Apply colision logic between all active entities
-      self.entityManager.tickActiveEntities( self.sdt ); // Tick all active entities with the delta time
+    //self.entityManager.collideActiveEntities( self.sdt );
+      self.entityManager.tickActiveEntities( self.sdt );
     }
-    def.tryHook( .OffTickStep, .{ self }); // Allows for custom game logic updates
+    def.tryHook( .OffTickStep, .{ self });
   }
 
 
