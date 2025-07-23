@@ -4,14 +4,6 @@ const def = @import( "defs" );
 // This file defines helper functions to conditionally print debug info based on the following enum's value
 // NOTE : this essentially implements a shittier version of std.log...
 
-//pub fn foo() !void {
-//  const logt = std.log.Logger.init(std.io.getStdErr());
-//  logt.err("An error occurred: {}", .{"File not found"});
-//  logt.warn("This is a warning");
-//  logt.info("Application started");
-//  logt.debug("Debugging value: {}", .{42});
-//}
-
 // ================================ DEFINITIONS ================================
 
 pub const LogLevel = enum
@@ -43,6 +35,36 @@ var       G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to writ
 var       G_IsFileOpened : bool = false;                     // Flag to check if the log file is opened ( and different from stderr )
 
 // TODO : have each log level be printed in its own file, on top of the shared main one
+
+// ================================ LOGGING TIMER ================================
+
+var LOG_TIMER  : def.timer.timer = .{};
+var IS_LT_INIT : bool = false; // Whether the timer has been initialized
+
+// NOTE : Initialize the log timer before using it, otherwise it will not work
+pub fn initLogTimer() void
+{
+  LOG_TIMER.qInit( def.timer.getNow(), 0 );
+  IS_LT_INIT = true;
+}
+
+// Returns the elapsed time since the global epoch
+fn getLogElapsedTime() i128
+{
+  if( !IS_LT_INIT ){ return def.timer.getNow(); } // If the timer is not initialized, return now
+
+  LOG_TIMER.incrementTo( def.timer.getNow() );
+  return LOG_TIMER.getElapsedTime();
+}
+
+// Returns the elapsed time since the last time increment
+fn getLogDeltaTime() i128
+{
+  if( !IS_LT_INIT ){ return 0; } // If the timer is not initialized, return 0
+
+  LOG_TIMER.incrementTo( def.timer.getNow() );
+  return LOG_TIMER.delta;
+}
 
 // ================================ CORE FUNCTIONS ================================
 
@@ -222,8 +244,8 @@ fn logTime() !void
 
   var now : i128 = undefined; // Get the elapsed time since the epoch
 
-  if( SHOW_LAPTIME ){ now = def.timer.getLapTime(); }     // Get the lap time if SHOW_LAPTIME is true
-  else              { now = def.timer.getElapsedTime(); } // Get the elapsed time since the epoch
+  if( SHOW_LAPTIME ){ now = getLogDeltaTime(); }   // Get the lap time if SHOW_LAPTIME is true
+  else              { now = getLogElapsedTime(); } // Get the elapsed time since the epoch
 
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
@@ -257,7 +279,7 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 
 pub fn logLapTime() void
 {
-  const now : i128 = def.timer.getLapTime();
+  const now : i128 = getLogDeltaTime();
 
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));

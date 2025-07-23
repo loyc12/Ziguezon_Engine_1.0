@@ -10,7 +10,7 @@ pub fn initAll() void
   def.qlog( .INFO, 0, @src(), "# Initializing all subsystems..." );
 
   // Initialize the timer
-  def.timer.initGlobalTimer();
+  def.logger.initLogTimer();
 
   // Initialize the game hooks
   def.initHooks( gh );

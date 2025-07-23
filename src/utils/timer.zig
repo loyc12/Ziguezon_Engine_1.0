@@ -1,19 +1,11 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub var G_TIMER : timer =
-.{
-  .epoch    = 0,
-  .cutoff   = 0,
-  .previous = 0,
-  .current  = 0,
-  .started  = false,
-  .expired  = false,
-  .lapCount = 0,
-};
+// NOTE : We treat zero ( the exact time of the "universal" epoch : UTC 1970-01-01 )
+// as a uninitialized time. This hopefully shouldn't cause any issues, as time is mesured
+// in nanoseconds, and the epoch is set to 1970-01-01 00:00:00Z, which is >55 years ago
 
 pub fn getNow() i128 { return std.time.nanoTimestamp(); }
-pub fn initGlobalTimer() void { G_TIMER.qInit( getNow(), 0 ); }
 
 pub fn getNewTimer() timer
 {
@@ -21,28 +13,9 @@ pub fn getNewTimer() timer
   return timer
   {
     .epoch    = tmp,
-    .cutoff   = 0,
-    .previous = tmp,
-    .current  = tmp,
+    .latest   = tmp,
     .started  = true,
-    .expired  = false,
-    .lapCount = 0,
   };
-}
-
-pub fn getEpoch() i128 { return G_TIMER.epoch; }
-pub fn getElapsedTime() i128
-{
-  G_TIMER.setCurrent( getNow() );
-  return G_TIMER.getElapsedTime();
-}
-
-// This function returns the elapsed time since the last lap in nanoseconds
-// It also updates the lap time to the current time
-pub fn getLapTime() i128
-{
-  G_TIMER.setCurrent( getNow() );
-  return G_TIMER.getLapTime();
 }
 
 // ================================ TIMER STRUCT ================================
@@ -50,23 +23,32 @@ pub fn getLapTime() i128
 pub const timer = struct
 {
   // All times are in nanoseconds
-  epoch  : i128 = 0, // start time ( 0 means no epoch )
-  cutoff : i128 = 0, // end time   ( 0 means no cutoff )
+  epoch  : i128 = 0, // Start time ( 0 means no epoch )
+  cutoff : i128 = 0, // End time   ( 0 means no cutoff )
 
-  previous : i128 = 0,
-  current  : i128 = 0,
+  latest : i128 = 0, // Latest time set ( used for lap time )
+  delta  : i128 = 0, // Delta time ( used for lap time )
+
+  lapCount : u32 = 0, // Number of times the timer has been incremented ( aka lapped )
+  maxLaps  : u32 = 0, // Maximum number of laps ( 0 means no limit )
 
   started : bool = false, // Whether the timer has started
   expired : bool = false, // Whether the timer has ended
 
-  lapCount : u64 = 0, // Number of times the timer has been incremented ( aka lapped )
-  maxLaps  : u64 = 0, // Maximum number of laps ( 0 means no limit )
 
   // ================ INITIALIZATION ================
 
   pub fn setEpoch(    self : *timer, startTime : i128 ) void { self.epoch  = startTime; }
   pub fn setCutoff(   self : *timer, endTime   : i128 ) void { self.cutoff = endTime; }
-  pub fn setDuration( self : *timer, duration  : i128 ) void { self.cutoff = self.epoch + duration; }
+  pub fn setDuration( self : *timer, duration  : i128 ) void
+  {
+    if( self.epoch == 0 )
+    {
+      def.qlog( .WARN, 0, @src(), "Tried to set duration without an epoch set" );
+      return;
+    }
+    self.cutoff = self.epoch + duration;
+  }
 
   // ================ UPDATE ================
 
@@ -75,8 +57,11 @@ pub const timer = struct
     self.setEpoch( startTime );
     self.setDuration( duration );
 
-    self.current  = startTime;
-    self.previous = startTime;
+    self.latest = startTime;
+    self.delta  = 0;
+
+    self.lapCount = 0;
+    self.maxLaps  = 0;
 
     self.started = true;
     self.expired = false;
@@ -86,65 +71,121 @@ pub const timer = struct
   {
     self.epoch    = 0;
     self.cutoff   = 0;
-    self.previous = 0;
-    self.current  = 0;
+
+    self.latest   = 0;
+    self.delta    = 0;
+
+    self.lapCount = 0;
+    self.maxLaps  = 0;
+
     self.started  = false;
     self.expired  = false;
-    self.lapCount = 0;
+  }
+
+  pub fn incrementTo(  self : *timer, currentTime : i128 ) void
+  {
+    if( currentTime < self.latest )
+    {
+      def.log( .WARN, 0, @src(), "Tried to increment timer to a past time ({d})", .{ currentTime });
+      return;
+    }
+    // Prevents outrageous delta times if lastest had not yet been set
+    if( self.latest != 0 ){ self.delta = currentTime - self.latest; }
+    else( def.qlog( .DEBUG, 0, @src(), "Tried to increment timer without a previous time set" ));
+
+    self.latest    = currentTime;
+    self.lapCount += 1;
+
+    self.updateStatus();
+  }
+
+  pub fn incrementBy( self : *timer, deltaTime: i128 ) void
+  {
+    if( deltaTime < 0 )
+    {
+      def.log( .WARN, 0, @src(), "Tried to increment timer by a non-positive delta time ({d})", .{ deltaTime });
+      return;
+    }
+    self.delta     = deltaTime;
+    self.latest   += deltaTime;
+    self.lapCount += 1;
+
+    self.updateStatus();
   }
 
   pub fn updateStatus( self : *timer ) void
   {
-    if( self.epoch   != 0 and self.current  >= self.epoch   ){ self.started = true; }
-    if( self.cutoff  != 0 and self.current  >= self.cutoff  ){ self.expired = true; }
-    if( self.maxLaps != 0 and self.lapCount >= self.maxLaps ){ self.expired = true; }
-  }
-
-  pub fn setCurrent(  self : *timer, currentTime : i128 ) void
-  {
-    self.previous = self.current;
-    self.current  = currentTime;
-    self.updateStatus();
-  }
-
-  pub fn incrementTime( self : *timer, delta: i128 ) void
-  {
-    self.previous = self.current;
-    self.current += delta;
-
-    self.lapCount += 1;
+    self.started = self.isStarted();
+    self.expired = self.isExpired();
   }
 
   // ================ ACCESSORS ================
 
-  pub fn isStarted( self : *const timer ) bool { return ( self.epoch  == 0 or  self.started ); }
-  pub fn isExpired( self : *const timer ) bool { return ( self.cutoff != 0 and self.expired ); }
+  pub fn isStarted( self : *const timer ) bool
+  {
+    if( self.epoch == 0 ) return true; // No epoch set, timer is considered started
+    if( self.latest >= self.epoch ) return true; // Timer started after epoch
+    return false; // Timer not started yet
+  }
+  pub fn isExpired( self : *const timer ) bool
+  {
+    if( self.cutoff  == 0 and self.maxLaps == 0 ) return false; // No cutoff or max laps set
+    if( self.cutoff  != 0 and self.latest   >= self.cutoff  ) return true; // Cutoff reached
+    if( self.maxLaps != 0 and self.lapCount >= self.maxLaps ) return true; // Max laps reached
+    return false; // Not expired
+  }
+
+  pub fn getPreviousTime( self : *const timer ) i128
+  {
+    if ( self.latest == 0 ) return 0;
+
+    const tmp = self.latest - self.delta;
+
+    // Previous time cannot be before epoch
+    if( tmp < self.epoch ) return self.epoch;
+    return tmp;
+  }
+
+  pub fn getTotalDuration( self : *const timer ) i128
+  {
+    if( self.epoch or self.cutoff == 0 )
+    {
+      def.log( .WARN, 0, @src(), "Tried to get total duration without an epoch and/or cutoff set" );
+      return 0;
+    }
+    return self.cutoff - self.epoch;
+  }
 
   pub fn getElapsedTime( self : *const timer ) i128
   {
-    if ( self.epoch == 0 ) return 0; // No epoch set
+    if(  self.epoch == 0  ) return 0;
+    if( !self.isStarted() ) return 0;
 
-    return self.current - self.epoch;
+    return self.latest - self.epoch;
   }
-  pub fn getRemainingTime( self : *const timer ) i128
+  pub fn getRemainTime( self : *const timer ) i128
   {
-    if ( self.cutoff == 0 ) return 0.0; // No cutoff set
+    if(  self.cutoff == 0 ) return 0;
+    if(  self.isExpired() ) return 0;
+    if( !self.isStarted() ) return self.getTotalDuration(); // Timer not yet started
 
-    return self.cutoff - self.current;
-  }
-
-  pub fn getLapTime( self : *const timer ) i128
-  {
-    if ( self.previous == 0 or self.current == 0 ) return 0; // No previous or current time set
-
-    return self.current - self.previous;
+    return self.cutoff - self.latest;
   }
 
-  pub fn getProgress( self : *const timer ) f32
+  pub fn getElapsedFraction( self : *const timer ) f32
   {
-    if( self.epoch == 0 or self.cutoff == 0 ) return 0.0; // No cutoff or epoch set
+    if(  self.epoch == 0 or self.cutoff == 0 ) return 0;
+    if(  self.isExpired() ) return 1;
+    if( !self.isStarted() ) return 0;
 
-    const elapsed = self.getElapsedTime();
-    return def.lerp( self.epoch, self.cutoff, elapsed );
+    return @floatFromInt( @divTrunc( self.getElapsedTime(), self.getTotalDuration() ));
+  }
+  pub fn getRemainFraction( self : *const timer ) f32
+  {
+    if(  self.epoch == 0 or self.cutoff == 0 ) return 0;
+    if(  self.isExpired() ) return 0;
+    if( !self.isStarted() ) return 1;
+
+    return @floatFromInt( @divTrunc( self.getRemainTime(), self.getTotalDuration() ));
   }
 };

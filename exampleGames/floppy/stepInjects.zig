@@ -128,17 +128,17 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
   s_buff[ s_slice.len ] = 0;
   def.log( .DEBUG, 0, @src(), "Score: {s}", .{ s_slice });
 
-  // Draw each the score in the middle of the screen
-  def.drawCenteredText( &s_buff, def.getScreenWidth() * 0.8, def.getScreenHeight() * 0.5, 128, def.ray.Color.yellow );
-
-  if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
+  if( ng.state == .LAUNCHED ) // NOTE : Greys out the game when it is paused
   {
     def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
   }
 
+  // Draw each the score in the middle of the screen
+  def.drawCenteredText( &s_buff, def.getScreenWidth() * 0.8, def.getScreenHeight() * 0.5, 128, def.ray.Color.yellow );
+
   if( IS_GAME_OVER ) // If there is a winner, display the winner message ( not grayed out )
   {
-    const winner_msg = "Womp Womp..."; // TODO : Change message based on score
+    const winner_msg = "Womp Womp..."; // TODO : Change message based on final score
     def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.ray.Color.red );
     def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.ray.Color.yellow );
     def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.ray.Color.yellow );
