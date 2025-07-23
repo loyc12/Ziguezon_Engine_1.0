@@ -212,39 +212,42 @@ pub const engine = struct
   pub fn loopLogic( self : *engine ) void
   {
     def.qlog( .INFO, 0, @src(), "Starting the game loop..." );
-    def.tryHook( .OnLoopStart, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnLoopStart, .{ self });
 
     while( !def.ray.windowShouldClose() )
     {
-      def.tryHook( .OnLoopIter, .{ self }); // Allows for custom initialization
+      def.tryHook( .OnLoopIter, .{ self });
 
       if( comptime def.logger.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
       else { def.logger.logLapTime(); }
 
       if( self.isLaunched() )
       {
-        // Capturing and reacting to input events directly ( works when paused )
-        self.update();
-
-        // Running the game logic ( is unpaused )
-        if( self.isUnpaused() ){ self.tick(); }
-
-        // Rendering the game visuals
-        self.render();
+        self.update();                          // Inputs and Flags
+        if( self.isUnpaused() ){ self.tick(); } // Logic and movement
+        self.render();                          // Visuals
       }
+      //def.tryHook( .OffLoopIter, .{ self });
     }
 
     def.qlog( .INFO, 0, @src(), "Game loop done" );
-    def.tryHook( .OnLoopEnd, .{ self }); // Allows for custom deinitialization
+    def.tryHook( .OnLoopEnd, .{ self });
   }
+
+  // ================================ GAME LOGIC ================================
 
   fn update( self : *engine ) void
   {
     def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
     // This function is used to get input from the user, such as keyboard or mouse input.
 
-    def.tryHook( .OnUpdateStep, .{ self }); // Allows for custom input handling
+    def.tryHook( .OnUpdateStep, .{ self });
+    {
+      // TODO : update global inputs here
+    }
+    //def.tryHook( .OffUpdateStep, .{ self });
   }
+
 
   fn tick( self : *engine ) void // TODO : use tick rate instead of frame time
   {
@@ -255,15 +258,14 @@ pub const engine = struct
     self.sdt = def.ray.getFrameTime() * self.timeScale;
     //def.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ self.sdt });
 
-    // Check for collisions between all active entities and the following ones
-
     def.tryHook( .OnTickStep, .{ self }); // Allows for custom game logic updates
-
+    {
     //self.entityManager.collideActiveEntities( self.sdt ); // Apply colision logic between all active entities
-    self.entityManager.tickActiveEntities( self.sdt ); // Tick all active entities with the delta time
-
+      self.entityManager.tickActiveEntities( self.sdt ); // Tick all active entities with the delta time
+    }
     def.tryHook( .OffTickStep, .{ self }); // Allows for custom game logic updates
   }
+
 
   fn render( self : *engine ) void
   {
@@ -271,25 +273,33 @@ pub const engine = struct
     // This function is used to render the game visuals, such as drawing sprites, backgrounds, etc.
     // It uses raylib's drawing functions to draw the game visuals on the screen.
 
-    def.ray.beginDrawing();     // Begin the drawing process
-    defer def.ray.endDrawing(); // End the drawing process when the function returns
+    def.ray.beginDrawing();
+    defer def.ray.endDrawing();
 
-     // Clear the background with a black color
-    def.ray.clearBackground( def.ray.Color.black );
-
-    def.ray.beginMode2D( self.mainCamera ); // World Rendering mode
+    // Background Rendering mode
+    def.tryHook( .OnRenderBackground, .{ self });
     {
-      def.tryHook( .OnRenderWorld, .{ self }); // Allows for custom rendering of the world
-
-      self.entityManager.renderActiveEntities(); // Render all active entities
-
-      def.tryHook( .OffRenderWorld, .{ self }); // Allows for custom rendering of the world
+      // TODO : Render the background here
     }
+    //def.tryHook( .OffRenderBackground, .{ self });
 
-    def.ray.endMode2D(); // UI Rendering mode
+    // World Rendering mode
+    def.ray.beginMode2D( self.mainCamera );
     {
-      def.tryHook( .OnRenderOverlay, .{ self }); // Allows for custom rendering of the overlay
+      def.tryHook( .OnRenderWorld, .{ self });
+      {
+        self.entityManager.renderActiveEntities();
+      }
+      def.tryHook( .OffRenderWorld, .{ self });
     }
+    def.ray.endMode2D();
+
+    // UI Rendering mode
+    def.tryHook( .OnRenderOverlay, .{ self });
+    {
+      // TODO : Render the UI elements here
+    }
+    //def.tryHook( .OffRenderOverlay, .{ self });
   }
 
 };

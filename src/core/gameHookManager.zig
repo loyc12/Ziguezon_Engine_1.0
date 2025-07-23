@@ -20,17 +20,19 @@ pub const hookTag = enum( u8 )
   OnLoopStart  = 10, // Called at the start of the game loop
   OnLoopEnd    = 11, // Called at the end of the game loop
   OnLoopIter   = 12, // Called for each iteration of the game loop ( at the start )
-  OffLoopIter  = 13, // Called for each iteration of the game loop ( at the end )
+//OffLoopIter  = 13, // Called for each iteration of the game loop ( at the end )
 
   OnUpdateStep   = 20, // Called every frame for updates ( at the start )
-  OffUpdateStep  = 21, // Called every frame for updates ( at the end )
+//OffUpdateStep  = 21, // Called every frame for updates ( at the end )
   OnTickStep     = 22, // Called every tick for logic updates ( at the start )
   OffTickStep    = 23, // Called every tick for logic updates ( at the end  )
 
-  OnRenderWorld    = 24, // Called to render the world ( at the start )
-  OffRenderWorld   = 25, // Called to render the world ( at the end  )
-  OnRenderOverlay  = 26, // Called to render overlays ( at the start )
-  OffRenderOverlay = 27, // Called to render overlays ( at the end )
+  OnRenderBackground  = 30, // Called to render the background ( at the start )
+//OffRenderBackground = 31, // Called to render the background ( at the end
+  OnRenderWorld       = 32, // Called to render the world ( at the start )
+  OffRenderWorld      = 33, // Called to render the world ( at the end  )
+  OnRenderOverlay     = 34, // Called to render overlays ( at the start )
+//OffRenderOverlay    = 35, // Called to render overlays ( at the end )
 
 };
 
@@ -55,14 +57,16 @@ pub const gameHooks = struct
   OffLoopIter : ?*const fn ( *def.eng.engine ) void = null,
 
   OnUpdateStep  : ?*const fn ( *def.eng.engine ) void = null,
-  OffUpdateStep : ?*const fn ( *def.eng.engine ) void = null,
+//OffUpdateStep : ?*const fn ( *def.eng.engine ) void = null,
   OnTickStep    : ?*const fn ( *def.eng.engine ) void = null,
   OffTickStep   : ?*const fn ( *def.eng.engine ) void = null,
 
-  OnRenderWorld    : ?*const fn ( *def.eng.engine ) void = null,
-  OffRenderWorld   : ?*const fn ( *def.eng.engine ) void = null,
-  OnRenderOverlay  : ?*const fn ( *def.eng.engine ) void = null,
-  OffRenderOverlay : ?*const fn ( *def.eng.engine ) void = null,
+  OnRenderBackground  : ?*const fn ( *def.eng.engine ) void = null,
+//OffRenderBackground : ?*const fn ( *def.eng.engine ) void = null
+  OnRenderWorld       : ?*const fn ( *def.eng.engine ) void = null,
+  OffRenderWorld      : ?*const fn ( *def.eng.engine ) void = null,
+  OnRenderOverlay     : ?*const fn ( *def.eng.engine ) void = null,
+//OffRenderOverlay    : ?*const fn ( *def.eng.engine ) void = null,
 
   // Initializes the game hooks from a given module
   pub fn initHooks( self : *gameHooks, module : anytype ) void
@@ -90,14 +94,16 @@ pub const gameHooks = struct
     if( @hasDecl( module, "OffLoopIter" )) self.OffLoopIter = @field( module, "OffLoopIter" );
 
     if( @hasDecl( module, "OnUpdateStep"  )) self.OnUpdateStep  = @field( module, "OnUpdateStep"  );
-    if( @hasDecl( module, "OffUpdateStep" )) self.OffUpdateStep = @field( module, "OffUpdateStep" );
+  //if( @hasDecl( module, "OffUpdateStep" )) self.OffUpdateStep = @field( module, "OffUpdateStep" );
     if( @hasDecl( module, "OnTickStep"    )) self.OnTickStep    = @field( module, "OnTickStep"    );
     if( @hasDecl( module, "OffTickStep"   )) self.OffTickStep   = @field( module, "OffTickStep"   );
 
+    if( @hasDecl( module, "OnRenderBackground"  )) self.OnRenderBackground  = @field( module, "OnRenderBackground"  );
+  //if( @hasDecl( module, "OffRenderBackground" )) self.OffRenderBackground = @field( module, "OffRenderBackground" );
     if( @hasDecl( module, "OnRenderWorld"    )) self.OnRenderWorld    = @field( module, "OnRenderWorld"    );
     if( @hasDecl( module, "OffRenderWorld"   )) self.OffRenderWorld   = @field( module, "OffRenderWorld"   );
     if( @hasDecl( module, "OnRenderOverlay"  )) self.OnRenderOverlay  = @field( module, "OnRenderOverlay"  );
-    if( @hasDecl( module, "OffRenderOverlay" )) self.OffRenderOverlay = @field( module, "OffRenderOverlay" );
+  //if( @hasDecl( module, "OffRenderOverlay" )) self.OffRenderOverlay = @field( module, "OffRenderOverlay" );
 
     self.logHookValidities();
   }
@@ -142,17 +148,19 @@ pub const gameHooks = struct
       .OnLoopStart => self.OnLoopStart,
       .OnLoopEnd   => self.OnLoopEnd,
       .OnLoopIter  => self.OnLoopIter,
-      .OffLoopIter => self.OffLoopIter,
+    //.OffLoopIter => self.OffLoopIter,
 
       .OnUpdateStep  => self.OnUpdateStep,
-      .OffUpdateStep => self.OffUpdateStep,
+    //.OffUpdateStep => self.OffUpdateStep,
       .OnTickStep    => self.OnTickStep,
       .OffTickStep   => self.OffTickStep,
 
-      .OnRenderWorld    => self.OnRenderWorld,
-      .OffRenderWorld   => self.OffRenderWorld,
-      .OnRenderOverlay  => self.OnRenderOverlay,
-      .OffRenderOverlay => self.OffRenderOverlay,
+      .OnRenderBackground  => self.OnRenderBackground,
+    //.OffRenderBackground => self.OffRenderBackground,
+      .OnRenderWorld       => self.OnRenderWorld,
+      .OffRenderWorld      => self.OffRenderWorld,
+      .OnRenderOverlay     => self.OnRenderOverlay,
+    //.OffRenderOverlay    => self.OffRenderOverlay,
     };
 
     // Call the function if it exists

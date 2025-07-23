@@ -317,6 +317,12 @@ pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( eve
 
 }
 
+pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.render()
+{
+  _ = ng; // Prevent unused variable warning
+
+  def.ray.clearBackground( def.ray.Color.black );
+}
 
 pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
 {

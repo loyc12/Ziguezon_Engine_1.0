@@ -25,12 +25,6 @@ pub fn OnLoopIter( ng : *def.eng.engine ) void // Called by engine.loopLogic() (
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OffLoopIter( ng : *def.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
-{
-  _ = ng; // Prevent unused variable warning
-}
-
-
 
 // NOTE : This is where you should capture inputs to update global flags
 pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( every frame, no exception )
@@ -46,11 +40,6 @@ pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( 
   }
 }
 
-pub fn OffUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( every frame, no exception )
-{
-  _ = ng; // Prevent unused variable warning
-}
-
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
 {
@@ -63,6 +52,13 @@ pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( eve
 }
 
 
+// NOTE : This is where you should render all background effects ( sky, etc. )
+pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.render()
+{
+  _ = ng; // Prevent unused variable warning
+
+  def.ray.clearBackground( def.ray.Color.black ); // Clear the screen with a black color
+}
 
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *def.eng.engine ) void // Called by engine.render()
@@ -89,9 +85,4 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
   {
     def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
   }
-}
-
-pub fn OffRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
-{
-  _ = ng; // Prevent unused variable warning
 }

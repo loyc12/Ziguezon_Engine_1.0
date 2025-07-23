@@ -17,10 +17,10 @@ pub const qlog = logger.qlog; // for quick logging ( no args )
 
 //pub const tryCall = misc.tryCall; // For calling functions that may not exist
 
-pub const ghk = @import( "core/gameHooks.zig" );
-pub var G_HK : ghk.gameHooks = .{}; // Global game hooks instance
+pub const ghm = @import( "core/gameHookManager.zig" );
+pub var G_HK : ghm.gameHooks = .{}; // Global game hooks instance
 pub fn initHooks( module : anytype ) void { G_HK.initHooks( module ); }
-pub fn tryHook( tag : ghk.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
+pub fn tryHook( tag : ghm.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 pub const eng = @import( "core/engine.zig" );
 pub var G_NG : eng.engine = .{}; // Global game engine instance

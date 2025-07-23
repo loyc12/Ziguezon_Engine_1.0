@@ -9,4 +9,5 @@ const gameStep = @import( "stepInjects.zig" );
   pub const OnTickStep   = gameStep.OnTickStep;
   pub const OffTickStep  = gameStep.OffTickStep;
 
-  pub const OnRenderOverlay = gameStep.OnRenderOverlay;
+  pub const OnRenderBackground = gameStep.OnRenderBackground;
+  pub const OnRenderOverlay    = gameStep.OnRenderOverlay;

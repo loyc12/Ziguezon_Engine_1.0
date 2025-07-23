@@ -105,6 +105,12 @@ pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( eve
   // ================ DISK-PILLAR COLLISIONS ================
 }
 
+pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.render()
+{
+  _ = ng; // Prevent unused variable warning
+
+  def.ray.clearBackground( def.ray.Color.green );
+}
 
 pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
 {
@@ -133,7 +139,7 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
   if( IS_GAME_OVER ) // If there is a winner, display the winner message ( not grayed out )
   {
     const winner_msg = "Womp Womp..."; // TODO : Change message based on score
-    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.ray.Color.green );
+    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.ray.Color.red );
     def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.ray.Color.yellow );
     def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.ray.Color.yellow );
   }
