@@ -5,7 +5,7 @@ const def = @import( "defs" );
 // ================================ INITIALIZATION ================================
 const gh = @import( "gameHooks" );
 
-pub fn initAll() void
+pub fn initCriticals() void
 {
   def.qlog( .INFO, 0, @src(), "# Initializing all subsystems..." );
 
@@ -21,7 +21,7 @@ pub fn initAll() void
   def.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
 }
 
-pub fn deinitAll() void
+pub fn deinitCriticals() void
 {
   def.qlog( .INFO, 0, @src(), "# Deinitializing all subsystems..." );
 
@@ -36,8 +36,8 @@ pub fn deinitAll() void
 
 pub fn main() !void
 {
-  initAll();
-  defer deinitAll();
+  initCriticals();
+  defer deinitCriticals();
 
   def.G_NG.changeState( .LAUNCHED );
 
@@ -48,5 +48,5 @@ pub fn main() !void
 
 test "example test"
 {
-  def.misc.testTryCall();
+
 }

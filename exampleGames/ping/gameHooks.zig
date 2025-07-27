@@ -1,5 +1,6 @@
 const gameState = @import( "stateInjects.zig" );
 
+  pub const OnStart  = gameState.OnStart;
   pub const OnLaunch = gameState.OnLaunch;
 
 

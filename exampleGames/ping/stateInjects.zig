@@ -9,6 +9,27 @@ pub var BALL_ID            : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
+pub fn OnStart( ng : *def.eng.engine ) void // Called by engine.start()
+{
+  def.qlog( .INFO, 0, @src(), "# Starting the game..." );
+
+
+  ng.resourceManager.addAudioFromFile( "hit1", "../exampleAssets/pew1.wav" ) catch | err |
+  {
+    def.qlog( .ERROR, 0, @src(), "Failed to load audio 'hit': {s}", .{ @errorName( err ) });
+  };
+  ng.resourceManager.addAudioFromFile( "hit2", "../exampleAssets/pew2.wav" ) catch | err |
+  {
+    def.qlog( .ERROR, 0, @src(), "Failed to load audio 'hit': {s}", .{ @errorName( err ) });
+  };
+  ng.resourceManager.addAudioFromFile( "hit3", "../exampleAssets/pew3.wav" ) catch | err |
+  {
+    def.qlog( .ERROR, 0, @src(), "Failed to load audio 'hit': {s}", .{ @errorName( err ) });
+  };
+
+  def.qlog( .INFO, 0, @src(), "$ Game started successfully!\n" );
+}
+
 pub fn OnLaunch( ng : *def.eng.engine ) void // Called by engine.launch()
 {
 

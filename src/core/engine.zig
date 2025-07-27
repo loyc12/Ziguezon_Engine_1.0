@@ -25,10 +25,12 @@ pub const engine = struct
   rng : def.rng.randomiser = undefined, // Random number generator for the game
 
   // The game timer is initialized with the current time
-//gameTimer : def.timer.timer = def.timer.getNewTimer(), // TODO : Use this to control when to tick or not ( see DEF_TARGET_TPS )
+  //gameTimer : def.timer.timer = def.timer.getNewTimer(),
+  // TODO : Use this to control when to tick or not ( see DEF_TARGET_TPS )
 
-  entityManager : def.ntm.entityManager = undefined,
-  mainCamera    : def.ray.Camera2D      = undefined,
+  resourceManager : def.rsm.resourceManager = undefined,
+  entityManager   : def.ntm.entityManager   = undefined,
+  mainCamera      : def.ray.Camera2D        = undefined,
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {
@@ -101,10 +103,12 @@ pub const engine = struct
     def.qlog( .TRACE, 0, @src(), "Starting the engine..." );
     // Initialize the engine (e.g. allocate resources, set up the game state, etc.)
 
-    self.rng.randInit(); // Initialize the random number generator with the current time
-    self.entityManager.init( def.alloc ); // Initialize the entity manager with the default allocator
+    self.rng.randInit();
+    self.entityManager.init(   def.alloc );
+    self.resourceManager.init( def.alloc );
 
-    self.mainCamera = def.ray.Camera2D{
+    self.mainCamera = def.ray.Camera2D
+    {
       .offset = // TODO : make sure the offset stay accurate when the window is resized
       .{
         .x = DEF_SCREEN_DIMS.x / 2,
@@ -114,9 +118,9 @@ pub const engine = struct
       .rotation = 0.0,
       .zoom = 1.0,
     };
-    def.qlog( .INFO, 0, @src(), "$ Hello, world !\n" );
 
-    def.tryHook( .OnStart, .{ self }); // Allows for custom initialization
+    def.qlog( .INFO, 0, @src(), "$ Hello, world !\n" );
+    def.tryHook( .OnStart, .{ self });
     self.state = .STARTED;
   }
 
@@ -127,10 +131,11 @@ pub const engine = struct
     // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
     def.ray.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
     def.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
+    def.ray.initAudioDevice();
 
     def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.ray.getScreenWidth(), def.ray.getScreenHeight() });
 
-    def.tryHook( .OnLaunch, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnLaunch, .{ self });
     self.state = .LAUNCHED;
   }
 
@@ -140,7 +145,7 @@ pub const engine = struct
 
     // Start the game loop or resume gameplay
 
-    def.tryHook( .OnPlay, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnPlay, .{ self });
     self.state = .PLAYING;
   }
 
@@ -164,7 +169,7 @@ pub const engine = struct
 
     // Pause the game logic (e.g. stop updating game state, freeze animations, etc.)
 
-    def.tryHook( .OnPause, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnPause, .{ self });
     self.state = .LAUNCHED;
   }
 
@@ -175,10 +180,15 @@ pub const engine = struct
     if( def.ray.isWindowReady() )
     {
       def.qlog( .INFO, 0, @src(), "# Closing the window..." );
-      def.ray.closeWindow(); // Close the game window if it is ready
+      def.ray.closeWindow();
+    }
+    if( def.ray.isAudioDeviceReady() )
+    {
+      def.qlog( .INFO, 0, @src(), "# Closing the audio device..." );
+      def.ray.closeAudioDevice();
     }
 
-    def.tryHook( .OnStop, .{ self }); // Allows for custom initialization
+    def.tryHook( .OnStop, .{ self });
     self.state = .STARTED;
   }
 
@@ -186,15 +196,15 @@ pub const engine = struct
   {
     def.qlog( .TRACE, 0, @src(), "Closing the engine..." );
 
-    // Deinitialize the engine (e.g. free resources, close windows, etc.)
-    self.entityManager.deinit(); // Deinitialize the entity manager
+    self.entityManager.deinit();
+    self.resourceManager.deinit();
 
-    self.entityManager = undefined; // Reset the entity manager
-    self.mainCamera    = undefined; // Reset the main camera
+    self.entityManager = undefined;
+    self.mainCamera    = undefined;
 
     def.qlog( .INFO, 0, @src(), "# Goodbye, cruel world...\n" );
 
-    def.tryHook( .OnClose, .{ self }); // Allows for custom deinitialization
+    def.tryHook( .OnClose, .{ self });
     self.state = .CLOSED;
   }
 

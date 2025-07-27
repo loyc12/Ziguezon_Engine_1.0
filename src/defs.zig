@@ -17,6 +17,8 @@ pub const qlog = logger.qlog; // for quick logging ( no args )
 
 //pub const tryCall = misc.tryCall; // For calling functions that may not exist
 
+pub const rsm = @import( "core/resourceManager.zig" );
+
 pub const ghm = @import( "core/gameHookManager.zig" );
 pub var G_HK : ghm.gameHooks = .{}; // Global game hooks instance
 pub fn initHooks( module : anytype ) void { G_HK.initHooks( module ); }

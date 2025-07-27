@@ -71,6 +71,8 @@ pub const gameHooks = struct
   // Initializes the game hooks from a given module
   pub fn initHooks( self : *gameHooks, module : anytype ) void
   {
+    def.qlog( .TRACE, 0, @src(), "Initializing game hooks..." );
+
     if( @typeInfo( module ) != .@"struct" )
     {
       //@compileError( "gameHooks.initHooks() expects a struct ( module ) type" );
@@ -105,12 +107,16 @@ pub const gameHooks = struct
     if( @hasDecl( module, "OnRenderOverlay"  )) self.OnRenderOverlay  = @field( module, "OnRenderOverlay"  );
   //if( @hasDecl( module, "OffRenderOverlay" )) self.OffRenderOverlay = @field( module, "OffRenderOverlay" );
 
-    self.logHookValidities();
+    self.checkHookValidities();
+
+    def.qlog( .INFO, 0, @src(), "Available game hooks initialized" );
   }
 
   // Logs the validity of each game hook
-  pub fn logHookValidities( self : *const gameHooks ) void
+  pub fn checkHookValidities( self : *const gameHooks ) void
   {
+    def.qlog( .TRACE, 0, @src(), "Checking game hook validity..." );
+
     // Loop through each field in the gameHooks struct
     // and log whether it is assigned or not
     inline for ( @typeInfo( gameHooks ).@"struct".fields )| field |
