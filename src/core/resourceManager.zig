@@ -3,19 +3,19 @@ const def = @import( "defs" );
 
 pub const resourceManager = struct
 {
-  audios  : std.AutoHashMap( [ :0 ]const u8, def.ray.AudioStream ),
-  music   : std.AutoHashMap( [ :0 ]const u8, def.ray.Music ),
-  fonts   : std.AutoHashMap( [ :0 ]const u8, def.ray.Font ),
-  sprites : std.AutoHashMap( [ :0 ]const u8, def.ray.Texture2D ),
+  audios  : std.StringHashMap( def.ray.Sound     ),
+  music   : std.StringHashMap( def.ray.Music     ),
+  fonts   : std.StringHashMap( def.ray.Font      ),
+  sprites : std.StringHashMap( def.ray.Texture2D ),
 
   pub fn init( self : *resourceManager, mapAlloc : std.mem.Allocator ) void
   {
     def.qlog( .TRACE, 0, @src(), "Initializing resource manager..." );
 
-    self.audios  = std.AutoHashMap( [ :0 ]const u8, def.ray.AudioStream ).init( mapAlloc );
-    self.music   = std.AutoHashMap( [ :0 ]const u8, def.ray.Music       ).init( mapAlloc );
-    self.fonts   = std.AutoHashMap( [ :0 ]const u8, def.ray.Font        ).init( mapAlloc );
-    self.sprites = std.AutoHashMap( [ :0 ]const u8, def.ray.Texture2D   ).init( mapAlloc );
+    self.audios  = std.StringHashMap( def.ray.Sound     ).init( mapAlloc );
+    self.music   = std.StringHashMap( def.ray.Music     ).init( mapAlloc );
+    self.fonts   = std.StringHashMap( def.ray.Font      ).init( mapAlloc );
+    self.sprites = std.StringHashMap( def.ray.Texture2D ).init( mapAlloc );
 
     def.qlog( .INFO, 0, @src(), "Resource manager initialized." );
   }
@@ -24,7 +24,7 @@ pub const resourceManager = struct
     def.qlog( .TRACE, 0, @src(), "Deinitializing resource manager..." );
 
     var it_audio = self.audios.iterator();
-    while( it_audio.next()) | entry | def.ray.unloadAudioStream( entry.value_ptr.* );
+    while( it_audio.next()) | entry | def.ray.unloadSound( entry.value_ptr.* );
 
     var it_music = self.music.iterator();
     while( it_music.next()) | entry | def.ray.unloadMusicStream( entry.value_ptr.* );
@@ -45,7 +45,7 @@ pub const resourceManager = struct
   }
 
   // Get resources from the map
-  pub fn getAudio( self : *const resourceManager, name : [ :0 ]const u8 ) ?def.ray.AudioStream
+  pub fn getAudio( self : *const resourceManager, name : [ :0 ]const u8 ) ?def.ray.Sound
   {
     return self.audios.get( name );
   }
@@ -63,7 +63,7 @@ pub const resourceManager = struct
   }
 
   // Add resources from raylib struct
-  pub fn addAudio( self : *resourceManager, name : [ :0 ]const u8, audio : def.ray.AudioStream ) !void
+  pub fn addAudio( self : *resourceManager, name : [ :0 ]const u8, audio : def.ray.Sound ) !void
   {
     try self.audios.put( name, audio );
   }
@@ -83,35 +83,58 @@ pub const resourceManager = struct
   // Add resources from file
   pub fn addAudioFromFile( self : *resourceManager, name : [ :0 ]const u8, filePath : [ :0 ]const u8 ) !void
   {
-    _ = self;
-    _ = name;
-    _ = filePath;
-    //const audio = def.ray.loadAudioStream( filePath );
-    //try self.addAudio( name, audio );
+    def.log( .DEBUG, 0, @src(), "Adding audio from file: {s}", .{ filePath });
+    const sound : def.ray.Sound = try def.ray.loadSound( filePath ); // catch | err |
+    try self.addAudio( name, sound );
   }
   pub fn addMusicFromFile( self : *resourceManager, name : [ :0 ]const u8, filePath : [ :0 ]const u8 ) !void
   {
-    _ = self;
-    _ = name;
-    _ = filePath;
-    //const music = def.ray.loadMusicStream( filePath );
-    //try self.addMusic( name, music );
+    def.log( .DEBUG, 0, @src(), "Adding music from file: {s}", .{ filePath });
+    const music : def.ray.Music = try def.ray.loadMusicStream( filePath );
+    try self.addMusic( name, music );
   }
   pub fn addFontFromFile( self : *resourceManager, name : [ :0 ]const u8, filePath : [ :0 ]const u8 ) !void
   {
-    _ = self;
-    _ = name;
-    _ = filePath;
-    //const font = def.ray.loadFont( filePath );
-    //try self.addFont( name, font );
+    def.log( .DEBUG, 0, @src(), "Adding font from file: {s}", .{ filePath });
+    const font : def.ray.Font = def.ray.loadFont( filePath );
+    try self.addFont( name, font );
   }
   pub fn addSpriteFromFile( self : *resourceManager, name : [ :0 ]const u8, filePath : [ :0 ]const u8 ) !void
   {
-    _ = self;
-    _ = name;
-    _ = filePath;
-    //const sprite = def.ray.loadTexture( filePath );
-    //try self.addSprite( name, sprite );
+    def.log( .DEBUG, 0, @src(), "Adding sprite from file: {s}", .{ filePath });
+    const texture : def.ray.texture2D = try def.ray.loadTexture( filePath );
+    try self.addSprite( name, texture );
+  }
+
+  // Sound action Shortcuts
+  pub fn playAudio( self : *resourceManager, name : [ :0 ]const u8 ) void
+  {
+    const audio = self.getAudio( name ) orelse
+    {
+      def.log( .ERROR, 0, @src(), "Audio '{s}' not found", .{ name });
+      return;
+    };
+    def.ray.playSound( audio );
+  }
+
+  pub fn playMusic( self : *resourceManager, name : [ :0 ]const u8 ) void
+  {
+    const music = self.getMusic( name ) orelse
+    {
+      def.log( .ERROR, 0, @src(), "Music '{s}' not found", .{ name });
+      return;
+    };
+    def.ray.playMusicStream( music );
+  }
+
+  pub fn stopMusic( self : *resourceManager, name : [ :0 ]const u8 ) void
+  {
+    const music = self.getMusic( name ) orelse
+    {
+      def.log( .ERROR, 0, @src(), "Music '{s}' not found", .{ name });
+      return;
+    };
+    def.ray.stopMusicStream( music );
   }
 
 };

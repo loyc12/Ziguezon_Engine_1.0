@@ -107,6 +107,8 @@ pub const engine = struct
     self.entityManager.init(   def.alloc );
     self.resourceManager.init( def.alloc );
 
+    def.ray.initAudioDevice();
+
     self.mainCamera = def.ray.Camera2D
     {
       .offset = // TODO : make sure the offset stay accurate when the window is resized
@@ -131,7 +133,6 @@ pub const engine = struct
     // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
     def.ray.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
     def.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
-    def.ray.initAudioDevice();
 
     def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.ray.getScreenWidth(), def.ray.getScreenHeight() });
 
@@ -182,11 +183,7 @@ pub const engine = struct
       def.qlog( .INFO, 0, @src(), "# Closing the window..." );
       def.ray.closeWindow();
     }
-    if( def.ray.isAudioDeviceReady() )
-    {
-      def.qlog( .INFO, 0, @src(), "# Closing the audio device..." );
-      def.ray.closeAudioDevice();
-    }
+
 
     def.tryHook( .OnStop, .{ self });
     self.state = .STARTED;
@@ -198,6 +195,12 @@ pub const engine = struct
 
     self.entityManager.deinit();
     self.resourceManager.deinit();
+
+    if( def.ray.isAudioDeviceReady() )
+    {
+      def.qlog( .INFO, 0, @src(), "# Closing the audio device..." );
+      def.ray.closeAudioDevice();
+    }
 
     self.entityManager = undefined;
     self.mainCamera    = undefined;

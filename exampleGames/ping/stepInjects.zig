@@ -48,6 +48,8 @@ pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) voi
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
   emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 )}, .{ .x = 128, .y = 32 }, 8, def.ray.Color.yellow );
+
+  ng.resourceManager.playAudio( "hit_1" );
 }
 
 // ================================ GLOBAL GAME VARIABLES ================================

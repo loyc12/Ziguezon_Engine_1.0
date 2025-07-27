@@ -14,19 +14,14 @@ pub fn OnStart( ng : *def.eng.engine ) void // Called by engine.start()
   def.qlog( .INFO, 0, @src(), "# Starting the game..." );
 
 
-  ng.resourceManager.addAudioFromFile( "hit1", "../exampleAssets/pew1.wav" ) catch | err |
+  ng.resourceManager.addAudioFromFile( "hit_1", "exampleGames/assets/sounds/Boop_1.wav" ) catch | err |
   {
-    def.qlog( .ERROR, 0, @src(), "Failed to load audio 'hit': {s}", .{ @errorName( err ) });
+    def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
   };
-  ng.resourceManager.addAudioFromFile( "hit2", "../exampleAssets/pew2.wav" ) catch | err |
+  ng.resourceManager.addAudioFromFile( "hit_2", "exampleGames/assets/sounds/Boop_2.wav" ) catch | err |
   {
-    def.qlog( .ERROR, 0, @src(), "Failed to load audio 'hit': {s}", .{ @errorName( err ) });
+    def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_2': {}\n", .{ err } );
   };
-  ng.resourceManager.addAudioFromFile( "hit3", "../exampleAssets/pew3.wav" ) catch | err |
-  {
-    def.qlog( .ERROR, 0, @src(), "Failed to load audio 'hit': {s}", .{ @errorName( err ) });
-  };
-
   def.qlog( .INFO, 0, @src(), "$ Game started successfully!\n" );
 }
 
