@@ -68,6 +68,7 @@ fn getLogDeltaTime() i128
 
 // ================================ CORE FUNCTIONS ================================
 
+// Shortcut to log a message with no arguments ( for simple text with no formatting )
 pub fn qlog( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
 {
   // Call the log function with no arguments
@@ -89,6 +90,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   if( comptime !SHOW_ID_MSGS and id != 0 ) return;
 
   // TODO : Implement the trace system properly, to log/unlog functions when they are called and exited
+
 
   // ================ LOGGING LOGIC ================
 
