@@ -347,7 +347,6 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.renderGr
   // Null terminate the strings
   s1_buff[ s1_slice.len ] = 0;
   s2_buff[ s2_slice.len ] = 0;
-  def.log( .DEBUG, 0, @src(), "Player 1 score: {s}\nPlayer 2 score: {s}", .{ s1_slice, s2_slice });
 
   // Draw each player's score in the middle of their respective fields
   def.drawCenteredText( &s1_buff, def.getScreenWidth() * 0.25, def.getScreenHeight() * 0.5, 64, def.ray.Color.blue );
