@@ -118,17 +118,8 @@ pub fn rotVec2Rad( a : vec2, angle : f32 ) vec2 // NOTE : Angles in radians
   const cosAngle = @cos( angle );
   const sinAngle = @sin( angle );
 
-  return vec2{
-    .x = ( a.x * cosAngle ) - ( a.y * sinAngle ),
-    .y = ( a.x * sinAngle ) + ( a.y * cosAngle ),
-  };
-}
-pub fn rotVec2Deg( a : vec2, angle : f32 ) vec2 // NOTE : Angles in degrees
-{
-  const cosAngle = @cos( DtR( angle ));
-  const sinAngle = @sin( DtR( angle ));
-
-  return vec2{
+  return vec2
+  {
     .x = ( a.x * cosAngle ) - ( a.y * sinAngle ),
     .y = ( a.x * sinAngle ) + ( a.y * cosAngle ),
   };

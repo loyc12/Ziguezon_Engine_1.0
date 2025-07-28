@@ -47,6 +47,106 @@ pub const engine = struct
     def.log( .DEBUG, 0, @src(), "Time scale set to {d}", .{ self.timeScale });
   }
 
+  // ================================ GAME LOOP FUNCTIONS ================================
+
+  pub fn loopLogic( self : *engine ) void
+  {
+    if( !self.isOpened() )
+    {
+      def.log( .WARN, 0, @src(), "Cannot start the game loop in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else { def.qlog( .TRACE, 0, @src(), "Starting the game loop..." ); }
+
+    def.tryHook( .OnLoopStart, .{ self });
+
+    // NOTE : this is a blocking loop, it will not return until the game is closed
+    // TODO : use a thread to run this loop in the background ?
+
+    while( !def.ray.windowShouldClose() )
+    {
+      def.tryHook( .OnLoopCycle, .{ self });
+
+      if( comptime def.logger.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
+      else { def.logger.logLapTime(); }
+
+      if( self.isOpened() )
+      {
+        self.updateInputs();   // Inputs and Global Flags
+        self.tickEntities();   // Logic and Physics
+        self.renderGraphics(); // Visuals and UI
+      }
+    }
+    def.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
+
+    def.tryHook( .OnLoopEnd, .{ self });
+
+    def.qlog( .INFO, 0, @src(), "Game loop stopped" );
+  }
+
+  // ================ LOOP EVENTS ================
+
+  fn updateInputs( self : *engine ) void
+  {
+    def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
+    // This function is used to get input from the user, such as keyboard or mouse input.
+
+    def.tryHook( .OnUpdateInputs, .{ self });
+    {
+      // TODO : update global inputs here
+    }
+    //def.tryHook( .OffUpdateInputs, .{ self });
+  }
+
+  fn tickEntities( self : *engine ) void           // TODO : use tick rate instead of frame time
+  {
+    if( !self.isPlaying() ){ return; } // skip this function if the game is paused
+
+    def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
+
+    self.sdt = def.ray.getFrameTime() * self.timeScale;
+
+    def.tryHook( .OnTickEntities, .{ self });
+    {
+    //self.entityManager.collideActiveEntities( self.sdt );
+      self.entityManager.tickActiveEntities( self.sdt );
+    }
+    def.tryHook( .OffTickEntities, .{ self });
+  }
+
+  fn renderGraphics( self : *engine ) void
+  {
+    def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
+
+    def.ray.beginDrawing();
+    defer def.ray.endDrawing();
+
+    // Background Rendering mode
+    def.tryHook( .OnRenderBackground, .{ self });
+    {
+      // TODO : Render the backgrounds here
+    }
+    //def.tryHook( .OffRenderBackground, .{ self });
+
+    // World Rendering mode
+    def.ray.beginMode2D( self.mainCamera );
+    {
+      def.tryHook( .OnRenderWorld, .{ self });
+      {
+        self.entityManager.renderActiveEntities();
+      }
+      def.tryHook( .OffRenderWorld, .{ self });
+    }
+    def.ray.endMode2D();
+
+    // UI Rendering mode
+    def.tryHook( .OnRenderOverlay, .{ self });
+    {
+      // TODO : Render the UI elements here
+    }
+    //def.tryHook( .OffRenderOverlay, .{ self });
+  }
+
   // ================================ ENGINE STATE FUNCTIONS ================================
 
   pub fn changeState( self : *engine, targetState : e_state ) void
@@ -281,107 +381,5 @@ pub const engine = struct
         return;
       },
     }
-  }
-
-  // ================================ GAME LOOP FUNCTIONS ================================
-
-  pub fn loopLogic( self : *engine ) void
-  {
-    if( !self.isOpened() )
-    {
-      def.log( .WARN, 0, @src(), "Cannot start the game loop in state {s}", .{ @tagName( self.state ) });
-      return;
-    }
-    else { def.qlog( .TRACE, 0, @src(), "Starting the game loop..." ); }
-
-    def.tryHook( .OnLoopStart, .{ self });
-
-    // NOTE : this is a blocking loop, it will not return until the game is closed
-    // TODO : use a thread to run this loop in the background ?
-
-    while( !def.ray.windowShouldClose() )
-    {
-      def.tryHook( .OnLoopCycle, .{ self });
-
-      if( comptime def.logger.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
-      else { def.logger.logLapTime(); }
-
-      if( self.isOpened() )
-      {
-        self.updateInputs();   // Inputs and Global Flags
-        self.tickEntities();   // Logic and Physics
-        self.renderGraphics(); // Visuals and UI
-      }
-    }
-    def.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
-
-    def.tryHook( .OnLoopEnd, .{ self });
-
-    def.qlog( .INFO, 0, @src(), "Game loop stopped" );
-  }
-
-  // ================ LOOP EVENTS ================
-
-  fn updateInputs( self : *engine ) void
-  {
-    def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
-    // This function is used to get input from the user, such as keyboard or mouse input.
-
-    def.tryHook( .OnUpdateInputs, .{ self });
-    {
-      // TODO : update global inputs here
-    }
-    //def.tryHook( .OffUpdateInputs, .{ self });
-  }
-
-
-  fn tickEntities( self : *engine ) void                // TODO : use tick rate instead of frame time
-  {
-    if( !self.isPlaying() ){ return; } // skip this function if the game is paused
-
-    def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
-
-    self.sdt = def.ray.getFrameTime() * self.timeScale;
-
-    def.tryHook( .OnTickEntities, .{ self });
-    {
-    //self.entityManager.collideActiveEntities( self.sdt );
-      self.entityManager.tickActiveEntities( self.sdt );
-    }
-    def.tryHook( .OffTickEntities, .{ self });
-  }
-
-
-  fn renderGraphics( self : *engine ) void
-  {
-    def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
-
-    def.ray.beginDrawing();
-    defer def.ray.endDrawing();
-
-    // Background Rendering mode
-    def.tryHook( .OnRenderBackground, .{ self });
-    {
-      // TODO : Render the backgrounds here
-    }
-    //def.tryHook( .OffRenderBackground, .{ self });
-
-    // World Rendering mode
-    def.ray.beginMode2D( self.mainCamera );
-    {
-      def.tryHook( .OnRenderWorld, .{ self });
-      {
-        self.entityManager.renderActiveEntities();
-      }
-      def.tryHook( .OffRenderWorld, .{ self });
-    }
-    def.ray.endMode2D();
-
-    // UI Rendering mode
-    def.tryHook( .OnRenderOverlay, .{ self });
-    {
-      // TODO : Render the UI elements here
-    }
-    //def.tryHook( .OffRenderOverlay, .{ self });
   }
 };

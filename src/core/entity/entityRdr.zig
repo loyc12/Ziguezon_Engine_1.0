@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 const entity = def.ntt.entity;
 
-// ================ RENDER FUNCTIONS ================
+// ================ HELPER FUNCTIONS ================
 
 pub fn clampInScreen( e1 : *entity ) void
 {
@@ -24,6 +24,28 @@ pub fn isOnScreen( e1 : *const entity ) bool
 
   return e1.isOnRange( def.vec2{ .x = -sw / 2, .y = -sh / 2 }, def.vec2{ .x = sw / 2,  .y = sh / 2 } );
 }
+
+fn renderRelativeTri( self : *const entity, p0 : def.vec2, p1 : def.vec2, p2 : def.vec2 ) void
+{
+  const np0 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p0, self.rotPos ));
+  const np1 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p1, self.rotPos ));
+  const np2 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p2, self.rotPos ));
+
+  def.ray.drawTriangle( np0, np1, np2, self.colour );
+}
+
+fn renderRelativeQuad( self : *const entity, p0 : def.vec2, p1 : def.vec2, p2 : def.vec2, p3 : def.vec2 ) void
+{
+  const np0 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p0, self.rotPos ));
+  const np1 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p1, self.rotPos ));
+  const np2 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p2, self.rotPos ));
+  const np3 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p3, self.rotPos ));
+
+  def.ray.drawTriangle( np0, np1, np2, self.colour );
+  def.ray.drawTriangle( np2, np3, np0, self.colour );
+}
+
+// ================ RENDER FUNCTIONS ================
 
 // This function renders the entity to the screen.
 pub fn renderEntity( self : *const entity ) void
@@ -46,44 +68,34 @@ pub fn renderEntity( self : *const entity ) void
   {
     .TRIA =>
     {
-      def.ray.drawTriangle(
-        .{ .x = self.pos.x,                .y = self.pos.y - self.scale.y }, // P0
-        .{ .x = self.pos.x - self.scale.x, .y = self.pos.y + self.scale.y }, // P2
-        .{ .x = self.pos.x + self.scale.x, .y = self.pos.y + self.scale.y }, // P1
-        self.colour );
+      renderRelativeTri( self,
+        .{ .x =  0,            .y = -self.scale.y }, // P0
+        .{ .x =  self.scale.x, .y =  self.scale.y }, // P2
+        .{ .x = -self.scale.x, .y =  self.scale.y }, // P1
+      );
     },
 
     .RECT =>
     {
-      def.ray.drawTriangle(
-        .{ .x = self.pos.x + self.scale.x, .y = self.pos.y + self.scale.y }, // P0
-        .{ .x = self.pos.x + self.scale.x, .y = self.pos.y - self.scale.y }, // P1
-        .{ .x = self.pos.x - self.scale.x, .y = self.pos.y - self.scale.y }, // P2
-        self.colour );
-
-      def.ray.drawTriangle(
-        .{ .x = self.pos.x - self.scale.x, .y = self.pos.y - self.scale.y }, // P2
-        .{ .x = self.pos.x - self.scale.x, .y = self.pos.y + self.scale.y }, // P3
-        .{ .x = self.pos.x + self.scale.x, .y = self.pos.y + self.scale.y }, // P0
-        self.colour );
+      renderRelativeQuad( self,
+        .{ .x =  self.scale.x, .y =  self.scale.y }, // P0
+        .{ .x =  self.scale.x, .y = -self.scale.y }, // P1
+        .{ .x = -self.scale.x, .y = -self.scale.y }, // P2
+        .{ .x = -self.scale.x, .y =  self.scale.y }, // P3
+      );
     },
 
     .DIAM =>
     {
-      def.ray.drawTriangle(
-        .{ .x = self.pos.x,                .y = self.pos.y - self.scale.y }, // P0
-        .{ .x = self.pos.x - self.scale.x, .y = self.pos.y                }, // P1
-        .{ .x = self.pos.x,                .y = self.pos.y + self.scale.y }, // P2
-        self.colour );
-
-      def.ray.drawTriangle(
-        .{ .x = self.pos.x,                .y = self.pos.y + self.scale.y }, // P2
-        .{ .x = self.pos.x + self.scale.x, .y = self.pos.y                }, // P3
-        .{ .x = self.pos.x,                .y = self.pos.y - self.scale.y }, // P0
-        self.colour );
+      renderRelativeQuad( self,
+        .{ .x =  0,            .y = -self.scale.y }, // P0
+        .{ .x =  self.scale.x, .y =  0            }, // P1
+        .{ .x =  0,            .y =  self.scale.y }, // P2
+        .{ .x = -self.scale.x, .y =  0            }, // P3
+      );
     },
 
-    .CIRC => // TODO : add ellipse support as well
+    .CIRC => // TODO : add reg polygon support and use that instead
     {
       def.ray.drawCircle(
         @intFromFloat( self.pos.x ),
