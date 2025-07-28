@@ -316,7 +316,7 @@ pub const entityManager = struct
 
   // ================ ROTATION PROPERTIES ================
 
-  pub fn setRotation( self : *entityManager, id : u32, rotation : f16 ) void
+  pub fn setRotation( self : *entityManager, id : u32, rotation : f32 ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -327,7 +327,7 @@ pub const entityManager = struct
     }
     self.entities[ index ].rotPos = rotation;
   }
-  pub fn getRotation( self : *entityManager, id : u32 ) ?f16
+  pub fn getRotation( self : *entityManager, id : u32 ) ?f32
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );

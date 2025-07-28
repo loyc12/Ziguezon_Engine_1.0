@@ -45,20 +45,26 @@ pub const randomiser = struct
     return res;
   }
 
+  // Returns a random angle in radians in the range [ 0, 2*PI )
+  pub fn getAngleRad( self : *randomiser ) f32
+  {
+    return self.rng.float( f32 ) * std.math.tau;
+  }
+
   // Returns a random float in in range [ offset - scale, offset + scale ]
   pub fn getFloatScaled( self : *randomiser, scale : f32, offset : f32 ) f32
   {
     const tmp = self.rng.float( f32 );
 
-    tmp = ( tmp * 2.0 ) - 1.0;       // Scale to range [-1, 1]
+    tmp =  ( tmp * 2.0 ) - 1.0;      // Scale to range [-1, 1]
     return ( tmp * scale ) + offset; // Scale and offset the value
   }
 
   // Returns a random unit vector ( length of 1 in a random direction )
   pub fn getVec2( self : *randomiser ) def.vec2
   {
-    const angle = self.rng.float( f32 ) * std.math.TAU;        // Get a random angle in radians
-    return def.vec2{ .x = @cos( angle ), .y = @sin( angle ) }; // Create a unit vector in the direction of the angle
+    const angle = self.getAngleRad();
+    return def.vec2{ .x = @cos( angle ), .y = @sin( angle ) };
 
   }
 

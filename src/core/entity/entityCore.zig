@@ -29,9 +29,9 @@ pub const entity = struct
 
   // ================ ROTATION PROPERTIES ================
 
-  rotPos : f16 = 0, // Rotation of the entity in radians
-//rotVel : f16 = 0, // Angular velocity of the entity in radians per second
-//rotAcc : f16 = 0, // Angular acceleration of the entity in radians per second squared
+  rotPos : f32 = 0, // Rotation of the entity in radians
+//rotVel : f32 = 0, // Angular velocity of the entity in radians per second
+//rotAcc : f32 = 0, // Angular acceleration of the entity in radians per second squared
 
 
   // ================ POSITION FUNCTIONS ================
