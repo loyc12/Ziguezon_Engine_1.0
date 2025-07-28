@@ -5,7 +5,7 @@ pub var DISK_ID : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnLaunch( ng : *def.eng.engine ) void // Called by engine.launch()
+pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 {
 
   if( ng.entityManager.addEntity( // disk

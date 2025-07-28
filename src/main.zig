@@ -39,11 +39,11 @@ pub fn main() !void
   initCriticals();
   defer deinitCriticals();
 
-  def.G_NG.changeState( .LAUNCHED );
+  def.G_NG.changeState( .OPENED );
 
   def.G_NG.loopLogic();
 
-  def.G_NG.changeState( .CLOSED );
+  def.G_NG.changeState( .OFF );
 }
 
 test "example test"

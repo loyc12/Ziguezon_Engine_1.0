@@ -412,7 +412,7 @@ pub const entityManager = struct
 
   // ================================ RENDER FUNCTIONS ================================
 
-  pub fn renderActiveEntities( self : *entityManager ) void // TODO : have this take in a renderer construct and pass it to entity.render()
+  pub fn renderActiveEntities( self : *entityManager ) void // TODO : have this take in a renderer construct and pass it to entity.renderGraphics()
   {
     // Iterate through all entities and render them if they are active
     for( self.entities.items )| entity |{ entity.renderSelf(); }

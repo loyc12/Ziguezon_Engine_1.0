@@ -11,9 +11,6 @@ pub var BALL_ID            : u32 = 0;
 
 pub fn OnStart( ng : *def.eng.engine ) void // Called by engine.start()
 {
-  def.qlog( .INFO, 0, @src(), "# Starting the game..." );
-
-
   ng.resourceManager.addAudioFromFile( "hit_1", "exampleGames/assets/sounds/Boop_1.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
@@ -22,10 +19,9 @@ pub fn OnStart( ng : *def.eng.engine ) void // Called by engine.start()
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_2': {}\n", .{ err } );
   };
-  def.qlog( .INFO, 0, @src(), "$ Game started successfully!\n" );
 }
 
-pub fn OnLaunch( ng : *def.eng.engine ) void // Called by engine.launch()
+pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 {
 
   if( ng.entityManager.addEntity( // player 1

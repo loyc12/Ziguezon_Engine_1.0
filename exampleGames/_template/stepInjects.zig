@@ -20,14 +20,14 @@ pub fn OnLoopEnd( ng : *def.eng.engine ) void // Called by engine.loopLogic()
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OnLoopIter( ng : *def.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
+pub fn OnLoopCycle( ng : *def.eng.engine ) void // Called by engine.loopLogic() ( every frame, no exception )
 {
   _ = ng; // Prevent unused variable warning
 }
 
 
 // NOTE : This is where you should capture inputs to update global flags
-pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
@@ -41,19 +41,19 @@ pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( 
 }
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OnTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   _ = ng; // Prevent unused variable warning
 }
 
 
 // NOTE : This is where you should render all background effects ( sky, etc. )
-pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 
@@ -61,27 +61,27 @@ pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.rende
 }
 
 // NOTE : This is where you should render all world-position relative effects
-pub fn OnRenderWorld( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OnRenderWorld( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   // NOTE : All active entities are rendered after the function is called, so no need to render them here.
 
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OffRenderWorld( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OffRenderWorld( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 }
 
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
-pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   if( DRAW_TEST ) // Example of a flag toggled feature
   {
     def.ray.drawText( "TEST", @divTrunc( def.ray.getScreenWidth(), 2 ), @divTrunc( def.ray.getScreenHeight(), 2 ), 64, def.ray.Color.green );
   }
 
-  if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
+  if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
     def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
   }

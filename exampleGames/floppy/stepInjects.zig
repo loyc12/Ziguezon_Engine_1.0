@@ -19,7 +19,7 @@ var IS_JUMPING    : bool = false; // Flag to check if the disk is jumping
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
@@ -47,7 +47,7 @@ pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( 
 
   if( ng.state == .PLAYING ) // If the game is launched, check for input
   {
-    if( IS_GAME_OVER ){ ng.changeState( .LAUNCHED ); return; }
+    if( IS_GAME_OVER ){ ng.changeState( .OPENED ); return; }
 
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.space ) or def.ray.isKeyPressed( def.ray.KeyboardKey.up ) or def.ray.isKeyPressed( def.ray.KeyboardKey.w ))
     {
@@ -57,7 +57,7 @@ pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( 
   }
 }
 
-pub fn OnTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OnTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   var disk = ng.entityManager.getEntity( stateInj.DISK_ID ) orelse
   {
@@ -81,7 +81,7 @@ pub fn OnTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( ever
   else{ disk.acc.y = GRAVITY; } // Apply gravity
 }
 
-pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   const hHeight : f32 = def.getScreenHeight() / 2.0;
 
@@ -105,14 +105,14 @@ pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( eve
   // ================ DISK-PILLAR COLLISIONS ================
 }
 
-pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 
   def.ray.clearBackground( def.ray.Color.green );
 }
 
-pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   // Declare the buffer to hold the formatted scores
   var s_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 };
@@ -128,7 +128,7 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
   s_buff[ s_slice.len ] = 0;
   def.log( .DEBUG, 0, @src(), "Score: {s}", .{ s_slice });
 
-  if( ng.state == .LAUNCHED ) // NOTE : Greys out the game when it is paused
+  if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {
     def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
   }
@@ -143,7 +143,7 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
     def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.ray.Color.yellow );
     def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.ray.Color.yellow );
   }
-  else if( ng.state == .LAUNCHED ) // If the game is paused, display the resume message
+  else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
     def.drawCenteredText( "Press Enter to resume",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.ray.Color.yellow );
     def.drawCenteredText( "Press Escape to exit",    def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 128, 64, def.ray.Color.yellow );

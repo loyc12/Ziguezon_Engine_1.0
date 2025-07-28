@@ -189,7 +189,7 @@ pub fn deinitFile() void
   if( G_IsFileOpened )
   {
     qlog( .INFO, 0, @src(), "Logfile deinitialized\n\n" );
-    G_LOG_FILE.close();
+    G_LOG_FILE.stop();
     G_IsFileOpened = false; // Set the flag to false as we closed the file
   }
 }

@@ -68,7 +68,7 @@ var   WINNER    : u8 = 0;              // The winner of the game, 1 for player 1
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
@@ -114,7 +114,7 @@ pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( 
 
   if( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE )
   {
-    ng.changeState( .LAUNCHED ); // Pause the game on victory
+    ng.changeState( .OPENED ); // Pause the game on victory
 
     if( SCORES[ 0 ] >= WIN_SCORE )
     {
@@ -129,7 +129,7 @@ pub fn OnUpdateStep( ng : *def.eng.engine ) void // Called by engine.update() ( 
   }
 }
 
-pub fn OnTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OnTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
   {
@@ -167,7 +167,7 @@ pub fn OnTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( ever
   }
 }
 
-pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( every frame, when not paused )
+pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   // ================ VARIABLES AND CONSTANTS ================
 
@@ -319,14 +319,14 @@ pub fn OffTickStep( ng : *def.eng.engine ) void // Called by engine.tick() ( eve
 
 }
 
-pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 
   def.ray.clearBackground( def.ray.Color.black );
 }
 
-pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
+pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
 {
   // Declare the buffers to hold the formatted scores
   var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score
@@ -353,7 +353,7 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
   def.drawCenteredText( &s1_buff, def.getScreenWidth() * 0.25, def.getScreenHeight() * 0.5, 64, def.ray.Color.blue );
   def.drawCenteredText( &s2_buff, def.getScreenWidth() * 0.75, def.getScreenHeight() * 0.5, 64, def.ray.Color.red );
 
-  if( ng.state == .LAUNCHED ) // NOTE : Gray out the game when it is paused
+  if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
     def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
   }
@@ -365,7 +365,7 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.render()
     def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.ray.Color.yellow );
     def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.ray.Color.yellow );
   }
-  else if( ng.state == .LAUNCHED ) // If the game is paused, display the resume message
+  else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
     def.drawCenteredText( "Press Enter to resume", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.ray.Color.yellow );
   }

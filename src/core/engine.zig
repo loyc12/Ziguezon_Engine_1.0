@@ -9,16 +9,16 @@ pub const DEF_TARGET_FPS  = 120; // Default target FPS for the game
 
 pub const e_state = enum // These values represent the different states of the engine.
 {
-  CLOSED,   // The engine is uninitialized
-  STARTED,  // The engine is initialized, but no window is created yet
-  LAUNCHED, // The game is paused ( only inputs and render are occuring )
-  PLAYING,  // The game is ticking and can be played
+  OFF,     // The engine is uninitialized
+  STARTED, // The engine is initialized, but no window is created yet
+  OPENED,  // The game is paused ( only inputs and render are occuring )
+  PLAYING, // The game is ticking and can be played
 };
 
-//pub fn isAccessibleState( state : e_state ) bool { return state == .CLOSED or state == .STARTED or state == .LAUNCHED or state == .TICKING; }
+//pub fn isAccessibleState( state : e_state ) bool { return state == .OFF or state == .STARTED or state == .OPENED or state == .TICKING; }
 pub const engine = struct
 {
-  state : e_state = .CLOSED,
+  state : e_state = .OFF,
   timeScale : f32 = 1.0, // Used to speed up or slow down the game
   sdt : f32 = 0.0, // Latest scaled delta time ( from last frame )
 
@@ -50,24 +50,25 @@ pub const engine = struct
 
   pub fn changeState( self : *engine, targetState : e_state ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Changing state" );
+
 
     if( targetState == self.state )
     {
       def.log( .WARN, 0, @src(), "State is already {s}, no change needed", .{ @tagName( self.state ) });
       return;
     }
+    else { def.qlog( .TRACE, 0, @src(), "Changing state" ); }
 
-    // If the target state is higher than the current state, we are increasing the state
+    // If the target state is higher than the current state,
     if( @intFromEnum( targetState ) > @intFromEnum( self.state ) )
     {
       def.log( .INFO, 0, @src(), "Increasing state from {s} to {s}", .{ @tagName( self.state ), @tagName( targetState )});
 
       switch( self.state )
       {
-        .CLOSED   => self.start(),
-        .STARTED  => self.launch(),
-        .LAUNCHED => self.play(),
+        .OFF     => { self.start(); },
+        .STARTED => { self.open();  },
+        .OPENED  => { self.play();  },
 
         else =>
         {
@@ -82,9 +83,9 @@ pub const engine = struct
 
       switch( self.state )
       {
-        .PLAYING  => self.pause(),
-        .LAUNCHED => self.stop(),
-        .STARTED  => self.close(),
+        .PLAYING => { self.pause(); },
+        .OPENED  => { self.close(); },
+        .STARTED => { self.stop();  },
 
         else =>
         {
@@ -94,68 +95,169 @@ pub const engine = struct
       }
     }
     // Recursively calling changeState to pass through all intermediate state changes ( if needed )
-    // TODO : use switch continue instead of recursion
+    // TODO : use "switch continue" instead of recursion ?
     if( self.state != targetState ){ self.changeState( targetState ); }
   }
 
+  // ================ START & STOP ================
+
   fn start( self : *engine ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Starting the engine..." );
-    // Initialize the engine (e.g. allocate resources, set up the game state, etc.)
-
-    self.rng.randInit();
-    self.entityManager.init(   def.alloc );
-    self.resourceManager.init( def.alloc );
-
-    def.ray.initAudioDevice();
-
-    self.mainCamera = def.ray.Camera2D
+    if( self.state != .OFF )
     {
-      .offset = // TODO : make sure the offset stay accurate when the window is resized
-      .{
-        .x = DEF_SCREEN_DIMS.x / 2,
-        .y = DEF_SCREEN_DIMS.y / 2
-      },
-      .target = .{ .x = 0, .y = 0 },
-      .rotation = 0.0,
-      .zoom = 1.0,
-    };
+      def.log( .WARN, 0, @src(), "Cannot start the engine in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else { def.qlog( .TRACE, 0, @src(), "Starting the engine..." ); }
+
+    // Initialize relevant raylib components
+    {
+      def.ray.initAudioDevice();
+
+      self.mainCamera = def.ray.Camera2D
+      {
+        .offset = // TODO : make sure the offset stay accurate when the window is resized
+        .{
+          .x = DEF_SCREEN_DIMS.x / 2,
+          .y = DEF_SCREEN_DIMS.y / 2
+        },
+        .target = .{ .x = 0, .y = 0 },
+        .rotation = 0.0,
+        .zoom = 1.0,
+      };
+    }
+    // Initialize relevant engine components
+    {
+      self.rng.randInit();
+      self.entityManager.init(   def.alloc );
+      self.resourceManager.init( def.alloc );
+    }
+    def.tryHook( .OnStart, .{ self });
 
     def.qlog( .INFO, 0, @src(), "$ Hello, world !\n" );
-    def.tryHook( .OnStart, .{ self });
     self.state = .STARTED;
   }
 
-  fn launch( self : *engine ) void
+  fn stop( self : *engine ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Launching the game..." );
+    if( self.state == .OFF )
+    {
+      def.log( .WARN, 0, @src(), "Cannot stop the engine in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else{ def.qlog( .TRACE, 0, @src(), "Stoping the engine..." ); }
 
-    // Prepare the engine for gameplay ( e.g. load game data, initialize game state, etc. )
-    def.ray.setTargetFPS( DEF_TARGET_FPS ); // Set the target FPS for the game
-    def.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Initialize the game window
+    def.tryHook( .OnStop, .{ self });
 
-    def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.ray.getScreenWidth(), def.ray.getScreenHeight() });
+    // Deinitialize relevant engine components
+    {
+      self.resourceManager.deinit();
+      self.resourceManager = undefined;
 
-    def.tryHook( .OnLaunch, .{ self });
-    self.state = .LAUNCHED;
+      self.entityManager.deinit();
+      self.entityManager = undefined;
+    }
+    // Deinitialize relevant raylib components
+    {
+      self.mainCamera = undefined;
+
+      if( def.ray.isAudioDeviceReady() )
+      {
+        def.qlog( .INFO, 0, @src(), "# Closing the audio device..." );
+        def.ray.closeAudioDevice();
+      }
+    }
+    self.state = .OFF;
+    def.qlog( .INFO, 0, @src(), "# Goodbye, cruel world...\n" );
   }
 
+  // ================ OPEN & CLOSE ================
+
+  fn open( self : *engine ) void
+  {
+    if( self.state != .STARTED )
+    {
+      def.log( .WARN, 0, @src(), "Cannot open the game in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else{ def.qlog( .TRACE, 0, @src(), "Launching the game..." ); }
+
+    // Initialize relevant engine components
+    {}
+    // Initialize relevant raylib components
+    {
+      def.ray.setTargetFPS( DEF_TARGET_FPS );
+      def.ray.initWindow( DEF_SCREEN_DIMS.x, DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Opens the window
+    }
+    def.tryHook( .OnOpen, .{ self });
+
+    // TODO : Start the game loop in a second thread here ?
+
+    self.state = .OPENED;
+    def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.ray.getScreenWidth(), def.ray.getScreenHeight() });
+  }
+
+  fn close( self : *engine ) void
+  {
+    if( self.state != .OPENED )
+    {
+      def.log( .WARN, 0, @src(), "Cannot close the game in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else{ def.qlog( .TRACE, 0, @src(), "Stopping the game..." ); }
+
+    def.tryHook( .OnClose, .{ self });
+
+    // Deinitialize relevant raylib components
+    {
+      if( def.ray.isWindowReady() )
+      {
+        def.qlog( .INFO, 0, @src(), "# Closing the window..." );
+        def.ray.closeWindow();
+      }
+    }
+    // Deinitialize relevant engine components
+    {}
+
+    self.state = .STARTED;
+    def.qlog( .INFO, 0, @src(), "# Cya !\n" );
+  }
+
+  // ================ PLAY & PAUSE ================
   fn play( self : *engine ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Resuming the game..." );
-
-    // Start the game loop or resume gameplay
+    if( self.state != .OPENED )
+    {
+      def.log( .WARN, 0, @src(), "Cannot play the game in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else{ def.qlog( .TRACE, 0, @src(), "Resuming the game..." ); }
 
     def.tryHook( .OnPlay, .{ self });
     self.state = .PLAYING;
   }
 
+
+  fn pause( self : *engine ) void
+  {
+    if( self.state != .PLAYING )
+    {
+      def.log( .WARN, 0, @src(), "Cannot pause the game in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else{ def.qlog( .TRACE, 0, @src(), "Pausing the game..." ); }
+
+    def.tryHook( .OnPause, .{ self });
+    self.state = .OPENED;
+  }
+
   pub fn togglePause( self : *engine ) void
   {
+    def.qlog( .TRACE, 0, @src(), "Toggling pause..." );
     switch( self.state )
     {
-      .LAUNCHED => self.play(),
-      .PLAYING  => self.pause(),
+      .OPENED  => { self.play();  },
+      .PLAYING => { self.pause(); },
       else =>
       {
         def.log( .WARN, 0, @src(), "Cannot toggle pause in current state ({s})", .{ @tagName( self.state ) });
@@ -164,58 +266,17 @@ pub const engine = struct
     }
   }
 
-  fn pause( self : *engine ) void
+  // ================ STATE CHECKERS ================
+
+  pub fn isStarted( self : *const engine ) bool
   {
-    def.qlog( .TRACE, 0, @src(), "Pausing the game..." );
-
-    // Pause the game logic (e.g. stop updating game state, freeze animations, etc.)
-
-    def.tryHook( .OnPause, .{ self });
-    self.state = .LAUNCHED;
+    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.STARTED ));
   }
-
-  fn stop( self : *engine ) void
+  pub fn isOpened( self : *const engine ) bool
   {
-    def.qlog( .TRACE, 0, @src(), "Stopping the game..." );
-
-    if( def.ray.isWindowReady() )
-    {
-      def.qlog( .INFO, 0, @src(), "# Closing the window..." );
-      def.ray.closeWindow();
-    }
-
-
-    def.tryHook( .OnStop, .{ self });
-    self.state = .STARTED;
+    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.OPENED ));
   }
-
-  fn close( self : *engine ) void
-  {
-    def.qlog( .TRACE, 0, @src(), "Closing the engine..." );
-
-    self.entityManager.deinit();
-    self.resourceManager.deinit();
-
-    if( def.ray.isAudioDeviceReady() )
-    {
-      def.qlog( .INFO, 0, @src(), "# Closing the audio device..." );
-      def.ray.closeAudioDevice();
-    }
-
-    self.entityManager = undefined;
-    self.mainCamera    = undefined;
-
-    def.qlog( .INFO, 0, @src(), "# Goodbye, cruel world...\n" );
-
-    def.tryHook( .OnClose, .{ self });
-    self.state = .CLOSED;
-  }
-
-  pub fn isLaunched( self : *const engine ) bool
-  {
-    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.LAUNCHED ));
-  }
-  pub fn isUnpaused( self : *const engine ) bool
+  pub fn isPlaying( self : *const engine ) bool
   {
     return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.PLAYING ));
   }
@@ -224,67 +285,74 @@ pub const engine = struct
 
   pub fn loopLogic( self : *engine ) void
   {
-    def.qlog( .INFO, 0, @src(), "Starting the game loop..." );
+    if( !self.isOpened() )
+    {
+      def.log( .WARN, 0, @src(), "Cannot start the game loop in state {s}", .{ @tagName( self.state ) });
+      return;
+    }
+    else { def.qlog( .TRACE, 0, @src(), "Starting the game loop..." ); }
+
     def.tryHook( .OnLoopStart, .{ self });
+
+    // NOTE : this is a blocking loop, it will not return until the game is closed
+    // TODO : use a thread to run this loop in the background ?
 
     while( !def.ray.windowShouldClose() )
     {
-      def.tryHook( .OnLoopIter, .{ self });
+      def.tryHook( .OnLoopCycle, .{ self });
 
       if( comptime def.logger.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
       else { def.logger.logLapTime(); }
 
-      if( self.isLaunched() )
+      if( self.isOpened() )
       {
-        self.update();                          // Inputs and Flags
-        if( self.isUnpaused() ){ self.tick(); } // Logic and movement
-        self.render();                          // Visuals
+        self.updateInputs();   // Inputs and Global Flags
+        self.tickEntities();   // Logic and Physics
+        self.renderGraphics(); // Visuals and UI
       }
-      //def.tryHook( .OffLoopIter, .{ self });
     }
+    def.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
 
-    def.qlog( .INFO, 0, @src(), "Game loop done" );
     def.tryHook( .OnLoopEnd, .{ self });
+
+    def.qlog( .INFO, 0, @src(), "Game loop stopped" );
   }
 
-  // ================================ GAME LOGIC ================================
+  // ================ LOOP EVENTS ================
 
-  fn update( self : *engine ) void
+  fn updateInputs( self : *engine ) void
   {
     def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
     // This function is used to get input from the user, such as keyboard or mouse input.
 
-    def.tryHook( .OnUpdateStep, .{ self });
+    def.tryHook( .OnUpdateInputs, .{ self });
     {
       // TODO : update global inputs here
     }
-    //def.tryHook( .OffUpdateStep, .{ self });
+    //def.tryHook( .OffUpdateInputs, .{ self });
   }
 
 
-  fn tick( self : *engine ) void // TODO : use tick rate instead of frame time
+  fn tickEntities( self : *engine ) void                // TODO : use tick rate instead of frame time
   {
+    if( !self.isPlaying() ){ return; } // skip this function if the game is paused
+
     def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
-    // This function is used to update the game logic, such as processing input, updating the game state, etc.
 
-    // Get the delta time and apply the time scale
     self.sdt = def.ray.getFrameTime() * self.timeScale;
-    //def.log( .DEBUG, 0, @src(), "Scaled Delta time : {d} seconds", .{ self.sdt });
 
-    def.tryHook( .OnTickStep, .{ self });
+    def.tryHook( .OnTickEntities, .{ self });
     {
     //self.entityManager.collideActiveEntities( self.sdt );
       self.entityManager.tickActiveEntities( self.sdt );
     }
-    def.tryHook( .OffTickStep, .{ self });
+    def.tryHook( .OffTickEntities, .{ self });
   }
 
 
-  fn render( self : *engine ) void
+  fn renderGraphics( self : *engine ) void
   {
     def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
-    // This function is used to render the game visuals, such as drawing sprites, backgrounds, etc.
-    // It uses raylib's drawing functions to draw the game visuals on the screen.
 
     def.ray.beginDrawing();
     defer def.ray.endDrawing();
@@ -292,7 +360,7 @@ pub const engine = struct
     // Background Rendering mode
     def.tryHook( .OnRenderBackground, .{ self });
     {
-      // TODO : Render the background here
+      // TODO : Render the backgrounds here
     }
     //def.tryHook( .OffRenderBackground, .{ self });
 
