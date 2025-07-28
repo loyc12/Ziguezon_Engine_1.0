@@ -25,27 +25,54 @@ pub const randomiser = struct
   {
     switch( @typeInfo( t ))
     {
-      .int     => return self.rng.randomInt( t ),
-      .float   => return self.rng.randomFloat( t ),
-      .@"enum" => return self.rng.randomEnum( t ),
+      .int     => return self.rng.int( t ),       // from int_min to int_max
+      .float   => return self.rng.float( t ),     // from 0.0 to 1.0
+      .@"enum" => return self.rng.enumValue( t ), // from the enumeration values
       else => @compileError("Unsupported type for random value generation"),
     }
   }
 
-  pub fn getVec2( self : *randomiser ) def.vec2
+  // Returns a random integer in the range [ min, max ] ( inclusive for both )
+  pub fn getIntClamped( self : *randomiser, min : i32, max : i32 ) i32
   {
-    var tmp = def.vec2{ .x = self.rng.float( f32 ), .y = self.rng.float( f32 ) };
 
-    // Scale to range [-1, 1]
-    tmp.x = ( tmp.x * 2.0 ) - 1.0;
-    tmp.y = ( tmp.y * 2.0 ) - 1.0;
+    var tmp : f32 = @floatFromInt( max - min ); // Getting the size of the range between [ min, max ]
+    tmp += 0.9999999;             // Adding ~1 to the range to include maximum value in the rounded down result
+    tmp =* self.rng.float( f32 ); // Getting a random float in the range [ 0, range + ~1 ]
+    tmp += @floatFromInt( min );  // Adding the minimum value to the random float to get the range [ min, max + ~1 ]
 
-    return tmp;
+    const res : i32 = @intFromFloat( @floor( tmp )); // Rounding down the value to get an integer in the range [ min, max ]
+    return res;
   }
 
+  // Returns a random float in in range [ offset - scale, offset + scale ]
+  pub fn getFloatScaled( self : *randomiser, scale : f32, offset : f32 ) f32
+  {
+    const tmp = self.rng.float( f32 );
+
+    tmp = ( tmp * 2.0 ) - 1.0;       // Scale to range [-1, 1]
+    return ( tmp * scale ) + offset; // Scale and offset the value
+  }
+
+  // Returns a random unit vector ( length of 1 in a random direction )
+  pub fn getVec2( self : *randomiser ) def.vec2
+  {
+    const angle = self.rng.float( f32 ) * std.math.TAU;        // Get a random angle in radians
+    return def.vec2{ .x = @cos( angle ), .y = @sin( angle ) }; // Create a unit vector in the direction of the angle
+
+  }
+
+  // Returns a random vector scaled by the given scale and offset by a given amount
   pub fn getVec2Scaled( self : *randomiser, scale : def.vec2, offset : def.vec2 ) def.vec2
   {
-    const tmp = self.getVec2();
-    return def.vec2{ .x = ( tmp.x * scale.x ) + offset.x, .y = ( tmp.y * scale.y ) + offset.y };
+    var tmp = self.getVec2(); // Get a random unit vector
+
+    tmp.x *= scale.x;  // Scale the x component
+    tmp.y *= scale.y;  // Scale the y component
+
+    tmp.x += offset.x; // Offset the x component
+    tmp.y += offset.y; // Offset the y component
+
+    return tmp;
   }
 };

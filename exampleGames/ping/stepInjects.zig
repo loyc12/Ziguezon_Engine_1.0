@@ -21,7 +21,7 @@ pub fn cpyEntityPosViaID( ng : *def.eng.engine , dstID : u32, srcID : u32, ) voi
   dst.cpyEntityPos( src );
 }
 
-pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel : def.vec2, dVel : def.vec2, count : u32, colour : def.ray.Color ) void
+pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel : def.vec2, dVel : def.vec2, rot : f32, dRot : f32, count : u32, colour : def.ray.Color ) void
 {
   // Emit particles at the given position with the given colour
   for( 0 .. count )| i |
@@ -37,8 +37,9 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel
 
     var tmp : *def.ntt.entity = particle.?;
 
-    tmp.pos = ng.rng.getVec2Scaled( dPos, pos ); // Set the particle position
-    tmp.vel = ng.rng.getVec2Scaled( dVel, vel ); // Set the particle velocity
+    tmp.pos = ng.rng.getVec2Scaled(  dPos, pos ); // Set the particle position
+    tmp.vel = ng.rng.getVec2Scaled(  dVel, vel ); // Set the particle velocity
+    tmp.rot = ng.rng.getFloatScaled( dRot, rot ); // Set the particle rotation
     tmp.colour = colour; // Set the particle colour
     tmp.scale = .{ .x = 4, .y = 4 }; // Set the particle size
   }
@@ -47,7 +48,7 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel
 pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
-  emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 )}, .{ .x = 128, .y = 32 }, 8, def.ray.Color.yellow );
+  emitParticles( ng, ball.getCenter(), .{ .x = 4, .y = 4 }, .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 )}, .{ .x = 128, .y = 32 }, 0, 8, 8, def.ray.Color.yellow );
 
   ng.resourceManager.playAudio( "hit_1" );
 }
