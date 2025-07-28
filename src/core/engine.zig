@@ -3,34 +3,35 @@ const def = @import( "defs" );
 
 // ================================ DEFINITIONS ================================
 
-pub const DEF_SCREEN_DIMS = def.vec2{ .x = 2048, .y = 1024 }; // Default screen dimensions for the game window
-pub const DEF_TARGET_FPS  = 120; // Default target FPS for the game
-//pub const DEF_TARGET_TPS   = 30; // Default tick rate for the game ( in seconds ) // TODO : USE ME
+pub const DEF_SCREEN_DIMS  = def.vec2{ .x = 2048, .y = 1024 };
+pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
 
-pub const e_state = enum // These values represent the different states of the engine.
+//pub const DEF_TARGET_TPS = 30;  // Default tick rate for the game ( in seconds ) // TODO : USE ME
+
+pub const e_state = enum
 {
   OFF,     // The engine is uninitialized
   STARTED, // The engine is initialized, but no window is created yet
-  OPENED,  // The game is paused ( only inputs and render are occuring )
+  OPENED,  // The window is openned but game is paused ( input and render only )
   PLAYING, // The game is ticking and can be played
 };
 
-//pub fn isAccessibleState( state : e_state ) bool { return state == .OFF or state == .STARTED or state == .OPENED or state == .TICKING; }
 pub const engine = struct
 {
-  state : e_state = .OFF,
+  // Engine Variables
+  state     : e_state = .OFF,
   timeScale : f32 = 1.0, // Used to speed up or slow down the game
-  sdt : f32 = 0.0, // Latest scaled delta time ( from last frame )
+  sdt       : f32 = 0.0, // Latest scaled delta time ( from last frame ) : == deltaTime * timeScale
 
-  rng : def.rng.randomiser = undefined, // Random number generator for the game
+  // Raylib Components
+  mainCamera : def.ray.Camera2D = undefined,
 
-  // The game timer is initialized with the current time
-  //gameTimer : def.timer.timer = def.timer.getNewTimer(),
-  // TODO : Use this to control when to tick or not ( see DEF_TARGET_TPS )
-
+  // Engine Components
+  rng             : def.rng.randomiser      = undefined,
   resourceManager : def.rsm.resourceManager = undefined,
   entityManager   : def.ntm.entityManager   = undefined,
-  mainCamera      : def.ray.Camera2D        = undefined,
+
+  // ================================ HELPER FUNCTIONS ================================
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {
@@ -46,7 +47,7 @@ pub const engine = struct
     def.log( .DEBUG, 0, @src(), "Time scale set to {d}", .{ self.timeScale });
   }
 
-  // ================================ ENGINE STATE ================================
+  // ================================ ENGINE STATE FUNCTIONS ================================
 
   pub fn changeState( self : *engine, targetState : e_state ) void
   {
@@ -97,6 +98,21 @@ pub const engine = struct
     // Recursively calling changeState to pass through all intermediate state changes ( if needed )
     // TODO : use "switch continue" instead of recursion ?
     if( self.state != targetState ){ self.changeState( targetState ); }
+  }
+
+    // ================ STATE CHECKERS ================
+
+  pub fn isStarted( self : *const engine ) bool
+  {
+    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.STARTED ));
+  }
+  pub fn isOpened( self : *const engine ) bool
+  {
+    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.OPENED ));
+  }
+  pub fn isPlaying( self : *const engine ) bool
+  {
+    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.PLAYING ));
   }
 
   // ================ START & STOP ================
@@ -224,6 +240,7 @@ pub const engine = struct
   }
 
   // ================ PLAY & PAUSE ================
+
   fn play( self : *engine ) void
   {
     if( self.state != .OPENED )
@@ -266,22 +283,7 @@ pub const engine = struct
     }
   }
 
-  // ================ STATE CHECKERS ================
-
-  pub fn isStarted( self : *const engine ) bool
-  {
-    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.STARTED ));
-  }
-  pub fn isOpened( self : *const engine ) bool
-  {
-    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.OPENED ));
-  }
-  pub fn isPlaying( self : *const engine ) bool
-  {
-    return ( @intFromEnum( self.state ) >= @intFromEnum( e_state.PLAYING ));
-  }
-
-  // ================================ GAME LOOP ================================
+  // ================================ GAME LOOP FUNCTIONS ================================
 
   pub fn loopLogic( self : *engine ) void
   {
@@ -382,5 +384,4 @@ pub const engine = struct
     }
     //def.tryHook( .OffRenderOverlay, .{ self });
   }
-
 };
