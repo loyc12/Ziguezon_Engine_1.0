@@ -38,12 +38,12 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel
 
     var tmp : *def.ntt.entity = particle.?;
 
-    tmp.shape  = .STAR; // Set the particle shape to circle
-    tmp.pos    = ng.rng.getVec2Scaled(  dPos, pos ); // Set the particle position
-    tmp.vel    = ng.rng.getVec2Scaled(  dVel, vel ); // Set the particle velocity
-    tmp.rotPos = ng.rng.getAngleRad(); // Set the particle rotation
-    tmp.colour = colour;               // Set the particle colour
-    tmp.scale  = .{ .x = 8, .y = 8 };  // Set the particle size
+    tmp.shape  = .TRIA;
+    tmp.pos    = ng.rng.getVec2Scaled(  dPos, pos );
+    tmp.vel    = ng.rng.getVec2Scaled(  dVel, vel );
+    tmp.rotPos = ng.rng.getAngleRad();
+    tmp.colour = colour;
+    tmp.scale  = .{ .x = 8, .y = 8 };
   }
 }
 

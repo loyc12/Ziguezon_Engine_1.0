@@ -105,18 +105,31 @@ pub const RtD = std.math.radiansToDegrees; // Shorthand for radians to degrees c
 
 pub fn addVec2(  a : vec2, b : vec2 ) vec2 { return vec2{ .x = a.x + b.x, .y = a.y + b.y }; }
 pub fn subVec2(  a : vec2, b : vec2 ) vec2 { return vec2{ .x = a.x - b.x, .y = a.y - b.y }; }
-pub fn normVec2( a : vec2 ) vec2
+pub fn mulVec2(  a : vec2, b : vec2 ) vec2 { return vec2{ .x = a.x * b.x, .y = a.y * b.y }; }
+pub fn divVec2(  a : vec2, b : vec2 ) ?vec2
+{
+  if( b.x == 0.0 or b.y == 0.0 )
+  {
+    @compileLog( "Warning: Division by zero in divVec2()" );
+    return null; // Return null if division by zero is attempted
+  }
+  return vec2{ .x = a.x / b.x, .y = a.y / b.y };
+}
+
+pub fn normVec2( a : vec2 ) ?vec2
 {
   const len = @sqrt(( a.x * a.x ) + ( a.y * a.y ));
 
-  if( len == 0.0 ){ return vec2{ .x = 0.0, .y = 0.0 }; } // Prevent division by zero
-
+  if( len == 0.0 )
+  {
+    return null;
+  }
   return vec2{ .x = a.x / len, .y = a.y / len };
 }
-pub fn rotVec2Rad( a : vec2, angle : f32 ) vec2 // NOTE : Angles in radians
+pub fn rotVec2Rad( a : vec2, angleRad : f32 ) vec2
 {
-  const cosAngle = @cos( angle );
-  const sinAngle = @sin( angle );
+  const cosAngle = @cos( angleRad );
+  const sinAngle = @sin( angleRad );
 
   return vec2
   {
@@ -124,12 +137,44 @@ pub fn rotVec2Rad( a : vec2, angle : f32 ) vec2 // NOTE : Angles in radians
     .y = ( a.x * sinAngle ) + ( a.y * cosAngle ),
   };
 }
+pub fn getScaledVec2FromAngleDeg( angleDeg : f32, scale : vec2 ) vec2
+{
+  return vec2{ .x = @cos( DtR( angleDeg )) * scale.x, .y = @sin( DtR( angleDeg )) * scale.y };
+}
+
+// Do not forget to dealloc the returned array !
+pub fn getScaledPolyVertexs( scale : vec2, sides : u32 ) ?[]vec2
+{
+  if( sides < 3 )
+  {
+    log( .ERROR, 0, @src(), "getScaledPolyVertexs() requires at least 3 sides, got {d}", .{ sides } );
+    return null;
+  }
+
+  var points = std.ArrayList( vec2 ).init( alloc );
+
+  for( 0..sides )| i |
+  {
+    const angle = @as( f32, @floatFromInt( i )) * ( std.math.tau / @as( f32, @floatFromInt( sides ))); // 2*PI / sides
+    points.append( vec2{ .x = @cos( angle ) * scale.x, .y = @sin( angle ) * scale.y }) catch | err |
+    {
+      log( .ERROR, 0, @src(), "Failed to append polygon vertex {d} : {}", .{ i, err } );
+    };
+  }
+  if( points.items.len < sides )
+  {
+    log( .ERROR, 0, @src(), "Failed to generate polygon vertexs, got only {d} out of {d}", .{ points.items.len, sides } );
+    alloc.free( points.items );
+    return null;
+  }
+  return points.items;
+}
 
 // ================================ RAYLIB ADDONS ================================
 
 pub fn getScreenWidth()  f32 { return @floatFromInt( ray.getScreenWidth()  ); }
 pub fn getScreenHeight() f32 { return @floatFromInt( ray.getScreenHeight() ); }
-pub fn getScreenSize() vec2  { return vec2{ .x = getScreenWidth(), .y = getScreenHeight(), }; }
+pub fn getScreenSize()  vec2 { return vec2{ .x = getScreenWidth(), .y = getScreenHeight(), }; }
 
 pub fn drawText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, color : ray.Color ) void
 {

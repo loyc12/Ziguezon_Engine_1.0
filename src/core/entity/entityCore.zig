@@ -4,11 +4,15 @@ const def    = @import( "defs" );
 pub const e_shape = enum
 {
   NONE, // No shape defined ( will not be rendered )
-  TRIA, // Triangle ( isosceles, pointing up )
+  TRIA, // Triangle ( equilateral, pointing towards -y ( up ))
+  STAR, // Star ( two overlaping triangles, pointing along the y axis )
   RECT, // Square / Rectangle
   DIAM, // Square / Diamond ( rhombus )
-  CIRC, // Circle / Ellipse
-  STAR, // Star ( two pverlaping equilateral triangles )
+  PENT, // Pentagon  ( regular )
+  HEXA, // Hexagon   ( regular )
+  OCTA, // Octagon   ( regular )
+  DODE, // Dodecagon ( regular )
+  CIRC, // Circle / Ellipse ( aproximated via a high facet count polygon )
 };
 
 pub const entity = struct
