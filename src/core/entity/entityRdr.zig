@@ -68,10 +68,10 @@ pub fn renderEntity( self : *const entity ) void
   {
     .TRIA =>
     {
-      renderRelativeTri( self,
-        .{ .x =  0,            .y = -self.scale.y }, // P0
-        .{ .x =  self.scale.x, .y =  self.scale.y }, // P2
-        .{ .x = -self.scale.x, .y =  self.scale.y }, // P1
+      renderRelativeTri( self, //                    NOTE : scale.y is negative here because "up" is -y in rendering
+        .{ .x = 0,                                              .y = -self.scale.y                                  }, // P0
+        .{ .x = self.scale.x * @sin( 4.0 * std.math.pi / 3.0 ), .y = -self.scale.y * @cos( 4.0 * std.math.pi / 3.0 )}, // P1
+        .{ .x = self.scale.x * @sin( 2.0 * std.math.pi / 3.0 ), .y = -self.scale.y * @cos( 2.0 * std.math.pi / 3.0 )}, // P2
       );
     },
 
@@ -89,9 +89,9 @@ pub fn renderEntity( self : *const entity ) void
     {
       renderRelativeQuad( self,
         .{ .x =  0,            .y = -self.scale.y }, // P0
-        .{ .x =  self.scale.x, .y =  0            }, // P1
+        .{ .x = -self.scale.x, .y =  0            }, // P1
         .{ .x =  0,            .y =  self.scale.y }, // P2
-        .{ .x = -self.scale.x, .y =  0            }, // P3
+        .{ .x =  self.scale.x, .y =  0            }, // P3
       );
     },
 
@@ -102,6 +102,20 @@ pub fn renderEntity( self : *const entity ) void
         @intFromFloat( self.pos.y ),
         ( self.scale.x + self.scale.y ) / 2, // Use average of X and Y scale for radius
         self.colour );
+    },
+
+    .STAR => // aka : two overlaping but inverted triangles
+    {
+      renderRelativeTri( self,
+        .{ .x = 0,                                              .y = -self.scale.y                                  }, // P0
+        .{ .x = self.scale.x * @sin( 4.0 * std.math.pi / 3.0 ), .y = -self.scale.y * @cos( 4.0 * std.math.pi / 3.0 )}, // P1
+        .{ .x = self.scale.x * @sin( 2.0 * std.math.pi / 3.0 ), .y = -self.scale.y * @cos( 2.0 * std.math.pi / 3.0 )}, // P2
+      );
+      renderRelativeTri( self,
+        .{ .x = self.scale.x * @sin( std.math.pi ),           .y = -self.scale.y * @cos( std.math.pi )            }, // P0
+        .{ .x = self.scale.x * @sin( 7 * std.math.pi / 3.0 ), .y = -self.scale.y * @cos( 7.0 * std.math.pi / 3.0 )}, // P1
+        .{ .x = self.scale.x * @sin( 5 * std.math.pi / 3.0 ), .y = -self.scale.y * @cos( 5.0 * std.math.pi / 3.0 )}, // P2
+      );
     },
 
     .NONE => {}, // NOTE : Not using else, so that the compiler warns if a new shape type is added

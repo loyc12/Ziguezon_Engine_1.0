@@ -8,6 +8,7 @@ pub const e_shape = enum
   RECT, // Square / Rectangle
   DIAM, // Square / Diamond ( rhombus )
   CIRC, // Circle / Ellipse
+  STAR, // Star ( two pverlaping equilateral triangles )
 };
 
 pub const entity = struct
@@ -17,9 +18,9 @@ pub const entity = struct
 
   // ================ SHAPE PROPERTIES ================
 
-  scale  : def.vec2,                          // Scale of the entity in X and Y
+  scale  : def.vec2,                            // Scale of the entity in X and Y
   colour : def.ray.Color = def.ray.Color.white, // Colour of the entity ( used for rendering )
-  shape  : e_shape     = .NONE,             // Shape of the entity
+  shape  : e_shape       = .NONE,               // Shape of the entity
 
   // ================ POSITION PROPERTIES ================
 
