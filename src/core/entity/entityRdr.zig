@@ -92,24 +92,23 @@ pub fn renderEntity( self : *const entity ) void
     {
       sideCount = 3; // Triangle has 3 sides
       renderRelativeTria( self,
-        def.getScaledVec2FromAngleDeg( 0.0,   self.scale ), // P0
-        def.getScaledVec2FromAngleDeg( 240.0, self.scale ), // P1
-        def.getScaledVec2FromAngleDeg( 120.0, self.scale ), // P2
+        def.getScaledVec2FromDeg( self.scale, 0.0   ), // P0
+        def.getScaledVec2FromDeg( self.scale, 240.0 ), // P1
+        def.getScaledVec2FromDeg( self.scale, 120.0 ), // P2
       );
     },
     .STAR => // aka : two overlaping but inverted triangles
     {
       sideCount = 6;
       renderRelativeTria( self,
-        def.getScaledVec2FromAngleDeg( 0.0,   self.scale ), // P0
-        def.getScaledVec2FromAngleDeg( 240.0, self.scale ), // P1
-        def.getScaledVec2FromAngleDeg( 120.0, self.scale ), // P2
+        def.getScaledVec2FromDeg( self.scale, 0.0   ), // P0
+        def.getScaledVec2FromDeg( self.scale, 240.0 ), // P1
+        def.getScaledVec2FromDeg( self.scale, 120.0 ), // P2
       );
       renderRelativeTria( self,
-        //.{ .x = self.scale.x * @sin( std.math.pi ),           .y = -self.scale.y * @cos( std.math.pi )            }, // P0
-        def.getScaledVec2FromAngleDeg( 180.0, self.scale ), // P0
-        def.getScaledVec2FromAngleDeg( 60.0,  self.scale ), // P1
-        def.getScaledVec2FromAngleDeg( 300.0, self.scale ), // P2
+        def.getScaledVec2FromDeg( self.scale, 180.0 ), // P0
+        def.getScaledVec2FromDeg( self.scale, 60.0  ), // P1
+        def.getScaledVec2FromDeg( self.scale, 300.0 ), // P2
       );
     },
     .RECT =>
@@ -141,7 +140,7 @@ pub fn renderEntity( self : *const entity ) void
 
   if( sideCount >= 5 )
   {
-    if( def.getScaledPolyVertexs( self.scale, sideCount )) | points |
+    if( def.getScaledPolyVerts( self.scale, sideCount )) | points |
     {
       renderRelativePoly( self, points );
       def.alloc.free( points );

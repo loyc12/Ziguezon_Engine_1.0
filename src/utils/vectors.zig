@@ -1,1 +1,0 @@
-// TODO : move the vector maths from def to here

@@ -39,8 +39,8 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel
     var tmp : *def.ntt.entity = particle.?;
 
     tmp.shape  = .TRIA;
-    tmp.pos    = ng.rng.getVec2Scaled(  dPos, pos );
-    tmp.vel    = ng.rng.getVec2Scaled(  dVel, vel );
+    tmp.pos    = ng.rng.getScaledVec2(  dPos, pos );
+    tmp.vel    = ng.rng.getScaledVec2(  dVel, vel );
     tmp.rotPos = ng.rng.getAngleRad();
     tmp.colour = colour;
     tmp.scale  = .{ .x = 8, .y = 8 };

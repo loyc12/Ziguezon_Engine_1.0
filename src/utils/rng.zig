@@ -33,7 +33,7 @@ pub const randomiser = struct
   }
 
   // Returns a random integer in the range [ min, max ] ( inclusive for both )
-  pub fn getIntClamped( self : *randomiser, min : i32, max : i32 ) i32
+  pub fn getClampedInt( self : *randomiser, min : i32, max : i32 ) i32
   {
 
     var tmp : f32 = @floatFromInt( max - min ); // Getting the size of the range between [ min, max ]
@@ -46,13 +46,13 @@ pub const randomiser = struct
   }
 
   // Returns a random angle in radians in the range [ 0, 2*PI )
-  pub fn getAngleRad( self : *randomiser ) f32
-  {
-    return self.rng.float( f32 ) * std.math.tau;
-  }
+  pub fn getAngleRad( self : *randomiser ) f32 { return self.rng.float( f32 ) * std.math.tau; }
+
+  // Returns a random angle in degrees in the range [ 0, 360 )
+  pub fn getAngleDeg( self : *randomiser ) f32 { return self.rng.float( f32 ) * 360.0; }
 
   // Returns a random float in in range [ offset - scale, offset + scale ]
-  pub fn getFloatScaled( self : *randomiser, scale : f32, offset : f32 ) f32
+  pub fn getScaledFloat( self : *randomiser, scale : f32, offset : f32 ) f32
   {
     const tmp = self.rng.float( f32 );
 
@@ -69,7 +69,7 @@ pub const randomiser = struct
   }
 
   // Returns a random vector scaled by the given scale and offset by a given amount
-  pub fn getVec2Scaled( self : *randomiser, scale : def.vec2, offset : def.vec2 ) def.vec2
+  pub fn getScaledVec2( self : *randomiser, scale : def.vec2, offset : def.vec2 ) def.vec2
   {
     var tmp = self.getVec2(); // Get a random unit vector
 
