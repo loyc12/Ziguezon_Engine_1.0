@@ -1,7 +1,11 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub const lerp = std.math.lerp;
+pub const atan2 = std.math.atan2;
+pub const DtR   = std.math.degreesToRadians;
+pub const RtD   = std.math.radiansToDegrees;
+
+pub const lerp  = std.math.lerp;
 
 pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 {

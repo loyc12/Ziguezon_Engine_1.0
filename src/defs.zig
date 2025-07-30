@@ -28,7 +28,6 @@ pub const ntm = @import( "core/entityManager.zig" );
 pub const ntt = @import( "core/entity/entityCore.zig" );
 
 
-
 // ================================ SHORTHANDS ================================
 // These are shorthand imports for commonly used modules in the project.
 
@@ -58,6 +57,10 @@ pub const qlog = logger.qlog; // for quick logging ( no args )
 
 // ================ MATHER SHORTHANDS ================
 pub const mather = @import( "utils/mather.zig" );
+
+pub const atan2 = mather.atan2;
+pub const DtR   = mather.DtR;
+pub const RtD   = mather.RtD;
 
 pub const lerp  = mather.lerp;
 pub const med3  = mather.med3;
@@ -99,4 +102,4 @@ pub const getSqrDist  = vector.getSqrDist;
 
 pub const getScaledVec2FromDeg = vector.getScaledVec2FromDeg;
 pub const getScaledVec2FromRad = vector.getScaledVec2FromRad;
-pub const getScaledPolyVerts  = vector.getScaledPolyVerts;
+pub const getScaledPolyVerts   = vector.getScaledPolyVerts;

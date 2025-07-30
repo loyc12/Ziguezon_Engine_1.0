@@ -2,9 +2,9 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 pub const vec2  = def.ray.Vector2;
-pub const atan2 = std.math.atan2;
-pub const DtR   = std.math.degreesToRadians;
-pub const RtD   = std.math.radiansToDegrees;
+pub const atan2 = def.atan2;
+pub const DtR   = def.DtR;
+pub const RtD   = def.RtD;
 
 // ================================ SCALAR MATH ================================
 
