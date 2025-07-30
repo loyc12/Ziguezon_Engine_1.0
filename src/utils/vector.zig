@@ -1,9 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-// Shorthand
-pub const vec2  = def.vec2;
-
+pub const vec2  = def.ray.Vector2;
 pub const atan2 = std.math.atan2;
 pub const DtR   = std.math.degreesToRadians;
 pub const RtD   = std.math.radiansToDegrees;

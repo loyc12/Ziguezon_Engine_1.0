@@ -78,7 +78,9 @@ pub fn qlog( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocat
 pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocation, comptime message : [:0] const u8, args : anytype ) void
 {
   // LOG EXAMPLE :
-  // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main) - This is a debug message
+
+    // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main)
+    // > This is a debug message
 
   // If the global log level is NONE, we instantly return, as nothing will ever be logged anyways
   if( comptime G_LOG_LVL == LogLevel.NONE ) return;
