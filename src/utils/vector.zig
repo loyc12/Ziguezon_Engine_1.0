@@ -144,28 +144,25 @@ pub fn getScaledVec2FromRad( scale : vec2, angleRad : f32 ) vec2 { return vec2{ 
 
 // Returns an allocated arrayList of vec2 points representing the vertexs of a regular polygon with the given scale and side count.
 // NOTE : Do not forget to dealloc the returned array !
-pub fn getScaledPolyVerts( scale : vec2, sideCount : u32 ) ?[]vec2
+pub fn getScaledPolyVerts( vertList : *std.ArrayList( def.vec2 ), scale : vec2, sideCount : u32 ) bool
 {
   if( sideCount < 3 )
   {
     def.log( .ERROR, 0, @src(), "getScaledPolyVerts() requires at least 3 sides, got {d}", .{ sideCount } );
-    return null;
+    return false;
   }
-  var points = std.ArrayList( vec2 ).init( def.alloc );
-
   for( 0..sideCount )| i |
   {
     const angle = @as( f32, @floatFromInt( i )) * ( std.math.tau / @as( f32, @floatFromInt( sideCount ))); // 2*PI / sides
-    points.append( vec2{ .x = @cos( angle ) * scale.x, .y = @sin( angle ) * scale.y }) catch | err |
+    vertList.append( vec2{ .x = @cos( angle ) * scale.x, .y = @sin( angle ) * scale.y }) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to append polygon vertex {d} : {}", .{ i, err } );
     };
   }
-  if( points.items.len < sideCount )
+  if( vertList.items.len < sideCount )
   {
-    def.log( .ERROR, 0, @src(), "Failed to generate polygon vertexs, got only {d} out of {d}", .{ points.items.len, sideCount } );
-    def.alloc.free( points.items );
-    return null;
+    def.log( .ERROR, 0, @src(), "Failed to generate polygon vertexs, got only {d} out of {d}", .{ vertList.items.len, sideCount } );
+    return false;
   }
-  return points.items;
+  return true;
 }

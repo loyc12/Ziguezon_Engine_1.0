@@ -1,1 +1,4 @@
 TODO : apply a lifetime to "particles"
+
+IDEA : kick the ball up on player contact, based on player speed
+IDEA : make it so the ball apogee is lower over time

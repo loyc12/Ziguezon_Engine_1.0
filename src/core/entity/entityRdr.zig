@@ -140,11 +140,18 @@ pub fn renderEntity( self : *const entity ) void
 
   if( sideCount >= 5 )
   {
-    if( def.getScaledPolyVerts( self.scale, sideCount )) | points |
+    def.setTmpTimer(); // DEBUG
+
+    var vertList : std.ArrayList( def.vec2 ) = std.ArrayList( def.vec2 ).init( def.alloc );
+
+    if( def.getScaledPolyVerts( &vertList, self.scale, sideCount ))
     {
-      renderRelativePoly( self, points );
-      def.alloc.free( points );
+      renderRelativePoly( self, vertList.items );
     }
-    else{ def.log( .ERROR, 0, @src(), "Failed to get polygon vertexs for entity {d} with shape {s}", .{ self.id, @tagName( self.shape ) }); }
+    else{ def.log( .ERROR, 0, @src(), "Failed to get all polygon vertexs for entity {d} with shape {s}", .{ self.id, @tagName( self.shape ) }); }
+
+    vertList.deinit(); // Deallocate the vertex list
+
+    def.logTmpTimer(); // DEBUG
   }
 }

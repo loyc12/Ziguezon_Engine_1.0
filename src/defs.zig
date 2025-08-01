@@ -54,6 +54,9 @@ pub const logger = @import( "utils/logger.zig" );
 pub const log  = logger.log;  // for argument-formatting logging
 pub const qlog = logger.qlog; // for quick logging ( no args )
 
+pub const setTmpTimer = logger.setTmpTimer;
+pub const logTmpTimer = logger.logTmpTimer;
+
 
 // ================ MATHER SHORTHANDS ================
 pub const mather = @import( "utils/mather.zig" );
