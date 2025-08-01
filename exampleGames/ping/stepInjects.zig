@@ -253,8 +253,8 @@ pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEnti
 
     if( ball.vel.y < 0 )
     {
-      ball.vel.y *= -wallBounceFactor;
       ball.vel.x *=  wallBounceFactor;
+      ball.vel.y *= -wallBounceFactor;
 
       emitParticlesOnBounce( ng, ball );
     }
@@ -300,7 +300,8 @@ pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEnti
     // Dividing by bounceFactor to accelerate the ball after each player bounce
     if( ball.vel.y > 0 ){ ball.vel.y = -ball.vel.y * playerBounceFactor; }
 
-    ball.vel.x += p1.vel.x * wallBounceFactor;
+    ball.vel.x += p1.vel.x / 2.0;
+    ball.vel.x *= wallBounceFactor;
 
     emitParticlesOnBounce( ng, ball );
   }
@@ -315,7 +316,8 @@ pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEnti
     // Dividing by bounceFactor to accelerate the ball after each player bounce
     if( ball.vel.y > 0 ){ ball.vel.y = -ball.vel.y * playerBounceFactor; }
 
-    ball.vel.x += p2.vel.x * wallBounceFactor;
+    ball.vel.x += p2.vel.x / 2.0;
+    ball.vel.x *= wallBounceFactor;
 
     emitParticlesOnBounce( ng, ball );
   }
