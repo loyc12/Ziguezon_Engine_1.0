@@ -27,7 +27,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
   if( ng.entityManager.addEntity( // player 1
   .{
     .shape  = .RECT,
-    .scale  = .{ .x = 128, .y = 32 },
+    .scale  = .{ .x = 128, .y = 16 },
     .colour = def.ray.Color.blue,
     .pos    = .{ .x = -512, .y = 512 },
   })
@@ -36,7 +36,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
   if( ng.entityManager.addEntity( // player 2
   .{
     .shape  = .RECT,
-    .scale  = .{ .x = 128, .y = 32 },
+    .scale  = .{ .x = 128, .y = 16 },
     .colour = def.ray.Color.red,
     .pos    = .{ .x = 512, .y = 512 },
   })
@@ -45,14 +45,14 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
   _ = ng.entityManager.addEntity( // separator
   .{
     .shape  = .RECT,
-    .scale  = .{ .x = 16, .y = 1024 },
+    .scale  = .{ .x = 8, .y = 1024 },
     .colour = def.ray.Color.dark_gray,
     .pos    = .{ .x = 0, .y = 0 },
   });
 
   if( ng.entityManager.addEntity( // ball shadow
   .{
-    .shape  = .CIRC,
+    .shape  = .ELLI,
     .scale  = .{ .x = 6, .y = 6 },
     .colour = def.ray.Color.pink,
     .pos    = .{ .x = 0, .y = 0 },
@@ -62,7 +62,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
   {
     _ = ng.entityManager.addEntity( // ball shadow
     .{
-      .shape  = .CIRC,
+      .shape  = .ELLI,
       .scale  = .{ .x = 8, .y = 8 },
       .colour = def.ray.Color.red,
       .pos    = .{ .x = 0, .y = 0 },
@@ -70,7 +70,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
     _ = ng.entityManager.addEntity( // ball shadow
     .{
-      .shape  = .CIRC,
+      .shape  = .ELLI,
       .scale  = .{ .x = 10, .y = 10 },
       .colour = def.ray.Color.orange,
       .pos    = .{ .x = 0, .y = 0 },
@@ -78,7 +78,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
     _ = ng.entityManager.addEntity( // ball shadow
     .{
-      .shape  = .CIRC,
+      .shape  = .ELLI,
       .scale  = .{ .x = 12, .y = 12 },
       .colour = def.ray.Color.yellow,
       .pos    = .{ .x = 0, .y = 0 },
@@ -86,7 +86,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
     _ = ng.entityManager.addEntity( // ball shadow
     .{
-      .shape  = .CIRC,
+      .shape  = .ELLI,
       .scale  = .{ .x = 14, .y = 14 },
       .colour = def.ray.Color.green,
       .pos    = .{ .x = 0, .y = 0 },
@@ -94,7 +94,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
     _ = ng.entityManager.addEntity( // ball shadow
     .{
-      .shape  = .CIRC,
+      .shape  = .ELLI,
       .scale  = .{ .x = 16, .y = 16 },
       .colour = def.ray.Color.sky_blue,
       .pos    = .{ .x = 0, .y = 0 },
@@ -102,7 +102,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
     _ = ng.entityManager.addEntity( // ball shadow
     .{
-      .shape  = .CIRC,
+      .shape  = .ELLI,
       .scale  = .{ .x = 18, .y = 18 },
       .colour = def.ray.Color.blue,
       .pos    = .{ .x = 0, .y = 0 },
@@ -110,7 +110,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
     _ = ng.entityManager.addEntity( // ball shadow
     .{
-      .shape  = .CIRC,
+      .shape  = .ELLI,
       .scale  = .{ .x = 20, .y = 20 },
       .colour = def.ray.Color.violet,
       .pos    = .{ .x = 0, .y = 0 },
@@ -119,7 +119,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
   if( ng.entityManager.addEntity( // ball shadow
   .{
-    .shape  = .CIRC,
+    .shape  = .ELLI,
     .scale  = .{ .x = 22, .y = 22 },
     .colour = def.ray.Color.magenta,
     .pos    = .{ .x = 0, .y = 0 },
@@ -128,7 +128,7 @@ pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
 
   if( ng.entityManager.addEntity( // ball
   .{
-    .shape  = .CIRC,
+    .shape  = .ELLI,
     .scale  = .{ .x = 24, .y = 24 },
     .colour = def.ray.Color.white,
     .pos    = .{ .x = 0, .y = 0 },

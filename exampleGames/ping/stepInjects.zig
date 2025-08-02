@@ -59,8 +59,8 @@ pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) voi
 
 var   P1_MV_FAC   : f32 = 0.0;   // Player 1 movement direction
 var   P2_MV_FAC   : f32 = 0.0;   // Player 2 movement direction
-const MV_FAC_STEP : f32 = 0.5;   // Movement factor step ( size of increment / decrement )
-const MV_FAC_CAP  : f32 = 24.0;  // Movement factor cap, to prevent excessive speed
+const MV_FAC_STEP : f32 = 0.4;   // Movement factor step ( size of increment / decrement )
+const MV_FAC_CAP  : f32 = 20.0;  // Movement factor cap, to prevent excessive speed
 
 const B_BASE_VEL  : f32 = 500.0; // Base velocity of the ball when it is launched
 const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball
@@ -177,7 +177,7 @@ pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEnti
   const hWidth  : f32 = def.getScreenWidth()  / 2.0;
   const hHeight : f32 = def.getScreenHeight() / 2.0;
 
-  const barHalfWidth : f32 = 16.0; // Half the width of the separator bar
+  const barHalfWidth : f32 = 8.0; // Half the width of the separator bar
   const playerSpeed  : f32 = 64.0; // Speed of the players
 
   const wallBounceFactor   : f32 = 0.90; // Bounce factor for the ball when hitting walls

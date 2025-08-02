@@ -12,7 +12,7 @@ pub const e_shape = enum
   HEXA, // Hexagon   ( regular )
   OCTA, // Octagon   ( regular )
   DODE, // Dodecagon ( regular )
-  CIRC, // Circle / Ellipse ( aproximated via a high facet count polygon )
+  ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
 };
 
 pub const entity = struct

@@ -134,7 +134,10 @@ pub fn getVecRAngleDistRad( p1 : VecR, p2 : VecR, origin : ?VecR, ) f32
 // ================================ VECTOR(S) GENERATORS ================================
 // These functions are used to create scaled unit vectors from angles
 
+// Returns an x/y scaled vector from a given angle in degrees ( R value is set to the vector's angle )
 pub fn getScaledVecRFromDeg( scale : VecR, angleDeg : f32 ) VecR { return getScaledVecRFromRad( scale, DtR( angleDeg )); }
+
+// Returns an x/y scaled vector from a given angle in radians ( R value is set to the vector's angle )
 pub fn getScaledVecRFromRad( scale : VecR, angleRad : f32 ) VecR
 {
   // NOTE : The Z ( R ) value is set to the angle, meaning it is always pointing outwards from the origin

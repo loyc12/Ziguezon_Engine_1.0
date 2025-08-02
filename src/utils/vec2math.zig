@@ -124,30 +124,8 @@ pub fn getVec2AngleDistRad( p1 : Vec2, p2 : Vec2, origin : ?Vec2, ) f32
 // ================================ VECTOR(S) GENERATORS ================================
 // These functions are used to create scaled unit vectors from angles
 
+// Returns an x/y scaled vector from a given angle in degrees
 pub fn getScaledVec2Deg( scale : Vec2, angleDeg : f32 ) Vec2 { return getScaledVec2Rad( scale, DtR( angleDeg )); }
-pub fn getScaledVec2Rad( scale : Vec2, angleRad : f32 ) Vec2 { return Vec2{ .x = @cos( angleRad ) * scale.x, .y = @sin( angleRad ) * scale.y }; }
 
-// Returns an allocated arrayList of Vec2 points representing the vertexs of a regular polygon with the given scale and side count.
-// NOTE : Do not forget to dealloc the returned array !
-pub fn getScaledPolyVerts( vertList : *std.ArrayList( def.Vec2 ), scale : Vec2, sideCount : u32 ) bool
-{
-  if( sideCount < 3 )
-  {
-    def.log( .ERROR, 0, @src(), "getScaledPolyVerts() requires at least 3 sides, got {d}", .{ sideCount } );
-    return false;
-  }
-  for( 0..sideCount )| i |
-  {
-    const angle = @as( f32, @floatFromInt( i )) * ( std.math.tau / @as( f32, @floatFromInt( sideCount ))); // 2*PI / sides
-    vertList.append( Vec2{ .x = @cos( angle ) * scale.x, .y = @sin( angle ) * scale.y }) catch | err |
-    {
-      def.log( .ERROR, 0, @src(), "Failed to append polygon vertex {d} : {}", .{ i, err } );
-    };
-  }
-  if( vertList.items.len < sideCount )
-  {
-    def.log( .ERROR, 0, @src(), "Failed to generate polygon vertexs, got only {d} out of {d}", .{ vertList.items.len, sideCount } );
-    return false;
-  }
-  return true;
-}
+// Returns an x/y scaled vector from a given angle in radians
+pub fn getScaledVec2Rad( scale : Vec2, angleRad : f32 ) Vec2 { return Vec2{ .x = @cos( angleRad ) * scale.x, .y = @sin( angleRad ) * scale.y }; }

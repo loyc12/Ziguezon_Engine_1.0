@@ -9,6 +9,7 @@ pub const timer  = @import( "utils/timer.zig" );
 // ================================ CORE ENGINE MODULES ================================
 
 // ================ GAME HOOK SYSTEM ================
+
 pub const ghm = @import( "core/gameHookManager.zig" );
 pub var G_HK : ghm.gameHooks = .{}; // NOTE : Global gameHooks struct instance
 
@@ -17,6 +18,7 @@ pub fn tryHook( tag : ghm.hookTag, args : anytype ) void { G_HK.tryHook( tag, ar
 
 
 // ================ ENGINE & MANAGERS ================
+
 pub const eng = @import( "core/engine.zig" );
 pub const rsm = @import( "core/resourceManager.zig" );
 pub const ntm = @import( "core/entityManager.zig" );
@@ -25,28 +27,59 @@ pub var G_NG : eng.engine = .{}; // NOTE : Global game engine instance
 
 
 // ================ ENTITY SYSTEM ================
+
 pub const ntt = @import( "core/entity/entityCore.zig" );
 
 
 // ================================ SHORTHANDS ================================
+
 pub const alloc = std.heap.smp_allocator;
 
 
 // ================ DRAWER SHORTHANDS ================
-pub const drawer              = @import( "utils/drawer.zig" );
 
-pub const getScreenWidth      = drawer.getScreenWidth;
-pub const getScreenHeight     = drawer.getScreenHeight;
-pub const getScreenSize       = drawer.getScreenSize;
+pub const drawer                   = @import( "utils/drawer.zig" );
 
-pub const drawText            = drawer.drawText;
-pub const drawCenteredText    = drawer.drawCenteredText;
+pub const getScreenWidth           = drawer.getScreenWidth;
+pub const getScreenHeight          = drawer.getScreenHeight;
+pub const getScreenSize            = drawer.getScreenSize;
 
-pub const drawTexture         = drawer.drawTexture;
-pub const drawTextureCentered = drawer.drawTextureCentered;
+pub const coverScreenWith          = drawer.coverScreenWith;
+
+pub const drawPixel                = drawer.drawPixel;
+pub const drawMacroPixel           = drawer.drawMacroPixel;
+pub const drawLine                 = drawer.drawLine;
+// pub const drawDotedLine            = drawer.drawDotedLine; // TODO : Implement this function
+pub const drawCircle               = drawer.drawCircle;
+pub const drawCircleLines          = drawer.drawCircleLines;
+pub const drawSimpleEllipse        = drawer.drawEllipse;
+pub const drawSimpleEllipseLines   = drawer.drawEllipseLines;
+pub const drawSimpleRectangle      = drawer.drawRectangle;
+pub const drawSimpleRectangleLines = drawer.drawRectangleLines;
+
+pub const drawBasicTria            = drawer.drawTria;
+pub const drawBasicTriaLines       = drawer.drawTriaLines;
+pub const drawBasicQuad            = drawer.drawQuad;
+pub const drawBasicQuadLines       = drawer.drawQuadLines;
+pub const drawBasicPoly            = drawer.drawPoly;
+pub const drawBasicPolyLines       = drawer.drawPolyLines;
+
+pub const drawRect                 = drawer.drawRectanglePlus;
+pub const drawPoly                 = drawer.drawPolygonPlus;
+pub const drawElli                 = drawer.drawEllipsePlus;
+pub const drawTria                 = drawer.drawTrianglePlus;
+pub const drawStar                 = drawer.drawHexStarPlus;
+pub const drawDiam                 = drawer.drawDiamondPlus;
+
+pub const drawText                 = drawer.drawText;
+pub const drawCenteredText         = drawer.drawCenteredText;
+
+pub const drawTexture              = drawer.drawTexture;
+pub const drawTextureCentered      = drawer.drawTextureCentered;
 
 
 // ================ LOGGER SHORTHANDS ================
+
 pub const logger      = @import( "utils/logger.zig" );
 
 pub const log         = logger.log;  // for argument-formatting logging
@@ -57,6 +90,7 @@ pub const logTmpTimer = logger.logTmpTimer;
 
 
 // ================ MATHER SHORTHANDS ================
+
 pub const mather      = @import( "utils/mather.zig" );
 
 pub const atan2       = mather.atan2;
@@ -75,6 +109,7 @@ pub const renorm      = mather.renorm;
 // ================ VECTORS SHORTHANDS ================
 
 // ======== Vec2 ========
+
 pub const Vec2math           = @import( "utils/vec2math.zig" );
 
 pub const Vec2               = Vec2math.Vec2;
@@ -106,6 +141,7 @@ pub const getScaledPolyVerts = Vec2math.getScaledPolyVerts;
 
 
 // ======== VecR ========
+
 pub const VecRmath         = @import( "utils/vecRmath.zig" );
 
 pub const VecR             = VecRmath.VecR;
@@ -138,6 +174,7 @@ pub const getScaledVecRRad = VecRmath.getScaledVecRRad;
 
 
 // ======== Vec3 ========
+
 pub const Vec3math      = @import( "utils/vec3math.zig" );
 
 pub const Vec3          = Vec3math.Vec3;

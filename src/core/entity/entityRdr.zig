@@ -83,73 +83,19 @@ pub fn renderEntity( self : *const entity ) void
     return;
   }
 
-  var sideCount : u32 = 0;
-
+  def.setTmpTimer();
   switch( self.shape )
   {
     .NONE => {}, // NOTE : Not using else, so that the compiler warns if a new shape type is added
-    .TRIA =>
-    {
-      sideCount = 3; // Triangle has 3 sides
-      renderRelativeTria( self,
-        def.getScaledVec2Deg( self.scale, 0.0   ), // P0
-        def.getScaledVec2Deg( self.scale, 240.0 ), // P1
-        def.getScaledVec2Deg( self.scale, 120.0 ), // P2
-      );
-      return;
-    },
-    .STAR => // aka : two overlaping but inverted triangles
-    {
-      sideCount = 6;
-      renderRelativeTria( self,
-        def.getScaledVec2Deg( self.scale, 0.0   ), // P0
-        def.getScaledVec2Deg( self.scale, 240.0 ), // P1
-        def.getScaledVec2Deg( self.scale, 120.0 ), // P2
-      );
-      renderRelativeTria( self,
-        def.getScaledVec2Deg( self.scale, 180.0 ), // PA
-        def.getScaledVec2Deg( self.scale, 60.0  ), // PB
-        def.getScaledVec2Deg( self.scale, 300.0 ), // PC
-      );
-      return;
-    },
-    .RECT =>
-    {
-      sideCount = 4;
-      renderRelativeQuad( self,
-        .{ .x =  self.scale.x, .y =  self.scale.y }, // P0
-        .{ .x =  self.scale.x, .y = -self.scale.y }, // P1
-        .{ .x = -self.scale.x, .y = -self.scale.y }, // P2
-        .{ .x = -self.scale.x, .y =  self.scale.y }, // P3
-      );
-      return;
-    },
-    .DIAM =>
-    {
-      sideCount = 4;
-      renderRelativeQuad( self,
-        .{ .x =  0, .y = -self.scale.y }, // P0
-        .{ .x = -self.scale.x, .y =  0 }, // P1
-        .{ .x =  0, .y =  self.scale.y }, // P2
-        .{ .x =  self.scale.x, .y =  0 }, // P3
-      );
-      return;
-    },
-    .PENT => { sideCount = 5;  },
-    .HEXA => { sideCount = 6;  },
-    .OCTA => { sideCount = 8;  },
-    .DODE => { sideCount = 12; },
-    .CIRC => { sideCount = 24; }, // Pretending a circle is a regular polygon
+    .TRIA => { def.drawTria( self.pos, self.scale, self.rotPos, self.colour     ); },
+    .STAR => { def.drawStar( self.pos, self.scale, self.rotPos, self.colour     ); },
+    .RECT => { def.drawRect( self.pos, self.scale, self.rotPos, self.colour     ); },
+    .DIAM => { def.drawDiam( self.pos, self.scale, self.rotPos, self.colour     ); },
+    .PENT => { def.drawPoly( self.pos, self.scale, self.rotPos, self.colour, 5  ); },
+    .HEXA => { def.drawPoly( self.pos, self.scale, self.rotPos, self.colour, 6  ); },
+    .OCTA => { def.drawPoly( self.pos, self.scale, self.rotPos, self.colour, 8  ); },
+    .DODE => { def.drawPoly( self.pos, self.scale, self.rotPos, self.colour, 12 ); },
+    .ELLI => { def.drawElli( self.pos, self.scale, self.rotPos, self.colour     ); },
   }
-
-  // TODO : Optimize this shit frfr
-  var vertList : std.ArrayList( def.Vec2 ) = std.ArrayList( def.Vec2 ).init( def.alloc );
-
-  if( def.getScaledPolyVerts( &vertList, self.scale, sideCount ))
-  {
-    renderRelativePoly( self, vertList.items );
-  }
-  else{ def.log( .ERROR, 0, @src(), "Failed to get all polygon vertexs for entity {d} with shape {s}", .{ self.id, @tagName( self.shape ) }); }
-
-  vertList.deinit(); // Deallocate the vertex list
+  def.logTmpTimer();
 }
