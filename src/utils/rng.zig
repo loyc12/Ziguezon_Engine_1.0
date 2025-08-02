@@ -81,4 +81,58 @@ pub const randomiser = struct
 
     return tmp;
   }
+
+  // Returns a random vector in 2D + rotation space ( length of 1 in a random direction and rotation )
+  pub fn getVecR( self : *randomiser ) def.VecR
+  {
+    const angle = self.getAngleRad();
+    return def.VecR{ .x = @cos( angle ), .y = @sin( angle ), .z = self.getAngleRad() };
+  }
+
+  // Returns a random vector in 2D + rotation space scaled by the given scale and offset by a given amount
+  pub fn getScaledVecR( self : *randomiser, scale : def.VecR, offset : def.VecR ) def.VecR
+  {
+    var tmp = self.getVecR(); // Get a random unit vector
+
+    tmp.x *= scale.x;  // Scale the x component
+    tmp.y *= scale.y;  // Scale the y component
+    tmp.z *= scale.z;  // Scale the rotation component
+
+    tmp.x += offset.x; // Offset the x component
+    tmp.y += offset.y; // Offset the y component
+    tmp.z += offset.z; // Offset the rotation component
+
+    return tmp;
+  }
+
+
+  // Returns a random unit vector in 3D space ( length of 1 in a random direction )
+  pub fn getVec3( self : *randomiser ) def.Vec3
+  {
+    const theta = self.rng.float( f32 ) * std.math.tau; // [0, 2π)
+    const z =   ( self.rng.float( f32 ) * 2.0 ) - 1.0;  // [-1, 1] // NOTE : Prevents the vector from being too close to the poles, garnteeing a uniform distribution in 3D space
+    const r = @sqrt( 1.0 - z * z );
+
+    return def.Vec3{
+      .x = r * @cos( theta ),
+      .y = r * @sin( theta ),
+      .z = z,
+    };
+  }
+
+  // Returns a random vector in 3D space scaled by the given scale and offset by a given amount
+  pub fn getScaledVec3( self : *randomiser, scale : def.Vec3, offset : def.Vec3 ) def.Vec3
+  {
+    var tmp = self.getVec3(); // Get a random unit vector
+
+    tmp.x *= scale.x;  // Scale the x component
+    tmp.y *= scale.y;  // Scale the y component
+    tmp.z *= scale.z;  // Scale the z component
+
+    tmp.x += offset.x; // Offset the x component
+    tmp.y += offset.y; // Offset the y component
+    tmp.z += offset.z; // Offset the z component
+
+    return tmp;
+  }
 };

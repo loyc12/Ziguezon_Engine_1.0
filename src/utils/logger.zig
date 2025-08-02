@@ -74,7 +74,7 @@ pub fn setTmpTimer() void { TMP_TIMER.qInit( def.timer.getNow(), 0 ); }
 
 // Logs the elapsed time since the last time increment of the temporary timer
 // This is used to measure the time between two arbitrary points in the code
-pub fn logTmpTimer() void
+pub fn logTmpTimer( callLocation : ?std.builtin.SourceLocation ) void
 {
   TMP_TIMER.incrementTo( def.timer.getNow() );
   const delta = TMP_TIMER.getElapsedTime();
@@ -82,7 +82,8 @@ pub fn logTmpTimer() void
   const sec  : u64 = @intCast( @divTrunc( delta, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      delta, @as( i128, std.time.ns_per_s )));
 
-  log( .INFO, 0, @src(), "& Temporary timer : {d}.{d:0>9} ", .{ sec, nano });
+  if( callLocation )| loc |{ log( .INFO, 0, loc,    "& Temporary timer : {d}.{d:0>9} ", .{ sec, nano }); }
+  else                     { log( .INFO, 0, @src(), "& Temporary timer : {d}.{d:0>9} ", .{ sec, nano }); }
 }
 
 // ================================ CORE FUNCTIONS ================================

@@ -21,8 +21,7 @@ pub fn cpyEntityPosViaID( ng : *def.eng.engine , dstID : u32, srcID : u32, ) voi
   dst.cpyEntityPos( src );
 }
 
-// TODO : add support for randomized rotPos and rotVel
-pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec2, dPos : def.Vec2, vel : def.Vec2, dVel : def.Vec2, count : u32, colour : def.ray.Color ) void
+pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec3, dPos : def.Vec3, vel : def.Vec3, dVel : def.Vec3, count : u32, colour : def.ray.Color ) void
 {
   // Emit particles at the given position with the given colour
   for( 0 .. count )| i |
@@ -39,9 +38,8 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec2, dPos : def.Vec2, vel
     var tmp : *def.ntt.entity = particle.?;
 
     tmp.shape  = .STAR;
-    tmp.pos    = ng.rng.getScaledVec2(  dPos, pos );
-    tmp.vel    = ng.rng.getScaledVec2(  dVel, vel );
-    tmp.rotPos = ng.rng.getAngleRad();
+    tmp.pos    = ng.rng.getScaledVecR( dPos, pos );
+    tmp.vel    = ng.rng.getScaledVecR( dVel, vel );
     tmp.colour = colour;
     tmp.scale  = .{ .x = 8, .y = 8 };
   }
@@ -50,7 +48,14 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec2, dPos : def.Vec2, vel
 pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
-  emitParticles( ng, ball.getCenter(), .{ .x = 16, .y = 16 }, .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 )}, .{ .x = 128, .y = 32 }, 8, def.ray.Color.yellow );
+
+  emitParticles( ng,
+    //ball.pos, // NOTE / TODO : using ball.pos sometimes causes the particles to spawn at 0,0. fix that
+    .{ .x = ball.pos.x, .y = ball.pos.y, .z = ball.pos.z },
+    .{ .x = 16, .y = 16, .z = std.math.pi },
+    .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .z = 0.0 },
+    .{ .x = 128, .y = 32, .z = 2 },
+    8, def.ray.Color.yellow );
 
   ng.resourceManager.playAudio( "hit_1" );
 }
@@ -91,8 +96,9 @@ pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInp
         return;
       };
 
-      ball.pos = .{ .x = 0, .y = 0 };
-      ball.vel = .{ .x = 0, .y = 0 };
+      ball.setPos( 0, 0, 0 ); // Reset the ball position
+      ball.setVel( 0, 0, 0 ); // Reset the ball velocity
+      ball.setAcc( 0, 0, 0 ); // Reset the ball acceleration
 
       // Reset the positions of the ball shadows
       for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
@@ -359,7 +365,7 @@ pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.renderGr
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
+    def.coverScreenWith( def.ray.Color.init( 0, 0, 0, 128 ));
   }
 
   if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )

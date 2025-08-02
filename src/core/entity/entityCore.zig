@@ -22,22 +22,15 @@ pub const entity = struct
 
   // ================ SHAPE PROPERTIES ================
 
-  scale  : def.Vec2,                            // Scale of the entity in X and Y
+  scale  : def.Vec2 = .{ .x = 0, .y = 0 },      // Scale of the entity in X and Y
   colour : def.ray.Color = def.ray.Color.white, // Colour of the entity ( used for rendering )
   shape  : e_shape       = .NONE,               // Shape of the entity
 
   // ================ POSITION PROPERTIES ================
 
-  pos : def.Vec2,                       // Position of the entity in 2D space
-  vel : def.Vec2 = .{ .x = 0, .y = 0 }, // Velocity of the entity in 2D space
-  acc : def.Vec2 = .{ .x = 0, .y = 0 }, // Acceleration of the entity in 2D space
-
-  // ================ ROTATION PROPERTIES ================
-
-  rotPos : f32 = 0, // Rotation of the entity in radians
-//rotVel : f32 = 0, // Angular velocity of the entity in radians per second
-//rotAcc : f32 = 0, // Angular acceleration of the entity in radians per second squared
-
+  pos : def.VecR,                               // Position and rotation of the entity in 2D space
+  vel : def.VecR = .{ .x = 0, .y = 0, .z = 0 }, // Velocity of the entity in 2D space
+  acc : def.VecR = .{ .x = 0, .y = 0, .z = 0 }, // Acceleration of the entity in 2D space
 
   // ================ POSITION FUNCTIONS ================
   const nttPos = @import( "entityPos.zig" );
@@ -50,7 +43,8 @@ pub const entity = struct
   pub fn getCartDistTo( self : *const entity, other : *const entity ) f32 { return nttPos.getCartDistTo( self, other ); }
 
   // POSITION ACCESSORS
-  pub fn getCenter( self : *const entity ) def.Vec2 { return self.pos ;}
+  pub fn getCenter( self : *const entity ) def.Vec2 { return def.Vec2{ .x = self.pos.x, .y = self.pos.y } ;}
+  pub fn getRot(    self : *const entity ) f32      { return self.pos.z; }
 
   pub fn getLeftX(   self : *const entity ) f32 { return nttPos.getLeftX(   self ); }
   pub fn getRightX(  self : *const entity ) f32 { return nttPos.getRightX(  self ); }
@@ -63,9 +57,16 @@ pub const entity = struct
   pub fn getBottomRight( self : *const entity ) def.Vec2 { return nttPos.getBottomRight( self ); }
 
   // POSITION SETTERS
-  pub fn setCenter( self : *entity, newPos : def.Vec2 ) void { self.pos = newPos; }
-  pub fn setPos(    self : *entity, newPos : def.Vec2 ) void { self.pos = newPos; }
+  pub fn setCenter( self : *entity, newPos : def.Vec2 ) void { self.pos.x = newPos.x; self.pos.y = newPos.y; }
+  pub fn setRot(    self : *entity, newRot : f32      ) void { self.pos.z = newRot; }
+
+  pub fn setPos( self : *entity, x : f32, y : f32, r : f32 ) void { self.pos.x = x; self.pos.y = y; self.pos.z = r; }
+  pub fn setVel( self : *entity, x : f32, y : f32, r : f32 ) void { self.vel.x = x; self.vel.y = y; self.vel.z = r; }
+  pub fn setAcc( self : *entity, x : f32, y : f32, r : f32 ) void { self.acc.x = x; self.acc.y = y; self.acc.z = r; }
+
   pub fn cpyEntityPos( self : *entity, other : *const entity ) void { nttPos.cpyEntityPos( self, other ); }
+  pub fn cpyEntityVel( self : *entity, other : *const entity ) void { nttPos.cpyEntityVel( self, other ); }
+  pub fn cpyEntityAcc( self : *entity, other : *const entity ) void { nttPos.cpyEntityAcc( self, other ); }
 
   pub fn setLeftX(   self : *entity, leftX   : f32 ) void { nttPos.setLeftX(   self, leftX ); }
   pub fn setRightX(  self : *entity, rightX  : f32 ) void { nttPos.setRightX(  self, rightX ); }

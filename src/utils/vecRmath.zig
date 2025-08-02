@@ -46,7 +46,7 @@ pub fn normVecRLen( v : VecR, newLen : f32 ) ?VecR
   }
 
   const factor = newLen / oldLen;
-  const r = def.clmp( v.z, 0, 2 * std.math.pi );
+  const r = def.clmp( v.z, 0, std.math.tau );
   return VecR{ .x = v.x * factor, .y = v.y * factor, .z = r };
 }
 

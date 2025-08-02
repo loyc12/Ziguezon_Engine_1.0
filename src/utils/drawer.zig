@@ -15,7 +15,7 @@ pub fn getScreenSize()  Vec2 { return Vec2{ .x = getScreenWidth(), .y = getScree
 pub fn coverScreenWith( color : ray.Color ) void
 {
   const screenSize = getScreenSize();
-  ray.drawRectangleV( Vec2{ .x = -screenSize.x / 2, .y = -screenSize.y / 2 }, screenSize, color );
+  ray.drawRectangleV( Vec2{ .x = 0, .y = 0 }, screenSize, color );
 }
 
 

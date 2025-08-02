@@ -164,28 +164,20 @@ pub const entityManager = struct
     return &self.entities.items[ self.entities.items.len - 1 ];
   }
 
-    pub fn createDefaultEntity( self : *entityManager ) ?*def.ntt.entity
+  pub fn createDefaultEntity( self : *entityManager ) ?*def.ntt.entity
   {
     def.qlog( .TRACE, 0, @src(), "Creating default entity" );
 
     if( !self.isInit )
     {
       def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
-      return null; // If the entity manager is not initialized, log a warning and return null
+      return null;
     }
 
     return self.addEntity( def.ntt.entity{
-      .id     = 0, // ID will be assigned by the entity manager
       .active = true,
-
-      .pos    = def.Vec2{ .x = 0.0, .y = 0.0 },
-      .vel    = def.Vec2{ .x = 0.0, .y = 0.0 },
-      .acc    = def.Vec2{ .x = 0.0, .y = 0.0 },
-
-      .rotPos = 0.0,
-
+      .pos    = def.VecR{ .x = 0.0, .y = 0.0, .z = 0.0 },
       .shape  = def.ntt.e_shape.RECT,
-      .scale  = def.Vec2{ .x = 1.0, .y = 1.0 },
       .colour = def.ray.Color{ .r = 255, .g = 255, .b = 255, .a = 255 },
     });
   }
@@ -415,7 +407,10 @@ pub const entityManager = struct
   pub fn renderActiveEntities( self : *entityManager ) void // TODO : have this take in a renderer construct and pass it to entity.renderGraphics()
   {
     // Iterate through all entities and render them if they are active
-    for( self.entities.items )| entity |{ entity.renderSelf(); }
+    for( self.entities.items )| entity |
+    {
+      entity.renderSelf();
+    }
   }
 
   // ================================ TICK FUNCTIONS ================================
@@ -432,14 +427,17 @@ pub const entityManager = struct
         // Apply the entity's accelerations to its velocities
         e.vel.x += e.acc.x * sdt;
         e.vel.y += e.acc.y * sdt;
+        e.vel.z += e.acc.z * sdt;
 
         // Apply the entity's velocities to its positions
         e.pos.x += e.vel.x * sdt;
         e.pos.y += e.vel.y * sdt;
+        e.pos.z += e.vel.z * sdt;
 
         // Reset the entity's accelerations to zero after applying them
         e.acc.x = 0;
         e.acc.y = 0;
+        e.acc.z = 0;
       }
     }
     //self.collideActiveEntities( sdt );

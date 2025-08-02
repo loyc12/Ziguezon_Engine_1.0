@@ -6,31 +6,11 @@ const entity  = def.ntt.entity;
 // ================ DISTANCE FUNCTIONS ================
 // These functions calculate the distance between two entities in various ways.
 
-pub fn getXDistTo( e1 : *const entity, e2 : *const entity ) f32
-{
-  def.log( .TRACE, 0, @src(), "Calculating X distance between entity {d} and {d}", .{ e1.id, e2.id });
-  return @abs( e2.pos.x - e1.pos.x );
-}
-pub fn getYDistTo( e1 : *const entity, e2 : *const entity ) f32
-{
-  def.log( .TRACE, 0, @src(), "Calculating Y distance between entity {d} and {d}", .{ e1.id, e2.id });
-  return @abs( e2.pos.y - e1.pos.y );
-}
-pub fn getSqrDistTo( e1 : *const entity, e2 : *const entity ) f32
-{
-  def.log( .TRACE, 0, @src(), "Calculating squared distance between entity {d} and {d}", .{ e1.id, e2.id });
-  const dist = def.Vec2{ .x = e2.pos.x - e1.pos.x, .y = e2.pos.y - e1.pos.y, };
-  return ( dist.x * dist.x ) + ( dist.y * dist.y );
-}
-pub fn getDistTo( e1 : *const entity, e2 : *const entity ) f32
-{
-  return @sqrt( getSqrDistTo( e1, e2 ) );
-}
-pub fn getCartDistTo( e1 : *const entity, e2 : *const entity ) f32
-{
-  def.log( .TRACE, 0, @src(), "Calculating cartesian distance between entity {d} and {d}", .{ e1.id, e2.id });
-  return @abs( e2.pos.x - e1.pos.x ) + @abs( e2.pos.y - e1.pos.y ); // NOTE : taxicab distance
-}
+pub fn getXDistTo(    e1 : *const entity, e2 : *const entity ) f32 { return def.getVecRDistX(    e1.pos, e2.pos ); }
+pub fn getYDistTo(    e1 : *const entity, e2 : *const entity ) f32 { return def.getVecRDistY(    e1.pos, e2.pos ); }
+pub fn getSqrDistTo(  e1 : *const entity, e2 : *const entity ) f32 { return def.getVecRSqrDist(  e1.pos, e2.pos ); }
+pub fn getDistTo(     e1 : *const entity, e2 : *const entity ) f32 { return def.getVecRDist(     e1.pos, e2.pos ); }
+pub fn getCartDistTo( e1 : *const entity, e2 : *const entity ) f32 { return def.getVecRCartDist( e1.pos, e2.pos ); }
 
 // ================ POSITION ACCESSORS ================
 // These functions calculate the sides of the entity's bounding box based on its position and scale.
@@ -90,6 +70,16 @@ pub fn cpyEntityPos( e1 : *entity, e2 : *const entity ) void
 {
   def.log( .TRACE, 0, @src(), "Copying position from entity {d} to entity {d}", .{ e2.id, e1.id });
   e1.pos = e2.pos;
+}
+pub fn cpyEntityVel( e1 : *entity, e2 : *const entity ) void
+{
+  def.log( .TRACE, 0, @src(), "Copying velocity from entity {d} to entity {d}", .{ e2.id, e1.id });
+  e1.vel = e2.vel;
+}
+pub fn cpyEntityAcc( e1 : *entity, e2 : *const entity ) void
+{
+  def.log( .TRACE, 0, @src(), "Copying acceleration from entity {d} to entity {d}", .{ e2.id, e1.id });
+  e1.acc = e2.acc;
 }
 
 pub fn setLeftX( e1 : *entity, leftX : f32 ) void
@@ -347,8 +337,8 @@ pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?def.Vec2
 
   // Find the directions of the overlap ( relative to e1 )
   const offset = def.Vec2{ .x = e2.pos.x - e1.pos.x, .y = e2.pos.y - e1.pos.y };
-  const dir  = def.Vec2{ .x = if( offset.x > 0 ) 1 else if ( offset.x < 0 ) -1 else 0,
-                        .y = if( offset.y > 0 ) 1 else if ( offset.y < 0 ) -1 else 0 };
+  const dir    = def.Vec2{ .x = if( offset.x > 0 ) 1 else if ( offset.x < 0 ) -1 else 0,
+                           .y = if( offset.y > 0 ) 1 else if ( offset.y < 0 ) -1 else 0 };
 
   // Find the edges of each entities bounding box
   // NOTE : This assumes that the entities are axis-aligned rectangles
