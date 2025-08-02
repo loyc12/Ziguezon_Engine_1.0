@@ -12,7 +12,7 @@ pub fn clampInScreen( e1 : *entity ) void
   const sw : f32 = def.getScreenWidth();
   const sh : f32 = def.getScreenHeight();
 
-  e1.clampInArea( def.vec2{ .x = -sw / 2, .y = -sh / 2 }, def.vec2{ .x = sw / 2,  .y = sh / 2 } );
+  e1.clampInArea( def.Vec2{ .x = -sw / 2, .y = -sh / 2 }, def.Vec2{ .x = sw / 2,  .y = sh / 2 } );
 }
 
 pub fn isOnScreen( e1 : *const entity ) bool
@@ -22,30 +22,30 @@ pub fn isOnScreen( e1 : *const entity ) bool
   const sw : f32 = def.getScreenWidth();
   const sh : f32 = def.getScreenHeight();
 
-  return e1.isOnRange( def.vec2{ .x = -sw / 2, .y = -sh / 2 }, def.vec2{ .x = sw / 2,  .y = sh / 2 } );
+  return e1.isOnRange( def.Vec2{ .x = -sw / 2, .y = -sh / 2 }, def.Vec2{ .x = sw / 2,  .y = sh / 2 } );
 }
 
-fn renderRelativeTria( self : *const entity, p0 : def.vec2, p1 : def.vec2, p2 : def.vec2 ) void
+fn renderRelativeTria( self : *const entity, p0 : def.Vec2, p1 : def.Vec2, p2 : def.Vec2 ) void
 {
-  const np0 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p0, self.rotPos ));
-  const np1 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p1, self.rotPos ));
-  const np2 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p2, self.rotPos ));
+  const np0 : def.Vec2 = def.addVec2( self.pos, def.rotVec2( p0, self.rotPos ));
+  const np1 : def.Vec2 = def.addVec2( self.pos, def.rotVec2( p1, self.rotPos ));
+  const np2 : def.Vec2 = def.addVec2( self.pos, def.rotVec2( p2, self.rotPos ));
 
   def.ray.drawTriangle( np0, np1, np2, self.colour );
 }
 
-fn renderRelativeQuad( self : *const entity, p0 : def.vec2, p1 : def.vec2, p2 : def.vec2, p3 : def.vec2 ) void
+fn renderRelativeQuad( self : *const entity, p0 : def.Vec2, p1 : def.Vec2, p2 : def.Vec2, p3 : def.Vec2 ) void
 {
-  const np0 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p0, self.rotPos ));
-  const np1 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p1, self.rotPos ));
-  const np2 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p2, self.rotPos ));
-  const np3 : def.vec2 = def.addVec2( self.pos, def.rotVec2Rad( p3, self.rotPos ));
+  const np0 : def.Vec2 = def.addVec2( self.pos, def.rotVec2( p0, self.rotPos ));
+  const np1 : def.Vec2 = def.addVec2( self.pos, def.rotVec2( p1, self.rotPos ));
+  const np2 : def.Vec2 = def.addVec2( self.pos, def.rotVec2( p2, self.rotPos ));
+  const np3 : def.Vec2 = def.addVec2( self.pos, def.rotVec2( p3, self.rotPos ));
 
   def.ray.drawTriangle( np0, np1, np2, self.colour );
   def.ray.drawTriangle( np2, np3, np0, self.colour );
 }
 
-fn renderRelativePoly( self : *const entity, points : []const def.vec2 ) void
+fn renderRelativePoly( self : *const entity, points : []const def.Vec2 ) void
 {
   if( points.len < 3 )
   {
@@ -54,11 +54,11 @@ fn renderRelativePoly( self : *const entity, points : []const def.vec2 ) void
   }
 
   // Initialize the first point to the last one, so that we can draw the first triangle
-  var p0 = def.addVec2( self.pos, def.rotVec2Rad( points[ points.len - 1 ], self.rotPos ));
+  var p0 = def.addVec2( self.pos, def.rotVec2( points[ points.len - 1 ], self.rotPos ));
 
   for( points[ 0.. ] )| point |
   {
-    const p1 = def.addVec2( self.pos, def.rotVec2Rad( point, self.rotPos ));
+    const p1 = def.addVec2( self.pos, def.rotVec2( point, self.rotPos ));
     def.ray.drawTriangle( p1, p0, self.pos, self.colour );
     p0 = p1;
   }
@@ -92,24 +92,26 @@ pub fn renderEntity( self : *const entity ) void
     {
       sideCount = 3; // Triangle has 3 sides
       renderRelativeTria( self,
-        def.getScaledVec2FromDeg( self.scale, 0.0   ), // P0
-        def.getScaledVec2FromDeg( self.scale, 240.0 ), // P1
-        def.getScaledVec2FromDeg( self.scale, 120.0 ), // P2
+        def.getScaledVec2Deg( self.scale, 0.0   ), // P0
+        def.getScaledVec2Deg( self.scale, 240.0 ), // P1
+        def.getScaledVec2Deg( self.scale, 120.0 ), // P2
       );
+      return;
     },
     .STAR => // aka : two overlaping but inverted triangles
     {
       sideCount = 6;
       renderRelativeTria( self,
-        def.getScaledVec2FromDeg( self.scale, 0.0   ), // P0
-        def.getScaledVec2FromDeg( self.scale, 240.0 ), // P1
-        def.getScaledVec2FromDeg( self.scale, 120.0 ), // P2
+        def.getScaledVec2Deg( self.scale, 0.0   ), // P0
+        def.getScaledVec2Deg( self.scale, 240.0 ), // P1
+        def.getScaledVec2Deg( self.scale, 120.0 ), // P2
       );
       renderRelativeTria( self,
-        def.getScaledVec2FromDeg( self.scale, 180.0 ), // P0
-        def.getScaledVec2FromDeg( self.scale, 60.0  ), // P1
-        def.getScaledVec2FromDeg( self.scale, 300.0 ), // P2
+        def.getScaledVec2Deg( self.scale, 180.0 ), // PA
+        def.getScaledVec2Deg( self.scale, 60.0  ), // PB
+        def.getScaledVec2Deg( self.scale, 300.0 ), // PC
       );
+      return;
     },
     .RECT =>
     {
@@ -120,6 +122,7 @@ pub fn renderEntity( self : *const entity ) void
         .{ .x = -self.scale.x, .y = -self.scale.y }, // P2
         .{ .x = -self.scale.x, .y =  self.scale.y }, // P3
       );
+      return;
     },
     .DIAM =>
     {
@@ -130,6 +133,7 @@ pub fn renderEntity( self : *const entity ) void
         .{ .x =  0, .y =  self.scale.y }, // P2
         .{ .x =  self.scale.x, .y =  0 }, // P3
       );
+      return;
     },
     .PENT => { sideCount = 5;  },
     .HEXA => { sideCount = 6;  },
@@ -138,20 +142,14 @@ pub fn renderEntity( self : *const entity ) void
     .CIRC => { sideCount = 24; }, // Pretending a circle is a regular polygon
   }
 
-  if( sideCount >= 5 )
+  // TODO : Optimize this shit frfr
+  var vertList : std.ArrayList( def.Vec2 ) = std.ArrayList( def.Vec2 ).init( def.alloc );
+
+  if( def.getScaledPolyVerts( &vertList, self.scale, sideCount ))
   {
-    def.setTmpTimer(); // DEBUG
-
-    var vertList : std.ArrayList( def.vec2 ) = std.ArrayList( def.vec2 ).init( def.alloc );
-
-    if( def.getScaledPolyVerts( &vertList, self.scale, sideCount ))
-    {
-      renderRelativePoly( self, vertList.items );
-    }
-    else{ def.log( .ERROR, 0, @src(), "Failed to get all polygon vertexs for entity {d} with shape {s}", .{ self.id, @tagName( self.shape ) }); }
-
-    vertList.deinit(); // Deallocate the vertex list
-
-    def.logTmpTimer(); // DEBUG
+    renderRelativePoly( self, vertList.items );
   }
+  else{ def.log( .ERROR, 0, @src(), "Failed to get all polygon vertexs for entity {d} with shape {s}", .{ self.id, @tagName( self.shape ) }); }
+
+  vertList.deinit(); // Deallocate the vertex list
 }

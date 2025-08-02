@@ -22,7 +22,7 @@ pub fn cpyEntityPosViaID( ng : *def.eng.engine , dstID : u32, srcID : u32, ) voi
 }
 
 // TODO : add support for randomized rotPos and rotVel
-pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel : def.vec2, dVel : def.vec2, count : u32, colour : def.ray.Color ) void
+pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec2, dPos : def.Vec2, vel : def.Vec2, dVel : def.Vec2, count : u32, colour : def.ray.Color ) void
 {
   // Emit particles at the given position with the given colour
   for( 0 .. count )| i |
@@ -38,7 +38,7 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.vec2, dPos : def.vec2, vel
 
     var tmp : *def.ntt.entity = particle.?;
 
-    tmp.shape  = .TRIA;
+    tmp.shape  = .STAR;
     tmp.pos    = ng.rng.getScaledVec2(  dPos, pos );
     tmp.vel    = ng.rng.getScaledVec2(  dVel, vel );
     tmp.rotPos = ng.rng.getAngleRad();

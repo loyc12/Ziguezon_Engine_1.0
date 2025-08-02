@@ -61,15 +61,15 @@ pub const randomiser = struct
   }
 
   // Returns a random unit vector ( length of 1 in a random direction )
-  pub fn getVec2( self : *randomiser ) def.vec2
+  pub fn getVec2( self : *randomiser ) def.Vec2
   {
     const angle = self.getAngleRad();
-    return def.vec2{ .x = @cos( angle ), .y = @sin( angle ) };
+    return def.Vec2{ .x = @cos( angle ), .y = @sin( angle ) };
 
   }
 
   // Returns a random vector scaled by the given scale and offset by a given amount
-  pub fn getScaledVec2( self : *randomiser, scale : def.vec2, offset : def.vec2 ) def.vec2
+  pub fn getScaledVec2( self : *randomiser, scale : def.Vec2, offset : def.Vec2 ) def.Vec2
   {
     var tmp = self.getVec2(); // Get a random unit vector
 

@@ -19,7 +19,7 @@ pub fn getYDistTo( e1 : *const entity, e2 : *const entity ) f32
 pub fn getSqrDistTo( e1 : *const entity, e2 : *const entity ) f32
 {
   def.log( .TRACE, 0, @src(), "Calculating squared distance between entity {d} and {d}", .{ e1.id, e2.id });
-  const dist = def.vec2{ .x = e2.pos.x - e1.pos.x, .y = e2.pos.y - e1.pos.y, };
+  const dist = def.Vec2{ .x = e2.pos.x - e1.pos.x, .y = e2.pos.y - e1.pos.y, };
   return ( dist.x * dist.x ) + ( dist.y * dist.y );
 }
 pub fn getDistTo( e1 : *const entity, e2 : *const entity ) f32
@@ -62,25 +62,25 @@ pub fn getBottomY( e1 : *const entity ) f32
 }
 
 // These functions return the corners of the entity's bounding box.
-pub fn getTopLeft( e1 : *const entity ) def.vec2
+pub fn getTopLeft( e1 : *const entity ) def.Vec2
 {
   def.log( .TRACE, 0, @src(), "Calculating top left corner of entity {d}", .{ e1.id });
-  return def.vec2{ .x = e1.pos.x - e1.scale.x, .y = e1.pos.y - e1.scale.y };
+  return def.Vec2{ .x = e1.pos.x - e1.scale.x, .y = e1.pos.y - e1.scale.y };
 }
-pub fn getTopRight( e1 : *const entity ) def.vec2
+pub fn getTopRight( e1 : *const entity ) def.Vec2
 {
   def.log( .TRACE, 0, @src(), "Calculating top right corner of entity {d}", .{ e1.id });
-  return def.vec2{ .x = e1.pos.x + e1.scale.x, .y = e1.pos.y - e1.scale.y };
+  return def.Vec2{ .x = e1.pos.x + e1.scale.x, .y = e1.pos.y - e1.scale.y };
 }
-pub fn getBottomLeft( e1 : *const entity ) def.vec2
+pub fn getBottomLeft( e1 : *const entity ) def.Vec2
 {
   def.log( .TRACE, 0, @src(), "Calculating bottom left corner of entity {d}", .{ e1.id });
-  return def.vec2{ .x = e1.pos.x - e1.scale.x, .y = e1.pos.y + e1.scale.y };
+  return def.Vec2{ .x = e1.pos.x - e1.scale.x, .y = e1.pos.y + e1.scale.y };
 }
-pub fn getBottomRight( e1 : *const entity ) def.vec2
+pub fn getBottomRight( e1 : *const entity ) def.Vec2
 {
   def.log( .TRACE, 0, @src(), "Calculating bottom right corner of entity {d}", .{ e1.id });
-  return def.vec2{ .x = e1.pos.x + e1.scale.x, .y = e1.pos.y + e1.scale.y };
+  return def.Vec2{ .x = e1.pos.x + e1.scale.x, .y = e1.pos.y + e1.scale.y };
 }
 
 // ================ POSITION SETTERS ================
@@ -114,25 +114,25 @@ pub fn setBottomY( e1 : *entity, bottomY : f32 ) void
 }
 
 // These functions set the corners of the entity's bounding box.
-pub fn setTopLeft( e1 : *entity, topLeftPos : def.vec2 ) void
+pub fn setTopLeft( e1 : *entity, topLeftPos : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Setting top left corner of entity {d} to {d}:{d}", .{ e1.id, topLeftPos.x, topLeftPos.y });
   e1.pos.x = topLeftPos.x + e1.scale.x;
   e1.pos.y = topLeftPos.y + e1.scale.y;
 }
-pub fn setTopRight( e1 : *entity, topRightPos : def.vec2 ) void
+pub fn setTopRight( e1 : *entity, topRightPos : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Setting top right corner of entity {d} to {d}:{d}", .{ e1.id, topRightPos.x, topRightPos.y });
   e1.pos.x = topRightPos.x - e1.scale.x;
   e1.pos.y = topRightPos.y + e1.scale.y;
 }
-pub fn setBottomLeft( e1 : *entity, bottomLeftPos : def.vec2 ) void
+pub fn setBottomLeft( e1 : *entity, bottomLeftPos : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Setting bottom left corner of entity {d} to {d}:{d}", .{ e1.id, bottomLeftPos.x, bottomLeftPos.y });
   e1.pos.x = bottomLeftPos.x + e1.scale.x;
   e1.pos.y = bottomLeftPos.y - e1.scale.y;
 }
-pub fn setBottomRight( e1 : *entity, bottomRightPos : def.vec2 ) void
+pub fn setBottomRight( e1 : *entity, bottomRightPos : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Setting bottom right corner of entity {d} to {d}:{d}", .{ e1.id, bottomRightPos.x, bottomRightPos.y });
   e1.pos.x = bottomRightPos.x - e1.scale.x;
@@ -194,7 +194,7 @@ pub fn clampInY( e1 : *entity, minY : f32, maxY : f32 ) void
   clampTopY(    e1, minY );
   clampBottomY( e1, maxY );
 }
-pub fn clampInArea( e1 : *entity, minPos : def.vec2, maxPos : def.vec2 ) void
+pub fn clampInArea( e1 : *entity, minPos : def.Vec2, maxPos : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Clamping entity {d} in area {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
   clampInX( e1, minPos.x, maxPos.x );
@@ -214,14 +214,14 @@ pub fn clampOnY( e1 : *entity, minY : f32, maxY : f32 ) void
   clampTopY(    e1, minY - ( 2 * e1.scale.y ));
   clampBottomY( e1, maxY + ( 2 * e1.scale.y ));
 }
-pub fn clampOnArea( e1 : *entity, minPos : def.vec2, maxPos : def.vec2 ) void
+pub fn clampOnArea( e1 : *entity, minPos : def.Vec2, maxPos : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Clamping entity {d} in area {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
   clampOnX( e1, minPos.x, maxPos.x );
   clampOnY( e1, minPos.y, maxPos.y );
 }
 
-pub fn clampOnPoint( e1 : *entity, pos : def.vec2 ) void
+pub fn clampOnPoint( e1 : *entity, pos : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Clamping entity {d} on point {d}:{d}", .{ e1.id, pos.x, pos.y });
   clampOnX( e1, pos.x, pos.x );
@@ -233,7 +233,7 @@ pub fn clampOnEntity( e1 : *entity, e2 : *const entity ) void
   clampOnX( e1, getLeftX( e2 ), getRightX( e2 ));
   clampOnY( e1, getTopY( e2 ), getBottomY( e2 ));
 }
-pub fn clampNearEntity( e1 : *entity, e2 : *const entity, masOffset : def.vec2 ) void
+pub fn clampNearEntity( e1 : *entity, e2 : *const entity, masOffset : def.Vec2 ) void
 {
   def.log( .TRACE, 0, @src(), "Clamping entity {d} near entity {d}", .{ e1.id, e2.id });
   // This function clamps the entity to be near another entity, allowing for partial overlap.
@@ -256,7 +256,7 @@ pub fn isInRangeY( e1 : *const entity, minY : f32, maxY : f32 ) bool
   def.log( .TRACE, 0, @src(), "Checking if entity {d} is in range Y:{d}:{d}", .{ e1.id, minY, maxY });
   return( .getTopY( e1 ) >= minY and getBottomY( e1 ) <= maxY );
 }
-pub fn isInRange( e1 : *const entity, minPos : def.vec2, maxPos : def.vec2 ) bool
+pub fn isInRange( e1 : *const entity, minPos : def.Vec2, maxPos : def.Vec2 ) bool
 {
   def.log( .TRACE, 0, @src(), "Checking if entity {d} is in range {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
   return(( isInRangeX( e1, minPos.x, maxPos.x ) and isInRangeY( e1, minPos.y, maxPos.y )));
@@ -273,13 +273,13 @@ pub fn isOnRangeY( e1 : *const entity, minY : f32, maxY : f32 ) bool
   def.log( .TRACE, 0, @src(), "Checking if entity {d} is on range Y:{d}:{d}", .{ e1.id, minY, maxY });
   return( getBottomY( e1) >= minY and getTopY( e1 ) <= maxY );
 }
-pub fn isOnRange( e1 : *const entity, minPos : def.vec2, maxPos : def.vec2 ) bool
+pub fn isOnRange( e1 : *const entity, minPos : def.Vec2, maxPos : def.Vec2 ) bool
 {
   def.log( .TRACE, 0, @src(), "Checking if entity {d} is on range {d}:{d} to {d}:{d}", .{ e1.id, minPos.x, minPos.y, maxPos.x, maxPos.y });
   return(( isOnRangeX( e1, minPos.x, maxPos.x ) and isOnRangeY( e1, minPos.y, maxPos.y )));
 }
 
-pub fn isOnPoint( e1 : *const entity, pos : def.vec2 ) bool
+pub fn isOnPoint( e1 : *const entity, pos : def.Vec2 ) bool
 {
   def.log( .TRACE, 0, @src(), "Checking if entity {d} is on point {d}:{d}", .{ e1.id, pos.x, pos.y });
   return( getLeftX( e1 ) <= pos.x and getRightX( e1 ) >= pos.x and getTopY( e1 ) <= pos.y and getBottomY( e1 ) >= pos.y );
@@ -299,7 +299,7 @@ pub fn isOverlapping( e1 : *const entity, e2 : *const entity ) bool
   }
 
   // Check for overlap
-  const linearDists = def.vec2{ .x = @abs( e2.pos.x - e1.pos.x ), .y = @abs( e2.pos.y - e1.pos.y )};
+  const linearDists = def.Vec2{ .x = @abs( e2.pos.x - e1.pos.x ), .y = @abs( e2.pos.y - e1.pos.y )};
   if( linearDists.x > ( e1.scale.x + e2.scale.x ) or linearDists.y > ( e1.scale.y + e2.scale.y ))
   {
     return false; // No overlap in at least one axis
@@ -313,7 +313,7 @@ pub fn isOverlapping( e1 : *const entity, e2 : *const entity ) bool
 // The overlap vector is the magnitude of the overlap in each axis, relative to the first entity.
 // NOTE : This function assumes that the entities are axis-aligned rectangles
 // NOTE : Use isOverlapping() if you simply want to check for collision without needing the overlap vector.
-pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?def.vec2
+pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?def.Vec2
 {
   def.log( .TRACE, 0, @src(), "Checking overlap between entity {d} and {d}", .{ e1.id, e2.id });
 
@@ -335,7 +335,7 @@ pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?def.vec2
   if( e1.pos.x == e2.pos.x and e1.pos.y == e2.pos.y ) // Check if the entities are at the same position
   {
     def.qlog( .TRACE, 0, @src(), "Entities are at the same position : returning" );
-    return def.vec2{ .x = 0, .y = 0 }; // No overlap direction possible
+    return def.Vec2{ .x = 0, .y = 0 }; // No overlap direction possible
   }
   // Check if the entities are too far apart to overlap
 
@@ -346,18 +346,18 @@ pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?def.vec2
   }
 
   // Find the directions of the overlap ( relative to e1 )
-  const offset = def.vec2{ .x = e2.pos.x - e1.pos.x, .y = e2.pos.y - e1.pos.y };
-  const dir  = def.vec2{ .x = if( offset.x > 0 ) 1 else if ( offset.x < 0 ) -1 else 0,
+  const offset = def.Vec2{ .x = e2.pos.x - e1.pos.x, .y = e2.pos.y - e1.pos.y };
+  const dir  = def.Vec2{ .x = if( offset.x > 0 ) 1 else if ( offset.x < 0 ) -1 else 0,
                         .y = if( offset.y > 0 ) 1 else if ( offset.y < 0 ) -1 else 0 };
 
   // Find the edges of each entities bounding box
   // NOTE : This assumes that the entities are axis-aligned rectangles
   // TODO : Add support for e2 shapes
-  const selfEdge = def.vec2{
+  const selfEdge = def.Vec2{
     .x = e1.pos.x + ( dir.x * e1.scale.x ),
     .y = e1.pos.y + ( dir.y * e1.scale.y )};
 
-  const otherEdge = def.vec2{
+  const otherEdge = def.Vec2{
     .x = e2.pos.x - ( dir.x * e2.scale.x ),
     .y = e2.pos.y - ( dir.y * e2.scale.y )};
 
@@ -377,7 +377,7 @@ pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?def.vec2
 
   // If we reach here, there is an overlap in both axes
   // Find the overlap vector ( the magniture of the overlap in each axis )
-  const overlap = def.vec2{
+  const overlap = def.Vec2{
     .x = if(      dir.x > 0 ) selfEdge.x  - otherEdge.x
           else if( dir.x < 0 ) otherEdge.x - selfEdge.x
           else 0,

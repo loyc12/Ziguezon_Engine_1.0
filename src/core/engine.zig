@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 // ================================ DEFINITIONS ================================
 
-pub const DEF_SCREEN_DIMS  = def.vec2{ .x = 2048, .y = 1024 };
+pub const DEF_SCREEN_DIMS  = def.Vec2{ .x = 2048, .y = 1024 };
 pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
 
 //pub const DEF_TARGET_TPS = 30;  // Default tick rate for the game ( in seconds ) // TODO : USE ME
