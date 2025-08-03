@@ -50,8 +50,8 @@ pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) voi
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
   emitParticles( ng,
-    //ball.pos, // NOTE / TODO : using ball.pos sometimes causes the particles to spawn at 0,0. fix that
-    .{ .x = ball.pos.x, .y = ball.pos.y, .z = ball.pos.z },
+    ball.pos, // NOTE / TODO : using ball.pos directly sometimes causes the particles to spawn at 0,0. fix that
+    //.{ .x = ball.pos.x, .y = ball.pos.y, .z = ball.pos.z },
     .{ .x = 16, .y = 16, .z = std.math.pi },
     .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .z = 0.0 },
     .{ .x = 128, .y = 32, .z = 2 },
