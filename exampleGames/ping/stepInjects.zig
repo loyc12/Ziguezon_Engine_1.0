@@ -21,27 +21,35 @@ pub fn cpyEntityPosViaID( ng : *def.eng.engine , dstID : u32, srcID : u32, ) voi
   dst.cpyEntityPos( src );
 }
 
-pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec3, dPos : def.Vec3, vel : def.Vec3, dVel : def.Vec3, count : u32, colour : def.ray.Color ) void
+// Emit particles in a given position and velocity range, with the given colour
+pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec3, vel : def.Vec3, dPos : def.Vec3, dVel : def.Vec3, amount : u32, colour : def.ray.Color ) void
 {
-  // Emit particles at the given position with the given colour
-  for( 0 .. count )| i |
+  ng.entityManager.entities.ensureTotalCapacity( ng.entityManager.entities.items.len + amount ) catch |err|
   {
-    _ = i; // Prevent unused variable warning\
+    def.log(.ERROR, 0, @src(), "Failed to preallocate entity capacity for particles: {}", .{ err });
+    return;
+  };
 
-    const particle = ng.entityManager.createDefaultEntity();
-    if( particle == null )
+  for( 0 .. amount )| i |
+  {
+    //_ = i; // Prevent unused variable warning
+    def.log( .DEBUG, 0, @src(), "Emitting particle {d} from position {d}:{d}|{d}", .{ i, pos.x, pos.y, pos.z });
+
+    if( ng.entityManager.createDefaultEntity() )| particle |
     {
-      def.qlog( .WARN, 0, @src(), "Failed to create particle entity" );
+      particle.scale  = .{ .x = 8, .y = 8 };
+      particle.shape  = .STAR;
+      particle.colour = colour;
+      particle.pos    = ng.rng.getScaledVecR( dPos, pos );
+      particle.vel    = ng.rng.getScaledVecR( dVel, vel );
+
+      def.log( .DEBUG, 0, @src(), "Emitting particle {d} at position {d}:{d}|{d}", .{ i, particle.pos.x, particle.pos.y, particle.pos.z });
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to create particle entity {d}", .{ i });
       return;
     }
-
-    var tmp : *def.ntt.entity = particle.?;
-
-    tmp.shape  = .STAR;
-    tmp.pos    = ng.rng.getScaledVecR( dPos, pos );
-    tmp.vel    = ng.rng.getScaledVecR( dVel, vel );
-    tmp.colour = colour;
-    tmp.scale  = .{ .x = 8, .y = 8 };
   }
 }
 
@@ -50,11 +58,10 @@ pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) voi
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
   emitParticles( ng,
-    ball.pos, // NOTE / TODO : using ball.pos directly sometimes causes the particles to spawn at 0,0. fix that
-    //.{ .x = ball.pos.x, .y = ball.pos.y, .z = ball.pos.z },
-    .{ .x = 16, .y = 16, .z = std.math.pi },
+    ball.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
     .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .z = 0.0 },
-    .{ .x = 128, .y = 32, .z = 2 },
+    .{ .x = 16,  .y = 16, .z = 1.0 },
+    .{ .x = 128, .y = 32, .z = 2.0 },
     8, def.ray.Color.yellow );
 
   ng.resourceManager.playAudio( "hit_1" );

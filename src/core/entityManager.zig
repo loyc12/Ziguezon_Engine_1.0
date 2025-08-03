@@ -34,7 +34,7 @@ pub const entityManager = struct
   {
     if( id <= 0 )
     {
-      def.log( .WARN, 0, @src(), "Entity ID cannot be 0", .{});
+      def.log( .WARN, 0, @src(), "Entity ID cannot be 0 or less", .{});
       return false; // ID cannot be 0
     }
     if( id > self.maxID )

@@ -45,6 +45,7 @@ pub fn build( b: *std.Build ) void
   .{
     .name = "ZiguezonEngine",
     .root_module = exe_mod,
+    .use_llvm = false,
   });
 
   // This declares the intent to install the executable artifact,

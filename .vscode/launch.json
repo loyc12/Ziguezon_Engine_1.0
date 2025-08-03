@@ -1,0 +1,13 @@
+{
+  "version": "0.1.0",
+  "configurations": [
+    {
+      "name": "Zig Debub Session",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/zig-out/bin/ZiguezonEngine",
+      "args": [], // "add", "args", "here"
+      "cwd": "${workspaceFolder}",
+    }
+  ]
+}

@@ -108,7 +108,7 @@ pub const entity = struct
   pub fn isOnPoint(  self : *const entity, point : def.Vec2 ) bool { return nttPos.isOnPoint( self, point ); }
 
   // COLLISION FUNCTIONS
-  pub fn isOverlapping( self : *const entity, other : *const entity ) bool { return nttPos.isOverlapping( self, other ); }
+  pub fn isOverlapping( self : *const entity, other : *const entity ) bool   { return nttPos.isOverlapping( self, other ); }
   pub fn getOverlap(    self : *const entity, other : *const entity ) ?def.Vec2 { return nttPos.getOverlap( self, other ); }
 
   // ================ RENDER FUNCTIONS ================
