@@ -81,13 +81,21 @@ COMPONENT SYSTEM
 > RENDER    ( col, sprite, layer )
 > TBD
 
-EVENT SYTEM ?
+INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
  > OnClick
  > TBD
 
 PARTICLE SYSTEM
  > Predefined & reusable particle buffer
+
+CAMERA MANAGER
+ > Position, Zoom, Rotation, Target, etc
+
+
+======== OTHER ========
+
+TPS vs FPS : decouple these two OR ensure the physic is stable
 
 
   RESOURCES :
