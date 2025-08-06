@@ -54,7 +54,7 @@ pub const randomiser = struct
   // Returns a random float in in range [ offset - scale, offset + scale ]
   pub fn getScaledFloat( self : *randomiser, scale : f32, offset : f32 ) f32
   {
-    const tmp = self.rng.float( f32 );
+    var tmp = self.rng.float( f32 );
 
     tmp =  ( tmp * 2.0 ) - 1.0;      // Scale to range [-1, 1]
     return ( tmp * scale ) + offset; // Scale and offset the value

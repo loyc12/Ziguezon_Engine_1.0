@@ -5,12 +5,19 @@ pub const col    = @import( "utils/colour.zig" );
 pub const rng    = @import( "utils/rng.zig" );
 pub const timer  = @import( "utils/timer.zig" );
 
+// ================================ DEFINITIONS ================================
+
+pub const SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
+pub const TARGET_FPS   = 120; // Default target FPS for the game
+
+//pub const TARGET_TPS = 30;  // Default tick rate for the game ( in seconds ) // TODO : USE ME
+
 
 // ================================ CORE ENGINE MODULES ================================
 
 // ================ GAME HOOK SYSTEM ================
 
-pub const ghm = @import( "core/gameHookManager.zig" );
+pub const ghm = @import( "core/system/gameHookManager.zig" );
 pub var G_HK : ghm.gameHooks = .{}; // NOTE : Global gameHooks struct instance
 
 pub fn initHooks( module : anytype ) void                { G_HK.initHooks( module ); }
@@ -19,11 +26,13 @@ pub fn tryHook( tag : ghm.hookTag, args : anytype ) void { G_HK.tryHook( tag, ar
 
 // ================ ENGINE & MANAGERS ================
 
-pub const eng = @import( "core/engine.zig" );
-pub const rsm = @import( "core/resourceManager.zig" );
-pub const ntm = @import( "core/entityManager.zig" );
 
-pub var G_NG : eng.engine = .{}; // NOTE : Global game engine instance
+pub const ngn = @import( "core/engine/engineCore.zig" );
+pub const rsm = @import( "core/system/resourceManager.zig" );
+//pub const rdm = @import( "core/system/renderManager.zig" );
+pub const ntm = @import( "core/system/entityManager.zig" );
+
+pub var G_NG : ngn.engine = .{}; // NOTE : Global game engine instance
 
 
 // ================ ENTITY SYSTEM ================
@@ -65,11 +74,13 @@ pub const drawBasicPoly            = drawer.drawPoly;
 pub const drawBasicPolyLines       = drawer.drawPolyLines;
 
 pub const drawRect                 = drawer.drawRectanglePlus;
-pub const drawPoly                 = drawer.drawPolygonPlus;
 pub const drawElli                 = drawer.drawEllipsePlus;
+pub const drawPoly                 = drawer.drawPolygonPlus;
+
 pub const drawTria                 = drawer.drawTrianglePlus;
-pub const drawStar                 = drawer.drawHexStarPlus;
 pub const drawDiam                 = drawer.drawDiamondPlus;
+pub const drawStar                 = drawer.drawHexStarPlus;
+pub const drawDstr                 = drawer.drawOctStarPlus;
 
 pub const drawText                 = drawer.drawText;
 pub const drawCenteredText         = drawer.drawCenteredText;
@@ -110,7 +121,7 @@ pub const renorm      = mather.renorm;
 
 // ======== Vec2 ========
 
-pub const Vec2math           = @import( "utils/vec2math.zig" );
+pub const Vec2math = @import( "utils/vec2math.zig" );
 
 pub const Vec2               = Vec2math.Vec2;
 pub const newVec2            = Vec2math.newVec2;
@@ -130,52 +141,65 @@ pub const getVec2SqrDist     = Vec2math.getSqrDist;
 pub const getVec2DistX       = Vec2math.getDistX;
 pub const getVec2DistY       = Vec2math.getDistY;
 
-// NOTE : Radian version shortcuts only
-pub const rotVec2            = Vec2math.rotVec2Rad;
-pub const getVec2Angle       = Vec2math.getVec2AngleRad;
-pub const getVec2AngleDist   = Vec2math.getVec2AngleDistRad;
+pub const rotVec2Rad         = Vec2math.rotVec2Rad;
+pub const rotVec2Deg         = Vec2math.rotVec2Rad;
 
-pub const getScaledVec2Deg   = Vec2math.getScaledVec2Deg;
-pub const getScaledVec2Rad   = Vec2math.getScaledVec2Rad;
-pub const getScaledPolyVerts = Vec2math.getScaledPolyVerts;
+pub const vec2ToRad          = Vec2math.vec2ToRad;
+pub const vec2ToDeg          = Vec2math.vec2ToDeg;
+
+pub const vec2AngularDistRad = Vec2math.vec2AngularDistRad;
+pub const vec2AngularDistDeg = Vec2math.vec2AngularDistDeg;
+
+pub const degToVec2          = Vec2math.degToVec2;
+pub const radToVec2          = Vec2math.radToVec2;
+
+pub const degToVec2Scaled    = Vec2math.degToVec2Scaled;
+pub const radToVec2Scaled    = Vec2math.radToVec2Scaled;
 
 
 // ======== VecR ========
 
-pub const VecRmath         = @import( "utils/vecRmath.zig" );
+pub const VecRmath = @import( "utils/vecRmath.zig" );
 
-pub const VecR             = VecRmath.VecR;
-pub const newVecR          = VecRmath.newVecR;
-pub const getRVal          = VecRmath.getRVal;
+pub const VecR               = VecRmath.VecR;
+pub const newVecR            = VecRmath.newVecR;
+pub const getRVal            = VecRmath.getRVal;
 
-pub const normVecRUnit     = VecRmath.normVecRUnit;
-pub const normVecRLen      = VecRmath.normVecRLen;
+pub const normVecRUnit       = VecRmath.normVecRUnit;
+pub const normVecRLen        = VecRmath.normVecRLen;
 
-pub const addVecR          = VecRmath.addVecR;
-pub const subVecR          = VecRmath.subVecR;
-pub const mulVecR          = VecRmath.mulVecR;
-pub const divVecR          = VecRmath.divVecR;
+pub const addVecR            = VecRmath.addVecR;
+pub const subVecR            = VecRmath.subVecR;
+pub const mulVecR            = VecRmath.mulVecR;
+pub const divVecR            = VecRmath.divVecR;
 
-pub const getVecRDist      = VecRmath.getVecRDist;
-pub const getVecRCartDist  = VecRmath.getVecRCartDist;
-pub const getVecRSqrDist   = VecRmath.getVecRSqrDist;
+pub const getVecRDist        = VecRmath.getVecRDist;
+pub const getVecRCartDist    = VecRmath.getVecRCartDist;
+pub const getVecRSqrDist     = VecRmath.getVecRSqrDist;
 
-pub const getVecRDistX     = VecRmath.getVecRDistX;
-pub const getVecRDistY     = VecRmath.getVecRDistY;
-pub const getVecRDistR     = VecRmath.getVecRDistR;
+pub const getVecRDistX       = VecRmath.getVecRDistX;
+pub const getVecRDistY       = VecRmath.getVecRDistY;
+pub const getVecRDistR       = VecRmath.getVecRDistR;
 
-// NOTE : Radian version shortcuts only
-pub const rotVecR          = VecRmath.rotVecR;
-pub const getVecRAngle     = VecRmath.getVecRAngleRad;
-pub const getVecRAngleDist = VecRmath.getVecRAngleDistRad;
+pub const rotVecRDeg         = VecRmath.rotVecRDeg;
+pub const rotVecRRad         = VecRmath.rotVecRRad;
 
-pub const getScaledVecRDeg = VecRmath.getScaledVecRDeg;
-pub const getScaledVecRRad = VecRmath.getScaledVecRRad;
+pub const vecRToRad          = VecRmath.vecRToRad;
+pub const vecRToDeg          = VecRmath.vecRToDeg;
+
+pub const vecRAngularDistRad = VecRmath.vecRAngularDistRad;
+pub const vecRAngularDistDeg = VecRmath.vecRAngularDistDeg;
+
+pub const degToVecR          = VecRmath.degToVecR;
+pub const radToVecR          = VecRmath.radToVecR;
+
+pub const degToVecRScaled    = VecRmath.degToVecRScaled;
+pub const radToVecRScaled    = VecRmath.radToVecRScaled;
 
 
 // ======== Vec3 ========
 
-pub const Vec3math      = @import( "utils/vec3math.zig" );
+pub const Vec3math = @import( "utils/vec3math.zig" );
 
 pub const Vec3          = Vec3math.Vec3;
 pub const newVec3       = Vec3math.newVec3;

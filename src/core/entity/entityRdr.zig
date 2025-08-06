@@ -28,6 +28,17 @@ pub fn isOnScreen( e1 : *const entity ) bool
 
 // ================ RENDER FUNCTIONS ================
 
+inline fn drawDirectionLine( self : *const entity, color : def.ray.Color, width : f32 ) void
+{
+  const frontPoint = def.Vec2math.radToVec2Scaled( self.getRot(), self.scale );
+  def.drawLine( self.getCenter(), def.addVec2( self.getCenter(), frontPoint ), color, width );
+}
+
+inline fn drawPolyOnSelf( self : *const entity, sides : u8 ) void
+{
+  def.drawPoly( self.getCenter(), self.scale, self.getRot(), self.colour, sides );
+}
+
 pub fn renderEntity( self : *const entity ) void
 {
   def.log( .TRACE, 0, @src(), "Rendering entity {d} at position {d}:{d} with shape {s}", .{ self.id, self.pos.x, self.pos.y, @tagName( self.shape ) });
@@ -45,15 +56,20 @@ pub fn renderEntity( self : *const entity ) void
 
   switch( self.shape )
   {
-    .NONE => {}, // NOTE : Not using else, so that the compiler warns if a new shape type is added
-    .TRIA => { def.drawTria( self.getCenter(), self.scale, self.getRot(), self.colour     ); },
-    .STAR => { def.drawStar( self.getCenter(), self.scale, self.getRot(), self.colour     ); },
-    .RECT => { def.drawRect( self.getCenter(), self.scale, self.getRot(), self.colour     ); },
-    .DIAM => { def.drawDiam( self.getCenter(), self.scale, self.getRot(), self.colour     ); },
-    .PENT => { def.drawPoly( self.getCenter(), self.scale, self.getRot(), self.colour, 5  ); },
-    .HEXA => { def.drawPoly( self.getCenter(), self.scale, self.getRot(), self.colour, 6  ); },
-    .OCTA => { def.drawPoly( self.getCenter(), self.scale, self.getRot(), self.colour, 8  ); },
-    .DODE => { def.drawPoly( self.getCenter(), self.scale, self.getRot(), self.colour, 12 ); },
-    .ELLI => { def.drawElli( self.getCenter(), self.scale, self.getRot(), self.colour     ); },
+    // NOTE : Exhaustively listing the possible enums, so that the compiler warns if a shape is unimplemented
+    .NONE => {},
+
+    .LINE => { drawDirectionLine( self, self.colour, 2.0 ); },
+    .RECT => { def.drawRect( self.getCenter(), self.scale, self.getRot(), self.colour ); },
+    .STAR => { def.drawStar( self.getCenter(), self.scale, self.getRot(), self.colour ); },
+    .DSTR => { def.drawDstr( self.getCenter(), self.scale, self.getRot(), self.colour ); },
+    .ELLI => { def.drawElli( self.getCenter(), self.scale, self.getRot(), self.colour ); },
+
+    .TRIA => { drawPolyOnSelf( self,  3 ); },
+    .DIAM => { drawPolyOnSelf( self,  4 ); },
+    .PENT => { drawPolyOnSelf( self,  5 ); },
+    .HEXA => { drawPolyOnSelf( self,  6 ); },
+    .OCTA => { drawPolyOnSelf( self,  8 ); },
+    .DODE => { drawPolyOnSelf( self, 12 ); },
   }
 }

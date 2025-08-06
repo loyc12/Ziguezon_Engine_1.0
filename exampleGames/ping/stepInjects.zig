@@ -4,7 +4,7 @@ const stateInj = @import( "stateInjects.zig" );
 
 // ================================ HELPER FUNCTIONS ================================
 
-pub fn cpyEntityPosViaID( ng : *def.eng.engine , dstID : u32, srcID : u32, ) void
+pub fn cpyEntityPosViaID( ng : *def.ngn.engine , dstID : u32, srcID : u32, ) void
 {
   const src = ng.entityManager.getEntity( srcID ) orelse
   {
@@ -22,7 +22,7 @@ pub fn cpyEntityPosViaID( ng : *def.eng.engine , dstID : u32, srcID : u32, ) voi
 }
 
 // Emit particles in a given position and velocity range, with the given colour
-pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec3, vel : def.Vec3, dPos : def.Vec3, dVel : def.Vec3, amount : u32, colour : def.ray.Color ) void
+pub fn emitParticles( ng : *def.ngn.engine, pos : def.Vec3, vel : def.Vec3, dPos : def.Vec3, dVel : def.Vec3, amount : u32, colour : def.ray.Color ) void
 {
   ng.entityManager.entities.ensureTotalCapacity( ng.entityManager.entities.items.len + amount ) catch |err|
   {
@@ -35,25 +35,20 @@ pub fn emitParticles( ng : *def.eng.engine, pos : def.Vec3, vel : def.Vec3, dPos
     //_ = i; // Prevent unused variable warning
     def.log( .DEBUG, 0, @src(), "Emitting particle {d} from position {d}:{d}|{d}", .{ i, pos.x, pos.y, pos.z });
 
-    if( ng.entityManager.createDefaultEntity() )| particle |
-    {
-      particle.scale  = .{ .x = 8, .y = 8 };
-      particle.shape  = .STAR;
-      particle.colour = colour;
-      particle.pos    = ng.rng.getScaledVecR( dPos, pos );
-      particle.vel    = ng.rng.getScaledVecR( dVel, vel );
+    const size = ng.rng.getScaledFloat( 2.0, 7.0 );
 
-      def.log( .DEBUG, 0, @src(), "Emitting particle {d} at position {d}:{d}|{d}", .{ i, particle.pos.x, particle.pos.y, particle.pos.z });
-    }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to create particle entity {d}", .{ i });
-      return;
-    }
+    _ = ng.entityManager.addEntity( // NOTE : We do not care if this fails, as we are just emitting particles
+    .{
+      .scale  = .{ .x = size, .y = size },
+      .colour = colour,
+      .shape  = ng.rng.getVal( def.ntt.e_shape ),
+      .pos    = ng.rng.getScaledVecR( dPos, pos ),
+      .vel    = ng.rng.getScaledVecR( dVel, vel ),
+    });
   }
 }
 
-pub fn emitParticlesOnBounce( ng : *def.eng.engine, ball : *def.ntt.entity ) void
+pub fn emitParticlesOnBounce( ng : *def.ngn.engine, ball : *def.ntt.entity ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
@@ -83,7 +78,7 @@ var   WINNER    : u8 = 0;              // The winner of the game, 1 for player 1
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
@@ -145,7 +140,7 @@ pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInp
   }
 }
 
-pub fn OnTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
   {
@@ -183,7 +178,7 @@ pub fn OnTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntit
   }
 }
 
-pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   // ================ VARIABLES AND CONSTANTS ================
 
@@ -337,14 +332,14 @@ pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEnti
 
 }
 
-pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderBackground( ng : *def.ngn.engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 
   def.ray.clearBackground( def.ray.Color.black );
 }
 
-pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderOverlay( ng : *def.ngn.engine ) void // Called by engine.renderGraphics()
 {
   // Declare the buffers to hold the formatted scores
   var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score

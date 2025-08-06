@@ -1,12 +1,7 @@
-RESOURCES :
 
-https://float.exposed/    // to see the bit values of floats
+    GAME DEV ROADMAP :
 
-
-GAME DEV ROADMAP
-
-
-======== Micro Projects ========
+======== MICRO PROJECTS ========
 
 Pong              ( Ping         ) - DONE
 Flappy Bird       ( Floppy       ) -
@@ -20,20 +15,21 @@ Brick Breaker     ( Wall Puncher ) -
 Space Invader     ( Sky Attacker ) -
 Pacman            ( Ratman       ) -
 
-======== Starter Projects ========
 
-Apo Surviver       ( Hydro - RPG )
+======== STARTER PROJECTS ========
+
+Apo Surviver     ( Hydro   - RPG )
 Asteroid miner   ( Orbiter - RPG )
-Platformer         ( Dazel - RPG )
+Platformer       ( Dazel   - RPG )
 
 Tower Defense              ( RTS )
 
-Civ in space      ( Polity - TBS )
+Civ-in-space               ( TBS )
 Fire-Emblem / Advance Wars ( TBS )
 Hex Empire                 ( TBS )
 
 
-======== Medium Projects ========
+======== MEDIUM PROJECTS ========
 
 City Builder               ( RTS )
 Colony Sim game            ( RTS )
@@ -43,4 +39,60 @@ Satisfactory / Factorio    ( TBS )
 DOOM-like                  ( FPS )
 
 Terraria               ( Sandbox )
+
+
+  ENGINE FEATURE ROADMAP :
+
+======== PARTS ========
+
+GAME HOOKS - OKAY
+ > Review if needed
+
+FILE INTERACTION
+ > LOAD
+ > SAVE
+
+RENDER LAYERS
+ > BKGRND_1,2,3
+ > WORLD_1,2,3
+ > FRGRND_1,2,3
+
+ > EFCTS (particles)
+ > INTRFC_1,2,3 (uis)
+ > DEBUG
+
+ > RENDER QUEUE (ordered)
+
+TILEMAP
+ > TILE_TYPE_MAP (base)
+ > TILE_RNDR_MAP (derived)
+ > TILE_OBJC_MAP
+
+SPRITE ATLAS
+ > SPRITE DIMS
+ > ATLAS DIMS
+ > FRAME COUNT ?
+
+
+======== SYSTEMS ========
+
+COMPONENT SYSTEM
+> TRANSFORM ( pos, vel, acc )
+> RENDER    ( col, sprite, layer )
+> TBD
+
+EVENT SYTEM ?
+ > OnKey
+ > OnClick
+ > TBD
+
+PARTICLE SYSTEM
+ > Predefined & reusable particle buffer
+
+
+  RESOURCES :
+
+https://float.exposed/    // to see the bit values of floats
+
+
 

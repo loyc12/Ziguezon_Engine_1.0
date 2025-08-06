@@ -19,7 +19,7 @@ var IS_JUMPING    : bool = false; // Flag to check if the disk is jumping
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
@@ -57,7 +57,7 @@ pub fn OnUpdateInputs( ng : *def.eng.engine ) void // Called by engine.updateInp
   }
 }
 
-pub fn OnTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   var disk = ng.entityManager.getEntity( stateInj.DISK_ID ) orelse
   {
@@ -81,7 +81,7 @@ pub fn OnTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntit
   else{ disk.acc.y = GRAVITY; } // Apply gravity
 }
 
-pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   const hHeight : f32 = def.getScreenHeight() / 2.0;
 
@@ -105,14 +105,14 @@ pub fn OffTickEntities( ng : *def.eng.engine ) void // Called by engine.tickEnti
   // ================ DISK-PILLAR COLLISIONS ================
 }
 
-pub fn OnRenderBackground( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderBackground( ng : *def.ngn.engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 
   def.ray.clearBackground( def.ray.Color.green );
 }
 
-pub fn OnRenderOverlay( ng : *def.eng.engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderOverlay( ng : *def.ngn.engine ) void // Called by engine.renderGraphics()
 {
   // Declare the buffer to hold the formatted scores
   var s_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 };

@@ -9,19 +9,20 @@ pub const RtD   = def.RtD;
 
 // NOTE : In this vector format, z represent the rotation angle R in radians, while x and y are the coordinates.
 
-pub fn newVecR( x : f32, y : f32, r : ?f32 ) VecR
+pub inline fn newVecR( x : f32, y : f32, r : ?f32 ) VecR
 {
   if( r )| angle | { return VecR{ .x = x, .y = y, .z = angle }; }
   else             { return VecR{ .x = x, .y = y, .z = 0.0   }; }
 }
-pub fn getRVal( v : VecR ) f32 { return v.z; } // Returns the R value ( rotation angle in radians )
+pub inline fn getRVal( v : VecR ) f32 { return v.z; } // Returns the R value ( rotation angle in radians )
+
 
 // ================================ SCALAR MATH ================================
 
-pub fn addValToVecR( v : VecR, c : f32 ) VecR { return VecR{ .x = v.x + c, .y = v.y + c, .z = v.z + 0.0 }; }
-pub fn subValToVecR( v : VecR, c : f32 ) VecR { return VecR{ .x = v.x - c, .y = v.y - c, .z = v.z + 0.0 }; }
-pub fn mulVecRByVal( v : VecR, c : f32 ) VecR { return VecR{ .x = v.x * c, .y = v.y * c, .z = v.z + 0.0 }; }
-pub fn divVecRByVal( v : VecR, c : f32 ) ?VecR
+pub inline fn addValToVecR( v : VecR, c : f32 ) VecR { return VecR{ .x = v.x + c, .y = v.y + c, .z = v.z + 0.0 }; }
+pub inline fn subValToVecR( v : VecR, c : f32 ) VecR { return VecR{ .x = v.x - c, .y = v.y - c, .z = v.z + 0.0 }; }
+pub inline fn mulVecRByVal( v : VecR, c : f32 ) VecR { return VecR{ .x = v.x * c, .y = v.y * c, .z = v.z + 0.0 }; }
+pub        fn divVecRByVal( v : VecR, c : f32 ) ?VecR
 {
   if( c == 0.0 )
   {
@@ -32,7 +33,7 @@ pub fn divVecRByVal( v : VecR, c : f32 ) ?VecR
 }
 
 // Normalizes a vector back to a unit vector ( length of 1 ), returns null if the vector is zero'd
-pub fn normVecRUnit( v : VecR ) ?VecR { return normVecRLen( v, 1.0 ); }
+pub inline fn normVecRUnit( v : VecR ) ?VecR { return normVecRLen( v, 1.0 ); }
 
 // Normalizes a vector to a new length, returns null if the vector is zero'd
 pub fn normVecRLen( v : VecR, newLen : f32 ) ?VecR
@@ -52,10 +53,10 @@ pub fn normVecRLen( v : VecR, newLen : f32 ) ?VecR
 
 // =============================== VECTOR MATH ================================
 
-pub fn addVecR( a : VecR, b : VecR ) VecR { return VecR{ .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z }; }
-pub fn subVecR( a : VecR, b : VecR ) VecR { return VecR{ .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z }; }
-pub fn mulVecR( a : VecR, b : VecR ) VecR { return VecR{ .x = a.x * b.x, .y = a.y * b.y, .z = a.z * b.z }; }
-pub fn divVecR( a : VecR, b : VecR ) ?VecR
+pub inline fn addVecR( a : VecR, b : VecR ) VecR { return VecR{ .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z }; }
+pub inline fn subVecR( a : VecR, b : VecR ) VecR { return VecR{ .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z }; }
+pub inline fn mulVecR( a : VecR, b : VecR ) VecR { return VecR{ .x = a.x * b.x, .y = a.y * b.y, .z = a.z * b.z }; }
+pub        fn divVecR( a : VecR, b : VecR ) ?VecR
 {
   if( b.x == 0.0 or b.y == 0.0 or b.z == 0.0 )
   {
@@ -71,28 +72,29 @@ pub fn divVecR( a : VecR, b : VecR ) ?VecR
 // NOTE : These functions are used to calculate UNSIGNED linear distances between vectors
 
 // Returns the Euclidian ( Chebyshev ) distance between two vectors
-pub fn getVecRDist( p1 : VecR, p2 : VecR ) f32 { return @sqrt( getVecRSqrDist( p1, p2 ) ); }
+pub inline fn getVecRDist( p1 : VecR, p2 : VecR ) f32 { return @sqrt( getVecRSqrDist( p1, p2 ) ); }
 
 // Returns the Cartesian ( Taxicab / Manhattan ) distance between two vectors
-pub fn getVecRCartDist( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.x - p1.x ) + @abs( p2.y - p1.y ); }
+pub inline fn getVecRCartDist( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.x - p1.x ) + @abs( p2.y - p1.y ); }
 
 // Returns the square of the distance between two vectors ( helps to avoid unnecessary sqrt() calls )
-pub fn getVecRSqrDist(  p1 : VecR, p2 : VecR ) f32
+pub inline fn getVecRSqrDist(  p1 : VecR, p2 : VecR ) f32
 {
   const dist = def.Vec2{ .x = p2.x - p1.x, .y = p2.y - p1.y };
   return ( dist.x * dist.x ) + ( dist.y * dist.y );
 }
 
 // Returns the linear distance between two vectors along a given axis
-pub fn getVecRDistX( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.x - p1.x ); }
-pub fn getVecRDistY( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.y - p1.y ); }
-pub fn getVecRDistR( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.z - p1.z ); }
+pub inline fn getVecRDistX( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.x - p1.x ); }
+pub inline fn getVecRDistY( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.y - p1.y ); }
+pub inline fn getVecRDistR( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.z - p1.z ); }
+
 
 // ================================ ANGULAR MATH ================================
 // NOTE : all returned angles are unsigned, in the range [ 0, 360 ] for degrees and [ 0, 2*PI ] for radians
 
-pub fn rotVecRDeg( a : VecR, angleDeg : f32 ) VecR { return rotVecRRad( a, DtR( angleDeg )); }
-pub fn rotVecRRad( a : VecR, angleRad : f32 ) VecR
+pub inline fn rotVecRDeg( a : VecR, angleDeg : f32 ) VecR { return rotVecRRad( a, DtR( angleDeg )); }
+pub        fn rotVecRRad( a : VecR, angleRad : f32 ) VecR
 {
   if( angleRad == 0.0 ){ return a; }
 
@@ -107,8 +109,8 @@ pub fn rotVecRRad( a : VecR, angleRad : f32 ) VecR
   };
 }
 
-pub fn getVecRAngleDeg( v : VecR ) f32 { return RtD( getVecRAngleRad( v )); }
-pub fn getVecRAngleRad( v : VecR ) f32
+pub inline fn vecRToDeg( v : VecR ) f32 { return RtD( vecRAngularDistRad( v )); }
+pub        fn vecRToRad( v : VecR ) f32
 {
   if( v.x == 0.0 and v.y == 0.0 )
   {
@@ -119,8 +121,9 @@ pub fn getVecRAngleRad( v : VecR ) f32
   return atan2( v.y, v.x );
 }
 
-pub fn getVecRAngleDistDeg( p1 : VecR, p2 : VecR, origin : ?VecR, ) f32 { return RtD( getVecRAngleDistRad( p1, p2, origin )); }
-pub fn getVecRAngleDistRad( p1 : VecR, p2 : VecR, origin : ?VecR, ) f32
+// Returns the unsinged angular distance between two vectors sharing the same origin
+pub inline  fn vecRAngularDistDeg( p1 : VecR, p2 : VecR, origin : ?VecR, ) f32 { return RtD( vecRAngularDistRad( p1, p2, origin )); }
+pub         fn vecRAngularDistRad( p1 : VecR, p2 : VecR, origin : ?VecR, ) f32
 {
   if( origin )| p0 |
   {
@@ -131,14 +134,15 @@ pub fn getVecRAngleDistRad( p1 : VecR, p2 : VecR, origin : ?VecR, ) f32
   else { return @abs( atan2( p1.y, p1.x ) - atan2( p2.y, p2.x )); }
 }
 
+
 // ================================ VECTOR(S) GENERATORS ================================
 // These functions are used to create scaled unit vectors from angles
 
-// Returns an x/y scaled vector from a given angle in degrees ( R value is set to the vector's angle )
-pub fn getScaledVecRFromDeg( scale : VecR, angleDeg : f32 ) VecR { return getScaledVecRFromRad( scale, DtR( angleDeg )); }
+pub inline fn degToVecR( angleDeg : f32 ) VecR { return radToVecR( DtR( angleDeg )); }
+pub inline fn radToVecR( angleRad : f32 ) VecR { return VecR{ .x = @cos( angleRad ), .y = @sin( angleRad ), .z = angleRad }; }
 
-// Returns an x/y scaled vector from a given angle in radians ( R value is set to the vector's angle )
-pub fn getScaledVecRFromRad( scale : VecR, angleRad : f32 ) VecR
+pub inline fn degToVecRScaled( angleDeg : f32, scale : VecR ) VecR { return radToVecRScaled( scale, DtR( angleDeg )); }
+pub inline fn radToVecRScaled( angleRad : f32, scale : VecR ) VecR
 {
   // NOTE : The Z ( R ) value is set to the angle, meaning it is always pointing outwards from the origin
   return Vec2{ .x = @cos( angleRad ) * scale.x, .y = @sin( angleRad ) * scale.y, .z = angleRad };

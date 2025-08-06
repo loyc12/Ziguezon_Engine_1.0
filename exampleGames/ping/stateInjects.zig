@@ -9,7 +9,7 @@ pub var BALL_ID            : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnStart( ng : *def.eng.engine ) void // Called by engine.start()
+pub fn OnStart( ng : *def.ngn.engine ) void // Called by engine.start()
 {
   ng.resourceManager.addAudioFromFile( "hit_1", "exampleGames/assets/sounds/Boop_1.wav" ) catch | err |
   {
@@ -21,7 +21,7 @@ pub fn OnStart( ng : *def.eng.engine ) void // Called by engine.start()
   };
 }
 
-pub fn OnOpen( ng : *def.eng.engine ) void // Called by engine.open()
+pub fn OnOpen( ng : *def.ngn.engine ) void // Called by engine.open()
 {
 
   if( ng.entityManager.addEntity( // player 1

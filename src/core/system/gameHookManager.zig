@@ -52,39 +52,39 @@ pub const gameHooks = struct
 {
   // Engine State Hooks
 
-  OnStart : ?*const fn ( *def.eng.engine ) void = null,
-  OnStop  : ?*const fn ( *def.eng.engine ) void = null,
+  OnStart : ?*const fn ( *def.ngn.engine ) void = null,
+  OnStop  : ?*const fn ( *def.ngn.engine ) void = null,
 
-  OnOpen  : ?*const fn ( *def.eng.engine ) void = null,
-  OnClose : ?*const fn ( *def.eng.engine ) void = null,
+  OnOpen  : ?*const fn ( *def.ngn.engine ) void = null,
+  OnClose : ?*const fn ( *def.ngn.engine ) void = null,
 
-  OnPlay  : ?*const fn ( *def.eng.engine ) void = null,
-  OnPause : ?*const fn ( *def.eng.engine ) void = null,
+  OnPlay  : ?*const fn ( *def.ngn.engine ) void = null,
+  OnPause : ?*const fn ( *def.ngn.engine ) void = null,
 
   // Engine Step Hooks
 
-  OnLoopStart : ?*const fn ( *def.eng.engine ) void = null,
-  OnLoopEnd   : ?*const fn ( *def.eng.engine ) void = null,
-  OnLoopCycle : ?*const fn ( *def.eng.engine ) void = null,
+  OnLoopStart : ?*const fn ( *def.ngn.engine ) void = null,
+  OnLoopEnd   : ?*const fn ( *def.ngn.engine ) void = null,
+  OnLoopCycle : ?*const fn ( *def.ngn.engine ) void = null,
 
   // Update and Tick Hooks
 
-  OnUpdateInputs  : ?*const fn ( *def.eng.engine ) void = null,
-//OffUpdateInputs : ?*const fn ( *def.eng.engine ) void = null,
+  OnUpdateInputs  : ?*const fn ( *def.ngn.engine ) void = null,
+//OffUpdateInputs : ?*const fn ( *def.ngn.engine ) void = null,
 
-  OnTickEntities    : ?*const fn ( *def.eng.engine ) void = null,
-  OffTickEntities   : ?*const fn ( *def.eng.engine ) void = null,
+  OnTickEntities    : ?*const fn ( *def.ngn.engine ) void = null,
+  OffTickEntities   : ?*const fn ( *def.ngn.engine ) void = null,
 
   // Rendering Hooks
 
-  OnRenderBackground  : ?*const fn ( *def.eng.engine ) void = null,
-//OffRenderBackground : ?*const fn ( *def.eng.engine ) void = null
+  OnRenderBackground  : ?*const fn ( *def.ngn.engine ) void = null,
+//OffRenderBackground : ?*const fn ( *def.ngn.engine ) void = null
 
-  OnRenderWorld       : ?*const fn ( *def.eng.engine ) void = null,
-  OffRenderWorld      : ?*const fn ( *def.eng.engine ) void = null,
+  OnRenderWorld       : ?*const fn ( *def.ngn.engine ) void = null,
+  OffRenderWorld      : ?*const fn ( *def.ngn.engine ) void = null,
 
-  OnRenderOverlay     : ?*const fn ( *def.eng.engine ) void = null,
-//OffRenderOverlay    : ?*const fn ( *def.eng.engine ) void = null,
+  OnRenderOverlay     : ?*const fn ( *def.ngn.engine ) void = null,
+//OffRenderOverlay    : ?*const fn ( *def.ngn.engine ) void = null,
 
 
   // ================================ GAME HOOKS FUNCTIONS ================================
