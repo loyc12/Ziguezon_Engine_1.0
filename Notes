@@ -1,67 +1,85 @@
 
-    GAME DEV ROADMAP :
+  GAME DEV ROADMAP :
+
+======== TOOLING PROJECTS ========
+
+Maze Builder      ( Labyrinther  ) - NEXT
+UI Designer       ( Menu Maker   ) -
+Animation Player  ( Animuter     ) -
+Paint             ( Colorant     ) -
+
 
 ======== MICRO PROJECTS ========
 
 Pong              ( Ping         ) - DONE
-Flappy Bird       ( Floppy       ) -
+Flappy Bird       ( Floppy       ) - WIP
 Snake             ( Couleuvre    ) -
-Asteroid          ( Meteroid     ) -
 Tetris            ( Pentomial    ) -
-Maze Builder      ( Labyrinth    ) -
-Paint             ( Colorant     ) -
-
-Brick Breaker     ( Wall Puncher ) -
-Space Invader     ( Sky Attacker ) -
+Duck Hunt         ( Chickenicide ) -
+Asteroid          ( Meteroid     ) -
 Pacman            ( Ratman       ) -
+
+Breakout          ( Wall Wacker  ) - Overlaps with Pong and Breakout
+Space Invader     ( Sky Tyrants  ) - Overlaps with Flappy Bird and Asteroid
 
 
 ======== STARTER PROJECTS ========
 
-Apo Surviver     ( Hydro   - RPG )
-Asteroid miner   ( Orbiter - RPG )
-Platformer       ( Dazel   - RPG )
+Platformer                 ( RPG ) Dazelia
 
 Tower Defense              ( RTS )
 
-Civ-in-space               ( TBS )
-Fire-Emblem / Advance Wars ( TBS )
 Hex Empire                 ( TBS )
+Card Game                  ( TBS )
+
+Cubehead                   ( FPS ) Squarehead
 
 
 ======== MEDIUM PROJECTS ========
 
+Apo Surviver               ( RPG ) Hydrowar
+Asteroid miner             ( RPG ) Orbiter
+
 City Builder               ( RTS )
 Colony Sim game            ( RTS )
 
-Satisfactory / Factorio    ( TBS )
+Civ-in-space               ( TBS )
+Fire-Emblem / Advance Wars ( TBS )
+Factorio-like              ( TBS )
 
 DOOM-like                  ( FPS )
 
-Terraria               ( Sandbox )
+Terraria-like              ( Sandbox )
+
 
 
   ENGINE FEATURE ROADMAP :
 
 ======== PARTS ========
 
-GAME HOOKS - OKAY
- > Review if needed
+GAME HOOKS
+ > Review implementation
 
 FILE INTERACTION
  > LOAD
  > SAVE
 
 RENDER LAYERS
- > BKGRND_1,2,3
- > WORLD_1,2,3
- > FRGRND_1,2,3
+ > BKGRND_1/2/.. 0-8   ( background parallax ? )
 
- > EFCTS (particles)
- > INTRFC_1,2,3 (uis)
- > DEBUG
+ > EFFECTS_1     9     ( particles )
+ > WORLD_1/2/..  10-28 ( play layers )
 
- > RENDER QUEUE (ordered)
+ > EFFECTS_2     29    ( particles )
+ > FRGRND_1/2/.. 30-38 ( forground parallax ? )
+
+ > EFFECTS_3     39    ( particles )
+ > INTRFC_1/2/.. 40-58 ( UI & OVERLAYS)
+
+ > EFFECTS_4     59    ( particles )
+ > DEBUG         60 +  ( hitboxes, etc )
+
+ > RENDER QUEUE ( elements sorted based on layer )
 
 TILEMAP
  > TILE_TYPE_MAP (base)
@@ -71,15 +89,15 @@ TILEMAP
 SPRITE ATLAS
  > SPRITE DIMS
  > ATLAS DIMS
- > FRAME COUNT ?
+ > PRE ATLAS FRAME COUNT / SPEED ?
 
 
 ======== SYSTEMS ========
 
 COMPONENT SYSTEM
-> TRANSFORM ( pos, vel, acc )
-> RENDER    ( col, sprite, layer )
-> TBD
+> TRANSFORM ( pos, vel, acc )               ( to be used in a trnsfrm queue)
+> RENDER    ( col, sprite, layer, z? )      ( to be used in a render  queue )
+> COLLIDER  ( shape, scale, collideType ? ) ( to be used in a collide queue )
 
 INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
@@ -89,8 +107,16 @@ INPUT MANAGER ( FULL EVENT SYTEM ? )
 PARTICLE SYSTEM
  > Predefined & reusable particle buffer
 
+ANIMATION MANAGER ?
+ > Animation frames
+ > Animation speed
+ > Animation state
+
 CAMERA MANAGER
  > Position, Zoom, Rotation, Target, etc
+
+UI MANAGER
+ > Text, Button, Slider, etc
 
 
 ======== OTHER ========
@@ -98,9 +124,12 @@ CAMERA MANAGER
 TPS vs FPS : decouple these two OR ensure the physic is stable
 
 
-  RESOURCES :
 
-https://float.exposed/    // to see the bit values of floats
+  REFERENCES :
+
+======== WEB ========
+
+https://float.exposed/         - to see the bit values of floats
 
 
 
