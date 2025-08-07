@@ -5,6 +5,11 @@ pub const col    = @import( "utils/colour.zig" );
 pub const rng    = @import( "utils/rng.zig" );
 pub const timer  = @import( "utils/timer.zig" );
 
+// ================================ DEFINITIONS ================================
+
+pub const DEF_SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
+pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
+
 
 // ================================ HOOK MANAGER ================================
 
@@ -39,10 +44,6 @@ pub const alloc = std.heap.smp_allocator;
 // ================ SCREEN MNGR SHORTHANDS ================
 
 pub const scm = @import( "core/system/screenManager.zig" );
-
-pub const SCREEN_DIMS         = scm.SCREEN_DIMS;
-pub const TARGET_FPS          = scm.TARGET_FPS;
-// pub const TARGET_TPS         = scm.TARGET_TPS; // TODO : USE ME
 
 pub const getScreenWidth      = scm.getScreenWidth;
 pub const getScreenHeight     = scm.getScreenHeight;
@@ -133,6 +134,11 @@ pub const Vec2math = @import( "utils/vec2math.zig" );
 pub const Vec2               = Vec2math.Vec2;
 pub const newVec2            = Vec2math.newVec2;
 
+pub const addValToVec2       = Vec2math.addValToVec2;
+pub const subValFromVec2     = Vec2math.subValFromVec2;
+pub const mulVec2ByVal       = Vec2math.mulVec2ByVal;
+pub const divVec2ByVal       = Vec2math.divVec2ByVal;
+
 pub const normVec2Unit       = Vec2math.normVec2Unit;
 pub const normVec2Len        = Vec2math.normVec2Len;
 
@@ -172,6 +178,11 @@ pub const VecR               = VecRmath.VecR;
 pub const newVecR            = VecRmath.newVecR;
 pub const getRVal            = VecRmath.getRVal;
 
+pub const addValToVecR       = VecRmath.addValToVecR;
+pub const subValFromVecR     = VecRmath.subValFromVecR;
+pub const mulVecRByVal       = VecRmath.mulVecRByVal;
+pub const divVecRByVal       = VecRmath.divVecRByVal;
+
 pub const normVecRUnit       = VecRmath.normVecRUnit;
 pub const normVecRLen        = VecRmath.normVecRLen;
 
@@ -208,36 +219,41 @@ pub const radToVecRScaled    = VecRmath.radToVecRScaled;
 
 pub const Vec3math = @import( "utils/vec3math.zig" );
 
-pub const Vec3          = Vec3math.Vec3;
-pub const newVec3       = Vec3math.newVec3;
+pub const Vec3           = Vec3math.Vec3;
+pub const newVec3        = Vec3math.newVec3;
 
-pub const normVec3Unit  = Vec3math.normVec3Unit;
-pub const normVec3Len   = Vec3math.normVec3Len;
+pub const addValToVec3   = Vec3math.addValToVec3;
+pub const subValFromVec3 = Vec3math.subValFromVec3;
+pub const mulVec3ByVal   = Vec3math.mulVec3ByVal;
+pub const divVec3ByVal   = Vec3math.divVec3ByVal;
 
-pub const addVec3       = Vec3math.addVec3;
-pub const subVec3       = Vec3math.subVec3;
-pub const mulVec3       = Vec3math.mulVec3;
-pub const divVec3       = Vec3math.divVec3;
+pub const normVec3Unit   = Vec3math.normVec3Unit;
+pub const normVec3Len    = Vec3math.normVec3Len;
 
-pub const getDist       = Vec3math.getDist;
-pub const getCartDist   = Vec3math.getCartDist;
-pub const getSqrDist    = Vec3math.getSqrDist;
+pub const addVec3        = Vec3math.addVec3;
+pub const subVec3        = Vec3math.subVec3;
+pub const mulVec3        = Vec3math.mulVec3;
+pub const divVec3        = Vec3math.divVec3;
 
-pub const getDistX      = Vec3math.getDistX;
-pub const getDistY      = Vec3math.getDistY;
-pub const getDistZ      = Vec3math.getDistZ;
+pub const getDist        = Vec3math.getDist;
+pub const getCartDist    = Vec3math.getCartDist;
+pub const getSqrDist     = Vec3math.getSqrDist;
 
-pub const getDistXY     = Vec3math.getDistXY;
-pub const getDistXZ     = Vec3math.getDistXZ;
-pub const getDistYZ     = Vec3math.getDistYZ;
+pub const getDistX       = Vec3math.getDistX;
+pub const getDistY       = Vec3math.getDistY;
+pub const getDistZ       = Vec3math.getDistZ;
 
-pub const getSqrDistXY  = Vec3math.getSqrDistXY;
-pub const getSqrDistXZ  = Vec3math.getSqrDistXZ;
-pub const getSqrDistYZ  = Vec3math.getSqrDistYZ;
+pub const getDistXY      = Vec3math.getDistXY;
+pub const getDistXZ      = Vec3math.getDistXZ;
+pub const getDistYZ      = Vec3math.getDistYZ;
 
-pub const getCylnDistXY = Vec3math.getCylnDistXY;
-pub const getCylnDistXZ = Vec3math.getCylnDistXZ;
-pub const getCylnDistYZ = Vec3math.getCylnDistYZ;
+pub const getSqrDistXY   = Vec3math.getSqrDistXY;
+pub const getSqrDistXZ   = Vec3math.getSqrDistXZ;
+pub const getSqrDistYZ   = Vec3math.getSqrDistYZ;
+
+pub const getCylnDistXY  = Vec3math.getCylnDistXY;
+pub const getCylnDistXZ  = Vec3math.getCylnDistXZ;
+pub const getCylnDistYZ  = Vec3math.getCylnDistYZ;
 
 
 

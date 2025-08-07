@@ -18,13 +18,11 @@ pub const engine = struct
   timeScale : f32 = 1.0, // Used to speed up or slow down the game
   sdt       : f32 = 0.0, // Latest scaled delta time ( from last frame ) : == deltaTime * timeScale
 
-  // Raylib Components
-  mainCamera : def.ray.Camera2D = undefined,
-
   // Engine Components
   rng             : def.rng.randomiser      = undefined,
   resourceManager : def.rsm.resourceManager = undefined,
   entityManager   : def.ntm.entityManager   = undefined,
+  screenManager   : def.scm.screenManager   = undefined,
 
 
   // ================================ HELPER FUNCTIONS ================================

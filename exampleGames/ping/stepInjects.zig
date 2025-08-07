@@ -120,8 +120,15 @@ pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInp
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.mainCamera.zoom = @min( ng.mainCamera.zoom * 1.1, 2.0 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.mainCamera.zoom = @max( ng.mainCamera.zoom / 1.1, 0.5 ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.screenManager.zoomBy( 1.111 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.screenManager.zoomBy( 0.900 ); }
+
+    // Reset the camera zoom and position when the middle mouse button is pressed
+    if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
+    {
+      ng.screenManager.setMainCameraZoom( 1.0 );
+      def.qlog( .INFO, 0, @src(), "Camera reseted" );
+    }
   }
 
   if( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE )

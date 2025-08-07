@@ -18,7 +18,7 @@ pub        fn divVec2ByVal( v : Vec2, c : f32 ) ?Vec2
 {
   if( c == 0.0 )
   {
-    @compileLog( "Warning: Division by zero in divVec2ByVal()" );
+    def.qlog( .ERROR, 0, @src(), "Division by zero in divVec2ByVal()" );
     return null;
   }
   return Vec2{ .x = v.x / c, .y = v.y / c };
@@ -33,7 +33,6 @@ pub fn normVec2Len( v : Vec2, newLen : f32 ) ?Vec2
   const oldLen = @sqrt(( v.x * v.x ) + ( v.y * v.y ));
   if( oldLen  == 0.0 )
   {
-    @compileLog( "Warning: Normalizing a zero vector in normVec2()" );
     def.qlog( .ERROR, 0, @src(), "Normalizing a zero vector in normVec2()" );
     return null;
   }

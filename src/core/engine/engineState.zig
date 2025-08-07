@@ -70,18 +70,6 @@ pub fn start( ng : *engine ) void
   // Initialize relevant raylib components
   {
     def.ray.initAudioDevice();
-
-    ng.mainCamera = def.ray.Camera2D
-    {
-      .offset = // TODO : make sure the offset stay accurate when the window is resized
-      .{
-        .x = def.SCREEN_DIMS.x / 2,
-        .y = def.SCREEN_DIMS.y / 2
-      },
-      .target = .{ .x = 0, .y = 0 },
-      .rotation = 0.0,
-      .zoom = 1.0,
-    };
   }
   // Initialize relevant engine components
   {
@@ -116,8 +104,6 @@ pub fn stop( ng : *engine ) void
   }
   // Deinitialize relevant raylib components
   {
-    ng.mainCamera = undefined;
-
     if( def.ray.isAudioDeviceReady() )
     {
       def.qlog( .INFO, 0, @src(), "# Closing the audio device..." );
@@ -141,11 +127,14 @@ pub fn open( ng : *engine ) void
   else{ def.qlog( .TRACE, 0, @src(), "Launching the game..." ); }
 
   // Initialize relevant engine components
-  {}
+  {
+    ng.screenManager.init( def.alloc );
+  }
   // Initialize relevant raylib components
   {
-    def.ray.setTargetFPS( def.TARGET_FPS );
-    def.ray.initWindow( def.SCREEN_DIMS.x, def.SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Opens the window
+    def.ray.setTargetFPS( def.DEF_TARGET_FPS );
+    def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Opens the window
+    ng.screenManager.setMainCameraOffset( def.getHalfScreenSize() ); // Sets the camera offset to the center of the screen
   }
   def.tryHook( .OnOpen, .{ ng });
 
@@ -175,7 +164,10 @@ pub fn close( ng : *engine ) void
     }
   }
   // Deinitialize relevant engine components
-  {}
+  {
+    ng.screenManager.deinit();
+    ng.screenManager = undefined;
+  }
 
   ng.state = .STARTED;
   def.qlog( .INFO, 0, @src(), "# Cya !\n" );

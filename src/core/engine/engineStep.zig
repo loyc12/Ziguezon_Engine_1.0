@@ -88,16 +88,20 @@ pub fn renderGraphics( ng : *engine ) void
   }
   //def.tryHook( .OffRenderBackground, .{ ng });
 
-  // World Rendering mode
-  def.ray.beginMode2D( ng.mainCamera );
+  if( ng.screenManager.getMainCamera() )| camera |
   {
-    def.tryHook( .OnRenderWorld, .{ ng });
+    // World Rendering mode
+    def.ray.beginMode2D( camera );
     {
-      ng.entityManager.renderActiveEntities();
+      def.tryHook( .OnRenderWorld, .{ ng });
+      {
+        ng.entityManager.renderActiveEntities();
+      }
+      def.tryHook( .OffRenderWorld, .{ ng });
     }
-    def.tryHook( .OffRenderWorld, .{ ng });
+    def.ray.endMode2D();
   }
-  def.ray.endMode2D();
+  else { def.qlog( .WARN, 0, @src(), "No main camera initialized, skipping world rendering" ); }
 
   // UI Rendering mode
   def.tryHook( .OnRenderOverlay, .{ ng });
