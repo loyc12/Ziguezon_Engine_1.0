@@ -51,7 +51,10 @@ pub fn updateInputs( ng : *engine ) void
 
   def.tryHook( .OnUpdateInputs, .{ ng });
   {
-    // TODO : update global inputs here
+    if( def.ray.isWindowResized() )
+    {
+      ng.screenManager.setMainCameraOffset( def.getHalfScreenSize() );
+    }
   }
   //def.tryHook( .OffUpdateInputs, .{ ng });
 }

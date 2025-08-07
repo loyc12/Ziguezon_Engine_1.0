@@ -132,6 +132,13 @@ pub fn open( ng : *engine ) void
   }
   // Initialize relevant raylib components
   {
+    def.ray.setConfigFlags(
+      .{
+        .window_resizable   = true, // Allow the window to be resized
+        //.window_undecorated = true, // Show the window decorations ( title bar, close button, etc. )
+      }
+    ); // Set the window flags
+
     def.ray.setTargetFPS( def.DEF_TARGET_FPS );
     def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Opens the window
     ng.screenManager.setMainCameraOffset( def.getHalfScreenSize() ); // Sets the camera offset to the center of the screen
