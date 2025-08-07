@@ -5,20 +5,10 @@ const Vec2 = def.Vec2;
 
 const ELLIPSE_SIDE_COUNT: u8 = 32; // Number of sides for the ellipse polygon approximation
 
+// ================================ DRAWING FUNCTIONS ================================
 
-// ================================ HELPER FUNCTIONS ================================
+pub inline fn coverScreenWith( color : ray.Color ) void { ray.drawRectangleV( Vec2{ .x = 0, .y = 0 }, def.getScreenSize(), color ); }
 
-pub inline fn getScreenWidth()  f32 { return @floatFromInt( ray.getScreenWidth()  ); }
-pub inline fn getScreenHeight() f32 { return @floatFromInt( ray.getScreenHeight() ); }
-pub inline fn getScreenSize()  Vec2 { return Vec2{ .x = getScreenWidth(), .y = getScreenHeight(), }; }
-
-pub inline fn coverScreenWith( color : ray.Color ) void
-{
-  ray.drawRectangleV( Vec2{ .x = 0, .y = 0 }, getScreenSize(), color );
-}
-
-
-// ================================ SHAPE DRAWING FUNCTIONS ================================
 
 // ================ SIMPLE DRAWING FUNCTIONS ================
 

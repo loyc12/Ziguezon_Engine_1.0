@@ -61,8 +61,8 @@ GAME HOOKS
  > Review implementation
 
 FILE INTERACTION
- > LOAD
- > SAVE
+ > SELECT & LOAD
+ > NAME & SAVE
 
 RENDER LAYERS
  > BKGRND_1/2/.. 0-8   ( background parallax ? )
@@ -74,7 +74,7 @@ RENDER LAYERS
  > FRGRND_1/2/.. 30-38 ( forground parallax ? )
 
  > EFFECTS_3     39    ( particles )
- > INTRFC_1/2/.. 40-58 ( UI & OVERLAYS)
+ > INTRFC_1/2/.. 40-58 ( UI & overlays)
 
  > EFFECTS_4     59    ( particles )
  > DEBUG         60 +  ( hitboxes, etc )
@@ -82,8 +82,8 @@ RENDER LAYERS
  > RENDER QUEUE ( elements sorted based on layer )
 
 TILEMAP
- > TILE_TYPE_MAP (base)
- > TILE_RNDR_MAP (derived)
+ > TILE_TYPE_MAP ( base )
+ > TILE_RNDR_MAP ( derived )
  > TILE_OBJC_MAP
 
 SPRITE ATLAS

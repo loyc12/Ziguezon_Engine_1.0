@@ -80,14 +80,12 @@ var   WINNER    : u8 = 0;              // The winner of the game, 1 for player 1
 
 pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
-  // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
   {
     ng.togglePause();
 
     if( WINNER != 0 )
     {
-      // Reset the scores
       SCORES = .{ 0, 0 }; // Reset scores if the game is restarted
       WINNER = 0;         // Reset winner
 
@@ -98,9 +96,9 @@ pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInp
         return;
       };
 
-      ball.setPos( 0, 0, 0 ); // Reset the ball position
-      ball.setVel( 0, 0, 0 ); // Reset the ball velocity
-      ball.setAcc( 0, 0, 0 ); // Reset the ball acceleration
+      ball.setPos( 0, 0, 0 );
+      ball.setVel( 0, 0, 0 );
+      ball.setAcc( 0, 0, 0 );
 
       // Reset the positions of the ball shadows
       for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
@@ -109,18 +107,21 @@ pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInp
     }
   }
 
-  if( ng.state == .PLAYING )
+  if( ng.isPlaying() )
   {
-    // Move entity 1 with A and D keys
+    // Move player 1 with A and D keys
     if( def.ray.isKeyDown( def.ray.KeyboardKey.d )){ P1_MV_FAC = @min( P1_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
     if( def.ray.isKeyDown( def.ray.KeyboardKey.a )){ P1_MV_FAC = @max( P1_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
     if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.space )){ P1_MV_FAC = 0; }
 
-
-    // Move entity 2 with side arrow keys
+    // Move player 2 with side arrow keys
     if( def.ray.isKeyDown( def.ray.KeyboardKey.right )){ P2_MV_FAC = @min( P2_MV_FAC + MV_FAC_STEP,  MV_FAC_CAP ); }
     if( def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.down ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
+
+    // Zoom in and out with the mouse wheel
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.mainCamera.zoom = @min( ng.mainCamera.zoom * 1.1, 2.0 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.mainCamera.zoom = @max( ng.mainCamera.zoom / 1.1, 0.5 ); }
   }
 
   if( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE )

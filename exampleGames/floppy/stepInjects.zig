@@ -130,7 +130,7 @@ pub fn OnRenderOverlay( ng : *def.ngn.engine ) void // Called by engine.renderGr
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {
-    def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
+    def.coverScreenWith( def.ray.Color.init( 0, 0, 0, 128 ));
   }
 
   // Draw each the score in the middle of the screen

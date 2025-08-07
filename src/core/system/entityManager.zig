@@ -11,7 +11,7 @@ pub const entityManager = struct
 
   // ================ ID PROPERTIES ================
 
-  pub fn getNewID( self : *entityManager ) u32
+  fn getNewID( self : *entityManager ) u32
   {
     if( !self.isInit )
     {
@@ -237,7 +237,7 @@ pub const entityManager = struct
 
   // ================ POSITION PROPERTIES ================
 
-  pub fn setPosition( self : *entityManager, id : u32, position : def.Vec2 ) void
+  pub fn setPosition( self : *entityManager, id : u32, position : def.VecR ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -248,7 +248,7 @@ pub const entityManager = struct
     }
     self.entities[ index ].pos = position;
   }
-  pub fn getPosition( self : *entityManager, id : u32 ) ?def.Vec2
+  pub fn getPosition( self : *entityManager, id : u32 ) ?def.VecR
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -260,7 +260,7 @@ pub const entityManager = struct
     return self.entities[ index ].pos;
   }
 
-  pub fn setVelocity( self : *entityManager, id : u32, velocity : def.Vec2 ) void
+  pub fn setVelocity( self : *entityManager, id : u32, velocity : def.VecR ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -271,7 +271,7 @@ pub const entityManager = struct
     }
     self.entities[ index ].vel = velocity;
   }
-  pub fn getVelocity( self : *entityManager, id : u32 ) ?def.Vec2
+  pub fn getVelocity( self : *entityManager, id : u32 ) ?def.VecR
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -283,7 +283,7 @@ pub const entityManager = struct
     return self.entities[ index ].vel;
   }
 
-  pub fn setAcceleration( self : *entityManager, id : u32, acceleration : def.Vec2 ) void
+  pub fn setAcceleration( self : *entityManager, id : u32, acceleration : def.VecR ) void
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -294,7 +294,7 @@ pub const entityManager = struct
     }
     self.entities[ index ].acc = acceleration;
   }
-  pub fn getAcceleration( self : *entityManager, id : u32 ) ?def.Vec2
+  pub fn getAcceleration( self : *entityManager, id : u32 ) ?def.VecR
   {
     // Find the index of the entity with the given ID
     const index = self.getIndexOf( id );
@@ -304,31 +304,6 @@ pub const entityManager = struct
       return null; // If the entity is not found, log a warning and return null
     }
     return self.entities[ index ].acc;
-  }
-
-  // ================ ROTATION PROPERTIES ================
-
-  pub fn setRotation( self : *entityManager, id : u32, rotation : f32 ) void
-  {
-    // Find the index of the entity with the given ID
-    const index = self.getIndexOf( id );
-    if( index == null )
-    {
-      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
-      return; // If the entity is not found, log a warning and return
-    }
-    self.entities[ index ].rotPos = rotation;
-  }
-  pub fn getRotation( self : *entityManager, id : u32 ) ?f32
-  {
-    // Find the index of the entity with the given ID
-    const index = self.getIndexOf( id );
-    if( index == null )
-    {
-      def.log( .WARN, 0, @src(), "Entity with ID {d} not found : passing", .{ id });
-      return null; // If the entity is not found, log a warning and return null
-    }
-    return self.entities[ index ].rotPos;
   }
 
   // ================ SHAPE PROPERTIES ================

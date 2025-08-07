@@ -5,17 +5,8 @@ pub const col    = @import( "utils/colour.zig" );
 pub const rng    = @import( "utils/rng.zig" );
 pub const timer  = @import( "utils/timer.zig" );
 
-// ================================ DEFINITIONS ================================
 
-pub const SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
-pub const TARGET_FPS   = 120; // Default target FPS for the game
-
-//pub const TARGET_TPS = 30;  // Default tick rate for the game ( in seconds ) // TODO : USE ME
-
-
-// ================================ CORE ENGINE MODULES ================================
-
-// ================ GAME HOOK SYSTEM ================
+// ================================ HOOK MANAGER ================================
 
 pub const ghm = @import( "core/system/gameHookManager.zig" );
 pub var G_HK : ghm.gameHooks = .{}; // NOTE : Global gameHooks struct instance
@@ -24,15 +15,15 @@ pub fn initHooks( module : anytype ) void                { G_HK.initHooks( modul
 pub fn tryHook( tag : ghm.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 
-// ================ ENGINE & MANAGERS ================
-
+// ================================ ENGINE ================================
 
 pub const ngn = @import( "core/engine/engineCore.zig" );
-pub const rsm = @import( "core/system/resourceManager.zig" );
-//pub const rdm = @import( "core/system/renderManager.zig" );
-pub const ntm = @import( "core/system/entityManager.zig" );
-
 pub var G_NG : ngn.engine = .{}; // NOTE : Global game engine instance
+
+// ================ MANAGERS ================
+
+pub const rsm = @import( "core/system/resourceManager.zig" );
+pub const ntm = @import( "core/system/entityManager.zig" );
 
 
 // ================ ENTITY SYSTEM ================
@@ -45,13 +36,29 @@ pub const ntt = @import( "core/entity/entityCore.zig" );
 pub const alloc = std.heap.smp_allocator;
 
 
+// ================ SCREEN MNGR SHORTHANDS ================
+
+pub const scm = @import( "core/system/screenManager.zig" );
+
+pub const SCREEN_DIMS         = scm.SCREEN_DIMS;
+pub const TARGET_FPS          = scm.TARGET_FPS;
+// pub const TARGET_TPS         = scm.TARGET_TPS; // TODO : USE ME
+
+pub const getScreenWidth      = scm.getScreenWidth;
+pub const getScreenHeight     = scm.getScreenHeight;
+pub const getScreenSize       = scm.getScreenSize;
+
+pub const getHalfScreenWidth  = scm.getHalfScreenWidth;
+pub const getHalfScreenHeight = scm.getHalfScreenHeight;
+pub const getHalfScreenSize   = scm.getHalfScreenSize;
+
+pub const getMouseScreenPos   = scm.getMouseScreenPos;
+pub const getMouseWorldPos    = scm.getMouseWorldPos;
+
+
 // ================ DRAWER SHORTHANDS ================
 
-pub const drawer                   = @import( "utils/drawer.zig" );
-
-pub const getScreenWidth           = drawer.getScreenWidth;
-pub const getScreenHeight          = drawer.getScreenHeight;
-pub const getScreenSize            = drawer.getScreenSize;
+pub const drawer = @import( "utils/drawer.zig" );
 
 pub const coverScreenWith          = drawer.coverScreenWith;
 

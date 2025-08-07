@@ -152,7 +152,7 @@ pub fn open( ng : *engine ) void
   // TODO : Start the game loop in a second thread here ?
 
   ng.state = .OPENED;
-  def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.ray.getScreenWidth(), def.ray.getScreenHeight() });
+  def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.getScreenWidth(), def.getScreenHeight() });
 }
 
 pub fn close( ng : *engine ) void

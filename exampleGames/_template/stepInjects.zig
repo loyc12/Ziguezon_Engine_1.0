@@ -78,11 +78,11 @@ pub fn OnRenderOverlay( ng : *def.ngn.engine ) void // Called by engine.renderGr
 {
   if( DRAW_TEST ) // Example of a flag toggled feature
   {
-    def.ray.drawText( "TEST", @divTrunc( def.ray.getScreenWidth(), 2 ), @divTrunc( def.ray.getScreenHeight(), 2 ), 64, def.ray.Color.green );
+    def.ray.drawText( "TEST", def.rdm.getHalfScreenWidth(), def.rdm.getHalfScreenHeight(), 64, def.ray.Color.green );
   }
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.ray.drawRectangle( 0, 0, def.ray.getScreenWidth(), def.ray.getScreenHeight(), def.ray.Color.init( 0, 0, 0, 128 ));
+    def.coverScreenWith( def.ray.Color.init( 0, 0, 0, 128 ));
   }
 }

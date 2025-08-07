@@ -45,9 +45,33 @@ pub fn OnOpen( ng : *def.ngn.engine ) void // Called by engine.open()
   _ = ng.entityManager.addEntity( // separator
   .{
     .shape  = .RECT,
-    .scale  = .{ .x = 8, .y = 1024 },
+    .scale  = .{ .x = 8, .y = 512 },
     .colour = def.ray.Color.dark_gray,
     .pos    = .{ .x = 0, .y = 0, .z = 0 },
+  });
+
+  _ = ng.entityManager.addEntity( // separator
+  .{
+    .shape  = .RECT,
+    .scale  = .{ .x = 8, .y = 512 },
+    .colour = def.ray.Color.light_gray,
+    .pos    = .{ .x = 1024, .y = 0, .z = 0 },
+  });
+
+  _ = ng.entityManager.addEntity( // separator
+  .{
+    .shape  = .RECT,
+    .scale  = .{ .x = 8, .y = 512 },
+    .colour = def.ray.Color.light_gray,
+    .pos    = .{ .x = -1024, .y = 0, .z = 0 },
+  });
+
+  _ = ng.entityManager.addEntity( // separator
+  .{
+    .shape  = .RECT,
+    .scale  = .{ .x = 1024, .y = 8 },
+    .colour = def.ray.Color.light_gray,
+    .pos    = .{ .x = 0, .y = -512, .z = 0 },
   });
 
   if( ng.entityManager.addEntity( // ball shadow
