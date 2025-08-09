@@ -62,19 +62,35 @@ pub fn emitParticlesOnBounce( ng : *def.ngn.engine, ball : *def.ntt.entity ) voi
   ng.resourceManager.playAudio( "hit_1" );
 }
 
+
 // ================================ GLOBAL GAME VARIABLES ================================
 
-var   P1_MV_FAC   : f32 = 0.0;   // Player 1 movement direction
-var   P2_MV_FAC   : f32 = 0.0;   // Player 2 movement direction
-const MV_FAC_STEP : f32 = 0.4;   // Movement factor step ( size of increment / decrement )
-const MV_FAC_CAP  : f32 = 20.0;  // Movement factor cap, to prevent excessive speed
+var   P1_MV_FAC : f32 = 0.0; // Player 1 movement direction
+var   P2_MV_FAC : f32 = 0.0; // Player 2 movement direction
 
-const B_BASE_VEL  : f32 = 500.0; // Base velocity of the ball when it is launched
-const B_BASE_GRAV : f32 = 600.0; // Base gravity of the ball
+const MV_FAC_STEP : f32 = 0.4;  // Movement factor step ( size of increment / decrement )
+const MV_FAC_CAP  : f32 = 16.0; // Movement factor cap, to prevent excessive speed
 
-const WIN_SCORE : u8 = 8;              // Score needed to win the game
+const B_BASE_VEL : f32 = 500.0; // Base velocity of the ball when it is launched
+const B_GRAVITY  : f32 = 600.0; // Base gravitational acceleration of the ball
+
+const WIN_SCORE : u8 = 5; // Score needed to win the game
+var   WINNER    : u8 = 0; // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet
+
 var   SCORES    : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
-var   WINNER    : u8 = 0;              // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet
+
+const B_MIN_BOUNCE_SPEED_X : f32 = 128.0; // Minimum parallel speed of the ball when bouncing off players
+const B_MIN_BOUNCE_SPEED_Y : f32 = 256.0; // Minimum perpendicular speed of the ball when bouncing off players
+
+pub fn ensureBallMinSpeeds( ball : *def.ntt.entity ) void
+{
+  if( ball.vel.x > 0 ){ ball.vel.x = @max( ball.vel.x,  B_MIN_BOUNCE_SPEED_X ); }
+  if( ball.vel.x < 0 ){ ball.vel.x = @min( ball.vel.x, -B_MIN_BOUNCE_SPEED_X ); }
+
+  if( ball.vel.y > 0 ){ ball.vel.y = @max( ball.vel.y,  B_MIN_BOUNCE_SPEED_Y ); }
+  if( ball.vel.y < 0 ){ ball.vel.y = @min( ball.vel.y, -B_MIN_BOUNCE_SPEED_Y ); }
+}
+
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
@@ -156,7 +172,7 @@ pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntit
     return;
   };
 
-  ball.acc.y = B_BASE_GRAV;
+  ball.acc.y = B_GRAVITY;
 
   // Swaps the positions of the ball shadows repeatedly
   for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
@@ -182,7 +198,7 @@ pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntit
       continue;
     }
 
-    part.acc.y = B_BASE_GRAV; // Apply gravity to all remaining particles
+    part.acc.y = B_GRAVITY; // Apply gravity to all remaining particles
   }
 }
 
@@ -190,14 +206,17 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 {
   // ================ VARIABLES AND CONSTANTS ================
 
-  const hWidth  : f32 = def.getScreenWidth()  / 2.0;
-  const hHeight : f32 = def.getScreenHeight() / 2.0;
+  const hWidth  : f32 = def.getScreenWidth()  / 2.0; // NOTE : uses the initial screen width  only
+  const hHeight : f32 = def.getScreenHeight() / 2.0; // NOTE : uses the initial screen height only
 
-  const barHalfWidth : f32 = 8.0; // Half the width of the separator bar
-  const playerSpeed  : f32 = 64.0; // Speed of the players
+  const barHalfWidth        : f32 = 8.0;  // Half the width of the separator bar
+  const playerSpeedFactor   : f32 = 64.0; // Base speed of the players
 
-  const wallBounceFactor   : f32 = 0.90; // Bounce factor for the ball when hitting walls
-  const playerBounceFactor : f32 = 1.03; // Bounce factor for the ball when hitting players
+  const wallBounceFactorX   : f32 = 0.85; // Perpendicular bounce factor for the ball when hitting walls
+  const wallBounceFactorY   : f32 = 0.90; // Parallel bounce factor for the ball when hitting walls
+
+  const playerBounceFactorY : f32 = 0.80; // Perpendicular bounce factor for the ball when hitting players
+  const playerBounceFactorX : f32 = 0.75; // Parallel bounce factor for the ball when hitting players
 
   var p1 = ng.entityManager.getEntity( stateInj.P1_ID ) orelse
   {
@@ -219,13 +238,13 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 
   // ================ CLAMPING THE PLAYER POSITIONS ================
 
-  p1.vel.x = P1_MV_FAC * playerSpeed;    // Set p1's velocity based on the movement direction
-  p1.clampInX( -hWidth, -barHalfWidth ); // Clamp p1's position to the left side
-  if( p1.vel.x == 0 ) { P1_MV_FAC = 0; } // Reset movement direction if p1's velocity was clamped
+  p1.vel.x = P1_MV_FAC * playerSpeedFactor;
+  p1.clampInX( -hWidth, -barHalfWidth );
+  if( p1.vel.x == 0 ) { P1_MV_FAC = 0; }
 
-  p2.vel.x = P2_MV_FAC * playerSpeed;    // Set p2's velocity based on the movement direction
-  p2.clampInX( barHalfWidth, hWidth );   // Clamp p2's position to the right side
-  if( p2.vel.x == 0 ) { P2_MV_FAC = 0; } // Reset movement direction if p2's velocity was clamped
+  p2.vel.x = P2_MV_FAC * playerSpeedFactor;
+  p2.clampInX( barHalfWidth, hWidth );
+  if( p2.vel.x == 0 ) { P2_MV_FAC = 0; }
 
 
   // ================ CLAMPING THE BALL POSITION ================
@@ -269,8 +288,8 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 
     if( ball.vel.y < 0 )
     {
-      ball.vel.x *=  wallBounceFactor;
-      ball.vel.y *= -wallBounceFactor;
+      ball.vel.x *=  wallBounceFactorY; // Inverted X and Y because this is a horizontal wall
+      ball.vel.y *= -wallBounceFactorX; // Inverted X and Y because this is a horizontal wall
 
       emitParticlesOnBounce( ng, ball );
     }
@@ -284,8 +303,8 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 
     if( ball.vel.x > 0 )
     {
-      ball.vel.x *= -wallBounceFactor;
-      ball.vel.y *=  wallBounceFactor;
+      ball.vel.x *= -wallBounceFactorX;
+      ball.vel.y *=  wallBounceFactorY;
 
       emitParticlesOnBounce( ng, ball );
     }
@@ -297,8 +316,8 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 
     if( ball.vel.x < 0 )
     {
-      ball.vel.x *= -wallBounceFactor;
-      ball.vel.y *=  wallBounceFactor;
+      ball.vel.x *= -wallBounceFactorX;
+      ball.vel.y *=  wallBounceFactorY;
 
       emitParticlesOnBounce( ng, ball );
     }
@@ -313,13 +332,17 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 
     ball.setBottomY( p1.getTopY() );
 
-    // Dividing by bounceFactor to accelerate the ball after each player bounce
-    if( ball.vel.y > 0 ){ ball.vel.y = -ball.vel.y * playerBounceFactor; }
+    if( ball.vel.y > 0 )
+    {
+      ball.vel.y  = -ball.vel.y * playerBounceFactorY;
+      ball.vel.y -= @abs( p1.vel.x ) / 3.0;
 
-    ball.vel.x += p1.vel.x / 2.0;
-    ball.vel.x *= wallBounceFactor;
+      ball.vel.x *= playerBounceFactorX;
+      ball.vel.x += p1.vel.x / 2.0;
 
-    emitParticlesOnBounce( ng, ball );
+      ensureBallMinSpeeds( ball );
+      emitParticlesOnBounce( ng, ball );
+    }
   }
 
   // Check if the ball is overlapping with player 2
@@ -329,13 +352,17 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 
     ball.setBottomY( p2.getTopY() );
 
-    // Dividing by bounceFactor to accelerate the ball after each player bounce
-    if( ball.vel.y > 0 ){ ball.vel.y = -ball.vel.y * playerBounceFactor; }
+    if( ball.vel.y > 0 )
+    {
+      ball.vel.y  = -ball.vel.y * playerBounceFactorY;
+      ball.vel.y -= @abs( p2.vel.x ) / 3.0;
 
-    ball.vel.x += p2.vel.x / 2.0;
-    ball.vel.x *= wallBounceFactor;
+      ball.vel.x *= playerBounceFactorX;
+      ball.vel.x += p2.vel.x / 2.0;
 
-    emitParticlesOnBounce( ng, ball );
+      ensureBallMinSpeeds( ball );
+      emitParticlesOnBounce( ng, ball );
+    }
   }
 
 }
