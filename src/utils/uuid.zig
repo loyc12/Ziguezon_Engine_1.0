@@ -36,6 +36,37 @@ var MAX_ID : u20 = @as( u20, idBits ); // The maximum ID value ( 1048575 )
 
 var TOP_ID : u20 = 0; // The top ID value ( used to generate new IDs )
 
+// ================================ UUID REUSE FUNCTIONS ================================
+
+var isAvailabilityInit : bool = false;                      // Whether the freed IDs list has been initialized
+var availableUUIDs     : std.ArrayList( Uuid ) = undefined; // A list of freed IDs ( used to reuse IDs )
+
+pub fn initAvailableUUIDs( allocator : std.mem.Allocator ) void
+{
+  if( isAvailabilityInit )
+  {
+    def.qlog( .WARN, 0, @src(), "Freed IDs list is already initialized" );
+    return;
+  }
+
+  availableUUIDs = std.ArrayList( Uuid ).init( allocator );
+  isAvailabilityInit = true;
+  def.qlog( .DEBUG, 0, @src(), "Initialized freed IDs list" );
+}
+
+pub fn deinitAvailableUUIDs() void
+{
+  if( !isAvailabilityInit )
+  {
+    def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized" );
+    return;
+  }
+
+  availableUUIDs.deinit();
+  isAvailabilityInit = false;
+  def.qlog( .DEBUG, 0, @src(), "Deinitialized freed IDs list" );
+}
+
 
 // ================================ UUID STRUCT ================================
 
@@ -44,10 +75,10 @@ inline fn convFlagToU32( flag : flagType ) u32 { return @as( u32, @intFromEnum( 
 pub const Uuid = struct
 {
   // This value stores both the ID itself ( bottom 20 bits ) and its associated flags ( top 12 bits )
-
   value : u32 = 0, // NOTE : ID 0 is reserved for "no ID"
 
-  pub inline fn initUUID( id : u20, flags : u12 ) Uuid { return .{ .value = @as( u32, id ) | ( @as( u32, flags ) << idSize )}; }
+  // ================ METHODS ================
+
   pub inline fn override( self : *Uuid, other : Uuid ) void { self.value = other.value; }
 
   pub inline fn getId(       self : *const Uuid ) u20 { return @as( u20, self.value & idBits   ); }
@@ -93,188 +124,163 @@ pub const Uuid = struct
 //pub inline fn isEvent(   self : *const Uuid ) bool { return( self.isActive() and self.getFlag( .EVENT )); }
 //pub inline fn isAI(      self : *const Uuid ) bool { return( self.isActive() and self.getFlag( .AI    )); }
 
+
+  // ================ INIT FUNCTIONS ================
+
+  pub inline fn initEmpty()                   Uuid { return .{ .value = 0 }; }
+  pub inline fn init( id : u20, flags : u12 ) Uuid { return .{ .value = @as( u32, id ) | ( @as( u32, flags ) << idSize )}; }
+
+  // ================ DELETION FUNCTIONS ================
+
+  // fn addAvailableUUID( toAdd : Uuid ) void
+  // prevent duplicates or invalid IDs from being added
+
+  //pub fn sortAvailableUUIDs() void {}
+  // Sort the list by ID
+
+  //pub fn compactAvailableUUIDs() void {}
+  // Remove IDs that are not marked for deletion
+  // Remove IDs that are continuously bellow the current MAX_ID, and lower the MAX_ID accordingly
+
+  pub fn markUUIDForDeletion( toDelete : *Uuid ) void
+  {
+    if( toDelete == null )
+    {
+      def.qlog( .WARN, 0, @src(), "Attempting to mark a null UUID for deletion" );
+      return;
+    }
+
+    const id = toDelete.getId();
+    if( id == 0 )
+    {
+      def.qlog( .WARN, 0, @src(), "Marking UUID with ID 0 ( reserved for no ID ) for deletion" );
+    }
+
+    if( !isAvailabilityInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized. Deleted ID will not be tracked or reused" );
+    }
+
+    def.log( .DEBUG, 0, @src(), "Marking UUID {d} for deletion", .{ id });
+
+    toDelete.activateFlag(   .DELETE ); // Activate the DELETE flag
+    toDelete.deactivateFlag( .ACTIVE ); // Deactivate the ACTIVE flag
+  }
+
+  pub fn freeUUID( toFree : *Uuid ) void
+  {
+    if( toFree == null )
+    {
+      def.qlog( .WARN, 0, @src(), "Attempting to free a null UUID" );
+      return;
+    }
+
+    const id = toFree.getId();
+    if( id == 0 )
+    {
+      def.qlog( .WARN, 0, @src(), "Freeing a UUID with ID 0 ( reserved for no ID )" );
+    }
+    if( !isAvailabilityInit )
+    {
+      def.log( .WARN, 0, @src(), "AvailableUUIDs list is not initialized. AvailableUUID with ID {d} will not be tracked or reused", .{ id });
+    }
+    if( !toFree.willFree() )
+    {
+      def.log( .WARN, 0, @src(), "Freeing UUID with ID {d} that was not properly marked for deletion beforehand", .{ id });
+    }
+
+    def.log( .DEBUG, 0, @src(), "Freeing UUID {d}", .{ id });
+
+    toFree.activateFlag(   .FREE );   // Activate the FREE flag
+    toFree.deactivateFlag( .DELETE ); // Deactivate the DELETE flag
+
+    if( isAvailabilityInit )
+    {
+      availableUUIDs.append( *toFree ) catch | err | // TODO : use addAvailableUUID instead
+      {
+        def.log( .ERROR, 0, @src(), "Error appending freed UUID {d} to the list: {}", .{ id, err });
+        return;
+      };
+      def.qlog( .DEBUG, 0, @src(), "UUID {d} has been freed and added to the list of freed IDs", .{ id });
+    }
+  }
+
+
+  // ================ CREATION / REUSE FUNCTIONS ================
+
+  inline fn hasIDsToReuse() bool
+  {
+    if( !isAvailabilityInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized" );
+      return false;
+    }
+    return availableUUIDs.items.len > 0;
+  }
+
+  inline fn reuseUUID( flags : u12 ) ?Uuid
+  {
+    def.qlog( .TRACE, 0, @src(), "Reusing an old UUID..." );
+
+    if( !isAvailabilityInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized" );
+      return null;
+    }
+
+    if( availableUUIDs.items.len > 0 )
+    {
+      if( availableUUIDs.pop() )| old |
+      {
+        old.setAllFlags( flags ); // Reset its flags to ACTIVE only
+        def.qlog( .DEBUG, 0, @src(), "Reusing old UUID {d}", .{ old.getId() });
+        return old;
+      }
+      def.qlog( .ERROR, 0, @src(), "Failed to pop an old UUID from the list" );
+    }
+    return null;
+  }
+
+  inline fn createNewUUID( flags : u12 ) ?Uuid
+  {
+    def.qlog( .TRACE, 0, @src(), "Creating a new UUID..." );
+
+    if( TOP_ID >= MAX_ID - 1 )
+    {
+      def.log( .ERROR, 0, @src(), "! Reached maximum UUID ID value. What have you done, bozo ! ", .{ MAX_ID });
+      return null;
+    } // If we reached the maximum ID, we can't create a new one
+
+    TOP_ID += 1;
+    return Uuid.init( TOP_ID, flags );
+  }
+
+  pub fn getNewUUID( flags : u12 ) ?Uuid
+  {
+    def.qlog( .TRACE, 0, @src(), "Generating a UUID..." );
+
+    if( hasIDsToReuse( flags ))
+    {
+      if( reuseUUID())| old |
+      {
+        def.qlog( .DEBUG, 0, @src(), "Reusing old UUID {d}", .{ old.getId() });
+        return old;
+      }
+      def.qlog( .WARN, 0, @src(), "Error reusing UUID, falling back to generating a new one instead" );
+    }
+
+    if( createNewUUID( flags ))| new |
+    {
+      def.qlog( .DEBUG, 0, @src(), "Creating new UUID {d}", .{ new.getId() });
+      return new;
+    }
+
+    def.qlog( .ERROR, 0, @src(), "Unable to create a new UUID" );
+    return null;
+  }
 };
 
 
-// ================================ UUID FUNCTIONS ================================
-
-// ================ AvailableUUID List ================
-
-var isAvailabilityInit : bool = false;                // Whether the freed IDs list has been initialized
-var availableUUIDs : std.ArrayList( Uuid ) = undefined; // A list of freed IDs ( used to reuse IDs )
-
-pub fn initAvailableUUIDs( allocator : std.mem.Allocator ) void
-{
-  if( isAvailabilityInit )
-  {
-    def.qlog( .WARN, 0, @src(), "Freed IDs list is already initialized" );
-    return;
-  }
-
-  availableUUIDs = std.ArrayList( Uuid ).init( allocator );
-  isAvailabilityInit = true;
-  def.qlog( .DEBUG, 0, @src(), "Initialized freed IDs list" );
-}
-
-pub fn deinitAvailableUUIDs() void
-{
-  if( !isAvailabilityInit )
-  {
-    def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized" );
-    return;
-  }
-
-  availableUUIDs.deinit();
-  isAvailabilityInit = false;
-  def.qlog( .DEBUG, 0, @src(), "Deinitialized freed IDs list" );
-}
-
-// fn addAvailableUUID( toAdd : Uuid ) void
-// prevent duplicates or invalid IDs from being added
-
-//pub fn sortAvailableUUIDs() void {}
-// Sort the list by ID
-
-//pub fn compactAvailableUUIDs() void {}
-// Remove IDs that are not marked for deletion
-// Remove IDs that are continuously bellow the current MAX_ID, and lower the MAX_ID accordingly
-
-pub fn markUUIDForDeletion( toDelete : *Uuid ) void
-{
-  if( toDelete == null )
-  {
-    def.qlog( .WARN, 0, @src(), "Attempting to mark a null UUID for deletion" );
-    return;
-  }
-
-  const id = toDelete.getId();
-  if( id == 0 )
-  {
-    def.qlog( .WARN, 0, @src(), "Marking UUID with ID 0 ( reserved for no ID ) for deletion" );
-  }
-
-  if( !isAvailabilityInit )
-  {
-    def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized. Deleted ID will not be tracked or reused" );
-  }
-
-  def.log( .DEBUG, 0, @src(), "Marking UUID {d} for deletion", .{ id });
-
-  toDelete.activateFlag(   .DELETE ); // Activate the DELETE flag
-  toDelete.deactivateFlag( .ACTIVE ); // Deactivate the ACTIVE flag
-}
-
-pub fn freeUUID( toFree : *Uuid ) void
-{
-  if( toFree == null )
-  {
-    def.qlog( .WARN, 0, @src(), "Attempting to free a null UUID" );
-    return;
-  }
-
-  const id = toFree.getId();
-  if( id == 0 )
-  {
-    def.qlog( .WARN, 0, @src(), "Freeing a UUID with ID 0 ( reserved for no ID )" );
-  }
-  if( !isAvailabilityInit )
-  {
-    def.log( .WARN, 0, @src(), "AvailableUUIDs list is not initialized. AvailableUUID with ID {d} will not be tracked or reused", .{ id });
-  }
-  if( !toFree.willFree() )
-  {
-    def.log( .WARN, 0, @src(), "Freeing UUID with ID {d} that was not properly marked for deletion beforehand", .{ id });
-  }
-
-  def.log( .DEBUG, 0, @src(), "Freeing UUID {d}", .{ id });
-
-  toFree.activateFlag(   .FREE );   // Activate the FREE flag
-  toFree.deactivateFlag( .DELETE ); // Deactivate the DELETE flag
-
-  if( isAvailabilityInit )
-  {
-    availableUUIDs.append( *toFree ) catch | err | // TODO : use addAvailableUUID instead
-    {
-      def.log( .ERROR, 0, @src(), "Error appending freed UUID {d} to the list: {}", .{ id, err });
-      return;
-    };
-    def.qlog( .DEBUG, 0, @src(), "UUID {d} has been freed and added to the list of freed IDs", .{ id });
-  }
-}
-
-
-// ================ UUID CREATION / REUSING ================
-
-inline fn hasIDsToReuse() bool
-{
-  if( !isAvailabilityInit )
-  {
-    def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized" );
-    return false;
-  }
-  return availableUUIDs.items.len > 0;
-}
-
-inline fn reuseUUID() ?Uuid
-{
-  def.qlog( .TRACE, 0, @src(), "Reusing an old UUID..." );
-
-  if( !isAvailabilityInit )
-  {
-    def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized" );
-    return null;
-  }
-
-  if( availableUUIDs.items.len > 0 )
-  {
-    if( availableUUIDs.pop() )| old |
-    {
-      old.setAllFlags( flagType.ACTIVE ); // Reset its flags to ACTIVE only
-      def.qlog( .DEBUG, 0, @src(), "Reusing old UUID {d}", .{ old.getId() });
-      return old;
-    }
-    def.qlog( .ERROR, 0, @src(), "Failed to pop an old UUID from the list" );
-  }
-  return null;
-}
-
-inline fn createNewUUID() ?Uuid
-{
-  def.qlog( .TRACE, 0, @src(), "Creating a new UUID..." );
-
-  if( TOP_ID >= MAX_ID - 1 )
-  {
-    def.log( .ERROR, 0, @src(), "! Reached maximum UUID ID value. What have you done, bozo ! ", .{ MAX_ID });
-    return null;
-  } // If we reached the maximum ID, we can't create a new one
-
-  TOP_ID += 1;
-  return Uuid.initUUID( TOP_ID, flagType.ACTIVE );
-}
-
-pub fn getNewUUID() ?Uuid
-{
-  def.qlog( .TRACE, 0, @src(), "Generating a UUID..." );
-
-  if( hasIDsToReuse() )
-  {
-    if( reuseUUID())| old |
-    {
-      def.qlog( .DEBUG, 0, @src(), "Reusing old UUID {d}", .{ old.getId() });
-      return old;
-    }
-    def.qlog( .WARN, 0, @src(), "Error reusing UUID, falling back to generating a new one instead" );
-  }
-
-  if( createNewUUID() )| new |
-  {
-    def.qlog( .DEBUG, 0, @src(), "Creating new UUID {d}", .{ new.getId() });
-    return new;
-  }
-
-  def.qlog( .ERROR, 0, @src(), "Unable to create a new UUID" );
-  return null;
-}
 
 
 
