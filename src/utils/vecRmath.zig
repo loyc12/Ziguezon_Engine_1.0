@@ -81,7 +81,7 @@ pub inline fn getVecRCartDist( p1 : VecR, p2 : VecR ) f32 { return @abs( p2.x - 
 pub inline fn getVecRSqrDist(  p1 : VecR, p2 : VecR ) f32
 {
   const dist = def.Vec2{ .x = p2.x - p1.x, .y = p2.y - p1.y };
-  return ( dist.x * dist.x ) + ( dist.y * dist.y );
+  return( dist.x * dist.x ) + ( dist.y * dist.y );
 }
 
 // Returns the linear distance between two vectors along a given axis

@@ -74,7 +74,7 @@ pub inline fn getCartDist( p1 : Vec3, p2 : Vec3 ) f32 { return @abs( p2.x - p1.x
 pub inline fn getSqrDist(  p1 : Vec3, p2 : Vec3 ) f32
 {
   const dist = def.Vec3{ .x = p2.x - p1.x, .y = p2.y - p1.y, .z = p2.z - p1.z, };
-  return ( dist.x * dist.x ) + ( dist.y * dist.y ) + ( dist.z * dist.z );
+  return( dist.x * dist.x ) + ( dist.y * dist.y ) + ( dist.z * dist.z );
 }
 
 // Returns the distance between two vectors in a given axis
@@ -91,17 +91,17 @@ pub inline fn getDistYZ( p1 : Vec3, p2 : Vec3 ) f32 { return @sqrt( getSqrDistYZ
 pub inline fn getSqrDistXY( p1 : Vec3, p2 : Vec3 ) f32
 {
   const dist = Vec2{ .x = p2.x - p1.x, .y = p2.y - p1.y};
-  return ( dist.x * dist.x ) + ( dist.y * dist.y );
+  return( dist.x * dist.x ) + ( dist.y * dist.y );
 }
 pub inline fn getSqrDistXZ( p1 : Vec3, p2 : Vec3 ) f32
 {
   const dist = Vec2{ .x = p2.x - p1.x, .y = p2.z - p1.z, };
-  return ( dist.x * dist.x ) + ( dist.y * dist.y );
+  return( dist.x * dist.x ) + ( dist.y * dist.y );
 }
 pub inline fn getSqrDistYZ( p1 : Vec3, p2 : Vec3 ) f32
 {
   const dist = Vec2{ .x = p2.y - p1.y, .y = p2.z - p1.z, };
-  return ( dist.x * dist.x ) + ( dist.y * dist.y );
+  return( dist.x * dist.x ) + ( dist.y * dist.y );
 }
 
 // Return the cylindrical distance between two vectors in a given plane

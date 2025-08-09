@@ -78,7 +78,7 @@ pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntit
     // NOTE : TESTS SCORE
     SCORE += 1;
   }
-  else{ disk.acc.y = GRAVITY; } // Apply gravity
+  else { disk.acc.y = GRAVITY; } // Apply gravity
 }
 
 pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )

@@ -137,7 +137,7 @@ pub const timer = struct
 
   pub fn getPreviousTime( self : *const timer ) i128
   {
-    if ( self.latest == 0 ) return 0;
+    if( self.latest == 0 ) return 0;
 
     const tmp = self.latest - self.delta;
 

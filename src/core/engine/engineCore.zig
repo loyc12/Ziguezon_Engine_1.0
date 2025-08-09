@@ -19,17 +19,16 @@ pub const engine = struct
   sdt       : f32 = 0.0, // Latest scaled delta time ( from last frame ) : == deltaTime * timeScale
 
   // Engine Components
-  rng             : def.rng.randomiser      = undefined,
   resourceManager : def.rsm.resourceManager = undefined,
   entityManager   : def.ntm.entityManager   = undefined,
-  screenManager   : def.scm.screenManager   = undefined,
+  viewManager     : def.vwm.viewManager     = undefined,
 
 
   // ================================ HELPER FUNCTIONS ================================
 
-  pub inline fn isStarted( ng : *const engine ) bool { return ( @intFromEnum( ng.state ) >= @intFromEnum( e_state.STARTED )); }
-  pub inline fn isOpened(  ng : *const engine ) bool { return ( @intFromEnum( ng.state ) >= @intFromEnum( e_state.OPENED  )); }
-  pub inline fn isPlaying( ng : *const engine ) bool { return ( @intFromEnum( ng.state ) >= @intFromEnum( e_state.PLAYING )); }
+  pub inline fn isStarted( ng : *const engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_state.STARTED )); }
+  pub inline fn isOpened(  ng : *const engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_state.OPENED  )); }
+  pub inline fn isPlaying( ng : *const engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_state.PLAYING )); }
 
   pub fn setTimeScale( self : *engine, newTimeScale : f32 ) void
   {

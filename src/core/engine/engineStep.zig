@@ -53,7 +53,7 @@ pub fn updateInputs( ng : *engine ) void
   {
     if( def.ray.isWindowResized() )
     {
-      ng.screenManager.setMainCameraOffset( def.getHalfScreenSize() );
+      ng.viewManager.setMainCameraOffset( def.getHalfScreenSize() );
     }
   }
   //def.tryHook( .OffUpdateInputs, .{ ng });
@@ -91,7 +91,7 @@ pub fn renderGraphics( ng : *engine ) void
   }
   //def.tryHook( .OffRenderBackground, .{ ng });
 
-  if( ng.screenManager.getMainCamera() )| camera |
+  if( ng.viewManager.getMainCamera() )| camera |
   {
     // World Rendering mode
     def.ray.beginMode2D( camera );

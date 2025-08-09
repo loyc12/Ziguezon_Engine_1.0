@@ -9,14 +9,10 @@ pub fn initCriticals() void
 {
   def.qlog( .INFO, 0, @src(), "# Initializing all subsystems..." );
 
-  // Initialize the timer
-  def.logger.initLogTimer();
+  def.initAllUtils( def.alloc );
 
   // Initialize the game hooks
   def.initHooks( gh );
-
-  // Initialize the log file if needed
-  def.logger.initFile();
 
   def.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
 }
@@ -25,8 +21,7 @@ pub fn deinitCriticals() void
 {
   def.qlog( .INFO, 0, @src(), "# Deinitializing all subsystems..." );
 
-  // Deinitialize the log file if present
-  def.logger.deinitFile();
+  def.deinitAllUtils();
 
   def.qlog( .INFO, 0, @src(), "$ Deinitialized all subsystems\n" );
 }

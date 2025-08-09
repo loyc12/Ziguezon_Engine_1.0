@@ -2,8 +2,31 @@ pub const std = @import( "std" );
 pub const ray = @import( "raylib" );
 
 pub const col    = @import( "utils/colour.zig" );
-pub const rng    = @import( "utils/rng.zig" );
 pub const timer  = @import( "utils/timer.zig" );
+pub const uuid   = @import( "utils/uuid.zig" );
+pub const rng    = @import( "utils/rng.zig" );
+
+pub var G_RNG : rng.randomiser = .{};
+
+pub fn initAllUtils( allocator : std.mem.Allocator ) void
+{
+  logger.initLogTimer();
+  logger.initFile();
+
+  rng.initGlobalRNG();
+  G_RNG = rng.G_RNG;
+
+  uuid.initAvailableUUIDs( allocator );
+}
+
+pub fn deinitAllUtils() void
+{
+  logger.deinitFile();
+
+  G_RNG = undefined;
+
+  uuid.deinitAvailableUUIDs();
+}
 
 // ================================ DEFINITIONS ================================
 
@@ -16,6 +39,7 @@ pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
 pub const ghm = @import( "core/system/gameHookManager.zig" );
 pub var G_HK : ghm.gameHooks = .{}; // NOTE : Global gameHooks struct instance
 
+// NOTE : Initialize this in the main
 pub fn initHooks( module : anytype ) void                { G_HK.initHooks( module ); }
 pub fn tryHook( tag : ghm.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
@@ -43,18 +67,18 @@ pub const alloc = std.heap.smp_allocator;
 
 // ================ SCREEN MNGR SHORTHANDS ================
 
-pub const scm = @import( "core/system/screenManager.zig" );
+pub const vwm = @import( "core/system/viewManager.zig" );
 
-pub const getScreenWidth      = scm.getScreenWidth;
-pub const getScreenHeight     = scm.getScreenHeight;
-pub const getScreenSize       = scm.getScreenSize;
+pub const getScreenWidth      = vwm.getScreenWidth;
+pub const getScreenHeight     = vwm.getScreenHeight;
+pub const getScreenSize       = vwm.getScreenSize;
 
-pub const getHalfScreenWidth  = scm.getHalfScreenWidth;
-pub const getHalfScreenHeight = scm.getHalfScreenHeight;
-pub const getHalfScreenSize   = scm.getHalfScreenSize;
+pub const getHalfScreenWidth  = vwm.getHalfScreenWidth;
+pub const getHalfScreenHeight = vwm.getHalfScreenHeight;
+pub const getHalfScreenSize   = vwm.getHalfScreenSize;
 
-pub const getMouseScreenPos   = scm.getMouseScreenPos;
-pub const getMouseWorldPos    = scm.getMouseWorldPos;
+pub const getMouseScreenPos   = vwm.getMouseScreenPos;
+pub const getMouseWorldPos    = vwm.getMouseWorldPos;
 
 
 // ================ DRAWER SHORTHANDS ================

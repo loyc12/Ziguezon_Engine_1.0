@@ -73,7 +73,6 @@ pub fn start( ng : *engine ) void
   }
   // Initialize relevant engine components
   {
-    ng.rng.randInit();
     ng.entityManager.init(   def.alloc );
     ng.resourceManager.init( def.alloc );
   }
@@ -90,7 +89,7 @@ pub fn stop( ng : *engine ) void
     def.log( .WARN, 0, @src(), "Cannot stop the engine in state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else{ def.qlog( .TRACE, 0, @src(), "Stoping the engine..." ); }
+  else { def.qlog( .TRACE, 0, @src(), "Stoping the engine..." ); }
 
   def.tryHook( .OnStop, .{ ng });
 
@@ -124,24 +123,24 @@ pub fn open( ng : *engine ) void
     def.log( .WARN, 0, @src(), "Cannot open the game in state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else{ def.qlog( .TRACE, 0, @src(), "Launching the game..." ); }
+  else { def.qlog( .TRACE, 0, @src(), "Launching the game..." ); }
 
   // Initialize relevant engine components
   {
-    ng.screenManager.init( def.alloc );
+    ng.viewManager.init( def.alloc );
   }
   // Initialize relevant raylib components
   {
     def.ray.setConfigFlags(
       .{
-        .window_resizable   = true, // Allow the window to be resized
+        //.window_resizable   = true, // Allow the window to be resized
         //.window_undecorated = true, // Show the window decorations ( title bar, close button, etc. )
       }
     ); // Set the window flags
 
     def.ray.setTargetFPS( def.DEF_TARGET_FPS );
     def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Opens the window
-    ng.screenManager.setMainCameraOffset( def.getHalfScreenSize() ); // Sets the camera offset to the center of the screen
+    ng.viewManager.setMainCameraOffset( def.getHalfScreenSize() ); // Sets the camera offset to the center of the screen
   }
   def.tryHook( .OnOpen, .{ ng });
 
@@ -158,7 +157,7 @@ pub fn close( ng : *engine ) void
     def.log( .WARN, 0, @src(), "Cannot close the game in state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else{ def.qlog( .TRACE, 0, @src(), "Stopping the game..." ); }
+  else { def.qlog( .TRACE, 0, @src(), "Stopping the game..." ); }
 
   def.tryHook( .OnClose, .{ ng });
 
@@ -172,8 +171,8 @@ pub fn close( ng : *engine ) void
   }
   // Deinitialize relevant engine components
   {
-    ng.screenManager.deinit();
-    ng.screenManager = undefined;
+    ng.viewManager.deinit();
+    ng.viewManager = undefined;
   }
 
   ng.state = .STARTED;
@@ -190,7 +189,7 @@ pub fn play( ng : *engine ) void
     def.log( .WARN, 0, @src(), "Cannot play the game in state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else{ def.qlog( .TRACE, 0, @src(), "Resuming the game..." ); }
+  else { def.qlog( .TRACE, 0, @src(), "Resuming the game..." ); }
 
   def.tryHook( .OnPlay, .{ ng });
   ng.state = .PLAYING;
@@ -204,7 +203,7 @@ pub fn pause( ng : *engine ) void
     def.log( .WARN, 0, @src(), "Cannot pause the game in state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else{ def.qlog( .TRACE, 0, @src(), "Pausing the game..." ); }
+  else { def.qlog( .TRACE, 0, @src(), "Pausing the game..." ); }
 
   def.tryHook( .OnPause, .{ ng });
   ng.state = .OPENED;

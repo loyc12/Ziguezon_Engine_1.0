@@ -35,15 +35,15 @@ pub fn emitParticles( ng : *def.ngn.engine, pos : def.Vec3, vel : def.Vec3, dPos
     //_ = i; // Prevent unused variable warning
     def.log( .DEBUG, 0, @src(), "Emitting particle {d} from position {d}:{d}|{d}", .{ i, pos.x, pos.y, pos.z });
 
-    const size = ng.rng.getScaledFloat( 2.0, 7.0 );
+    const size = def.G_RNG.getScaledFloat( 2.0, 7.0 );
 
     _ = ng.entityManager.addEntity( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .scale  = .{ .x = size, .y = size },
       .colour = colour,
-      .shape  = ng.rng.getVal( def.ntt.e_shape ),
-      .pos    = ng.rng.getScaledVecR( dPos, pos ),
-      .vel    = ng.rng.getScaledVecR( dVel, vel ),
+      .shape  = def.G_RNG.getVal( def.ntt.e_shape ),
+      .pos    = def.G_RNG.getScaledVecR( dPos, pos ),
+      .vel    = def.G_RNG.getScaledVecR( dVel, vel ),
     });
   }
 }
@@ -120,13 +120,13 @@ pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInp
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.screenManager.zoomBy( 1.111 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.screenManager.zoomBy( 0.900 ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.viewManager.zoomBy( 1.111 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.viewManager.zoomBy( 0.900 ); }
 
     // Reset the camera zoom and position when the middle mouse button is pressed
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
     {
-      ng.screenManager.setMainCameraZoom( 1.0 );
+      ng.viewManager.setMainCameraZoom( 1.0 );
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }

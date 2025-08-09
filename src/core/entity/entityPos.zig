@@ -140,7 +140,7 @@ pub fn clampLeftX( e1 : *entity, minLeftX : f32 ) void
   if( getLeftX( e1 ) < minLeftX )
   {
     setLeftX( e1, minLeftX );
-    if ( e1.vel.x < 0 ){ e1.vel.x = 0; }
+    if( e1.vel.x < 0 ){ e1.vel.x = 0; }
   }
 }
 pub fn clampRightX( e1 : *entity, maxRightX : f32 ) void
@@ -149,7 +149,7 @@ pub fn clampRightX( e1 : *entity, maxRightX : f32 ) void
   if( getRightX( e1 ) > maxRightX )
   {
     setRightX( e1, maxRightX );
-    if ( e1.vel.x > 0 ){ e1.vel.x = 0; }
+    if( e1.vel.x > 0 ){ e1.vel.x = 0; }
   }
 }
 pub fn clampTopY( e1 : *entity, minTopY : f32 ) void
@@ -158,7 +158,7 @@ pub fn clampTopY( e1 : *entity, minTopY : f32 ) void
   if( getTopY( e1 ) < minTopY )
   {
     setTopY( e1, minTopY );
-    if ( e1.vel.y < 0 ){ e1.vel.y = 0; }
+    if( e1.vel.y < 0 ){ e1.vel.y = 0; }
   }
 }
 pub fn clampBottomY( e1 : *entity, maxBottomY : f32 ) void
@@ -167,7 +167,7 @@ pub fn clampBottomY( e1 : *entity, maxBottomY : f32 ) void
   if( getBottomY( e1 ) > maxBottomY )
   {
     setBottomY( e1, maxBottomY );
-    if ( e1.vel.y > 0 ){ e1.vel.y = 0; }
+    if( e1.vel.y > 0 ){ e1.vel.y = 0; }
   }
 }
 
@@ -337,8 +337,8 @@ pub fn getOverlap( e1 : *const entity, e2 : *const entity ) ?def.Vec2
 
   // Find the directions of the overlap ( relative to e1 )
   const offset = def.Vec2{ .x = e2.pos.x - e1.pos.x, .y = e2.pos.y - e1.pos.y };
-  const dir    = def.Vec2{ .x = if( offset.x > 0 ) 1 else if ( offset.x < 0 ) -1 else 0,
-                           .y = if( offset.y > 0 ) 1 else if ( offset.y < 0 ) -1 else 0 };
+  const dir    = def.Vec2{ .x = if( offset.x > 0 ) 1 else if( offset.x < 0 ) -1 else 0,
+                           .y = if( offset.y > 0 ) 1 else if( offset.y < 0 ) -1 else 0 };
 
   // Find the edges of each entities bounding box
   // NOTE : This assumes that the entities are axis-aligned rectangles

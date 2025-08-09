@@ -3,6 +3,26 @@ const def = @import( "defs" );
 
 const RandType : type = std.Random.Xoshiro256;
 
+
+// ================================ GLOBAL RANDOM NUMBER GENERATOR ================================
+
+pub var G_RNG : randomiser = .{};
+
+pub fn initGlobalRNG() void
+{
+  G_RNG.randInit();
+  def.qlog( .INFO, 0, @src(), "Random number generator initialized" );
+}
+
+pub fn seedGlobalRNG( seed : i128 ) void
+{
+  G_RNG.seedInit( seed );
+  def.qlog( .INFO, 0, @src(), "Random number generator seeded with {d}", .{ seed });
+}
+
+
+// ================================ RANDOMISER STRUCT ================================
+
 pub const randomiser = struct
 {
   prng : RandType   = undefined,
@@ -15,7 +35,7 @@ pub const randomiser = struct
     const top : u64  = @intCast( val & 0xFFFFFFFFFFFFFFFF0000000000000000 );
     const bot : u64  = @intCast( val & 0x0000000000000000FFFFFFFFFFFFFFFF );
 
-    self.prng = RandType.init( top + bot ); // Reseeding the prng
+    self.prng = RandType.init( top + bot );
 
     // Reinitializing the rng wrapper with the new prng
     self.rng = std.Random.init( &self.prng, std.Random.Xoshiro256.fill );
@@ -57,7 +77,7 @@ pub const randomiser = struct
     var tmp = self.rng.float( f32 );
 
     tmp =  ( tmp * 2.0 ) - 1.0;      // Scale to range [-1, 1]
-    return ( tmp * scale ) + offset; // Scale and offset the value
+    return( tmp * scale ) + offset; // Scale and offset the value
   }
 
   // Returns a random unit vector ( length of 1 in a random direction )
