@@ -29,7 +29,7 @@ pub fn clampInScreen( e1 : *Entity ) void
 
 // ================ RENDER FUNCTIONS ================
 
-inline fn drawDirectionLine( self : *const Entity, color : def.ray.Color, width : f32 ) void
+inline fn drawDirectionLine( self : *const Entity, color : def.Colour, width : f32 ) void
 {
   const frontPoint = def.radToVec2Scaled( self.getRot(), self.scale );
   def.drawLine( self.getCenter(), def.addVec2( self.getCenter(), frontPoint ), color, width );

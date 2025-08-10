@@ -27,7 +27,7 @@ pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 }
 
 // Emit particles in a given position and velocity range, with the given colour
-pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : VecR, amount : u32, colour : def.ray.Color ) void
+pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : VecR, amount : u32, colour : def.Colour ) void
 {
   ng.entityManager.entities.ensureTotalCapacity( ng.entityManager.entities.items.len + amount ) catch |err|
   {
@@ -62,7 +62,7 @@ pub fn emitParticlesOnBounce( ng : *Engine, ball : *Entity ) void
     .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .z = 0.0 },
     .{ .x = 16,  .y = 16, .z = 1.0 },
     .{ .x = 128, .y = 32, .z = 2.0 },
-    888, def.ray.Color.yellow );
+    12, def.Colour.yellow );
 
   ng.resourceManager.playAudio( "hit_1" );
 }
@@ -373,7 +373,7 @@ pub fn OnRenderBackground( ng : *Engine ) void // Called by engine.renderGraphic
 {
   _ = ng; // Prevent unused variable warning
 
-  def.ray.clearBackground( def.ray.Color.black );
+  def.ray.clearBackground( def.Colour.black );
 }
 
 pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
@@ -399,23 +399,23 @@ pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
   s2_buff[ s2_slice.len ] = 0;
 
   // Draw each player's score in the middle of their respective fields
-  def.drawCenteredText( &s1_buff, def.getScreenWidth() * 0.25, def.getScreenHeight() * 0.5, 64, def.ray.Color.blue );
-  def.drawCenteredText( &s2_buff, def.getScreenWidth() * 0.75, def.getScreenHeight() * 0.5, 64, def.ray.Color.red );
+  def.drawCenteredText( &s1_buff, def.getScreenWidth() * 0.25, def.getScreenHeight() * 0.5, 64, def.Colour.blue );
+  def.drawCenteredText( &s2_buff, def.getScreenWidth() * 0.75, def.getScreenHeight() * 0.5, 64, def.Colour.red );
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.coverScreenWith( def.ray.Color.init( 0, 0, 0, 128 ));
+    def.coverScreenWith( def.Colour.init( 0, 0, 0, 128 ));
   }
 
   if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )
   {
     const winner_msg = if( WINNER == 1 ) "Player 1 wins!" else "Player 2 wins!";
-    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.ray.Color.green );
-    def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.ray.Color.yellow );
-    def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.ray.Color.yellow );
+    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.Colour.green );
+    def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.Colour.yellow );
+    def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawCenteredText( "Press Enter to resume", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.ray.Color.yellow );
+    def.drawCenteredText( "Press Enter to resume", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.Colour.yellow );
   }
 }

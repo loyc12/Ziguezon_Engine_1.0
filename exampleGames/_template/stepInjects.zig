@@ -57,7 +57,7 @@ pub fn OnRenderBackground( ng : *def.Engine ) void // Called by engine.renderGra
 {
   _ = ng; // Prevent unused variable warning
 
-  def.ray.clearBackground( def.ray.Color.black ); // Clear the screen with a black color
+  def.ray.clearBackground( def.Colour.black ); // Clear the screen with a black color
 }
 
 // NOTE : This is where you should render all world-position relative effects
@@ -78,11 +78,11 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
 {
   if( DRAW_TEST ) // Example of a flag toggled feature
   {
-    def.ray.drawText( "TEST", def.rdm.getHalfScreenWidth(), def.rdm.getHalfScreenHeight(), 64, def.ray.Color.green );
+    def.ray.drawText( "TEST", def.rdm.getHalfScreenWidth(), def.rdm.getHalfScreenHeight(), 64, def.Colour.green );
   }
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.coverScreenWith( def.ray.Color.init( 0, 0, 0, 128 ));
+    def.coverScreenWith( def.Colour.init( 0, 0, 0, 128 ));
   }
 }

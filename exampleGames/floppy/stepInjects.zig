@@ -109,7 +109,7 @@ pub fn OnRenderBackground( ng : *def.Engine ) void // Called by engine.renderGra
 {
   _ = ng; // Prevent unused variable warning
 
-  def.ray.clearBackground( def.ray.Color.green );
+  def.ray.clearBackground( def.Colour.green );
 }
 
 pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphics()
@@ -130,24 +130,24 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {
-    def.coverScreenWith( def.ray.Color.init( 0, 0, 0, 128 ));
+    def.coverScreenWith( def.Colour.init( 0, 0, 0, 128 ));
   }
 
   // Draw each the score in the middle of the screen
-  def.drawCenteredText( &s_buff, def.getScreenWidth() * 0.8, def.getScreenHeight() * 0.5, 128, def.ray.Color.yellow );
+  def.drawCenteredText( &s_buff, def.getScreenWidth() * 0.8, def.getScreenHeight() * 0.5, 128, def.Colour.yellow );
 
   if( IS_GAME_OVER ) // If there is a winner, display the winner message ( not grayed out )
   {
     const winner_msg = "Womp Womp..."; // TODO : Change message based on final score
-    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.ray.Color.red );
-    def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.ray.Color.yellow );
-    def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.ray.Color.yellow );
+    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.Colour.red );
+    def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.Colour.yellow );
+    def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawCenteredText( "Press Enter to resume",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.ray.Color.yellow );
-    def.drawCenteredText( "Press Escape to exit",    def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 128, 64, def.ray.Color.yellow );
-    def.drawCenteredText( "Press W, Up or Space to", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64, def.ray.Color.yellow );
-    def.drawCenteredText( "jump during the game",    def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 256, 64, def.ray.Color.yellow );
+    def.drawCenteredText( "Press Enter to resume",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press Escape to exit",    def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 128, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press W, Up or Space to", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64, def.Colour.yellow );
+    def.drawCenteredText( "jump during the game",    def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 256, 64, def.Colour.yellow );
   }
 }

@@ -374,7 +374,7 @@ pub const entityManager = struct
     return self.entities[ index ].scale;
   }
 
-  pub fn setColour( self : *entityManager, id : u32, colour : def.ray.Color ) void
+  pub fn setColour( self : *entityManager, id : u32, colour : def.Colour ) void
   {
     // Find the index of the Entity with the given ID
     const index = self.getIndexOf( id );
@@ -385,7 +385,7 @@ pub const entityManager = struct
     }
     self.entities[ index ].colour = colour;
   }
-  pub fn getColour( self : *entityManager, id : u32 ) ?def.ray.Color
+  pub fn getColour( self : *entityManager, id : u32 ) ?def.Colour
   {
     // Find the index of the Entity with the given ID
     const index = self.getIndexOf( id );

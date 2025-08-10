@@ -46,7 +46,7 @@ pub const Entity = struct
   acc    : VecR = .{ .x = 0, .y = 0, .z = 0 },
   scale  : Vec2 = .{ .x = 0, .y = 0 },
 
-  colour : def.ray.Color = def.ray.Color.white,
+  colour : def.Colour = def.Colour.white,
   shape  : e_ntt_shape   = .NONE,
 
 
