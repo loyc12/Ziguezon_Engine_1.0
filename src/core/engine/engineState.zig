@@ -1,12 +1,12 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const engine  = def.ngn.engine;
-const e_state = def.ngn.e_state;
+const Engine  = def.Engine;
+const e_ng_state = def.ngn.e_ng_state;
 
 // ================================ ENGINE STATE FUNCTIONS ================================
 
-pub fn changeState( ng : *engine, targetState : e_state ) void
+pub fn changeState( ng : *Engine, targetState : e_ng_state ) void
 {
   if( targetState == ng.state )
   {
@@ -58,7 +58,7 @@ pub fn changeState( ng : *engine, targetState : e_state ) void
 
 // ================ START & STOP ================
 
-pub fn start( ng : *engine ) void
+pub fn start( ng : *Engine ) void
 {
   if( ng.state != .OFF )
   {
@@ -82,7 +82,7 @@ pub fn start( ng : *engine ) void
   ng.state = .STARTED;
 }
 
-pub fn stop( ng : *engine ) void
+pub fn stop( ng : *Engine ) void
 {
   if( ng.state == .OFF )
   {
@@ -116,7 +116,7 @@ pub fn stop( ng : *engine ) void
 
 // ================ OPEN & CLOSE ================
 
-pub fn open( ng : *engine ) void
+pub fn open( ng : *Engine ) void
 {
   if( ng.state != .STARTED )
   {
@@ -150,7 +150,7 @@ pub fn open( ng : *engine ) void
   def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.getScreenWidth(), def.getScreenHeight() });
 }
 
-pub fn close( ng : *engine ) void
+pub fn close( ng : *Engine ) void
 {
   if( ng.state != .OPENED )
   {
@@ -182,7 +182,7 @@ pub fn close( ng : *engine ) void
 
 // ================ PLAY & PAUSE ================
 
-pub fn play( ng : *engine ) void
+pub fn play( ng : *Engine ) void
 {
   if( ng.state != .OPENED )
   {
@@ -196,7 +196,7 @@ pub fn play( ng : *engine ) void
 }
 
 
-pub fn pause( ng : *engine ) void
+pub fn pause( ng : *Engine ) void
 {
   if( ng.state != .PLAYING )
   {
@@ -209,7 +209,7 @@ pub fn pause( ng : *engine ) void
   ng.state = .OPENED;
 }
 
-pub fn togglePause( ng : *engine ) void
+pub fn togglePause( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Toggling pause..." );
   switch( ng.state )

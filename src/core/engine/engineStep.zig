@@ -1,11 +1,11 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const engine = def.ngn.engine;
+const Engine = def.Engine;
 
 // ================================ ENGINE STEP FUNCTIONS ================================
 
-pub fn loopLogic( ng : *engine ) void
+pub fn loopLogic( ng : *Engine ) void
 {
   if( !ng.isOpened() )
   {
@@ -44,7 +44,7 @@ pub fn loopLogic( ng : *engine ) void
 
 // ================ LOOP EVENTS ================
 
-pub fn updateInputs( ng : *engine ) void
+pub fn updateInputs( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
   // This function is used to get input from the user, such as keyboard or mouse input.
@@ -60,7 +60,7 @@ pub fn updateInputs( ng : *engine ) void
 }
 
 
-pub fn tickEntities( ng : *engine ) void           // TODO : use tick rate instead of frame time
+pub fn tickEntities( ng : *Engine ) void           // TODO : use tick rate instead of frame time
 {
   if( !ng.isPlaying() ){ return; } // skip this function if the game is paused
 
@@ -70,14 +70,15 @@ pub fn tickEntities( ng : *engine ) void           // TODO : use tick rate inste
 
   def.tryHook( .OnTickEntities, .{ ng });
   {
-  //ng.entityManager.collideActiveEntities( ng.sdt );
     ng.entityManager.tickActiveEntities( ng.sdt );
+    //ng.entityManager.collideActiveEntities( ng.sdt );
+    ng.entityManager.deleteAllMarkedEntities();
   }
   def.tryHook( .OffTickEntities, .{ ng });
 }
 
 
-pub fn renderGraphics( ng : *engine ) void
+pub fn renderGraphics( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
 

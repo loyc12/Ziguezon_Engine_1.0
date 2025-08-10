@@ -2,9 +2,14 @@ const std      = @import( "std" );
 const def      = @import( "defs" );
 const stateInj = @import( "stateInjects.zig" );
 
+const Engine = def.Engine;
+const Entity = def.Entity;
+const Vec2   = def.Vec2;
+const VecR   = def.VecR;
+
 // ================================ HELPER FUNCTIONS ================================
 
-pub fn cpyEntityPosViaID( ng : *def.ngn.engine , dstID : u32, srcID : u32, ) void
+pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 {
   const src = ng.entityManager.getEntity( srcID ) orelse
   {
@@ -22,7 +27,7 @@ pub fn cpyEntityPosViaID( ng : *def.ngn.engine , dstID : u32, srcID : u32, ) voi
 }
 
 // Emit particles in a given position and velocity range, with the given colour
-pub fn emitParticles( ng : *def.ngn.engine, pos : def.Vec3, vel : def.Vec3, dPos : def.Vec3, dVel : def.Vec3, amount : u32, colour : def.ray.Color ) void
+pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : VecR, amount : u32, colour : def.ray.Color ) void
 {
   ng.entityManager.entities.ensureTotalCapacity( ng.entityManager.entities.items.len + amount ) catch |err|
   {
@@ -32,23 +37,23 @@ pub fn emitParticles( ng : *def.ngn.engine, pos : def.Vec3, vel : def.Vec3, dPos
 
   for( 0 .. amount )| i |
   {
-    //_ = i; // Prevent unused variable warning
-    def.log( .DEBUG, 0, @src(), "Emitting particle {d} from position {d}:{d}|{d}", .{ i, pos.x, pos.y, pos.z });
+    _ = i; // Ignore the index, we don't need it
 
     const size = def.G_RNG.getScaledFloat( 2.0, 7.0 );
 
     _ = ng.entityManager.addEntity( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
-      .scale  = .{ .x = size, .y = size },
-      .colour = colour,
-      .shape  = def.G_RNG.getVal( def.ntt.e_shape ),
       .pos    = def.G_RNG.getScaledVecR( dPos, pos ),
       .vel    = def.G_RNG.getScaledVecR( dVel, vel ),
+      .scale  = def.newVec2( size, size ),
+
+      .shape  = def.G_RNG.getVal( def.ntt.e_ntt_shape ),
+      .colour = colour,
     });
   }
 }
 
-pub fn emitParticlesOnBounce( ng : *def.ngn.engine, ball : *def.ntt.entity ) void
+pub fn emitParticlesOnBounce( ng : *Engine, ball : *Entity ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
@@ -57,7 +62,7 @@ pub fn emitParticlesOnBounce( ng : *def.ngn.engine, ball : *def.ntt.entity ) voi
     .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .z = 0.0 },
     .{ .x = 16,  .y = 16, .z = 1.0 },
     .{ .x = 128, .y = 32, .z = 2.0 },
-    8, def.ray.Color.yellow );
+    888, def.ray.Color.yellow );
 
   ng.resourceManager.playAudio( "hit_1" );
 }
@@ -82,7 +87,7 @@ var   SCORES    : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 const B_MIN_BOUNCE_SPEED_X : f32 = 128.0; // Minimum parallel speed of the ball when bouncing off players
 const B_MIN_BOUNCE_SPEED_Y : f32 = 256.0; // Minimum perpendicular speed of the ball when bouncing off players
 
-pub fn ensureBallMinSpeeds( ball : *def.ntt.entity ) void
+pub fn ensureBallMinSpeeds( ball : *Entity ) void
 {
   if( ball.vel.x > 0 ){ ball.vel.x = @max( ball.vel.x,  B_MIN_BOUNCE_SPEED_X ); }
   if( ball.vel.x < 0 ){ ball.vel.x = @min( ball.vel.x, -B_MIN_BOUNCE_SPEED_X ); }
@@ -94,7 +99,7 @@ pub fn ensureBallMinSpeeds( ball : *def.ntt.entity ) void
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
   {
@@ -164,7 +169,7 @@ pub fn OnUpdateInputs( ng : *def.ngn.engine ) void // Called by engine.updateInp
   }
 }
 
-pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OnTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
   {
@@ -183,18 +188,15 @@ pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntit
 
   for( stateInj.BALL_ID + 1 .. 1 + ng.entityManager.getMaxID() )| i |
   {
-    const part = ng.entityManager.getEntity( @intCast( i )) orelse
-    {
-      def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ i });
-      continue;
-    };
+    const part = ng.entityManager.getEntity( @intCast( i )) orelse continue;
 
-    if( part.active == false ){ continue; } // Skip inactive entities
+    if( part.canBeDel() ){ continue; } // skip pre-marked particles
 
+    // If the particle is bellow the screen, deactivate it and mark it for deletion
     if( part.getTopY() >= def.getScreenHeight() / 2 )
     {
-      // If the particle is above the top of the screen, set it to inactive
-      part.active = false;
+      part.delFlag( .ACTIVE );
+      part.addFlag( .DELETE );
       continue;
     }
 
@@ -202,7 +204,7 @@ pub fn OnTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntit
   }
 }
 
-pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
   // ================ VARIABLES AND CONSTANTS ================
 
@@ -367,14 +369,14 @@ pub fn OffTickEntities( ng : *def.ngn.engine ) void // Called by engine.tickEnti
 
 }
 
-pub fn OnRenderBackground( ng : *def.ngn.engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderBackground( ng : *Engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 
   def.ray.clearBackground( def.ray.Color.black );
 }
 
-pub fn OnRenderOverlay( ng : *def.ngn.engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
 {
   // Declare the buffers to hold the formatted scores
   var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score

@@ -14,8 +14,7 @@ pub inline fn newVecR( x : f32, y : f32, r : ?f32 ) VecR
   if( r )| angle | { return VecR{ .x = x, .y = y, .z = angle }; }
   else             { return VecR{ .x = x, .y = y, .z = 0.0   }; }
 }
-pub inline fn getRVal( v : VecR ) f32 { return v.z; } // Returns the R value ( rotation angle in radians )
-
+pub inline fn zeroVecR() VecR { return VecR{ .x = 0.0, .y = 0.0, .z = 0.0 }; } // Returns a zero'd vector
 
 // ================================ SCALAR MATH ================================
 

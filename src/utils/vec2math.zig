@@ -7,7 +7,7 @@ pub const DtR   = def.DtR;
 pub const RtD   = def.RtD;
 
 pub inline fn newVec2( x : f32, y : f32 ) Vec2 { return Vec2{ .x = x, .y = y }; }
-
+pub inline fn zeroVec2() Vec2 { return Vec2{ .x = 0.0, .y = 0.0 }; }
 
 // ================================ SCALAR MATH ================================
 

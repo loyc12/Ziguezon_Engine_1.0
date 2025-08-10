@@ -8,6 +8,7 @@ pub const DtR   = def.DtR;
 pub const RtD   = def.RtD;
 
 pub fn newVec3( x : f32, y : f32, z : f32 ) Vec3 { return Vec3{ .x = x, .y = y, .z = z }; }
+pub fn zeroVec3() Vec3 { return Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 }; }
 
 // ================================ SCALAR MATH ================================
 

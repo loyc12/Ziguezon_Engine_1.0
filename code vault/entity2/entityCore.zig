@@ -8,7 +8,7 @@ const CompRender    = @import( "entityRender.zig" );
 const Uuid     = def.uuid.Uuid;
 const flagType = def.uuid.flagType;
 
-pub const e_shape = enum
+pub const e_ntt_shape = enum
 {
   NONE, // No shape defined ( will not be rendered )
   LINE, // Line ( from center to forward, scaled )

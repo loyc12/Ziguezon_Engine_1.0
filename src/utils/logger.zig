@@ -157,13 +157,13 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   {
     switch ( message[ 0 ])
     {
-      '!'  => setCol( def.col.RED ),
-      '@'  => setCol( def.col.MAGEN ),
-      '#'  => setCol( def.col.YELOW ),
-      '$'  => setCol( def.col.GREEN ),
-      '%'  => setCol( def.col.BLUE ),
-      '&'  => setCol( def.col.CYAN ),
-      else => setCol( def.col.RESET ),
+      '!'  => setCol( def.tCol.RED ),
+      '@'  => setCol( def.tCol.MAGEN ),
+      '#'  => setCol( def.tCol.YELOW ),
+      '$'  => setCol( def.tCol.GREEN ),
+      '%'  => setCol( def.tCol.BLUE ),
+      '&'  => setCol( def.tCol.CYAN ),
+      else => setCol( def.tCol.RESET ),
     }
   }
 
@@ -197,7 +197,7 @@ pub fn initFile() void
     std.debug.print( "Failed to create or open log file '{s}': {}\nLogging to stderr isntead\n", .{ LOG_FILE_NAME, err });
     return;
   };
-  std.debug.print( def.col.YELOW ++ "Logging to file '{s}'\n" ++ def.col.RESET, .{ LOG_FILE_NAME });
+  std.debug.print( def.tCol.YELOW ++ "Logging to file '{s}'\n" ++ def.tCol.RESET, .{ LOG_FILE_NAME });
   G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
 
   qlog( .INFO, 0, @src(), "Logfile initialized\n\n" );
@@ -242,12 +242,12 @@ fn logLevel( level: LogLevel ) !void
 
   switch ( level )
   {
-    LogLevel.NONE  => setCol( def.col.RESET ),
-    LogLevel.ERROR => setCol( def.col.RED   ),
-    LogLevel.WARN  => setCol( def.col.YELOW ),
-    LogLevel.INFO  => setCol( def.col.GREEN ),
-    LogLevel.DEBUG => setCol( def.col.CYAN  ),
-    LogLevel.TRACE => setCol( def.col.GRAY  ),
+    LogLevel.NONE  => setCol( def.tCol.RESET ),
+    LogLevel.ERROR => setCol( def.tCol.RED   ),
+    LogLevel.WARN  => setCol( def.tCol.YELOW ),
+    LogLevel.INFO  => setCol( def.tCol.GREEN ),
+    LogLevel.DEBUG => setCol( def.tCol.CYAN  ),
+    LogLevel.TRACE => setCol( def.tCol.GRAY  ),
   }
   const lvl : []const u8 = switch ( level )
   {
@@ -274,7 +274,7 @@ fn logTime() !void
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
 
-  setCol( def.col.GRAY ); // Set the color to gray for the timestamp
+  setCol( def.tCol.GRAY ); // Set the color to gray for the timestamp
 
   // Print the time in seconds and nanoseconds
   try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
@@ -286,15 +286,15 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 
   if( callLocation )| loc | // If the call location is defined, print the file, line, and function name
   {
-    setCol( def.col.BLUE ); // Set the color to blue for the source location
+    setCol( def.tCol.BLUE ); // Set the color to blue for the source location
     try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
 
-    setCol( def.col.GRAY ); // Set the color to gray for the function name
+    setCol( def.tCol.GRAY ); // Set the color to gray for the function name
     try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
   }
   else // If the call location is undefined, print "UNDEFINED"
   {
-    setCol( def.col.YELOW ); // Set the color to red for the undefined location
+    setCol( def.tCol.YELOW ); // Set the color to red for the undefined location
     try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
   }
 }

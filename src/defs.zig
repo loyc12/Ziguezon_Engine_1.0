@@ -1,7 +1,7 @@
 pub const std = @import( "std" );
 pub const ray = @import( "raylib" );
 
-pub const col    = @import( "utils/colour.zig" );
+pub const tCol   = @import( "utils/colouriser.zig" );
 pub const timer  = @import( "utils/timer.zig" );
 pub const rng    = @import( "utils/rng.zig" );
 
@@ -44,7 +44,8 @@ pub fn tryHook( tag : ghm.hookTag, args : anytype ) void { G_HK.tryHook( tag, ar
 // ================================ ENGINE ================================
 
 pub const ngn = @import( "core/engine/engineCore.zig" );
-pub var G_NG : ngn.engine = .{}; // NOTE : Global game engine instance
+pub const Engine = ngn.Engine;
+pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 
 // ================ MANAGERS ================
 
@@ -54,7 +55,8 @@ pub const ntm = @import( "core/system/entityManager.zig" );
 
 // ================ ENTITY SYSTEM ================
 
-pub const ntt = @import( "core/entity/entityCore.zig" );
+pub const ntt    = @import( "core/entity/entityCore.zig" );
+pub const Entity = ntt.Entity; // Shorthand for the Entity struct
 
 
 // ================================ SHORTHANDS ================================
@@ -148,133 +150,145 @@ pub const renorm      = mather.renorm;
 
 // ================ VECTORS SHORTHANDS ================
 
+// ======== RAYLIB COLOUR ========
+
+pub const Colour = ray.Color;
+
+pub fn newColour( r : u8, g : u8, b : u8, a : ?u8 ) Colour
+{
+  if( a )| alpha | { return Colour{ .r = r, .g = g, .b = b, .a = alpha }; }
+  else             { return Colour{ .r = r, .g = g, .b = b, .a = 255   }; }
+}
+
 // ======== Vec2 ========
 
-pub const Vec2math = @import( "utils/vec2math.zig" );
+pub const vec2math = @import( "utils/vec2math.zig" );
 
-pub const Vec2               = Vec2math.Vec2;
-pub const newVec2            = Vec2math.newVec2;
+pub const Vec2               = vec2math.Vec2;
+pub const newVec2            = vec2math.newVec2;
+pub const zeroVec2           = vec2math.zeroVec2;
 
-pub const addValToVec2       = Vec2math.addValToVec2;
-pub const subValFromVec2     = Vec2math.subValFromVec2;
-pub const mulVec2ByVal       = Vec2math.mulVec2ByVal;
-pub const divVec2ByVal       = Vec2math.divVec2ByVal;
+pub const addValToVec2       = vec2math.addValToVec2;
+pub const subValFromVec2     = vec2math.subValFromVec2;
+pub const mulVec2ByVal       = vec2math.mulVec2ByVal;
+pub const divVec2ByVal       = vec2math.divVec2ByVal;
 
-pub const normVec2Unit       = Vec2math.normVec2Unit;
-pub const normVec2Len        = Vec2math.normVec2Len;
+pub const normVec2Unit       = vec2math.normVec2Unit;
+pub const normVec2Len        = vec2math.normVec2Len;
 
-pub const addVec2            = Vec2math.addVec2;
-pub const subVec2            = Vec2math.subVec2;
-pub const mulVec2            = Vec2math.mulVec2;
-pub const divVec2            = Vec2math.divVec2;
+pub const addVec2            = vec2math.addVec2;
+pub const subVec2            = vec2math.subVec2;
+pub const mulVec2            = vec2math.mulVec2;
+pub const divVec2            = vec2math.divVec2;
 
-pub const getVec2Dist        = Vec2math.getDist;
-pub const getVec2CartDist    = Vec2math.getCartDist;
-pub const getVec2SqrDist     = Vec2math.getSqrDist;
+pub const getVec2Dist        = vec2math.getDist;
+pub const getVec2CartDist    = vec2math.getCartDist;
+pub const getVec2SqrDist     = vec2math.getSqrDist;
 
-pub const getVec2DistX       = Vec2math.getDistX;
-pub const getVec2DistY       = Vec2math.getDistY;
+pub const getVec2DistX       = vec2math.getDistX;
+pub const getVec2DistY       = vec2math.getDistY;
 
-pub const rotVec2Rad         = Vec2math.rotVec2Rad;
-pub const rotVec2Deg         = Vec2math.rotVec2Rad;
+pub const rotVec2Rad         = vec2math.rotVec2Rad;
+pub const rotVec2Deg         = vec2math.rotVec2Rad;
 
-pub const vec2ToRad          = Vec2math.vec2ToRad;
-pub const vec2ToDeg          = Vec2math.vec2ToDeg;
+pub const vec2ToRad          = vec2math.vec2ToRad;
+pub const vec2ToDeg          = vec2math.vec2ToDeg;
 
-pub const vec2AngularDistRad = Vec2math.vec2AngularDistRad;
-pub const vec2AngularDistDeg = Vec2math.vec2AngularDistDeg;
+pub const vec2AngularDistRad = vec2math.vec2AngularDistRad;
+pub const vec2AngularDistDeg = vec2math.vec2AngularDistDeg;
 
-pub const degToVec2          = Vec2math.degToVec2;
-pub const radToVec2          = Vec2math.radToVec2;
+pub const degToVec2          = vec2math.degToVec2;
+pub const radToVec2          = vec2math.radToVec2;
 
-pub const degToVec2Scaled    = Vec2math.degToVec2Scaled;
-pub const radToVec2Scaled    = Vec2math.radToVec2Scaled;
+pub const degToVec2Scaled    = vec2math.degToVec2Scaled;
+pub const radToVec2Scaled    = vec2math.radToVec2Scaled;
 
 
 // ======== VecR ========
 
-pub const VecRmath = @import( "utils/vecRmath.zig" );
+pub const vecRmath = @import( "utils/vecRmath.zig" );
 
-pub const VecR               = VecRmath.VecR;
-pub const newVecR            = VecRmath.newVecR;
-pub const getRVal            = VecRmath.getRVal;
+pub const VecR               = vecRmath.VecR;
+pub const newVecR            = vecRmath.newVecR;
+pub const zeroVecR           = vecRmath.zeroVecR;
 
-pub const addValToVecR       = VecRmath.addValToVecR;
-pub const subValFromVecR     = VecRmath.subValFromVecR;
-pub const mulVecRByVal       = VecRmath.mulVecRByVal;
-pub const divVecRByVal       = VecRmath.divVecRByVal;
+pub const addValToVecR       = vecRmath.addValToVecR;
+pub const subValFromVecR     = vecRmath.subValFromVecR;
+pub const mulVecRByVal       = vecRmath.mulVecRByVal;
+pub const divVecRByVal       = vecRmath.divVecRByVal;
 
-pub const normVecRUnit       = VecRmath.normVecRUnit;
-pub const normVecRLen        = VecRmath.normVecRLen;
+pub const normVecRUnit       = vecRmath.normVecRUnit;
+pub const normVecRLen        = vecRmath.normVecRLen;
 
-pub const addVecR            = VecRmath.addVecR;
-pub const subVecR            = VecRmath.subVecR;
-pub const mulVecR            = VecRmath.mulVecR;
-pub const divVecR            = VecRmath.divVecR;
+pub const addVecR            = vecRmath.addVecR;
+pub const subVecR            = vecRmath.subVecR;
+pub const mulVecR            = vecRmath.mulVecR;
+pub const divVecR            = vecRmath.divVecR;
 
-pub const getVecRDist        = VecRmath.getVecRDist;
-pub const getVecRCartDist    = VecRmath.getVecRCartDist;
-pub const getVecRSqrDist     = VecRmath.getVecRSqrDist;
+pub const getVecRDist        = vecRmath.getVecRDist;
+pub const getVecRCartDist    = vecRmath.getVecRCartDist;
+pub const getVecRSqrDist     = vecRmath.getVecRSqrDist;
 
-pub const getVecRDistX       = VecRmath.getVecRDistX;
-pub const getVecRDistY       = VecRmath.getVecRDistY;
-pub const getVecRDistR       = VecRmath.getVecRDistR;
+pub const getVecRDistX       = vecRmath.getVecRDistX;
+pub const getVecRDistY       = vecRmath.getVecRDistY;
+pub const getVecRDistR       = vecRmath.getVecRDistR;
 
-pub const rotVecRDeg         = VecRmath.rotVecRDeg;
-pub const rotVecRRad         = VecRmath.rotVecRRad;
+pub const rotVecRDeg         = vecRmath.rotVecRDeg;
+pub const rotVecRRad         = vecRmath.rotVecRRad;
 
-pub const vecRToRad          = VecRmath.vecRToRad;
-pub const vecRToDeg          = VecRmath.vecRToDeg;
+pub const vecRToRad          = vecRmath.vecRToRad;
+pub const vecRToDeg          = vecRmath.vecRToDeg;
 
-pub const vecRAngularDistRad = VecRmath.vecRAngularDistRad;
-pub const vecRAngularDistDeg = VecRmath.vecRAngularDistDeg;
+pub const vecRAngularDistRad = vecRmath.vecRAngularDistRad;
+pub const vecRAngularDistDeg = vecRmath.vecRAngularDistDeg;
 
-pub const degToVecR          = VecRmath.degToVecR;
-pub const radToVecR          = VecRmath.radToVecR;
+pub const degToVecR          = vecRmath.degToVecR;
+pub const radToVecR          = vecRmath.radToVecR;
 
-pub const degToVecRScaled    = VecRmath.degToVecRScaled;
-pub const radToVecRScaled    = VecRmath.radToVecRScaled;
+pub const degToVecRScaled    = vecRmath.degToVecRScaled;
+pub const radToVecRScaled    = vecRmath.radToVecRScaled;
 
 
 // ======== Vec3 ========
 
-pub const Vec3math = @import( "utils/vec3math.zig" );
+pub const vec3math = @import( "utils/vec3math.zig" );
 
-pub const Vec3           = Vec3math.Vec3;
-pub const newVec3        = Vec3math.newVec3;
+pub const Vec3           = vec3math.Vec3;
+pub const newVec3        = vec3math.newVec3;
+pub const zeroVec3       = vec3math.zeroVec3;
 
-pub const addValToVec3   = Vec3math.addValToVec3;
-pub const subValFromVec3 = Vec3math.subValFromVec3;
-pub const mulVec3ByVal   = Vec3math.mulVec3ByVal;
-pub const divVec3ByVal   = Vec3math.divVec3ByVal;
+pub const addValToVec3   = vec3math.addValToVec3;
+pub const subValFromVec3 = vec3math.subValFromVec3;
+pub const mulVec3ByVal   = vec3math.mulVec3ByVal;
+pub const divVec3ByVal   = vec3math.divVec3ByVal;
 
-pub const normVec3Unit   = Vec3math.normVec3Unit;
-pub const normVec3Len    = Vec3math.normVec3Len;
+pub const normVec3Unit   = vec3math.normVec3Unit;
+pub const normVec3Len    = vec3math.normVec3Len;
 
-pub const addVec3        = Vec3math.addVec3;
-pub const subVec3        = Vec3math.subVec3;
-pub const mulVec3        = Vec3math.mulVec3;
-pub const divVec3        = Vec3math.divVec3;
+pub const addVec3        = vec3math.addVec3;
+pub const subVec3        = vec3math.subVec3;
+pub const mulVec3        = vec3math.mulVec3;
+pub const divVec3        = vec3math.divVec3;
 
-pub const getDist        = Vec3math.getDist;
-pub const getCartDist    = Vec3math.getCartDist;
-pub const getSqrDist     = Vec3math.getSqrDist;
+pub const getDist        = vec3math.getDist;
+pub const getCartDist    = vec3math.getCartDist;
+pub const getSqrDist     = vec3math.getSqrDist;
 
-pub const getDistX       = Vec3math.getDistX;
-pub const getDistY       = Vec3math.getDistY;
-pub const getDistZ       = Vec3math.getDistZ;
+pub const getDistX       = vec3math.getDistX;
+pub const getDistY       = vec3math.getDistY;
+pub const getDistZ       = vec3math.getDistZ;
 
-pub const getDistXY      = Vec3math.getDistXY;
-pub const getDistXZ      = Vec3math.getDistXZ;
-pub const getDistYZ      = Vec3math.getDistYZ;
+pub const getDistXY      = vec3math.getDistXY;
+pub const getDistXZ      = vec3math.getDistXZ;
+pub const getDistYZ      = vec3math.getDistYZ;
 
-pub const getSqrDistXY   = Vec3math.getSqrDistXY;
-pub const getSqrDistXZ   = Vec3math.getSqrDistXZ;
-pub const getSqrDistYZ   = Vec3math.getSqrDistYZ;
+pub const getSqrDistXY   = vec3math.getSqrDistXY;
+pub const getSqrDistXZ   = vec3math.getSqrDistXZ;
+pub const getSqrDistYZ   = vec3math.getSqrDistYZ;
 
-pub const getCylnDistXY  = Vec3math.getCylnDistXY;
-pub const getCylnDistXZ  = Vec3math.getCylnDistXZ;
-pub const getCylnDistYZ  = Vec3math.getCylnDistYZ;
+pub const getCylnDistXY  = vec3math.getCylnDistXY;
+pub const getCylnDistXZ  = vec3math.getCylnDistXZ;
+pub const getCylnDistYZ  = vec3math.getCylnDistYZ;
 
 
 
