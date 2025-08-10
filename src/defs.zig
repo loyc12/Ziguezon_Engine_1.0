@@ -3,20 +3,19 @@ pub const ray = @import( "raylib" );
 
 pub const col    = @import( "utils/colour.zig" );
 pub const timer  = @import( "utils/timer.zig" );
-pub const uuid   = @import( "utils/uuid.zig" );
 pub const rng    = @import( "utils/rng.zig" );
 
 pub var G_RNG : rng.randomiser = .{};
 
 pub fn initAllUtils( allocator : std.mem.Allocator ) void
 {
+  _ = allocator;
+
   logger.initLogTimer();
   logger.initFile();
 
   rng.initGlobalRNG();
   G_RNG = rng.G_RNG;
-
-  uuid.initAvailableUUIDs( allocator );
 }
 
 pub fn deinitAllUtils() void
@@ -24,8 +23,6 @@ pub fn deinitAllUtils() void
   logger.deinitFile();
 
   G_RNG = undefined;
-
-  uuid.deinitAvailableUUIDs();
 }
 
 // ================================ DEFINITIONS ================================
