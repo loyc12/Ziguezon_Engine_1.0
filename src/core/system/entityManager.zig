@@ -45,7 +45,6 @@ pub const EntityManager = struct
       def.log( .ERROR, 0, @src(), "Entity manager is not initialized : cannot recalculate maxID", .{});
       return;
     }
-
     var newMaxID: u32 = 0;
 
     for( self.entities.items )| *e |
@@ -60,10 +59,6 @@ pub const EntityManager = struct
     else if( newMaxID > self.maxID )
     {
       def.log( .WARN, 0, @src(), "Recalculated maxID {d} is greater than previous maxID {d}", .{ newMaxID, self.maxID });
-    }
-    else
-    {
-      def.log( .TRACE, 0, @src(), "Recalculated maxID {d} is equal to previous maxID {d}", .{ newMaxID, self.maxID });
     }
 
     self.maxID = newMaxID;
@@ -214,7 +209,7 @@ pub const EntityManager = struct
     }
 
     return self.addEntity( Entity{
-      .pos    = def.VecR{ .x = 0.0, .y = 0.0, .z = 0.0 },
+      .pos    = def.newVecR( 0, 0, 0 ),
       .colour = def.newColour( 255, 255, 255, 255 ),
       .shape  = .RECT,
     });
@@ -267,7 +262,6 @@ pub const EntityManager = struct
     }
 
     self.recalcMaxID();
-    def.log( .DEBUG, 0, @src(), "All Entities marked for deletion have been deleted : new maxID == {d}", .{ self.maxID });
   }
 
   // ================================ RENDER FUNCTIONS ================================
