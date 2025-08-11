@@ -30,12 +30,12 @@ pub inline fn getMouseWorldPos()  def.Vec2
 
 // ================================ SCREEN MANAGER ================================
 
-pub const viewManager = struct
+pub const ViewManager = struct
 {
   hasCamera : bool = false,
   mainCamera : def.ray.Camera2D = undefined,
 
-  pub fn init( self : *viewManager, alloc : std.mem.Allocator ) void
+  pub fn init( self : *ViewManager, alloc : std.mem.Allocator ) void
   {
     def.qlog( .TRACE, 0, @src(), "Initializing screen manager..." );
 
@@ -56,7 +56,7 @@ pub const viewManager = struct
 
     def.qlog( .INFO, 0, @src(), "Screen manager initialized." );
   }
-  pub fn deinit( self : *viewManager ) void
+  pub fn deinit( self : *ViewManager ) void
   {
     def.qlog( .TRACE, 0, @src(), "Deinitializing screen manager..." );
 
@@ -71,7 +71,7 @@ pub const viewManager = struct
 
   // ================ CAMERA ACCESSORS / MUTATORS ================
 
-  pub fn getMainCamera( self : *const viewManager ) ?def.ray.Camera2D
+  pub fn getMainCamera( self : *const ViewManager ) ?def.ray.Camera2D
   {
     if( !self.hasCamera )
     {
@@ -81,7 +81,7 @@ pub const viewManager = struct
     return self.mainCamera;
   }
 
-  pub fn setMainCameraZoom( self : *viewManager, zoom : f32 ) void
+  pub fn setMainCameraZoom( self : *ViewManager, zoom : f32 ) void
   {
     if( !self.hasCamera )
     {
@@ -92,7 +92,7 @@ pub const viewManager = struct
     def.log( .DEBUG, 0, @src(), "Main camera zoom set to {d}", .{ zoom });
   }
 
-  pub fn setMainCameraTarget( self : *viewManager, target : def.Vec2 ) void
+  pub fn setMainCameraTarget( self : *ViewManager, target : def.Vec2 ) void
   {
     if( !self.hasCamera )
     {
@@ -103,7 +103,7 @@ pub const viewManager = struct
     def.log( .DEBUG, 0, @src(), "Main camera target set to {d}:{d}", .{ target.x, target.y });
   }
 
-  pub fn setMainCameraOffset( self : *viewManager, offset : def.Vec2 ) void
+  pub fn setMainCameraOffset( self : *ViewManager, offset : def.Vec2 ) void
   {
     if( !self.hasCamera )
     {
@@ -114,7 +114,7 @@ pub const viewManager = struct
     def.log( .DEBUG, 0, @src(), "Main camera offset set to {d}:{d}", .{ offset.x, offset.y });
   }
 
-  pub fn setMainCameraRotation( self : *viewManager, rotation : f32 ) void
+  pub fn setMainCameraRotation( self : *ViewManager, rotation : f32 ) void
   {
     if( !self.hasCamera )
     {
@@ -125,7 +125,7 @@ pub const viewManager = struct
     def.log( .DEBUG, 0, @src(), "Main camera rotation set to {d}", .{ rotation });
   }
 
-  pub fn zoomBy( self : *viewManager, factor : f32 ) void
+  pub fn zoomBy( self : *ViewManager, factor : f32 ) void
   {
     if( !self.hasCamera )
     {
