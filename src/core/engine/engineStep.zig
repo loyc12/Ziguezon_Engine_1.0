@@ -23,7 +23,7 @@ pub fn loopLogic( ng : *Engine ) void
   {
     def.tryHook( .OnLoopCycle, .{ ng });
 
-    // NOTE : Debug logging for the frame time
+    // Debug logging the frame time
     if( comptime def.logger.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
     else { def.logger.logLapTime(); }
 
@@ -47,7 +47,6 @@ pub fn loopLogic( ng : *Engine ) void
 pub fn updateInputs( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
-  // This function is used to get input from the user, such as keyboard or mouse input.
 
   def.tryHook( .OnUpdateInputs, .{ ng });
   {
@@ -60,9 +59,9 @@ pub fn updateInputs( ng : *Engine ) void
 }
 
 
-pub fn tickEntities( ng : *Engine ) void           // TODO : use tick rate instead of frame time
+pub fn tickEntities( ng : *Engine ) void    // TODO : use tick rate instead of frame time
 {
-  if( !ng.isPlaying() ){ return; } // skip this function if the game is paused
+  if( !ng.isPlaying() ){ return; }
 
   def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
 
@@ -78,14 +77,13 @@ pub fn tickEntities( ng : *Engine ) void           // TODO : use tick rate inste
 }
 
 
-pub fn renderGraphics( ng : *Engine ) void
+pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture instead
 {
   def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
 
   def.ray.beginDrawing();
   defer def.ray.endDrawing();
 
-  // Background Rendering mode
   def.tryHook( .OnRenderBackground, .{ ng });
   {
     // TODO : Render the backgrounds here
@@ -94,7 +92,6 @@ pub fn renderGraphics( ng : *Engine ) void
 
   if( ng.viewManager.getMainCamera() )| camera |
   {
-    // World Rendering mode
     def.ray.beginMode2D( camera );
     {
       def.tryHook( .OnRenderWorld, .{ ng });
@@ -107,7 +104,6 @@ pub fn renderGraphics( ng : *Engine ) void
   }
   else { def.qlog( .WARN, 0, @src(), "No main camera initialized, skipping world rendering" ); }
 
-  // UI Rendering mode
   def.tryHook( .OnRenderOverlay, .{ ng });
   {
     // TODO : Render the UI elements here

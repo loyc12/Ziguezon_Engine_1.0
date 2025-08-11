@@ -136,4 +136,15 @@ pub const ViewManager = struct
 
     def.log( .DEBUG, 0, @src(), "Main camera zoom changed by {d}", .{ factor });
   }
+
+  pub fn moveBy( self : *ViewManager, offset : def.Vec2 ) void
+  {
+    if( !self.hasCamera )
+    {
+      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
+      return;
+    }
+    self.mainCamera.target = def.addVec2( self.mainCamera.target, offset );
+    def.log( .DEBUG, 0, @src(), "Main camera moved by {d}:{d}", .{ offset.x, offset.y });
+  }
 };

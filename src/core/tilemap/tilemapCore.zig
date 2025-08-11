@@ -143,7 +143,7 @@ pub const Tilemap = struct
     return newMap;
   }
 
-  pub fn deInit( self : *Tilemap, allocator : std.mem.Allocator ) void
+  pub fn deInit( self : *Tilemap ) void
   {
     if( !self.isInit() )
     {
@@ -152,7 +152,7 @@ pub const Tilemap = struct
     }
 
     def.log( .DEBUG, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
-    self.tileArray.deinit( allocator );
+    self.tileArray.deinit();
     self.setFlag( e_tlmp_flags.DELETE,  true );
     self.setFlag( e_tlmp_flags.IS_INIT, false );
     self.setFlag( e_tlmp_flags.ACTIVE,  false );

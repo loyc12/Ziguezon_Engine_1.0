@@ -19,6 +19,7 @@ pub const ResourceManager = struct
 
     def.qlog( .INFO, 0, @src(), "Resource manager initialized." );
   }
+
   pub fn deinit( self : *ResourceManager ) void
   {
     def.qlog( .TRACE, 0, @src(), "Deinitializing resource manager..." );
@@ -44,7 +45,6 @@ pub const ResourceManager = struct
     def.qlog( .INFO, 0, @src(), "Resource manager deinitialized." );
   }
 
-
   // Get resources from the map
   pub fn getAudio( self : *const ResourceManager, name : [ :0 ]const u8 ) ?def.ray.Sound
   {
@@ -62,7 +62,6 @@ pub const ResourceManager = struct
   {
     return self.sprites.get( name );
   }
-
 
   // Add resources from raylib struct
   pub fn addAudio( self : *ResourceManager, name : [ :0 ]const u8, audio : def.ray.Sound ) !void
@@ -85,7 +84,6 @@ pub const ResourceManager = struct
     def.log( .DEBUG, 0, @src(), "Adding sprite: {s}", .{ name });
     try self.sprites.put( name, sprite );
   }
-
 
   // Add resources from file
   pub fn addAudioFromFile( self : *ResourceManager, name : [ :0 ]const u8, filePath : [ :0 ]const u8 ) !void
@@ -115,7 +113,6 @@ pub const ResourceManager = struct
     const texture : def.ray.texture2D = try def.ray.loadTexture( filePath );
     try self.addSprite( name, texture );
   }
-
 
   // Sound action Shortcuts
   pub fn playAudio( self : *ResourceManager, name : [ :0 ]const u8 ) void

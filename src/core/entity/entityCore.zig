@@ -73,6 +73,7 @@ pub const Entity = struct
 
 
   // ================ POSITION FUNCTIONS ================
+  // Uses AABB positioning
 
   const nttPos = @import( "entityPos.zig" );
 
@@ -93,10 +94,6 @@ pub const Entity = struct
   // POSITION SETTERS
   pub inline fn setCenter( self : *Entity, newPos : Vec2 ) void { self.pos.x = newPos.x; self.pos.y = newPos.y; }
   pub inline fn setRot(    self : *Entity, newRot : f32  ) void { self.pos.z = newRot; }
-
-  pub inline fn setPos( self : *Entity, x : f32, y : f32, r : f32 ) void { self.pos.x = x; self.pos.y = y; self.pos.z = r; }
-  pub inline fn setVel( self : *Entity, x : f32, y : f32, r : f32 ) void { self.vel.x = x; self.vel.y = y; self.vel.z = r; }
-  pub inline fn setAcc( self : *Entity, x : f32, y : f32, r : f32 ) void { self.acc.x = x; self.acc.y = y; self.acc.z = r; }
 
   pub inline fn cpyEntityPos( self : *Entity, other : *const Entity ) void { nttPos.cpyEntityPos( self, other ); }
   pub inline fn cpyEntityVel( self : *Entity, other : *const Entity ) void { nttPos.cpyEntityVel( self, other ); }
@@ -143,6 +140,7 @@ pub const Entity = struct
 
   // MOVEMENT FUNCTIONS
   pub inline fn moveSelf( self : *Entity, sdt : f32 ) void { nttPos.moveSelf( self, sdt ); }
+
 
   // ================ COLLISION FUNCTIONS ================
 

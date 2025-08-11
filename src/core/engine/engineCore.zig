@@ -36,7 +36,7 @@ pub const Engine = struct
     if( newTimeScale < 0 )
     {
       def.log( .WARN, 0, @src(), "Cannot set time scale to {d}: clamping to 0", .{ newTimeScale });
-      self.timeScale = 0.0; // Clamping the time scale to 0
+      self.timeScale = 0.0;
       return;
     }
 

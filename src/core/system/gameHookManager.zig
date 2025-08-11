@@ -89,20 +89,17 @@ pub const gameHooks = struct
 
   // ================================ GAME HOOKS FUNCTIONS ================================
 
-  // Initializes the game hooks from a given module
   pub fn initHooks( self : *gameHooks, module : anytype ) void
   {
     def.qlog( .TRACE, 0, @src(), "Initializing game hooks..." );
 
     if( @typeInfo( module ) != .@"struct" )
     {
-      //@compileError( "gameHooks.initHooks() expects a struct ( module ) type" );
       def.log( .ERROR, 0, @src(), "gameHooks.initHooks() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
       return;
     }
 
     // Engine State hooks
-
     if( @hasDecl( module, "OnStart" )) self.OnStart = @field( module, "OnStart" );
     if( @hasDecl( module, "OnStop"  )) self.OnStop  = @field( module, "OnStop"  );
 
@@ -113,20 +110,17 @@ pub const gameHooks = struct
     if( @hasDecl( module, "OnPause" )) self.OnPause = @field( module, "OnPause" );
 
     // Engine Step Hooks
-
     if( @hasDecl( module, "OnLoopStart" )) self.OnLoopStart = @field( module, "OnLoopStart" );
     if( @hasDecl( module, "OnLoopEnd"   )) self.OnLoopEnd   = @field( module, "OnLoopEnd"   );
     if( @hasDecl( module, "OnLoopCycle" )) self.OnLoopCycle = @field( module, "OnLoopCycle" );
 
     // Update and Tick Hooks
-
     if( @hasDecl( module, "OnUpdateInputs"  )) self.OnUpdateInputs  = @field( module, "OnUpdateInputs"  );
   //if( @hasDecl( module, "OffUpdateInputs" )) self.OffUpdateInputs = @field( module, "OffUpdateInputs" );
     if( @hasDecl( module, "OnTickEntities"  )) self.OnTickEntities  = @field( module, "OnTickEntities"  );
     if( @hasDecl( module, "OffTickEntities" )) self.OffTickEntities = @field( module, "OffTickEntities" );
 
     // Rendering Hooks
-
     if( @hasDecl( module, "OnRenderBackground"  )) self.OnRenderBackground  = @field( module, "OnRenderBackground"  );
   //if( @hasDecl( module, "OffRenderBackground" )) self.OffRenderBackground = @field( module, "OffRenderBackground" );
 
@@ -137,7 +131,6 @@ pub const gameHooks = struct
   //if( @hasDecl( module, "OffRenderOverlay" )) self.OffRenderOverlay = @field( module, "OffRenderOverlay" );
 
     self.checkHookValidities();
-
     def.qlog( .INFO, 0, @src(), "Available game hooks initialized" );
   }
 
@@ -167,7 +160,6 @@ pub const gameHooks = struct
     const hookFunct = switch( tag )
     {
       // Engine State Hooks
-
       .OnStart => self.OnStart,
       .OnStop  => self.OnStop,
 
@@ -178,13 +170,11 @@ pub const gameHooks = struct
       .OnPause => self.OnPause,
 
       // Engine Step Hooks
-
       .OnLoopStart => self.OnLoopStart,
       .OnLoopEnd   => self.OnLoopEnd,
       .OnLoopCycle => self.OnLoopCycle,
 
       // Update and Tick Hooks
-
       .OnUpdateInputs  => self.OnUpdateInputs,
     //.OffUpdateInputs => self.OffUpdateInputs,
 
@@ -192,7 +182,6 @@ pub const gameHooks = struct
       .OffTickEntities => self.OffTickEntities,
 
       // Rendering Hooks
-
       .OnRenderBackground  => self.OnRenderBackground,
     //.OffRenderBackground => self.OffRenderBackground,
 
@@ -205,7 +194,7 @@ pub const gameHooks = struct
 
     if( hookFunct  )| func |
     {
-      // def.log( .DEBUG, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
+      def.log( .TRACE, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
       switch( args.len )
       {
         1 => func( args[ 0 ] ),

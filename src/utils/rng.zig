@@ -76,7 +76,7 @@ pub const randomiser = struct
   {
     var tmp = self.rng.float( f32 );
 
-    tmp =  ( tmp * 2.0 ) - 1.0;      // Scale to range [-1, 1]
+    tmp = ( tmp * 2.0 ) - 1.0;      // Scale to range [-1, 1]
     return( tmp * scale ) + offset; // Scale and offset the value
   }
 
@@ -93,11 +93,11 @@ pub const randomiser = struct
   {
     var tmp = self.getVec2(); // Get a random unit vector
 
-    tmp.x *= scale.x;  // Scale the x component
-    tmp.y *= scale.y;  // Scale the y component
+    tmp.x *= scale.x;
+    tmp.y *= scale.y;
 
-    tmp.x += offset.x; // Offset the x component
-    tmp.y += offset.y; // Offset the y component
+    tmp.x += offset.x;
+    tmp.y += offset.y;
 
     return tmp;
   }
@@ -114,13 +114,13 @@ pub const randomiser = struct
   {
     var tmp = self.getVecR(); // Get a random unit vector
 
-    tmp.x *= scale.x;  // Scale the x component
-    tmp.y *= scale.y;  // Scale the y component
-    tmp.z *= scale.z;  // Scale the rotation component
+    tmp.x *= scale.x;
+    tmp.y *= scale.y;
+    tmp.z *= scale.z;
 
-    tmp.x += offset.x; // Offset the x component
-    tmp.y += offset.y; // Offset the y component
-    tmp.z += offset.z; // Offset the rotation component
+    tmp.x += offset.x;
+    tmp.y += offset.y;
+    tmp.z += offset.z;
 
     return tmp;
   }
@@ -130,7 +130,7 @@ pub const randomiser = struct
   pub fn getVec3( self : *randomiser ) def.Vec3
   {
     const theta = self.rng.float( f32 ) * std.math.tau; // [0, 2π)
-    const z =   ( self.rng.float( f32 ) * 2.0 ) - 1.0;  // [-1, 1] // NOTE : Prevents the vector from being too close to the poles, garnteeing a uniform distribution in 3D space
+    const z =   ( self.rng.float( f32 ) * 2.0 ) - 1.0;  // [-1, 1] // NOTE : Prevents the vector from being too close to the poles, garanteeing a uniform distribution in 3D space
     const r = @sqrt( 1.0 - z * z );
 
     return def.Vec3{
@@ -145,13 +145,13 @@ pub const randomiser = struct
   {
     var tmp = self.getVec3(); // Get a random unit vector
 
-    tmp.x *= scale.x;  // Scale the x component
-    tmp.y *= scale.y;  // Scale the y component
-    tmp.z *= scale.z;  // Scale the z component
+    tmp.x *= scale.x;
+    tmp.y *= scale.y;
+    tmp.z *= scale.z;
 
-    tmp.x += offset.x; // Offset the x component
-    tmp.y += offset.y; // Offset the y component
-    tmp.z += offset.z; // Offset the z component
+    tmp.x += offset.x;
+    tmp.y += offset.y;
+    tmp.z += offset.z;
 
     return tmp;
   }

@@ -58,7 +58,6 @@ pub fn renderEntity( self : *const Entity ) void
 
   switch( self.shape )
   {
-    // NOTE : Exhaustively listing the possible enums, so that the compiler warns if a shape is unimplemented
     .NONE => {},
 
     .LINE => { drawDirectionLine( self, self.colour, 2.0 ); },

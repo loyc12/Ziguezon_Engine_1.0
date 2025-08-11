@@ -29,7 +29,7 @@ pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 // Emit particles in a given position and velocity range, with the given colour
 pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : VecR, amount : u32, colour : def.Colour ) void
 {
-  ng.entityManager.entities.ensureTotalCapacity( ng.entityManager.entities.items.len + amount ) catch |err|
+  ng.entityManager.entityList.ensureTotalCapacity( ng.entityManager.entityList.items.len + amount ) catch |err|
   {
     def.log(.ERROR, 0, @src(), "Failed to preallocate entity capacity for particles: {}", .{ err });
     return;
@@ -87,6 +87,9 @@ var   SCORES    : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 const B_MIN_BOUNCE_SPEED_X : f32 = 128.0; // Minimum parallel speed of the ball when bouncing off players
 const B_MIN_BOUNCE_SPEED_Y : f32 = 256.0; // Minimum perpendicular speed of the ball when bouncing off players
 
+const B_KIN_TRANS_FACTOR_X : f32 = 0.25; // How much of the player's velocity is given to the ball on bounce ( horizontal )
+const B_KIN_TRANS_FACTOR_Y : f32 = 0.25; // How much of the player's velocity is given to the ball on bounce ( vertical )
+
 pub fn ensureBallMinSpeeds( ball : *Entity ) void
 {
   if( ball.vel.x > 0 ){ ball.vel.x = @max( ball.vel.x,  B_MIN_BOUNCE_SPEED_X ); }
@@ -117,9 +120,9 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
         return;
       };
 
-      ball.setPos( 0, 0, 0 );
-      ball.setVel( 0, 0, 0 );
-      ball.setAcc( 0, 0, 0 );
+      ball.pos = def.newVecR( 0, 0, 0 );
+      ball.vel = def.newVecR( 0, 0, 0 );
+      ball.acc = def.newVecR( 0, 0, 0 );
 
       // Reset the positions of the ball shadows
       for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
@@ -140,6 +143,12 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ P2_MV_FAC = @max( P2_MV_FAC - MV_FAC_STEP, -MV_FAC_CAP ); }
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
+    // Move the camera with the numpad keys
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.viewManager.moveBy( def.newVec2(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.viewManager.moveBy( def.newVec2(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.viewManager.moveBy( def.newVec2( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.viewManager.moveBy( def.newVec2(  8,  0 )); }
+
     // Zoom in and out with the mouse wheel
     if( def.ray.getMouseWheelMove() > 0.0 ){ ng.viewManager.zoomBy( 1.111 ); }
     if( def.ray.getMouseWheelMove() < 0.0 ){ ng.viewManager.zoomBy( 0.900 ); }
@@ -148,6 +157,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
     {
       ng.viewManager.setMainCameraZoom( 1.0 );
+      ng.viewManager.setMainCameraTarget( def.zeroVec2() );
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -337,10 +347,10 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
     if( ball.vel.y > 0 )
     {
       ball.vel.y  = -ball.vel.y * playerBounceFactorY;
-      ball.vel.y -= @abs( p1.vel.x ) / 3.0;
+      ball.vel.y -= @abs( p1.vel.x ) * B_KIN_TRANS_FACTOR_Y;
 
       ball.vel.x *= playerBounceFactorX;
-      ball.vel.x += p1.vel.x / 2.0;
+      ball.vel.x += p1.vel.x * B_KIN_TRANS_FACTOR_X;
 
       ensureBallMinSpeeds( ball );
       emitParticlesOnBounce( ng, ball );
@@ -357,10 +367,10 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
     if( ball.vel.y > 0 )
     {
       ball.vel.y  = -ball.vel.y * playerBounceFactorY;
-      ball.vel.y -= @abs( p2.vel.x ) / 3.0;
+      ball.vel.y -= @abs( p2.vel.x ) * B_KIN_TRANS_FACTOR_Y;
 
       ball.vel.x *= playerBounceFactorX;
-      ball.vel.x += p2.vel.x / 2.0;
+      ball.vel.x += p2.vel.x * B_KIN_TRANS_FACTOR_X;
 
       ensureBallMinSpeeds( ball );
       emitParticlesOnBounce( ng, ball );
@@ -383,12 +393,12 @@ pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
   var s2_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 2's score
 
   // Convert the scores to strings
-  const s1_slice = std.fmt.bufPrint(&s1_buff, "{d}", .{ SCORES[ 0 ]}) catch | err |
+  const s1_slice = std.fmt.bufPrint( &s1_buff, "{d}", .{ SCORES[ 0 ]}) catch | err |
   {
       def.log(.ERROR, 0, @src(), "Failed to format score for player 1: {}", .{err});
       return;
   };
-  const s2_slice  = std.fmt.bufPrint(&s2_buff, "{d}", .{ SCORES[ 1 ]}) catch | err |
+  const s2_slice  = std.fmt.bufPrint( &s2_buff, "{d}", .{ SCORES[ 1 ]}) catch | err |
   {
       def.log(.ERROR, 0, @src(), "Failed to format score for player 2: {}", .{ err });
       return;
@@ -398,9 +408,13 @@ pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
   s1_buff[ s1_slice.len ] = 0;
   s2_buff[ s2_slice.len ] = 0;
 
+  // Find the center of each field in screen space
+  const p1_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() *  0.25, 0 ), ng.viewManager.mainCamera );
+  const p2_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() * -0.25, 0 ), ng.viewManager.mainCamera );
+
   // Draw each player's score in the middle of their respective fields
-  def.drawCenteredText( &s1_buff, def.getScreenWidth() * 0.25, def.getScreenHeight() * 0.5, 64, def.Colour.blue );
-  def.drawCenteredText( &s2_buff, def.getScreenWidth() * 0.75, def.getScreenHeight() * 0.5, 64, def.Colour.red );
+  def.drawCenteredText( &s1_buff, p1_score_pos.x, p1_score_pos.y, 64, def.Colour.blue );
+  def.drawCenteredText( &s2_buff, p2_score_pos.x, p2_score_pos.y, 64, def.Colour.red );
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {

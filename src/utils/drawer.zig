@@ -56,6 +56,8 @@ pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, w
   ray.drawRectangleLinesEx( ray.Rectangle{ .x = pos.x, .y = pos.y, .width = size.x, .height = size.y }, width, col );
 }
 
+// TODO : Add a drawSimplePolygon(Lines) function
+
 
 // ================ BASIC DRAWING FUNCTIONS ================
 
@@ -127,7 +129,6 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour, 
     P1 = P2;
   }
 }
-
 
 // Draws a triangle centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void

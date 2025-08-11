@@ -1,8 +1,9 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Engine  = def.Engine;
+const Engine     = def.Engine;
 const e_ng_state = def.ngn.e_ng_state;
+
 
 // ================================ ENGINE STATE FUNCTIONS ================================
 
@@ -15,7 +16,6 @@ pub fn changeState( ng : *Engine, targetState : e_ng_state ) void
   }
   else { def.qlog( .TRACE, 0, @src(), "Changing state" ); }
 
-  // If the target state is higher than the current state,
   if( @intFromEnum( targetState ) > @intFromEnum( ng.state ) )
   {
     def.log( .INFO, 0, @src(), "Increasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
@@ -33,7 +33,7 @@ pub fn changeState( ng : *Engine, targetState : e_ng_state ) void
       },
     }
   }
-  else // If the target state is lower than the current state, we are decreasing the state
+  else
   {
     def.log( .INFO, 0, @src(), "Decreasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
 
@@ -50,8 +50,9 @@ pub fn changeState( ng : *Engine, targetState : e_ng_state ) void
       },
     }
   }
+
+  // TODO : use "switch continue" instead of recursion, once it is available in Zig
   // Recursively calling changeState to pass through all intermediate state changes ( if needed )
-  // TODO : use "switch continue" instead of recursion ?
   if( ng.state != targetState ){ ng.changeState( targetState ); }
 }
 
@@ -84,7 +85,7 @@ pub fn start( ng : *Engine ) void
 
 pub fn stop( ng : *Engine ) void
 {
-  if( ng.state == .OFF )
+  if( ng.state != .STARTED )
   {
     def.log( .WARN, 0, @src(), "Cannot stop the engine in state {s}", .{ @tagName( ng.state ) });
     return;
@@ -131,12 +132,12 @@ pub fn open( ng : *Engine ) void
   }
   // Initialize relevant raylib components
   {
-    def.ray.setConfigFlags(
+    def.ray.setConfigFlags( // Set the window flags
       .{
         //.window_resizable   = true, // Allow the window to be resized
         //.window_undecorated = true, // Show the window decorations ( title bar, close button, etc. )
       }
-    ); // Set the window flags
+    );
 
     def.ray.setTargetFPS( def.DEF_TARGET_FPS );
     def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Opens the window
@@ -218,7 +219,7 @@ pub fn togglePause( ng : *Engine ) void
     .PLAYING => { pause( ng ); },
     else =>
     {
-      def.log( .WARN, 0, @src(), "Cannot toggle pause in current state ({s})", .{ @tagName( ng.state ) });
+      def.log( .WARN, 0, @src(), "Cannot toggle pause in state ({s})", .{ @tagName( ng.state ) });
       return;
     },
   }
