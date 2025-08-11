@@ -189,12 +189,12 @@ pub fn OnTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( 
 
   ball.acc.y = B_GRAVITY;
 
-  // Swaps the positions of the ball shadows repeatedly
+  // Chainwap the positions of the ball shadows
   for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
 
   cpyEntityPosViaID( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
 
-  if( ng.entityManager.getMaxID() == stateInj.BALL_ID ){ return; } // If the ball is the last entity, no particles exist, so we can skip the rest of the function
+  if( ng.entityManager.getMaxID() == stateInj.BALL_ID ){ return; }
 
   for( stateInj.BALL_ID + 1 .. 1 + ng.entityManager.getMaxID() )| i |
   {
@@ -218,8 +218,8 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
 {
   // ================ VARIABLES AND CONSTANTS ================
 
-  const hWidth  : f32 = def.getScreenWidth()  / 2.0; // NOTE : uses the initial screen width  only
-  const hHeight : f32 = def.getScreenHeight() / 2.0; // NOTE : uses the initial screen height only
+  const hWidth  : f32 = def.getScreenWidth()  / 2.0;
+  const hHeight : f32 = def.getScreenHeight() / 2.0;
 
   const barHalfWidth        : f32 = 8.0;  // Half the width of the separator bar
   const playerSpeedFactor   : f32 = 64.0; // Base speed of the players
@@ -275,7 +275,7 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
 
       // Set the ball to be thrown towards player 1
       ball.vel.x = -B_BASE_VEL;
-      ball.pos.x =  hWidth / 2; // Set the ball horizontal position to the middle of player 2's field
+      ball.pos.x =  hWidth / 2;
     }
     else if( ball.pos.x > 0 ) // Player 1 scores a point
     {
@@ -284,13 +284,21 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
 
       // Set the ball to be thrown towards player 2
       ball.vel.x =  B_BASE_VEL;
-      ball.pos.x = -hWidth / 2; // Reset ball horizontal position to the middle of player 1's field
+      ball.pos.x = -hWidth / 2;
     }
     else // If the ball is in the middle of the screen, reset its horizontal position
     {
       def.qlog( .WARN, 0, @src(), "No player scored, throwing ball to Player 1" );
-      ball.vel.x = -B_BASE_VEL; // Set the ball horizontal velocity to the base velocity
-      ball.pos.x =  hWidth / 2; // Reset ball horizontal position to the middle of player 1's field
+      if( def.G_RNG.getVal( bool ))
+      {
+        ball.vel.x =  B_BASE_VEL;
+        ball.pos.x = -hWidth / 2;
+      }
+      else
+      {
+        ball.vel.x = -B_BASE_VEL;
+        ball.pos.x =  hWidth / 2;
+      }
     }
   }
   else if( ball.getTopY() <= -hHeight ) // Bounce the ball if it goes above the top of the screen

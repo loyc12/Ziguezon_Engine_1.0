@@ -45,9 +45,10 @@ pub const randomiser = struct
   {
     switch( @typeInfo( t ))
     {
-      .int     => return self.rng.int( t ),       // from int_min to int_max
-      .float   => return self.rng.float( t ),     // from 0.0 to 1.0
-      .@"enum" => return self.rng.enumValue( t ), // from the enumeration values
+      .int     => return self.rng.int( t ),              // from int_min to int_max
+      .bool    => return self.rng.int( u1 ) == 1,        // true or false
+      .float   => return self.rng.float( t ),            // from 0.0 to 1.0
+      .@"enum" => return self.rng.enumValue( t ),        // from the enumeration values
       else => @compileError("Unsupported type for random value generation"),
     }
   }
