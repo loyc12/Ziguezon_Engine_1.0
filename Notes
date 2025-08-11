@@ -57,8 +57,9 @@ Terraria-like              ( Sandbox )
 
 ======== PARTS ========
 
-GAME HOOKS
- > Review implementation
+REVIEW IMPLEMENTATIONS
+ > gameHooks
+ > timer
 
 FILE INTERACTION
  > SELECT & LOAD
@@ -94,11 +95,6 @@ SPRITE ATLAS
 
 ======== SYSTEMS ========
 
-COMPONENT SYSTEM
-> TRANSFORM ( pos, vel, acc )               ( to be used in a trnsfrm queue)
-> RENDER    ( col, sprite, layer, z? )      ( to be used in a render  queue )
-> COLLIDER  ( shape, scale, collideType ? ) ( to be used in a collide queue )
-
 INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
  > OnClick
@@ -111,9 +107,6 @@ ANIMATION MANAGER ?
  > Animation frames
  > Animation speed
  > Animation state
-
-CAMERA MANAGER
- > Position, Zoom, Rotation, Target, etc
 
 UI MANAGER
  > Text, Button, Slider, etc
