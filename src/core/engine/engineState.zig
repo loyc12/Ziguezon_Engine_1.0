@@ -70,12 +70,29 @@ pub fn start( ng : *Engine ) void
 
   // Initialize relevant raylib components
   {
-    def.ray.initAudioDevice();
+    if( !def.ray.isAudioDeviceReady() )
+    {
+      def.qlog( .INFO, 0, @src(), "# Initializing the audio device..." );
+      def.ray.initAudioDevice();
+    }
   }
   // Initialize relevant engine components
   {
-    ng.entityManager.init(   def.alloc );
-    ng.resourceManager.init( def.alloc );
+    if( !ng.resourceManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Initializing Resource manager" );
+      ng.resourceManager.init( def.alloc );
+    }
+    if( !ng.tilemapManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Initializing Tilemap manager" );
+      ng.tilemapManager.init( def.alloc );
+    }
+    if( !ng.entityManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Initializing Entity manager" );
+      ng.entityManager.init(   def.alloc );
+    }
   }
   def.tryHook( .OnStart, .{ ng });
 
@@ -96,11 +113,24 @@ pub fn stop( ng : *Engine ) void
 
   // Deinitialize relevant engine components
   {
-    ng.resourceManager.deinit();
-    ng.resourceManager = undefined;
-
-    ng.entityManager.deinit();
-    ng.entityManager = undefined;
+    if( ng.entityManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Deinitializing Entity manager" );
+      ng.entityManager.deinit();
+      ng.entityManager = null;
+    }
+    if( ng.tilemapManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Deinitializing Tilemap manager" );
+      ng.tilemapManager.deinit();
+      ng.tilemapManager = null;
+    }
+    if( ng.resourceManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Deinitializing Resource manager" );
+      ng.resourceManager.deinit();
+      ng.resourceManager = null;
+    }
   }
   // Deinitialize relevant raylib components
   {
@@ -128,7 +158,11 @@ pub fn open( ng : *Engine ) void
 
   // Initialize relevant engine components
   {
-    ng.viewManager.init( def.alloc );
+    if( !ng.viewManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Initializing View manager" );
+      ng.viewManager.init( def.alloc );
+    }
   }
   // Initialize relevant raylib components
   {
@@ -139,9 +173,12 @@ pub fn open( ng : *Engine ) void
       }
     );
 
-    def.ray.setTargetFPS( def.DEF_TARGET_FPS );
-    def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" ); // Opens the window
-    ng.viewManager.setMainCameraOffset( def.getHalfScreenSize() ); // Sets the camera offset to the center of the screen
+    if( !def.ray.isWindowReady() )
+    {
+      def.ray.setTargetFPS( def.DEF_TARGET_FPS );
+      def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" );
+      ng.viewManager.setMainCameraOffset( def.getHalfScreenSize() );
+    }
   }
   def.tryHook( .OnOpen, .{ ng });
 
@@ -172,8 +209,12 @@ pub fn close( ng : *Engine ) void
   }
   // Deinitialize relevant engine components
   {
-    ng.viewManager.deinit();
-    ng.viewManager = undefined;
+    if( ng.viewManager.isInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Deinitializing View manager" );
+      ng.viewManager.deinit();
+      ng.viewManager = null;
+    }
   }
 
   ng.state = .STARTED;
