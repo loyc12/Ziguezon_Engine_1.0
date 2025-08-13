@@ -30,12 +30,13 @@ pub fn OnLoopCycle( ng : *def.Engine ) void // Called by engine.loopLogic() ( ev
 pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   // Toggle pause if the P key is pressed
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Toggle the "DRAW_TEST" example flag if the T key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.t ))
   {
     DRAW_TEST = !DRAW_TEST;
+    ng.resourceManager.playAudio( "hit_1" );
     def.log( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
   }
 }
@@ -78,7 +79,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
 {
   if( DRAW_TEST ) // Example of a flag toggled feature
   {
-    def.ray.drawText( "TEST", def.rdm.getHalfScreenWidth(), def.rdm.getHalfScreenHeight(), 64, def.Colour.green );
+    def.drawCenteredText( "TEST", def.getHalfScreenWidth(), def.getHalfScreenHeight(), 64, def.Colour.green );
   }
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused

@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const Engine     = def.Engine;
-const e_ng_state = def.ngn.e_ng_state;
+const e_ng_state = def.ng.e_ng_state;
 
 
 // ================================ ENGINE STATE FUNCTIONS ================================

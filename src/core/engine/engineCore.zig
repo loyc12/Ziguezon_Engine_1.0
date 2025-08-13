@@ -19,9 +19,9 @@ pub const Engine = struct
   sdt       : f32 = 0.0, // Latest scaled delta time ( from last frame ) : == deltaTime * timeScale
 
   // Engine Components
-  resourceManager : def.rsm.ResourceManager = undefined,
-  entityManager   : def.ntm.EntityManager   = undefined,
-  viewManager     : def.vwm.ViewManager     = undefined,
+  resourceManager : def.res_m.ResourceManager = undefined,
+  entityManager   : def.ntt_m.EntityManager   = undefined,
+  viewManager     : def.scr_m.ViewManager     = undefined,
 
 
   // ================================ HELPER FUNCTIONS ================================

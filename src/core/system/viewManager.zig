@@ -25,7 +25,7 @@ pub inline fn getHalfScreenSize() def.Vec2
 pub inline fn getMouseScreenPos() def.Vec2 { return def.ray.getMousePosition(); }
 pub inline fn getMouseWorldPos()  def.Vec2
 {
-  return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ngn.mainCamera );
+  return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ng.mainCamera );
 }
 
 // ================================ SCREEN MANAGER ================================
@@ -44,8 +44,8 @@ pub const ViewManager = struct
     if( !self.hasCamera  )
     {
       self.mainCamera = def.ray.Camera2D{
-        .target = def.Vec2{ .x = 0, .y = 0 },
-        .offset = def.divVec2ByVal( def.DEF_SCREEN_DIMS, 2.0 ) orelse def.Vec2{ .x = 0, .y = 0 },
+        .target = def.Vec2{ .x = 0.0, .y = 0.0 },
+        .offset = def.divVec2ByVal( def.DEF_SCREEN_DIMS, 2.0 ) orelse def.Vec2{ .x = 0.0, .y = 0.0 },
         .rotation = 0.0,
         .zoom = 1.0,
       };

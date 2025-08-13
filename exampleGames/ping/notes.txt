@@ -1,0 +1,1 @@
+IDEA : add a maxConsecutiveBounce ( ex : 3 )

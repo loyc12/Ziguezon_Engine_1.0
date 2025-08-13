@@ -1,26 +1,26 @@
 pub const std = @import( "std" );
 pub const ray = @import( "raylib" );
 
-pub const tCol   = @import( "utils/colouriser.zig" );
-pub const timer  = @import( "utils/timer.zig" );
-pub const rng    = @import( "utils/rng.zig" );
+pub const col_u  = @import( "utils/colouriser.zig" );
+pub const tmr_u  = @import( "utils/timer.zig" );
+pub const rng_u  = @import( "utils/rng.zig" );
 
-pub var G_RNG : rng.randomiser = .{};
+pub var G_RNG : rng_u.randomiser = .{};
 
 pub fn initAllUtils( allocator : std.mem.Allocator ) void
 {
   _ = allocator;
 
-  logger.initLogTimer();
-  logger.initFile();
+  log_u.initLogTimer();
+  log_u.initFile();
 
-  rng.initGlobalRNG();
-  G_RNG = rng.G_RNG;
+  rng_u.initGlobalRNG();
+  G_RNG = rng_u.G_RNG;
 }
 
 pub fn deinitAllUtils() void
 {
-  logger.deinitFile();
+  log_u.deinitFile();
 
   G_RNG = undefined;
 }
@@ -33,30 +33,39 @@ pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
 
 // ================================ HOOK MANAGER ================================
 
-pub const ghm = @import( "core/system/gameHookManager.zig" );
-pub var G_HK : ghm.gameHooks = .{}; // NOTE : Global gameHooks struct instance
+pub const ghk_m = @import( "core/system/gameHookManager.zig" );
+pub var G_HK : ghk_m.gameHooks = .{}; // NOTE : Global gameHooks struct instance
 
-// NOTE : Initialize this in the main
-pub fn initHooks( module : anytype ) void                { G_HK.initHooks( module ); }
-pub fn tryHook( tag : ghm.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
+// NOTE : Do not forget to call def.initHooks( SpecificGameModule ) in your main function
+pub fn initHooks( module : anytype ) void                  { G_HK.initHooks( module ); }
+pub fn tryHook( tag : ghk_m.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 
 // ================================ ENGINE ================================
 
-pub const ngn = @import( "core/engine/engineCore.zig" );
-pub const Engine = ngn.Engine;
+pub const ng     = @import( "core/engine/engineCore.zig" );
+pub const Engine = ng.Engine;
 pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 
 // ================ MANAGERS ================
 
-pub const rsm = @import( "core/system/resourceManager.zig" );
-pub const ntm = @import( "core/system/entityManager.zig" );
+pub const res_m = @import( "core/system/resourceManager.zig" );
+pub const ntt_m = @import( "core/system/entityManager.zig" );
+pub const tlm_m = @import( "core/system/tilemapManager.zig" );
+pub const scr_m = @import( "core/system/viewManager.zig" );
 
 
 // ================ ENTITY SYSTEM ================
 
 pub const ntt    = @import( "core/entity/entityCore.zig" );
-pub const Entity = ntt.Entity; // Shorthand for the Entity struct
+pub const Entity = ntt.Entity;
+
+
+// ================ TILEMAP SYSTEM ================
+
+pub const tlm     = @import( "core/tilemap/tilemapCore.zig" );
+pub const Tile    = tlm.Tile;
+pub const Tilemap = tlm.Entity;
 
 
 // ================================ SHORTHANDS ================================
@@ -66,86 +75,84 @@ pub const alloc = std.heap.smp_allocator;
 
 // ================ SCREEN MNGR SHORTHANDS ================
 
-pub const vwm = @import( "core/system/viewManager.zig" );
+pub const getScreenWidth      = scr_m.getScreenWidth;
+pub const getScreenHeight     = scr_m.getScreenHeight;
+pub const getScreenSize       = scr_m.getScreenSize;
 
-pub const getScreenWidth      = vwm.getScreenWidth;
-pub const getScreenHeight     = vwm.getScreenHeight;
-pub const getScreenSize       = vwm.getScreenSize;
+pub const getHalfScreenWidth  = scr_m.getHalfScreenWidth;
+pub const getHalfScreenHeight = scr_m.getHalfScreenHeight;
+pub const getHalfScreenSize   = scr_m.getHalfScreenSize;
 
-pub const getHalfScreenWidth  = vwm.getHalfScreenWidth;
-pub const getHalfScreenHeight = vwm.getHalfScreenHeight;
-pub const getHalfScreenSize   = vwm.getHalfScreenSize;
-
-pub const getMouseScreenPos   = vwm.getMouseScreenPos;
-pub const getMouseWorldPos    = vwm.getMouseWorldPos;
+pub const getMouseScreenPos   = scr_m.getMouseScreenPos;
+pub const getMouseWorldPos    = scr_m.getMouseWorldPos;
 
 
 // ================ DRAWER SHORTHANDS ================
 
-pub const drawer = @import( "utils/drawer.zig" );
+pub const drw_u                    = @import( "utils/drawer.zig" );
 
-pub const coverScreenWith          = drawer.coverScreenWith;
+pub const coverScreenWith          = drw_u.coverScreenWith;
 
-pub const drawPixel                = drawer.drawPixel;
-pub const drawMacroPixel           = drawer.drawMacroPixel;
-pub const drawLine                 = drawer.drawLine;
-// pub const drawDotedLine            = drawer.drawDotedLine; // TODO : Implement this function
-pub const drawCircle               = drawer.drawCircle;
-pub const drawCircleLines          = drawer.drawCircleLines;
-pub const drawSimpleEllipse        = drawer.drawEllipse;
-pub const drawSimpleEllipseLines   = drawer.drawEllipseLines;
-pub const drawSimpleRectangle      = drawer.drawRectangle;
-pub const drawSimpleRectangleLines = drawer.drawRectangleLines;
+pub const drawPixel                = drw_u.drawPixel;
+pub const drawMacroPixel           = drw_u.drawMacroPixel;
+pub const drawLine                 = drw_u.drawLine;
+// pub const drawDotedLine            = drw_u.drawDotedLine; // TODO : Implement this function
+pub const drawCircle               = drw_u.drawCircle;
+pub const drawCircleLines          = drw_u.drawCircleLines;
+pub const drawSimpleEllipse        = drw_u.drawEllipse;
+pub const drawSimpleEllipseLines   = drw_u.drawEllipseLines;
+pub const drawSimpleRectangle      = drw_u.drawRectangle;
+pub const drawSimpleRectangleLines = drw_u.drawRectangleLines;
 
-pub const drawBasicTria            = drawer.drawTria;
-pub const drawBasicTriaLines       = drawer.drawTriaLines;
-pub const drawBasicQuad            = drawer.drawQuad;
-pub const drawBasicQuadLines       = drawer.drawQuadLines;
-pub const drawBasicPoly            = drawer.drawPoly;
-pub const drawBasicPolyLines       = drawer.drawPolyLines;
+pub const drawBasicTria            = drw_u.drawTria;
+pub const drawBasicTriaLines       = drw_u.drawTriaLines;
+pub const drawBasicQuad            = drw_u.drawQuad;
+pub const drawBasicQuadLines       = drw_u.drawQuadLines;
+pub const drawBasicPoly            = drw_u.drawPoly;
+pub const drawBasicPolyLines       = drw_u.drawPolyLines;
 
-pub const drawRect                 = drawer.drawRectanglePlus;
-pub const drawElli                 = drawer.drawEllipsePlus;
-pub const drawPoly                 = drawer.drawPolygonPlus;
+pub const drawRect                 = drw_u.drawRectanglePlus;
+pub const drawElli                 = drw_u.drawEllipsePlus;
+pub const drawPoly                 = drw_u.drawPolygonPlus;
 
-pub const drawTria                 = drawer.drawTrianglePlus;
-pub const drawDiam                 = drawer.drawDiamondPlus;
-pub const drawStar                 = drawer.drawHexStarPlus;
-pub const drawDstr                 = drawer.drawOctStarPlus;
+pub const drawTria                 = drw_u.drawTrianglePlus;
+pub const drawDiam                 = drw_u.drawDiamondPlus;
+pub const drawStar                 = drw_u.drawHexStarPlus;
+pub const drawDstr                 = drw_u.drawOctStarPlus;
 
-pub const drawText                 = drawer.drawText;
-pub const drawCenteredText         = drawer.drawCenteredText;
+pub const drawText                 = drw_u.drawText;
+pub const drawCenteredText         = drw_u.drawCenteredText;
 
-pub const drawTexture              = drawer.drawTexture;
-pub const drawTextureCentered      = drawer.drawTextureCentered;
+pub const drawTexture              = drw_u.drawTexture;
+pub const drawTextureCentered      = drw_u.drawTextureCentered;
 
 
 // ================ LOGGER SHORTHANDS ================
 
-pub const logger      = @import( "utils/logger.zig" );
+pub const log_u       = @import( "utils/logger.zig" );
 
-pub const log         = logger.log;  // for argument-formatting logging
-pub const qlog        = logger.qlog; // for quick logging ( no args )
+pub const log         = log_u.log;  // for argument-formatting logging
+pub const qlog        = log_u.qlog; // for quick logging ( no args )
 
-pub const setTmpTimer = logger.setTmpTimer;
-pub const logTmpTimer = logger.logTmpTimer;
+pub const setTmpTimer = log_u.setTmpTimer;
+pub const logTmpTimer = log_u.logTmpTimer;
 
 
 // ================ MATHER SHORTHANDS ================
 
-pub const mather      = @import( "utils/mather.zig" );
+pub const mth_u  = @import( "utils/mather.zig" );
 
-pub const atan2       = mather.atan2;
-pub const DtR         = mather.DtR;
-pub const RtD         = mather.RtD;
+pub const atan2  = mth_u.atan2;
+pub const DtR    = mth_u.DtR;
+pub const RtD    = mth_u.RtD;
 
-pub const lerp        = mather.lerp;
-pub const med3        = mather.med3;
-pub const clmp        = mather.clmp;
+pub const lerp   = mth_u.lerp;
+pub const med3   = mth_u.med3;
+pub const clmp   = mth_u.clmp;
 
-pub const norm        = mather.norm;
-pub const denorm      = mather.denorm;
-pub const renorm      = mather.renorm;
+pub const norm   = mth_u.norm;
+pub const denorm = mth_u.denorm;
+pub const renorm = mth_u.renorm;
 
 
 // ================ VECTORS SHORTHANDS ================

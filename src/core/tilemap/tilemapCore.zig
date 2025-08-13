@@ -21,8 +21,8 @@ pub const e_tlmp_flags = enum( u8 )
   DELETE     = 0b10000000, // Grid is marked for deletion
   IS_INIT    = 0b01000000, // Grid is initialized
   ACTIVE     = 0b00100000, // Grid is active and can be used
-  DRAW_DIR_X = 0b00010000, // 0 = left to right, 1 = right to left
-  DRAW_DIR_Y = 0b00001000, // 0 = top to bottom, 1 = bottom to top
+//DRAW_DIR_X = 0b00010000, // 0 = left to right, 1 = right to left
+//DRAW_DIR_Y = 0b00001000, // 0 = top to bottom, 1 = bottom to top
 //DUMMY_1    = 0b00000100, // Dummy flag for future use
 //DUMMY_2    = 0b00000010, // Dummy flag for future use
   DEBUG      = 0b00000001, // Tilemap will be rendered with debug information
@@ -34,26 +34,22 @@ pub const e_tlmp_flags = enum( u8 )
 
 pub const e_tile_type = enum( u8 )
 {
-  EMPTY = 0,
-
-  FLOOR,
-  WALL,
-
-  TRIGGER,
-  DOOR,
-
-  WATER,
-  LAVA,
-
-  SPAWN,
-  EXIT,
+  EMPTY   = 0,
+  FLOOR   = 1,
+  WALL    = 2,
+//TRIGGER,
+//DOOR,
+//WATER,
+//LAVA,
+//SPAWN,
+//EXIT,
 };
 
 pub fn getTileTypeColour( tileType : e_tile_type ) def.Colour
 {
   return switch( tileType )
   {
-    .EMPTY   => def.newColour( 0, 0, 0, 0 ),
+    .EMPTY   => def.newColour( 0,   0,   0,   0 ),
     .FLOOR   => def.newColour( 200, 200, 200, 255 ),
     .WALL    => def.newColour( 150, 150, 150, 255 ),
     .TRIGGER => def.newColour( 100, 255, 100, 255 ),
@@ -74,7 +70,7 @@ pub const Tile = struct
 
 pub const Tilemap = struct
 {
-  //id  : u32 = 0,
+  id    : u32 = 0,
   flags : u8  = 0, // Flags for the tilemap ( e.g. is it a grid tilemap ? )
 
   gridPos   : VecR,
@@ -100,8 +96,8 @@ pub const Tilemap = struct
   pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE     ); }
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT    ); }
   pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.ACTIVE     ); }
-  pub inline fn drawDirX( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_X ); }
-  pub inline fn drawDirY( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_Y ); }
+//pub inline fn drawDirX( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_X ); }
+//pub inline fn drawDirY( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_Y ); }
 
   // ================ INITIALIZATION FUNCTIONS ================
 
@@ -129,7 +125,6 @@ pub const Tilemap = struct
     };
 
     var newMap = Tilemap{
-    //.id          = 0, // TODO : add a Tilemap ID system if required
       .flags       = @intFromEnum( e_tlmp_flags.DEFAULT | e_tlmp_flags.IS_INIT ),
       .gridPos     = params.gridPos,
       .gridScale   = params.gridScale,

@@ -15,10 +15,10 @@ pub fn getCartDistTo( e1 : *const Entity, e2 : *const Entity ) f32 { return def.
 
 // ================ COLLISION FUNCTIONS ================
 
-// This function checks if the Entity overlaps with another via AABB based on the entities;s scales
+// This function checks if the Entity overlaps with another via AABB based on the entities's scales
 pub fn isOverlapping( e1 : *const Entity, e2 : *const Entity ) bool
 {
-  def.log( .TRACE, 0, @src(), "Checking if Entity {d} overlaps with {d}", .{ e1.id, e2.id });
+  def.log( .TRACE, e1.id, @src(), "Checking if Entity {d} overlaps with {d}", .{ e1.id, e2.id });
 
   const linearDists = Vec2{ .x = @abs( e2.pos.x - e1.pos.x ), .y = @abs( e2.pos.y - e1.pos.y )};
   const sumOfScales = Vec2{ .x = e1.scale.x + e2.scale.x, .y = e1.scale.y + e2.scale.y };
@@ -28,7 +28,7 @@ pub fn isOverlapping( e1 : *const Entity, e2 : *const Entity ) bool
     return false; // No overlap in at least one axis
   }
 
-  def.qlog( .TRACE, 0, @src(), "Entities are overlapping : returning" );
+  def.qlog( .TRACE, e1.id, @src(), "Entities are overlapping : returning" );
   return true; // Overlap detected in both axes
 }
 
@@ -38,21 +38,21 @@ pub fn isOverlapping( e1 : *const Entity, e2 : *const Entity ) bool
 // NOTE : Use isOverlapping() if you simply want to check for collision without needing the overlap vector.
 pub fn getOverlap( e1 : *const Entity, e2 : *const Entity ) ?Vec2
 {
-  def.log( .TRACE, 0, @src(), "Checking overlap between Entity {d} and {d}", .{ e1.id, e2.id });
+  def.log( .TRACE, e1.id, @src(), "Checking overlap between Entity {d} and {d}", .{ e1.id, e2.id });
 
   if( e1.id == e2.id )
   {
-    def.qlog( .DEBUG, 0, @src(), "Entities are the same : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "Entities are the same : returning" );
     return null;
   }
-  if( e1.pos.x == e2.pos.x and e1.pos.y == e2.pos.y )
+  if( e1.pos.x == e2.pos.x and e1.pos.y == e2.pos.y ) // No overlap direction possible
   {
-    def.qlog( .TRACE, 0, @src(), "Entities are at the same position : returning" );
-    return Vec2{ .x = 0, .y = 0 }; // No overlap direction possible
+    def.qlog( .TRACE, e1.id, @src(), "Entities are at the same position : returning" );
+    return def.zeroVec2();
   }
   if( !isOverlapping( e1, e2 ))
   {
-    def.qlog( .DEBUG, 0, @src(), "Entities are not overlapping : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "Entities are not overlapping : returning" );
     return null;
   }
 
@@ -76,13 +76,13 @@ pub fn getOverlap( e1 : *const Entity, e2 : *const Entity ) ?Vec2
   if( dir.x > 0 and selfEdge.x < otherEdge.x or
       dir.x < 0 and selfEdge.x > otherEdge.x )
   {
-    def.qlog( .DEBUG, 0, @src(), "No overlap detected in X direction : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "No overlap detected in X direction : returning" );
     return null;
   }
   if( dir.y > 0 and selfEdge.y < otherEdge.y or
       dir.y < 0 and selfEdge.y > otherEdge.y )
   {
-    def.qlog( .DEBUG, 0, @src(), "No overlap detected in Y direction : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "No overlap detected in Y direction : returning" );
     return null;
   }
 
@@ -96,7 +96,7 @@ pub fn getOverlap( e1 : *const Entity, e2 : *const Entity ) ?Vec2
           else if( dir.y < 0 ) otherEdge.y - selfEdge.y
           else 0, };
 
-  def.log( .DEBUG, 0, @src(), "Overlap of magniture {d}:{d} detected", .{ overlap.x, overlap.y });
+  def.log( .DEBUG, e1.id, @src(), "Overlap of magniture {d}:{d} detected", .{ overlap.x, overlap.y });
   return overlap;
 }
 
@@ -104,35 +104,35 @@ pub fn collideWith( e1 : *Entity, e2 : *Entity ) bool
 {
   if( !e1.isSolid() or !e2.isSolid() )
   {
-    def.qlog( .DEBUG, 0, @src(), "One of the entities is not solid : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "One of the entities is not solid : returning" );
     return false; // No collision if either Entity is not solid
   }
 
-  def.log( .TRACE, 0, @src(), "Checking collision between Entity {d} and {d}", .{ e1.id, e2.id });
+  def.log( .TRACE, e1.id, @src(), "Checking collision between Entity {d} and {d}", .{ e1.id, e2.id });
 
   if( e1.id == e2.id ) // Check if the entities are the same
   {
-    def.qlog( .DEBUG, 0, @src(), "Entities are the same : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "Entities are the same : returning" );
     return false;
   }
 
   if( !isOverlapping( e1, e2 ))
   {
-    def.qlog( .DEBUG, 0, @src(), "Entities are not overlapping : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "Entities are not overlapping : returning" );
     return false;
   }
 
   const overlap = getOverlap( e1, e2 );
   if( overlap == null )
   {
-    def.qlog( .DEBUG, 0, @src(), "No overlap detected : returning" );
+    def.qlog( .DEBUG, e1.id, @src(), "No overlap detected : returning" );
     return false;
   }
 
   if( e1.isMobile() and e2.isMobile() )
   {
-    e1.pos.x += overlap.x / 2;
-    e1.pos.y += overlap.y / 2;
+    e1.pos.x += overlap.x / 2.0;
+    e1.pos.y += overlap.y / 2.0;
   }
   else if( e1.isMobile() )
   {
@@ -145,6 +145,6 @@ pub fn collideWith( e1 : *Entity, e2 : *Entity ) bool
     e2.pos.y -= overlap.y;
   }
 
-  def.qlog( .TRACE, 0, @src(), "Collision detected and resolved : returning" );
+  def.qlog( .TRACE, e1.id, @src(), "Collision detected and resolved : returning" );
   return true;
 }

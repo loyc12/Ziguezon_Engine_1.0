@@ -38,25 +38,25 @@ var       G_IsFileOpened : bool = false;                     // Flag to check if
 
 // ================================ LOG TIMER ================================
 
-var LOG_TIMER  : def.timer.timer = .{};
+var LOG_TIMER  : def.tmr_u.timer = .{};
 var IS_LT_INIT : bool = false; // Whether the timer has been initialized
 
-var TMP_TIMER : def.timer.timer = .{};
+var TMP_TIMER : def.tmr_u.timer = .{};
 
 // NOTE : Initialize the log timer before using it, otherwise it will not work
 pub fn initLogTimer() void
 {
-  LOG_TIMER.qInit( def.timer.getNow(), 0 );
-  TMP_TIMER.qInit( def.timer.getNow(), 0 );
+  LOG_TIMER.qInit( def.tmr_u.getNow(), 0 );
+  TMP_TIMER.qInit( def.tmr_u.getNow(), 0 );
   IS_LT_INIT = true;
 }
 
 // Returns the elapsed time since the global epoch
 fn getLogElapsedTime() i128
 {
-  if( !IS_LT_INIT ){ return def.timer.getNow(); }
+  if( !IS_LT_INIT ){ return def.tmr_u.getNow(); }
 
-  LOG_TIMER.incrementTo( def.timer.getNow() );
+  LOG_TIMER.incrementTo( def.tmr_u.getNow() );
   return LOG_TIMER.getElapsedTime();
 }
 
@@ -65,18 +65,18 @@ fn getLogDeltaTime() i128
 {
   if( !IS_LT_INIT ){ return 0; }
 
-  LOG_TIMER.incrementTo( def.timer.getNow() );
+  LOG_TIMER.incrementTo( def.tmr_u.getNow() );
   return LOG_TIMER.delta;
 }
 
 // Resets the temporary timer to the current time
-pub fn setTmpTimer() void { TMP_TIMER.qInit( def.timer.getNow(), 0 ); }
+pub fn setTmpTimer() void { TMP_TIMER.qInit( def.tmr_u.getNow(), 0 ); }
 
 // Logs the elapsed time since the last time increment of the temporary timer
 // This is used to measure the time between two arbitrary points in the code
 pub fn logTmpTimer( callLocation : ?std.builtin.SourceLocation ) void
 {
-  TMP_TIMER.incrementTo( def.timer.getNow() );
+  TMP_TIMER.incrementTo( def.tmr_u.getNow() );
   const delta = TMP_TIMER.getElapsedTime();
 
   const sec  : u64 = @intCast( @divTrunc( delta, @as( i128, std.time.ns_per_s )));
@@ -155,13 +155,13 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   {
     switch ( message[ 0 ])
     {
-      '!'  => setCol( def.tCol.RED ),
-      '@'  => setCol( def.tCol.MAGEN ),
-      '#'  => setCol( def.tCol.YELOW ),
-      '$'  => setCol( def.tCol.GREEN ),
-      '%'  => setCol( def.tCol.BLUE ),
-      '&'  => setCol( def.tCol.CYAN ),
-      else => setCol( def.tCol.RESET ),
+      '!'  => setCol( def.col_u.RED ),
+      '@'  => setCol( def.col_u.MAGEN ),
+      '#'  => setCol( def.col_u.YELOW ),
+      '$'  => setCol( def.col_u.GREEN ),
+      '%'  => setCol( def.col_u.BLUE ),
+      '&'  => setCol( def.col_u.CYAN ),
+      else => setCol( def.col_u.RESET ),
     }
   }
 
@@ -194,7 +194,7 @@ pub fn initFile() void
     std.debug.print( "Failed to create or open log file '{s}': {}\nLogging to stderr isntead\n", .{ LOG_FILE_NAME, err });
     return;
   };
-  std.debug.print( def.tCol.YELOW ++ "Logging to file '{s}'\n" ++ def.tCol.RESET, .{ LOG_FILE_NAME });
+  std.debug.print( def.col_u.YELOW ++ "Logging to file '{s}'\n" ++ def.col_u.RESET, .{ LOG_FILE_NAME });
   G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
 
   qlog( .INFO, 0, @src(), "Logfile initialized\n\n" );
@@ -236,12 +236,12 @@ fn logLevel( level: LogLevel ) !void
 {
   switch ( level )
   {
-    LogLevel.NONE  => setCol( def.tCol.RESET ),
-    LogLevel.ERROR => setCol( def.tCol.RED   ),
-    LogLevel.WARN  => setCol( def.tCol.YELOW ),
-    LogLevel.INFO  => setCol( def.tCol.GREEN ),
-    LogLevel.DEBUG => setCol( def.tCol.CYAN  ),
-    LogLevel.TRACE => setCol( def.tCol.GRAY  ),
+    LogLevel.NONE  => setCol( def.col_u.RESET ),
+    LogLevel.ERROR => setCol( def.col_u.RED   ),
+    LogLevel.WARN  => setCol( def.col_u.YELOW ),
+    LogLevel.INFO  => setCol( def.col_u.GREEN ),
+    LogLevel.DEBUG => setCol( def.col_u.CYAN  ),
+    LogLevel.TRACE => setCol( def.col_u.GRAY  ),
   }
 
   const lvl : []const u8 = switch ( level )
@@ -269,7 +269,7 @@ fn logTime() !void
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
 
-  setCol( def.tCol.GRAY );
+  setCol( def.col_u.GRAY );
 
   try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
 }
@@ -280,15 +280,15 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 
   if( callLocation )| loc | // If the call location is defined, print the file, line, and function name
   {
-    setCol( def.tCol.BLUE );
+    setCol( def.col_u.BLUE );
     try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
 
-    setCol( def.tCol.GRAY );
+    setCol( def.col_u.GRAY );
     try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
   }
   else
   {
-    setCol( def.tCol.YELOW );
+    setCol( def.col_u.YELOW );
     try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
   }
 }

@@ -145,15 +145,15 @@ pub inline fn drawDiamondPlus( pos : Vec2, radii : Vec2, rotation : f32, col : C
 // Draws a 6-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, rotation,               col, 3 );
-  drawPolygonPlus( pos, radii, rotation + std.math.pi, col, 3 );
+  drawPolygonPlus( pos, radii, rotation,                     col, 3 );
+  drawPolygonPlus( pos, radii, rotation + std.math.pi / 3.0, col, 3 );
 }
 
 // Draws an 8-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
 {
   drawPolygonPlus( pos, radii, rotation,                     col, 4 );
-  drawPolygonPlus( pos, radii, rotation + std.math.pi / 2.0, col, 4 );
+  drawPolygonPlus( pos, radii, rotation + std.math.pi / 4.0, col, 4 );
 }
 
 
@@ -179,7 +179,7 @@ pub inline fn drawTexture( image : ray.Texture2D, posX : f32, posY : f32, rot : 
   ray.drawTextureEx( image, ray.Vector2{ .x = posX, .y = posY }, rot, scale.x, col );
 }
 
-pub inline fn drawTextureCentered( image : ray.Texture2D, posX : f32, posY : f32, rot : f32, scale : Vec2, col : Colour ) void
+pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32, rot : f32, scale : Vec2, col : Colour ) void
 {
   const halfWidth  = @as( f32, @floatFromInt( image.width  )) * scale.x / 2.0;
   const halfHeight = @as( f32, @floatFromInt( image.height )) * scale.y / 2.0;
