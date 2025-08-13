@@ -131,7 +131,7 @@ pub const gameHooks = struct
   //if( @hasDecl( module, "OffRenderOverlay" )) self.OffRenderOverlay = @field( module, "OffRenderOverlay" );
 
     self.checkHookValidities();
-    def.qlog( .INFO, 0, @src(), "Available game hooks initialized" );
+    def.qlog( .INFO, 0, @src(), "$ Available game hooks initialized\n" );
   }
 
   pub fn checkHookValidities( self : *const gameHooks ) void
@@ -150,7 +150,7 @@ pub const gameHooks = struct
       }
       else
       {
-        def.log( .DEBUG, 0, @src(), "! Game hook for '{s}' is NOT set", .{ fieldName });
+        def.log( .DEBUG, 0, @src(), "@ Game hook for '{s}' is NOT set", .{ fieldName });
       }
     }
   }

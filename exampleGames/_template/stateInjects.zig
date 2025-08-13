@@ -21,7 +21,7 @@ pub fn OnStop( ng : *def.Engine ) void // Called by engine.stop()
 
 pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your entities
 {
-  if( ng.entityManager.addEntity( // ball
+  if( ng.entityManager.loadEntityFromParams( // ball
   .{
     .shape  = .DSTR,
     .scale  = .{ .x = 62, .y = 62 },

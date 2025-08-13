@@ -28,6 +28,7 @@ pub const e_tlmp_flags = enum( u8 )
   DEBUG      = 0b00000001, // Tilemap will be rendered with debug information
 
   DEFAULT    = 0b00100000, // Default flags for the tilemap ( active )
+  TO_CPY     = 0b00011111, // Flags to copy when creating a new tilemap from params
   NONE       = 0b00000000, // No flags set
   ALL        = 0b11111111, // All flags set
 };
@@ -79,7 +80,8 @@ pub const Tilemap = struct
   tileScale : Vec2 = DEF_TILE_SCALE,
   tileShape : e_tlmp_shape = .RECT,
 
-  tileArray : std.ArrayList( Tile ) = undefined,
+  tileArray : ?std.ArrayList( Tile ) = null,
+
 
   // ================ FLAG MANAGEMENT ================
 
@@ -92,66 +94,104 @@ pub const Tilemap = struct
   {
     if( value ){ self.addFlag( flag ); } else { self.delFlag( flag ); }
   }
-
   pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE     ); }
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT    ); }
   pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.ACTIVE     ); }
 //pub inline fn drawDirX( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_X ); }
 //pub inline fn drawDirY( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_Y ); }
 
+
   // ================ INITIALIZATION FUNCTIONS ================
 
-  // TODO : add a "loadTilemap" function to load a tilemap from a file
-
-  pub fn getNewTilemap( params : Tilemap, fillType : e_tile_type, allocator : std.mem.Allocator ) ?Tilemap
+  pub fn init( self : *Tilemap, allocator : std.mem.Allocatorm, fillType : ?e_tile_type ) void
   {
-    if( params.gridScale.x == 0 or params.gridScale.y == 0 )
+    if( self.isInit() )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ params.gridScale.x, params.gridScale.y });
-      return null;
+      def.log( .ERROR, 0, @src(), "Tilemap {d} is already initialized, cannot reinitialize", .{ self.id });
+      return;
     }
-    if( params.tileScale.x <= 0 or params.tileScale.y <= 0 )
+    def.log( .DEBUG, 0, @src(), "Initializing Tilemap {d}", .{ self.id });
+
+    if( self.gridScale.x == 0 or self.gridScale.y == 0 )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap tile scale must be greater than 0, got {d}:{d}", .{ params.tileScale.x, params.tileScale.y });
-      return null;
+      def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ self.gridScale.x, self.gridScale.y });
+      return;
+    }
+    if( self.tileScale.x <= 0 or self.tileScale.y <= 0 )
+    {
+      def.log( .ERROR, 0, @src(), "Tilemap tile scale must be greater than 0, got {d}:{d}", .{ self.tileScale.x, self.tileScale.y });
+      return;
     }
 
-    const capacity = @as( usize, params.gridScale.x * params.gridScale.y );
+    const capacity = @as( usize, self.gridScale.x * self.gridScale.y );
 
-    const newArray = std.ArrayList( Tile ).initCapacity( allocator, capacity ) orelse
+    self.tileArray = std.ArrayList( Tile ).initCapacity( allocator, capacity ) orelse
     {
       def.log( .ERROR, 0, @src(), "Failed to allocate memory for tilemap tile array with capacity {d}", .{ capacity });
-      return null;
+      return;
     };
 
-    var newMap = Tilemap{
-      .flags       = @intFromEnum( e_tlmp_flags.DEFAULT | e_tlmp_flags.IS_INIT ),
-      .gridPos     = params.gridPos,
-      .gridScale   = params.gridScale,
-      .tileScale   = params.tileScale,
-      .tileShape   = params.tileShape,
-      .tileArray   = newArray,
-    };
+    self.setFlag( e_tlmp_flags.IS_INIT, true );
+    self.setFlag( e_tlmp_flags.ACTIVE,  true );
 
-    newMap.fillWithType( fillType );
-
-    return newMap;
+    if( fillType != null ){ self.fillWithType( fillType ); }
+    else                  { self.fillWithType( .EMPTY   ); }
   }
 
-  pub fn deInit( self : *Tilemap ) void
+  pub fn deinit( self : *Tilemap ) void
   {
     if( !self.isInit() )
     {
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot deinitialize", .{ self.id });
       return;
     }
-
     def.log( .DEBUG, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
+
     self.tileArray.deinit();
     self.setFlag( e_tlmp_flags.DELETE,  true );
     self.setFlag( e_tlmp_flags.IS_INIT, false );
     self.setFlag( e_tlmp_flags.ACTIVE,  false );
   }
+
+  pub fn createTilemapFromParams( params : Tilemap, fillType : e_tile_type, allocator : std.mem.Allocator ) ?Tilemap
+  {
+    if( params.isInit() )
+    {
+      def.log( .ERROR, 0, @src(), "Params cannot be an initialized tilemap", .{});
+      return null;
+    }
+    if( params.tileArray != null )
+    {
+      def.log( .ERROR, 0, @src(), "Params cannot have a pre-existing tile array", .{});
+      return null;
+    }
+
+    var tmp = Tilemap{
+      .flags       = params.flags | e_tlmp_flags.TO_CPY,
+      .gridPos     = params.gridPos,
+      .gridScale   = params.gridScale,
+      .tileScale   = params.tileScale,
+      .tileShape   = params.tileShape,
+    };
+
+    tmp.init( allocator, fillType ) orelse
+    {
+      def.log( .ERROR, 0, @src(), "Failed to initialize new tilemap", .{});
+      return null;
+    };
+
+    return tmp;
+  }
+
+  //pub fn createTilemapFromFile( filePath : []const u8, allocator : std.mem.Allocator ) ?Tilemap
+  //{
+  //  _ = filePath;
+  //  _ = allocator;
+  //
+  //  // TODO : implement me
+  //  def.log( .ERROR, 0, @src(), "Tilemap loading from file is not yet implemented", .{});
+  //  return null;
+  //}
 
   // ================ TILE FUNCTIONS ================
 

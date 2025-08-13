@@ -166,7 +166,7 @@ pub const EntityManager = struct
 
   // ================================ ENTITY MANAGEMENT FUNCTIONS ================================
 
-  pub fn addEntity( self : *EntityManager, newEntity : Entity ) ?*Entity
+  pub fn loadEntityFromParams( self : *EntityManager, newEntity : Entity ) ?*Entity
   {
     def.qlog( .TRACE, 0, @src(), "Adding new Entity" );
 
@@ -193,6 +193,8 @@ pub const EntityManager = struct
     return &self.entityList.items[ self.entityList.items.len - 1 ];
   }
 
+  // pub fn loadEntitiesFromFile( self : *EntityManager, filePath : []const u8 ) ?*Entity
+
   pub fn createDefaultEntity( self : *EntityManager ) ?*Entity
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Entity" );
@@ -203,7 +205,7 @@ pub const EntityManager = struct
       return null;
     }
 
-    return self.addEntity( Entity{
+    return self.loadEntityFromParams( Entity{
       .pos    = def.newVecR( 0, 0, 0 ),
       .colour = def.newColour( 255, 255, 255, 255 ),
       .shape  = .RECT,

@@ -61,7 +61,6 @@ pub const Entity = struct
   {
     if( value ){ self.addFlag( flag ); } else { self.delFlag( flag ); }
   }
-
   pub inline fn canBeDel(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DELETE ); }
   pub inline fn isActive(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ACTIVE  );}
   pub inline fn isMobile(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.MOBILE  ); }

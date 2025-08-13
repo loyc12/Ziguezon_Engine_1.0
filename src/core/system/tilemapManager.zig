@@ -158,6 +158,8 @@ pub const TilemapManager = struct
       return;
     }
 
+    for( self.tilemapList.items )| *tlmp |{ tlmp.deinit(); }
+
     self.tilemapList.deinit();
     self.maxID = 0;
 
@@ -167,7 +169,7 @@ pub const TilemapManager = struct
 
   // ================================ ENTITY MANAGEMENT FUNCTIONS ================================
 
-  pub fn addTilemap( self : *TilemapManager, newTilemap : Tilemap ) ?*Tilemap
+  pub fn loadTilemapFromParams( self : *TilemapManager, allocator : std.mem.Allocator, params : Tilemap, fillType : ?def.tlm.e_tile_type ) ?*Tilemap
   {
     def.qlog( .TRACE, 0, @src(), "Adding new Tilemap" );
 
@@ -177,13 +179,21 @@ pub const TilemapManager = struct
       return null;
     }
 
-    var tmp = newTilemap;
+    if( params.isInit() )
+    {
+      def.log( .WARN, 0, @src(), "Tilemap to be added is already initialized", .{});
+      return null;
+    }
+
+    var tmp = params;
     tmp.id  = self.getNewID();
 
-    if( newTilemap.id != 0 and newTilemap.id != tmp.id )
+    if( params.id != 0 and params.id != tmp.id )
     {
-      def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ newTilemap.id, tmp.id });
+      def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
     }
+
+    tmp.init( allocator, fillType );
 
     self.tilemapList.append( tmp ) catch | err |
     {
@@ -194,7 +204,9 @@ pub const TilemapManager = struct
     return &self.tilemapList.items[ self.tilemapList.items.len - 1 ];
   }
 
-  pub fn createDefaultTilemap( self : *TilemapManager ) ?*Tilemap
+  // pub fn loadTilemapFromFile( self : *TilemapManager, filePath : []const u8, allocator : std.mem.Allocator ) ?*Tilemap
+
+  pub fn createDefaultTilemap( self : *TilemapManager, allocator : std.mem.Allocator ) ?*Tilemap
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Tilemap" );
 
@@ -204,11 +216,12 @@ pub const TilemapManager = struct
       return null;
     }
 
-    return self.addTilemap( Tilemap{
-      .pos    = def.newVecR( 0, 0, 0 ),
-      .colour = def.newColour( 255, 255, 255, 255 ),
-      .shape  = .RECT,
-    });
+    return self.createTilemapFromParams( Tilemap{
+      .gridPos   = Vec2{ .x = 0, .y = 0 },
+      .gridScale = Vec2{ .x = 32, .y = 32 },
+      .tileScale = Vec2{ .x = 32, .y = 32 },
+      .tileShape = .RECT,
+    }, allocator, .FLOOR );
   }
 
   pub fn getTilemap( self : *TilemapManager, id : u32 ) ?*Tilemap
@@ -234,13 +247,16 @@ pub const TilemapManager = struct
       return;
     }
 
+    var tilemap = &self.tilemapList.items[ index ];
+    tilemap.deinit();
+
     _ = self.tilemapList.swapRemove( index );
     def.log( .DEBUG, 0, @src(), "Tilemap with ID {d} deleted", .{ id });
   }
 
-  pub fn deleteAllMarkedEntities( self : *TilemapManager ) void
+  pub fn deleteAllMarkedTilemaps( self : *TilemapManager ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Deleting all Entities marked for deletion" );
+    def.qlog( .TRACE, 0, @src(), "Deleting all Tilemaps marked for deletion" );
 
     if( !self.isInit )
     {
@@ -248,7 +264,7 @@ pub const TilemapManager = struct
       return;
     }
 
-    // Iterate through all entities and delete those marked for deletion via the .DELETE flag
+    // Iterate through all tilemaps and delete those marked for deletion via the .DELETE flag
     for( self.tilemapList.items, 0.. )| tlmp, index |
     {
       if( index >= self.tilemapList.items.len ){ break; }
@@ -260,9 +276,9 @@ pub const TilemapManager = struct
 
   // ================================ RENDER FUNCTIONS ================================
 
-  pub fn renderActiveEntities( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Tilemap.renderGraphics()
+  pub fn renderActiveTilemaps( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Tilemap.renderGraphics()
   {
-    def.qlog( .TRACE, 0, @src(), "Rendering active Entities" );
+    def.qlog( .TRACE, 0, @src(), "Rendering active Tilemaps" );
 
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {
@@ -272,32 +288,11 @@ pub const TilemapManager = struct
 
   // ================================ TICK FUNCTIONS ================================
 
-  pub fn tickActiveEntities( self : *TilemapManager, sdt : f32 ) void
-  {
-    for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
-    {
-      tlmp.moveSelf( sdt );
-    }}
-  }
-
-  pub fn collideActiveEntities( self : *TilemapManager, sdt : f32 ) void
-  {
-    _ = sdt; // Prevent unused variable warning
-
-    for( self.tilemapList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
-    {
-      if( index + 1 >= self.tilemapList.items.len ){ continue; } // Prevents out of bounds access
-
-      // Iterate through all following entities ( those following the current one in the list ) to check for collisions
-      for( self.tilemapList.items[ index + 1 .. ])| e2 |{ if( e2.isActive() )
-      {
-        const overlap = e1.getOverlap( &e2 ) orelse continue; // TODO : swap this with "collideWith( e2 )" when implemented
-        {
-          def.log( .DEBUG, 0, @src(), "Collision detected between Tilemap {d} and {d} with magnitude {d}:{d}", .{ e1.id, e2.id, overlap.x, overlap.y });
-          def.log( .DEBUG, 0, @src(), "Tilemap {d} position: {d}:{d}, Tilemap {d} position: {d}:{d}", .{ e1.id, e1.pos.x, e1.pos.y, e2.id, e2.pos.x, e2.pos.y });
-          def.log( .DEBUG, 0, @src(), "Tilemap {d} scale:    {d}:{d}, Tilemap {d} scale:    {d}:{d}", .{ e1.id, e1.scale.x, e1.scale.y, e2.id, e2.scale.x, e2.scale.y });
-        }
-      }}
-    }}
-  }
+  //pub fn tickActiveTilemaps( self : *TilemapManager, sdt : f32 ) void
+  //{
+  //  for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
+  //  {
+  //    tlmp.moveSelf( sdt );
+  //  }}
+  //}
 };

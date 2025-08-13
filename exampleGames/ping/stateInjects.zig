@@ -24,7 +24,7 @@ pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()
 pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
 {
 
-  if( ng.entityManager.addEntity( // player 1
+  if( ng.entityManager.loadEntityFromParams( // player 1
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
@@ -33,7 +33,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
   })
   )| p1 |{ P1_ID = p1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 1 entity" ); }
 
-  if( ng.entityManager.addEntity( // player 2
+  if( ng.entityManager.loadEntityFromParams( // player 2
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
@@ -42,7 +42,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
   })
   )| p2 |{ P2_ID = p2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 2 entity" ); }
 
-  _ = ng.entityManager.addEntity( // separator
+  _ = ng.entityManager.loadEntityFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -50,7 +50,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
     .pos    = .{ .x = 0, .y = 0, .z = 0 },
   });
 
-  _ = ng.entityManager.addEntity( // separator
+  _ = ng.entityManager.loadEntityFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -58,7 +58,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
     .pos    = .{ .x = 1024, .y = 0, .z = 0 },
   });
 
-  _ = ng.entityManager.addEntity( // separator
+  _ = ng.entityManager.loadEntityFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -66,7 +66,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
     .pos    = .{ .x = -1024, .y = 0, .z = 0 },
   });
 
-  _ = ng.entityManager.addEntity( // separator
+  _ = ng.entityManager.loadEntityFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 1024, .y = 8 },
@@ -74,7 +74,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
     .pos    = .{ .x = 0, .y = -512, .z = 0 },
   });
 
-  if( ng.entityManager.addEntity( // ball shadow
+  if( ng.entityManager.loadEntityFromParams( // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 6, .y = 6 },
@@ -84,7 +84,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
   )| shad1 |{ SHADOW_RANGE_START = shad1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow 1 entity" ); }
 
   {
-    _ = ng.entityManager.addEntity( // ball shadow
+    _ = ng.entityManager.loadEntityFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 8, .y = 8 },
@@ -92,7 +92,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
       .pos    = .{ .x = 0, .y = 0, .z = 0 },
     });
 
-    _ = ng.entityManager.addEntity( // ball shadow
+    _ = ng.entityManager.loadEntityFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 10, .y = 10 },
@@ -100,7 +100,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
       .pos    = .{ .x = 0, .y = 0, .z = 0 },
     });
 
-    _ = ng.entityManager.addEntity( // ball shadow
+    _ = ng.entityManager.loadEntityFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 12, .y = 12 },
@@ -108,7 +108,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
       .pos    = .{ .x = 0, .y = 0, .z = 0 },
     });
 
-    _ = ng.entityManager.addEntity( // ball shadow
+    _ = ng.entityManager.loadEntityFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 14, .y = 14 },
@@ -116,7 +116,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
       .pos    = .{ .x = 0, .y = 0, .z = 0 },
     });
 
-    _ = ng.entityManager.addEntity( // ball shadow
+    _ = ng.entityManager.loadEntityFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 16, .y = 16 },
@@ -124,7 +124,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
       .pos    = .{ .x = 0, .y = 0, .z = 0 },
     });
 
-    _ = ng.entityManager.addEntity( // ball shadow
+    _ = ng.entityManager.loadEntityFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 18, .y = 18 },
@@ -132,7 +132,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
       .pos    = .{ .x = 0, .y = 0, .z = 0 },
     });
 
-    _ = ng.entityManager.addEntity( // ball shadow
+    _ = ng.entityManager.loadEntityFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 20, .y = 20 },
@@ -141,7 +141,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
     });
   }
 
-  if( ng.entityManager.addEntity( // ball shadow
+  if( ng.entityManager.loadEntityFromParams( // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 22, .y = 22 },
@@ -150,7 +150,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
   })
   )| shad2 |{ SHADOW_RANGE_END = shad2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow * entity" ); }
 
-  if( ng.entityManager.addEntity( // ball
+  if( ng.entityManager.loadEntityFromParams( // ball
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 24, .y = 24 },

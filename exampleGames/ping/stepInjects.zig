@@ -41,7 +41,7 @@ pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : 
 
     const size = def.G_RNG.getScaledFloat( 2.0, 7.0 );
 
-    _ = ng.entityManager.addEntity( // NOTE : We do not care if this fails, as we are just emitting particles
+    _ = ng.entityManager.loadEntityFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .pos    = def.G_RNG.getScaledVecR( dPos, pos ),
       .vel    = def.G_RNG.getScaledVecR( dVel, vel ),
