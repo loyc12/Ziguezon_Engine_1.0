@@ -52,7 +52,12 @@ pub fn updateInputs( ng : *Engine ) void
   {
     if( def.ray.isWindowResized() )
     {
-      ng.viewManager.setMainCameraOffset( def.getHalfScreenSize() );
+      if( ng.isViewManagerInit() )
+      {
+        def.qlog( .TRACE, 0, @src(), "Updating View manager main camera offset" );
+        ng.viewManager.?.setMainCameraOffset( def.getHalfScreenSize() );
+      }
+      else { def.qlog( .WARN, 0, @src(), "No View manager initialized, skipping camera offset update" ); }
     }
   }
   //def.tryHook( .OffUpdateInputs, .{ ng });
@@ -63,17 +68,22 @@ pub fn tickEntities( ng : *Engine ) void    // TODO : use tick rate instead of f
 {
   if( !ng.isPlaying() ){ return; }
 
+
   def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
 
   ng.sdt = def.ray.getFrameTime() * ng.timeScale;
 
-  def.tryHook( .OnTickEntities, .{ ng });
+  if( ng.isEntityManagerInit() )
   {
-    ng.entityManager.tickActiveEntities( ng.sdt );
+    def.tryHook( .OnTickEntities, .{ ng });
+
+    ng.entityManager.?.tickActiveEntities( ng.sdt );
     //ng.entityManager.collideActiveEntities( ng.sdt );
-    ng.entityManager.deleteAllMarkedEntities();
-  }
+    ng.entityManager.?.deleteAllMarkedEntities();
+
   def.tryHook( .OffTickEntities, .{ ng });
+  }
+  else { def.qlog( .WARN, 0, @src(), "Cannot tick entities: Entity manager is not initialized" ); }
 }
 
 
@@ -90,14 +100,31 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
   }
   //def.tryHook( .OffRenderBackground, .{ ng });
 
-  if( ng.viewManager.getMainCamera() )| camera |
+  if( !ng.isViewManagerInit() )
   {
-    def.ray.beginMode2D( camera );
+    def.qlog( .WARN, 0, @src(), "Cannot render graphics: View manager is not initialized" );
+    return;
+  }
+
+  if( ng.viewManager.?.getMainCameraCpy() )| cam |
+  {
+    def.ray.beginMode2D( cam );
     {
       def.tryHook( .OnRenderWorld, .{ ng });
+
+      if( ng.isTilemapManagerInit() )
       {
-        ng.entityManager.renderActiveEntities();
+        ng.tilemapManager.?.renderActiveTilemaps();
       }
+      else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
+
+      if( ng.isEntityManagerInit() )
+      {
+        ng.entityManager.?.renderActiveEntities();
+      }
+      else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
+
+
       def.tryHook( .OffRenderWorld, .{ ng });
     }
     def.ray.endMode2D();

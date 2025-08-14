@@ -396,6 +396,12 @@ pub fn OnRenderBackground( ng : *Engine ) void // Called by engine.renderGraphic
 
 pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
 {
+  const cam = ng.viewManager.getMainCameraCpy() orelse
+  {
+    def.log( .ERROR, 0, @src(), "No main camera initialized" );
+    return;
+  };
+
   // Declare the buffers to hold the formatted scores
   var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score
   var s2_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 2's score
@@ -417,8 +423,8 @@ pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
   s2_buff[ s2_slice.len ] = 0;
 
   // Find the center of each field in screen space
-  const p1_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() *  0.25, 0 ), ng.viewManager.mainCamera );
-  const p2_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() * -0.25, 0 ), ng.viewManager.mainCamera );
+  const p1_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() *  0.25, 0 ), cam );
+  const p2_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() * -0.25, 0 ), cam );
 
   // Draw each player's score in the middle of their respective fields
   def.drawCenteredText( &s1_buff, p1_score_pos.x, p1_score_pos.y, 64, def.Colour.blue );

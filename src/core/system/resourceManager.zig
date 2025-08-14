@@ -3,6 +3,7 @@ const def = @import( "defs" );
 
 pub const ResourceManager = struct
 {
+  isInit  : bool = false,
   sounds  : std.StringHashMap( def.ray.Sound     ),
   music   : std.StringHashMap( def.ray.Music     ),
   fonts   : std.StringHashMap( def.ray.Font      ),
@@ -12,17 +13,30 @@ pub const ResourceManager = struct
   {
     def.qlog( .TRACE, 0, @src(), "Initializing resource manager..." );
 
+    if( self.isInit )
+    {
+      def.log( .WARN, 0, @src(), "Resource manager is already initialized", .{});
+      return;
+    }
+
     self.sounds  = std.StringHashMap( def.ray.Sound     ).init( mapAlloc );
     self.music   = std.StringHashMap( def.ray.Music     ).init( mapAlloc );
     self.fonts   = std.StringHashMap( def.ray.Font      ).init( mapAlloc );
     self.sprites = std.StringHashMap( def.ray.Texture2D ).init( mapAlloc );
 
+    self.isInit = true;
     def.qlog( .INFO, 0, @src(), "Resource manager initialized." );
   }
 
   pub fn deinit( self : *ResourceManager ) void
   {
     def.qlog( .TRACE, 0, @src(), "Deinitializing resource manager..." );
+
+    if( !self.isInit )
+    {
+      def.log( .WARN, 0, @src(), "Resource manager is not initialized", .{});
+      return;
+    }
 
     var it_audio = self.sounds.iterator();
     while( it_audio.next()) | entry | def.ray.unloadSound( entry.value_ptr.* );
@@ -36,12 +50,12 @@ pub const ResourceManager = struct
     var it_sprites = self.sprites.iterator();
     while( it_sprites.next()) | entry | def.ray.unloadTexture( entry.value_ptr.* );
 
-
     self.sounds.clearAndFree();
     self.music.clearAndFree();
     self.fonts.clearAndFree();
     self.sprites.clearAndFree();
 
+    self.isInit = false;
     def.qlog( .INFO, 0, @src(), "Resource manager deinitialized." );
   }
 

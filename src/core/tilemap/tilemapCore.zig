@@ -3,9 +3,9 @@ const def  = @import( "defs" );
 
 const Vec2 = def.Vec2;
 const VecR = def.VecR;
-const Dim2 = [ 2 ]u16; // like vec2, but with u16 instead of f32
+const Dim2 = [ 2 ]u32; // like vec2, but with u32 instead of f32
 
-const DEF_GRID_SCALE = Dim2{ .x = 64, .y = 64 };
+const DEF_GRID_SCALE = Dim2{      64,      64 };
 const DEF_TILE_SCALE = Vec2{ .x = 64, .y = 64 };
 
 pub const e_tlmp_shape = enum( u8 )
@@ -27,7 +27,6 @@ pub const e_tlmp_flags = enum( u8 )
 //DUMMY_2    = 0b00000010, // Dummy flag for future use
   DEBUG      = 0b00000001, // Tilemap will be rendered with debug information
 
-  DEFAULT    = 0b00100000, // Default flags for the tilemap ( active )
   TO_CPY     = 0b00011111, // Flags to copy when creating a new tilemap from params
   NONE       = 0b00000000, // No flags set
   ALL        = 0b11111111, // All flags set
@@ -145,9 +144,14 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot deinitialize", .{ self.id });
       return;
     }
+    if( self.tileArray == null )
+    {
+      def.log( .ERROR, 0, @src(), "Tilemap {d} tile array is null, cannot deinitialize", .{ self.id });
+      return;
+    }
     def.log( .DEBUG, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
 
-    self.tileArray.deinit();
+    self.tileArray.?.deinit();
     self.setFlag( e_tlmp_flags.DELETE,  true );
     self.setFlag( e_tlmp_flags.IS_INIT, false );
     self.setFlag( e_tlmp_flags.ACTIVE,  false );
@@ -353,8 +357,8 @@ pub const Tilemap = struct
     return switch( self.tileShape )
     {
       .RECT => Dim2{
-        .x = @as( u16, @intFromFloat( @floor( p.x ))),
-        .y = @as( u16, @intFromFloat( @floor( p.y ))),
+        .x = @as( u32, @intFromFloat( @floor( p.x ))),
+        .y = @as( u32, @intFromFloat( @floor( p.y ))),
       }
       // TODO : add other shapes ( trickier posisitons )
     };

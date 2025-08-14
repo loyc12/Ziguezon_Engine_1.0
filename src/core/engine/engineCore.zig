@@ -59,4 +59,18 @@ pub const Engine = struct
   const ngnStep = @import( "engineStep.zig" );
 
   pub inline fn loopLogic(  self : *Engine ) void { ngnStep.loopLogic( self ); }
+
+
+  // ================================ MANAGER SHORTHAND FUNCTIONS ================================
+
+  pub inline fn isResourceManagerInit( ng : *const Engine ) bool { if( ng.resourceManager )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isEntityManagerInit(   ng : *const Engine ) bool { if( ng.entityManager   )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isTilemapManagerInit(  ng : *const Engine ) bool { if( ng.tilemapManager  )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isViewManagerInit(     ng : *const Engine ) bool { if( ng.viewManager     )| *m |{ return m.isInit; } else { return false; }}
+
+  pub inline fn getResourceManager( ng : *Engine ) !*def.res_m.ResourceManager { if( ng.resourceManager )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getEntityManager(   ng : *Engine ) !*def.ntt_m.EntityManager   { if( ng.entityManager   )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getTilemapManager(  ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager  )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getViewManager(     ng : *Engine ) !*def.scr_m.ViewManager     { if( ng.viewManager     )| *m |{ return m; } else { return error.NullManager; }}
+
 };

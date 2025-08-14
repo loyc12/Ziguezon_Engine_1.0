@@ -282,7 +282,7 @@ pub const TilemapManager = struct
 
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {
-      tlmp.renderSelf();
+      //tlmp.renderSelf(); // TODO : implement Tilemap.renderSelf()
     }}
   }
 
