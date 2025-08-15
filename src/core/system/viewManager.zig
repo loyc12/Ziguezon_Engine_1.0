@@ -25,15 +25,15 @@ pub inline fn getHalfScreenSize() def.Vec2
 pub inline fn getMouseScreenPos() def.Vec2 { return def.ray.getMousePosition(); }
 pub inline fn getMouseWorldPos()  def.Vec2
 {
-  return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ng.mainCamera );
+  return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ng.camera );
 }
 
 // ================================ SCREEN MANAGER ================================
 
 pub const ViewManager = struct
 {
-  isInit     : bool = false,
-  mainCamera : def.ray.Camera2D = undefined,
+  isInit : bool       = false,
+  camera : def.Camera = undefined,
 
   pub fn init( self : *ViewManager, alloc : std.mem.Allocator ) void
   {
@@ -43,7 +43,7 @@ pub const ViewManager = struct
 
     if( !self.isInit  )
     {
-      self.mainCamera = def.ray.Camera2D{
+      self.camera = def.Camera{
         .target = def.Vec2{ .x = 0.0, .y = 0.0 },
         .offset = def.divVec2ByVal( def.DEF_SCREEN_DIMS, 2.0 ) orelse def.Vec2{ .x = 0.0, .y = 0.0 },
         .rotation = 0.0,
@@ -51,10 +51,10 @@ pub const ViewManager = struct
       };
 
       self.isInit = true;
-      def.log( .INFO, 0, @src(), "Initialized main camera with size {d}x{d}\n", .{ getScreenWidth(), getScreenHeight() });
+      def.log( .INFO, 0, @src(), "Initialized main camera with size {d}x{d}", .{ getScreenWidth(), getScreenHeight() });
     }
 
-    def.qlog( .INFO, 0, @src(), "Screen manager initialized." );
+    def.qlog( .INFO, 0, @src(), "Screen manager initialized\n" );
   }
   pub fn deinit( self : *ViewManager ) void
   {
@@ -62,7 +62,7 @@ pub const ViewManager = struct
 
     if( self.isInit )
     {
-      self.mainCamera = undefined;
+      self.camera = undefined;
       def.qlog( .INFO, 0, @src(), "Main camera deinitialized." );
     }
 
@@ -71,70 +71,55 @@ pub const ViewManager = struct
 
   // ================ CAMERA ACCESSORS / MUTATORS ================
 
-  pub fn getMainCameraCpy( self : *const ViewManager ) ?def.ray.Camera2D
+  pub fn getCameraCpy( self : *const ViewManager ) ?def.Camera
   {
     if( !self.isInit )
     {
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
       return null;
     }
-    return self.mainCamera;
+    return self.camera;
   }
 
-  pub fn setMainCameraZoom( self : *ViewManager, zoom : f32 ) void
+  pub fn setCameraOffset( self : *ViewManager, offset : def.Vec2 ) void
   {
     if( !self.isInit )
     {
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
       return;
     }
-    self.mainCamera.zoom = zoom;
-    def.log( .DEBUG, 0, @src(), "Main camera zoom set to {d}", .{ zoom });
-  }
-
-  pub fn setMainCameraTarget( self : *ViewManager, target : def.Vec2 ) void
-  {
-    if( !self.isInit )
-    {
-      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
-      return;
-    }
-    self.mainCamera.target = target;
-    def.log( .DEBUG, 0, @src(), "Main camera target set to {d}:{d}", .{ target.x, target.y });
-  }
-
-  pub fn setMainCameraOffset( self : *ViewManager, offset : def.Vec2 ) void
-  {
-    if( !self.isInit )
-    {
-      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
-      return;
-    }
-    self.mainCamera.offset = offset;
+    self.camera.offset = offset;
     def.log( .DEBUG, 0, @src(), "Main camera offset set to {d}:{d}", .{ offset.x, offset.y });
   }
-
-  pub fn setMainCameraRotation( self : *ViewManager, rotation : f32 ) void
+  pub fn setCameraTarget( self : *ViewManager, target : def.Vec2 ) void
   {
     if( !self.isInit )
     {
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
       return;
     }
-    self.mainCamera.rotation = rotation;
+    self.camera.target = target;
+    def.log( .DEBUG, 0, @src(), "Main camera target set to {d}:{d}", .{ target.x, target.y });
+  }
+  pub fn setCameraRotation( self : *ViewManager, rotation : f32 ) void
+  {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
+      return;
+    }
+    self.camera.rotation = rotation;
     def.log( .DEBUG, 0, @src(), "Main camera rotation set to {d}", .{ rotation });
   }
-
-  pub fn zoomBy( self : *ViewManager, factor : f32 ) void
+  pub fn setCameraZoom( self : *ViewManager, zoom : f32 ) void
   {
     if( !self.isInit )
     {
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
       return;
     }
-    self.mainCamera.zoom = def.clmp( self.mainCamera.zoom * factor, MIN_ZOOM, MAX_ZOOM );
-
-    def.log( .DEBUG, 0, @src(), "Main camera zoom changed by {d}", .{ factor });
+    self.camera.zoom = zoom;
+    def.log( .DEBUG, 0, @src(), "Main camera zoom set to {d}", .{ zoom });
   }
 
   pub fn moveBy( self : *ViewManager, offset : def.Vec2 ) void
@@ -144,7 +129,19 @@ pub const ViewManager = struct
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
       return;
     }
-    self.mainCamera.target = def.addVec2( self.mainCamera.target, offset );
+    self.camera.target = def.addVec2( self.camera.target, offset );
     def.log( .DEBUG, 0, @src(), "Main camera moved by {d}:{d}", .{ offset.x, offset.y });
   }
+  pub fn zoomBy( self : *ViewManager, factor : f32 ) void
+  {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
+      return;
+    }
+    self.camera.zoom = def.clmp( self.camera.zoom * factor, MIN_ZOOM, MAX_ZOOM );
+
+    def.log( .DEBUG, 0, @src(), "Main camera zoom changed by {d}", .{ factor });
+  }
+
 };

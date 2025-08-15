@@ -65,7 +65,7 @@ pub const Entity = ntt.Entity;
 
 pub const tlm     = @import( "core/tilemap/tilemapCore.zig" );
 pub const Tile    = tlm.Tile;
-pub const Tilemap = tlm.Entity;
+pub const Tilemap = tlm.Tilemap;
 
 
 // ================================ SHORTHANDS ================================
@@ -166,6 +166,11 @@ pub fn newColour( r : u8, g : u8, b : u8, a : ?u8 ) Colour
   if( a )| alpha | { return Colour{ .r = r, .g = g, .b = b, .a = alpha }; }
   else             { return Colour{ .r = r, .g = g, .b = b, .a = 255   }; }
 }
+
+// ======== RAYLIB CAMERA ========
+
+pub const Camera = ray.Camera2D;
+
 
 // ======== Vec2 ========
 

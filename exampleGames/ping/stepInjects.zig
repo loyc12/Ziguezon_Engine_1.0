@@ -11,13 +11,13 @@ const VecR   = def.VecR;
 
 pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 {
-  const src = ng.entityManager.getEntity( srcID ) orelse
+  const src = ng.getEntity( srcID ) orelse
   {
     def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ srcID });
     return;
   };
 
-  const dst = ng.entityManager.getEntity( dstID ) orelse
+  const dst = ng.getEntity( dstID ) orelse
   {
     def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ dstID });
     return;
@@ -29,19 +29,13 @@ pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 // Emit particles in a given position and velocity range, with the given colour
 pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : VecR, amount : u32, colour : def.Colour ) void
 {
-  ng.entityManager.entityList.ensureTotalCapacity( ng.entityManager.entityList.items.len + amount ) catch |err|
-  {
-    def.log(.ERROR, 0, @src(), "Failed to preallocate entity capacity for particles: {}", .{ err });
-    return;
-  };
-
   for( 0 .. amount )| i |
   {
     _ = i; // Ignore the index, we don't need it
 
     const size = def.G_RNG.getScaledFloat( 2.0, 7.0 );
 
-    _ = ng.entityManager.loadEntityFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
+    _ = ng.loadEntityFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .pos    = def.G_RNG.getScaledVecR( dPos, pos ),
       .vel    = def.G_RNG.getScaledVecR( dVel, vel ),
@@ -64,7 +58,7 @@ pub fn emitParticlesOnBounce( ng : *Engine, ball : *Entity ) void
     .{ .x = 128, .y = 32, .z = 2.0 },
     12, def.Colour.yellow );
 
-  ng.resourceManager.playAudio( "hit_1" );
+  ng.playAudio( "hit_1" );
 }
 
 
@@ -114,7 +108,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
       WINNER = 0;         // Reset winner
 
       // Reset the ball position and velocity
-      var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
+      var ball = ng.getEntity( stateInj.BALL_ID ) orelse
       {
         def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
         return;
@@ -144,20 +138,20 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Move the camera with the numpad keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.viewManager.moveBy( def.newVec2(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.viewManager.moveBy( def.newVec2(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.viewManager.moveBy( def.newVec2( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.viewManager.moveBy( def.newVec2(  8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveBy( def.newVec2(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveBy( def.newVec2(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveBy( def.newVec2( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveBy( def.newVec2(  8,  0 )); }
 
     // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.viewManager.zoomBy( 1.111 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.viewManager.zoomBy( 0.900 ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomBy( 1.111 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomBy( 0.900 ); }
 
     // Reset the camera zoom and position when the middle mouse button is pressed
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
     {
-      ng.viewManager.setMainCameraZoom( 1.0 );
-      ng.viewManager.setMainCameraTarget( def.zeroVec2() );
+      ng.setCameraZoom( 1.0 );
+      ng.setCameraTarget( def.zeroVec2() );
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -181,7 +175,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
 
 pub fn OnTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
-  var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
+  var ball = ng.getEntity( stateInj.BALL_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
@@ -194,11 +188,11 @@ pub fn OnTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( 
 
   cpyEntityPosViaID( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
 
-  if( ng.entityManager.getMaxID() == stateInj.BALL_ID ){ return; }
+  if( ng.getMaxEntityID() == stateInj.BALL_ID ){ return; }
 
-  for( stateInj.BALL_ID + 1 .. 1 + ng.entityManager.getMaxID() )| i |
+  for( stateInj.BALL_ID + 1 .. 1 + ng.getMaxEntityID() )| i |
   {
-    const part = ng.entityManager.getEntity( @intCast( i )) orelse continue;
+    const part = ng.getEntity( @intCast( i )) orelse continue;
 
     if( part.canBeDel() ){ continue; } // skip pre-marked particles
 
@@ -230,19 +224,19 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
   const playerBounceFactorY : f32 = 0.80; // Perpendicular bounce factor for the ball when hitting players
   const playerBounceFactorX : f32 = 0.75; // Parallel bounce factor for the ball when hitting players
 
-  var p1 = ng.entityManager.getEntity( stateInj.P1_ID ) orelse
+  var p1 = ng.getEntity( stateInj.P1_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Entity with ID {d} ( P1 ) not found", .{ stateInj.P1_ID } );
     return;
   };
 
-  var p2 = ng.entityManager.getEntity( stateInj.P2_ID ) orelse
+  var p2 = ng.getEntity( stateInj.P2_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Entity with ID {d} ( P2 ) not found", .{ stateInj.P2_ID } );
     return;
   };
 
-  var ball = ng.entityManager.getEntity( stateInj.BALL_ID ) orelse
+  var ball = ng.getEntity( stateInj.BALL_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
@@ -396,9 +390,9 @@ pub fn OnRenderBackground( ng : *Engine ) void // Called by engine.renderGraphic
 
 pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
 {
-  const cam = ng.viewManager.getMainCameraCpy() orelse
+  const cam = ng.getCameraCpy() orelse
   {
-    def.log( .ERROR, 0, @src(), "No main camera initialized" );
+    def.qlog( .ERROR, 0, @src(), "No main camera initialized" );
     return;
   };
 

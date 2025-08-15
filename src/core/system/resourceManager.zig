@@ -4,10 +4,10 @@ const def = @import( "defs" );
 pub const ResourceManager = struct
 {
   isInit  : bool = false,
-  sounds  : std.StringHashMap( def.ray.Sound     ),
-  music   : std.StringHashMap( def.ray.Music     ),
-  fonts   : std.StringHashMap( def.ray.Font      ),
-  sprites : std.StringHashMap( def.ray.Texture2D ),
+  sounds  : std.StringHashMap( def.ray.Sound     ) = undefined,
+  music   : std.StringHashMap( def.ray.Music     ) = undefined,
+  fonts   : std.StringHashMap( def.ray.Font      ) = undefined,
+  sprites : std.StringHashMap( def.ray.Texture2D ) = undefined,
 
   pub fn init( self : *ResourceManager, mapAlloc : std.mem.Allocator ) void
   {

@@ -73,4 +73,112 @@ pub const Engine = struct
   pub inline fn getTilemapManager(  ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager  )| *m |{ return m; } else { return error.NullManager; }}
   pub inline fn getViewManager(     ng : *Engine ) !*def.scr_m.ViewManager     { if( ng.viewManager     )| *m |{ return m; } else { return error.NullManager; }}
 
+
+  // ================ RESOURCE MANAGER ================
+
+  pub inline fn addAudio( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) void
+  {
+    if ( self.resourceManager )| *m |{ m.addAudio( name, path ); }
+  }
+  pub inline fn addAudioFromFile( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) !void
+  {
+    if ( self.resourceManager )| *m |{ return m.addAudioFromFile( name, path ); } else { return error.NullManager; }
+  }
+  pub inline fn playAudio( self : *Engine, name : [ :0 ]const u8 ) void
+  {
+    if ( self.resourceManager )| *m |{ m.playAudio( name ); }
+  }
+
+
+  // ================ ENTITY MANAGER ================
+
+  pub inline fn getMaxEntityID( ng : *Engine ) u32
+  {
+    if( ng.entityManager )| *m |{ return m.getMaxID(); } else { return 0; }
+  }
+  pub inline fn getEntity( ng : *Engine, id : u32 ) ?*def.Entity
+  {
+    if( ng.entityManager )| *m |{ return m.getEntity( id ); } else { return null; }
+  }
+  pub inline fn loadEntityFromParams( ng : *Engine, params : def.Entity ) ?*def.Entity
+  {
+    if( ng.entityManager )| *m |{ return m.loadEntityFromParams( params ); } else { return null; }
+  }
+
+  pub inline fn tickActiveEntities( ng : *Engine, sdt : f32 ) void
+  {
+    if( ng.entityManager )| *m |{ m.tickActiveEntities( sdt ); }
+  }
+  pub inline fn renderActiveEntities( ng : *Engine ) void
+  {
+    if( ng.entityManager )| *m |{ m.renderActiveEntities(); }
+  }
+  pub inline fn deleteAllMarkedEntities( ng : *Engine ) void
+  {
+    if( ng.entityManager )| *m |{ m.deleteAllMarkedEntities(); }
+  }
+
+
+  // ================ TILEMAP MANAGER ================
+
+  pub inline fn getMaxTilemapID( ng : *Engine ) u32
+  {
+    if( ng.tilemapManager )| *m |{ return m.getMaxID(); } else { return 0; }
+  }
+  pub inline fn getTilemap( ng : *Engine, id : u32 ) ?*def.Tilemap
+  {
+    if( ng.tilemapManager )| *m |{ return m.getTilemap( id ); } else { return null; }
+  }
+  pub inline fn loadTilemapFromParams( ng : *Engine, params : def.Tilemap, fillType : ?def.tlm.e_tile_type ) ?*def.Tilemap
+  {
+    if( ng.tilemapManager )| *m |{ return m.loadTilemapFromParams( def.alloc, params, fillType ); } else { return null; }
+  }
+
+//pub inline fn tickActiveTilemaps( ng : *Engine, sdt : f32 ) void
+//{
+//  if( ng.tilemapManager )| *m |{ m.tickActiveTilemaps( sdt ); }
+//}
+  pub inline fn renderActiveTilemaps( ng : *Engine ) void
+  {
+    if( ng.tilemapManager )| *m |{ m.renderActiveTilemaps(); }
+  }
+  pub inline fn deleteAllMarkedTilemaps( ng : *Engine ) void
+  {
+    if( ng.tilemapManager )| *m |{ m.deleteAllMarkedTilemaps(); }
+  }
+
+
+  // ================ VIEW MANAGER ================
+
+  pub inline fn getCameraCpy( ng : *Engine ) ?def.Camera
+  {
+    if( ng.viewManager )| *m |{ return m.getCameraCpy(); } else { return null; }
+  }
+
+  pub inline fn setCameraOffset( ng : *Engine, offset : def.Vec2 ) void
+  {
+    if( ng.viewManager )| *m |{ m.setCameraOffset( offset ); }
+  }
+  pub inline fn setCameraTarget( ng : *Engine, target : def.Vec2 ) void
+  {
+    if( ng.viewManager )| *m |{ m.setCameraTarget( target ); }
+  }
+  pub inline fn setCameraRotation( ng : *Engine, rotation : f32 ) void
+  {
+    if( ng.viewManager )| *m |{ m.setCameraRotation( rotation ); }
+  }
+  pub inline fn setCameraZoom( ng : *Engine, zoom : f32 ) void
+  {
+    if( ng.viewManager )| *m |{ m.setCameraZoom( zoom ); }
+  }
+
+  pub inline fn moveBy( ng : *Engine, offset : def.Vec2 ) void
+  {
+    if( ng.viewManager )| *m |{ m.moveBy( offset ); }
+  }
+  pub inline fn zoomBy( ng : *Engine, factor : f32 ) void
+  {
+    if( ng.viewManager )| *m |{ m.zoomBy( factor ); }
+  }
+
 };

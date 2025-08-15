@@ -5,7 +5,7 @@ const Vec2 = def.Vec2;
 const VecR = def.VecR;
 const Dim2 = [ 2 ]u32; // like vec2, but with u32 instead of f32
 
-const DEF_GRID_SCALE = Dim2{      64,      64 };
+const DEF_GRID_SCALE = Dim2{ 64, 64 };
 const DEF_TILE_SCALE = Vec2{ .x = 64, .y = 64 };
 
 pub const e_tlmp_shape = enum( u8 )
@@ -52,12 +52,12 @@ pub fn getTileTypeColour( tileType : e_tile_type ) def.Colour
     .EMPTY   => def.newColour( 0,   0,   0,   0 ),
     .FLOOR   => def.newColour( 200, 200, 200, 255 ),
     .WALL    => def.newColour( 150, 150, 150, 255 ),
-    .TRIGGER => def.newColour( 100, 255, 100, 255 ),
-    .DOOR    => def.newColour( 255, 200, 100, 255 ),
-    .WATER   => def.newColour( 50,  150, 255, 255 ),
-    .LAVA    => def.newColour( 255, 100, 50,  255 ),
-    .SPAWN   => def.newColour( 0,   255, 0,   255 ),
-    .EXIT    => def.newColour( 0,   0,   255, 255 ),
+  //.TRIGGER => def.newColour( 100, 255, 100, 255 ),
+  //.DOOR    => def.newColour( 255, 200, 100, 255 ),
+  //.WATER   => def.newColour( 50,  150, 255, 255 ),
+  //.LAVA    => def.newColour( 255, 100, 50,  255 ),
+  //.SPAWN   => def.newColour( 0,   255, 0,   255 ),
+  //.EXIT    => def.newColour( 0,   0,   255, 255 ),
   };
 }
 
@@ -79,7 +79,7 @@ pub const Tilemap = struct
   tileScale : Vec2 = DEF_TILE_SCALE,
   tileShape : e_tlmp_shape = .RECT,
 
-  tileArray : ?std.ArrayList( Tile ) = null,
+  tileArray : std.ArrayList( Tile ) = undefined,
 
 
   // ================ FLAG MANAGEMENT ================
@@ -102,7 +102,7 @@ pub const Tilemap = struct
 
   // ================ INITIALIZATION FUNCTIONS ================
 
-  pub fn init( self : *Tilemap, allocator : std.mem.Allocatorm, fillType : ?e_tile_type ) void
+  pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : ?e_tile_type ) void
   {
     if( self.isInit() )
     {
@@ -111,9 +111,9 @@ pub const Tilemap = struct
     }
     def.log( .DEBUG, 0, @src(), "Initializing Tilemap {d}", .{ self.id });
 
-    if( self.gridScale.x == 0 or self.gridScale.y == 0 )
+    if( self.gridScale[ 0 ] == 0 or self.gridScale[ 1 ] == 0 )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ self.gridScale.x, self.gridScale.y });
+      def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ self.gridScale[ 0 ], self.gridScale[ 1 ] });
       return;
     }
     if( self.tileScale.x <= 0 or self.tileScale.y <= 0 )
@@ -122,19 +122,19 @@ pub const Tilemap = struct
       return;
     }
 
-    const capacity = @as( usize, self.gridScale.x * self.gridScale.y );
+    const capacity = @as( usize, self.gridScale[ 0 ] * self.gridScale[ 1 ] );
 
-    self.tileArray = std.ArrayList( Tile ).initCapacity( allocator, capacity ) orelse
+    self.tileArray = std.ArrayList( Tile ).initCapacity( allocator, capacity ) catch | err |
     {
-      def.log( .ERROR, 0, @src(), "Failed to allocate memory for tilemap tile array with capacity {d}", .{ capacity });
+      def.log( .ERROR, 0, @src(), "Failed to initialize tilemap tile array: {}", .{ err } );
       return;
     };
 
     self.setFlag( e_tlmp_flags.IS_INIT, true );
     self.setFlag( e_tlmp_flags.ACTIVE,  true );
 
-    if( fillType != null ){ self.fillWithType( fillType ); }
-    else                  { self.fillWithType( .EMPTY   ); }
+    if( fillType != null ){ self.fillWithType( fillType.? ); }
+    else                  { self.fillWithType( .EMPTY     ); }
   }
 
   pub fn deinit( self : *Tilemap ) void
@@ -144,14 +144,9 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot deinitialize", .{ self.id });
       return;
     }
-    if( self.tileArray == null )
-    {
-      def.log( .ERROR, 0, @src(), "Tilemap {d} tile array is null, cannot deinitialize", .{ self.id });
-      return;
-    }
     def.log( .DEBUG, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
 
-    self.tileArray.?.deinit();
+    self.tileArray.deinit();
     self.setFlag( e_tlmp_flags.DELETE,  true );
     self.setFlag( e_tlmp_flags.IS_INIT, false );
     self.setFlag( e_tlmp_flags.ACTIVE,  false );
@@ -162,11 +157,6 @@ pub const Tilemap = struct
     if( params.isInit() )
     {
       def.log( .ERROR, 0, @src(), "Params cannot be an initialized tilemap", .{});
-      return null;
-    }
-    if( params.tileArray != null )
-    {
-      def.log( .ERROR, 0, @src(), "Params cannot have a pre-existing tile array", .{});
       return null;
     }
 
@@ -203,17 +193,17 @@ pub const Tilemap = struct
   {
     if( !self.isIndexInGrid( index ))
     {
-      def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridScale.x, self.gridScale.y });
+      def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridScale[ 0 ], self.gridScale[ 1 ]});
       return null;
     }
-    return Dim2{ .x = index % self.gridScale.x, .y = index / self.gridScale.x };
+    return Dim2{ index % self.gridScale[ 0 ], index / self.gridScale[ 0 ] };
   }
 
   pub inline fn getTileIndex( self : *const Tilemap, gridPos : Dim2 ) ?u32
   {
-    if( !self.isTileInGrid( gridPos ))
+    if( !self.isCoordInGrid( gridPos ))
     {
-      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ gridPos.x, gridPos.y, self.gridScale.x, self.gridScale.y });
+      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ gridPos.x, gridPos.y, self.gridScale[ 0 ], self.gridScale[ 1 ]});
       return null;
     }
     return ( gridPos.y * self.gridScale.x ) + gridPos.x;
@@ -221,6 +211,12 @@ pub const Tilemap = struct
 
   pub inline fn getTile( self : *Tilemap, gridPos : Dim2 ) ?*Tile
   {
+    if( !self.isInit() )
+    {
+      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot get tile at {d}:{d}", .{ self.id, gridPos.x, gridPos.y });
+      return null;
+    }
+
     const index = self.getTileIndex( gridPos ) orelse return null;
     return &self.tileArray[ index ];
   }
@@ -234,7 +230,7 @@ pub const Tilemap = struct
   }
   pub inline fn isIndexInGrid( self : *const Tilemap, index : u32 ) bool
   {
-    return( index < self.gridScale.x * self.gridScale.y );
+    return( index < self.gridScale[ 0 ] * self.gridScale[ 1 ] );
   }
 //pub inline fn isTileArrayProperlySized( self : *const Tilemap ) bool
 //{
@@ -245,24 +241,25 @@ pub const Tilemap = struct
   {
     if( !self.isInit() )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with type {s}", .{ self.id, @tagName( tileType ) });
+      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with type {s}", .{ self.id, @tagName( tileType )});
       return;
     }
 
-    for( 0..self.gridScale.x * self.gridScale.y )| index |
+    for( 0..self.gridScale[ 0 ] * self.gridScale[ 1 ] )| index |
     {
-      const coords = self.getTileCoords( index ) orelse
+      const coords = self.getTileCoords( @intCast( index )) orelse
       {
-        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridScale.x, self.gridScale.y });
+        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridScale[ 0 ], self.gridScale[ 1 ]});
         continue;
       };
 
-      self.tileArray[ index ] = Tile{
+      self.tileArray.items.ptr[ index ] = Tile{
         .tType  = tileType,
         .colour = getTileTypeColour( tileType ),
         .mapPos = coords,
       };
     }
+    else { def.log( .ERROR, 0, @src(), "Tilemap {d} tile array is null, cannot fill with type {s}", .{ self.id, @tagName( tileType )}); }
   }
 
   // ================ POSITION FUNCTIONS ================

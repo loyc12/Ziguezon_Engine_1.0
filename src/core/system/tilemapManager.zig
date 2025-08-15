@@ -8,8 +8,8 @@ const VecR    = def.VecR;
 
 pub const TilemapManager = struct
 {
-  isInit   : bool = false,
-  maxID    : u32  = 0,
+  isInit      : bool = false,
+  maxID       : u32  = 0,
   tilemapList : std.ArrayList( Tilemap ) = undefined,
 
   // ================================ HELPER FUNCTIONS ================================

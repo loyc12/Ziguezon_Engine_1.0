@@ -81,22 +81,25 @@ pub fn start( ng : *Engine ) void
     if( !ng.isResourceManagerInit() )
     {
       def.qlog( .TRACE, 0, @src(), "Initializing Resource manager" );
+      ng.resourceManager = .{};
       ng.resourceManager.?.init( def.alloc );
     }
     if( !ng.isTilemapManagerInit() )
     {
       def.qlog( .TRACE, 0, @src(), "Initializing Tilemap manager" );
+      ng.tilemapManager = .{};
       ng.tilemapManager.?.init( def.alloc );
     }
     if( !ng.isEntityManagerInit() )
     {
       def.qlog( .TRACE, 0, @src(), "Initializing Entity manager" );
-      ng.entityManager.?.init(   def.alloc );
+      ng.entityManager = .{};
+      ng.entityManager.?.init( def.alloc );
     }
   }
   def.tryHook( .OnStart, .{ ng });
 
-  def.qlog( .INFO, 0, @src(), "$ Hello, world !\n" );
+  def.qlog( .INFO, 0, @src(), "& Hello, world !\n" );
   ng.state = .STARTED;
 }
 
@@ -141,7 +144,7 @@ pub fn stop( ng : *Engine ) void
     }
   }
   ng.state = .OFF;
-  def.qlog( .INFO, 0, @src(), "# Goodbye, cruel world...\n" );
+  def.qlog( .INFO, 0, @src(), "& Goodbye, cruel world...\n" );
 }
 
 
@@ -161,6 +164,7 @@ pub fn open( ng : *Engine ) void
     if( !ng.isViewManagerInit() )
     {
       def.qlog( .TRACE, 0, @src(), "Initializing View manager" );
+      ng.viewManager = .{};
       ng.viewManager.?.init( def.alloc );
     }
   }
@@ -177,7 +181,7 @@ pub fn open( ng : *Engine ) void
     {
       def.ray.setTargetFPS( def.DEF_TARGET_FPS );
       def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" );
-      ng.viewManager.?.setMainCameraOffset( def.getHalfScreenSize() );
+      ng.setCameraOffset( def.getHalfScreenSize() );
     }
   }
   def.tryHook( .OnOpen, .{ ng });
@@ -185,7 +189,7 @@ pub fn open( ng : *Engine ) void
   // TODO : Start the game loop in a second thread here ?
 
   ng.state = .OPENED;
-  def.log( .DEBUG, 0, @src(), "$ Window initialized with size {d}x{d}\n", .{ def.getScreenWidth(), def.getScreenHeight() });
+  def.log( .DEBUG, 0, @src(), "& Window initialized with size {d}x{d}\n", .{ def.getScreenWidth(), def.getScreenHeight() });
 }
 
 pub fn close( ng : *Engine ) void
@@ -218,7 +222,7 @@ pub fn close( ng : *Engine ) void
   }
 
   ng.state = .STARTED;
-  def.qlog( .INFO, 0, @src(), "# Cya !\n" );
+  def.qlog( .INFO, 0, @src(), "& Cya !\n" );
 }
 
 

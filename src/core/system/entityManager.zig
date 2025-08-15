@@ -60,7 +60,6 @@ pub const EntityManager = struct
     {
       def.log( .WARN, 0, @src(), "Recalculated maxID {d} is greater than previous maxID {d}", .{ newMaxID, self.maxID });
     }
-
     self.maxID = newMaxID;
   }
 
@@ -166,7 +165,7 @@ pub const EntityManager = struct
 
   // ================================ ENTITY MANAGEMENT FUNCTIONS ================================
 
-  pub fn loadEntityFromParams( self : *EntityManager, newEntity : Entity ) ?*Entity
+  pub fn loadEntityFromParams( self : *EntityManager, params : Entity ) ?*Entity
   {
     def.qlog( .TRACE, 0, @src(), "Adding new Entity" );
 
@@ -176,12 +175,12 @@ pub const EntityManager = struct
       return null;
     }
 
-    var tmp = newEntity;
+    var tmp = params;
     tmp.id  = self.getNewID();
 
-    if( newEntity.id != 0 and newEntity.id != tmp.id )
+    if( params.id != 0 and params.id != tmp.id )
     {
-      def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ newEntity.id, tmp.id });
+      def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
     }
 
     self.entityList.append( tmp ) catch | err |

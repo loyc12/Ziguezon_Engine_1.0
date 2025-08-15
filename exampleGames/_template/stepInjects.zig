@@ -36,7 +36,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.t ))
   {
     DRAW_TEST = !DRAW_TEST;
-    ng.resourceManager.playAudio( "hit_1" );
+    ng.playAudio( "hit_1" );
     def.log( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
   }
 }

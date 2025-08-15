@@ -8,7 +8,7 @@ pub var DISK_ID : u32 = 0;
 pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
 {
 
-  if( ng.entityManager.loadEntityFromParams( // disk
+  if( ng.loadEntityFromParams( // disk
   .{
     .pos    = .{ .x = -720, .y = 0 },
     .scale  = .{ .x = 32, .y = 32 },

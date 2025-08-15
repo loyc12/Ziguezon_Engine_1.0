@@ -12,9 +12,10 @@ pub fn loopLogic( ng : *Engine ) void
     def.log( .WARN, 0, @src(), "Cannot start the game loop in state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else { def.qlog( .TRACE, 0, @src(), "Starting the game loop..." ); }
 
+  def.qlog( .TRACE, 0, @src(), "Starting the game loop..." );
   def.tryHook( .OnLoopStart, .{ ng });
+  def.qlog( .INFO, 0, @src(), "& Game loop started\n" );
 
   // NOTE : this is a blocking loop, it will not return until the game is closed
   // TODO : use a thread to run this loop in the background ?
@@ -35,10 +36,8 @@ pub fn loopLogic( ng : *Engine ) void
     }
   }
   def.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
-
   def.tryHook( .OnLoopEnd, .{ ng });
-
-  def.qlog( .INFO, 0, @src(), "Game loop stopped" );
+  def.qlog( .INFO, 0, @src(), "& Game loop stopped\n" );
 }
 
 
@@ -55,7 +54,7 @@ pub fn updateInputs( ng : *Engine ) void
       if( ng.isViewManagerInit() )
       {
         def.qlog( .TRACE, 0, @src(), "Updating View manager main camera offset" );
-        ng.viewManager.?.setMainCameraOffset( def.getHalfScreenSize() );
+        ng.setCameraOffset( def.getHalfScreenSize() );
       }
       else { def.qlog( .WARN, 0, @src(), "No View manager initialized, skipping camera offset update" ); }
     }
@@ -77,9 +76,9 @@ pub fn tickEntities( ng : *Engine ) void    // TODO : use tick rate instead of f
   {
     def.tryHook( .OnTickEntities, .{ ng });
 
-    ng.entityManager.?.tickActiveEntities( ng.sdt );
-    //ng.entityManager.collideActiveEntities( ng.sdt );
-    ng.entityManager.?.deleteAllMarkedEntities();
+    ng.tickActiveEntities( ng.sdt );
+    //ng.collideActiveEntities( ng.sdt );
+    ng.deleteAllMarkedEntities();
 
   def.tryHook( .OffTickEntities, .{ ng });
   }
@@ -106,7 +105,7 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
     return;
   }
 
-  if( ng.viewManager.?.getMainCameraCpy() )| cam |
+  if( ng.getCameraCpy() )| cam |
   {
     def.ray.beginMode2D( cam );
     {
@@ -114,13 +113,13 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
 
       if( ng.isTilemapManagerInit() )
       {
-        ng.tilemapManager.?.renderActiveTilemaps();
+        ng.renderActiveTilemaps();
       }
       else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
 
       if( ng.isEntityManagerInit() )
       {
-        ng.entityManager.?.renderActiveEntities();
+        ng.renderActiveEntities();
       }
       else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
 
