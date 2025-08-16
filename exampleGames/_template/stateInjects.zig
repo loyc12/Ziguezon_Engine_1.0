@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-var BALL_ID : u32 = 0;
+pub var EXAMPLE_NTT_ID : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
@@ -28,7 +28,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     .colour = def.Colour.white,
     .pos    = .{ .x = 512, .y = 0, .z = 0 },
   })
-  )| ball |{ BALL_ID = ball.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball entity" ); }
+  )| ball |{ EXAMPLE_NTT_ID = ball.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball entity" ); }
 
   if( ng.loadTilemapFromParams( // world
   .{

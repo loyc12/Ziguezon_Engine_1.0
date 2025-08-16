@@ -302,7 +302,9 @@ pub fn logLapTime() void
   const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
   const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
 
-  log( .INFO, 0, @src(), "@ Lap time : {d}.{d:0>9} ", .{ sec, nano });
+  const fps  : f32 = if( now == 0 ) 0.0 else 1_000_000_000.0 / @as( f32, @floatFromInt( now ));
+
+  log( .INFO, 0, @src(), "@ Lap time : {d}.{d:0>9} ( {d:.2} fps )", .{ sec, nano, fps });
 }
 
 

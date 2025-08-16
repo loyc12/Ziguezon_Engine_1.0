@@ -1,6 +1,11 @@
-const std = @import( "std" );
-const def = @import( "defs" );
+const std      = @import( "std" );
+const def      = @import( "defs" );
+const stateInj = @import( "stateInjects.zig" );
 
+const Engine = def.Engine;
+const Entity = def.Entity;
+const Vec2   = def.Vec2;
+const VecR   = def.VecR;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
@@ -44,7 +49,14 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
-  _ = ng; // Prevent unused variable warning
+  var exampleEntity = ng.getEntity( stateInj.EXAMPLE_NTT_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Entity ) not found", .{ stateInj.EXAMPLE_NTT_ID });
+    return;
+  };
+
+  exampleEntity.pos.z += 0.01 * ( @cos( exampleEntity.pos.z ) + 1.5 ); // Example of a simple variable rotation effect
+  exampleEntity.pos.y  = 256  * ( @sin( exampleEntity.pos.z ) );       // Example of a simple variable vertical movement effect
 }
 
 pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
