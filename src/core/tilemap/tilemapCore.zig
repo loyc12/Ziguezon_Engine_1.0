@@ -99,6 +99,28 @@ pub const Tilemap = struct
 //pub inline fn drawDirX( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_X ); }
 //pub inline fn drawDirY( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_Y ); }
 
+  // ================ CHECKERS ================
+
+  pub inline fn isCoordsValid( self : *const Tilemap, coords : Coords2 ) bool
+  {
+    if( !coords.isPos() )
+    {
+      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
+      return false;
+    }
+    if( coords.isSupXY( self.gridSize ))
+    {
+      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.gridSize.x, self.gridSize.y });
+      return false;
+    }
+    return true;
+  }
+
+  pub inline fn isIndexValid( self : *const Tilemap, index : u32 ) bool
+  {
+    return( index < self.gridSize.x * self.gridSize.y );
+  }
+
 
   // ================ INITIALIZATION FUNCTIONS ================
 
@@ -191,7 +213,7 @@ pub const Tilemap = struct
 
   pub inline fn getTileCoords( self : *const Tilemap, index : u32 ) ?Coords2
   {
-    if( !self.isIndexInGrid( index ))
+    if( !self.isIndexValid( index ))
     {
       def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridSize.x, self.gridSize.y });
       return null;
@@ -203,11 +225,8 @@ pub const Tilemap = struct
 
   pub inline fn getTileIndex( self : *const Tilemap, gridCoords : Coords2 ) ?u32
   {
-    if( !self.areCoordsInGrid( gridCoords ))
-    {
-      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ gridCoords.x, gridCoords.y, self.gridSize.x, self.gridSize.y });
-      return null;
-    }
+    if( !self.isCoordsValid( gridCoords )){ return null; }
+
     return @intCast( gridCoords.x + ( gridCoords.y * self.gridSize.y ));
   }
 
@@ -218,6 +237,7 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot get tile at {d}:{d}", .{ self.id, gridCoords.x, gridCoords.y });
       return null;
     }
+    if( !self.isCoordsValid( gridCoords )){ return null; }
 
     const index = self.getTileIndex( gridCoords ) orelse return null;
     return &self.tileArray.items.ptr[ index ];
@@ -225,24 +245,6 @@ pub const Tilemap = struct
 
 
   // ================ GRID FUNCTIONS ================
-
-  pub inline fn areCoordsInGrid( self : *const Tilemap, tileCoords : Coords2 ) bool
-  {
-    if( !tileCoords.isPos() )
-    {
-      def.log( .WARN, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ tileCoords.x, tileCoords.y });
-      return false;
-    }
-    return( tileCoords.x < self.gridSize.x and tileCoords.y < self.gridSize.y );
-  }
-  pub inline fn isIndexInGrid( self : *const Tilemap, index : u32 ) bool
-  {
-    return( index < self.gridSize.x * self.gridSize.y );
-  }
-//pub inline fn isTileArrayProperlySized( self : *const Tilemap ) bool
-//{
-//  return( self.tileArray.len == self.gridSize.x * self.gridSize.y );
-//}
 
   pub fn fillWithType( self : *Tilemap, tileType : e_tile_type ) void
   {
@@ -273,13 +275,18 @@ pub const Tilemap = struct
 
   pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
   pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.z; }
-  pub inline fn getTilePos( self : *const Tilemap, gridCoords : Coords2 ) VecR
+
+  pub inline fn getTileWorldPos( self : *const Tilemap, gridCoords : Coords2 ) ?VecR
   {
-    const relPos = def.addVec2( self.getRelTilePos( gridCoords ), self.getGridPos() );
+    if( !self.isCoordsValid( gridCoords )){ return null; }
+
+    const relPos = def.addVec2( self.getRelTilePos( gridCoords ).?, self.getGridPos() );
     return VecR{ .x = relPos.x, .y = relPos.y, .z = self.gridPos.z };
   }
-  pub fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) Vec2
+  pub fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?Vec2
   {
+    if( !self.isCoordsValid( gridCoords )){ return null; }
+
     var tilePos = switch( self.tileShape )
     {
       .RECT => Vec2{
@@ -311,6 +318,12 @@ pub const Tilemap = struct
 
   pub fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2 ) void
   {
+    if( !self.isCoordsValid( gridCoords ))
+    {
+      def.log( .ERROR, 0, @src(), "Unable to draw tile at position {d}:{d} in tilemap {d} : coords are invalid", .{ gridCoords.x, gridCoords.y, self.id });
+      return;
+    }
+
     const tile = self.getTile( gridCoords ) orelse
     {
       def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridCoords.x, gridCoords.y, -1 });
@@ -323,7 +336,7 @@ pub const Tilemap = struct
       return;
     }
 
-    const pos = self.getTilePos( gridCoords );
+    const pos = self.getTileWorldPos( gridCoords ).?;
     def.drawCircle( def.newVec2( pos.x, pos.y ), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
   }
 
@@ -348,7 +361,7 @@ pub const Tilemap = struct
     }
   }
 
-  // TODO : test me
+  // TODO : TEST THIS SHIT
   pub fn findHitTileCoords( self : *const Tilemap, point : Vec2 ) ?Coords2
   {
     def.log( .TRACE, 0, @src(), "Finding hit tile at point {d}:{d} for Tilemap {d}", .{ point.x, point.y, self.id });
@@ -359,15 +372,17 @@ pub const Tilemap = struct
       return null;
     }
 
-    // Aligning the rotation of the point to the tilemap's
-    var p = def.rotVec2Rad( point, -self.getRot());
+    // Centering the point on the tilemap
+    var p = def.subVec2( point, self.getGridPos() );
 
-    // Canceling out the grid's pos and scale
-    p = def.subVec2( p, self.getGridPos() );
+    // Canceling out the grid's rotation
+    p = def.rotVec2Rad( p, -self.getRot());
+
+    // Converting the point to tile coordinates
     p = def.divVec2( p, self.tileScale );
-    p = def.addVec2( p, Vec2{ .x = 0.5, .y = 0.5 });
 
-    if( p.x < 0 or p.x >= @as( f32, self.gridSize.x ) or p.y < 0 or p.y >= @as( f32, self.gridSize.y ))
+    // Checking if the point is out of bounds
+    if( p.x < 0 or p.x >= @as( f32, self.gridSize.x + 1 ) or p.y < 0 or p.y >= @as( f32, self.gridSize.y + 1 ))
     {
       def.log( .DEBUG, 0, @src(), "Point {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ p.x, p.y, self.gridSize.x, self.gridSize.y });
       return null;
