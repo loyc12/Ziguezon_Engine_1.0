@@ -64,7 +64,7 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
     return;
   };
 
-  exampleTilemap.gridCenter.z += 0.01;
+  exampleTilemap.gridPos.z += 0.01;
 }
 
 pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )

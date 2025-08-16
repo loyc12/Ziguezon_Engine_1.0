@@ -155,6 +155,14 @@ pub const denorm = mth_u.denorm;
 pub const renorm = mth_u.renorm;
 
 
+// ================ COORDINATES SHORTHANDS ================
+
+pub const cor_u  = @import( "utils/coorder.zig" );
+
+pub const Coords2 = cor_u.Coords2;
+pub const Coords3 = cor_u.Coords3;
+
+
 // ================ VECTORS SHORTHANDS ================
 
 // ======== RAYLIB COLOUR ========
