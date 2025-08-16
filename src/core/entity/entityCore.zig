@@ -74,7 +74,7 @@ pub const Entity = struct
   // ================ POSITION FUNCTIONS ================
   // Uses AABB positioning
 
-  const nttPos = @import( "entityPos.zig" );
+  const nttPos = @import( "entityTrans.zig" );
 
   // POSITION ACCESSORS
   pub inline fn getCenter( self : *const Entity ) Vec2 { return Vec2{ .x = self.pos.x, .y = self.pos.y } ;}
@@ -143,7 +143,7 @@ pub const Entity = struct
 
   // ================ COLLISION FUNCTIONS ================
 
-  const nttCld = @import( "entityCld.zig" );
+  const nttCld = @import( "entityColide.zig" );
 
   // DISTANCE FUNCTIONS
   pub inline fn getXDistTo(    self : *const Entity, other : *const Entity ) f32 { return nttCld.getXDistTo(    self, other ); }
@@ -159,7 +159,7 @@ pub const Entity = struct
 
   // ================ RENDER FUNCTIONS ================
 
-  const nttRdr = @import( "entityRdr.zig" );
+  const nttRdr = @import( "entityRender.zig" );
 
   pub inline fn isOnScreen(    self : *const Entity ) bool { return nttRdr.isOnScreen( self ); }
   pub inline fn clampInScreen( self :       *Entity ) void { nttPos.clampInScreen( self ); }

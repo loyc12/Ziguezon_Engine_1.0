@@ -73,13 +73,13 @@ pub const Tilemap = struct
   id    : u32 = 0,
   flags : u8  = 0, // Flags for the tilemap ( e.g. is it a grid tilemap ? )
 
-  gridPos   : VecR,
-  gridScale : Dim2 = DEF_GRID_SCALE,
+  gridCenter : VecR,
+  gridScale  : Dim2 = DEF_GRID_SCALE,
 
-  tileScale : Vec2 = DEF_TILE_SCALE,
-  tileShape : e_tlmp_shape = .RECT,
+  tileScale  : Vec2 = DEF_TILE_SCALE,
+  tileShape  : e_tlmp_shape = .RECT,
 
-  tileArray : std.ArrayList( Tile ) = undefined,
+  tileArray  : std.ArrayList( Tile ) = undefined,
 
 
   // ================ FLAG MANAGEMENT ================
@@ -203,22 +203,22 @@ pub const Tilemap = struct
   {
     if( !self.isCoordInGrid( gridPos ))
     {
-      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ gridPos.x, gridPos.y, self.gridScale[ 0 ], self.gridScale[ 1 ]});
+      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ gridPos[ 0 ], gridPos[ 1 ], self.gridScale[ 0 ], self.gridScale[ 1 ]});
       return null;
     }
-    return ( gridPos.y * self.gridScale.x ) + gridPos.x;
+    return ( gridPos[ 1 ] * self.gridScale[ 1 ] ) + gridPos[ 0 ];
   }
 
-  pub inline fn getTile( self : *Tilemap, gridPos : Dim2 ) ?*Tile
+  pub inline fn getTile( self : *const Tilemap, gridPos : Dim2 ) ?*Tile
   {
     if( !self.isInit() )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot get tile at {d}:{d}", .{ self.id, gridPos.x, gridPos.y });
+      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot get tile at {d}:{d}", .{ self.id, gridPos[ 0 ], gridPos[ 1 ] });
       return null;
     }
 
     const index = self.getTileIndex( gridPos ) orelse return null;
-    return &self.tileArray[ index ];
+    return &self.tileArray.items.ptr[ index ];
   }
 
 
@@ -226,7 +226,7 @@ pub const Tilemap = struct
 
   pub inline fn isCoordInGrid( self : *const Tilemap, coord : Dim2 ) bool
   {
-    return( coord.x < self.gridScale.x and coord.y < self.gridScale.y );
+    return( coord[ 0 ] < self.gridScale[ 0 ] and coord[ 1 ] < self.gridScale[ 1 ] );
   }
   pub inline fn isIndexInGrid( self : *const Tilemap, index : u32 ) bool
   {
@@ -264,26 +264,38 @@ pub const Tilemap = struct
 
   // ================ POSITION FUNCTIONS ================
 
-  pub inline fn getGridCenter( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
-  pub inline fn getGridRot(    self : *const Tilemap ) f32  { return self.gridPos.z; }
-  pub inline fn getTilePos(    self : *const Tilemap, gridPos : Dim2 ) VecR
+  pub inline fn getGridCenter( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridCenter.x, .y = self.gridCenter.y }; }
+  pub inline fn getGridRot(    self : *const Tilemap ) f32  { return self.gridCenter.z; }
+  pub inline fn getTileCenter(    self : *const Tilemap, gridPos : Dim2 ) VecR
   {
-    const relPos = def.addVec2( self.getGridCenter(), self.getRelTilePos( gridPos ));
-    return VecR{ .x = relPos.x, .y = relPos.y, .z = self.gridPos.z };
+    const relPos = def.addVec2( self.getRelTileCenter( gridPos ), self.getGridCenter() );
+    return VecR{ .x = relPos.x, .y = relPos.y, .z = self.gridCenter.z };
   }
-  pub fn getRelTilePos( self : *const Tilemap, gridPos : Dim2 ) Vec2
+  pub fn getRelTileCenter( self : *const Tilemap, gridPos : Dim2 ) Vec2
   {
     var tilePos = switch( self.tileShape )
     {
       .RECT => Vec2{
-        .x = @as( f32, @floatFromInt( gridPos.x )) + 0.5,
-        .y = @as( f32, @floatFromInt( gridPos.y )) + 0.5,
+        .x = @as( f32, @floatFromInt( gridPos[ 0 ] )),
+        .y = @as( f32, @floatFromInt( gridPos[ 1 ] )),
         },
-      // TODO : add other shapes ( trickier posisitons )
+      // TODO : add other shapes ( trickier positions )
     };
 
+    const offset = def.divVec2ByVal(
+      .{
+        .x = @floatFromInt( self.gridScale[ 0 ] - 1 ), // Minus 1 because no need to offset a 1x1 grid
+        .y = @floatFromInt( self.gridScale[ 1 ] - 1 ), // Minus 1 because no need to offset a 1x1 grid
+      }, 2 )
+    orelse
+    {
+      def.log( .ERROR, 0, @src(), "Tilemap {d} has null grid scale, cannot get tile position", .{ self.id });
+      return Vec2{ .x = 0, .y = 0 };
+    };
+
+    tilePos = def.subVec2(    tilePos, offset );
     tilePos = def.mulVec2(    tilePos, self.tileScale );
-    tilePos = def.rotVec2Rad( tilePos, self.getRot()  );
+    tilePos = def.rotVec2Rad( tilePos, self.getGridRot()  );
 
     return tilePos;
   }
@@ -294,33 +306,35 @@ pub const Tilemap = struct
   {
     const tile = self.getTile( gridPos ) orelse
     {
-      def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridPos.x, gridPos.y, -1 });
+      def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridPos[ 0 ], gridPos[ 1 ], -1 });
       return;
     };
 
     if( tile.tType == .EMPTY )
     {
-      def.log( .TRACE, 0, @src(), "Tile at position {d}:{d} is empty, not drawing", .{ gridPos.x, gridPos.y });
+      def.log( .TRACE, 0, @src(), "Tile at position {d}:{d} is empty, not drawing", .{ gridPos[ 0 ], gridPos[ 1 ] });
       return;
     }
 
-    const pos = self.getTilePos( gridPos );
-    def.drawCircle( pos, self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
+    const pos = self.getTileCenter( gridPos );
+    def.drawCircle( def.newVec2( pos.x, pos.y ), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
   }
 
   pub fn drawTilemap( self : *const Tilemap ) void
   {
+    def.log( .TRACE, 0, @src(), "Drawing Tilemap {d} at position {d}:{d} with scale {d}:{d}", .{ self.id, self.gridCenter.x, self.gridCenter.y, self.gridScale[ 0 ], self.gridScale[ 1 ] });
+
     if( !self.isInit() )
     {
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot draw", .{ self.id });
       return;
     }
 
-    for( 0..self.gridScale.x * self.gridScale.y )| index |
+    for( 0..self.gridScale[ 0 ] * self.gridScale[ 1 ] )| index |
     {
-      const gridPos = self.getTileCoords( index ) orelse
+      const gridPos = self.getTileCoords( @intCast( index )) orelse
       {
-        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridScale.x, self.gridScale.y });
+        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridScale[ 0 ], self.gridScale[ 1 ] });
         continue;
       };
       self.drawSingleTile( gridPos );
@@ -330,6 +344,8 @@ pub const Tilemap = struct
   // TODO : test me
   pub fn findHitTileCoords( self : *const Tilemap, point : Vec2 ) ?Dim2
   {
+    def.log( .TRACE, 0, @src(), "Finding hit tile at point {d}:{d} for Tilemap {d}", .{ point.x, point.y, self.id });
+
     if( !self.isInit() )
     {
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot find hit tile", .{ self.id });
@@ -346,7 +362,7 @@ pub const Tilemap = struct
 
     if( p.x < 0 or p.x >= @as( f32, self.gridScale.x ) or p.y < 0 or p.y >= @as( f32, self.gridScale.y ))
     {
-      def.log( .DEBUG, 0, @src(), "Point {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ p.x, p.y, self.gridScale.x, self.gridScale.y });
+      def.log( .DEBUG, 0, @src(), "Point {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ p.x, p.y, self.gridScale[ 0 ], self.gridScale[ 1 ] });
       return null;
     }
 

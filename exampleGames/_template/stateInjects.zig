@@ -2,6 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 pub var EXAMPLE_NTT_ID : u32 = 0;
+pub var EXAMPLE_TLM_ID : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
@@ -21,21 +22,21 @@ pub fn OnStop( ng : *def.Engine ) void // Called by engine.stop()
 
 pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your entities
 {
-  if( ng.loadEntityFromParams( // ball
+  if( ng.loadEntityFromParams(
   .{
     .shape  = .DSTR,
     .scale  = .{ .x = 62, .y = 62 },
     .colour = def.Colour.white,
     .pos    = .{ .x = 512, .y = 0, .z = 0 },
   })
-  )| ball |{ EXAMPLE_NTT_ID = ball.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball entity" ); }
+  )| ntt |{ EXAMPLE_NTT_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example entity" ); }
 
-  if( ng.loadTilemapFromParams( // world
+  if( ng.loadTilemapFromParams(
   .{
-    .gridPos = def.newVecR( -640, -360, 0 ),
+    .gridCenter = def.newVecR( -512, 0, def.DtR( 30 )),
+    .gridScale  = .{ 5, 5 },
   }, .FLOOR )
-  )| world |{ def.log( .INFO,  0, @src(), "World tilemap created with ID: {d}", .{ world.id } );}
-  else {      def.qlog( .ERROR, 0, @src(), "Failed to create world tilemap" ); }
+  )| tlm |{ EXAMPLE_TLM_ID = tlm.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example tilemap" ); }
 }
 pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()
 {

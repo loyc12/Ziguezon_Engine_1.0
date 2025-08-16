@@ -57,6 +57,14 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
 
   exampleEntity.pos.z += 0.01 * ( @cos( exampleEntity.pos.z ) + 1.5 ); // Example of a simple variable rotation effect
   exampleEntity.pos.y  = 256  * ( @sin( exampleEntity.pos.z ) );       // Example of a simple variable vertical movement effect
+
+  var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+    return;
+  };
+
+  exampleTilemap.gridCenter.z += 0.01;
 }
 
 pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
