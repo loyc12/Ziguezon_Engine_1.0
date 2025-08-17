@@ -31,8 +31,8 @@ pub fn clampInScreen( e1 : *Entity ) void
 
 inline fn drawDirectionLine( e1 : *const Entity, color : def.Colour, width : f32 ) void
 {
-  const frontPoint = def.radToVec2Scaled( e1.getRot(), e1.scale );
-  def.drawLine( e1.getCenter(), def.addVec2( e1.getCenter(), frontPoint ), color, width );
+  const frontPoint = Vec2.fromAngleScaled( e1.getRot(), e1.scale );
+  def.drawLine( e1.getCenter(), e1.getCenter().add( frontPoint ), color, width );
 }
 
 inline fn drawPolyOne1( e1 : *const Entity, sides : u8 ) void

@@ -274,14 +274,14 @@ pub const Tilemap = struct
   // ================ POSITION FUNCTIONS ================
 
   pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
-  pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.z; }
+  pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.r; }
 
   pub inline fn getTileWorldPos( self : *const Tilemap, gridCoords : Coords2 ) ?VecR
   {
     if( !self.isCoordsValid( gridCoords )){ return null; }
 
-    const relPos = def.addVec2( self.getRelTilePos( gridCoords ).?, self.getGridPos() );
-    return VecR{ .x = relPos.x, .y = relPos.y, .z = self.gridPos.z };
+    const relPos = self.getGridPos().add( self.getRelTilePos( gridCoords ).? );
+    return VecR{ .x = relPos.x, .y = relPos.y, .r = self.gridPos.r };
   }
   pub fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?Vec2
   {
@@ -296,20 +296,14 @@ pub const Tilemap = struct
       // TODO : add other shapes ( trickier positions )
     };
 
-    const offset = def.divVec2ByVal(
-      .{
-        .x = @floatFromInt( self.gridSize.x - 1 ), // Minus 1 because no need to offset a 1x1 grid
-        .y = @floatFromInt( self.gridSize.y - 1 ), // Minus 1 because no need to offset a 1x1 grid
-      }, 2 )
-    orelse
-    {
-      def.log( .ERROR, 0, @src(), "Tilemap {d} has null grid scale, cannot get tile position", .{ self.id });
-      return Vec2{ .x = 0, .y = 0 };
+    const offset = Vec2{
+      .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )) / 2, // Minus 1 because no need to offset a 1x1 grid
+      .y = @as( f32, @floatFromInt( self.gridSize.y - 1 )) / 2, // Minus 1 because no need to offset a 1x1 grid
     };
 
-    tilePos = def.subVec2(    tilePos, offset );
-    tilePos = def.mulVec2(    tilePos, self.tileScale );
-    tilePos = def.rotVec2Rad( tilePos, self.getGridRot()  );
+    tilePos = tilePos.sub( offset );
+    tilePos = tilePos.mul( self.tileScale );
+    tilePos = tilePos.rot( self.getGridRot() );
 
     return tilePos;
   }
@@ -337,7 +331,7 @@ pub const Tilemap = struct
     }
 
     const pos = self.getTileWorldPos( gridCoords ).?;
-    def.drawCircle( def.newVec2( pos.x, pos.y ), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
+    def.drawCircle( pos.toVec2(), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
   }
 
   pub fn drawTilemap( self : *const Tilemap ) void

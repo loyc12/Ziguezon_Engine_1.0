@@ -42,9 +42,9 @@ pub const Entity = struct
   id     : u32  = 0,
   flags  : u8   = @intFromEnum( e_ntt_flags.DEFAULT ),
   pos    : VecR,
-  vel    : VecR = .{ .x = 0, .y = 0, .z = 0 },
-  acc    : VecR = .{ .x = 0, .y = 0, .z = 0 },
-  scale  : Vec2 = .{ .x = 0, .y = 0 },
+  vel    : VecR = .{},
+  acc    : VecR = .{},
+  scale  : Vec2 = .{},
 
   colour : def.Colour = def.Colour.white,
   shape  : e_ntt_shape   = .NONE,
@@ -78,7 +78,7 @@ pub const Entity = struct
 
   // POSITION ACCESSORS
   pub inline fn getCenter( self : *const Entity ) Vec2 { return Vec2{ .x = self.pos.x, .y = self.pos.y } ;}
-  pub inline fn getRot(    self : *const Entity ) f32  { return self.pos.z; }
+  pub inline fn getRot(    self : *const Entity ) f32  { return self.pos.r; }
 
   pub inline fn getLeftX(   self : *const Entity ) f32 { return nttPos.getLeftX(   self ); }
   pub inline fn getRightX(  self : *const Entity ) f32 { return nttPos.getRightX(  self ); }
@@ -92,7 +92,7 @@ pub const Entity = struct
 
   // POSITION SETTERS
   pub inline fn setCenter( self : *Entity, newPos : Vec2 ) void { self.pos.x = newPos.x; self.pos.y = newPos.y; }
-  pub inline fn setRot(    self : *Entity, newRot : f32  ) void { self.pos.z = newRot; }
+  pub inline fn setRot(    self : *Entity, newRot : f32  ) void { self.pos.r = newRot; }
 
   pub inline fn cpyEntityPos( self : *Entity, other : *const Entity ) void { nttPos.cpyEntityPos( self, other ); }
   pub inline fn cpyEntityVel( self : *Entity, other : *const Entity ) void { nttPos.cpyEntityVel( self, other ); }

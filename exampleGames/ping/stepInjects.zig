@@ -39,7 +39,7 @@ pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : 
     .{
       .pos    = def.G_RNG.getScaledVecR( dPos, pos ),
       .vel    = def.G_RNG.getScaledVecR( dVel, vel ),
-      .scale  = def.newVec2( size, size ),
+      .scale  = Vec2.fromVals( size, size ),
 
       .shape  = def.G_RNG.getVal( def.ntt.e_ntt_shape ),
       .colour = colour,
@@ -53,9 +53,9 @@ pub fn emitParticlesOnBounce( ng : *Engine, ball : *Entity ) void
 
   emitParticles( ng,
     ball.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
-    .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .z = 0.0 },
-    .{ .x = 16,  .y = 16, .z = 1.0 },
-    .{ .x = 128, .y = 32, .z = 2.0 },
+    .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .r = 0.0 },
+    .{ .x = 16,  .y = 16, .r = 1.0 },
+    .{ .x = 128, .y = 32, .r = 2.0 },
     12, def.Colour.yellow );
 
   ng.playAudio( "hit_1" );
@@ -114,9 +114,9 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
         return;
       };
 
-      ball.pos = def.newVecR( 0, 0, 0 );
-      ball.vel = def.newVecR( 0, 0, 0 );
-      ball.acc = def.newVecR( 0, 0, 0 );
+      ball.pos = VecR.zero();
+      ball.vel = VecR.zero();
+      ball.acc = VecR.zero();
 
       // Reset the positions of the ball shadows
       for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
@@ -138,10 +138,10 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Move the camera with the numpad keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveBy( def.newVec2(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveBy( def.newVec2(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveBy( def.newVec2( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveBy( def.newVec2(  8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveBy( Vec2.fromVals(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveBy( Vec2.fromVals(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveBy( Vec2.fromVals( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveBy( Vec2.fromVals(  8,  0 )); }
 
     // Zoom in and out with the mouse wheel
     if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomBy( 1.111 ); }
@@ -151,7 +151,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
     {
       ng.setCameraZoom( 1.0 );
-      ng.setCameraTarget( def.zeroVec2() );
+      ng.setCameraTarget( Vec2.zero() );
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -417,8 +417,8 @@ pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
   s2_buff[ s2_slice.len ] = 0;
 
   // Find the center of each field in screen space
-  const p1_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() *  0.25, 0 ), cam );
-  const p2_score_pos = def.ray.getWorldToScreen2D( def.newVec2( def.getScreenWidth() * -0.25, 0 ), cam );
+  const p1_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() *  0.25, .y = 0 }, cam );
+  const p2_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() * -0.25, .y = 0 }, cam );
 
   // Draw each player's score in the middle of their respective fields
   def.drawCenteredText( &s1_buff, p1_score_pos.x, p1_score_pos.y, 64, def.Colour.blue );

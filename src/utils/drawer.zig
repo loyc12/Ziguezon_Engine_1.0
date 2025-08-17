@@ -9,29 +9,29 @@ const ELLIPSE_SIDE_COUNT: u8 = 32; // Number of sides for the ellipse polygon ap
 
 // ================================ DRAWING FUNCTIONS ================================
 
-pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( Vec2{ .x = 0, .y = 0 }, def.getScreenSize(), col ); }
+pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( def.nullRayVec2, def.getScreenSize().toRayVec2(), col ); }
 
 
 // ================ SIMPLE DRAWING FUNCTIONS ================
 
 pub inline fn drawPixel( pos : Vec2, col : Colour ) void
 {
-  ray.drawPixelV( pos, col );
+  ray.drawPixelV( pos.toRayVec2(), col );
 }
 pub inline fn drawMacroPixel( pos : Vec2, size : f32, col : Colour ) void
 {
-  ray.drawRectangleV( pos, size, col );
+  ray.drawRectangleV( pos.toRayVec2(), size, col );
 }
 
 pub inline fn drawLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f32 ) void
 {
-  ray.drawLineEx( ray.Vector2{ .x = p1.x, .y = p1.y }, ray.Vector2{ .x = p2.x, .y = p2.y }, width, col );
+  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col );
 }
 // pub fn drawDotedLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f32, spacinf : f32 ) void
 
 pub inline fn drawCircle( pos : Vec2, radius : f32, col : Colour ) void
 {
-  ray.drawCircleV( pos, radius, col );
+  ray.drawCircleV( pos.toRayVec2(), radius, col );
 }
 pub inline fn drawCircleLines( pos : Vec2, radius : f32, col : Colour ) void // TODO : Add line thickness
 {
@@ -40,16 +40,16 @@ pub inline fn drawCircleLines( pos : Vec2, radius : f32, col : Colour ) void // 
 
 pub inline fn drawSimpleEllipse( pos : Vec2, radiusX : f32, radiusY : f32, col : Colour ) void
 {
-  ray.drawEllipseV( pos, radiusX, radiusY, col );
+  ray.drawEllipseV( pos.toRayVec2(), radiusX, radiusY, col );
 }
 pub inline fn drawSimpleEllipseLines( pos : Vec2, radiusX : f32, radiusY : f32, col : Colour ) void // TODO : Add line thickness
 {
-  ray.drawEllipseLinesV( pos, radiusX, radiusY, col );
+  ray.drawEllipseLinesV( pos.toRayVec2(), radiusX, radiusY, col );
 }
 
 pub inline fn drawSimpleRectangle( pos : Vec2, size : Vec2, col : Colour ) void
 {
-  ray.drawRectangleV( pos, size, col );
+  ray.drawRectangleV( pos.toRayVec2(), size, col );
 }
 pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, width : f32  ) void
 {
@@ -63,35 +63,35 @@ pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, w
 
 pub inline fn drawBasicTria( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour ) void
 {
-  ray.drawTriangle( p1, p2, p3, col );
+  ray.drawTriangle( p1.toRayVec2(), p2.toRayVec2(), p3.toRayVec2(), col );
 }
 pub inline fn drawBasicTriaLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f32 ) void
 {
-  ray.drawLineEx( p1, p2, width, col );
-  ray.drawLineEx( p2, p3, width, col );
-  ray.drawLineEx( p3, p1, width, col );
+  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col );
+  ray.drawLineEx( p2.toRayVec2(), p3.toRayVec2(), width, col );
+  ray.drawLineEx( p3.toRayVec2(), p1.toRayVec2(), width, col );
 }
 
 pub inline fn drawBasicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour ) void
 {
-  ray.drawTriangle( p1, p2, p3, col );
-  ray.drawTriangle( p3, p4, p1, col );
+  ray.drawTriangle( p1.toRayVec2(), p2.toRayVec2(), p3.toRayVec2(), col );
+  ray.drawTriangle( p3.toRayVec2(), p4.toRayVec2(), p1.toRayVec2(), col );
 }
 pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f32  ) void
 {
-  ray.drawLineEx( p1, p2, width, col );
-  ray.drawLineEx( p2, p3, width, col );
-  ray.drawLineEx( p3, p4, width, col );
-  ray.drawLineEx( p4, p1, width, col );
+  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col );
+  ray.drawLineEx( p2.toRayVec2(), p3.toRayVec2(), width, col );
+  ray.drawLineEx( p3.toRayVec2(), p4.toRayVec2(), width, col );
+  ray.drawLineEx( p4.toRayVec2(), p1.toRayVec2(), width, col );
 }
 
 pub inline fn drawBasicPoly( pos : Vec2, radius : f32, rotation : f32, col : Colour, sides : u8 ) void
 {
-  ray.drawPoly( pos, @intCast( sides ), radius, rotation, col );
+  ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, rotation, col );
 }
 pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, rotation : f32, col : Colour, width : f32, sides : u8  ) void // TODO : Add line thickness
 {
-  ray.drawPolyLinesEx( pos, @intCast( sides ), radius, rotation, width, col );
+  ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, rotation, width, col );
 }
 
 
@@ -100,7 +100,7 @@ pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, rotation : f32, col 
 // Draws a rectangle centered at a given position with specified rotation (rad), colour and size, and scaled in x/y by radii
 pub inline fn drawRectanglePlus(  pos : Vec2, radii : Vec2, rotation : f32, col : Colour) void
 {
-  ray.drawRectanglePro( ray.Rectangle{ .x = pos.x, .y = pos.y, .width = radii.x * 2, .height = radii.y * 2 }, radii, rotation, col );
+  ray.drawRectanglePro( ray.Rectangle{ .x = pos.x, .y = pos.y, .width = radii.x * 2, .height = radii.y * 2 }, radii.toRayVec2(), rotation, col );
 }
 
 // Draws an ellipse centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
@@ -119,13 +119,13 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour, 
   }
   const sideStepAngle = 2.0 * std.math.pi / @as( f32, @floatFromInt( sides ));
 
-  const P0 = def.addVec2( pos, def.radToVec2Scaled( rotation,                 radii ));
-  var   P1 = def.addVec2( pos, def.radToVec2Scaled( rotation + sideStepAngle, radii ));
+  const P0 = pos.add( Vec2.fromAngleScaled( rotation,                 radii ));
+  var   P1 = pos.add( Vec2.fromAngleScaled( rotation + sideStepAngle, radii ));
 
   for( 2..sides )| i |
   {
-    const P2 = def.addVec2( pos, def.radToVec2Scaled( rotation + ( sideStepAngle * @as( f32, @floatFromInt( i ))), radii ));
-    ray.drawTriangle( P0, P2, P1, col );
+    const P2 = pos.add( Vec2.fromAngleScaled( rotation + ( sideStepAngle * @as( f32, @floatFromInt( i ))), radii ));
+    ray.drawTriangle( P0.toRayVec2(), P2.toRayVec2(), P1.toRayVec2(), col );
     P1 = P2;
   }
 }

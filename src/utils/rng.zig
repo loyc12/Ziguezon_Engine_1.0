@@ -107,7 +107,7 @@ pub const randomiser = struct
   pub fn getVecR( self : *randomiser ) def.VecR
   {
     const angle = self.getAngleRad();
-    return def.VecR{ .x = @cos( angle ), .y = @sin( angle ), .z = self.getAngleRad() };
+    return def.VecR{ .x = @cos( angle ), .y = @sin( angle ), .r = self.getAngleRad() };
   }
 
   // Returns a random vector in 2D + rotation space scaled by the given scale and offset by a given amount
@@ -117,11 +117,11 @@ pub const randomiser = struct
 
     tmp.x *= scale.x;
     tmp.y *= scale.y;
-    tmp.z *= scale.z;
+    tmp.r *= scale.r;
 
     tmp.x += offset.x;
     tmp.y += offset.y;
-    tmp.z += offset.z;
+    tmp.r += offset.r;
 
     return tmp;
   }

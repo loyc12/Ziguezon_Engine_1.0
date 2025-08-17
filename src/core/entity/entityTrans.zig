@@ -285,13 +285,13 @@ pub fn moveSelf( e1 : *Entity, sdt : f32 ) void
 
   e1.vel.x += e1.acc.x * sdt;
   e1.vel.y += e1.acc.y * sdt;
-  e1.vel.z += e1.acc.z * sdt;
+  e1.vel.r += e1.acc.r * sdt;
 
   e1.pos.x += e1.vel.x * sdt;
   e1.pos.y += e1.vel.y * sdt;
-  e1.pos.z += e1.vel.z * sdt;
+  e1.pos.r += e1.vel.r * sdt;
 
   e1.acc.x = 0;
   e1.acc.y = 0;
-  e1.acc.z = 0;
+  e1.acc.r = 0;
 }

@@ -27,13 +27,13 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     .shape  = .DSTR,
     .scale  = .{ .x = 62, .y = 62 },
     .colour = def.Colour.white,
-    .pos    = .{ .x = 512, .y = 0, .z = 0 },
+    .pos    = .{ .x = 512, .y = 0, .r = 0 },
   })
   )| ntt |{ EXAMPLE_NTT_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example entity" ); }
 
   if( ng.loadTilemapFromParams(
   .{
-    .gridPos  = def.newVecR( -512, 0, def.DtR( 30 )),
+    .gridPos  = def.VecR.fromVals( -512, 0, def.DtR( 30 )),
     .gridSize = .{ .x = 5, .y = 5 },
   }, .FLOOR )
   )| tlm |{ EXAMPLE_TLM_ID = tlm.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example tilemap" ); }
