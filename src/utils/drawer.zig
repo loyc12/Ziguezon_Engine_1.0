@@ -7,7 +7,21 @@ const Colour = def.Colour;
 
 const ELLIPSE_SIDE_COUNT: u8 = 32; // Number of sides for the ellipse polygon approximation
 
-// ================================ DRAWING FUNCTIONS ================================
+// ================ SCREEN FUNCTIONS ================
+
+//pub inline fn isPixelInScreen( pos : Vec2 ) bool
+//{
+//  const screenSize = def.getScreenSize();
+//  return pos.x >= 0 and pos.x <= screenSize.x and pos.y >= 0 and pos.y <= screenSize.y;
+//}
+//pub inline fn isPixelNearScreen( pos : Vec2, offset : Vec2 ) bool
+//{
+//  const screenSize = def.getScreenSize();
+//  return(
+//    pos.x >= -offset.x and pos.x <= offset.x + screenSize.x and
+//    pos.y >= -offset.y and pos.y <= offset.y + screenSize.y
+//  );
+//}
 
 pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( def.nullRayVec2, def.getScreenSize().toRayVec2(), col ); }
 

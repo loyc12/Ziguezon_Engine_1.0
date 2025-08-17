@@ -310,6 +310,28 @@ pub const Tilemap = struct
 
   // =============== DRAW FUNCTIONS ================
 
+  //pub fn isTileOnScreen( self : *const Tilemap, gridCoords : Coords2 ) bool // TODO : IMPLEMENT ME ( reuse entity pos logic, after moving it to more generic util file )
+  //{
+  //  if( !self.isCoordsValid( gridCoords ))
+  //  {
+  //    def.log( .ERROR, 0, @src(), "Cannot check if tile at {d}:{d} is on screen in tilemap {d} : coords are invalid", .{ gridCoords.x, gridCoords.y, self.id });
+  //    return false;
+  //  }
+//
+  //  const tilePos = self.getTileWorldPos( gridCoords ) orelse
+  //  {
+  //    def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridCoords.x, gridCoords.y, self.id });
+  //    return false;
+  //  };
+//
+  //  const tileMaxSize = @max( self.tileScale.x, self.tileScale.y ) * 1.415;
+//
+  //  const shw : f32 = def.getScreenWidth()  / 2 + tileMaxSize;
+  //  const shh : f32 = def.getScreenHeight() / 2 + tileMaxSize;
+//
+  //  return isOnRange( Vec2{ .x = -shw, .y = -shh }, Vec2{ .x = shw,  .y = shh });
+  //}
+
   pub fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2 ) void
   {
     if( !self.isCoordsValid( gridCoords ))
