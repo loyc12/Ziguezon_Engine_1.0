@@ -206,15 +206,9 @@ pub const TilemapManager = struct
 
   // pub fn loadTilemapFromFile( self : *TilemapManager, filePath : []const u8, allocator : std.mem.Allocator ) ?*Tilemap
 
-  pub fn createDefaultTilemap( self : *TilemapManager, allocator : std.mem.Allocator ) ?*Tilemap
+  pub fn loadDefaultTilemap( self : *TilemapManager, allocator : std.mem.Allocator ) ?*Tilemap
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Tilemap" );
-
-    if( !self.isInit )
-    {
-      def.log( .WARN, 0, @src(), "Tilemap manager is not initialized", .{});
-      return null;
-    }
 
     return self.createTilemapFromParams( Tilemap{
       .gridPos   = Vec2{ .x = 0, .y = 0 },

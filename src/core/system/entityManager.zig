@@ -194,18 +194,12 @@ pub const EntityManager = struct
 
   // pub fn loadEntitiesFromFile( self : *EntityManager, filePath : []const u8 ) ?*Entity
 
-  pub fn createDefaultEntity( self : *EntityManager ) ?*Entity
+  pub fn loadDefaultEntity( self : *EntityManager ) ?*Entity
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Entity" );
 
-    if( !self.isInit )
-    {
-      def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
-      return null;
-    }
-
     return self.loadEntityFromParams( Entity{
-      .pos    = def.newVecR( 0, 0, 0 ),
+      .pos    = VecR.new( 0, 0, 0 ),
       .colour = def.newColour( 255, 255, 255, 255 ),
       .shape  = .RECT,
     });
