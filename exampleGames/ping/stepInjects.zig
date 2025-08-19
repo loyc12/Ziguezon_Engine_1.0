@@ -23,7 +23,7 @@ pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
     return;
   };
 
-  dst.cpyEntityPos( src );
+  dst.pos = src.pos;
 }
 
 // Emit particles in a given position and velocity range, with the given colour
@@ -156,7 +156,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     }
   }
 
-  if( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE )
+  if( WINNER == 0 and ( SCORES[ 0 ] >= WIN_SCORE or SCORES[ 1 ] >= WIN_SCORE ))
   {
     ng.changeState( .OPENED ); // Pause the game on victory
 
@@ -245,12 +245,20 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
   // ================ CLAMPING THE PLAYER POSITIONS ================
 
   p1.vel.x = P1_MV_FAC * playerSpeedFactor;
-  p1.clampInX( -hWidth, -barHalfWidth );
-  if( p1.vel.x == 0 ) { P1_MV_FAC = 0; }
+  if( !p1.isInXRange( -hWidth, -barHalfWidth ))
+  {
+    p1.clampInXRange( -hWidth, -barHalfWidth );
+    p1.vel.x  = 0;
+    P1_MV_FAC = 0;
+  }
 
   p2.vel.x = P2_MV_FAC * playerSpeedFactor;
-  p2.clampInX( barHalfWidth, hWidth );
-  if( p2.vel.x == 0 ) { P2_MV_FAC = 0; }
+  if( !p2.isInXRange( barHalfWidth, hWidth ))
+  {
+    p2.clampInXRange( barHalfWidth, hWidth );
+    p2.vel.x  = 0;
+    P2_MV_FAC = 0;
+  }
 
 
   // ================ CLAMPING THE BALL POSITION ================

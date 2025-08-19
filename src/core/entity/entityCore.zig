@@ -77,67 +77,76 @@ pub const Entity = struct
   const nttPos = @import( "entityTrans.zig" );
 
   // POSITION ACCESSORS
-  pub inline fn getCenter( self : *const Entity ) Vec2 { return Vec2{ .x = self.pos.x, .y = self.pos.y } ;}
+
+  pub inline fn getCenter( self : *const Entity ) Vec2 { return self.pos.toVec2() ;}
   pub inline fn getRot(    self : *const Entity ) f32  { return self.pos.r; }
 
-  pub inline fn getLeftX(   self : *const Entity ) f32 { return nttPos.getLeftX(   self ); }
-  pub inline fn getRightX(  self : *const Entity ) f32 { return nttPos.getRightX(  self ); }
-  pub inline fn getTopY(    self : *const Entity ) f32 { return nttPos.getTopY(    self ); }
-  pub inline fn getBottomY( self : *const Entity ) f32 { return nttPos.getBottomY( self ); }
+  pub inline fn getLeftX(   self : *const Entity ) f32 { return def.getLeftX(   self.pos.toVec2(), self.scale ); }
+  pub inline fn getRightX(  self : *const Entity ) f32 { return def.getRightX(  self.pos.toVec2(), self.scale ); }
+  pub inline fn getTopY(    self : *const Entity ) f32 { return def.getTopY(    self.pos.toVec2(), self.scale ); }
+  pub inline fn getBottomY( self : *const Entity ) f32 { return def.getBottomY( self.pos.toVec2(), self.scale ); }
 
-  pub inline fn getTopLeft(     self : *const Entity ) Vec2 { return nttPos.getTopLeft(     self ); }
-  pub inline fn getTopRight(    self : *const Entity ) Vec2 { return nttPos.getTopRight(    self ); }
-  pub inline fn getBottomLeft(  self : *const Entity ) Vec2 { return nttPos.getBottomLeft(  self ); }
-  pub inline fn getBottomRight( self : *const Entity ) Vec2 { return nttPos.getBottomRight( self ); }
+  pub inline fn getTopLeft(     self : *const Entity ) Vec2 { return def.getTopLeft(     self.pos.toVec2(), self.scale ); }
+  pub inline fn getTopRight(    self : *const Entity ) Vec2 { return def.getTopRight(    self.pos.toVec2(), self.scale ); }
+  pub inline fn getBottomLeft(  self : *const Entity ) Vec2 { return def.getBottomLeft(  self.pos.toVec2(), self.scale ); }
+  pub inline fn getBottomRight( self : *const Entity ) Vec2 { return def.getBottomRight( self.pos.toVec2(), self.scale ); }
 
-  // POSITION SETTERS
   pub inline fn setCenter( self : *Entity, newPos : Vec2 ) void { self.pos.x = newPos.x; self.pos.y = newPos.y; }
   pub inline fn setRot(    self : *Entity, newRot : f32  ) void { self.pos.r = newRot; }
 
-  pub inline fn cpyEntityPos( self : *Entity, other : *const Entity ) void { nttPos.cpyEntityPos( self, other ); }
-  pub inline fn cpyEntityVel( self : *Entity, other : *const Entity ) void { nttPos.cpyEntityVel( self, other ); }
-  pub inline fn cpyEntityAcc( self : *Entity, other : *const Entity ) void { nttPos.cpyEntityAcc( self, other ); }
+  pub inline fn setLeftX(   self : *Entity, leftX   : f32 ) void { self.pos.x = def.getCenterXFromLeftX(   leftX,   self.scale ); }
+  pub inline fn setRightX(  self : *Entity, rightX  : f32 ) void { self.pos.x = def.getCenterXFromRightX(  rightX,  self.scale ); }
+  pub inline fn setTopY(    self : *Entity, topY    : f32 ) void { self.pos.y = def.getCenterYFromTopY(    topY,    self.scale ); }
+  pub inline fn setBottomY( self : *Entity, bottomY : f32 ) void { self.pos.y = def.getCenterYFromBottomY( bottomY, self.scale ); }
 
-  pub inline fn setLeftX(   self : *Entity, leftX   : f32 ) void { nttPos.setLeftX(   self, leftX ); }
-  pub inline fn setRightX(  self : *Entity, rightX  : f32 ) void { nttPos.setRightX(  self, rightX ); }
-  pub inline fn setTopY(    self : *Entity, topY    : f32 ) void { nttPos.setTopY(    self, topY ); }
-  pub inline fn setBottomY( self : *Entity, bottomY : f32 ) void { nttPos.setBottomY( self, bottomY ); }
+  pub inline fn setTopLeft(     self : *Entity, topLeftPos     : Vec2 ) void { self.pos = def.getCenterFromTopLeft(     topLeftPos,     self.scale ).toVecR( self.pos.r ); }
+  pub inline fn setTopRight(    self : *Entity, topRightPos    : Vec2 ) void { self.pos = def.getCenterFromTopRight(    topRightPos,    self.scale ).toVecR( self.pos.r ); }
+  pub inline fn setBottomLeft(  self : *Entity, bottomLeftPos  : Vec2 ) void { self.pos = def.getCenterFromBottomLeft(  bottomLeftPos,  self.scale ).toVecR( self.pos.r ); }
+  pub inline fn setBottomRight( self : *Entity, bottomRightPos : Vec2 ) void { self.pos = def.getCenterFromBottomRight( bottomRightPos, self.scale ).toVecR( self.pos.r ); }
 
-  pub inline fn setTopLeft(     self : *Entity, topLeftPos     : Vec2 ) void { nttPos.setTopLeft(     self, topLeftPos ); }
-  pub inline fn setTopRight(    self : *Entity, topRightPos    : Vec2 ) void { nttPos.setTopRight(    self, topRightPos ); }
-  pub inline fn setBottomLeft(  self : *Entity, bottomLeftPos  : Vec2 ) void { nttPos.setBottomLeft(  self, bottomLeftPos ); }
-  pub inline fn setBottomRight( self : *Entity, bottomRightPos : Vec2 ) void { nttPos.setBottomRight( self, bottomRightPos ); }
+  // RANGE CHECK FUNCTIONS
+
+  pub inline fn isLeftOfX(   self : *const Entity, xVal : f32 ) bool { return def.isLeftOfX(  self.pos.toVec2(), self.scale, xVal ); }
+  pub inline fn isRightOfX(  self : *const Entity, xVal : f32 ) bool { return def.isRightOfX( self.pos.toVec2(), self.scale, xVal ); }
+  pub inline fn isAboveY(    self : *const Entity, yVal : f32 ) bool { return def.isAboveY(   self.pos.toVec2(), self.scale, yVal ); }
+  pub inline fn isBelowY(    self : *const Entity, yVal : f32 ) bool { return def.isBelowY(   self.pos.toVec2(), self.scale, yVal ); }
+
+  pub inline fn isOnXVal(  self : *const Entity, xVal  : f32  ) bool { return def.isOnXVal(  self.pos.toVec2(), self.scale, xVal  ); }
+  pub inline fn isOnYVal(  self : *const Entity, yVal  : f32  ) bool { return def.isOnYVal(  self.pos.toVec2(), self.scale, yVal  ); }
+  pub inline fn isOnPoint( self : *const Entity, point : Vec2 ) bool { return def.isOnPoint( self.pos.toVec2(), self.scale, point ); }
+
+  pub inline fn isOnXRange( self : *const Entity, minX   : f32,  maxX   : f32  ) bool { return def.isOnXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
+  pub inline fn isOnYRange( self : *const Entity, minY   : f32,  maxY   : f32  ) bool { return def.isOnYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
+  pub inline fn isOnRange(  self : *const Entity, minPos : Vec2, maxPos : Vec2 ) bool { return def.isOnArea(   self.pos.toVec2(), self.scale, minPos, maxPos ); }
+
+  pub inline fn isInXRange( self : *const Entity, minX   : f32,  maxX   : f32  ) bool { return def.isInXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
+  pub inline fn isInYRange( self : *const Entity, minY   : f32,  maxY   : f32  ) bool { return def.isInYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
+  pub inline fn isInRange(  self : *const Entity, minPos : Vec2, maxPos : Vec2 ) bool { return def.isInArea(   self.pos.toVec2(), self.scale, minPos, maxPos ); }
 
   // CLAMPING FUNCTIONS
-  pub inline fn clampLeftX(   self : *Entity, minLeftX   : f32 ) void { nttPos.clampLeftX(   self, minLeftX ); }
-  pub inline fn clampRightX(  self : *Entity, maxRightX  : f32 ) void { nttPos.clampRightX(  self, maxRightX ); }
-  pub inline fn clampTopY(    self : *Entity, minTopY    : f32 ) void { nttPos.clampTopY(    self, minTopY ); }
-  pub inline fn clampBottomY( self : *Entity, maxBottomY : f32 ) void { nttPos.clampBottomY( self, maxBottomY ); }
 
-  pub inline fn clampInX(    self : *Entity, minX   : f32,  maxX   : f32  ) void { nttPos.clampInX(    self, minX, maxX ); }
-  pub inline fn clampInY(    self : *Entity, minY   : f32,  maxY   : f32  ) void { nttPos.clampInY(    self, minY, maxY ); }
-  pub inline fn clampInArea( self : *Entity, minPos : Vec2, maxPos : Vec2 ) void { nttPos.clampInArea( self, minPos, maxPos ); }
+  pub inline fn clampLeftOfX(   self : *Entity, minLeftX   : f32 ) void { self.pos.x = def.clampLeftOfX(   self.pos.toVec2(), self.scale, minLeftX   ); }
+  pub inline fn clampRighOftX(  self : *Entity, maxRightX  : f32 ) void { self.pos.x = def.clampRightOfX(  self.pos.toVec2(), self.scale, maxRightX  ); }
+  pub inline fn clampAboveY(    self : *Entity, minTopY    : f32 ) void { self.pos.y = def.clampAboveY(    self.pos.toVec2(), self.scale, minTopY    ); }
+  pub inline fn clampBelowY(    self : *Entity, maxBottomY : f32 ) void { self.pos.y = def.clampBelowY(    self.pos.toVec2(), self.scale, maxBottomY ); }
 
-  pub inline fn clampOnX(     self : *Entity, minX   : f32,  maxX   : f32  ) void { nttPos.clampOnX(    self, minX, maxX ); }
-  pub inline fn clampOnY(     self : *Entity, minY   : f32,  maxY   : f32  ) void { nttPos.clampOnY(    self, minY, maxY ); }
-  pub inline fn clampOnArea(  self : *Entity, minPos : Vec2, maxPos : Vec2 ) void { nttPos.clampOnArea( self, minPos, maxPos ); }
+  pub inline fn clampOnXVal(  self : *Entity, xVal  : f32  ) void { self.pos.x = def.clampOnXVal(  self.pos.toVec2(), self.scale, xVal  ); }
+  pub inline fn clampOnYVal(  self : *Entity, yVal  : f32  ) void { self.pos.y = def.clampOnYVal(  self.pos.toVec2(), self.scale, yVal  ); }
+  pub inline fn clampOnPoint( self : *Entity, point : Vec2 ) void { self.pos   = def.clampOnPoint( self.pos.toVec2(), self.scale, point ).toVecR( self.pos.r ); }
 
-  pub inline fn clampOnPoint(    self : *Entity, point : Vec2 ) void { nttPos.clampOnPoint( self, point ); }
-  pub inline fn clampOnEntity(   self : *Entity, other : *const Entity ) void { nttPos.clampOnEntity( self, other ); }
-  pub inline fn clampNearEntity( self : *Entity, other : *const Entity, maxOffset : Vec2 ) void { nttPos.clampNearEntity( self, other, maxOffset ); }
+  pub inline fn clampOnXRange(  self : *Entity, minX   : f32,  maxX   : f32  ) void { self.pos.x = def.clampOnXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
+  pub inline fn clampOnYRange(  self : *Entity, minY   : f32,  maxY   : f32  ) void { self.pos.y = def.clampOnYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
+  pub inline fn clampOnArea(    self : *Entity, minPos : Vec2, maxPos : Vec2 ) void { self.pos   = def.clampOnArea(   self.pos.toVec2(), self.scale, minPos, maxPos ).toVecR( self.pos.r ); }
 
-  // RANGE FUNCTIONS
-  pub inline fn isInRangeX( self : *const Entity, minX   : f32,  maxX   : f32  ) bool { return nttPos.isInRangeX( self, minX, maxX ); }
-  pub inline fn isInRangeY( self : *const Entity, minY   : f32,  maxY   : f32  ) bool { return nttPos.isInRangeY( self, minY, maxY ); }
-  pub inline fn isInRange(  self : *const Entity, minPos : Vec2, maxPos : Vec2 ) bool { return nttPos.isInRange(  self, minPos, maxPos ); }
+  pub inline fn clampInXRange( self : *Entity, minX   : f32,  maxX   : f32  ) void { self.pos.x = def.clampInXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
+  pub inline fn clampInYRange( self : *Entity, minY   : f32,  maxY   : f32  ) void { self.pos.y = def.clampInYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
+  pub inline fn clampInArea(   self : *Entity, minPos : Vec2, maxPos : Vec2 ) void { self.pos   = def.clampInArea(   self.pos.toVec2(), self.scale, minPos, maxPos ).toVecR( self.pos.r ); }
 
-  pub inline fn isOnRangeX( self : *const Entity, minX   : f32,  maxX   : f32  ) bool { return nttPos.isOnRangeX( self, minX, maxX ); }
-  pub inline fn isOnRangeY( self : *const Entity, minY   : f32,  maxY   : f32  ) bool { return nttPos.isOnRangeY( self, minY, maxY ); }
-  pub inline fn isOnRange(  self : *const Entity, minPos : Vec2, maxPos : Vec2 ) bool { return nttPos.isOnRange(  self, minPos, maxPos ); }
-
-  pub inline fn isOnPoint( self : *const Entity, point : Vec2 ) bool { return nttPos.isOnPoint( self, point ); }
+  pub inline fn clampInEntity( self : *Entity, other : *const Entity ) void { self.pos = def.clampInArea(  self.pos.toVec2(), self.scale, other.getTopLeft(), other.getBottomRight() ).toVecR( self.pos.r ); }
+  pub inline fn clampOnEntity( self : *Entity, other : *const Entity ) void { self.pos = def.clampOnArea(  self.pos.toVec2(), self.scale, other.getTopLeft(), other.getBottomRight() ).toVecR( self.pos.r ); }
 
   // MOVEMENT FUNCTIONS
+
   pub inline fn moveSelf( self : *Entity, sdt : f32 ) void { nttPos.moveSelf( self, sdt ); }
 
 
@@ -146,6 +155,7 @@ pub const Entity = struct
   const nttCld = @import( "entityColide.zig" );
 
   // DISTANCE FUNCTIONS
+
   pub inline fn getXDistTo(    self : *const Entity, other : *const Entity ) f32 { return nttCld.getXDistTo(    self, other ); }
   pub inline fn getYDistTo(    self : *const Entity, other : *const Entity ) f32 { return nttCld.getYDistTo(    self, other ); }
   pub inline fn getSqrDistTo(  self : *const Entity, other : *const Entity ) f32 { return nttCld.getSqrDistTo(  self, other ); }
@@ -153,6 +163,7 @@ pub const Entity = struct
   pub inline fn getCartDistTo( self : *const Entity, other : *const Entity ) f32 { return nttCld.getCartDistTo( self, other ); }
 
   // COLLISION FUNCTIONS
+
   pub inline fn isOverlapping( self : *const Entity, other : *const Entity ) bool  { return nttCld.isOverlapping( self, other ); }
   pub inline fn getOverlap(    self : *const Entity, other : *const Entity ) ?Vec2 { return nttCld.getOverlap(    self, other ); }
   pub inline fn collideWith(   self :       *Entity, other :       *Entity ) bool  { return nttCld.collideWith( self, other ); }

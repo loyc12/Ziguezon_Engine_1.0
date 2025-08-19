@@ -15,8 +15,8 @@ pub inline fn getScreenSize() def.Vec2
   return def.Vec2{ .x = getScreenWidth(), .y = getScreenHeight(), };
 }
 
-pub inline fn getHalfScreenWidth()  f32 { return getScreenWidth()  / 2.0; }
-pub inline fn getHalfScreenHeight() f32 { return getScreenHeight() / 2.0; }
+pub inline fn getHalfScreenWidth()  f32 { return getScreenWidth()  * 0.5; }
+pub inline fn getHalfScreenHeight() f32 { return getScreenHeight() * 0.5; }
 pub inline fn getHalfScreenSize() def.Vec2
 {
   return def.Vec2{ .x = getHalfScreenWidth(), .y = getHalfScreenHeight(), };

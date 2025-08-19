@@ -68,7 +68,7 @@ pub const Tile    = tlm.Tile;
 pub const Tilemap = tlm.Tilemap;
 
 
-// ================================ SHORTHANDS ================================
+// ================================ MANAGER SHORTHANDS ================================
 
 pub const alloc = std.heap.smp_allocator;
 
@@ -126,6 +126,69 @@ pub const drawCenteredText         = drw_u.drawCenteredText;
 pub const drawTexture              = drw_u.drawTexture;
 pub const drawTextureCentered      = drw_u.drawTextureCentered;
 
+
+// ================================ UTILS SHORTHANDS ================================
+
+// ================ BOXER SHORTHANDS ================
+
+pub const box_u = @import( "utils/boxer.zig" );
+
+pub const getLeftX       = box_u.getLeftX;
+pub const getRightX      = box_u.getRightX;
+pub const getTopY        = box_u.getTopY;
+pub const getBottomY     = box_u.getBottomY;
+
+pub const getTopLeft     = box_u.getTopLeft;
+pub const getTopRight    = box_u.getTopRight;
+pub const getBottomLeft  = box_u.getBottomLeft;
+pub const getBottomRight = box_u.getBottomRight;
+
+
+pub const getCenterXFromLeftX      = box_u.getCenterXFromLeftX;
+pub const getCenterXFromRightX     = box_u.getCenterXFromRightX;
+pub const getCenterYFromTopY       = box_u.getCenterYFromTopY;
+pub const getCenterYFromBottomY    = box_u.getCenterYFromBottomY;
+
+pub const getCenterFromTopLeft     = box_u.getCenterFromTopLeft;
+pub const getCenterFromTopRight    = box_u.getCenterFromTopRight;
+pub const getCenterFromBottomLeft  = box_u.getCenterFromBottomLeft;
+pub const getCenterFromBottomRight = box_u.getCenterFromBottomRight;
+
+
+pub const isLeftOfX   = box_u.isLeftOfX;
+pub const isRightOfX  = box_u.isRightOfX;
+pub const isAboveY    = box_u.isAboveY;
+pub const isBelowY    = box_u.isBelowY;
+
+pub const isOnXVal    = box_u.isOnXVal;
+pub const isOnYVal    = box_u.isOnYVal;
+pub const isOnPoint   = box_u.isOnPoint;
+
+pub const isOnXRange  = box_u.isOnXRange;
+pub const isOnYRange  = box_u.isOnYRange;
+pub const isOnArea    = box_u.isOnArea;
+
+pub const isInXRange  = box_u.isInXRange;
+pub const isInYRange  = box_u.isInYRange;
+pub const isInArea    = box_u.isInArea;
+
+
+pub const clampLeftOfX   = box_u.clampLeftOfX;
+pub const clampRightOfX  = box_u.clampRightOfX;
+pub const clampAboveY    = box_u.clampAboveY;
+pub const clampBelowY    = box_u.clampBelowY;
+
+pub const clampOnXVal    = box_u.clampOnXVal;
+pub const clampOnYVal    = box_u.clampOnYVal;
+pub const clampOnPoint   = box_u.clampOnPoint;
+
+pub const clampOnXRange  = box_u.clampOnXRange;
+pub const clampOnYRange  = box_u.clampOnYRange;
+pub const clampOnArea    = box_u.clampOnArea;
+
+pub const clampInXRange  = box_u.clampInXRange;
+pub const clampInYRange  = box_u.clampInYRange;
+pub const clampInArea    = box_u.clampInArea;
 
 // ================ LOGGER SHORTHANDS ================
 

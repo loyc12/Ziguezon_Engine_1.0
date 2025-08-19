@@ -10,20 +10,19 @@ pub fn isOnScreen( e1 : *const Entity ) bool
 {
   def.log( .TRACE, 0, @src(), "Checking if Entity {d} is on screen", .{ e1.id });
 
-  const shw : f32 = def.getScreenWidth()  / 2;
-  const shh : f32 = def.getScreenHeight() / 2;
+  // Adding half the entity's scale to give a margin for angled entities ( 1.5 ~= 1.414)
+  const screenScale = def.getHalfScreenSize().add( e1.scale.mulVal( 0.5 ));
 
-  return e1.isOnRange( Vec2{ .x = -shw, .y = -shh }, Vec2{ .x = shw,  .y = shh });
+  return e1.isOnRange( screenScale.mulVal( -1 ), screenScale );
 }
 
 pub fn clampInScreen( e1 : *Entity ) void
 {
   def.log( .TRACE, 0, @src(), "Clamping Entity {d} on screen", .{ e1.id });
 
-  const shw : f32 = def.getScreenWidth()  / 2;
-  const shh : f32 = def.getScreenHeight() / 2;
+  const screenScale = def.getHalfScreenSize();
 
-  e1.clampInArea( Vec2{ .x = -shw, .y = -shh }, Vec2{ .x = shw,  .y = shh });
+  e1.clampInArea( screenScale.mulVal( -1 ), screenScale );
 }
 
 
