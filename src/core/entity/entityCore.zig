@@ -72,9 +72,32 @@ pub const Entity = struct
 
 
   // ================ POSITION FUNCTIONS ================
-  // Uses AABB positioning
+  // Assumes AABB hitboxes for all shapes and orientations
 
-  const nttPos = @import( "entityTrans.zig" );
+  // MOVEMENT FUNCTIONS
+
+  pub fn moveSelf( self : *Entity, sdt : f32 ) void
+  {
+    if( !self.isMobile() )
+    {
+      def.log( .TRACE, self.id, @src(), "Entity {d} is not mobile and cannot be moved", .{ self.id });
+      return;
+    }
+
+    def.log( .TRACE, self.id, @src(), "Moving Entity {d} by velocity {d}:{d} with acceleration {d}:{d} over time {d}", .{ self.id, self.vel.x, self.vel.y, self.acc.x, self.acc.y, sdt });
+
+    self.vel.x += self.acc.x * sdt;
+    self.vel.y += self.acc.y * sdt;
+    self.vel.r += self.acc.r * sdt;
+
+    self.pos.x += self.vel.x * sdt;
+    self.pos.y += self.vel.y * sdt;
+    self.pos.r += self.vel.r * sdt;
+
+    self.acc.x = 0;
+    self.acc.y = 0;
+    self.acc.r = 0;
+  }
 
   // POSITION ACCESSORS
 
@@ -145,12 +168,8 @@ pub const Entity = struct
   pub inline fn clampInEntity( self : *Entity, other : *const Entity ) void { self.pos = def.clampInArea(  self.pos.toVec2(), self.scale, other.getTopLeft(), other.getBottomRight() ).toVecR( self.pos.r ); }
   pub inline fn clampOnEntity( self : *Entity, other : *const Entity ) void { self.pos = def.clampOnArea(  self.pos.toVec2(), self.scale, other.getTopLeft(), other.getBottomRight() ).toVecR( self.pos.r ); }
 
-  // MOVEMENT FUNCTIONS
-
-  pub inline fn moveSelf( self : *Entity, sdt : f32 ) void { nttPos.moveSelf( self, sdt ); }
-
-
   // ================ COLLISION FUNCTIONS ================
+  // Assumes AABB hitboxes for all shapes and orientations
 
   const nttCld = @import( "entityColide.zig" );
 
@@ -173,7 +192,7 @@ pub const Entity = struct
   const nttRdr = @import( "entityRender.zig" );
 
   pub inline fn isOnScreen(    self : *const Entity ) bool { return nttRdr.isOnScreen( self ); }
-  pub inline fn clampInScreen( self :       *Entity ) void { nttPos.clampInScreen( self ); }
+  pub inline fn clampInScreen( self :       *Entity ) void { nttRdr.clampInScreen( self ); }
   pub inline fn renderSelf(    self : *const Entity ) void { nttRdr.renderEntity( self ); }
 };
 
