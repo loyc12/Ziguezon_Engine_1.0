@@ -101,20 +101,45 @@ pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, co
 
 pub inline fn drawBasicPoly( pos : Vec2, radius : f32, rotation : f32, col : Colour, sides : u8 ) void
 {
-  ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, rotation, col );
+  ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( rotation ), col );
 }
 pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, rotation : f32, col : Colour, width : f32, sides : u8  ) void // TODO : Add line thickness
 {
-  ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, rotation, width, col );
+  ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( rotation ), width, col );
 }
 
 
 // ================ ADVANCED DRAWING FUNCTIONS ================
 
+// Draws a triangle centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
+pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
+{
+  drawPolygonPlus( pos, radii, rotation, col, 3 );
+}
+
+// Draws a diamond centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
+pub inline fn drawDiamondPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
+{
+  drawPolygonPlus( pos, radii, rotation, col, 4 );
+  //drawBasicQuad(
+  //  pos.add( Vec2.fromVals(  radii.x,  0       ).rot( rotation )),
+  //  pos.add( Vec2.fromVals(  0,       -radii.y ).rot( rotation )),
+  //  pos.add( Vec2.fromVals( -radii.x,  0       ).rot( rotation )),
+  //  pos.add( Vec2.fromVals(  0,        radii.y ).rot( rotation )),
+  //  col
+  //);
+}
+
 // Draws a rectangle centered at a given position with specified rotation (rad), colour and size, and scaled in x/y by radii
 pub inline fn drawRectanglePlus(  pos : Vec2, radii : Vec2, rotation : f32, col : Colour) void
 {
-  ray.drawRectanglePro( ray.Rectangle{ .x = pos.x, .y = pos.y, .width = radii.x * 2, .height = radii.y * 2 }, radii.toRayVec2(), rotation, col );
+  drawBasicQuad(
+    pos.add( Vec2.fromVals(  radii.x,  radii.y ).rot( rotation )),
+    pos.add( Vec2.fromVals(  radii.x, -radii.y ).rot( rotation )),
+    pos.add( Vec2.fromVals( -radii.x, -radii.y ).rot( rotation )),
+    pos.add( Vec2.fromVals( -radii.x,  radii.y ).rot( rotation )),
+    col
+  );
 }
 
 // Draws an ellipse centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
@@ -133,28 +158,17 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour, 
   }
   const sideStepAngle = 2.0 * std.math.pi / @as( f32, @floatFromInt( sides ));
 
-  const P0 = pos.add( Vec2.fromAngleScaled( rotation,                 radii ));
-  var   P1 = pos.add( Vec2.fromAngleScaled( rotation + sideStepAngle, radii ));
+  const P0 = pos.add( Vec2.fromAngleScaled( 0,             radii ).rot( rotation ));
+  var   P1 = pos.add( Vec2.fromAngleScaled( sideStepAngle, radii ).rot( rotation ));
 
   for( 2..sides )| i |
   {
-    const P2 = pos.add( Vec2.fromAngleScaled( rotation + ( sideStepAngle * @as( f32, @floatFromInt( i ))), radii ));
+    var P2 = pos.add( Vec2.fromAngleScaled( sideStepAngle * @as( f32, @floatFromInt( i )), radii ).rot( rotation ));
     ray.drawTriangle( P0.toRayVec2(), P2.toRayVec2(), P1.toRayVec2(), col );
     P1 = P2;
   }
 }
 
-// Draws a triangle centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
-{
-  drawPolygonPlus( pos, radii, rotation, col, 3 );
-}
-
-// Draws a diamond centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawDiamondPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
-{
-  drawPolygonPlus( pos, radii, rotation, col, 4 );
-}
 
 // Draws a 6-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
@@ -202,5 +216,5 @@ pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32
 
 pub inline fn drawTexturePlus( image : ray.Texture2D, source : ray.Rectangle, dest : ray.Rectangle, origin : Vec2, rotation : f32, col : Colour ) void
 {
-  ray.drawTexturePro( image, source, dest, origin, rotation, col );
+  ray.drawTexturePro( image, source, dest, origin, def.RtD( rotation ), col );
 }

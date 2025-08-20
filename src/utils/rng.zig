@@ -156,4 +156,14 @@ pub const randomiser = struct
 
     return tmp;
   }
+
+  pub fn getColour( self : *randomiser ) def.Colour
+  {
+    return def.Colour{
+      .r = @intFromFloat( @floor( self.rng_u.float( f32 ) * 255.999 )),
+      .g = @intFromFloat( @floor( self.rng_u.float( f32 ) * 255.999 )),
+      .b = @intFromFloat( @floor( self.rng_u.float( f32 ) * 255.999 )),
+      .a = 255,
+    };
+  }
 };

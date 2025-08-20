@@ -8,12 +8,15 @@ const Coords2 = def.Coords2;
 const DEF_GRID_SIZE  = Coords2{ .x = 32, .y = 32 };
 const DEF_TILE_SCALE = Vec2{    .x = 64, .y = 64 };
 
-pub const e_tlmp_shape = enum( u8 )
+const HEX_OFFSET_RATIO = ( 1.2 );
+const HEX_TILE_RATIO   = ( 1.1 );
+
+pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 {
   RECT, // []
-//DIAM, // <>
-//HEXA, // <_>
-//TRIA, // /\
+  DIAM, // <>
+  HEXA, // <_> // TODO : Fix hexa rendering
+//TRIA, // /\  // TODO : Implement triangles
 };
 
 pub const e_tlmp_flags = enum( u8 )
@@ -220,7 +223,11 @@ pub const Tilemap = struct
     }
 
     const tmp = @as( i32, @intCast( index ));
-    return Coords2{ .x = @mod( tmp, self.gridSize.x ), .y = @divTrunc( tmp, self.gridSize.y )};
+
+    return Coords2{
+      .x = @mod(      tmp, self.gridSize.x ),
+      .y = @divTrunc( tmp, self.gridSize.x ),
+    };
   }
 
   pub inline fn getTileIndex( self : *const Tilemap, gridCoords : Coords2 ) ?u32
@@ -264,7 +271,7 @@ pub const Tilemap = struct
 
       self.tileArray.items.ptr[ index ] = Tile{
         .tType  = tileType,
-        .colour = getTileTypeColour( tileType ),
+        .colour = def.G_RNG.getColour(), // NOTE : DEBUG COLOUR : CHANGE BACK TO getTileTypeColour( tileType ),
         .mapPos = tileCoordss,
       };
     }
@@ -293,12 +300,31 @@ pub const Tilemap = struct
         .x = @as( f32, @floatFromInt( gridCoords.x )),
         .y = @as( f32, @floatFromInt( gridCoords.y )),
         },
+      .DIAM => Vec2{
+        .x = @as( f32, @floatFromInt( gridCoords.x + gridCoords.y )),
+        .y = @as( f32, @floatFromInt( gridCoords.y - gridCoords.x )),
+      },
+      .HEXA => Vec2{
+        .x = @as( f32, @floatFromInt( gridCoords.x + gridCoords.y )) / HEX_OFFSET_RATIO,
+        .y = @as( f32, @floatFromInt( gridCoords.y - gridCoords.x )),
+      },
       // TODO : add other shapes ( trickier positions )
     };
 
-    const offset = Vec2{
-      .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )) / 2, // Minus 1 because no need to offset a 1x1 grid
-      .y = @as( f32, @floatFromInt( self.gridSize.y - 1 )) / 2, // Minus 1 because no need to offset a 1x1 grid
+    const offset = switch( self.tileShape )
+    {
+      .RECT => Vec2{
+        .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )) / 2,
+        .y = @as( f32, @floatFromInt( self.gridSize.y - 1 )) / 2,
+      },
+      .DIAM => Vec2{
+        .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )),
+        .y = 0,
+      },
+      .HEXA => Vec2{
+        .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )) / HEX_OFFSET_RATIO,
+        .y = 0,
+      },
     };
 
     tilePos = tilePos.sub( offset );
@@ -353,7 +379,22 @@ pub const Tilemap = struct
     }
 
     const pos = self.getTileWorldPos( gridCoords ).?;
-    def.drawCircle( pos.toVec2(), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
+
+    const scale = switch( self.tileShape )
+    {
+      .RECT => self.tileScale.mulVal( 0.5 ),
+      .DIAM => self.tileScale,
+      .HEXA => self.tileScale.mul( .{ .x = 0.5, .y = 1.0 }).mulVal( HEX_TILE_RATIO ),
+    };
+
+    switch( self.tileShape )
+    {
+      .RECT => def.drawRect( pos.toVec2(), scale, self.getGridRot(), tile.colour ),
+      .DIAM => def.drawPoly( pos.toVec2(), scale, self.getGridRot(), tile.colour, 4 ),
+      .HEXA => def.drawPoly( pos.toVec2(), scale, self.getGridRot(), tile.colour, 6 ),
+    }
+
+    //def.drawCircle( pos.toVec2(), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
   }
 
   pub fn drawTilemap( self : *const Tilemap ) void
@@ -404,14 +445,26 @@ pub const Tilemap = struct
       return null;
     }
 
+    // TODO : TEST THIS
+
     // Getting the tile hit
     return switch( self.tileShape )
     {
       .RECT => Coords2{
         .x = @as( u32, @intFromFloat( @floor( p.x ))),
         .y = @as( u32, @intFromFloat( @floor( p.y ))),
-      }
-      // TODO : add other shapes ( trickier posisitons )
+      },
+
+      // TODO : TEST THESE   V
+
+      .DIAM => Coords2{
+        .x = @as( u32, @intFromFloat( @floor( p.x - p.y ))),
+        .y = @as( u32, @intFromFloat( @floor( p.x + p.y ))),
+      },
+      .HEXA => Coords2{
+        .x = @as( u32, @intFromFloat( @floor(( p.x - p.y ) * HEX_OFFSET_RATIO ))),
+        .y = @as( u32, @intFromFloat( @floor(( p.x + p.y )              ))),
+      },
     };
   }
 };
