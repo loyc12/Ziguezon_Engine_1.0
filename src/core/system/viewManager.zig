@@ -101,15 +101,15 @@ pub const ViewManager = struct
     self.camera.target = target.toRayVec2();
     def.log( .DEBUG, 0, @src(), "Main camera target set to {d}:{d}", .{ target.x, target.y });
   }
-  pub fn setCameraRotation( self : *ViewManager, rotation : f32 ) void
+  pub fn setCameraRotation( self : *ViewManager, a : def.Angle ) void
   {
     if( !self.isInit )
     {
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
       return;
     }
-    self.camera.rotation = rotation;
-    def.log( .DEBUG, 0, @src(), "Main camera rotation set to {d}", .{ rotation });
+    self.camera.rotation = a;
+    def.log( .DEBUG, 0, @src(), "Main camera rotation set to {d}", .{ a });
   }
   pub fn setCameraZoom( self : *ViewManager, zoom : f32 ) void
   {

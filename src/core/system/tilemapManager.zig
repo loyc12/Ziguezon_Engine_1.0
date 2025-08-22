@@ -211,7 +211,7 @@ pub const TilemapManager = struct
     def.qlog( .TRACE, 0, @src(), "Creating default Tilemap" );
 
     return self.createTilemapFromParams( Tilemap{
-      .gridPos   = Vec2{ .x = 0, .y = 0 },
+      .gridPos   = Vec2{ .x = 0,  .y = 0  },
       .gridScale = Vec2{ .x = 32, .y = 32 },
       .tileScale = Vec2{ .x = 32, .y = 32 },
       .tileShape = .RECT,

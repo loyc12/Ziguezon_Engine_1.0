@@ -39,7 +39,7 @@ pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : 
     .{
       .pos    = def.G_RNG.getScaledVecR( dPos, pos ),
       .vel    = def.G_RNG.getScaledVecR( dVel, vel ),
-      .scale  = Vec2.fromVals( size, size ),
+      .scale  = Vec2.new( size, size ),
 
       .shape  = def.G_RNG.getVal( def.ntt.e_ntt_shape ),
       .colour = colour,
@@ -138,10 +138,10 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Move the camera with the numpad keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveBy( Vec2.fromVals(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveBy( Vec2.fromVals(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveBy( Vec2.fromVals( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveBy( Vec2.fromVals(  8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveBy( Vec2.new(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveBy( Vec2.new(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveBy( Vec2.new( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveBy( Vec2.new(  8,  0 )); }
 
     // Zoom in and out with the mouse wheel
     if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomBy( 1.111 ); }

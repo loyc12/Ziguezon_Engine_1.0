@@ -1,6 +1,8 @@
 const std  = @import( "std" );
 const def  = @import( "defs" );
 
+const Angle = def.Angle;
+
 const Vec2 = def.Vec2;
 const Vec3 = def.Vec3;
 
@@ -16,19 +18,19 @@ const Coords3 = def.Coords3;
 
 pub const VecR = struct
 {
-  x : f32 = 0,
-  y : f32 = 0,
-  r : f32 = 0,
+  x : f32   = 0,
+  y : f32   = 0,
+  r : Angle = 0,
 
 
   // ================ GENERATION ================
 
   pub inline fn zero() VecR { return VecR{ .x = 0, .y = 0, .r = 0 }; }
 
-  pub inline fn fromVals( x : f32, y : f32, r : f32 ) VecR { return VecR{ .x = x, .y = y, .r = r }; }
+  pub inline fn new( x : f32, y : f32, r : Angle ) VecR { return VecR{ .x = x, .y = y, .r = r }; }
 
-  pub inline fn fromAngleDeg( a : f32 ) VecR { return fromAngle( def.DtR( a )); }
-  pub inline fn fromAngle(    a : f32 ) VecR
+  pub inline fn fromAngleDeg( a : Angle ) VecR { return fromAngle( def.DtR( a )); }
+  pub inline fn fromAngle(    a : Angle ) VecR
   {
     return VecR{
       .x = @cos( a ),
@@ -37,8 +39,8 @@ pub const VecR = struct
     };
   }
 
-  pub inline fn fromAngleDegScaled( a : f32, scale : VecR ) VecR { return fromAngleScaled( def.DtR( a ), scale ); }
-  pub inline fn fromAngleScaled(    a : f32, scale : VecR ) VecR
+  pub inline fn fromAngleDegScaled( a : Angle, scale : VecR ) VecR { return fromAngleScaled( def.DtR( a ), scale ); }
+  pub inline fn fromAngleScaled(    a : Angle, scale : VecR ) VecR
   {
     return VecR{
       .x = @cos( a ) * scale.x,
@@ -61,7 +63,7 @@ pub const VecR = struct
 
   // ================ COMPARISONS ================
 
-  pub inline fn isPos(  self : *const VecR ) bool { return self.x >= 0 and self.y >= 0; }
+  pub inline fn isPosi(  self : *const VecR ) bool { return self.x >= 0 and self.y >= 0; }
   pub inline fn isZero( self : *const VecR ) bool { return self.x == 0 and self.y == 0; }
 
   pub inline fn isEq(    self : *const VecR, other : VecR ) bool { return self.x == other.x and self.y == other.y and self.r == other.r; }
@@ -72,17 +74,17 @@ pub const VecR = struct
 
   // ================ BACIS MATHS ================
 
-  pub inline fn add( self : *const VecR, other : VecR ) VecR { return VecR{ .x = self.x + other.x, .y = self.y + other.y, .r = self.r + other.r }; }
-  pub inline fn sub( self : *const VecR, other : VecR ) VecR { return VecR{ .x = self.x - other.x, .y = self.y - other.y, .r = self.r - other.r }; }
-  pub inline fn mul( self : *const VecR, other : VecR ) VecR { return VecR{ .x = self.x * other.x, .y = self.y * other.y, .r = self.r * other.r }; }
+  pub inline fn add( self : *const VecR, other : VecR ) VecR { return VecR{ .x = self.x + other.x, .y = self.y + other.y, .r = self.r }; }
+  pub inline fn sub( self : *const VecR, other : VecR ) VecR { return VecR{ .x = self.x - other.x, .y = self.y - other.y, .r = self.r }; }
+  pub inline fn mul( self : *const VecR, other : VecR ) VecR { return VecR{ .x = self.x * other.x, .y = self.y * other.y, .r = self.r }; }
   pub inline fn div( self : *const VecR, other : VecR ) ?VecR
   {
-    if( other.x == 0.0 or other.y == 0.0 or other.r == 0.0 )
+    if( other.x == 0.0 or other.y == 0.0 )
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in VecR.div()" );
       return null;
     }
-    return VecR{ .x = self.x / other.x, .y = self.y / other.y, .r = self.r / other.r };
+    return VecR{ .x = self.x / other.x, .y = self.y / other.y, .r = self.r };
   }
 
   pub inline fn addVal( self : *const VecR, val : f32 ) VecR { return VecR{ .x = self.x + val, .y = self.y + val, .r = self.r }; }
@@ -145,17 +147,17 @@ pub const VecR = struct
   pub inline fn len(    self : *const VecR ) f32 { return @sqrt( self.lenSqr() ); }
   pub inline fn lenSqr( self : *const VecR ) f32 { return ( self.x * self.x ) + ( self.y * self.y ); }
 
-  pub inline fn rotateDeg( self : *const VecR, a : f32 ) VecR { return self.rotate( def.DtR( a )); }
-  pub inline fn rotate(    self : *const VecR, a : f32 ) VecR
+  pub inline fn rotDeg( self : *const VecR, a : Angle ) VecR { return self.rot( def.DtR( a )); }
+  pub inline fn rot(    self : *const VecR, a : Angle ) VecR
   {
-    if( angle == 0.0 ){ return .{ .x = self.x, .y = self.y, .r = self.r }; }
+    if( a == 0.0 ){ return .{ .x = self.x, .y = self.y, .r = self.r }; }
     const cosA = @cos( a );
     const sinA = @sin( a );
 
     return VecR{
       .x = ( self.x * cosA ) - ( self.y * sinA ),
       .y = ( self.x * sinA ) + ( self.y * cosA ),
-      .r = self.r + a, // Update the angle
+      .r = def.wrap( self.r + a, 0.0, std.math.pi ), // Update the angle
     };
   }
 

@@ -1,6 +1,8 @@
 const std  = @import( "std" );
 const def  = @import( "defs" );
 
+const Angle = def.Angle;
+
 const VecR = def.VecR;
 const Vec3 = def.Vec3;
 
@@ -24,10 +26,10 @@ pub const Vec2 = struct
 
   pub inline fn zero() Vec2 { return Vec2{ .x = 0, .y = 0 }; }
 
-  pub inline fn fromVals( x : f32, y : f32 ) Vec2 { return Vec2{ .x = x, .y = y }; }
+  pub inline fn new( x : f32, y : f32 ) Vec2 { return Vec2{ .x = x, .y = y }; }
 
-  pub inline fn fromAngleDeg( a : f32 ) Vec2 { return fromAngle( def.DtR( a )); }
-  pub inline fn fromAngle(    a : f32 ) Vec2
+  pub inline fn fromAngleDeg( a : Angle ) Vec2 { return fromAngle( def.DtR( a )); }
+  pub inline fn fromAngle(    a : Angle ) Vec2
   {
     return Vec2{
       .x = @cos( a ),
@@ -35,8 +37,8 @@ pub const Vec2 = struct
     };
   }
 
-  pub inline fn fromAngleDegScaled( a : f32, scale : Vec2 ) Vec2 { return fromAngleScaled( def.DtR( a ), scale ); }
-  pub inline fn fromAngleScaled(    a : f32, scale : Vec2 ) Vec2
+  pub inline fn fromAngleDegScaled( a : Angle, scale : Vec2 ) Vec2 { return fromAngleScaled( def.DtR( a ), scale ); }
+  pub inline fn fromAngleScaled(    a : Angle, scale : Vec2 ) Vec2
   {
     return Vec2{
       .x = @cos( a ) * scale.x,
@@ -145,8 +147,8 @@ pub const Vec2 = struct
   pub inline fn len(    self : *const Vec2 ) f32 { return @sqrt( self.lenSqr() ); }
   pub inline fn lenSqr( self : *const Vec2 ) f32 { return ( self.x * self.x ) + ( self.y * self.y ); }
 
-  pub inline fn rotDeg( self : *const Vec2, a : f32 ) Vec2 { return self.rotate( def.DtR( a )); }
-  pub inline fn rot(    self : *const Vec2, a : f32 ) Vec2
+  pub inline fn rotDeg( self : *const Vec2, a : Angle ) Vec2 { return self.rot( def.DtR( a )); }
+  pub inline fn rot(    self : *const Vec2, a : Angle ) Vec2
   {
     if( a == 0.0 ){ return .{ .x = self.x, .y = self.y }; }
     const cosA = @cos( a );

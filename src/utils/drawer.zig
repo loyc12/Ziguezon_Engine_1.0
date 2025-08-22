@@ -3,6 +3,7 @@ const def  = @import( "defs" );
 
 const ray    = def.ray;
 const Vec2   = def.Vec2;
+const Angle  = def.Angle;
 const Colour = def.Colour;
 
 const ELLIPSE_SIDE_COUNT: u8 = 32; // Number of sides for the ellipse polygon approximation
@@ -99,57 +100,57 @@ pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, co
   ray.drawLineEx( p4.toRayVec2(), p1.toRayVec2(), width, col );
 }
 
-pub inline fn drawBasicPoly( pos : Vec2, radius : f32, rotation : f32, col : Colour, sides : u8 ) void
+pub inline fn drawBasicPoly( pos : Vec2, radius : f32, a : Angle, col : Colour, sides : u8 ) void
 {
-  ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( rotation ), col );
+  ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), col );
 }
-pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, rotation : f32, col : Colour, width : f32, sides : u8  ) void // TODO : Add line thickness
+pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, a : Angle, col : Colour, width : f32, sides : u8  ) void // TODO : Add line thickness
 {
-  ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( rotation ), width, col );
+  ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), width, col );
 }
 
 
 // ================ ADVANCED DRAWING FUNCTIONS ================
 
 // Draws a triangle centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
+pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, rotation, col, 3 );
+  drawPolygonPlus( pos, radii, a, col, 3 );
 }
 
 // Draws a diamond centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawDiamondPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
+pub inline fn drawDiamondPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, rotation, col, 4 );
+  drawPolygonPlus( pos, radii, a, col, 4 );
   //drawBasicQuad(
-  //  pos.add( Vec2.fromVals(  radii.x,  0       ).rot( rotation )),
-  //  pos.add( Vec2.fromVals(  0,       -radii.y ).rot( rotation )),
-  //  pos.add( Vec2.fromVals( -radii.x,  0       ).rot( rotation )),
-  //  pos.add( Vec2.fromVals(  0,        radii.y ).rot( rotation )),
+  //  pos.add( Vec2.new(  radii.x,  0       ).rot( a )),
+  //  pos.add( Vec2.new(  0,       -radii.y ).rot( a )),
+  //  pos.add( Vec2.new( -radii.x,  0       ).rot( a )),
+  //  pos.add( Vec2.new(  0,        radii.y ).rot( a )),
   //  col
   //);
 }
 
 // Draws a rectangle centered at a given position with specified rotation (rad), colour and size, and scaled in x/y by radii
-pub inline fn drawRectanglePlus(  pos : Vec2, radii : Vec2, rotation : f32, col : Colour) void
+pub inline fn drawRectanglePlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour) void
 {
   drawBasicQuad(
-    pos.add( Vec2.fromVals(  radii.x,  radii.y ).rot( rotation )),
-    pos.add( Vec2.fromVals(  radii.x, -radii.y ).rot( rotation )),
-    pos.add( Vec2.fromVals( -radii.x, -radii.y ).rot( rotation )),
-    pos.add( Vec2.fromVals( -radii.x,  radii.y ).rot( rotation )),
+    pos.add( Vec2.new(  radii.x,  radii.y ).rot( a )),
+    pos.add( Vec2.new(  radii.x, -radii.y ).rot( a )),
+    pos.add( Vec2.new( -radii.x, -radii.y ).rot( a )),
+    pos.add( Vec2.new( -radii.x,  radii.y ).rot( a )),
     col
   );
 }
 
 // Draws an ellipse centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawEllipsePlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
+pub inline fn drawEllipsePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, rotation, col, ELLIPSE_SIDE_COUNT ); // Pretending ellipses are polygons
+  drawPolygonPlus( pos, radii, a, col, ELLIPSE_SIDE_COUNT ); // Pretending ellipses are polygons
 }
 
 // Draws a polygon centered at a given position with specified rotation (rad), colour and facet count, and scaled in x/y by radii
-pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour, sides : u8 ) void
+pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u8 ) void
 {
   if( sides < 3 )
   {
@@ -158,12 +159,12 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour, 
   }
   const sideStepAngle = 2.0 * std.math.pi / @as( f32, @floatFromInt( sides ));
 
-  const P0 = pos.add( Vec2.fromAngleScaled( 0,             radii ).rot( rotation ));
-  var   P1 = pos.add( Vec2.fromAngleScaled( sideStepAngle, radii ).rot( rotation ));
+  const P0 = pos.add( Vec2.fromAngleScaled( 0,             radii ).rot( a ));
+  var   P1 = pos.add( Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a ));
 
   for( 2..sides )| i |
   {
-    var P2 = pos.add( Vec2.fromAngleScaled( sideStepAngle * @as( f32, @floatFromInt( i )), radii ).rot( rotation ));
+    var P2 = pos.add( Vec2.fromAngleScaled( sideStepAngle * @as( f32, @floatFromInt( i )), radii ).rot( a ));
     ray.drawTriangle( P0.toRayVec2(), P2.toRayVec2(), P1.toRayVec2(), col );
     P1 = P2;
   }
@@ -171,17 +172,17 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour, 
 
 
 // Draws a 6-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
+pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, rotation,                     col, 3 );
-  drawPolygonPlus( pos, radii, rotation + std.math.pi / 3.0, col, 3 );
+  drawPolygonPlus( pos, radii, a,                     col, 3 );
+  drawPolygonPlus( pos, radii, a + std.math.pi / 3.0, col, 3 );
 }
 
 // Draws an 8-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, rotation : f32, col : Colour ) void
+pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, rotation,                     col, 4 );
-  drawPolygonPlus( pos, radii, rotation + std.math.pi / 4.0, col, 4 );
+  drawPolygonPlus( pos, radii, a,                     col, 4 );
+  drawPolygonPlus( pos, radii, a + std.math.pi / 4.0, col, 4 );
 }
 
 
@@ -202,19 +203,19 @@ pub inline fn drawCenteredText( text : [:0] const u8, posX : f32, posY : f32, fo
 
 // ================ TEXTURE DRAWING FUNCTIONS ================
 
-pub inline fn drawTexture( image : ray.Texture2D, posX : f32, posY : f32, rot : f32, scale : Vec2, col : Colour ) void
+pub inline fn drawTexture( image : ray.Texture2D, posX : f32, posY : f32, a : Angle, scale : Vec2, col : Colour ) void
 {
-  ray.drawTextureEx( image, ray.Vector2{ .x = posX, .y = posY }, rot, scale.x, col );
+  ray.drawTextureEx( image, ray.Vector2{ .x = posX, .y = posY }, a, scale.x, col );
 }
 
-pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32, rot : f32, scale : Vec2, col : Colour ) void
+pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32, a : Angle, scale : Vec2, col : Colour ) void
 {
   const halfWidth  = @as( f32, @floatFromInt( image.width  )) * scale.x / 2.0;
   const halfHeight = @as( f32, @floatFromInt( image.height )) * scale.y / 2.0;
-  drawTexture( image, posX - halfWidth, posY - halfHeight, rot, scale, col );
+  drawTexture( image, posX - halfWidth, posY - halfHeight, a, scale, col );
 }
 
-pub inline fn drawTexturePlus( image : ray.Texture2D, source : ray.Rectangle, dest : ray.Rectangle, origin : Vec2, rotation : f32, col : Colour ) void
+pub inline fn drawTexturePlus( image : ray.Texture2D, source : ray.Rectangle, dest : ray.Rectangle, origin : Vec2, a : Angle, col : Colour ) void
 {
-  ray.drawTexturePro( image, source, dest, origin, def.RtD( rotation ), col );
+  ray.drawTexturePro( image, source, dest, origin, def.RtD( a ), col );
 }

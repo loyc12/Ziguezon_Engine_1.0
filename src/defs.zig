@@ -205,6 +205,8 @@ pub const logTmpTimer = log_u.logTmpTimer;
 
 pub const mth_u  = @import( "utils/mather.zig" );
 
+pub const Angle  = f32; // Angle type, used for angles in radians
+
 pub const atan2  = mth_u.atan2;
 pub const DtR    = mth_u.DtR;
 pub const RtD    = mth_u.RtD;
@@ -212,6 +214,7 @@ pub const RtD    = mth_u.RtD;
 pub const lerp   = mth_u.lerp;
 pub const med3   = mth_u.med3;
 pub const clmp   = mth_u.clmp;
+pub const wrap   = mth_u.wrap;
 
 pub const norm   = mth_u.norm;
 pub const denorm = mth_u.denorm;

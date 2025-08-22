@@ -163,9 +163,9 @@ pub const Engine = struct
   {
     if( ng.viewManager )| *m |{ m.setCameraTarget( target ); }
   }
-  pub inline fn setCameraRotation( ng : *Engine, rotation : f32 ) void
+  pub inline fn setCameraRotation( ng : *Engine, a : def.Angle ) void
   {
-    if( ng.viewManager )| *m |{ m.setCameraRotation( rotation ); }
+    if( ng.viewManager )| *m |{ m.setCameraRotation( a ); }
   }
   pub inline fn setCameraZoom( ng : *Engine, zoom : f32 ) void
   {

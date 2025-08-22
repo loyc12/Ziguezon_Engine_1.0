@@ -25,10 +25,10 @@ pub const Vec3 = struct
 
   pub inline fn zero() Vec3 { return Vec3{ .x = 0, .y = 0, .z = 0 }; }
 
-  pub inline fn fromVals( x : f32, y : f32, z : f32 ) Vec3 { return Vec3{ .x = x, .y = y, .z = z }; }
+  pub inline fn new( x : f32, y : f32, z : f32 ) Vec3 { return Vec3{ .x = x, .y = y, .z = z }; }
 
-  //pub inline fn fromAngleDeg( a : f32, b : f32 ) Vec3 { return fromAngle( def.DtR( a )); }
-  //pub inline fn fromAngle(    a : f32, b : f32 ) Vec3
+  //pub inline fn fromAngleDeg( a : Angle, b : f32 ) Vec3 { return fromAngle( def.DtR( a )); }
+  //pub inline fn fromAngle(    a : Angle, b : f32 ) Vec3
   //{
   //  return Vec3{
   //    .x = @cos( a ),
@@ -36,8 +36,8 @@ pub const Vec3 = struct
   //  };
   //}
 
-  //pub inline fn fromAngleDegScaled( a : f32, b : f32, scale : Vec3 ) Vec3 { return fromAngleScaled( def.DtR( a ), scale ); }
-  //pub inline fn fromAngleScaled(    a : f32, b : f32, scale : Vec3 ) Vec3
+  //pub inline fn fromAngleDegScaled( a : Angle, b : f32, scale : Vec3 ) Vec3 { return fromAngleScaled( def.DtR( a ), scale ); }
+  //pub inline fn fromAngleScaled(    a : Angle, b : f32, scale : Vec3 ) Vec3
   //{
   //  return Vec3{
   //    .x = @cos( a ) * scale.x,
@@ -145,8 +145,8 @@ pub const Vec3 = struct
   pub inline fn len(    self : *const Vec3 ) f32 { return @sqrt( self.lenSqr() ); }
   pub inline fn lenSqr( self : *const Vec3 ) f32 { return ( self.x * self.x ) + ( self.y * self.y ) + ( self.z * self.z ); }
 
-  //pub inline fn rotateDeg( self : *const Vec3, a : f32 ) Vec3 { return self.rotate( def.DtR( a )); }
-  //pub inline fn rotate(    self : *const Vec3, a : f32 ) Vec3
+  //pub inline fn rotDeg( self : *const Vec3, a : Angle ) Vec3 { return self.rot( def.DtR( a )); }
+  //pub inline fn rot(    self : *const Vec3, a : Angle ) Vec3
   //{
   //  if( angle == 0.0 ){ return *self; } // No rotation needed
   //  const cosA = @cos( a );

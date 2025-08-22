@@ -1,23 +1,16 @@
 const std  = @import( "std" );
 const def  = @import( "defs" );
 
+const tlmpShape = @import( "tilemapShape.zig" );
+const e_tlmp_shape = tlmpShape.e_tlmp_shape;
+
 const Vec2    = def.Vec2;
 const VecR    = def.VecR;
+const Angle   = def.Angle;
 const Coords2 = def.Coords2;
 
 const DEF_GRID_SIZE  = Coords2{ .x = 32, .y = 32 };
 const DEF_TILE_SCALE = Vec2{    .x = 64, .y = 64 };
-
-const HEX_OFFSET_RATIO = ( 1.2 );
-const HEX_TILE_RATIO   = ( 1.1 );
-
-pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
-{
-  RECT, // []
-  DIAM, // <>
-  HEXA, // <_> // TODO : Fix hexa rendering
-//TRIA, // /\  // TODO : Implement triangles
-};
 
 pub const e_tlmp_flags = enum( u8 )
 {
@@ -66,9 +59,9 @@ pub fn getTileTypeColour( tileType : e_tile_type ) def.Colour
 
 pub const Tile = struct
 {
-  tType  : e_tile_type = .EMPTY,
-  colour : def.Colour  = def.newColour( 255, 255, 255, 255 ),
-  mapPos : Coords2     = .{},
+  tType      : e_tile_type = .EMPTY,
+  colour     : def.Colour  = def.newColour( 255, 255, 255, 255 ),
+  gridCoords : Coords2     = .{},
 };
 
 pub const Tilemap = struct
@@ -76,7 +69,7 @@ pub const Tilemap = struct
   id    : u32 = 0,
   flags : u8  = 0, // Flags for the tilemap ( e.g. is it a grid tilemap ? )
 
-  gridPos : VecR,
+  gridPos    : VecR,
   gridSize   : Coords2 = DEF_GRID_SIZE,
 
   tileScale  : Vec2 = DEF_TILE_SCALE,
@@ -263,7 +256,7 @@ pub const Tilemap = struct
 
     for( 0 .. @intCast( self.gridSize.x * self.gridSize.y ))| index |
     {
-      const tileCoordss = self.getTileCoords( @intCast( index )) orelse
+      const tileCoords = self.getTileCoords( @intCast( index )) orelse
       {
         def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridSize.x, self.gridSize.y });
         continue;
@@ -272,7 +265,7 @@ pub const Tilemap = struct
       self.tileArray.items.ptr[ index ] = Tile{
         .tType  = tileType,
         .colour = def.G_RNG.getColour(), // NOTE : DEBUG COLOUR : CHANGE BACK TO getTileTypeColour( tileType ),
-        .mapPos = tileCoordss,
+        .gridCoords = tileCoords,
       };
     }
     else { def.log( .ERROR, 0, @src(), "Tilemap {d} tile array is null, cannot fill with type {s}", .{ self.id, @tagName( tileType )}); }
@@ -283,56 +276,8 @@ pub const Tilemap = struct
   pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
   pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.r; }
 
-  pub inline fn getTileWorldPos( self : *const Tilemap, gridCoords : Coords2 ) ?VecR
-  {
-    if( !self.isCoordsValid( gridCoords )){ return null; }
-
-    const relPos = self.getGridPos().add( self.getRelTilePos( gridCoords ).? );
-    return VecR{ .x = relPos.x, .y = relPos.y, .r = self.gridPos.r };
-  }
-  pub fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?Vec2
-  {
-    if( !self.isCoordsValid( gridCoords )){ return null; }
-
-    var tilePos = switch( self.tileShape )
-    {
-      .RECT => Vec2{
-        .x = @as( f32, @floatFromInt( gridCoords.x )),
-        .y = @as( f32, @floatFromInt( gridCoords.y )),
-        },
-      .DIAM => Vec2{
-        .x = @as( f32, @floatFromInt( gridCoords.x + gridCoords.y )),
-        .y = @as( f32, @floatFromInt( gridCoords.y - gridCoords.x )),
-      },
-      .HEXA => Vec2{
-        .x = @as( f32, @floatFromInt( gridCoords.x + gridCoords.y )) / HEX_OFFSET_RATIO,
-        .y = @as( f32, @floatFromInt( gridCoords.y - gridCoords.x )),
-      },
-      // TODO : add other shapes ( trickier positions )
-    };
-
-    const offset = switch( self.tileShape )
-    {
-      .RECT => Vec2{
-        .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )) / 2,
-        .y = @as( f32, @floatFromInt( self.gridSize.y - 1 )) / 2,
-      },
-      .DIAM => Vec2{
-        .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )),
-        .y = 0,
-      },
-      .HEXA => Vec2{
-        .x = @as( f32, @floatFromInt( self.gridSize.x - 1 )) / HEX_OFFSET_RATIO,
-        .y = 0,
-      },
-    };
-
-    tilePos = tilePos.sub( offset );
-    tilePos = tilePos.mul( self.tileScale );
-    tilePos = tilePos.rot( self.getGridRot() );
-
-    return tilePos;
-  }
+  pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecR { return tlmpShape.getAbsTilePos( self, gridCoords ); }
+  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecR { return tlmpShape.getRelTilePos( self, gridCoords ); }
 
   // =============== DRAW FUNCTIONS ================
 
@@ -378,21 +323,7 @@ pub const Tilemap = struct
       return;
     }
 
-    const pos = self.getTileWorldPos( gridCoords ).?;
-
-    const scale = switch( self.tileShape )
-    {
-      .RECT => self.tileScale.mulVal( 0.5 ),
-      .DIAM => self.tileScale,
-      .HEXA => self.tileScale.mul( .{ .x = 0.5, .y = 1.0 }).mulVal( HEX_TILE_RATIO ),
-    };
-
-    switch( self.tileShape )
-    {
-      .RECT => def.drawRect( pos.toVec2(), scale, self.getGridRot(), tile.colour ),
-      .DIAM => def.drawPoly( pos.toVec2(), scale, self.getGridRot(), tile.colour, 4 ),
-      .HEXA => def.drawPoly( pos.toVec2(), scale, self.getGridRot(), tile.colour, 6 ),
-    }
+    tlmpShape.drawTileShape( self, tile );
 
     //def.drawCircle( pos.toVec2(), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
   }
@@ -429,42 +360,10 @@ pub const Tilemap = struct
       return null;
     }
 
-    // Centering the point on the tilemap
-    var p = def.subVec2( point, self.getGridPos() );
-
-    // Canceling out the grid's rotation
-    p = def.rotVec2Rad( p, -self.getRot());
-
-    // Converting the point to tile coordinates
-    p = def.divVec2( p, self.tileScale );
-
-    // Checking if the point is out of bounds
-    if( p.x < 0 or p.x >= @as( f32, self.gridSize.x + 1 ) or p.y < 0 or p.y >= @as( f32, self.gridSize.y + 1 ))
+    return tlmpShape.getCoordsFromAbsPos( self, point ) orelse
     {
-      def.log( .DEBUG, 0, @src(), "Point {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ p.x, p.y, self.gridSize.x, self.gridSize.y });
+      def.log( .ERROR, 0, @src(), "Failed to get tile coordinates in tilemap {d} from point {d}:{d}", .{ point.x, point.y, self.id });
       return null;
-    }
-
-    // TODO : TEST THIS
-
-    // Getting the tile hit
-    return switch( self.tileShape )
-    {
-      .RECT => Coords2{
-        .x = @as( u32, @intFromFloat( @floor( p.x ))),
-        .y = @as( u32, @intFromFloat( @floor( p.y ))),
-      },
-
-      // TODO : TEST THESE   V
-
-      .DIAM => Coords2{
-        .x = @as( u32, @intFromFloat( @floor( p.x - p.y ))),
-        .y = @as( u32, @intFromFloat( @floor( p.x + p.y ))),
-      },
-      .HEXA => Coords2{
-        .x = @as( u32, @intFromFloat( @floor(( p.x - p.y ) * HEX_OFFSET_RATIO ))),
-        .y = @as( u32, @intFromFloat( @floor(( p.x + p.y )              ))),
-      },
     };
   }
 };

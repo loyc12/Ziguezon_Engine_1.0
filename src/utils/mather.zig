@@ -47,13 +47,14 @@ pub fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
   {
     .float, .comptime_float, .int, .comptime_int =>
     {
+      if( max <= min )
+      {
+        def.qlog( .ERROR, 0, @src(), "wrap() called with max <= min" );
+        return min; // or max, they are the same
+      }
       const range = max - min;
-      if( range == 0 ) return min;
 
-      var wrapped = ( val - min ) % range;
-      if( wrapped < 0 ) wrapped += range;
-
-      return wrapped + min;
+      return @mod( val - min, range) + min;
     },
     else => @compileError( "wrap() only supports Int and Float types" ),
   }
