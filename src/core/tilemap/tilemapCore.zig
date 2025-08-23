@@ -303,7 +303,7 @@ pub const Tilemap = struct
   //  return isOnRange( Vec2{ .x = -shw, .y = -shh }, Vec2{ .x = shw,  .y = shh });
   //}
 
-  pub fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2 ) void
+  fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2 ) void
   {
     if( !self.isCoordsValid( gridCoords ))
     {
