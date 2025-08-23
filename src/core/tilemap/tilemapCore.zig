@@ -112,10 +112,16 @@ pub const Tilemap = struct
     return true;
   }
 
+  pub inline fn getTileCount( self : *const Tilemap ) u32
+  {
+    return @intCast( self.gridSize.x * self.gridSize.y );
+  }
+
   pub inline fn isIndexValid( self : *const Tilemap, index : u32 ) bool
   {
-    return( index < self.gridSize.x * self.gridSize.y );
+    return( index < self.getTileCount() );
   }
+
 
 
   // ================ INITIALIZATION FUNCTIONS ================
@@ -140,9 +146,7 @@ pub const Tilemap = struct
       return;
     }
 
-    const capacity : usize = @intCast( self.gridSize.x * self.gridSize.y );
-
-    self.tileArray = std.ArrayList( Tile ).initCapacity( allocator, capacity ) catch | err |
+    self.tileArray = std.ArrayList( Tile ).initCapacity( allocator, self.getTileCount() ) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to initialize tilemap tile array: {}", .{ err } );
       return;
@@ -177,6 +181,8 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Params cannot be an initialized tilemap", .{});
       return null;
     }
+
+    def.log( .DEBUG, 0, @src(), "gridSize: {d}:{d}, tileScale: {d}:{d}, tileShape: {s}", .{ params.gridSize.x, params.gridSize.y, params.tileScale.x, params.tileScale.y, params.tileShape });
 
     var tmp = Tilemap{
       .flags       = params.flags | e_tlmp_flags.TO_CPY,
@@ -254,7 +260,7 @@ pub const Tilemap = struct
       return;
     }
 
-    for( 0 .. @intCast( self.gridSize.x * self.gridSize.y ))| index |
+    for( 0 .. self.getTileCount() )| index |
     {
       const tileCoords = self.getTileCoords( @intCast( index )) orelse
       {
@@ -262,13 +268,14 @@ pub const Tilemap = struct
         continue;
       };
 
+      //def.log( .DEBUG, 0, @src(), "Setting tile at position {d}:{d} in tilemap {d} to type {s}", .{ tileCoords.x, tileCoords.y, self.id, @tagName( tileType )});
+
       self.tileArray.items.ptr[ index ] = Tile{
         .tType  = tileType,
         .colour = def.G_RNG.getColour(), // NOTE : DEBUG COLOUR : CHANGE BACK TO getTileTypeColour( tileType ),
         .gridCoords = tileCoords,
       };
     }
-    else { def.log( .ERROR, 0, @src(), "Tilemap {d} tile array is null, cannot fill with type {s}", .{ self.id, @tagName( tileType )}); }
   }
 
   // ================ POSITION FUNCTIONS ================
@@ -338,7 +345,7 @@ pub const Tilemap = struct
       return;
     }
 
-    for( 0 .. @intCast( self.gridSize.x * self.gridSize.y ))| index |
+    for( 0 .. self.getTileCount() )| index |
     {
       const gridCoords = self.getTileCoords( @intCast( index )) orelse
       {

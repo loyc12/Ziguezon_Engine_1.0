@@ -12,8 +12,10 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 {
   RECT, // []
   DIAM, // <>
+
   TRI1, // /\  ( upright )
   TRI2, // >   ( sideways )
+
   HEX1, // <_> ( pointy top )
   HEX2, // <_> ( flat top )
 };
@@ -119,6 +121,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : VecR ) ?Coords2
 
 pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
 {
+  //def.log( .DEBUG, 0, @src(), "Drawing tile at position {d}:{d} in tilemap {d}", .{ tile.gridCoords.x, tile.gridCoords.y, tlmp.id });
   const pos = getAbsTilePos( tlmp, tile.gridCoords ) orelse
   {
     def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.gridCoords.x, tile.gridCoords.y, tlmp.id });
@@ -155,7 +158,7 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
 
     .HEX1 =>
     {
-      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.r + def.DtR( 90 ), tile.colour, 6 );
+      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.r - def.DtR( 90 ), tile.colour, 6 );
     },
 
     .HEX2 =>

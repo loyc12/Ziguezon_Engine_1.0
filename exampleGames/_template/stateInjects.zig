@@ -34,9 +34,9 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
   if( ng.loadTilemapFromParams(
   .{
     .gridPos   = def.VecR.new( -512, 0, 0 ),
-    .gridSize  = .{ .x = 5,  .y = 5  },
+    .gridSize  = .{ .x = 8,  .y = 5  },
     .tileScale = .{ .x = 64, .y = 64 },
-    .tileShape = .HEX2,
+    .tileShape = .RECT,
   }, .FLOOR )
   )| tlm |{ EXAMPLE_TLM_ID = tlm.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example tilemap" ); }
 }
