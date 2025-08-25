@@ -128,13 +128,13 @@ pub const Tilemap = struct
 
   pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : ?e_tile_type ) void
   {
+    def.log( .TRACE, 0, @src(), "Initializing Tilemap {d}", .{ self.id });
+
     if( self.isInit() )
     {
       def.log( .ERROR, 0, @src(), "Tilemap {d} is already initialized, cannot reinitialize", .{ self.id });
       return;
     }
-    def.log( .DEBUG, 0, @src(), "Initializing Tilemap {d}", .{ self.id });
-
     if( self.gridSize.x == 0 or self.gridSize.y == 0 )
     {
       def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ self.gridSize.x, self.gridSize.y });
@@ -161,13 +161,13 @@ pub const Tilemap = struct
 
   pub fn deinit( self : *Tilemap ) void
   {
+    def.log( .TRACE, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
+
     if( !self.isInit() )
     {
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot deinitialize", .{ self.id });
       return;
     }
-    def.log( .DEBUG, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
-
     self.tileArray.deinit();
     self.setFlag( e_tlmp_flags.DELETE,  true );
     self.setFlag( e_tlmp_flags.IS_INIT, false );
@@ -181,8 +181,6 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Params cannot be an initialized tilemap", .{});
       return null;
     }
-
-    def.log( .DEBUG, 0, @src(), "gridSize: {d}:{d}, tileScale: {d}:{d}, tileShape: {s}", .{ params.gridSize.x, params.gridSize.y, params.tileScale.x, params.tileScale.y, params.tileShape });
 
     var tmp = Tilemap{
       .flags       = params.flags | e_tlmp_flags.TO_CPY,
@@ -233,7 +231,7 @@ pub const Tilemap = struct
   {
     if( !self.isCoordsValid( gridCoords )){ return null; }
 
-    return @intCast( gridCoords.x + ( gridCoords.y * self.gridSize.y ));
+    return @intCast(( gridCoords.y * self.gridSize.x ) + gridCoords.x );
   }
 
   pub inline fn getTile( self : *const Tilemap, gridCoords : Coords2 ) ?*Tile
@@ -267,8 +265,6 @@ pub const Tilemap = struct
         def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridSize.x, self.gridSize.y });
         continue;
       };
-
-      //def.log( .DEBUG, 0, @src(), "Setting tile at position {d}:{d} in tilemap {d} to type {s}", .{ tileCoords.x, tileCoords.y, self.id, @tagName( tileType )});
 
       self.tileArray.items.ptr[ index ] = Tile{
         .tType  = tileType,
@@ -331,8 +327,6 @@ pub const Tilemap = struct
     }
 
     tlmpShape.drawTileShape( self, tile );
-
-    //def.drawCircle( pos.toVec2(), self.tileScale.x / 2, tile.colour ); // TODO : replace by proper polygon
   }
 
   pub fn drawTilemap( self : *const Tilemap ) void

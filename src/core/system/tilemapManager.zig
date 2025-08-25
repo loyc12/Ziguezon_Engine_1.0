@@ -181,7 +181,7 @@ pub const TilemapManager = struct
 
     if( params.isInit() )
     {
-      def.log( .WARN, 0, @src(), "Tilemap to be added is already initialized", .{});
+      def.log( .WARN, 0, @src(), "Cannot load from an initialized tilemap", .{});
       return null;
     }
 
@@ -210,7 +210,7 @@ pub const TilemapManager = struct
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Tilemap" );
 
-    return self.createTilemapFromParams( Tilemap{
+    return self.loadTilemapFromParams( Tilemap{
       .gridPos   = Vec2{ .x = 0,  .y = 0  },
       .gridScale = Vec2{ .x = 32, .y = 32 },
       .tileScale = Vec2{ .x = 32, .y = 32 },
