@@ -46,18 +46,34 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     def.log( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
   }
 
+  var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+    return;
+  };
+
+  // Swap tilemap shape if the Y key is pressed
+
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.y ))
+  {
+    switch( exampleTilemap.tileShape )
+    {
+      .RECT => exampleTilemap.tileShape = .DIAM,
+      .DIAM => exampleTilemap.tileShape = .HEX1,
+      .HEX1 => exampleTilemap.tileShape = .HEX2,
+      .HEX2 => exampleTilemap.tileShape = .TRI1,
+      .TRI1 => exampleTilemap.tileShape = .TRI2,
+      .TRI2 => exampleTilemap.tileShape = .RECT,
+    }
+    def.log( .INFO, 0, @src(), "Example tilemap shape changed to {}", .{ exampleTilemap.tileShape });
+  }
+
   // If left clicked, check if a tile was clicked on the example tilemap
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
   {
     const mouseScreemPos = def.ray.getMousePosition();
     const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().? );
 
-
-    var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
-    {
-      def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
-      return;
-    };
 
     const clickedCoords = exampleTilemap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -71,9 +87,10 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
         return;
       };
 
+      def.log( .INFO, 0, @src(), "Clicked on tile with coords {d}:{d} in tilemap {d}", .{ clickedTile.gridCoords.x, clickedTile.gridCoords.y, exampleTilemap.id });
+
       // Change the tile color to a random color
       clickedTile.colour = def.G_RNG.getColour();
-      ng.playAudio( "hit_0" );
     }
     else
     {

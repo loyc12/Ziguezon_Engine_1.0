@@ -104,7 +104,7 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
       return false;
     }
-    if( coords.isSupXY( self.gridSize ))
+    if( coords.isSupXY( self.gridSize.subVal( 1 )))
     {
       def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.gridSize.x, self.gridSize.y });
       return false;

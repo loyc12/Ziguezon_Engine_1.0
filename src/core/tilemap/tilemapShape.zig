@@ -31,7 +31,11 @@ const R3I = 1.0 / R3;
 const HR2 = R2 / 2.0;
 const HR3 = R3 / 2.0;
 
-const HEX_FACTOR = 1.0 - ( HR3 / 6.0 ); // Factor to multiply hex tile pos by to get correct spacing
+const SIZE_FACTOR = 1.0; // Base factor to set the size of tiles ( affects all shapes )
+const RECT_FACTOR = SIZE_FACTOR * 1.0;
+const DIAM_FACTOR = SIZE_FACTOR * R2I;
+const TRIA_FACTOR = SIZE_FACTOR * 0.8;
+const HEXA_FACTOR = SIZE_FACTOR * 0.6;
 
 
 // ================================ TILE TO POS ================================
@@ -54,37 +58,37 @@ pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
   switch( tlmp.tileShape )
   {
     // Rectangle ( scaled along axis )
-    .RECT => { pos = VecA.new( X, Y, null ); },
+    .RECT => { pos = VecA.new( X, Y, null ).mulVal( RECT_FACTOR ); },
 
     // Diamond ( scaled along diagonals )
-    .DIAM => { pos = VecA.new(( X - Y ), ( X + Y ), null ).mulVal( R2I ); },
+    .DIAM => { pos = VecA.new(( X - Y ), ( X + Y ), null ).mulVal( DIAM_FACTOR ); },
 
     // Upright triangle
     .TRI1 =>
     {
       const offset : f32 = ( @as( f32, @floatFromInt( @mod( gridCoords.x + gridCoords.y, 2 ))) - 0.5 ) / 3;
-      pos = VecA.new( X * HEX_FACTOR , ( Y - offset ) * R3 * HEX_FACTOR, null );
+      pos = VecA.new( X * HR3, ( Y - offset ) * 1.5, null ).mulVal( TRIA_FACTOR );
     },
 
     // Sideways triangle
     .TRI2 =>
     {
       const offset : f32 = ( @as( f32, @floatFromInt( @mod( gridCoords.x + gridCoords.y, 2 ))) - 0.5 ) / 3;
-      pos = VecA.new(( X - offset ) * R3 * HEX_FACTOR , Y * HEX_FACTOR, null );
+      pos = VecA.new(( X - offset ) * 1.5, Y * HR3, null ).mulVal( TRIA_FACTOR );
     },
 
     // Pointy top hexagon
     .HEX1 =>
     {
       const xOffset : f32 = @as( f32, @floatFromInt( @mod( gridCoords.y, 2 ))) * 0.5;
-      pos = VecA.new(( X + xOffset ) * R3 * HEX_FACTOR , Y * 1.5 * HEX_FACTOR, null );
+      pos = VecA.new(( X + xOffset ) * R3, Y * 1.5, null ).mulVal( HEXA_FACTOR );
     },
 
     // Flat top hexagon
     .HEX2 =>
     {
       const yOffset : f32 = @as( f32, @floatFromInt( @mod( gridCoords.x, 2 ))) * 0.5;
-      pos = VecA.new( X * 1.5 * HEX_FACTOR , ( Y + yOffset ) * R3 * HEX_FACTOR, null );
+      pos = VecA.new( X * 1.5, ( Y + yOffset ) * R3, null ).mulVal( HEXA_FACTOR );
     },
   }
   return pos.mul( tlmp.tileScale.toVecA( null ));
@@ -96,9 +100,13 @@ pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 {
   const relPos = pos.sub( tlmp.gridPos.toVec2() ).rot( tlmp.gridPos.a.neg() );
 
-  if( relPos.lenSqr() > tlmp.gridSize.toVec2().mulVal( 0.5 ).mul( tlmp.tileScale ).lenSqr() )
+  const maxX = tlmp.tileScale.x * HR2 * @as( f32, @floatFromInt( tlmp.gridSize.x ));
+  const maxY = tlmp.tileScale.y * HR2 * @as( f32, @floatFromInt( tlmp.gridSize.y ));
+
+  // Preleminary check to see if pos is even in tilemap bounds
+  if( relPos.x < -maxX or relPos.x > maxX or relPos.y < -maxY or relPos.y > maxY )
   {
-    def.log( .DEBUG, 0, @src(), "Position {d}:{d} is out of bounds for tilemap {d} with scale {d}:{d}", .{ relPos.x, relPos.y, tlmp.id, tlmp.gridSize.x, tlmp.gridSize.y });
+    def.log( .DEBUG, 0, @src(), "Position {d},{d} is out of tilemap bounds", .{ relPos.x, relPos.y });
     return null;
   }
 
@@ -107,14 +115,41 @@ pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
 pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 {
-  const X = pos.x / tlmp.tileScale.x;
-  const Y = pos.y / tlmp.tileScale.y;
+  const baseX = pos.x / tlmp.tileScale.x;
+  const baseY = pos.y / tlmp.tileScale.y;
 
-  // TODO : check if the tile is in bounds first
+  switch( tlmp.tileShape )
+  {
+    .RECT =>
+    {
+      const gridX = @round( baseX + ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 ));
+      const gridY = @round( baseY + ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 ));
 
-  _ = X + Y; // prevent unused variable warning
+      const coords = Coords2{
+        .x = @intFromFloat( gridX ),
+        .y = @intFromFloat( gridY ),
+      };
 
-  def.log( .ERROR, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {}", .{ tlmp.tileShape });
+      if( !tlmp.isCoordsValid( coords )){ return null; }
+      return coords;
+    },
+
+    .DIAM =>
+    {
+      const gridX = @round(( baseX + baseY ) * R2I + ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 ));
+      const gridY = @round(( baseY - baseX ) * R2I + ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 ));
+
+      const coords = Coords2{
+        .x = @intFromFloat( gridX ),
+        .y = @intFromFloat( gridY ),
+      };
+
+      if( !tlmp.isCoordsValid( coords )){ return null; }
+      return coords;
+    },
+
+    else => def.log( .ERROR, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
+  }
 
   return null;
 }
@@ -135,36 +170,36 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
   {
     .RECT =>
     {
-      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( 0.5 ), pos.a, tile.colour );
+      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( RECT_FACTOR / 2.0 ), pos.a, tile.colour );
     },
 
     .DIAM =>
     {
-      def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( R2I ), pos.a, tile.colour );
+      def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( DIAM_FACTOR ), pos.a, tile.colour );
     },
 
     .TRI1 =>
     {
       const parity = ( 1 == @mod( tile.gridCoords.x + tile.gridCoords.y, 2 ));
-      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a.addDeg( 90 ), tile.colour ); }
-      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a.subDeg( 90 ), tile.colour ); }
+      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a.addDeg( 90 ), tile.colour ); }
+      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a.subDeg( 90 ), tile.colour ); }
     },
 
     .TRI2 =>
     {
       const parity = ( 1 == @mod( tile.gridCoords.x + tile.gridCoords.y, 2 ));
-      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a,               tile.colour ); }
-      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a.addDeg( 180 ), tile.colour ); }
+      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a,               tile.colour ); }
+      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a.addDeg( 180 ), tile.colour ); }
     },
 
     .HEX1 =>
     {
-      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.a.subDeg( 90 ), tile.colour, 6 );
+      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR ), pos.a.subDeg( 90 ), tile.colour, 6 );
     },
 
     .HEX2 =>
     {
-      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.a, tile.colour, 6 );
+      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR ), pos.a, tile.colour, 6 );
     },
   }
 }
