@@ -95,7 +95,7 @@ pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities
 
   if( disk.getTopY() < -hHeight )
   {
-    disk.clampBelowY( -hHeight );
+    disk.clampInTopY( -hHeight );
     disk.vel.y = 0;
   }
 
