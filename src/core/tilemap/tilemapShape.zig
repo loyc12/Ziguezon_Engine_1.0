@@ -170,7 +170,7 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
   {
     .RECT =>
     {
-      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( RECT_FACTOR / 2.0 ), pos.a, tile.colour );
+      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( RECT_FACTOR * 0.5 ), pos.a, tile.colour );
     },
 
     .DIAM =>
