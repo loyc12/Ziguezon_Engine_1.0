@@ -20,14 +20,18 @@ pub const VecR = struct
 {
   x : f32   = 0,
   y : f32   = 0,
-  r : Angle = 0,
+  r : Angle = .{},
 
 
   // ================ GENERATION ================
 
-  pub inline fn zero() VecR { return VecR{ .x = 0, .y = 0, .r = 0 }; }
+  pub inline fn zero() VecR { return .{}; }
 
-  pub inline fn new( x : f32, y : f32, r : Angle ) VecR { return VecR{ .x = x, .y = y, .r = r }; }
+  pub inline fn new( x : f32, y : f32, r : ?Angle ) VecR
+  {
+    if( r == null ){ return VecR{ .x = x, .y = y, .r = .{} }; }
+    else           { return VecR{ .x = x, .y = y, .r = r.? }; }
+  }
 
   pub inline fn fromAngleDeg( a : Angle ) VecR { return fromAngle( def.DtR( a )); }
   pub inline fn fromAngle(    a : Angle ) VecR
@@ -150,25 +154,16 @@ pub const VecR = struct
   pub inline fn rotDeg( self : *const VecR, a : Angle ) VecR { return self.rot( def.DtR( a )); }
   pub inline fn rot(    self : *const VecR, a : Angle ) VecR
   {
-    if( a == 0.0 ){ return .{ .x = self.x, .y = self.y, .r = self.r }; }
-    const cosA = @cos( a );
-    const sinA = @sin( a );
+    if( a.isZero() ){ return .{ .x = self.x, .y = self.y, .r = self.r }; }
+    const cosA = a.cos();
+    const sinA = a.sin();
 
     return VecR{
       .x = ( self.x * cosA ) - ( self.y * sinA ),
       .y = ( self.x * sinA ) + ( self.y * cosA ),
-      .r = def.wrap( self.r + a, 0.0, std.math.pi ), // Update the angle
+      .r = self.r.rot( a ), // Update the angle
     };
   }
 
-  pub inline fn angleDeg( self : *const VecR ) f32 { return def.RtD( self.angle() ); }
-  pub inline fn angle(    self : *const VecR ) f32
-  {
-    if( self.x == 0.0 and self.y == 0.0 )
-    {
-      def.qlog( .WARN, 0, @src(), "Angle of a zero vector in VecR.angle()" );
-      return 0.0;
-    }
-    return def.atan2( self.y, self.x );
-  }
+  pub inline fn toAngle( self : *const VecR ) Angle { return Angle.atan2( self.y, self.x ); }
 };

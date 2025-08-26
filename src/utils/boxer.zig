@@ -40,8 +40,8 @@ pub inline fn getCenterFromBottomRight( bottomRightPos : Vec2, radii : Vec2 ) Ve
 
 pub inline fn isLeftOfX(   center : Vec2, radii : Vec2, xVal : f32 ) bool { return getRightX(  center, radii ) < xVal; }
 pub inline fn isRightOfX(  center : Vec2, radii : Vec2, xVal : f32 ) bool { return getLeftX(   center, radii ) > xVal; }
-pub inline fn isAboveY(    center : Vec2, radii : Vec2, yVal : f32 ) bool { return getBottomY( center, radii ) < yVal; }
-pub inline fn isBelowY(    center : Vec2, radii : Vec2, yVal : f32 ) bool { return getTopY(    center, radii ) > yVal; }
+pub inline fn isBelowY(    center : Vec2, radii : Vec2, yVal : f32 ) bool { return getBottomY( center, radii ) < yVal; }
+pub inline fn isAboveY(    center : Vec2, radii : Vec2, yVal : f32 ) bool { return getTopY(    center, radii ) > yVal; }
 
 // ================ INCLUSIVE RANGE FUNCTIONS ================
 // Checks if the box overlaps with the given range
@@ -131,10 +131,10 @@ pub inline fn isInArea( center : Vec2, radii : Vec2, minPos : Vec2, maxPos : Vec
 // ================================ CLAMPING FUNCTIONS ================================
 // Calculates an updated center position for a box, clamping it within or over the given range
 
-pub inline fn clampLeftOfX(   center : Vec2, radii : Vec2, minLeftX   : f32 ) f32 { if( getLeftX(   center, radii ) < minLeftX   ){ return minLeftX   + radii.x; }}
-pub inline fn clampRightOfX(  center : Vec2, radii : Vec2, maxRightX  : f32 ) f32 { if( getRightX(  center, radii ) > maxRightX  ){ return maxRightX  - radii.x; }}
-pub inline fn clampAboveY(    center : Vec2, radii : Vec2, minTopY    : f32 ) f32 { if( getTopY(    center, radii ) < minTopY    ){ return minTopY    + radii.y; }}
-pub inline fn clampBelowY(    center : Vec2, radii : Vec2, maxBottomY : f32 ) f32 { if( getBottomY( center, radii ) > maxBottomY ){ return maxBottomY - radii.y; }}
+pub inline fn clampLeftOfX(   center : Vec2, radii : Vec2, minLeftX   : f32 ) f32 { if( getLeftX(   center, radii ) < minLeftX   ) return minLeftX   + radii.x else return center.x; }
+pub inline fn clampRightOfX(  center : Vec2, radii : Vec2, maxRightX  : f32 ) f32 { if( getRightX(  center, radii ) > maxRightX  ) return maxRightX  - radii.x else return center.x; }
+pub inline fn clampBelowY(    center : Vec2, radii : Vec2, minTopY    : f32 ) f32 { if( getTopY(    center, radii ) < minTopY    ) return minTopY    + radii.y else return center.y; }
+pub inline fn clampAboveY(    center : Vec2, radii : Vec2, maxBottomY : f32 ) f32 { if( getBottomY( center, radii ) > maxBottomY ) return maxBottomY - radii.y else return center.y; }
 
 // ================ INCLUSIVE CLAMPING FUNCTIONS ================
 // Calculates an updated center position for a box, so that it is partially over the given range

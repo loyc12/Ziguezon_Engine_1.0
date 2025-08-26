@@ -1,6 +1,8 @@
 const std  = @import( "std" );
 const def  = @import( "defs" );
 
+const Angle = def.Angle;
+
 const Vec2 = def.Vec2;
 const VecR = def.VecR;
 
@@ -88,21 +90,21 @@ pub const Entity = struct
 
     self.vel.x += self.acc.x * sdt;
     self.vel.y += self.acc.y * sdt;
-    self.vel.r += self.acc.r * sdt;
+    self.vel.r = self.vel.r.rot( self.acc.r.mulVal( sdt ));
 
     self.pos.x += self.vel.x * sdt;
     self.pos.y += self.vel.y * sdt;
-    self.pos.r += self.vel.r * sdt;
+    self.pos.r = self.pos.r.rot( self.vel.r.mulVal( sdt ));
 
     self.acc.x = 0;
     self.acc.y = 0;
-    self.acc.r = 0;
+    self.acc.r = def.Angle.zero();
   }
 
   // POSITION ACCESSORS
 
   pub inline fn getCenter( self : *const Entity ) Vec2 { return self.pos.toVec2() ;}
-  pub inline fn getRot(    self : *const Entity ) f32  { return self.pos.r; }
+  pub inline fn getRot(    self : *const Entity ) Angle { return self.pos.r; }
 
   pub inline fn getLeftX(   self : *const Entity ) f32 { return def.getLeftX(   self.pos.toVec2(), self.scale ); }
   pub inline fn getRightX(  self : *const Entity ) f32 { return def.getRightX(  self.pos.toVec2(), self.scale ); }
@@ -131,8 +133,8 @@ pub const Entity = struct
 
   pub inline fn isLeftOfX(   self : *const Entity, xVal : f32 ) bool { return def.isLeftOfX(  self.pos.toVec2(), self.scale, xVal ); }
   pub inline fn isRightOfX(  self : *const Entity, xVal : f32 ) bool { return def.isRightOfX( self.pos.toVec2(), self.scale, xVal ); }
-  pub inline fn isAboveY(    self : *const Entity, yVal : f32 ) bool { return def.isAboveY(   self.pos.toVec2(), self.scale, yVal ); }
   pub inline fn isBelowY(    self : *const Entity, yVal : f32 ) bool { return def.isBelowY(   self.pos.toVec2(), self.scale, yVal ); }
+  pub inline fn isAboveY(    self : *const Entity, yVal : f32 ) bool { return def.isAboveY(   self.pos.toVec2(), self.scale, yVal ); }
 
   pub inline fn isOnXVal(  self : *const Entity, xVal  : f32  ) bool { return def.isOnXVal(  self.pos.toVec2(), self.scale, xVal  ); }
   pub inline fn isOnYVal(  self : *const Entity, yVal  : f32  ) bool { return def.isOnYVal(  self.pos.toVec2(), self.scale, yVal  ); }
@@ -150,8 +152,8 @@ pub const Entity = struct
 
   pub inline fn clampLeftOfX(   self : *Entity, minLeftX   : f32 ) void { self.pos.x = def.clampLeftOfX(   self.pos.toVec2(), self.scale, minLeftX   ); }
   pub inline fn clampRighOftX(  self : *Entity, maxRightX  : f32 ) void { self.pos.x = def.clampRightOfX(  self.pos.toVec2(), self.scale, maxRightX  ); }
-  pub inline fn clampAboveY(    self : *Entity, minTopY    : f32 ) void { self.pos.y = def.clampAboveY(    self.pos.toVec2(), self.scale, minTopY    ); }
-  pub inline fn clampBelowY(    self : *Entity, maxBottomY : f32 ) void { self.pos.y = def.clampBelowY(    self.pos.toVec2(), self.scale, maxBottomY ); }
+  pub inline fn clampBelowY(    self : *Entity, minTopY    : f32 ) void { self.pos.y = def.clampBelowY(    self.pos.toVec2(), self.scale, minTopY    ); }
+  pub inline fn clampAboveY(    self : *Entity, maxBottomY : f32 ) void { self.pos.y = def.clampAboveY(    self.pos.toVec2(), self.scale, maxBottomY ); }
 
   pub inline fn clampOnXVal(  self : *Entity, xVal  : f32  ) void { self.pos.x = def.clampOnXVal(  self.pos.toVec2(), self.scale, xVal  ); }
   pub inline fn clampOnYVal(  self : *Entity, yVal  : f32  ) void { self.pos.y = def.clampOnYVal(  self.pos.toVec2(), self.scale, yVal  ); }

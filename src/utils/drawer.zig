@@ -157,14 +157,14 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
     def.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with less than 3 sides" );
     return;
   }
-  const sideStepAngle = 2.0 * std.math.pi / @as( f32, @floatFromInt( sides ));
+  const sideStepAngle = Angle.newRad( 2.0 * std.math.pi / @as( f32, @floatFromInt( sides )));
 
-  const P0 = pos.add( Vec2.fromAngleScaled( 0,             radii ).rot( a ));
+  const P0 = pos.add( Vec2.fromAngleScaled( Angle.zero(),  radii ).rot( a ));
   var   P1 = pos.add( Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a ));
 
   for( 2..sides )| i |
   {
-    var P2 = pos.add( Vec2.fromAngleScaled( sideStepAngle * @as( f32, @floatFromInt( i )), radii ).rot( a ));
+    var P2 = pos.add( Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a ));
     ray.drawTriangle( P0.toRayVec2(), P2.toRayVec2(), P1.toRayVec2(), col );
     P1 = P2;
   }
@@ -174,15 +174,15 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
 // Draws a 6-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, a,                     col, 3 );
-  drawPolygonPlus( pos, radii, a + std.math.pi / 3.0, col, 3 );
+  drawPolygonPlus( pos, radii, a,                         col, 3 );
+  drawPolygonPlus( pos, radii, a.rotRad( std.math.pi / 3.0 ), col, 3 );
 }
 
 // Draws an 8-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, a,                     col, 4 );
-  drawPolygonPlus( pos, radii, a + std.math.pi / 4.0, col, 4 );
+  drawPolygonPlus( pos, radii, a,                          col, 4 );
+  drawPolygonPlus( pos, radii, a.rotRad( std.math.pi / 4.0 ), col, 4 );
 }
 
 

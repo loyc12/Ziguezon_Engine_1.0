@@ -20,7 +20,7 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0", .{});
+      def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
 
@@ -32,7 +32,7 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0", .{});
+      def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
 
@@ -43,7 +43,7 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap manager is not initialized : cannot recalculate maxID", .{});
+      def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : cannot recalculate maxID" );
       return;
     }
     var newMaxID: u32 = 0;
@@ -69,7 +69,7 @@ pub const TilemapManager = struct
   {
     if( id <= 0 )
     {
-      def.log( .WARN, 0, @src(), "Tilemap ID cannot be 0 or less", .{});
+      def.qlog( .WARN, 0, @src(), "Tilemap ID cannot be 0 or less" );
       return false;
     }
     if( id > self.maxID )
@@ -86,7 +86,7 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning null", .{});
+      def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning null" );
       return null;
     }
 
@@ -109,12 +109,12 @@ pub const TilemapManager = struct
   {
     if( self.tilemapList.len == 0 )
     {
-      def.log( .WARN, 0, @src(), "No tilemapList available", .{});
+      def.qlog( .WARN, 0, @src(), "No tilemapList available" );
       return false;
     }
     if( index == null )
     {
-      def.log( .WARN, 0, @src(), "Index is null", .{});
+      def.qlog( .WARN, 0, @src(), "Index is null" );
       return false;
     }
     if( index < 0 )
@@ -138,14 +138,14 @@ pub const TilemapManager = struct
 
     if( self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Tilemap manager is already initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Tilemap manager is already initialized" );
       return;
     }
 
     self.tilemapList = std.ArrayList( Tilemap ).init( allocator  );
 
     self.isInit = true;
-    def.log( .INFO, 0, @src(), "Tilemap manager initialized", .{});
+    def.qlog( .INFO, 0, @src(), "Tilemap manager initialized" );
   }
 
   pub fn deinit( self : *TilemapManager ) void
@@ -154,7 +154,7 @@ pub const TilemapManager = struct
 
     if( !self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Tilemap manager is not initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
       return;
     }
 
@@ -164,7 +164,7 @@ pub const TilemapManager = struct
     self.maxID = 0;
 
     self.isInit = false;
-    def.log( .INFO, 0, @src(), "Tilemap manager deinitialized", .{});
+    def.qlog( .INFO, 0, @src(), "Tilemap manager deinitialized" );
   }
 
   // ================================ ENTITY MANAGEMENT FUNCTIONS ================================
@@ -175,13 +175,13 @@ pub const TilemapManager = struct
 
     if( !self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Tilemap manager is not initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
       return null;
     }
 
     if( params.isInit() )
     {
-      def.log( .WARN, 0, @src(), "Cannot load from an initialized tilemap", .{});
+      def.qlog( .WARN, 0, @src(), "Cannot load from an initialized tilemap" );
       return null;
     }
 
@@ -254,7 +254,7 @@ pub const TilemapManager = struct
 
     if( !self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Tilemap manager is not initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
       return;
     }
 

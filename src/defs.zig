@@ -129,6 +129,13 @@ pub const drawTextureCentered      = drw_u.drawTextureCentered;
 
 // ================================ UTILS SHORTHANDS ================================
 
+// ================ ANGLER SHORTHANDS ================================
+
+pub const ngl_u = @import( "utils/angler.zig" );
+
+pub const Angle = ngl_u.Angle;
+
+
 // ================ BOXER SHORTHANDS ================
 
 pub const box_u = @import( "utils/boxer.zig" );
@@ -157,8 +164,8 @@ pub const getCenterFromBottomRight = box_u.getCenterFromBottomRight;
 
 pub const isLeftOfX   = box_u.isLeftOfX;
 pub const isRightOfX  = box_u.isRightOfX;
-pub const isAboveY    = box_u.isAboveY;
 pub const isBelowY    = box_u.isBelowY;
+pub const isAboveY    = box_u.isAboveY;
 
 pub const isOnXVal    = box_u.isOnXVal;
 pub const isOnYVal    = box_u.isOnYVal;
@@ -175,8 +182,8 @@ pub const isInArea    = box_u.isInArea;
 
 pub const clampLeftOfX   = box_u.clampLeftOfX;
 pub const clampRightOfX  = box_u.clampRightOfX;
-pub const clampAboveY    = box_u.clampAboveY;
 pub const clampBelowY    = box_u.clampBelowY;
+pub const clampAboveY    = box_u.clampAboveY;
 
 pub const clampOnXVal    = box_u.clampOnXVal;
 pub const clampOnYVal    = box_u.clampOnYVal;
@@ -189,6 +196,7 @@ pub const clampOnArea    = box_u.clampOnArea;
 pub const clampInXRange  = box_u.clampInXRange;
 pub const clampInYRange  = box_u.clampInYRange;
 pub const clampInArea    = box_u.clampInArea;
+
 
 // ================ LOGGER SHORTHANDS ================
 
@@ -204,8 +212,6 @@ pub const logTmpTimer = log_u.logTmpTimer;
 // ================ MATHER SHORTHANDS ================
 
 pub const mth_u  = @import( "utils/mather.zig" );
-
-pub const Angle  = f32; // Angle type, used for angles in radians
 
 pub const atan2  = mth_u.atan2;
 pub const DtR    = mth_u.DtR;

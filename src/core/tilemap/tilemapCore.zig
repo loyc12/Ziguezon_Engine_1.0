@@ -178,7 +178,7 @@ pub const Tilemap = struct
   {
     if( params.isInit() )
     {
-      def.log( .ERROR, 0, @src(), "Params cannot be an initialized tilemap", .{});
+      def.qlog( .ERROR, 0, @src(), "Params cannot be an initialized tilemap");
       return null;
     }
 
@@ -192,7 +192,7 @@ pub const Tilemap = struct
 
     tmp.init( allocator, fillType ) orelse
     {
-      def.log( .ERROR, 0, @src(), "Failed to initialize new tilemap", .{});
+      def.qlog( .ERROR, 0, @src(), "Failed to initialize new tilemap");
       return null;
     };
 
@@ -205,7 +205,7 @@ pub const Tilemap = struct
   //  _ = allocator;
   //
   //  // TODO : implement me
-  //  def.log( .ERROR, 0, @src(), "Tilemap loading from file is not yet implemented", .{});
+  //  def.qlog( .ERROR, 0, @src(), "Tilemap loading from file is not yet implemented");
   //  return null;
   //}
 
@@ -316,7 +316,7 @@ pub const Tilemap = struct
 
     const tile = self.getTile( gridCoords ) orelse
     {
-      def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridCoords.x, gridCoords.y, -1 });
+      def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridCoords.x, gridCoords.y, self.id });
       return;
     };
 

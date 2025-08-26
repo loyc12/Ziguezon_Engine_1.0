@@ -19,7 +19,7 @@ pub const EntityManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0", .{});
+      def.qlog( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0" );
       return 0;
     }
 
@@ -31,7 +31,7 @@ pub const EntityManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0", .{});
+      def.qlog( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0" );
       return 0;
     }
 
@@ -42,7 +42,7 @@ pub const EntityManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Entity manager is not initialized : cannot recalculate maxID", .{});
+      def.qlog( .ERROR, 0, @src(), "Entity manager is not initialized : cannot recalculate maxID" );
       return;
     }
     var newMaxID: u32 = 0;
@@ -67,7 +67,7 @@ pub const EntityManager = struct
   {
     if( id <= 0 )
     {
-      def.log( .WARN, 0, @src(), "Entity ID cannot be 0 or less", .{});
+      def.qlog( .WARN, 0, @src(), "Entity ID cannot be 0 or less" );
       return false;
     }
     if( id > self.maxID )
@@ -84,7 +84,7 @@ pub const EntityManager = struct
   {
     if( !self.isInit )
     {
-      def.log( .ERROR, 0, @src(), "Entity manager is not initialized : returning null", .{});
+      def.qlog( .ERROR, 0, @src(), "Entity manager is not initialized : returning null" );
       return null;
     }
 
@@ -107,12 +107,12 @@ pub const EntityManager = struct
   {
     if( self.entityList.len == 0 )
     {
-      def.log( .WARN, 0, @src(), "No entityList available", .{});
+      def.qlog( .WARN, 0, @src(), "No entityList available" );
       return false;
     }
     if( index == null )
     {
-      def.log( .WARN, 0, @src(), "Index is null", .{});
+      def.qlog( .WARN, 0, @src(), "Index is null" );
       return false;
     }
     if( index < 0 )
@@ -136,14 +136,14 @@ pub const EntityManager = struct
 
     if( self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Entity manager is already initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Entity manager is already initialized" );
       return;
     }
 
     self.entityList = std.ArrayList( Entity ).init( allocator  );
 
     self.isInit = true;
-    def.log( .INFO, 0, @src(), "Entity manager initialized", .{});
+    def.qlog( .INFO, 0, @src(), "Entity manager initialized" );
   }
 
   pub fn deinit( self : *EntityManager ) void
@@ -152,7 +152,7 @@ pub const EntityManager = struct
 
     if( !self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Entity manager is not initialized" );
       return;
     }
 
@@ -160,7 +160,7 @@ pub const EntityManager = struct
     self.maxID = 0;
 
     self.isInit = false;
-    def.log( .INFO, 0, @src(), "Entity manager deinitialized", .{});
+    def.qlog( .INFO, 0, @src(), "Entity manager deinitialized" );
   }
 
   // ================================ ENTITY MANAGEMENT FUNCTIONS ================================
@@ -171,7 +171,7 @@ pub const EntityManager = struct
 
     if( !self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Entity manager is not initialized" );
       return null;
     }
 
@@ -199,7 +199,7 @@ pub const EntityManager = struct
     def.qlog( .TRACE, 0, @src(), "Creating default Entity" );
 
     return self.loadEntityFromParams( Entity{
-      .pos    = VecR.new( 0, 0, 0 ),
+      .pos    = VecR.zero(),
       .colour = def.newColour( 255, 255, 255, 255 ),
       .shape  = .RECT,
     });
@@ -238,7 +238,7 @@ pub const EntityManager = struct
 
     if( !self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Entity manager is not initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Entity manager is not initialized" );
       return;
     }
 

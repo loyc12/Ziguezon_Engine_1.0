@@ -43,7 +43,7 @@ pub const entity2 = struct
 
     if( Uuid.getNewUUID( flags ))| val |
     {
-      def.log( .DEBUG, 0, @src(), "Creating new entity with ID {d} and flags {x}", .{ val.getId(), flags } );
+      def.log( .DEBUG, 0, @src(), "Creating new entity with ID {d} and flags {x}", .{ val, flags } );
       return .{
         .uuid      = val,
         .transform = if( val.getFlag( .MOBILE  )) CompTransform.init() else null,
@@ -64,7 +64,7 @@ pub const entity2 = struct
 
     if( Uuid.getNewUUID( other.uuid.getAllFlags() )) | val |
     {
-      def.log( .DEBUG, 0, @src(), "Creating new entity from copy with ID {d} and flags {x}", .{ val.getId(), other.uuid.getAllFlags() });
+      def.log( .DEBUG, 0, @src(), "Creating new entity from copy with ID {d} and flags {x}", .{ val, other.uuid.getAllFlags() });
       return
       .{
         .uuid      =     val,

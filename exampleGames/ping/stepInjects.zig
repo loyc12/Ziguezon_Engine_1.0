@@ -4,6 +4,7 @@ const stateInj = @import( "stateInjects.zig" );
 
 const Engine = def.Engine;
 const Entity = def.Entity;
+const Angle  = def.Angle;
 const Vec2   = def.Vec2;
 const VecR   = def.VecR;
 
@@ -53,9 +54,9 @@ pub fn emitParticlesOnBounce( ng : *Engine, ball : *Entity ) void
 
   emitParticles( ng,
     ball.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
-    .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ), .r = 0.0 },
-    .{ .x = 16,  .y = 16, .r = 1.0 },
-    .{ .x = 128, .y = 32, .r = 2.0 },
+    .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ) },
+    .{ .x = 16,  .y = 16, .r = Angle.newRad( 1.0 )},
+    .{ .x = 128, .y = 32, .r = Angle.newRad( 2.0 )},
     12, def.Colour.yellow );
 
   ng.playAudio( "hit_1" );

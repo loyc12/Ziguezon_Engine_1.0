@@ -24,7 +24,7 @@ pub const Vec2 = struct
 
   // ================ GENERATION ================
 
-  pub inline fn zero() Vec2 { return Vec2{ .x = 0, .y = 0 }; }
+  pub inline fn zero() Vec2 { return .{}; }
 
   pub inline fn new( x : f32, y : f32 ) Vec2 { return Vec2{ .x = x, .y = y }; }
 
@@ -32,8 +32,8 @@ pub const Vec2 = struct
   pub inline fn fromAngle(    a : Angle ) Vec2
   {
     return Vec2{
-      .x = @cos( a ),
-      .y = @sin( a ),
+      .x = a.cos(),
+      .y = a.sin(),
     };
   }
 
@@ -41,17 +41,17 @@ pub const Vec2 = struct
   pub inline fn fromAngleScaled(    a : Angle, scale : Vec2 ) Vec2
   {
     return Vec2{
-      .x = @cos( a ) * scale.x,
-      .y = @sin( a ) * scale.y,
+      .x = a.cos() * scale.x,
+      .y = a.sin() * scale.y,
     };
   }
 
   // ================ CONVERSIONS ================
 
   pub inline fn toRayVec2( self : *const Vec2 ) RayVec2 { return RayVec2{ .x = self.x, .y = self.y }; }
-  pub inline fn toVecR(    self : *const Vec2, r : ?f32 ) VecR
+  pub inline fn toVecR(    self : *const Vec2, r : ?Angle ) VecR
   {
-    if( r == null ){ return VecR{ .x = self.x, .y = self.y, .r = self.angle() }; }
+    if( r == null ){ return VecR{ .x = self.x, .y = self.y, .r = self.toAngle() }; }
     else           { return VecR{ .x = self.x, .y = self.y, .r = r.? }; }
   }
   pub inline fn toCoords2( self : *const Vec2 ) Coords2
@@ -150,9 +150,9 @@ pub const Vec2 = struct
   pub inline fn rotDeg( self : *const Vec2, a : Angle ) Vec2 { return self.rot( def.DtR( a )); }
   pub inline fn rot(    self : *const Vec2, a : Angle ) Vec2
   {
-    if( a == 0.0 ){ return .{ .x = self.x, .y = self.y }; }
-    const cosA = @cos( a );
-    const sinA = @sin( a );
+    if( a.isZero() ){ return .{ .x = self.x, .y = self.y }; }
+    const cosA = a.cos();
+    const sinA = a.sin();
 
     return Vec2{
       .x = ( self.x * cosA ) - ( self.y * sinA ),
@@ -160,14 +160,5 @@ pub const Vec2 = struct
     };
   }
 
-  pub inline fn angleDeg( self : *const Vec2 ) f32 { return def.RtD( self.angle() ); }
-  pub inline fn angle(    self : *const Vec2 ) f32
-  {
-    if( self.x == 0.0 and self.y == 0.0 )
-    {
-      def.qlog( .WARN, 0, @src(), "Angle of a zero vector in Vec2.angle()" );
-      return 0.0;
-    }
-    return def.atan2( self.y, self.x );
-  }
+  pub inline fn toAngle( self : *const Vec2 ) Angle { return Angle.atan2( self.y, self.x ); }
 };

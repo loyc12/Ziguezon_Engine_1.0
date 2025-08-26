@@ -1,6 +1,11 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const Angle = def.Angle;
+const Vec2  = def.Vec2;
+const VecR  = def.VecR;
+const Vec3  = def.Vec3;
+
 const RandType : type = std.Random.Xoshiro256;
 
 
@@ -67,10 +72,17 @@ pub const randomiser = struct
   }
 
   // Returns a random angle in radians in the range [ 0, 2*PI )
-  pub fn getAngleRad( self : *randomiser ) f32 { return self.rng_u.float( f32 ) * std.math.tau; }
+  pub fn getAngle( self : *randomiser ) Angle { return Angle.newRad( self.rng_u.float( f32 ) * std.math.tau ); }
 
-  // Returns a random angle in degrees in the range [ 0, 360 )
-  pub fn getAngleDeg( self : *randomiser ) f32 { return self.rng_u.float( f32 ) * 360.0; }
+  pub fn getScaledAngle( self : *randomiser, scale : Angle, offset : Angle ) Angle
+  {
+    var tmp = self.rng_u.float( f32 ); // Get a random float in the range [ 0.0, 1.0 )
+
+    tmp = ( tmp * 2.0 ) - 1.0;         // Scale to range [-1.0, 1.0 )
+    tmp = ( tmp * scale.toRad() ) + offset.toRad(); // Scale and offset the value
+
+    return Angle.newRad( tmp );
+  }
 
   // Returns a random float in in range [ offset - scale, offset + scale ]
   pub fn getScaledFloat( self : *randomiser, scale : f32, offset : f32 ) f32
@@ -82,15 +94,15 @@ pub const randomiser = struct
   }
 
   // Returns a random unit vector ( length of 1 in a random direction )
-  pub fn getVec2( self : *randomiser ) def.Vec2
+  pub fn getVec2( self : *randomiser ) Vec2
   {
     const angle = self.getAngleRad();
-    return def.Vec2{ .x = @cos( angle ), .y = @sin( angle ) };
 
+    return Vec2{ .x = @cos( angle ), .y = @sin( angle ) };
   }
 
   // Returns a random vector scaled by the given scale and offset by a given amount
-  pub fn getScaledVec2( self : *randomiser, scale : def.Vec2, offset : def.Vec2 ) def.Vec2
+  pub fn getScaledVec2( self : *randomiser, scale : Vec2, offset : Vec2 ) Vec2
   {
     var tmp = self.getVec2(); // Get a random unit vector
 
@@ -104,37 +116,35 @@ pub const randomiser = struct
   }
 
   // Returns a random vector in 2D + rotation space ( length of 1 in a random direction and rotation )
-  pub fn getVecR( self : *randomiser ) def.VecR
+  pub fn getVecR( self : *randomiser ) VecR
   {
-    const angle = self.getAngleRad();
-    return def.VecR{ .x = @cos( angle ), .y = @sin( angle ), .r = self.getAngleRad() };
+    const a = self.getAngle();
+    return VecR{ .x = a.cos(), .y = a.sin(), .r = self.getAngle() };
   }
 
   // Returns a random vector in 2D + rotation space scaled by the given scale and offset by a given amount
-  pub fn getScaledVecR( self : *randomiser, scale : def.VecR, offset : def.VecR ) def.VecR
+  pub fn getScaledVecR( self : *randomiser, scale : VecR, offset : VecR ) VecR
   {
     var tmp = self.getVecR(); // Get a random unit vector
 
     tmp.x *= scale.x;
     tmp.y *= scale.y;
-    tmp.r *= scale.r;
 
     tmp.x += offset.x;
     tmp.y += offset.y;
-    tmp.r += offset.r;
 
     return tmp;
   }
 
 
   // Returns a random unit vector in 3D space ( length of 1 in a random direction )
-  pub fn getVec3( self : *randomiser ) def.Vec3
+  pub fn getVec3( self : *randomiser ) Vec3
   {
     const theta = self.rng_u.float( f32 ) * std.math.tau; // [0, 2π)
     const z =   ( self.rng_u.float( f32 ) * 2.0 ) - 1.0;  // [-1, 1] // NOTE : Prevents the vector from being too close to the poles, garanteeing a uniform distribution in 3D space
     const r = @sqrt( 1.0 - z * z );
 
-    return def.Vec3{
+    return Vec3{
       .x = r * @cos( theta ),
       .y = r * @sin( theta ),
       .z = z,
@@ -142,7 +152,7 @@ pub const randomiser = struct
   }
 
   // Returns a random vector in 3D space scaled by the given scale and offset by a given amount
-  pub fn getScaledVec3( self : *randomiser, scale : def.Vec3, offset : def.Vec3 ) def.Vec3
+  pub fn getScaledVec3( self : *randomiser, scale : Vec3, offset : Vec3 ) Vec3
   {
     var tmp = self.getVec3(); // Get a random unit vector
 

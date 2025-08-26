@@ -23,7 +23,7 @@ pub const Vec3 = struct
 
   // ================ GENERATION ================
 
-  pub inline fn zero() Vec3 { return Vec3{ .x = 0, .y = 0, .z = 0 }; }
+  pub inline fn zero() Vec3 { return .{}; }
 
   pub inline fn new( x : f32, y : f32, z : f32 ) Vec3 { return Vec3{ .x = x, .y = y, .z = z }; }
 

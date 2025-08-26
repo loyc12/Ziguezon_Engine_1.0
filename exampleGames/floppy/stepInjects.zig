@@ -93,7 +93,11 @@ pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities
 
   // ================ CLAMPING THE DISK POSITIONS ================
 
-  disk.clampTopY( -hHeight );
+  if( disk.getTopY() < -hHeight )
+  {
+    disk.clampBelowY( -hHeight );
+    disk.vel.y = 0;
+  }
 
   if( disk.getBottomY() > hHeight )
   {

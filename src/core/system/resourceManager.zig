@@ -15,7 +15,7 @@ pub const ResourceManager = struct
 
     if( self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Resource manager is already initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Resource manager is already initialized" );
       return;
     }
 
@@ -34,7 +34,7 @@ pub const ResourceManager = struct
 
     if( !self.isInit )
     {
-      def.log( .WARN, 0, @src(), "Resource manager is not initialized", .{});
+      def.qlog( .WARN, 0, @src(), "Resource manager is not initialized" );
       return;
     }
 
