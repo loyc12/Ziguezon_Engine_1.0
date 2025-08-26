@@ -60,6 +60,8 @@ pub const scr_m = @import( "core/system/viewManager.zig" );
 pub const ntt    = @import( "core/entity/entityCore.zig" );
 pub const Entity = ntt.Entity;
 
+pub const DRAW_HITBOXES = false; // Set to true to draw entity hitbox overlay ( for debugging purposes )
+
 
 // ================ TILEMAP SYSTEM ================
 
@@ -138,64 +140,24 @@ pub const Angle = ngl_u.Angle;
 
 // ================ BOXER SHORTHANDS ================
 
-pub const box_u = @import( "utils/boxer.zig" );
+pub const box2_u = @import( "utils/boxer2.zig" );
 
-pub const getLeftX       = box_u.getLeftX;
-pub const getRightX      = box_u.getRightX;
-pub const getTopY        = box_u.getTopY;
-pub const getBottomY     = box_u.getBottomY;
+pub const Box2 = box2_u.Box2;
 
-pub const getTopLeft     = box_u.getTopLeft;
-pub const getTopRight    = box_u.getTopRight;
-pub const getBottomLeft  = box_u.getBottomLeft;
-pub const getBottomRight = box_u.getBottomRight;
+pub const isLeftOf  = box2_u.isLeftOf;
+pub const isRightOf = box2_u.isRightOf;
+pub const isAbove   = box2_u.isAbove;   // NOTE : Y axis is inverted in raylib rendering
+pub const isBelow   = box2_u.isBelow;   // NOTE : Y axis is inverted in raylib rendering
 
+pub const getCenterXFromLeftX      = box2_u.getCenterXFromLeftX;
+pub const getCenterXFromRightX     = box2_u.getCenterXFromRightX;
+pub const getCenterYFromTopY       = box2_u.getCenterYFromTopY;
+pub const getCenterYFromBottomY    = box2_u.getCenterYFromBottomY;
 
-pub const getCenterXFromLeftX      = box_u.getCenterXFromLeftX;
-pub const getCenterXFromRightX     = box_u.getCenterXFromRightX;
-pub const getCenterYFromTopY       = box_u.getCenterYFromTopY;
-pub const getCenterYFromBottomY    = box_u.getCenterYFromBottomY;
-
-pub const getCenterFromTopLeft     = box_u.getCenterFromTopLeft;
-pub const getCenterFromTopRight    = box_u.getCenterFromTopRight;
-pub const getCenterFromBottomLeft  = box_u.getCenterFromBottomLeft;
-pub const getCenterFromBottomRight = box_u.getCenterFromBottomRight;
-
-
-pub const isLeftOfX   = box_u.isLeftOfX;
-pub const isRightOfX  = box_u.isRightOfX;
-pub const isBelowY    = box_u.isBelowY;
-pub const isAboveY    = box_u.isAboveY;
-
-pub const isOnXVal    = box_u.isOnXVal;
-pub const isOnYVal    = box_u.isOnYVal;
-pub const isOnPoint   = box_u.isOnPoint;
-
-pub const isOnXRange  = box_u.isOnXRange;
-pub const isOnYRange  = box_u.isOnYRange;
-pub const isOnArea    = box_u.isOnArea;
-
-pub const isInXRange  = box_u.isInXRange;
-pub const isInYRange  = box_u.isInYRange;
-pub const isInArea    = box_u.isInArea;
-
-
-pub const clampLeftOfX   = box_u.clampLeftOfX;
-pub const clampRightOfX  = box_u.clampRightOfX;
-pub const clampBelowY    = box_u.clampBelowY;
-pub const clampAboveY    = box_u.clampAboveY;
-
-pub const clampOnXVal    = box_u.clampOnXVal;
-pub const clampOnYVal    = box_u.clampOnYVal;
-pub const clampOnPoint   = box_u.clampOnPoint;
-
-pub const clampOnXRange  = box_u.clampOnXRange;
-pub const clampOnYRange  = box_u.clampOnYRange;
-pub const clampOnArea    = box_u.clampOnArea;
-
-pub const clampInXRange  = box_u.clampInXRange;
-pub const clampInYRange  = box_u.clampInYRange;
-pub const clampInArea    = box_u.clampInArea;
+pub const getCenterFromTopLeft     = box2_u.getCenterFromTopLeft;
+pub const getCenterFromTopRight    = box2_u.getCenterFromTopRight;
+pub const getCenterFromBottomLeft  = box2_u.getCenterFromBottomLeft;
+pub const getCenterFromBottomRight = box2_u.getCenterFromBottomRight;
 
 
 // ================ LOGGER SHORTHANDS ================
@@ -234,29 +196,25 @@ pub const Coords2 = cor_u.Coords2;
 pub const Coords3 = cor_u.Coords3;
 
 
-// ================ VECTORS SHORTHANDS ================
+// ================ VECTER SHORTHANDS ================
 
 pub const RayVec2 = ray.Vector2;
 pub const RayVec3 = ray.Vector3;
 pub const RayVec4 = ray.Vector4;
 
-pub const nullRayVec2 = RayVec2{ .x = 0, .y = 0 };
-pub const nullRayVec3 = RayVec3{ .x = 0, .y = 0, .z = 0 };
-pub const nullRayVec4 = RayVec4{ .x = 0, .y = 0, .z = 0, .w = 0 };
+pub const zeroRayVec2 = RayVec2{ .x = 0, .y = 0 };
+pub const zeroRayVec3 = RayVec3{ .x = 0, .y = 0, .z = 0 };
+pub const zeroRayVec4 = RayVec4{ .x = 0, .y = 0, .z = 0, .w = 0 };
 
 
 pub const vec2_u = @import( "utils/vecter2.zig" );
 pub const Vec2   = vec2_u.Vec2;
 
-pub const vecR_u = @import( "utils/vecterR.zig" );
-pub const VecR   = vecR_u.VecR;
+pub const vecA_u = @import( "utils/vecterA.zig" );
+pub const VecA   = vecA_u.VecA;
 
 pub const vec3_u = @import( "utils/vecter3.zig" );
 pub const Vec3   = vec3_u.Vec3;
-
-pub const nullVec2 = Vec2{ .x = 0, .y = 0 };
-pub const nullVecR = VecR{ .x = 0, .y = 0, .r = 0 };
-pub const nullVec3 = Vec3{ .x = 0, .y = 0, .z = 0 };
 
 
 // ================= RAYLIB SHORTHANDS ================
@@ -316,49 +274,49 @@ pub fn newColour( r : u8, g : u8, b : u8, a : ?u8 ) Colour
 //pub const radToVec2Scaled    = vec2math.radToVec2Scaled;
 //
 //
-//// ======== VecR ========
+//// ======== VecA ========
 //
-//pub const vecRmath = @import( "utils/vecRmath.zig" );
+//pub const vecAmath = @import( "utils/vecAmath.zig" );
 //
-//pub const VecR               = vecRmath.VecR;
-//pub const newVecR            = vecRmath.newVecR;
-//pub const zeroVecR           = vecRmath.zeroVecR;
+//pub const VecA               = vecAmath.VecA;
+//pub const newVecA            = vecAmath.newVecA;
+//pub const zeroVecA           = vecAmath.zeroVecA;
 //
-//pub const addValToVecR       = vecRmath.addValToVecR;
-//pub const subValFromVecR     = vecRmath.subValFromVecR;
-//pub const mulVecRByVal       = vecRmath.mulVecRByVal;
-//pub const divVecRByVal       = vecRmath.divVecRByVal;
+//pub const addValToVecA       = vecAmath.addValToVecA;
+//pub const subValFromVecA     = vecAmath.subValFromVecA;
+//pub const mulVecAByVal       = vecAmath.mulVecAByVal;
+//pub const divVecAByVal       = vecAmath.divVecAByVal;
 //
-//pub const normVecRUnit       = vecRmath.normVecRUnit;
-//pub const normVecRLen        = vecRmath.normVecRLen;
+//pub const normVecAUnit       = vecAmath.normVecAUnit;
+//pub const normVecALen        = vecAmath.normVecALen;
 //
-//pub const addVecR            = vecRmath.addVecR;
-//pub const subVecR            = vecRmath.subVecR;
-//pub const mulVecR            = vecRmath.mulVecR;
-//pub const divVecR            = vecRmath.divVecR;
+//pub const addVecA            = vecAmath.addVecA;
+//pub const subVecA            = vecAmath.subVecA;
+//pub const mulVecA            = vecAmath.mulVecA;
+//pub const divVecA            = vecAmath.divVecA;
 //
-//pub const getVecRDist        = vecRmath.getVecRDist;
-//pub const getVecRCartDist    = vecRmath.getVecRCartDist;
-//pub const getVecRSqrDist     = vecRmath.getVecRSqrDist;
+//pub const getVecADist        = vecAmath.getVecADist;
+//pub const getVecACartDist    = vecAmath.getVecACartDist;
+//pub const getVecASqrDist     = vecAmath.getVecASqrDist;
 //
-//pub const getVecRDistX       = vecRmath.getVecRDistX;
-//pub const getVecRDistY       = vecRmath.getVecRDistY;
-//pub const getVecRDistR       = vecRmath.getVecRDistR;
+//pub const getVecADistX       = vecAmath.getVecADistX;
+//pub const getVecADistY       = vecAmath.getVecADistY;
+//pub const getVecADistR       = vecAmath.getVecADistR;
 //
-//pub const rotVecRDeg         = vecRmath.rotVecRDeg;
-//pub const rotVecRRad         = vecRmath.rotVecRRad;
+//pub const rotVecADeg         = vecAmath.rotVecADeg;
+//pub const rotVecARad         = vecAmath.rotVecARad;
 //
-//pub const vecRToRad          = vecRmath.vecRToRad;
-//pub const vecRToDeg          = vecRmath.vecRToDeg;
+//pub const vecAToRad          = vecAmath.vecAToRad;
+//pub const vecAToDeg          = vecAmath.vecAToDeg;
 //
-//pub const vecRAngularDistRad = vecRmath.vecRAngularDistRad;
-//pub const vecRAngularDistDeg = vecRmath.vecRAngularDistDeg;
+//pub const vecAAngularDistRad = vecAmath.vecAAngularDistRad;
+//pub const vecAAngularDistDeg = vecAmath.vecAAngularDistDeg;
 //
-//pub const degToVecR          = vecRmath.degToVecR;
-//pub const radToVecR          = vecRmath.radToVecR;
+//pub const degToVecA          = vecAmath.degToVecA;
+//pub const radToVecA          = vecAmath.radToVecA;
 //
-//pub const degToVecRScaled    = vecRmath.degToVecRScaled;
-//pub const radToVecRScaled    = vecRmath.radToVecRScaled;
+//pub const degToVecAScaled    = vecAmath.degToVecAScaled;
+//pub const radToVecAScaled    = vecAmath.radToVecAScaled;
 //
 //
 //// ======== Vec3 ========

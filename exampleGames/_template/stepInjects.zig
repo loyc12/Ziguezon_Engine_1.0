@@ -6,7 +6,7 @@ const Engine = def.Engine;
 const Entity = def.Entity;
 const Angle  = def.Angle;
 const Vec2   = def.Vec2;
-const VecR   = def.VecR;
+const VecA   = def.VecA;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
@@ -56,8 +56,8 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
     return;
   };
 
-  exampleEntity.pos.r = exampleEntity.pos.r.rotDeg( exampleEntity.pos.r.cos() + 1.5 ); // Example of a simple variable rotation effect
-  exampleEntity.pos.y  = 256  * exampleEntity.pos.r.sin();                             // Example of a simple variable vertical movement effect
+  exampleEntity.pos.a = exampleEntity.pos.a.rotDeg( exampleEntity.pos.a.cos() + 1.5 ); // Example of a simple variable rotation effect
+  exampleEntity.pos.y  = 256  * exampleEntity.pos.a.sin();                             // Example of a simple variable vertical movement effect
 
   var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
@@ -65,7 +65,7 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
     return;
   };
 
-  exampleTilemap.gridPos.r = exampleTilemap.gridPos.r.rotRad( 0.01 ); // Example of a simple variable rotation effect
+  exampleTilemap.gridPos.a = exampleTilemap.gridPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
 }
 
 pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )

@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const Vec2 = def.Vec2;
-const VecR = def.VecR;
+const VecA = def.VecA;
 //const Vec3 = def.Vec3;
 
 const RayVec2 = def.RayVec2;
@@ -18,8 +18,6 @@ pub const Angle = struct
 
   // ================ GENERATION ================
 
-  pub inline fn zero() Angle { return .{}; }
-
   pub inline fn newDeg( d : f32 ) Angle { return Angle.newRad( def.DtR( d )); }
   pub inline fn newRad( r : f32 ) Angle
   {
@@ -30,7 +28,7 @@ pub const Angle = struct
   // ================ CONVERSIONS ================
 
   pub inline fn toRayVec2( self : *const Angle, scale : ?Vec2 ) RayVec2        { return self.toVec2( scale ).toRayVec2(); }
-  pub inline fn toVecR(    self : *const Angle, scale : ?Vec2, r : ?f32 ) VecR { return self.toVec2( scale ).toVecR( r ); }
+  pub inline fn toVecA(    self : *const Angle, scale : ?Vec2, r : ?f32 ) VecA { return self.toVec2( scale ).toVecA( r ); }
   pub inline fn toVec2(    self : *const Angle, scale : ?Vec2 ) Vec2
   {
     const r = @cos( self.r ) * if( scale )| s | s.r else 1.0;
@@ -49,14 +47,14 @@ pub const Angle = struct
 
   // ================ COMPARISONS ================
 
-  pub inline fn isPos(  self : *const Angle ) bool { return self.r > 0; }
+  pub inline fn isPosi(  self : *const Angle ) bool { return self.r > 0; }
   pub inline fn isNeg(  self : *const Angle ) bool { return self.r < 0; }
   pub inline fn isZero( self : *const Angle ) bool { return self.r == 0; }
 
   pub inline fn isEq(   self : *const Angle, other : Angle ) bool { return self.r == other.r; }
   pub inline fn isDiff( self : *const Angle, other : Angle ) bool { return self.r != other.r; }
 
-  pub inline fn isLeftOf(  self : *const Angle, other : Angle ) bool { return self.sub( other ).isPos(); }
+  pub inline fn isLeftOf(  self : *const Angle, other : Angle ) bool { return self.sub( other ).isPosi(); }
   pub inline fn isRightOf( self : *const Angle, other : Angle ) bool { return self.sub( other ).isNeg(); }
 
   pub inline fn isAlignedTo(  self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( self.sub( other ).r ) <= threshold; }

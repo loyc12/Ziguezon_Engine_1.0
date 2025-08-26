@@ -4,7 +4,7 @@ const def  = @import( "defs" );
 const Angle   = def.Angle;
 
 const Vec2    = def.Vec2;
-const VecR    = def.VecR;
+const VecA    = def.VecA;
 const Coords2 = def.Coords2;
 
 const Tile    = def.Tile;
@@ -36,65 +36,65 @@ const HEX_FACTOR = 1.0 - ( HR3 / 6.0 ); // Factor to multiply hex tile pos by to
 
 // ================================ TILE TO POS ================================
 
-pub fn getAbsTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecR
+pub fn getAbsTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
 {
   const  tilePos = getRelTilePos( tlmp, gridCoords ) orelse return null;
-  return tilePos.rot( tlmp.gridPos.r ).add( tlmp.gridPos );
+  return tilePos.rot( tlmp.gridPos.a ).add( tlmp.gridPos );
 }
 
-pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecR
+pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
 {
   if( !tlmp.isCoordsValid( gridCoords )){ return null; }
 
   const X = @as( f32, @floatFromInt( gridCoords.x )) - ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 );
   const Y = @as( f32, @floatFromInt( gridCoords.y )) - ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 );
 
-  var pos : VecR = undefined;
+  var pos : VecA = undefined;
 
   switch( tlmp.tileShape )
   {
     // Rectangle ( scaled along axis )
-    .RECT => { pos = VecR.new( X, Y, null ); },
+    .RECT => { pos = VecA.new( X, Y, null ); },
 
     // Diamond ( scaled along diagonals )
-    .DIAM => { pos = VecR.new(( X - Y ), ( X + Y ), null ).mulVal( R2I ); },
+    .DIAM => { pos = VecA.new(( X - Y ), ( X + Y ), null ).mulVal( R2I ); },
 
     // Upright triangle
     .TRI1 =>
     {
       const offset : f32 = ( @as( f32, @floatFromInt( @mod( gridCoords.x + gridCoords.y, 2 ))) - 0.5 ) / 3;
-      pos = VecR.new( X * HEX_FACTOR , ( Y - offset ) * R3 * HEX_FACTOR, null );
+      pos = VecA.new( X * HEX_FACTOR , ( Y - offset ) * R3 * HEX_FACTOR, null );
     },
 
     // Sideways triangle
     .TRI2 =>
     {
       const offset : f32 = ( @as( f32, @floatFromInt( @mod( gridCoords.x + gridCoords.y, 2 ))) - 0.5 ) / 3;
-      pos = VecR.new(( X - offset ) * R3 * HEX_FACTOR , Y * HEX_FACTOR, null );
+      pos = VecA.new(( X - offset ) * R3 * HEX_FACTOR , Y * HEX_FACTOR, null );
     },
 
     // Pointy top hexagon
     .HEX1 =>
     {
       const xOffset : f32 = @as( f32, @floatFromInt( @mod( gridCoords.y, 2 ))) * 0.5;
-      pos = VecR.new(( X + xOffset ) * R3 * HEX_FACTOR , Y * 1.5 * HEX_FACTOR, null );
+      pos = VecA.new(( X + xOffset ) * R3 * HEX_FACTOR , Y * 1.5 * HEX_FACTOR, null );
     },
 
     // Flat top hexagon
     .HEX2 =>
     {
       const yOffset : f32 = @as( f32, @floatFromInt( @mod( gridCoords.x, 2 ))) * 0.5;
-      pos = VecR.new( X * 1.5 * HEX_FACTOR , ( Y + yOffset ) * R3 * HEX_FACTOR, null );
+      pos = VecA.new( X * 1.5 * HEX_FACTOR , ( Y + yOffset ) * R3 * HEX_FACTOR, null );
     },
   }
-  return pos.mul( tlmp.tileScale.toVecR( null ));
+  return pos.mul( tlmp.tileScale.toVecA( null ));
 }
 
 // ================================ POS TO TILE ================================
 
-pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : VecR ) ?Coords2
+pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : VecA ) ?Coords2
 {
-  const relPos = pos.sub( tlmp.gridPos ).rot( -tlmp.gridPos.r );
+  const relPos = pos.sub( tlmp.gridPos ).rot( -tlmp.gridPos.a );
 
   if( relPos.lenSqr() > tlmp.gridSize.toVec2().mulVal( 0.5 ).mul( tlmp.tileScale ).lenSqr() )
   {
@@ -105,11 +105,11 @@ pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : VecR ) ?Coords2
   return getCoordsFromRelPos( tlmp, relPos );
 }
 
-pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : VecR ) ?Coords2
+pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : VecA ) ?Coords2
 {
   const X =  pos.x / tlmp.tileScale.x;
   const Y =  pos.y / tlmp.tileScale.y;
-  const R = -pos.r;
+  const R = -pos.a;
 
   // TODO : check if the tile is in bounds first
 
@@ -136,36 +136,36 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
   {
     .RECT =>
     {
-      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( 0.5 ), pos.r, tile.colour );
+      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( 0.5 ), pos.a, tile.colour );
     },
 
     .DIAM =>
     {
-      def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( R2I ), pos.r, tile.colour );
+      def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( R2I ), pos.a, tile.colour );
     },
 
     .TRI1 =>
     {
       const parity = ( 1 == @mod( tile.gridCoords.x + tile.gridCoords.y, 2 ));
-      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.r.addDeg( 90 ), tile.colour ); }
-      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.r.subDeg( 90 ), tile.colour ); }
+      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a.addDeg( 90 ), tile.colour ); }
+      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a.subDeg( 90 ), tile.colour ); }
     },
 
     .TRI2 =>
     {
       const parity = ( 1 == @mod( tile.gridCoords.x + tile.gridCoords.y, 2 ));
-      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.r,               tile.colour ); }
-      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.r.addDeg( 180 ), tile.colour ); }
+      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a,               tile.colour ); }
+      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( 1.0 ), pos.a.addDeg( 180 ), tile.colour ); }
     },
 
     .HEX1 =>
     {
-      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.r.subDeg( 90 ), tile.colour, 6 );
+      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.a.subDeg( 90 ), tile.colour, 6 );
     },
 
     .HEX2 =>
     {
-      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.r, tile.colour, 6 );
+      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HR3 ), pos.a, tile.colour, 6 );
     },
   }
 }

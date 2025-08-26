@@ -5,7 +5,7 @@ const tlmpShape = @import( "tilemapShape.zig" );
 const e_tlmp_shape = tlmpShape.e_tlmp_shape;
 
 const Vec2    = def.Vec2;
-const VecR    = def.VecR;
+const VecA    = def.VecA;
 const Angle   = def.Angle;
 const Coords2 = def.Coords2;
 
@@ -69,7 +69,7 @@ pub const Tilemap = struct
   id    : u32 = 0,
   flags : u8  = 0, // Flags for the tilemap ( e.g. is it a grid tilemap ? )
 
-  gridPos    : VecR,
+  gridPos    : VecA,
   gridSize   : Coords2 = DEF_GRID_SIZE,
 
   tileScale  : Vec2 = DEF_TILE_SCALE,
@@ -99,7 +99,7 @@ pub const Tilemap = struct
 
   pub inline fn isCoordsValid( self : *const Tilemap, coords : Coords2 ) bool
   {
-    if( !coords.isPos() )
+    if( !coords.isPosi() )
     {
       def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
       return false;
@@ -277,10 +277,10 @@ pub const Tilemap = struct
   // ================ POSITION FUNCTIONS ================
 
   pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
-  pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.r; }
+  pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.a; }
 
-  pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecR { return tlmpShape.getAbsTilePos( self, gridCoords ); }
-  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecR { return tlmpShape.getRelTilePos( self, gridCoords ); }
+  pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecA { return tlmpShape.getAbsTilePos( self, gridCoords ); }
+  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecA { return tlmpShape.getRelTilePos( self, gridCoords ); }
 
   // =============== DRAW FUNCTIONS ================
 
@@ -351,9 +351,9 @@ pub const Tilemap = struct
   }
 
   // TODO : TEST THIS SHIT
-  pub fn findHitTileCoords( self : *const Tilemap, point : Vec2 ) ?Coords2
+  pub fn findHitTileCoords( self : *const Tilemap, p : Vec2 ) ?Coords2
   {
-    def.log( .TRACE, 0, @src(), "Finding hit tile at point {d}:{d} for Tilemap {d}", .{ point.x, point.y, self.id });
+    def.log( .TRACE, 0, @src(), "Finding hit tile at p {d}:{d} for Tilemap {d}", .{ p.x, p.y, self.id });
 
     if( !self.isInit() )
     {
@@ -361,9 +361,9 @@ pub const Tilemap = struct
       return null;
     }
 
-    return tlmpShape.getCoordsFromAbsPos( self, point ) orelse
+    return tlmpShape.getCoordsFromAbsPos( self, p ) orelse
     {
-      def.log( .ERROR, 0, @src(), "Failed to get tile coordinates in tilemap {d} from point {d}:{d}", .{ point.x, point.y, self.id });
+      def.log( .ERROR, 0, @src(), "Failed to get tile coordinates in tilemap {d} from p {d}:{d}", .{ p.x, p.y, self.id });
       return null;
     };
   }

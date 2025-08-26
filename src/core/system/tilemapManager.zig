@@ -4,7 +4,7 @@ const def = @import( "defs" );
 const Tile    = def.tlm.Tile;
 const Tilemap = def.tlm.Tilemap;
 const Vec2    = def.Vec2;
-const VecR    = def.VecR;
+const VecA    = def.VecA;
 
 pub const TilemapManager = struct
 {

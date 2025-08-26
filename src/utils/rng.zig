@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 const Angle = def.Angle;
 const Vec2  = def.Vec2;
-const VecR  = def.VecR;
+const VecA  = def.VecA;
 const Vec3  = def.Vec3;
 
 const RandType : type = std.Random.Xoshiro256;
@@ -116,16 +116,16 @@ pub const randomiser = struct
   }
 
   // Returns a random vector in 2D + rotation space ( length of 1 in a random direction and rotation )
-  pub fn getVecR( self : *randomiser ) VecR
+  pub fn getVecA( self : *randomiser ) VecA
   {
     const a = self.getAngle();
-    return VecR{ .x = a.cos(), .y = a.sin(), .r = self.getAngle() };
+    return VecA{ .x = a.cos(), .y = a.sin(), .a = self.getAngle() };
   }
 
   // Returns a random vector in 2D + rotation space scaled by the given scale and offset by a given amount
-  pub fn getScaledVecR( self : *randomiser, scale : VecR, offset : VecR ) VecR
+  pub fn getScaledVecA( self : *randomiser, scale : VecA, offset : VecA ) VecA
   {
-    var tmp = self.getVecR(); // Get a random unit vector
+    var tmp = self.getVecA(); // Get a random unit vector
 
     tmp.x *= scale.x;
     tmp.y *= scale.y;

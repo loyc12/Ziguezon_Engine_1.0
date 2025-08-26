@@ -2,7 +2,7 @@ const std  = @import( "std" );
 const def  = @import( "defs" );
 
 const Vec2 = def.Vec2;
-const VecR = def.VecR;
+const VecA = def.VecA;
 
 const RayVec2 = def.RayVec2;
 const RayVec3 = def.RayVec3;
@@ -22,8 +22,6 @@ pub const Vec3 = struct
 
 
   // ================ GENERATION ================
-
-  pub inline fn zero() Vec3 { return .{}; }
 
   pub inline fn new( x : f32, y : f32, z : f32 ) Vec3 { return Vec3{ .x = x, .y = y, .z = z }; }
 
@@ -59,7 +57,7 @@ pub const Vec3 = struct
 
   // ================ COMPARISONS ================
 
-  pub inline fn isPos(  self : *const Vec3 ) bool { return self.x >= 0 and self.y >= 0 and self.z >= 0; }
+  pub inline fn isPosi( self : *const Vec3 ) bool { return self.x >= 0 and self.y >= 0 and self.z >= 0; }
   pub inline fn isZero( self : *const Vec3 ) bool { return self.x == 0 and self.y == 0 and self.z == 0; }
 
   pub inline fn isEq(    self : *const Vec3, other : Vec3 ) bool { return self.x == other.x and self.y == other.y and self.z == other.z; }
@@ -69,6 +67,9 @@ pub const Vec3 = struct
 
 
   // ================ BACIS MATHS ================
+
+  pub inline fn abs( self : *const Vec3 ) Vec3 { return Vec3{ .x =  @abs( self.x ), .y =  @abs( self.y ), .z =  @abs( self.z ) }; }
+  pub inline fn neg( self : *const Vec3 ) Vec3 { return Vec3{ .x = -@abs( self.x ), .y = -@abs( self.y ), .z = -@abs( self.z ) }; }
 
   pub inline fn add( self : *const Vec3, other : Vec3 ) Vec3 { return Vec3{ .x = self.x + other.x, .y = self.y + other.y, .z = self.z + other.z }; }
   pub inline fn sub( self : *const Vec3, other : Vec3 ) Vec3 { return Vec3{ .x = self.x - other.x, .y = self.y - other.y, .z = self.z - other.z }; }
@@ -96,8 +97,8 @@ pub const Vec3 = struct
     return Vec3{ .x = self.x / val, .y = self.y / val, .z = self.z / val };
   }
 
-  pub inline fn dist(    self : *const Vec3, other : Vec3 ) f32 { return @sqrt( self.eucliDistSqr( other )); }
-  pub inline fn distSqr( self : *const Vec3, other : Vec3 ) f32
+  pub inline fn getDist(    self : *const Vec3, other : Vec3 ) f32 { return @sqrt( self.eucliDistSqr( other )); }
+  pub inline fn getDistSqr( self : *const Vec3, other : Vec3 ) f32
   {
     const dx = self.x - other.x;
     const dy = self.y - other.y;
@@ -105,15 +106,15 @@ pub const Vec3 = struct
     return ( dx * dx ) + ( dy * dy ) + ( dz * dz );
   }
 
-  pub inline fn manhattanDist( self : *const Vec3, other : Vec3 ) f32 { return self.xDist( other ) + self.yDist( other ) + self.zDist( other ); }
-  pub inline fn xDist(         self : *const Vec3, other : Vec3 ) f32 { return @abs( self.x - other.x ); }
-  pub inline fn yDist(         self : *const Vec3, other : Vec3 ) f32 { return @abs( self.y - other.y ); }
-  pub inline fn zDist(         self : *const Vec3, other : Vec3 ) f32 { return @abs( self.z - other.z ); }
+  pub inline fn getDistM( self : *const Vec3, other : Vec3 ) f32 { return self.getDistX( other ) + self.getDistY( other ) + self.getDistZ( other ); }
+  pub inline fn getDistX( self : *const Vec3, other : Vec3 ) f32 { return @abs( self.x - other.x ); }
+  pub inline fn getDistY( self : *const Vec3, other : Vec3 ) f32 { return @abs( self.y - other.y ); }
+  pub inline fn getDistZ( self : *const Vec3, other : Vec3 ) f32 { return @abs( self.z - other.z ); }
 
-  pub inline fn maxLinDist( self : *const Vec3, other : Vec3 ) f32 { return @max(     self.xDist( other ), self.yDist( other ), self.zDist( other )); }
-  pub inline fn medLinDist( self : *const Vec3, other : Vec3 ) f32 { return def.med3( self.xDist( other ), self.yDist( other ), self.zDist( other )); }
-  pub inline fn minLinDist( self : *const Vec3, other : Vec3 ) f32 { return @min(     self.xDist( other ), self.yDist( other ), self.zDist( other )); }
-  pub inline fn avgLinDist( self : *const Vec3, other : Vec3 ) f32 { return ( self.xDist( other ) + self.yDist( other ) + self.zDist( other )) / 3.0; }
+  pub inline fn getMaxLinDist( self : *const Vec3, other : Vec3 ) f32 { return @max(     self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
+  pub inline fn getMedLinDist( self : *const Vec3, other : Vec3 ) f32 { return def.med3( self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
+  pub inline fn getMinLinDist( self : *const Vec3, other : Vec3 ) f32 { return @min(     self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
+  pub inline fn getAvgLinDist( self : *const Vec3, other : Vec3 ) f32 { return ( self.getDistX( other ) + self.getDistY( other ) + self.getDistZ( other )) / 3.0; }
 
 
   // ================ VECTOR MATHS ================

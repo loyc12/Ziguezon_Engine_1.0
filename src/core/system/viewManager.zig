@@ -44,7 +44,7 @@ pub const ViewManager = struct
     if( !self.isInit  )
     {
       self.camera = def.Camera{
-        .target = def.nullRayVec2,
+        .target = def.zeroRayVec2,
         .offset = def.DEF_SCREEN_DIMS.divVal( 2.0 ).?.toRayVec2(),
         .rotation = 0.0,
         .zoom = 1.0,

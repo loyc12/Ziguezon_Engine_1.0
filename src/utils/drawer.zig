@@ -24,7 +24,7 @@ const ELLIPSE_SIDE_COUNT: u8 = 32; // Number of sides for the ellipse polygon ap
 //  );
 //}
 
-pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( def.nullRayVec2, def.getScreenSize().toRayVec2(), col ); }
+pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( def.zeroRayVec2, def.getScreenSize().toRayVec2(), col ); }
 
 
 // ================ SIMPLE DRAWING FUNCTIONS ================
@@ -159,7 +159,7 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
   }
   const sideStepAngle = Angle.newRad( 2.0 * std.math.pi / @as( f32, @floatFromInt( sides )));
 
-  const P0 = pos.add( Vec2.fromAngleScaled( Angle.zero(),  radii ).rot( a ));
+  const P0 = pos.add( Vec2.fromAngleScaled( .{},  radii ).rot( a ));
   var   P1 = pos.add( Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a ));
 
   for( 2..sides )| i |

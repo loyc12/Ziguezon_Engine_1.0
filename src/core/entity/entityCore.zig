@@ -3,8 +3,10 @@ const def  = @import( "defs" );
 
 const Angle = def.Angle;
 
+const Box2 = def.Box2;
+
 const Vec2 = def.Vec2;
-const VecR = def.VecR;
+const VecA = def.VecA;
 
 pub const e_ntt_shape = enum
 {
@@ -43,13 +45,15 @@ pub const Entity = struct
 {
   id     : u32  = 0,
   flags  : u8   = @intFromEnum( e_ntt_flags.DEFAULT ),
-  pos    : VecR,
-  vel    : VecR = .{},
-  acc    : VecR = .{},
+  pos    : VecA,
+  vel    : VecA = .{},
+  acc    : VecA = .{},
   scale  : Vec2 = .{},
 
-  colour : def.Colour = def.Colour.white,
-  shape  : e_ntt_shape   = .NONE,
+  hitbox : def.Box2 = .{},
+
+  colour : def.Colour  = def.Colour.white,
+  shape  : e_ntt_shape = .NONE,
 
 
   // ================ FLAG MANAGEMENT ================
@@ -76,7 +80,34 @@ pub const Entity = struct
   // ================ POSITION FUNCTIONS ================
   // Assumes AABB hitboxes for all shapes and orientations
 
-  // MOVEMENT FUNCTIONS
+  inline fn updateVel( self : *Entity, sdt : f32 ) void
+  {
+
+    self.vel.x += self.acc.x * sdt;
+    self.vel.y += self.acc.y * sdt;
+    self.vel.a = self.vel.a.rot( self.acc.a.mulVal( sdt ));
+
+    self.acc.x = 0;
+    self.acc.y = 0;
+    self.acc.a = .{};
+  }
+  inline fn updatePos( self : *Entity, sdt : f32 ) void
+  {
+    self.pos.x += self.vel.x * sdt;
+    self.pos.y += self.vel.y * sdt;
+    self.pos.a = self.pos.a.rot( self.vel.a.mulVal( sdt ));
+  }
+
+  inline fn updatePosFromHitbox( self : *Entity ) void
+  {
+    self.pos.x = self.hitbox.center.x;
+    self.pos.y = self.hitbox.center.y;
+  }
+  inline fn updateHitbox( self : *Entity ) void
+  {
+    self.hitbox.center = self.pos.toVec2();
+    self.hitbox.scale  = self.scale.toScaledAABB( self.pos.a );
+  }
 
   pub fn moveSelf( self : *Entity, sdt : f32 ) void
   {
@@ -85,103 +116,125 @@ pub const Entity = struct
       def.log( .TRACE, self.id, @src(), "Entity {d} is not mobile and cannot be moved", .{ self.id });
       return;
     }
-
     def.log( .TRACE, self.id, @src(), "Moving Entity {d} by velocity {d}:{d} with acceleration {d}:{d} over time {d}", .{ self.id, self.vel.x, self.vel.y, self.acc.x, self.acc.y, sdt });
 
-    self.vel.x += self.acc.x * sdt;
-    self.vel.y += self.acc.y * sdt;
-    self.vel.r = self.vel.r.rot( self.acc.r.mulVal( sdt ));
-
-    self.pos.x += self.vel.x * sdt;
-    self.pos.y += self.vel.y * sdt;
-    self.pos.r = self.pos.r.rot( self.vel.r.mulVal( sdt ));
-
-    self.acc.x = 0;
-    self.acc.y = 0;
-    self.acc.r = def.Angle.zero();
+    self.updateVel( sdt );
+    self.updatePos( sdt );
+    self.updateHitbox();
   }
 
-  // POSITION ACCESSORS
 
-  pub inline fn getCenter( self : *const Entity ) Vec2 { return self.pos.toVec2() ;}
-  pub inline fn getRot(    self : *const Entity ) Angle { return self.pos.r; }
+  // ======== HITBOX ACCESSORS & MUTATORS ========
 
-  pub inline fn getLeftX(   self : *const Entity ) f32 { return def.getLeftX(   self.pos.toVec2(), self.scale ); }
-  pub inline fn getRightX(  self : *const Entity ) f32 { return def.getRightX(  self.pos.toVec2(), self.scale ); }
-  pub inline fn getTopY(    self : *const Entity ) f32 { return def.getTopY(    self.pos.toVec2(), self.scale ); }
-  pub inline fn getBottomY( self : *const Entity ) f32 { return def.getBottomY( self.pos.toVec2(), self.scale ); }
+  pub inline fn getCenter( self : *const Entity ) Vec2  { return self.pos.toVec2(); }
+  pub inline fn getRot(    self : *const Entity ) Angle { return self.pos.a; }
 
-  pub inline fn getTopLeft(     self : *const Entity ) Vec2 { return def.getTopLeft(     self.pos.toVec2(), self.scale ); }
-  pub inline fn getTopRight(    self : *const Entity ) Vec2 { return def.getTopRight(    self.pos.toVec2(), self.scale ); }
-  pub inline fn getBottomLeft(  self : *const Entity ) Vec2 { return def.getBottomLeft(  self.pos.toVec2(), self.scale ); }
-  pub inline fn getBottomRight( self : *const Entity ) Vec2 { return def.getBottomRight( self.pos.toVec2(), self.scale ); }
+  pub inline fn getLeftX(   self : *const Entity ) f32 { return self.hitbox.getLeftX();   }
+  pub inline fn getRightX(  self : *const Entity ) f32 { return self.hitbox.getRightX();  }
+  pub inline fn getTopY(    self : *const Entity ) f32 { return self.hitbox.getTopY();    }
+  pub inline fn getBottomY( self : *const Entity ) f32 { return self.hitbox.getBottomY(); }
 
-  pub inline fn setCenter( self : *Entity, newPos : Vec2 ) void { self.pos.x = newPos.x; self.pos.y = newPos.y; }
-  pub inline fn setRot(    self : *Entity, newRot : f32  ) void { self.pos.r = newRot; }
+  pub inline fn getTopLeft(     self : *const Entity ) Vec2 { return self.hitbox.getTopLeft();     }
+  pub inline fn getTopRight(    self : *const Entity ) Vec2 { return self.hitbox.getTopRight();    }
+  pub inline fn getBottomLeft(  self : *const Entity ) Vec2 { return self.hitbox.getBottomLeft();  }
+  pub inline fn getBottomRight( self : *const Entity ) Vec2 { return self.hitbox.getBottomRight(); }
 
-  pub inline fn setLeftX(   self : *Entity, leftX   : f32 ) void { self.pos.x = def.getCenterXFromLeftX(   leftX,   self.scale ); }
-  pub inline fn setRightX(  self : *Entity, rightX  : f32 ) void { self.pos.x = def.getCenterXFromRightX(  rightX,  self.scale ); }
-  pub inline fn setTopY(    self : *Entity, topY    : f32 ) void { self.pos.y = def.getCenterYFromTopY(    topY,    self.scale ); }
-  pub inline fn setBottomY( self : *Entity, bottomY : f32 ) void { self.pos.y = def.getCenterYFromBottomY( bottomY, self.scale ); }
+  pub inline fn setCenter( self : *Entity, newPos : Vec2 ) void { self.pos.x = newPos.x; self.pos.y = newPos.y; self.hitbox.center = newPos; }
+  pub inline fn setRot(    self : *Entity, newRot : f32  ) void { self.pos.a = newRot; }
 
-  pub inline fn setTopLeft(     self : *Entity, topLeftPos     : Vec2 ) void { self.pos = def.getCenterFromTopLeft(     topLeftPos,     self.scale ).toVecR( self.pos.r ); }
-  pub inline fn setTopRight(    self : *Entity, topRightPos    : Vec2 ) void { self.pos = def.getCenterFromTopRight(    topRightPos,    self.scale ).toVecR( self.pos.r ); }
-  pub inline fn setBottomLeft(  self : *Entity, bottomLeftPos  : Vec2 ) void { self.pos = def.getCenterFromBottomLeft(  bottomLeftPos,  self.scale ).toVecR( self.pos.r ); }
-  pub inline fn setBottomRight( self : *Entity, bottomRightPos : Vec2 ) void { self.pos = def.getCenterFromBottomRight( bottomRightPos, self.scale ).toVecR( self.pos.r ); }
+  pub inline fn setLeftX(   self : *Entity, leftX   : f32 ) void { self.pos.x = def.getCenterXFromLeftX(   leftX,   self.hitbox.scale ); self.updateHitbox(); }
+  pub inline fn setRightX(  self : *Entity, rightX  : f32 ) void { self.pos.x = def.getCenterXFromRightX(  rightX,  self.hitbox.scale ); self.updateHitbox(); }
+  pub inline fn setTopY(    self : *Entity, topY    : f32 ) void { self.pos.y = def.getCenterYFromTopY(    topY,    self.hitbox.scale ); self.updateHitbox(); }
+  pub inline fn setBottomY( self : *Entity, bottomY : f32 ) void { self.pos.y = def.getCenterYFromBottomY( bottomY, self.hitbox.scale ); self.updateHitbox(); }
 
-  // RANGE CHECK FUNCTIONS
+  pub inline fn setTopLeft(     self : *Entity, topLeftPos     : Vec2 ) void { self.pos = def.getCenterFromTopLeft(     topLeftPos,     self.hitbox.scale ).toVecA( self.pos.a ); self.updateHitbox(); }
+  pub inline fn setTopRight(    self : *Entity, topRightPos    : Vec2 ) void { self.pos = def.getCenterFromTopRight(    topRightPos,    self.hitbox.scale ).toVecA( self.pos.a ); self.updateHitbox(); }
+  pub inline fn setBottomLeft(  self : *Entity, bottomLeftPos  : Vec2 ) void { self.pos = def.getCenterFromBottomLeft(  bottomLeftPos,  self.hitbox.scale ).toVecA( self.pos.a ); self.updateHitbox(); }
+  pub inline fn setBottomRight( self : *Entity, bottomRightPos : Vec2 ) void { self.pos = def.getCenterFromBottomRight( bottomRightPos, self.hitbox.scale ).toVecA( self.pos.a ); self.updateHitbox(); }
 
-  pub inline fn isLeftOfX(   self : *const Entity, xVal : f32 ) bool { return def.isLeftOfX(  self.pos.toVec2(), self.scale, xVal ); }
-  pub inline fn isRightOfX(  self : *const Entity, xVal : f32 ) bool { return def.isRightOfX( self.pos.toVec2(), self.scale, xVal ); }
-  pub inline fn isBelowY(    self : *const Entity, yVal : f32 ) bool { return def.isBelowY(   self.pos.toVec2(), self.scale, yVal ); }
-  pub inline fn isAboveY(    self : *const Entity, yVal : f32 ) bool { return def.isAboveY(   self.pos.toVec2(), self.scale, yVal ); }
 
-  pub inline fn isOnXVal(  self : *const Entity, xVal  : f32  ) bool { return def.isOnXVal(  self.pos.toVec2(), self.scale, xVal  ); }
-  pub inline fn isOnYVal(  self : *const Entity, yVal  : f32  ) bool { return def.isOnYVal(  self.pos.toVec2(), self.scale, yVal  ); }
-  pub inline fn isOnPoint( self : *const Entity, point : Vec2 ) bool { return def.isOnPoint( self.pos.toVec2(), self.scale, point ); }
+  // ======== HITBOX CHECKERS ========
 
-  pub inline fn isOnXRange( self : *const Entity, minX   : f32,  maxX   : f32  ) bool { return def.isOnXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
-  pub inline fn isOnYRange( self : *const Entity, minY   : f32,  maxY   : f32  ) bool { return def.isOnYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
-  pub inline fn isOnRange(  self : *const Entity, minPos : Vec2, maxPos : Vec2 ) bool { return def.isOnArea(   self.pos.toVec2(), self.scale, minPos, maxPos ); }
+  pub inline fn goesLeftOf(  self : *const Entity, thresholdX : f32 ) bool { return self.hitbox.goesLeftOf(  thresholdX ); }
+  pub inline fn goesRightOf( self : *const Entity, thresholdX : f32 ) bool { return self.hitbox.goesRightOf( thresholdX ); }
+  pub inline fn goesAbove(   self : *const Entity, thresholdY : f32 ) bool { return self.hitbox.goesAbove(   thresholdY ); }
+  pub inline fn goesBelow(   self : *const Entity, thresholdY : f32 ) bool { return self.hitbox.goesBelow(   thresholdY ); }
 
-  pub inline fn isInXRange( self : *const Entity, minX   : f32,  maxX   : f32  ) bool { return def.isInXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
-  pub inline fn isInYRange( self : *const Entity, minY   : f32,  maxY   : f32  ) bool { return def.isInYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
-  pub inline fn isInRange(  self : *const Entity, minPos : Vec2, maxPos : Vec2 ) bool { return def.isInArea(   self.pos.toVec2(), self.scale, minPos, maxPos ); }
+  pub inline fn isOnX(      self : *const Entity, xVal  : f32  ) bool { return self.hitbox.isOnX( xVal ); }
+  pub inline fn isOnY(      self : *const Entity, yVal  : f32  ) bool { return self.hitbox.isOnY( yVal ); }
+  pub inline fn isOnPoint(  self : *const Entity, p : Vec2 ) bool { return self.hitbox.isOnPoint( p ); }
 
-  // CLAMPING FUNCTIONS
+  pub inline fn isOnXRange( self : *const Entity, xMin : f32,  xMax : f32  ) bool { return self.hitbox.isOnXRange( xMin, xMax ); }
+  pub inline fn isOnYRange( self : *const Entity, yMin : f32,  yMax : f32  ) bool { return self.hitbox.isOnYRange( yMin, yMax ); }
+  pub inline fn isOnArea(   self : *const Entity, pMin : Vec2, pMax : Vec2 ) bool { return self.hitbox.isOnArea(   pMin, pMax ); }
 
-  pub inline fn clampLeftOfX(   self : *Entity, minLeftX   : f32 ) void { self.pos.x = def.clampLeftOfX(   self.pos.toVec2(), self.scale, minLeftX   ); }
-  pub inline fn clampRighOftX(  self : *Entity, maxRightX  : f32 ) void { self.pos.x = def.clampRightOfX(  self.pos.toVec2(), self.scale, maxRightX  ); }
-  pub inline fn clampBelowY(    self : *Entity, minTopY    : f32 ) void { self.pos.y = def.clampBelowY(    self.pos.toVec2(), self.scale, minTopY    ); }
-  pub inline fn clampAboveY(    self : *Entity, maxBottomY : f32 ) void { self.pos.y = def.clampAboveY(    self.pos.toVec2(), self.scale, maxBottomY ); }
 
-  pub inline fn clampOnXVal(  self : *Entity, xVal  : f32  ) void { self.pos.x = def.clampOnXVal(  self.pos.toVec2(), self.scale, xVal  ); }
-  pub inline fn clampOnYVal(  self : *Entity, yVal  : f32  ) void { self.pos.y = def.clampOnYVal(  self.pos.toVec2(), self.scale, yVal  ); }
-  pub inline fn clampOnPoint( self : *Entity, point : Vec2 ) void { self.pos   = def.clampOnPoint( self.pos.toVec2(), self.scale, point ).toVecR( self.pos.r ); }
+  pub inline fn isLeftOf(   self : *const Entity, thresholdX : f32 ) bool { return self.hitbox.isLeftOf(  thresholdX ); }
+  pub inline fn isRightOf(  self : *const Entity, thresholdX : f32 ) bool { return self.hitbox.isRightOf( thresholdX ); }
+  pub inline fn isAbove(    self : *const Entity, thresholdY : f32 ) bool { return self.hitbox.isAbove(   thresholdY ); }
+  pub inline fn isBelow(    self : *const Entity, thresholdY : f32 ) bool { return self.hitbox.isBelow(   thresholdY ); }
 
-  pub inline fn clampOnXRange(  self : *Entity, minX   : f32,  maxX   : f32  ) void { self.pos.x = def.clampOnXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
-  pub inline fn clampOnYRange(  self : *Entity, minY   : f32,  maxY   : f32  ) void { self.pos.y = def.clampOnYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
-  pub inline fn clampOnArea(    self : *Entity, minPos : Vec2, maxPos : Vec2 ) void { self.pos   = def.clampOnArea(   self.pos.toVec2(), self.scale, minPos, maxPos ).toVecR( self.pos.r ); }
+  pub inline fn isInXRange( self : *const Entity, xMin : f32,  xMax : f32  ) bool { return self.hitbox.isInXRange( xMin, xMax ); }
+  pub inline fn isInYRange( self : *const Entity, yMin : f32,  yMax : f32  ) bool { return self.hitbox.isInYRange( yMin, yMax ); }
+  pub inline fn isInArea(   self : *const Entity, pMin : Vec2, pMax : Vec2 ) bool { return self.hitbox.isInArea(   pMin, pMax ); }
 
-  pub inline fn clampInXRange( self : *Entity, minX   : f32,  maxX   : f32  ) void { self.pos.x = def.clampInXRange( self.pos.toVec2(), self.scale, minX,   maxX   ); }
-  pub inline fn clampInYRange( self : *Entity, minY   : f32,  maxY   : f32  ) void { self.pos.y = def.clampInYRange( self.pos.toVec2(), self.scale, minY,   maxY   ); }
-  pub inline fn clampInArea(   self : *Entity, minPos : Vec2, maxPos : Vec2 ) void { self.pos   = def.clampInArea(   self.pos.toVec2(), self.scale, minPos, maxPos ).toVecR( self.pos.r ); }
 
-  pub inline fn clampInEntity( self : *Entity, other : *const Entity ) void { self.pos = def.clampInArea(  self.pos.toVec2(), self.scale, other.getTopLeft(), other.getBottomRight() ).toVecR( self.pos.r ); }
-  pub inline fn clampOnEntity( self : *Entity, other : *const Entity ) void { self.pos = def.clampOnArea(  self.pos.toVec2(), self.scale, other.getTopLeft(), other.getBottomRight() ).toVecR( self.pos.r ); }
+  // ======== HITBOX CLAMPER ========
+
+  pub inline fn clampOnLeftX(   self : *Entity, thresholdX : f32 ) void { self.hitbox.clampOnLeftX(   thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnRightX(  self : *Entity, thresholdX : f32 ) void { self.hitbox.clampOnRightX(  thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnTopY(    self : *Entity, thresholdY : f32 ) void { self.hitbox.clampOnTopY(    thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnBottomY( self : *Entity, thresholdY : f32 ) void { self.hitbox.clampOnBottomY( thresholdY ); self.updatePosFromHitbox(); }
+
+  pub inline fn clampOnX(     self : *Entity, xVal : f32  ) void { self.hitbox.clampOnX(  xVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnY(     self : *Entity, yVal : f32  ) void { self.hitbox.clampOnY(  yVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnPoint( self : *Entity, p    : Vec2 ) void { self.hitbox.clampOnPoint( p ); self.updatePosFromHitbox(); }
+
+  pub inline fn clampOnXRange( self : *Entity, xMin : f32,  xMax : f32  ) void { self.hitbox.clampOnXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnYRange( self : *Entity, yMin : f32,  yMax : f32  ) void { self.hitbox.clampOnYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnArea(   self : *Entity, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampOnArea(   pMin, pMax ); self.updatePosFromHitbox(); }
+
+  pub inline fn clampNotInXRange( self : *Entity, xMin : f32,  xMax : f32  ) void { self.hitbox.clampNotInXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotInYRange( self : *Entity, yMin : f32,  yMax : f32  ) void { self.hitbox.clampNotInYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotInArea(   self : *Entity, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampNotInArea(   pMin, pMax ); self.updatePosFromHitbox(); }
+
+
+  pub inline fn clampInLeftX(   self : *Entity, thresholdX : f32 ) void { self.hitbox.clampInLeftX(   thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampInRightX(  self : *Entity, thresholdX : f32 ) void { self.hitbox.clampInRightX(  thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampInTopY(    self : *Entity, thresholdY : f32 ) void { self.hitbox.clampInTopY(    thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampInBottomY( self : *Entity, thresholdY : f32 ) void { self.hitbox.clampInBottomY( thresholdY ); self.updatePosFromHitbox(); }
+
+  pub inline fn clampNotOnX(     self : *Entity, xVal : f32  ) void { self.hitbox.clampNotOnX(  xVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnY(     self : *Entity, yVal : f32  ) void { self.hitbox.clampNotOnY(  yVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnPoint( self : *Entity, p    : Vec2 ) void { self.hitbox.clampNotOnPoint( p ); self.updatePosFromHitbox(); }
+
+  pub inline fn clampInXRange( self : *Entity, xMin : f32,  xMax : f32  ) void { self.hitbox.clampInXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampInYRange( self : *Entity, yMin : f32,  yMax : f32  ) void { self.hitbox.clampInYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampInArea(   self : *Entity, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampInArea(   pMin, pMax ); self.updatePosFromHitbox(); }
+
+  pub inline fn clampNotOnXRange( self : *Entity, xMin : f32,  xMax : f32  ) void { self.hitbox.clampNotOnXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnYRange( self : *Entity, yMin : f32,  yMax : f32  ) void { self.hitbox.clampNotOnYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnArea(   self : *Entity, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampNotOnArea(   pMin, pMax ); self.updatePosFromHitbox(); }
+
+
+  // ======== HITBOX DISTANCE FUNCTIONS ========
+
+  pub inline fn getDist(    self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getDist(    other.hitbox.center ); }
+  pub inline fn getDistSqr( self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getDistSqr( other.hitbox.center ); }
+
+  pub inline fn getDistM( self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getDistM( other.hitbox.center ); }
+  pub inline fn getDistX( self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getDistX( other.hitbox.center ); }
+  pub inline fn getDistY( self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getDistY( other.hitbox.center ); }
+
+  pub inline fn getMaxLinDist( self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getMaxLinDist( other.hitbox.center ); }
+  pub inline fn getMinLinDist( self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getMinLinDist( other.hitbox.center ); }
+  pub inline fn getAvgLinDist( self : *const Entity, other : *const Entity ) f32 { return self.hitbox.center.getAvgLinDist( other.hitbox.center ); }
+
 
   // ================ COLLISION FUNCTIONS ================
   // Assumes AABB hitboxes for all shapes and orientations
 
   const nttCld = @import( "entityColide.zig" );
-
-  // DISTANCE FUNCTIONS
-
-  pub inline fn getXDistTo(    self : *const Entity, other : *const Entity ) f32 { return nttCld.getXDistTo(    self, other ); }
-  pub inline fn getYDistTo(    self : *const Entity, other : *const Entity ) f32 { return nttCld.getYDistTo(    self, other ); }
-  pub inline fn getSqrDistTo(  self : *const Entity, other : *const Entity ) f32 { return nttCld.getSqrDistTo(  self, other ); }
-  pub inline fn getDistTo(     self : *const Entity, other : *const Entity ) f32 { return nttCld.getCartDistTo( self, other ); }
-  pub inline fn getCartDistTo( self : *const Entity, other : *const Entity ) f32 { return nttCld.getCartDistTo( self, other ); }
 
   // COLLISION FUNCTIONS
 

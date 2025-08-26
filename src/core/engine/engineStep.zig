@@ -120,6 +120,7 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
       if( ng.isEntityManagerInit() )
       {
         ng.renderActiveEntities();
+        if( def.DRAW_HITBOXES ){ ng.renderEntityHitboxes(); }
       }
       else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
 

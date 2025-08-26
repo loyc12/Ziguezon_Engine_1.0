@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 const Entity = def.ntt.Entity;
 const Vec2   = def.Vec2;
-const VecR   = def.VecR;
+const VecA   = def.VecA;
 
 pub const EntityManager = struct
 {
@@ -199,7 +199,7 @@ pub const EntityManager = struct
     def.qlog( .TRACE, 0, @src(), "Creating default Entity" );
 
     return self.loadEntityFromParams( Entity{
-      .pos    = VecR.zero(),
+      .pos    = .{},
       .colour = def.newColour( 255, 255, 255, 255 ),
       .shape  = .RECT,
     });
@@ -253,6 +253,18 @@ pub const EntityManager = struct
   }
 
   // ================================ RENDER FUNCTIONS ================================
+
+  pub fn renderEntityHitboxes( self : *EntityManager ) void // TODO : have this take in a renderer construct and pass it to Entity.renderHitbox()
+  {
+    def.qlog( .TRACE, 0, @src(), "Rendering Entity hitboxes" );
+
+    for( self.entityList.items )| *e |{ if( e.isActive() )
+    {
+      if( e.isSolid() ){ e.hitbox.drawSelf( def.newColour( 0, 0, 255, 64 )); }
+      else             { e.hitbox.drawSelf( def.newColour( 255, 0, 0, 64 )); }
+
+    }}
+  }
 
   pub fn renderActiveEntities( self : *EntityManager ) void // TODO : have this take in a renderer construct and pass it to Entity.renderGraphics()
   {

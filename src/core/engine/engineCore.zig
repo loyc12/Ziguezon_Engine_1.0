@@ -104,18 +104,22 @@ pub const Engine = struct
   {
     if( ng.entityManager )| *m |{ return m.loadEntityFromParams( params ); } else { return null; }
   }
+  pub inline fn deleteAllMarkedEntities( ng : *Engine ) void
+  {
+    if( ng.entityManager )| *m |{ m.deleteAllMarkedEntities(); }
+  }
 
   pub inline fn tickActiveEntities( ng : *Engine, sdt : f32 ) void
   {
     if( ng.entityManager )| *m |{ m.tickActiveEntities( sdt ); }
   }
+  pub inline fn renderEntityHitboxes( ng : *Engine ) void
+  {
+    if( ng.entityManager )| *m |{ m.renderEntityHitboxes(); }
+  }
   pub inline fn renderActiveEntities( ng : *Engine ) void
   {
     if( ng.entityManager )| *m |{ m.renderActiveEntities(); }
-  }
-  pub inline fn deleteAllMarkedEntities( ng : *Engine ) void
-  {
-    if( ng.entityManager )| *m |{ m.deleteAllMarkedEntities(); }
   }
 
 

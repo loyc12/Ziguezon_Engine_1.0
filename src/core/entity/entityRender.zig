@@ -10,10 +10,9 @@ pub fn isOnScreen( e1 : *const Entity ) bool
 {
   def.log( .TRACE, 0, @src(), "Checking if Entity {d} is on screen", .{ e1.id });
 
-  // Adding half the entity's scale to give a margin for angled entities ( 1.5 ~= 1.414)
-  const screenScale = def.getHalfScreenSize().add( e1.scale.mulVal( 0.5 ));
+  const screenScale = def.getHalfScreenSize();
 
-  return e1.isOnRange( screenScale.mulVal( -1 ), screenScale );
+  return e1.isOnArea( screenScale.neg(), screenScale.abs() );
 }
 
 pub fn clampInScreen( e1 : *Entity ) void
@@ -22,7 +21,7 @@ pub fn clampInScreen( e1 : *Entity ) void
 
   const screenScale = def.getHalfScreenSize();
 
-  e1.clampInArea( screenScale.mulVal( -1 ), screenScale );
+  e1.clampInArea( screenScale.neg(), screenScale.abs() );
 }
 
 

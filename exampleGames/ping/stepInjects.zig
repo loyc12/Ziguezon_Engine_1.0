@@ -6,7 +6,7 @@ const Engine = def.Engine;
 const Entity = def.Entity;
 const Angle  = def.Angle;
 const Vec2   = def.Vec2;
-const VecR   = def.VecR;
+const VecA   = def.VecA;
 
 // ================================ HELPER FUNCTIONS ================================
 
@@ -28,7 +28,7 @@ pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 }
 
 // Emit particles in a given position and velocity range, with the given colour
-pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : VecR, amount : u32, colour : def.Colour ) void
+pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : def.Colour ) void
 {
   for( 0 .. amount )| i |
   {
@@ -38,8 +38,8 @@ pub fn emitParticles( ng : *Engine, pos : VecR, vel : VecR, dPos : VecR, dVel : 
 
     _ = ng.loadEntityFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
-      .pos    = def.G_RNG.getScaledVecR( dPos, pos ),
-      .vel    = def.G_RNG.getScaledVecR( dVel, vel ),
+      .pos    = def.G_RNG.getScaledVecA( dPos, pos ),
+      .vel    = def.G_RNG.getScaledVecA( dVel, vel ),
       .scale  = Vec2.new( size, size ),
 
       .shape  = def.G_RNG.getVal( def.ntt.e_ntt_shape ),
@@ -55,8 +55,8 @@ pub fn emitParticlesOnBounce( ng : *Engine, ball : *Entity ) void
   emitParticles( ng,
     ball.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
     .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ) },
-    .{ .x = 16,  .y = 16, .r = Angle.newRad( 1.0 )},
-    .{ .x = 128, .y = 32, .r = Angle.newRad( 2.0 )},
+    .{ .x = 16,  .y = 16, .a = Angle.newRad( 1.0 )},
+    .{ .x = 128, .y = 32, .a = Angle.newRad( 2.0 )},
     12, def.Colour.yellow );
 
   ng.playAudio( "hit_1" );
@@ -115,9 +115,9 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
         return;
       };
 
-      ball.pos = VecR.zero();
-      ball.vel = VecR.zero();
-      ball.acc = VecR.zero();
+      ball.pos = .{};
+      ball.vel = .{};
+      ball.acc = .{};
 
       // Reset the positions of the ball shadows
       for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
@@ -152,7 +152,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
     {
       ng.setCameraZoom( 1.0 );
-      ng.setCameraTarget( Vec2.zero() );
+      ng.setCameraTarget( .{} );
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
