@@ -45,6 +45,41 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     ng.playAudio( "hit_1" );
     def.log( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
   }
+
+  // If left clicked, check if a tile was clicked on the example tilemap
+  if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
+  {
+    const mouseScreemPos = def.ray.getMousePosition();
+    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().? );
+
+
+    var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
+    {
+      def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+      return;
+    };
+
+    const clickedCoords = exampleTilemap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
+
+    if( clickedCoords != null )
+    {
+      def.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ clickedCoords.?.x, clickedCoords.?.y });
+
+      var clickedTile = exampleTilemap.getTile( clickedCoords.? ) orelse
+      {
+        def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ clickedCoords.?.x, clickedCoords.?.y, exampleTilemap.id });
+        return;
+      };
+
+      // Change the tile color to a random color
+      clickedTile.colour = def.G_RNG.getColour();
+      ng.playAudio( "hit_0" );
+    }
+    else
+    {
+      def.log( .INFO, 0, @src(), "No tile found at mouse world position {d}:{d}", .{ mouseWorldPos.x, mouseWorldPos.y });
+    }
+  }
 }
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )

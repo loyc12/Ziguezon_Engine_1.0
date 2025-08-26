@@ -92,9 +92,9 @@ pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
 
 // ================================ POS TO TILE ================================
 
-pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : VecA ) ?Coords2
+pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 {
-  const relPos = pos.sub( tlmp.gridPos ).rot( -tlmp.gridPos.a );
+  const relPos = pos.sub( tlmp.gridPos.toVec2() ).rot( tlmp.gridPos.a.neg() );
 
   if( relPos.lenSqr() > tlmp.gridSize.toVec2().mulVal( 0.5 ).mul( tlmp.tileScale ).lenSqr() )
   {
@@ -105,17 +105,16 @@ pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : VecA ) ?Coords2
   return getCoordsFromRelPos( tlmp, relPos );
 }
 
-pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : VecA ) ?Coords2
+pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 {
-  const X =  pos.x / tlmp.tileScale.x;
-  const Y =  pos.y / tlmp.tileScale.y;
-  const R = -pos.a;
+  const X = pos.x / tlmp.tileScale.x;
+  const Y = pos.y / tlmp.tileScale.y;
 
   // TODO : check if the tile is in bounds first
 
-  _ = X + Y + R; // prevent unused variable warning
+  _ = X + Y; // prevent unused variable warning
 
-  def.log( .ERROR, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ tlmp.tileShape });
+  def.log( .ERROR, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {}", .{ tlmp.tileShape });
 
   return null;
 }

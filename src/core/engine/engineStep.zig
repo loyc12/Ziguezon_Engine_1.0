@@ -25,8 +25,8 @@ pub fn loopLogic( ng : *Engine ) void
     def.tryHook( .OnLoopCycle, .{ ng });
 
     // Debug logging the frame time
-    if( comptime def.log_u.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
-    else { def.log_u.logLapTime(); }
+    //if( comptime def.log_u.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
+    //else { def.log_u.logLapTime(); }
 
     if( ng.isOpened() )
     {
