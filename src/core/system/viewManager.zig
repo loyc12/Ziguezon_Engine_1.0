@@ -157,6 +157,8 @@ pub const ViewManager = struct
 
   pub fn clampCameraOnArea( self : *ViewManager, area : Box2 ) void
   {
+    def.log( .TRACE, 0, @src(), "Clamping camera on area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
+
     if( !self.isInit )
     {
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
@@ -167,15 +169,14 @@ pub const ViewManager = struct
       def.qlog( .WARN, 0, @src(), "Cannot clamp camera without a valid view box" );
       return;
     };
-
-    def.log( .DEBUG, 0, @src(), "Clamping camera on area {d}:{d} to {d}:{d}", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
-    def.log( .DEBUG, 0, @src(), "Camera view before clamp {d}:{d} to {d}:{d}", .{ camView.getTopLeft().x, camView.getTopLeft().y, camView.getBottomRight().x, camView.getBottomRight().y });
 
     camView.clampOnArea( area.getTopLeft(), area.getBottomRight() );
     self.camera.target = camView.center.toRayVec2();
   }
   pub fn clampCameraInArea( self : *ViewManager, area : Box2 ) void
   {
+    def.log( .TRACE, 0, @src(), "Clamping camera in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
+
     if( !self.isInit )
     {
       def.qlog( .WARN, 0, @src(), "No main camera initialized" );
@@ -186,9 +187,6 @@ pub const ViewManager = struct
       def.qlog( .WARN, 0, @src(), "Cannot clamp camera without a valid view box" );
       return;
     };
-
-    def.log( .DEBUG, 0, @src(), "Clamping camera on area {d}:{d} to {d}:{d}", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
-    def.log( .DEBUG, 0, @src(), "Camera view before clamp {d}:{d} to {d}:{d}", .{ camView.getTopLeft().x, camView.getTopLeft().y, camView.getBottomRight().x, camView.getBottomRight().y });
 
     camView.clampInArea( area.getTopLeft(), area.getBottomRight() );
     self.camera.target = camView.center.toRayVec2();

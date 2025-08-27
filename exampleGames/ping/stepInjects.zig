@@ -139,14 +139,14 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Move the camera with the numpad keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveBy( Vec2.new(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveBy( Vec2.new(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveBy( Vec2.new( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveBy( Vec2.new(  8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveCameraBy( Vec2.new(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveCameraBy( Vec2.new(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveCameraBy( Vec2.new( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveCameraBy( Vec2.new(  8,  0 )); }
 
     // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomBy( 1.111 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomBy( 0.900 ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 1.111 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy( 0.900 ); }
 
     // Reset the camera zoom and position when the middle mouse button is pressed
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
