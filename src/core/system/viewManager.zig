@@ -1,6 +1,10 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const Box2    = def.Box2;
+const Vec2   = def.Vec2;
+const Camera = def.Camera;
+
 // ================================ DEFINITIONS ================================
 
 pub const MIN_ZOOM : f32 = 0.5; // Closest zoom factor for the camera
@@ -10,20 +14,20 @@ pub const MAX_ZOOM : f32 = 8.0; // Furthest zoom factor for the camera
 
 pub inline fn getScreenWidth()  f32 { return @floatFromInt( def.ray.getScreenWidth()  ); }
 pub inline fn getScreenHeight() f32 { return @floatFromInt( def.ray.getScreenHeight() ); }
-pub inline fn getScreenSize() def.Vec2
+pub inline fn getScreenSize() Vec2
 {
-  return def.Vec2{ .x = getScreenWidth(), .y = getScreenHeight(), };
+  return Vec2{ .x = getScreenWidth(), .y = getScreenHeight(), };
 }
 
 pub inline fn getHalfScreenWidth()  f32 { return getScreenWidth()  * 0.5; }
 pub inline fn getHalfScreenHeight() f32 { return getScreenHeight() * 0.5; }
-pub inline fn getHalfScreenSize() def.Vec2
+pub inline fn getHalfScreenSize() Vec2
 {
-  return def.Vec2{ .x = getHalfScreenWidth(), .y = getHalfScreenHeight(), };
+  return Vec2{ .x = getHalfScreenWidth(), .y = getHalfScreenHeight(), };
 }
 
-pub inline fn getMouseScreenPos() def.Vec2 { return def.ray.getMousePosition(); }
-pub inline fn getMouseWorldPos()  def.Vec2
+pub inline fn getMouseScreenPos() Vec2 { return def.ray.getMousePosition(); }
+pub inline fn getMouseWorldPos()  Vec2
 {
   return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ng.camera );
 }
@@ -33,7 +37,7 @@ pub inline fn getMouseWorldPos()  def.Vec2
 pub const ViewManager = struct
 {
   isInit : bool       = false,
-  camera : def.Camera = undefined,
+  camera : Camera = undefined,
 
   pub fn init( self : *ViewManager, alloc : std.mem.Allocator ) void
   {
@@ -43,7 +47,7 @@ pub const ViewManager = struct
 
     if( !self.isInit  )
     {
-      self.camera = def.Camera{
+      self.camera = Camera{
         .target = def.zeroRayVec2,
         .offset = def.DEF_SCREEN_DIMS.divVal( 2.0 ).?.toRayVec2(),
         .rotation = 0.0,
@@ -71,7 +75,7 @@ pub const ViewManager = struct
 
   // ================ CAMERA ACCESSORS / MUTATORS ================
 
-  pub fn getCameraCpy( self : *const ViewManager ) ?def.Camera
+  pub fn getCameraCpy( self : *const ViewManager ) ?Camera
   {
     if( !self.isInit )
     {
@@ -81,7 +85,7 @@ pub const ViewManager = struct
     return self.camera;
   }
 
-  pub fn setCameraOffset( self : *ViewManager, offset : def.Vec2 ) void
+  pub fn setCameraOffset( self : *ViewManager, offset : Vec2 ) void
   {
     if( !self.isInit )
     {
@@ -89,9 +93,8 @@ pub const ViewManager = struct
       return;
     }
     self.camera.offset = offset.toRayVec2();
-    def.log( .DEBUG, 0, @src(), "Main camera offset set to {d}:{d}", .{ offset.x, offset.y });
   }
-  pub fn setCameraTarget( self : *ViewManager, target : def.Vec2 ) void
+  pub fn setCameraTarget( self : *ViewManager, target : Vec2 ) void
   {
     if( !self.isInit )
     {
@@ -99,7 +102,6 @@ pub const ViewManager = struct
       return;
     }
     self.camera.target = target.toRayVec2();
-    def.log( .DEBUG, 0, @src(), "Main camera target set to {d}:{d}", .{ target.x, target.y });
   }
   pub fn setCameraRotation( self : *ViewManager, a : def.Angle ) void
   {
@@ -109,7 +111,6 @@ pub const ViewManager = struct
       return;
     }
     self.camera.rotation = a;
-    def.log( .DEBUG, 0, @src(), "Main camera rotation set to {d}", .{ a });
   }
   pub fn setCameraZoom( self : *ViewManager, zoom : f32 ) void
   {
@@ -119,10 +120,23 @@ pub const ViewManager = struct
       return;
     }
     self.camera.zoom = zoom;
-    def.log( .DEBUG, 0, @src(), "Main camera zoom set to {d}", .{ zoom });
+  }
+  pub fn getCameraViewBox( self : *const ViewManager ) ?Box2
+  {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
+      return null;
+    }
+
+    const camView : Box2 = Box2{
+      .center = Vec2{ .x = self.camera.target.x, .y = self.camera.target.y },
+      .scale  = getScreenSize().divVal( 2.0 * self.camera.zoom ).?,
+    };
+    return camView;
   }
 
-  pub fn moveBy( self : *ViewManager, offset : def.Vec2 ) void
+  pub fn moveCameraBy( self : *ViewManager, offset : Vec2 ) void
   {
     if( !self.isInit )
     {
@@ -130,10 +144,8 @@ pub const ViewManager = struct
       return;
     }
     self.camera.target = .{ .x = self.camera.target.x + offset.x, .y = self.camera.target.y + offset.y };
-
-    def.log( .DEBUG, 0, @src(), "Main camera moved by {d}:{d}", .{ offset.x, offset.y });
   }
-  pub fn zoomBy( self : *ViewManager, factor : f32 ) void
+  pub fn zoomCameraBy( self : *ViewManager, factor : f32 ) void
   {
     if( !self.isInit )
     {
@@ -141,8 +153,44 @@ pub const ViewManager = struct
       return;
     }
     self.camera.zoom = def.clmp( self.camera.zoom * factor, MIN_ZOOM, MAX_ZOOM );
-
-    def.log( .DEBUG, 0, @src(), "Main camera zoom changed by {d}", .{ factor });
   }
 
+  pub fn clampCameraOnArea( self : *ViewManager, area : Box2 ) void
+  {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
+      return;
+    }
+    var camView = self.getCameraViewBox() orelse
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot clamp camera without a valid view box" );
+      return;
+    };
+
+    def.log( .DEBUG, 0, @src(), "Clamping camera on area {d}:{d} to {d}:{d}", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
+    def.log( .DEBUG, 0, @src(), "Camera view before clamp {d}:{d} to {d}:{d}", .{ camView.getTopLeft().x, camView.getTopLeft().y, camView.getBottomRight().x, camView.getBottomRight().y });
+
+    camView.clampOnArea( area.getTopLeft(), area.getBottomRight() );
+    self.camera.target = camView.center.toRayVec2();
+  }
+  pub fn clampCameraInArea( self : *ViewManager, area : Box2 ) void
+  {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "No main camera initialized" );
+      return;
+    }
+    var camView = self.getCameraViewBox() orelse
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot clamp camera without a valid view box" );
+      return;
+    };
+
+    def.log( .DEBUG, 0, @src(), "Clamping camera on area {d}:{d} to {d}:{d}", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
+    def.log( .DEBUG, 0, @src(), "Camera view before clamp {d}:{d} to {d}:{d}", .{ camView.getTopLeft().x, camView.getTopLeft().y, camView.getBottomRight().x, camView.getBottomRight().y });
+
+    camView.clampInArea( area.getTopLeft(), area.getBottomRight() );
+    self.camera.target = camView.center.toRayVec2();
+  }
 };

@@ -4,13 +4,15 @@ const stateInj = @import( "stateInjects.zig" );
 
 const Engine = def.Engine;
 const Entity = def.Entity;
+
 const Angle  = def.Angle;
 const Vec2   = def.Vec2;
 const VecA   = def.VecA;
+const Box2   = def.Box2;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-var DRAW_TEST : bool = true; // Example input-toggled flag
+
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -35,37 +37,65 @@ pub fn OnLoopCycle( ng : *def.Engine ) void // Called by engine.loopLogic() ( ev
 // NOTE : This is where you should capture inputs to update global flags
 pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
-  // Toggle pause if the P key is pressed
+  // Toggle pause if the P key is pressed // TODO: Use pause to show options
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
-  // Toggle the "DRAW_TEST" example flag if the T key is pressed
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.t ))
+  if( ng.isPlaying() )
   {
-    DRAW_TEST = !DRAW_TEST;
-    ng.playAudio( "hit_1" );
-    def.log( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
+    // Move the camera with the WASD or arrow keys
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraBy( Vec2.new(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraBy( Vec2.new(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraBy( Vec2.new( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraBy( Vec2.new(  8,  0 )); }
+
+
+    // Zoom in and out with the mouse wheel
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
+
+    // Reset the camera zoom and position when r is pressed
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
+    {
+      ng.setCameraZoom( 1.0 );
+      ng.setCameraTarget( .{} );
+      def.qlog( .INFO, 0, @src(), "Camera reseted" );
+    }
   }
 
-  var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
+  var mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
     return;
   };
 
-  // Swap tilemap shape if the Y key is pressed
+  // Clamp the camera to the maze area
+  var viewableScale = mazeMap.gridSize.toVec2().mul( mazeMap.tileScale ).mulVal( 0.5 );
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.y ))
+  if( mazeMap.tileShape == .DIAM ){ viewableScale = viewableScale.mulVal( @sqrt( 2.0 ));
+  }
+  viewableScale = viewableScale.add( ng.getCameraViewBox().?.scale );
+
+  ng.clampCameraInArea( Box2.new( .{}, viewableScale ));
+
+  // Swap tilemap render style if the V key is pressed
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
   {
-    switch( exampleTilemap.tileShape )
+    switch( mazeMap.tileShape )
     {
-      .RECT => exampleTilemap.tileShape = .DIAM,
-      .DIAM => exampleTilemap.tileShape = .HEX1,
-      .HEX1 => exampleTilemap.tileShape = .HEX2,
-      .HEX2 => exampleTilemap.tileShape = .TRI1,
-      .TRI1 => exampleTilemap.tileShape = .TRI2,
-      .TRI2 => exampleTilemap.tileShape = .RECT,
+      .RECT =>
+      {
+        mazeMap.tileShape = .DIAM;
+        mazeMap.tileScale.y = mazeMap.tileScale.x * 0.5;
+      },
+
+      .DIAM =>
+      {
+        mazeMap.tileShape = .RECT;
+        mazeMap.tileScale.y = mazeMap.tileScale.x;
+      },
+      else  => mazeMap.tileShape = .RECT, // Default case
     }
-    def.log( .INFO, 0, @src(), "Example tilemap shape changed to {}", .{ exampleTilemap.tileShape });
+    def.log( .INFO, 0, @src(), "Maze tilemap shape changed to {s}", .{ @tagName( mazeMap.tileShape )});
   }
 
   // If left clicked, check if a tile was clicked on the example tilemap
@@ -74,27 +104,20 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     const mouseScreemPos = def.ray.getMousePosition();
     const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().? );
 
-
-    const worldCoords = exampleTilemap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
+    const worldCoords = mazeMap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
     if( worldCoords != null )
     {
       def.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      var clickedTile = exampleTilemap.getTile( worldCoords.? ) orelse
+      var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
       {
-        def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, exampleTilemap.id });
+        def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
         return;
       };
 
-      def.log( .INFO, 0, @src(), "Clicked on tile with coords {d}:{d} in tilemap {d}", .{ clickedTile.gridCoords.x, clickedTile.gridCoords.y, exampleTilemap.id });
-
       // Change the tile color to a random color
       clickedTile.colour = def.G_RNG.getColour();
-    }
-    else
-    {
-      def.log( .INFO, 0, @src(), "No tile found at mouse world position {d}:{d}", .{ mouseWorldPos.x, mouseWorldPos.y });
     }
   }
 }
@@ -102,22 +125,13 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
 {
-  var exampleEntity = ng.getEntity( stateInj.EXAMPLE_NTT_ID ) orelse
+  const mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Entity ) not found", .{ stateInj.EXAMPLE_NTT_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.MAZE_ID });
     return;
   };
 
-  exampleEntity.pos.a = exampleEntity.pos.a.rotDeg( exampleEntity.pos.a.cos() + 1.5 ); // Example of a simple variable rotation effect
-  exampleEntity.pos.y  = 256  * exampleEntity.pos.a.sin();                             // Example of a simple variable vertical movement effect
-
-  var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
-  {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
-    return;
-  };
-
-  exampleTilemap.gridPos.a = exampleTilemap.gridPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
+  _ = mazeMap; // Prevent unused variable warning
 }
 
 pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
@@ -150,13 +164,12 @@ pub fn OffRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphic
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
 pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {
-  if( DRAW_TEST ) // Example of a flag toggled feature
-  {
-    def.drawCenteredText( "TEST", def.getHalfScreenWidth(), def.getHalfScreenHeight(), 64, def.Colour.green );
-  }
-
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
+    const screenCenter = def.getHalfScreenSize();
+
     def.coverScreenWith( def.Colour.init( 0, 0, 0, 128 ));
+    def.drawCenteredText( "Paused", screenCenter.x, screenCenter.y - 20, 40, def.Colour.white );
+    def.drawCenteredText( "Press P or Enter to resume", screenCenter.x, screenCenter.y + 20, 20, def.Colour.white );
   }
 }

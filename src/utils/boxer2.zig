@@ -274,15 +274,15 @@ pub const Box2 = struct
 
   pub fn clampInXRange( self : *Box2, xMin : f32, xMax : f32 ) void
   {
-    if( checkMinMax(      xMin, xMax )){                   return; }
-    if( checkClampRange(  xMin, xMax, self.scale.x * 2 )){ return; }
+    if( checkMinMax(      xMin, xMax )){ return; }
+    if( checkClampRange(  xMin, xMax, self.scale.x * 2 )){ self.center.x = ( xMin + xMax ) * 0.5; return; }
     self.clampInLeftX(  xMin );
     self.clampInRightX( xMax );
   }
   pub fn clampInYRange( self : *Box2, minY : f32, maxY : f32 ) void
   {
-    if( checkMinMax(     minY, maxY )){                   return; }
-    if( checkClampRange( minY, maxY, self.scale.y * 2 )){ return; }
+    if( checkMinMax(     minY, maxY )){ return; }
+    if( checkClampRange( minY, maxY, self.scale.y * 2 )){ self.center.y = ( minY + maxY ) * 0.5; return; }
     self.clampInTopY(    minY );
     self.clampInBottomY( maxY );
   }

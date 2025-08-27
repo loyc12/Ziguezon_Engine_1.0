@@ -123,6 +123,12 @@ pub fn build( b: *std.Build ) void
   const floppy_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/floppy/gameHooks.zig" });
   floppy_step.dependOn( &floppy_cli_cmd.step );
 
+  // This creates a step for the floppy game
+  const labyrinth_step = b.step( "labyrinth", "Run the labyrinth game" );
+  const labyrinth_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/labyrinther/gameHooks.zig" });
+  labyrinth_step.dependOn( &labyrinth_cli_cmd.step );
+
+
   // ================================ TESTS ================================
 
   const exe_unit_tests     = b.addTest(.{ .root_module = exe_mod });

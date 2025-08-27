@@ -158,6 +158,10 @@ pub const Engine = struct
   {
     if( ng.viewManager )| *m |{ return m.getCameraCpy(); } else { return null; }
   }
+  pub inline fn getCameraViewBox( ng : *Engine ) ?def.Box2
+  {
+    if( ng.viewManager )| *m |{ return m.getCameraViewBox(); } else { return null; }
+  }
 
   pub inline fn setCameraOffset( ng : *Engine, offset : def.Vec2 ) void
   {
@@ -176,13 +180,23 @@ pub const Engine = struct
     if( ng.viewManager )| *m |{ m.setCameraZoom( zoom ); }
   }
 
-  pub inline fn moveBy( ng : *Engine, offset : def.Vec2 ) void
+  pub inline fn moveCameraBy( ng : *Engine, offset : def.Vec2 ) void
   {
-    if( ng.viewManager )| *m |{ m.moveBy( offset ); }
+    if( ng.viewManager )| *m |{ m.moveCameraBy( offset ); }
   }
-  pub inline fn zoomBy( ng : *Engine, factor : f32 ) void
+  pub inline fn zoomCameraBy( ng : *Engine, factor : f32 ) void
   {
-    if( ng.viewManager )| *m |{ m.zoomBy( factor ); }
+    if( ng.viewManager )| *m |{ m.zoomCameraBy( factor ); }
   }
+
+  pub inline fn clampCameraOnArea( ng : *Engine, area : def.Box2 ) void
+  {
+    if( ng.viewManager )| *m |{ m.clampCameraOnArea( area ); }
+  }
+  pub inline fn clampCameraInArea( ng : *Engine, area : def.Box2 ) void
+  {
+    if( ng.viewManager )| *m |{ m.clampCameraInArea( area ); }
+  }
+
 
 };
