@@ -376,17 +376,18 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
 
   // TODO : check if pos is in or near screen bounds first
 
+
   const dParity : f32 = @floatFromInt(( 2 * @mod( tile .gridCoords.x + tile .gridCoords.y, 2 )) - 1 );
 
   switch( tlmp.tileShape )
   {
-    .RECT => def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( RECT_FACTOR * MARGIN_FACTOR * 0.5 ), pos.a,                                    tile.colour ),
-    .DIAM => def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( DIAM_FACTOR * MARGIN_FACTOR ),       pos.a,                                    tile.colour ),
+    .RECT => def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( RECT_FACTOR * MARGIN_FACTOR * 0.5 ), pos.a, tile.colour ),
+    .DIAM => def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( DIAM_FACTOR * MARGIN_FACTOR ),       pos.a, tile.colour ),
 
-    .HEX1 => def.drawHexa( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR * MARGIN_FACTOR ),       pos.a.subDeg( 90.0 ),                     tile.colour ),
-    .HEX2 => def.drawHexa( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR * MARGIN_FACTOR ),       pos.a,                                    tile.colour ),
+    .HEX1 => def.drawHexa( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR * MARGIN_FACTOR ), pos.a.subDeg( 90.0 ), tile.colour ),
+    .HEX2 => def.drawHexa( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR * MARGIN_FACTOR ), pos.a,                tile.colour ),
 
-    .TRI1 => def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ),       pos.a.addDeg(  dParity * 90.0 ),          tile.colour ),
-    .TRI2 => def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ),       pos.a.subDeg(( dParity * 90.0 ) - 90 ),    tile.colour ),
+    .TRI1 => def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ), pos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
+    .TRI2 => def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ), pos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
   }
 }
