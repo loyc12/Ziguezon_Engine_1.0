@@ -89,10 +89,14 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 
       .DIAM =>
       {
-        mazeMap.tileShape = .RECT;
+        mazeMap.tileShape = .HEX1;
         mazeMap.tileScale.y = mazeMap.tileScale.x;
       },
-      else  => mazeMap.tileShape = .RECT, // Default case
+
+      .HEX1 => mazeMap.tileShape = .HEX2,
+      .HEX2 => mazeMap.tileShape = .TRI1,
+      .TRI1 => mazeMap.tileShape = .TRI2,
+      .TRI2 => mazeMap.tileShape = .RECT,
     }
     def.log( .INFO, 0, @src(), "Maze tilemap shape changed to {s}", .{ @tagName( mazeMap.tileShape )});
   }
@@ -115,8 +119,29 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
         return;
       };
 
-      // Change the tile color to a random color
-      clickedTile.colour = def.G_RNG.getColour();
+      // Change the color of the clicked tile
+      clickedTile.colour = def.Colour.gray; //def.G_RNG.getColour();
+
+      // Change the color of all neighbouring tiles to their direction color
+      const dirArray = [_]def.e_dir_2{ .NO, .NE, .EA, .SE, .SO, .SW, .WE, .NW };
+      for( dirArray )| dir |
+      {
+
+        const n_coords = mazeMap.getNeighbourCoords( clickedTile.gridCoords, dir ) orelse
+        {
+          def.log( .TRACE, 0, @src(), "No northern neighbour in direcetion {s} found for tile at {d}:{d} in tilemap {d}",
+                  .{ @tagName( dir ), clickedTile.gridCoords.x, clickedTile.gridCoords.y, mazeMap.id });
+          continue;
+        };
+
+        var n_tile = mazeMap.getTile( n_coords ) orelse
+        {
+          def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ n_coords.x, n_coords.y, mazeMap.id });
+          continue;
+        };
+
+        n_tile.colour = dir.getDebugColour();
+      }
     }
   }
 }

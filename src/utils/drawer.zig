@@ -112,24 +112,10 @@ pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, a : Angle, col : Col
 
 // ================ ADVANCED DRAWING FUNCTIONS ================
 
-// Draws a triangle centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
-{
-  drawPolygonPlus( pos, radii, a, col, 3 );
-}
-
-// Draws a diamond centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawDiamondPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
-{
-  drawPolygonPlus( pos, radii, a, col, 4 );
-  //drawBasicQuad(
-  //  pos.add( Vec2.new(  radii.x,  0       ).rot( a )),
-  //  pos.add( Vec2.new(  0,       -radii.y ).rot( a )),
-  //  pos.add( Vec2.new( -radii.x,  0       ).rot( a )),
-  //  pos.add( Vec2.new(  0,        radii.y ).rot( a )),
-  //  col
-  //);
-}
+pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 3 ); }
+pub inline fn drawDiamondPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 4 ); }
+pub inline fn drawPentagonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 5 ); }
+pub inline fn drawHexagonPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 6 ); }
 
 // Draws a rectangle centered at a given position with specified rotation (rad), colour and size, and scaled in x/y by radii
 pub inline fn drawRectanglePlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour) void

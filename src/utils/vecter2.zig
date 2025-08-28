@@ -102,7 +102,7 @@ pub const Vec2 = struct
     return Vec2{ .x = self.x / val, .y = self.y / val };
   }
 
-  pub inline fn getDist(    self : *const Vec2, other : Vec2 ) f32 { return @sqrt( self.eucliDistSqr( other )); }
+  pub inline fn getDist(    self : *const Vec2, other : Vec2 ) f32 { return @sqrt( self.getDistSqr( other )); }
   pub inline fn getDistSqr( self : *const Vec2, other : Vec2 ) f32
   {
     const dx = self.x - other.x;

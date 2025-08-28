@@ -297,6 +297,8 @@ pub const Tilemap = struct
   pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecA { return tlmpShape.getAbsTilePos( self, gridCoords ); }
   pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecA { return tlmpShape.getRelTilePos( self, gridCoords ); }
 
+  pub inline fn getNeighbourCoords( self : *const Tilemap, gridCoords : Coords2, direction : def.e_dir_2 ) ?Coords2 { return tlmpShape.getNeighbourCoords( self, gridCoords, direction ); }
+
   // =============== DRAW FUNCTIONS ================
 
   //pub fn isTileOnScreen( self : *const Tilemap, gridCoords : Coords2 ) bool // TODO : IMPLEMENT ME ( reuse entity pos logic, after moving it to more generic util file )
