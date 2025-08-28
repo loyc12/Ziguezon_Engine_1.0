@@ -39,23 +39,28 @@ pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for cus
 //LAVA,
 //SPAWN,
 //EXIT,
-};
+  RANDOM = 255, // For random tile generation only
 
-pub fn getTileTypeColour( tileType : e_tile_type ) def.Colour
-{
-  return switch( tileType )
+  // a enum method... ? in THIS economy ?!
+  pub fn getTileTypeColour( self : e_tile_type ) def.Colour
   {
-    .EMPTY   => def.newColour( 0,   0,   0,   0 ),
-    .FLOOR   => def.newColour( 200, 200, 200, 255 ),
-    .WALL    => def.newColour( 150, 150, 150, 255 ),
-  //.TRIGGER => def.newColour( 100, 255, 100, 255 ),
-  //.DOOR    => def.newColour( 255, 200, 100, 255 ),
-  //.WATER   => def.newColour( 50,  150, 255, 255 ),
-  //.LAVA    => def.newColour( 255, 100, 50,  255 ),
-  //.SPAWN   => def.newColour( 0,   255, 0,   255 ),
-  //.EXIT    => def.newColour( 0,   0,   255, 255 ),
+    return switch( self )
+    {
+      .EMPTY   => def.newColour( 0,   0,   0,   0 ),
+      .FLOOR   => def.newColour( 200, 200, 200, 255 ),
+      .WALL    => def.newColour( 150, 150, 150, 255 ),
+    //.TRIGGER => def.newColour( 100, 255, 100, 255 ),
+    //.DOOR    => def.newColour( 255, 200, 100, 255 ),
+    //.WATER   => def.newColour( 50,  150, 255, 255 ),
+    //.LAVA    => def.newColour( 255, 100, 50,  255 ),
+    //.SPAWN   => def.newColour( 0,   255, 0,   255 ),
+    //.EXIT    => def.newColour( 0,   0,   255, 255 ),
+      .RANDOM  => def.newColour( 255, 0,   255, 255 ), // Magenta for debug only
+    };
+  }
   };
-}
+
+
 
 pub const Tile = struct
 {
@@ -266,9 +271,19 @@ pub const Tilemap = struct
         continue;
       };
 
+      var tmp : e_tile_type = undefined;
+
+      if( tileType != .RANDOM ){ tmp = tileType; }
+      else switch( def.G_RNG.getClampedInt( 1, 2 ))
+      {
+        1 => tmp    = .FLOOR,
+        2 => tmp    = .WALL,
+        else => tmp = .EMPTY, // Should never happen
+      }
+
       self.tileArray.items.ptr[ index ] = Tile{
-        .tType  = tileType,
-        .colour = def.G_RNG.getColour(), // NOTE : DEBUG COLOUR : CHANGE BACK TO getTileTypeColour( tileType ),
+        .tType      = tmp,
+        .colour     = tmp.getTileTypeColour(),
         .gridCoords = tileCoords,
       };
     }

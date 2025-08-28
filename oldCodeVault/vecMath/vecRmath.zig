@@ -46,7 +46,7 @@ pub fn normVecALen( v : VecA, newLen : f32 ) ?VecA
   }
 
   const factor = newLen / oldLen;
-  const r = def.wrap( v.z, 0, std.math.tau );
+  const r = def.wrap( v.z, 0, def.TAU );
   return VecA{ .x = v.x * factor, .y = v.y * factor, .z = r };
 }
 

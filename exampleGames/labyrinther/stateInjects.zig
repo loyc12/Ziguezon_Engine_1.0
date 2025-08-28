@@ -24,7 +24,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     .gridSize  = .{ .x = 31, .y = 31  },
     .tileScale = .{ .x = 64, .y = 64 },
     .tileShape = .RECT,
-  }, .FLOOR )
+  }, .RANDOM )
   )| tlm |{ MAZE_ID = tlm.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create maze tilemap" ); }
 }
 pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()

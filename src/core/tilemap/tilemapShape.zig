@@ -10,32 +10,40 @@ const Coords2 = def.Coords2;
 const Tile    = def.Tile;
 const Tilemap = def.Tilemap;
 
+const R2  = def.R3;
+const R3  = def.R3;
+
+const IR2 = 1.0 / R2;
+const IR3 = def.IR3;
+
+const HR2 = def.HR2;
+const HR3 = def.HR3;
+
 pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 {
   RECT, // []
   DIAM, // <>
 
   TRI1, // /\  ( upright )
-  TRI2, // >   ( sideways )
+  TRI2, // >   ( sideway )
 
   HEX1, // <_> ( pointy top )
-  HEX2, // <_> ( flat top )
+  HEX2, // <_> (  flat top  )
+
+//PEN1, // ( upright )
+//PEN2, // ( sideway )
 };
 
-const R2 = @sqrt( 2.0 );
-const R3 = @sqrt( 3.0 );
+const SIZE_FACTOR   = 1.0;   // Base factor to set the size of tiles ( affects all shapes )
+const MARGIN_FACTOR = 0.95; // Factor to scale down tiles slightly to leave a margin between them
 
-const R2I = 1.0 / R2;
-const R3I = 1.0 / R3;
+const RECT_FACTOR = SIZE_FACTOR; // 1x1 square ( R = HR2 )
+const DIAM_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 4 ); // R = 1.0
 
-const HR2 = R2 / 2.0;
-const HR3 = R3 / 2.0;
+const TRIA_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 3 );
+const HEXA_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 6 );
 
-const SIZE_FACTOR = 1.0; // Base factor to set the size of tiles ( affects all shapes )
-const RECT_FACTOR = SIZE_FACTOR * 1.0;
-const DIAM_FACTOR = SIZE_FACTOR * R2I;
-const TRIA_FACTOR = SIZE_FACTOR * 0.8;
-const HEXA_FACTOR = SIZE_FACTOR * 0.6;
+//const PENT_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 5 );
 
 
 // ================================ TILE TO POS ================================
@@ -136,8 +144,8 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
     .DIAM =>
     {
-      const gridX = @round(( baseX + baseY ) * R2I + ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 ));
-      const gridY = @round(( baseY - baseX ) * R2I + ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 ));
+      const gridX = @round(( baseX + baseY ) * IR2 + ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 ));
+      const gridY = @round(( baseY - baseX ) * IR2 + ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 ));
 
       const coords = Coords2{
         .x = @intFromFloat( gridX ),
@@ -170,36 +178,36 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
   {
     .RECT =>
     {
-      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( RECT_FACTOR * 0.5 ), pos.a, tile.colour );
+      def.drawRect( pos.toVec2(), tlmp.tileScale.mulVal( RECT_FACTOR * MARGIN_FACTOR * 0.5 ), pos.a, tile.colour );
     },
 
     .DIAM =>
     {
-      def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( DIAM_FACTOR ), pos.a, tile.colour );
+      def.drawDiam( pos.toVec2(), tlmp.tileScale.mulVal( DIAM_FACTOR * MARGIN_FACTOR ), pos.a, tile.colour );
     },
 
     .TRI1 =>
     {
       const parity = ( 1 == @mod( tile.gridCoords.x + tile.gridCoords.y, 2 ));
-      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a.addDeg( 90 ), tile.colour ); }
-      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a.subDeg( 90 ), tile.colour ); }
+      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ), pos.a.addDeg( 90 ), tile.colour ); }
+      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ), pos.a.subDeg( 90 ), tile.colour ); }
     },
 
     .TRI2 =>
     {
       const parity = ( 1 == @mod( tile.gridCoords.x + tile.gridCoords.y, 2 ));
-      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a,               tile.colour ); }
-      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR ), pos.a.addDeg( 180 ), tile.colour ); }
+      if( parity ){ def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ), pos.a,               tile.colour ); }
+      else        { def.drawTria( pos.toVec2(), tlmp.tileScale.mulVal( TRIA_FACTOR * MARGIN_FACTOR ), pos.a.addDeg( 180 ), tile.colour ); }
     },
 
     .HEX1 =>
     {
-      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR ), pos.a.subDeg( 90 ), tile.colour, 6 );
+      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR * MARGIN_FACTOR ), pos.a.subDeg( 90 ), tile.colour, 6 );
     },
 
     .HEX2 =>
     {
-      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR ), pos.a, tile.colour, 6 );
+      def.drawPoly( pos.toVec2(), tlmp.tileScale.mulVal( HEXA_FACTOR * MARGIN_FACTOR ), pos.a, tile.colour, 6 );
     },
   }
 }

@@ -5,7 +5,41 @@ pub const atan2 = std.math.atan2;
 pub const DtR   = std.math.degreesToRadians;
 pub const RtD   = std.math.radiansToDegrees;
 
+pub const E     = std.math.e;
+pub const PI    = std.math.pi;
+pub const TAU   = std.math.tau;
+pub const PHI   = std.math.phi;
+pub const EPS   = 0.00000001;
+
+pub const R2  = @sqrt( 2.0 );
+pub const HR2 = R2 / 2.0;
+pub const IR2 = 1.0 / R2;
+
+pub const R3  = @sqrt( 3.0 );
+pub const HR3 = R3 / 2.0;
+pub const IR3 = 1.0 / R3;
+
 pub const lerp  = std.math.lerp;
+
+pub fn sign( val : anytype ) @TypeOf( val )
+{
+  switch( @typeInfo( @TypeOf( val )))
+  {
+    .float, .comptime_float =>
+    {
+      if( val > 0.0 ){ return  1.0; }
+      if( val < 0.0 ){ return -1.0; }
+      return 0.0;
+    },
+    .int, .comptime_int =>
+    {
+      if( val > 0 ){ return  1; }
+      if( val < 0 ){ return -1; }
+      return 0;
+    },
+    else => @compileError( "sign() only supports Int and Float types" ),
+  }
+}
 
 pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 {
@@ -83,4 +117,44 @@ pub fn renorm( val : anytype, srcMin : @TypeOf( val ), srcMax : @TypeOf( val ), 
     .float, .comptime_float => return norm( denorm( val, srcMin, srcMax ), dstMin, dstMax ),
     else => @compileError( "renorm() only supports Float types" ),
   }
+}
+
+pub fn getPolyArea( circumradius : f32, sideCount : u8 ) f32
+{
+  if( sideCount < 3 )
+  {
+    def.qlog( .ERROR, 0, @src(), "getPolyArea() called with sides < 3" );
+    return 0.0;
+  }
+
+  if( sideCount == 255 )
+  {
+    def.qlog( .DEBUG, 0, @src(), "getPolyArea() called with sides = 255 ( treating as circle )" );
+    return PI * circumradius * circumradius;
+  }
+
+  const n = @as( f32, @floatFromInt( sideCount ));
+
+  const facetAngle = DtR( 360.0 / n );
+  return ( 0.5 * n * circumradius * circumradius * std.math.sin( facetAngle ));
+}
+
+pub fn getPolyCircum( area : f32, sideCount : u8 ) f32
+{
+  if( sideCount < 3 )
+  {
+    def.qlog( .ERROR, 0, @src(), "getPolyCircumradius() called with sides < 3" );
+    return 0.0;
+  }
+
+  if( sideCount == 255 )
+  {
+    def.qlog( .DEBUG, 0, @src(), "getPolyCircumradius() called with sides = 255 ( treating as circle )" );
+    return std.math.sqrt( area / PI );
+  }
+
+  const n = @as( f32, @floatFromInt( sideCount ));
+
+  const facetAngle = DtR( 360.0 / n );
+  return std.math.sqrt( 2.0 * area / n * std.math.sin( facetAngle ));
 }

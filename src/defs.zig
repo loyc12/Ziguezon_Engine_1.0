@@ -179,6 +179,22 @@ pub const atan2  = mth_u.atan2;
 pub const DtR    = mth_u.DtR;
 pub const RtD    = mth_u.RtD;
 
+pub const E      = mth_u.E;
+pub const PI     = mth_u.PI;
+pub const TAU    = mth_u.TAU;
+pub const PHI    = mth_u.PHI;
+pub const EPS    = mth_u.EPS;
+
+pub const R2     = mth_u.R2;
+pub const HR2    = mth_u.HR2;
+pub const IR2    = mth_u.IR2;
+
+pub const R3     = mth_u.R3;
+pub const HR3    = mth_u.HR3;
+pub const IR3    = mth_u.IR3;
+
+pub const sign   = mth_u.sign;
+
 pub const lerp   = mth_u.lerp;
 pub const med3   = mth_u.med3;
 pub const clmp   = mth_u.clmp;
@@ -187,6 +203,9 @@ pub const wrap   = mth_u.wrap;
 pub const norm   = mth_u.norm;
 pub const denorm = mth_u.denorm;
 pub const renorm = mth_u.renorm;
+
+pub const getPolyCircum = mth_u.getPolyCircum;
+pub const getPolyArea = mth_u.getPolyArea;
 
 
 // ================ COORDS SHORTHANDS ================

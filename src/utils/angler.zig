@@ -39,10 +39,10 @@ pub const Angle = struct
 
   pub inline fn toRad( self : *const Angle ) f32 { return self.r; }
   pub inline fn toDeg( self : *const Angle ) f32 { return def.RtD( self.r ); }
-  pub inline fn toOne( self : *const Angle ) f32 { return self.r / std.math.pi; }
+  pub inline fn toOne( self : *const Angle ) f32 { return self.r / def.PI; }
 
-  pub inline fn normSelf( self :   *Angle ) void  { self.r =           def.wrap( self.r, -std.math.pi, std.math.pi );  }
-  pub inline fn norm( self : *const Angle ) Angle { return Angle{ .r = def.wrap( self.r, -std.math.pi, std.math.pi )}; }
+  pub inline fn normSelf( self :   *Angle ) void  { self.r =           def.wrap( self.r, -def.PI, def.PI );  }
+  pub inline fn norm( self : *const Angle ) Angle { return Angle{ .r = def.wrap( self.r, -def.PI, def.PI )}; }
 
 
   // ================ COMPARISONS ================
@@ -58,14 +58,14 @@ pub const Angle = struct
   pub inline fn isRightOf( self : *const Angle, other : Angle ) bool { return self.sub( other ).isNeg(); }
 
   pub inline fn isAlignedTo(  self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( self.sub( other ).r ) <= threshold; }
-  pub inline fn isOppositeTo( self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - std.math.pi ) <= threshold; }
-  pub inline fn isPerpTo(     self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - ( std.math.pi / 2 )) <= threshold; }
+  pub inline fn isOppositeTo( self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - def.PI ) <= threshold; }
+  pub inline fn isPerpTo(     self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - ( def.PI / 2 )) <= threshold; }
 
 
   // ================ BACIS MATHS ================
 
   pub inline fn neg( self : *const Angle ) Angle { return Angle.newRad( -self.r ).norm(); }
-  pub inline fn inv( self : *const Angle ) Angle { return Angle.newRad( self.r + std.math.pi ).norm(); }
+  pub inline fn inv( self : *const Angle ) Angle { return Angle.newRad( self.r + def.PI ).norm(); }
 
   //pub inline fn flipAlongTangent( self : *const Angle, tangA : Angle ) Angle { return tangA.mulVal( 2 ).sub( self ).norm(); } // TODO : test this shit, I do not truct copilot's explainations here
   //pub inline fn flipAlongNormal(  self : *const Angle, normA : Angle ) Angle { return normA.mulVal( 2 ).sub( self ).norm(); }
