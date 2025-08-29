@@ -133,7 +133,7 @@ pub const Engine = struct
   {
     if( ng.tilemapManager )| *m |{ return m.getTilemap( id ); } else { return null; }
   }
-  pub inline fn loadTilemapFromParams( ng : *Engine, params : def.Tilemap, fillType : ?def.tlm.e_tile_type ) ?*def.Tilemap
+  pub inline fn loadTilemapFromParams( ng : *Engine, params : def.Tilemap, fillType : def.tlm.e_tile_type ) ?*def.Tilemap
   {
     if( ng.tilemapManager )| *m |{ return m.loadTilemapFromParams( def.alloc, params, fillType ); } else { return null; }
   }

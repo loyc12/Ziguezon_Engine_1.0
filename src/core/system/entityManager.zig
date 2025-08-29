@@ -175,9 +175,13 @@ pub const EntityManager = struct
       return null;
     }
 
-    var tmp = params;
-    tmp.id  = self.getNewID();
+    var tmp = Entity.createEntityFromParams( params ) orelse
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to create Entity from params" );
+      return null;
+    };
 
+    tmp.id = self.getNewID();
     if( params.id != 0 and params.id != tmp.id )
     {
       def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
@@ -192,18 +196,14 @@ pub const EntityManager = struct
     return &self.entityList.items[ self.entityList.items.len - 1 ];
   }
 
-  // pub fn loadEntitiesFromFile( self : *EntityManager, filePath : []const u8 ) ?*Entity
-
   pub fn loadDefaultEntity( self : *EntityManager ) ?*Entity
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Entity" );
 
-    return self.loadEntityFromParams( Entity{
-      .pos    = .{},
-      .colour = def.newColour( 255, 255, 255, 255 ),
-      .shape  = .RECT,
-    });
+    return self.loadEntityFromParams( .{} );
   }
+
+  // pub fn loadEntitiesFromFile( self : *EntityManager, filePath : []const u8 ) ?*Entity
 
   pub fn getEntity( self : *EntityManager, id : u32 ) ?*Entity
   {

@@ -32,19 +32,19 @@ pub const e_ntt_flags = enum( u8 )
   VISIBLE = 0b00100000, // Entity will be rendered
   MOBILE  = 0b00010000, // Entity can change position
   SOLID   = 0b00001000, // Entity can collide with other entities
-//TRIGGER = 0b00000100, // Entity can trigger events
-//ANIMATE = 0b00000010, // Entity has an animation
+//MORE... = 0b00000100, //
+//MORE... = 0b00000010, //
   DEBUG   = 0b00000001, // Entity will be rendered with debug information
 
   DEFAULT = 0b01111000, // Default flags for default entities ( active, visible, mobile, solid )
+  TO_CPY  = 0b00111111, // Flags to copy when creating a new entity from params
   NONE    = 0b00000000, // No flags set
   ALL     = 0b11111111, // All flags set
 };
 
 pub const Entity = struct
 {
-  // ================ BASE PROPERTIES ================
-
+  // ================ PROPERTIES ================
   id     : u32  = 0,
   flags  : u8   = @intFromEnum( e_ntt_flags.DEFAULT ),
 
@@ -54,14 +54,14 @@ pub const Entity = struct
   acc    : VecA = .{},
   scale  : Vec2 = .{},
 
-  // ======== COLLISION DATA ===========
+  // ======== COLLISION DATA ========
   hitbox : Box2 = .{}, // current hitbox position and scale ( after rotation ). will be changed on update ( or when clamping )
 
-  // ======== RENDERING DATA ========
+  // ======== RENDERING DATA ======== ( DEBUG )
   colour : def.Colour  = def.Colour.white,
-  shape  : e_ntt_shape = .NONE,
+  shape  : e_ntt_shape = .RECT,
 
-  // ======= CUSTOM BEHAVIOUR POINTERS ========
+  // ======== CUSTOM BEHAVIOUR ========
 //data   : ?*anyopaque = null, // Pointer to instance specific data ( if any )
 //script : ?*anyopaque = null, // Pointer to instance specific scripting ( if any )
 
@@ -87,15 +87,46 @@ pub const Entity = struct
   pub inline fn showDBG(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DEBUG   ); }
 
 
+  // ================ INITIALIZATION FUNCTIONS ================
+
+  pub fn createEntityFromParams( params : Entity ) ?Entity
+  {
+    if( params.canBeDel() ){ def.qlog( .WARN, 0, @src(), "Params should not be a deleted entity"); }
+
+    const tmp = Entity{
+      .flags  = params.flags | @intFromEnum( e_ntt_flags.TO_CPY ),
+      .pos    = params.pos,
+      .vel    = params.vel,
+      .acc    = params.acc,
+      .scale  = params.scale,
+      .hitbox = params.hitbox,
+      .colour = params.colour,
+      .shape  = params.shape,
+    };
+
+    // NOTE : init here if ever needed
+    return tmp;
+  }
+
+  pub fn createEntityFromFile( filePath : []const u8 ) ?Entity
+  {
+    _ = filePath;
+
+    // TODO : implement me
+
+    def.qlog( .ERROR, 0, @src(), "Entity loading from file is not yet implemented");
+    return null;
+  }
+
+
   // ================ POSITION FUNCTIONS ================
-  // Assumes AABB hitboxes for all shapes and orientations
 
   inline fn updateVel( self : *Entity, sdt : f32 ) void
   {
 
     self.vel.x += self.acc.x * sdt;
     self.vel.y += self.acc.y * sdt;
-    self.vel.a = self.vel.a.rot( self.acc.a.mulVal( sdt ));
+    self.vel.a  = self.vel.a.rot( self.acc.a.mulVal( sdt ));
 
     self.acc.x = 0;
     self.acc.y = 0;

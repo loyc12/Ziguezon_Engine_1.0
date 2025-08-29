@@ -43,8 +43,8 @@ pub fn tryHook( tag : ghk_m.hookTag, args : anytype ) void { G_HK.tryHook( tag, 
 
 // ================================ ENGINE ================================
 
-pub const ng     = @import( "core/engine/engineCore.zig" );
-pub const Engine = ng.Engine;
+pub const ng            = @import( "core/engine/engineCore.zig" );
+pub const Engine        = ng.Engine;
 pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 
 // ================ MANAGERS ================
@@ -57,17 +57,19 @@ pub const scr_m = @import( "core/system/viewManager.zig" );
 
 // ================ ENTITY SYSTEM ================
 
-pub const ntt    = @import( "core/entity/entityCore.zig" );
-pub const Entity = ntt.Entity;
+pub const ntt         = @import( "core/entity/entityCore.zig" );
+pub const Entity      = ntt.Entity;
+pub const e_ntt_flags = ntt.e_ntt_flags;
 
 pub const DRAW_HITBOXES = false; // Set to true to draw entity hitbox overlay ( for debugging purposes )
 
 
 // ================ TILEMAP SYSTEM ================
 
-pub const tlm     = @import( "core/tilemap/tilemapCore.zig" );
-pub const Tile    = tlm.Tile;
-pub const Tilemap = tlm.Tilemap;
+pub const tlm          = @import( "core/tilemap/tilemapCore.zig" );
+pub const Tile         = tlm.Tile;
+pub const Tilemap      = tlm.Tilemap;
+pub const e_tlmp_type  = tlm.e_tlmp_type;
 
 
 // ================================ MANAGER SHORTHANDS ================================

@@ -167,9 +167,9 @@ pub const TilemapManager = struct
     def.qlog( .INFO, 0, @src(), "Tilemap manager deinitialized" );
   }
 
-  // ================================ ENTITY MANAGEMENT FUNCTIONS ================================
+  // ================================ TILEMAP MANAGEMENT FUNCTIONS ================================
 
-  pub fn loadTilemapFromParams( self : *TilemapManager, allocator : std.mem.Allocator, params : Tilemap, fillType : ?def.tlm.e_tile_type ) ?*Tilemap
+  pub fn loadTilemapFromParams( self : *TilemapManager, allocator : std.mem.Allocator, params : Tilemap, fillType : def.tlm.e_tile_type ) ?*Tilemap
   {
     def.qlog( .TRACE, 0, @src(), "Adding new Tilemap" );
 
@@ -179,21 +179,17 @@ pub const TilemapManager = struct
       return null;
     }
 
-    if( params.isInit() )
+    var tmp = Tilemap.createTilemapFromParams( params, fillType, allocator ) orelse
     {
-      def.qlog( .WARN, 0, @src(), "Cannot load from an initialized tilemap" );
+      def.qlog( .ERROR, 0, @src(), "Failed to create Tilemap from params" );
       return null;
-    }
+    };
 
-    var tmp = params;
-    tmp.id  = self.getNewID();
-
+    tmp.id = self.getNewID();
     if( params.id != 0 and params.id != tmp.id )
     {
       def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
     }
-
-    tmp.init( allocator, fillType );
 
     self.tilemapList.append( tmp ) catch | err |
     {
@@ -204,19 +200,15 @@ pub const TilemapManager = struct
     return &self.tilemapList.items[ self.tilemapList.items.len - 1 ];
   }
 
-  // pub fn loadTilemapFromFile( self : *TilemapManager, filePath : []const u8, allocator : std.mem.Allocator ) ?*Tilemap
 
   pub fn loadDefaultTilemap( self : *TilemapManager, allocator : std.mem.Allocator ) ?*Tilemap
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Tilemap" );
 
-    return self.loadTilemapFromParams( Tilemap{
-      .gridPos   = Vec2{ .x = 0,  .y = 0  },
-      .gridScale = Vec2{ .x = 32, .y = 32 },
-      .tileScale = Vec2{ .x = 32, .y = 32 },
-      .tileShape = .RECT,
-    }, allocator, .FLOOR );
+    return self.loadTilemapFromParams( .{}, allocator, .FLOOR );
   }
+
+  // pub fn loadTilemapFromFile( self : *TilemapManager, filePath : []const u8, allocator : std.mem.Allocator ) ?*Tilemap
 
   pub fn getTilemap( self : *TilemapManager, id : u32 ) ?*Tilemap
   {

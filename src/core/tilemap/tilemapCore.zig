@@ -10,22 +10,23 @@ const Angle   = def.Angle;
 const Coords2 = def.Coords2;
 
 const DEF_GRID_SIZE  = Coords2{ .x = 32, .y = 32 };
-const DEF_TILE_SCALE = Vec2{    .x = 64, .y = 64 };
+const DEF_TILE_SCALE = Vec2{    .x = 32, .y = 32 };
 
 pub const e_tlmp_flags = enum( u8 )
 {
-  DELETE     = 0b10000000, // Grid is marked for deletion
-  IS_INIT    = 0b01000000, // Grid is initialized
-  ACTIVE     = 0b00100000, // Grid is active and can be used
-//DRAW_DIR_X = 0b00010000, // 0 = left to right, 1 = right to left
-//DRAW_DIR_Y = 0b00001000, // 0 = top to bottom, 1 = bottom to top
-//DUMMY_1    = 0b00000100, // Dummy flag for future use
-//DUMMY_2    = 0b00000010, // Dummy flag for future use
-  DEBUG      = 0b00000001, // Tilemap will be rendered with debug information
+  DELETE  = 0b10000000, // Grid is marked for deletion
+  IS_INIT = 0b01000000, // Grid is initialized
+  ACTIVE  = 0b00100000, // Grid is active and can be used
+//MORE... = 0b00010000, //
+//MORE... = 0b00001000, //
+//MORE... = 0b00000100, //
+//MORE... = 0b00000010, //
+  DEBUG   = 0b00000001, // Tilemap will be rendered with debug information
 
-  TO_CPY     = 0b00011111, // Flags to copy when creating a new tilemap from params
-  NONE       = 0b00000000, // No flags set
-  ALL        = 0b11111111, // All flags set
+  DEFAULT = 0b00111000, // Default flags for a new tilemap
+  TO_CPY  = 0b00011111, // Flags to copy when creating a new tilemap from params
+  NONE    = 0b00000000, // No flags set
+  ALL     = 0b11111111, // All flags set
 };
 
 pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for custom tile types ?
@@ -33,12 +34,7 @@ pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for cus
   EMPTY   = 0,
   FLOOR   = 1,
   WALL    = 2,
-//TRIGGER,
-//DOOR,
-//WATER,
-//LAVA,
-//SPAWN,
-//EXIT,
+//MORE...
   RANDOM = 255, // For random tile generation only
 
   // a enum method... ? in THIS economy ?!
@@ -49,12 +45,7 @@ pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for cus
       .EMPTY   => def.newColour( 0,   0,   0,   0 ),
       .FLOOR   => def.newColour( 200, 200, 200, 255 ),
       .WALL    => def.newColour( 150, 150, 150, 255 ),
-    //.TRIGGER => def.newColour( 100, 255, 100, 255 ),
-    //.DOOR    => def.newColour( 255, 200, 100, 255 ),
-    //.WATER   => def.newColour( 50,  150, 255, 255 ),
-    //.LAVA    => def.newColour( 255, 100, 50,  255 ),
-    //.SPAWN   => def.newColour( 0,   255, 0,   255 ),
-    //.EXIT    => def.newColour( 0,   0,   255, 255 ),
+    //.MORE...
       .RANDOM  => def.newColour( 255, 0,   255, 255 ), // Magenta for debug only
     };
   }
@@ -64,22 +55,41 @@ pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for cus
 
 pub const Tile = struct
 {
-  tType      : e_tile_type = .EMPTY,
+  // ================ PROPERTIES ================
+  tType      : e_tile_type = .EMPTY, // NOTE : move this to data instead, to allow for custom tile types ?
+
+  // ======== GRID POS DATA ========
+  gridCoords : Coords2 = .{},
+
+  // ======== RENDERING DATA ======== ( DEBUG )
   colour     : def.Colour  = def.newColour( 255, 255, 255, 255 ),
-  gridCoords : Coords2     = .{},
+
+  // ======== CUSTOM BEHAVIOUR ========
+//data     : ?*anyopaque = null, // Pointer to instance specific data ( if any )
+//script   : ?*anyopaque = null, // Pointer to instance specific scripting ( if any )
 };
 
-pub const Tilemap = struct
+pub const Tilemap = struct // TODO : move to own file ?
 {
-  id    : u32 = 0,
-  flags : u8  = 0, // Flags for the tilemap ( e.g. is it a grid tilemap ? )
+  // ================ PROPERTIES ================
+  id         : u32 = 0,
+  flags      : u8  = @intFromEnum( e_tlmp_flags.DEFAULT ),
 
-  gridPos    : VecA,
+  // ======== GRID DATA ========
+  gridPos    : VecA    = .{},
   gridSize   : Coords2 = DEF_GRID_SIZE,
 
-  tileScale  : Vec2 = DEF_TILE_SCALE,
-  tileShape  : e_tlmp_shape = .RECT,
   tileArray  : std.ArrayList( Tile ) = undefined,
+
+  // ======= TILE DATA ========
+  tileScale  : Vec2         = DEF_TILE_SCALE,
+  tileShape  : e_tlmp_shape = .RECT,
+
+//baseFillType : e_tile_type = .EMPTY,
+
+  // ======= CUSTOM BEHAVIOUR ========
+//data     : ?*anyopaque = null, // Pointer to instance specific data ( if any )
+//script   : ?*anyopaque = null, // Pointer to instance specific scripting ( if any )
 
 
   // ================ FLAG MANAGEMENT ================
@@ -97,8 +107,7 @@ pub const Tilemap = struct
   pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE     ); }
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT    ); }
   pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.ACTIVE     ); }
-//pub inline fn drawDirX( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_X ); }
-//pub inline fn drawDirY( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DRAW_DIR_Y ); }
+
 
   // ================ CHECKERS ================
 
@@ -128,10 +137,9 @@ pub const Tilemap = struct
   }
 
 
-
   // ================ INITIALIZATION FUNCTIONS ================
 
-  pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : ?e_tile_type ) void
+  pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : e_tile_type ) void
   {
     def.log( .TRACE, 0, @src(), "Initializing Tilemap {d}", .{ self.id });
 
@@ -160,8 +168,7 @@ pub const Tilemap = struct
     self.setFlag( e_tlmp_flags.IS_INIT, true );
     self.setFlag( e_tlmp_flags.ACTIVE,  true );
 
-    if( fillType != null ){ self.fillWithType( fillType.? ); }
-    else                  { self.fillWithType( .EMPTY     ); }
+    self.fillWithType( fillType );
   }
 
   pub fn deinit( self : *Tilemap ) void
@@ -181,38 +188,30 @@ pub const Tilemap = struct
 
   pub fn createTilemapFromParams( params : Tilemap, fillType : e_tile_type, allocator : std.mem.Allocator ) ?Tilemap
   {
-    if( params.isInit() )
-    {
-      def.qlog( .ERROR, 0, @src(), "Params cannot be an initialized tilemap");
-      return null;
-    }
+    if( params.isInit() ){ def.qlog( .WARN, 0, @src(), "Params shoul not be an initialized tilemap"); }
 
-    var tmp = Tilemap{
-      .flags       = params.flags | e_tlmp_flags.TO_CPY,
-      .gridPos     = params.gridPos,
-      .gridSize    = params.gridSize,
-      .tileScale   = params.tileScale,
-      .tileShape   = params.tileShape,
+    var tmp      = Tilemap{
+      .flags     = params.flags | @intFromEnum( e_tlmp_flags.TO_CPY ),
+      .gridPos   = params.gridPos,
+      .gridSize  = params.gridSize,
+      .tileScale = params.tileScale,
+      .tileShape = params.tileShape,
     };
 
-    tmp.init( allocator, fillType ) orelse
-    {
-      def.qlog( .ERROR, 0, @src(), "Failed to initialize new tilemap");
-      return null;
-    };
-
+    tmp.init( allocator, fillType );
     return tmp;
   }
 
-  //pub fn createTilemapFromFile( filePath : []const u8, allocator : std.mem.Allocator ) ?Tilemap
-  //{
-  //  _ = filePath;
-  //  _ = allocator;
-  //
-  //  // TODO : implement me
-  //  def.qlog( .ERROR, 0, @src(), "Tilemap loading from file is not yet implemented");
-  //  return null;
-  //}
+  pub fn createTilemapFromFile( filePath : []const u8, allocator : std.mem.Allocator ) ?Tilemap
+  {
+    _ = filePath;
+    _ = allocator;
+
+    // TODO : implement me
+
+    def.qlog( .ERROR, 0, @src(), "Tilemap loading from file is not yet implemented");
+    return null;
+  }
 
   // ================ TILE FUNCTIONS ================
 
@@ -301,7 +300,7 @@ pub const Tilemap = struct
 
   // =============== DRAW FUNCTIONS ================
 
-  //pub fn isTileOnScreen( self : *const Tilemap, gridCoords : Coords2 ) bool // TODO : IMPLEMENT ME ( reuse entity pos logic, after moving it to more generic util file )
+  //pub fn isTileOnScreen( self : *const Tilemap, gridCoords : Coords2 ) bool
   //{
   //  if( !self.isCoordsValid( gridCoords ))
   //  {
