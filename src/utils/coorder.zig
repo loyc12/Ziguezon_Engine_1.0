@@ -10,6 +10,7 @@ pub const e_dir_2 = enum( u8 )
   SE, EA, NE, SO,
   NO, SW, WE, NW,
 
+  // an enum method... ? in THIS economy ?!
   pub fn getDebugColour( self : e_dir_2 ) def.Colour
   {
     return switch( self )

@@ -18,21 +18,30 @@ pub const LogLevel = enum
   INFO,  // Long term informational messages ( key events in the program )
   DEBUG, // tracing of abnormal execution flow ( unhappy path ) and short term debugging messages
   TRACE, // Tracing of normal execution flow   ( happy path )
+
+
+  // an enum method... ? in THIS economy ?!
+  pub fn canLog( self : LogLevel ) bool
+  {
+    if( comptime G_LOG_LVL == .NONE ){                     return false; }
+    if( @intFromEnum( self ) > @intFromEnum( G_LOG_LVL )){ return false;  }
+    return true;
+  }
 };
 
 // Global configuration variables for the debug logging system
-pub const G_LOG_LVL : LogLevel = .DEBUG; // Set the global log level for debug printing
+pub const G_LOG_LVL      : LogLevel    = .DEBUG; // Set the global log level for debug printing
 
-pub const SHOW_ID_MSGS   : bool = true;  // If true, messages with id will not be omitted
-pub const SHOW_TIMESTAMP : bool = true;  // If true, messages will include a timestamp of the system clock
-pub const SHOW_LAPTIME   : bool = false; // If true, the timestamp, if present, will be the time since the last message instead of the system clock
-pub const SHOW_MSG_SRC   : bool = true;  // If true, messages will include the source file, line number, and function name of the call location
-pub const ADD_PREC_NL    : bool = true;  // If true, a newline will be before the actual message, to make it more readable
+pub const SHOW_ID_MSGS   : bool        = true;   // If true, messages with id will not be omitted
+pub const SHOW_TIMESTAMP : bool        = true;   // If true, messages will include a timestamp of the system clock
+pub const SHOW_LAPTIME   : bool        = false;  // If true, the timestamp, if present, will be the time since the last message instead of the system clock
+pub const SHOW_MSG_SRC   : bool        = true;   // If true, messages will include the source file, line number, and function name of the call location
+pub const ADD_PREC_NL    : bool        = true;   // If true, a newline will be before the actual message, to make it more readable
 
-pub const USE_LOG_FILE   : bool = false;                     // If true, log messages will be written to a file instead of stdout/stderr
+pub const USE_LOG_FILE   : bool        = false;              // If true, log messages will be written to a file instead of stdout/stderr
 pub const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
 var       G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to write log messages in ( default is stderr )
-var       G_IsFileOpened : bool = false;                     // Flag to check if the log file is opened ( and different from stderr )
+var       G_IsFileOpened : bool        = false;              // Flag to check if the log file is opened ( and different from stderr )
 
 // TODO : have each log level be printed in its own file, on top of the shared main one
 
@@ -101,11 +110,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
     // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main)
     // > This is a debug message
 
-  // If the global log level is NONE, we instantly return, as nothing will ever be logged anyways
-  if( comptime G_LOG_LVL == LogLevel.NONE ) return;
-
-  // If the level is higher than the global log level, do nothing
-  if( @intFromEnum( level ) > @intFromEnum( G_LOG_LVL )) return;
+  if( !level.canLog() ) return;
 
   // If the message is IDed and SHOW_ID_MSGS is false, do nothing
   if( comptime !SHOW_ID_MSGS and id != 0 ) return;

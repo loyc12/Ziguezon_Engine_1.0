@@ -1,12 +1,13 @@
-const std  = @import( "std" );
-const def  = @import( "defs" );
+const std    = @import( "std" );
+const def    = @import( "defs" );
 
-const Angle = def.Angle;
+const nttRdr = @import( "entityRender.zig" );
 
-const Box2 = def.Box2;
+const Angle  = def.Angle;
+const Box2   = def.Box2;
+const Vec2   = def.Vec2;
+const VecA   = def.VecA;
 
-const Vec2 = def.Vec2;
-const VecA = def.VecA;
 
 pub const e_ntt_shape = enum // FOR DEBUG RENDERING ONLY
 {
@@ -288,8 +289,6 @@ pub const Entity = struct
   pub inline fn collideWith(   self :       *Entity, other :       *Entity ) bool  { return nttCld.collideWith( self, other ); }
 
   // ================ RENDER FUNCTIONS ================
-
-  const nttRdr = @import( "entityRender.zig" );
 
   pub inline fn isOnScreen(    self : *const Entity ) bool { return nttRdr.isOnScreen( self ); }
   pub inline fn clampInScreen( self :       *Entity ) void { nttRdr.clampInScreen(     self ); }

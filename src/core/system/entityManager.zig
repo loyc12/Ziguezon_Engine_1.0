@@ -1,5 +1,5 @@
-const std = @import( "std" );
-const def = @import( "defs" );
+const std    = @import( "std" );
+const def    = @import( "defs" );
 
 const Entity = def.ntt.Entity;
 const Vec2   = def.Vec2;

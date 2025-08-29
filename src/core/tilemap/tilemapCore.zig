@@ -1,16 +1,20 @@
-const std  = @import( "std" );
-const def  = @import( "defs" );
+const std              = @import( "std" );
+const def              = @import( "defs" );
 
-const tlmpShape = @import( "tilemapShape.zig" );
-const e_tlmp_shape = tlmpShape.e_tlmp_shape;
+const tileCore         = @import( "tileCore.zig" );
+const tlmpShape        = @import( "tilemapShape.zig" );
 
-const Vec2    = def.Vec2;
-const VecA    = def.VecA;
-const Angle   = def.Angle;
-const Coords2 = def.Coords2;
+pub const Tile         = tileCore.Tile;
+pub const e_tile_type  = tileCore.e_tile_type;
+pub const e_tlmp_shape = tlmpShape.e_tlmp_shape;
 
-const DEF_GRID_SIZE  = Coords2{ .x = 32, .y = 32 };
-const DEF_TILE_SCALE = Vec2{    .x = 32, .y = 32 };
+const Vec2             = def.Vec2;
+const VecA             = def.VecA;
+const Coords2          = def.Coords2;
+
+const DEF_GRID_SIZE    = Coords2{ .x = 32, .y = 32 };
+const DEF_TILE_SCALE   = Vec2{    .x = 32, .y = 32 };
+
 
 pub const e_tlmp_flags = enum( u8 )
 {
@@ -29,45 +33,6 @@ pub const e_tlmp_flags = enum( u8 )
   ALL     = 0b11111111, // All flags set
 };
 
-pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for custom tile types ?
-{
-  EMPTY   = 0,
-  FLOOR   = 1,
-  WALL    = 2,
-//MORE...
-  RANDOM = 255, // For random tile generation only
-
-  // a enum method... ? in THIS economy ?!
-  pub fn getTileTypeColour( self : e_tile_type ) def.Colour
-  {
-    return switch( self )
-    {
-      .EMPTY   => def.newColour( 0,   0,   0,   0 ),
-      .FLOOR   => def.newColour( 200, 200, 200, 255 ),
-      .WALL    => def.newColour( 150, 150, 150, 255 ),
-    //.MORE...
-      .RANDOM  => def.newColour( 255, 0,   255, 255 ), // Magenta for debug only
-    };
-  }
-  };
-
-
-
-pub const Tile = struct
-{
-  // ================ PROPERTIES ================
-  tType      : e_tile_type = .EMPTY, // NOTE : move this to data instead, to allow for custom tile types ?
-
-  // ======== GRID POS DATA ========
-  gridCoords : Coords2 = .{},
-
-  // ======== RENDERING DATA ======== ( DEBUG )
-  colour     : def.Colour  = def.newColour( 255, 255, 255, 255 ),
-
-  // ======== CUSTOM BEHAVIOUR ========
-//data     : ?*anyopaque = null, // Pointer to instance specific data ( if any )
-//script   : ?*anyopaque = null, // Pointer to instance specific scripting ( if any )
-};
 
 pub const Tilemap = struct // TODO : move to own file ?
 {
@@ -111,29 +76,22 @@ pub const Tilemap = struct // TODO : move to own file ?
 
   // ================ CHECKERS ================
 
+
+  pub inline fn getTileCount(  self : *const Tilemap ) u32 { return @intCast( self.gridSize.x * self.gridSize.y ); }
+  pub inline fn isIndexValid(  self : *const Tilemap, index : u32 ) bool { return( index < self.getTileCount() ); }
   pub inline fn isCoordsValid( self : *const Tilemap, coords : Coords2 ) bool
   {
     if( !coords.isPosi() )
     {
-      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
+      def.log( .DEBUG, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
       return false;
     }
     if( coords.isSupXY( self.gridSize.subVal( 1 )))
     {
-      def.log( .ERROR, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.gridSize.x, self.gridSize.y });
+      def.log( .DEBUG, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.gridSize.x, self.gridSize.y });
       return false;
     }
     return true;
-  }
-
-  pub inline fn getTileCount( self : *const Tilemap ) u32
-  {
-    return @intCast( self.gridSize.x * self.gridSize.y );
-  }
-
-  pub inline fn isIndexValid( self : *const Tilemap, index : u32 ) bool
-  {
-    return( index < self.getTileCount() );
   }
 
 
@@ -373,13 +331,13 @@ pub const Tilemap = struct // TODO : move to own file ?
 
     if( !self.isInit() )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot find hit tile", .{ self.id });
+      def.log( .WARN, 0, @src(), "Tilemap {d} is not initialized, cannot find hit tile", .{ self.id });
       return null;
     }
 
     return tlmpShape.getCoordsFromAbsPos( self, p ) orelse
     {
-      def.log( .ERROR, 0, @src(), "Failed to get tile coordinates in tilemap {d} from p {d}:{d}", .{ p.x, p.y, self.id });
+      def.log( .DEBUG, 0, @src(), "Failed to get tile coordinates in tilemap {d} from p {d}:{d}", .{ p.x, p.y, self.id });
       return null;
     };
   }

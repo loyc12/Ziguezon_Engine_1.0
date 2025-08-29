@@ -1,5 +1,5 @@
-const std = @import( "std" );
-const def = @import( "defs" );
+const std     = @import( "std" );
+const def     = @import( "defs" );
 
 const Tile    = def.tlm.Tile;
 const Tilemap = def.tlm.Tilemap;
@@ -96,10 +96,7 @@ pub const TilemapManager = struct
       return null;
     }
 
-    for( self.tilemapList.items, 0.. )| tlmp, index |
-    {
-      if( tlmp.id == id ){ return index; }
-    }
+    for( self.tilemapList.items, 0.. )| tlmp, index |{ if( tlmp.id == id ){ return index; }}
 
     def.log( .TRACE, 0, @src(), "Tilemap with ID {d} not found", .{ id });
     return null;
