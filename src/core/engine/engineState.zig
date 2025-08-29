@@ -161,11 +161,10 @@ pub fn open( ng : *Engine ) void
 
   // Initialize relevant engine components
   {
-    if( !ng.isViewManagerInit() )
+    if( !ng.isCameraInit() )
     {
-      def.qlog( .TRACE, 0, @src(), "Initializing View manager" );
-      ng.viewManager = .{};
-      ng.viewManager.?.init( def.alloc );
+      def.qlog( .TRACE, 0, @src(), "Initializing Main Camera" );
+      ng.initCamera();
     }
   }
   // Initialize relevant raylib components
@@ -181,7 +180,6 @@ pub fn open( ng : *Engine ) void
     {
       def.ray.setTargetFPS( def.DEF_TARGET_FPS );
       def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" );
-      ng.setCameraOffset( def.getHalfScreenSize() );
     }
   }
   def.tryHook( .OnOpen, .{ ng });
@@ -213,12 +211,11 @@ pub fn close( ng : *Engine ) void
   }
   // Deinitialize relevant engine components
   {
-    if( ng.isViewManagerInit() )
+    if( ng.isCameraInit() )
     {
-      def.qlog( .TRACE, 0, @src(), "Deinitializing View manager" );
-      ng.viewManager.?.deinit();
+      def.qlog( .TRACE, 0, @src(), "Deinitializing Camera" );
+      ng.deinitCamera();
     }
-    ng.viewManager = null;
   }
 
   ng.state = .STARTED;

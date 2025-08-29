@@ -1,6 +1,12 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const Cam2D = def.Cam2D;
+const Box2  = def.Box2;
+const Vec2  = def.Vec2;
+const VecA  = def.VecA;
+const Angle = def.Angle;
+
 // ================================ DEFINITIONS ================================
 
 pub const e_ng_state = enum
@@ -15,14 +21,14 @@ pub const Engine = struct
 {
   // Engine Variables
   state     : e_ng_state = .OFF,
-  timeScale : f32 = 1.0, // Used to speed up or slow down the game
-  sdt       : f32 = 0.0, // Latest scaled delta time ( from last frame ) : == deltaTime * timeScale
+  timeScale : f32        = 1.0, // Used to speed up or slow down the game
+  sdt       : f32        = 0.0, // Latest scaled delta time ( from last frame ) : == deltaTime * timeScale
+  Camera    : ?Cam2D     = null,
 
   // Engine Components
   resourceManager : ?def.res_m.ResourceManager = null,
   entityManager   : ?def.ntt_m.EntityManager   = null,
   tilemapManager  : ?def.tlm_m.TilemapManager  = null,
-  viewManager     : ?def.scr_m.ViewManager     = null,
 
 
   // ================================ HELPER FUNCTIONS ================================
@@ -46,6 +52,45 @@ pub const Engine = struct
   }
 
 
+  // ================ CAMERA SHORTHAND FUNCTIONS ================
+
+  pub inline fn initCamera( ng : *Engine ) void
+  {
+    if( ng.Camera != null ){ def.qlog( .WARN, 0, @src(), "Camera is already initialized, reinitializing it" ); }
+    ng.Camera = Cam2D.new( .{}, 1.0 );
+  }
+  pub inline fn deinitCamera( ng : *Engine ) void
+  {
+    if( ng.Camera == null ){ def.qlog( .WARN, 0, @src(), "Camera is already deinitialized" ); return; }
+    ng.Camera = null;
+  }
+
+  pub inline fn getCameraCpy(     ng : *Engine ) ?Cam2D { if( ng.Camera )| c |{ return c; } else { return null; }}
+  pub inline fn getCameraViewBox( ng : *Engine ) ?Box2  { if( ng.Camera )| c |{ return c.toViewBox(); } else { return null; }}
+
+  pub inline fn updateCameraDims( ng : *Engine ) void { if( ng.Camera )| *c |{ c.updateDims(); }}
+  pub inline fn updateCameraPos(  ng : *Engine ) void { if( ng.Camera )| *c |{ c.updatePos();  }}
+
+  pub inline fn setCameraCenter(  ng : *Engine, center : Vec2  ) void { if( ng.Camera )| *c |{ c.setCenter( center ); }}
+  pub inline fn setCameraZoom(    ng : *Engine, zoom   : f32   ) void { if( ng.Camera )| *c |{ c.setZoom(   zoom   ); }}
+  pub inline fn setCameraRot(     ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.setRot(    angle  ); }}
+
+  pub inline fn moveCameraBy(     ng : *Engine, offset : Vec2  ) void { if( ng.Camera )| *c |{ c.moveBy( offset ); }}
+  pub inline fn zoomCameraBy(     ng : *Engine, factor : f32   ) void { if( ng.Camera )| *c |{ c.zoomBy( factor ); }}
+  pub inline fn rotCameraBy(      ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.rotBy(  angle  ); }}
+
+  pub inline fn clampCameraOnArea(  ng : *Engine, area   : Box2  ) void { if( ng.Camera )| *c |{ c.clampOnArea(  area  ); }}
+  pub inline fn clampCameraInArea(  ng : *Engine, area   : Box2  ) void { if( ng.Camera )| *c |{ c.clampInArea(  area  ); }}
+  pub inline fn clampCameraOnPoint( ng : *Engine, point  : Vec2  ) void { if( ng.Camera )| *c |{ c.clampOnPoint( point ); }}
+
+  pub inline fn clampCameraCenterInArea(  ng : *Engine, center : Vec2  ) void
+  {
+    if( ng.Camera )| *c |{ c.clampCenterInArea( ng, center ); }
+  }
+
+  pub inline fn isCameraInit( ng : *const Engine ) bool { if( ng.Camera != null ){    return true; } else { return false; }}
+  pub inline fn getCamera(    ng : *Engine ) !*Cam2D    { if( ng.Camera != null )| *c |{ return c; } else { return error.NullManager; }}
+
   // ================================ ENGINE STATE FUNCTIONS ================================
 
   const ngnState = @import( "engineState.zig" );
@@ -66,12 +111,10 @@ pub const Engine = struct
   pub inline fn isResourceManagerInit( ng : *const Engine ) bool { if( ng.resourceManager )| *m |{ return m.isInit; } else { return false; }}
   pub inline fn isEntityManagerInit(   ng : *const Engine ) bool { if( ng.entityManager   )| *m |{ return m.isInit; } else { return false; }}
   pub inline fn isTilemapManagerInit(  ng : *const Engine ) bool { if( ng.tilemapManager  )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isViewManagerInit(     ng : *const Engine ) bool { if( ng.viewManager     )| *m |{ return m.isInit; } else { return false; }}
 
   pub inline fn getResourceManager( ng : *Engine ) !*def.res_m.ResourceManager { if( ng.resourceManager )| *m |{ return m; } else { return error.NullManager; }}
   pub inline fn getEntityManager(   ng : *Engine ) !*def.ntt_m.EntityManager   { if( ng.entityManager   )| *m |{ return m; } else { return error.NullManager; }}
   pub inline fn getTilemapManager(  ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager  )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getViewManager(     ng : *Engine ) !*def.scr_m.ViewManager     { if( ng.viewManager     )| *m |{ return m; } else { return error.NullManager; }}
 
 
   // ================ RESOURCE MANAGER ================
@@ -150,53 +193,5 @@ pub const Engine = struct
   {
     if( ng.tilemapManager )| *m |{ m.deleteAllMarkedTilemaps(); }
   }
-
-
-  // ================ VIEW MANAGER ================
-
-  pub inline fn getCameraCpy( ng : *Engine ) ?def.Camera
-  {
-    if( ng.viewManager )| *m |{ return m.getCameraCpy(); } else { return null; }
-  }
-  pub inline fn getCameraViewBox( ng : *Engine ) ?def.Box2
-  {
-    if( ng.viewManager )| *m |{ return m.getCameraViewBox(); } else { return null; }
-  }
-
-  pub inline fn setCameraOffset( ng : *Engine, offset : def.Vec2 ) void
-  {
-    if( ng.viewManager )| *m |{ m.setCameraOffset( offset ); }
-  }
-  pub inline fn setCameraTarget( ng : *Engine, target : def.Vec2 ) void
-  {
-    if( ng.viewManager )| *m |{ m.setCameraTarget( target ); }
-  }
-  pub inline fn setCameraRotation( ng : *Engine, a : def.Angle ) void
-  {
-    if( ng.viewManager )| *m |{ m.setCameraRotation( a ); }
-  }
-  pub inline fn setCameraZoom( ng : *Engine, zoom : f32 ) void
-  {
-    if( ng.viewManager )| *m |{ m.setCameraZoom( zoom ); }
-  }
-
-  pub inline fn moveCameraBy( ng : *Engine, offset : def.Vec2 ) void
-  {
-    if( ng.viewManager )| *m |{ m.moveCameraBy( offset ); }
-  }
-  pub inline fn zoomCameraBy( ng : *Engine, factor : f32 ) void
-  {
-    if( ng.viewManager )| *m |{ m.zoomCameraBy( factor ); }
-  }
-
-  pub inline fn clampCameraOnArea( ng : *Engine, area : def.Box2 ) void
-  {
-    if( ng.viewManager )| *m |{ m.clampCameraOnArea( area ); }
-  }
-  pub inline fn clampCameraInArea( ng : *Engine, area : def.Box2 ) void
-  {
-    if( ng.viewManager )| *m |{ m.clampCameraInArea( area ); }
-  }
-
 
 };

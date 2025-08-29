@@ -265,18 +265,18 @@ pub const Tilemap = struct // TODO : move to own file ?
   //    def.log( .ERROR, 0, @src(), "Cannot check if tile at {d}:{d} is on screen in tilemap {d} : coords are invalid", .{ gridCoords.x, gridCoords.y, self.id });
   //    return false;
   //  }
-//
+  //
   //  const tilePos = self.getTileWorldPos( gridCoords ) orelse
   //  {
   //    def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridCoords.x, gridCoords.y, self.id });
   //    return false;
   //  };
-//
+  //
   //  const tileMaxSize = @max( self.tileScale.x, self.tileScale.y ) * 1.415;
-//
+  //
   //  const shw : f32 = def.getScreenWidth()  / 2 + tileMaxSize;
   //  const shh : f32 = def.getScreenHeight() / 2 + tileMaxSize;
-//
+  //
   //  return isOnRange( Vec2{ .x = -shw, .y = -shh }, Vec2{ .x = shw,  .y = shh });
   //}
 
@@ -324,7 +324,6 @@ pub const Tilemap = struct // TODO : move to own file ?
     }
   }
 
-  // TODO : TEST THIS SHIT
   pub fn findHitTileCoords( self : *const Tilemap, p : Vec2 ) ?Coords2
   {
     def.log( .TRACE, 0, @src(), "Finding hit tile at p {d}:{d} for Tilemap {d}", .{ p.x, p.y, self.id });

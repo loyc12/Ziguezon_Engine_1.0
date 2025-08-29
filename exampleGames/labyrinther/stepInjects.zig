@@ -55,8 +55,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     // Reset the camera zoom and position when r is pressed
     if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
     {
-      ng.setCameraZoom( 1.0 );
-      ng.setCameraTarget( .{} );
+      ng.setCameraZoom(   1.0 );
+      ng.setCameraCenter( .{} );
+      ng.setCameraRot(    .{} );
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -105,7 +106,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
   {
     const mouseScreemPos = def.ray.getMousePosition();
-    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().? );
+    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().?.toRayCam() );
 
     const worldCoords = mazeMap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 

@@ -70,15 +70,15 @@ pub const Angle = struct
   //pub inline fn flipAlongTangent( self : *const Angle, tangA : Angle ) Angle { return tangA.mulVal( 2 ).sub( self ).norm(); } // TODO : test this shit, I do not truct copilot's explainations here
   //pub inline fn flipAlongNormal(  self : *const Angle, normA : Angle ) Angle { return normA.mulVal( 2 ).sub( self ).norm(); }
 
-  pub inline fn rot( self : *const Angle, other : Angle ) Angle { return self.add( other ); }
+  pub inline fn rot( self : *const Angle, other : Angle ) Angle { return self.add(     other ); }
   pub inline fn add( self : *const Angle, other : Angle ) Angle { return Angle.newRad( self.r + other.r ).norm(); }
   pub inline fn sub( self : *const Angle, other : Angle ) Angle { return Angle.newRad( self.r - other.r ).norm(); }
 
-  pub inline fn rotRad( self : *const Angle, val : f32 ) Angle { return self.addRad( val ); }
+  pub inline fn rotRad( self : *const Angle, val : f32 ) Angle { return self.addRad(  val ); }
   pub inline fn addRad( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r + val ).norm(); }
   pub inline fn subRad( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r - val ).norm(); }
 
-  pub inline fn rotDeg( self : *const Angle, val : f32 ) Angle { return self.addDeg( val ); }
+  pub inline fn rotDeg( self : *const Angle, val : f32 ) Angle { return self.addDeg(  val ); }
   pub inline fn addDeg( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r + def.DtR( val )).norm(); }
   pub inline fn subDeg( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r - def.DtR( val )).norm(); }
 

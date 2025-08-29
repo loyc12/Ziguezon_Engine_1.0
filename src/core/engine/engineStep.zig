@@ -51,12 +51,12 @@ pub fn updateInputs( ng : *Engine ) void
   {
     if( def.ray.isWindowResized() )
     {
-      if( ng.isViewManagerInit() )
+      if( ng.isCameraInit() )
       {
-        def.qlog( .TRACE, 0, @src(), "Updating View manager main camera offset" );
-        ng.setCameraOffset( def.getHalfScreenSize() );
+        def.qlog( .TRACE, 0, @src(), "Updating camera dimensions" );
+        ng.updateCameraDims();
       }
-      else { def.qlog( .WARN, 0, @src(), "No View manager initialized, skipping camera offset update" ); }
+      else { def.qlog( .WARN, 0, @src(), "No main camera initialized, skipping camera update" ); }
     }
   }
   //def.tryHook( .OffUpdateInputs, .{ ng });
@@ -99,15 +99,15 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
   }
   //def.tryHook( .OffRenderBackground, .{ ng });
 
-  if( !ng.isViewManagerInit() )
+  if( !ng.isCameraInit() )
   {
-    def.qlog( .WARN, 0, @src(), "Cannot render graphics: View manager is not initialized" );
+    def.qlog( .WARN, 0, @src(), "Cannot render graphics: Main camera is not initialized" );
     return;
   }
 
   if( ng.getCameraCpy() )| cam |
   {
-    def.ray.beginMode2D( cam );
+    def.ray.beginMode2D( cam.toRayCam() );
     {
       def.tryHook( .OnRenderWorld, .{ ng });
 

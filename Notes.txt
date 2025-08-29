@@ -57,9 +57,12 @@ Terraria-like              ( Sandbox )
 
 ======== PARTS ========
 
+UTILS ADDITIONS
+ > on-screen performance logging util ( time taken by each step )
+
 REVIEW IMPLEMENTATIONS
  > gameHooks
- > timer
+ > timers
 
 FILE INTERACTION
  > SELECT & LOAD
@@ -67,7 +70,7 @@ FILE INTERACTION
 
 CUSTOM RENDER LAYERS
  > RENDER QUEUE ( elements sorted based on layer )
-
+ > UI interaction priority based on layer
 
 SPRITE ATLAS
  > SPRITE DIMS
@@ -82,7 +85,7 @@ INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnClick
  > TBD
 
-PARTICLE SYSTEM
+PARTICLE MANAGER
  > Predefined & reusable particle buffer
 
 ANIMATION MANAGER ?

@@ -30,6 +30,7 @@ pub fn deinitAllUtils() void
 pub const DEF_SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
 pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
 
+pub const alloc = std.heap.smp_allocator;
 
 // ================================ HOOK MANAGER ================================
 
@@ -52,7 +53,6 @@ pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 pub const res_m = @import( "core/system/resourceManager.zig" );
 pub const ntt_m = @import( "core/system/entityManager.zig" );
 pub const tlm_m = @import( "core/system/tilemapManager.zig" );
-pub const scr_m = @import( "core/system/viewManager.zig" );
 
 
 // ================ ENTITY SYSTEM ================
@@ -72,23 +72,54 @@ pub const Tilemap      = tlm.Tilemap;
 pub const e_tlmp_type  = tlm.e_tlmp_type;
 
 
-// ================================ MANAGER SHORTHANDS ================================
+// ================================ UTILS SHORTHANDS ================================
 
-pub const alloc = std.heap.smp_allocator;
+// ================ ANGLER SHORTHANDS ================================
+
+pub const ngl_u = @import( "utils/angler.zig" );
+
+pub const Angle = ngl_u.Angle;
 
 
-// ================ SCREEN MNGR SHORTHANDS ================
+// ================ BOXER SHORTHANDS ================
 
-pub const getScreenWidth      = scr_m.getScreenWidth;
-pub const getScreenHeight     = scr_m.getScreenHeight;
-pub const getScreenSize       = scr_m.getScreenSize;
+pub const box2_u = @import( "utils/boxer2.zig" );
 
-pub const getHalfScreenWidth  = scr_m.getHalfScreenWidth;
-pub const getHalfScreenHeight = scr_m.getHalfScreenHeight;
-pub const getHalfScreenSize   = scr_m.getHalfScreenSize;
+pub const Box2 = box2_u.Box2;
 
-pub const getMouseScreenPos   = scr_m.getMouseScreenPos;
-pub const getMouseWorldPos    = scr_m.getMouseWorldPos;
+pub const isLeftOf  = box2_u.isLeftOf;
+pub const isRightOf = box2_u.isRightOf;
+pub const isAbove   = box2_u.isAbove;   // NOTE : Y axis is inverted in raylib rendering
+pub const isBelow   = box2_u.isBelow;   // NOTE : Y axis is inverted in raylib rendering
+
+pub const getCenterXFromLeftX      = box2_u.getCenterXFromLeftX;
+pub const getCenterXFromRightX     = box2_u.getCenterXFromRightX;
+pub const getCenterYFromTopY       = box2_u.getCenterYFromTopY;
+pub const getCenterYFromBottomY    = box2_u.getCenterYFromBottomY;
+
+pub const getCenterFromTopLeft     = box2_u.getCenterFromTopLeft;
+pub const getCenterFromTopRight    = box2_u.getCenterFromTopRight;
+pub const getCenterFromBottomLeft  = box2_u.getCenterFromBottomLeft;
+pub const getCenterFromBottomRight = box2_u.getCenterFromBottomRight;
+
+
+// ================ CAMER SHORTHANDS ================
+
+pub const cmr_u  = @import( "utils/camer.zig" );
+
+pub const RayCam = cmr_u.RayCam;
+pub const Cam2D  = cmr_u.Cam2D;
+
+pub const getScreenWidth      = cmr_u.getScreenWidth;
+pub const getScreenHeight     = cmr_u.getScreenHeight;
+pub const getScreenSize       = cmr_u.getScreenSize;
+
+pub const getHalfScreenWidth  = cmr_u.getHalfScreenWidth;
+pub const getHalfScreenHeight = cmr_u.getHalfScreenHeight;
+pub const getHalfScreenSize   = cmr_u.getHalfScreenSize;
+
+pub const getMouseScreenPos   = cmr_u.getMouseScreenPos;
+pub const getMouseWorldPos    = cmr_u.getMouseWorldPos;
 
 
 // ================ DRAWER SHORTHANDS ================
@@ -132,37 +163,6 @@ pub const drawCenteredText         = drw_u.drawCenteredText;
 
 pub const drawTexture              = drw_u.drawTexture;
 pub const drawTextureCentered      = drw_u.drawTextureCentered;
-
-
-// ================================ UTILS SHORTHANDS ================================
-
-// ================ ANGLER SHORTHANDS ================================
-
-pub const ngl_u = @import( "utils/angler.zig" );
-
-pub const Angle = ngl_u.Angle;
-
-
-// ================ BOXER SHORTHANDS ================
-
-pub const box2_u = @import( "utils/boxer2.zig" );
-
-pub const Box2 = box2_u.Box2;
-
-pub const isLeftOf  = box2_u.isLeftOf;
-pub const isRightOf = box2_u.isRightOf;
-pub const isAbove   = box2_u.isAbove;   // NOTE : Y axis is inverted in raylib rendering
-pub const isBelow   = box2_u.isBelow;   // NOTE : Y axis is inverted in raylib rendering
-
-pub const getCenterXFromLeftX      = box2_u.getCenterXFromLeftX;
-pub const getCenterXFromRightX     = box2_u.getCenterXFromRightX;
-pub const getCenterYFromTopY       = box2_u.getCenterYFromTopY;
-pub const getCenterYFromBottomY    = box2_u.getCenterYFromBottomY;
-
-pub const getCenterFromTopLeft     = box2_u.getCenterFromTopLeft;
-pub const getCenterFromTopRight    = box2_u.getCenterFromTopRight;
-pub const getCenterFromBottomLeft  = box2_u.getCenterFromBottomLeft;
-pub const getCenterFromBottomRight = box2_u.getCenterFromBottomRight;
 
 
 // ================ LOGGER SHORTHANDS ================
@@ -210,7 +210,7 @@ pub const denorm = mth_u.denorm;
 pub const renorm = mth_u.renorm;
 
 pub const getPolyCircum = mth_u.getPolyCircum;
-pub const getPolyArea = mth_u.getPolyArea;
+pub const getPolyArea   = mth_u.getPolyArea;
 
 
 // ================ COORDS SHORTHANDS ================
@@ -246,8 +246,6 @@ pub const Vec3   = vec3_u.Vec3;
 
 
 // ================= RAYLIB SHORTHANDS ================
-
-pub const Camera = ray.Camera2D;
 
 pub const Colour = ray.Color;
 
