@@ -19,6 +19,16 @@ const IR3 = def.IR3;
 const HR2 = def.HR2;
 const HR3 = def.HR3;
 
+
+const SIZE_FACTOR   = 1.00; // Base factor to set the size of tiles ( affects all shapes )
+const MARGIN_FACTOR = 0.95; // Factor to scale down tiles slightly to leave a margin between them
+
+const RECT_FACTOR = SIZE_FACTOR; // 1x1 square ( R = HR2 )
+const DIAM_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 4 ); // R = 1.0
+const HEXA_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 6 );
+const TRIA_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 3 );
+//const PENT_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 5 );
+
 pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 {
   RECT, // []
@@ -37,11 +47,10 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 
   pub fn getGridScaleFactors( self : e_tlmp_shape ) Vec2 // TODO : add a getBoundingBox() method to tilemaps
   {
-    const base = Vec2.new( 1.0, 1.0 );
     var tmp = switch( self )
     {
-      .RECT => base.mulVal( RECT_FACTOR ),
-      .DIAM => base.mulVal( DIAM_FACTOR * 2.0 ),
+      .RECT => Vec2.new( 1.0, 1.0 ).mulVal( RECT_FACTOR ),
+      .DIAM => Vec2.new( 2.0, 2.0 ).mulVal( DIAM_FACTOR ),
       .HEX1 => Vec2.new( R3,  1.5 ).mulVal( HEXA_FACTOR ),
       .HEX2 => Vec2.new( 1.5, R3  ).mulVal( HEXA_FACTOR ),
       .TRI1 => Vec2.new( HR3, 1.5 ).mulVal( TRIA_FACTOR ),
@@ -58,32 +67,24 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
       .DIAM => return .{},
       .HEX1 =>
       {
-        //const xOffset = ( @as( f32, @floatFromInt( @mod( coords.y, 2 ))) - 0.5 ) / 2.0;
-
         const yParity : f32 = @floatFromInt( @mod( coords.y, 2 ));
         const xOffset = ( yParity - 0.5 ) / 2.0;
         return Vec2.new( xOffset, 0.0 );
       },
       .HEX2 =>
       {
-        //const yOffset = ( @as( f32, @floatFromInt( @mod( coords.x, 2 ))) - 0.5 ) / 2.0;
-
         const xParity : f32 = @floatFromInt( @mod( coords.x, 2 ));
         const yOffset = ( xParity - 0.5 ) / 2.0;
         return Vec2.new( 0.0, yOffset );
       },
       .TRI1 =>
       {
-        //const yOffset = ( @as( f32, @floatFromInt( @mod( coords.x + coords.y, 2 ))) - 0.5 ) / 3.0;
-
         const tParity : f32 = @floatFromInt( @mod( coords.x + coords.y, 2 ));
         const yOffset = ( tParity - 0.5 ) / 3.0;
         return Vec2.new( 0.0, yOffset );
       },
       .TRI2 =>
       {
-        //const xOffset = ( @as( f32, @floatFromInt( @mod( coords.x + coords.y, 2 ))) - 0.5 ) / 3.0;
-
         const tParity : f32 = @floatFromInt( @mod( coords.x + coords.y, 2 ));
         const xOffset = ( tParity - 0.5 ) / 3.0;
         return Vec2.new( xOffset, 0.0 );
@@ -91,15 +92,6 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
     }
   }
 };
-
-const SIZE_FACTOR   = 1.00; // Base factor to set the size of tiles ( affects all shapes )
-const MARGIN_FACTOR = 0.95; // Factor to scale down tiles slightly to leave a margin between them
-
-const RECT_FACTOR = SIZE_FACTOR; // 1x1 square ( R = HR2 )
-const DIAM_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 4 ); // R = 1.0
-const HEXA_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 6 );
-const TRIA_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 3 );
-//const PENT_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 5 );
 
 
 // ================================ COORDS TO POS ================================

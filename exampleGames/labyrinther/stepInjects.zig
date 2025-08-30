@@ -91,7 +91,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
       .RECT =>
       {
         mazeMap.tileShape = .DIAM;
-        mazeMap.tileScale.y = mazeMap.tileScale.x * 0.5;
+        mazeMap.tileScale.y = mazeMap.tileScale.x * 0.5; // skews the map to get an isometric view
       },
 
       .DIAM =>
