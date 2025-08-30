@@ -35,7 +35,7 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 
   //pub fn getTileScaleFactor( self : e_tlmp_shape ) f32
 
-  pub fn getGridScaleFactors( self : e_tlmp_shape ) Vec2
+  pub fn getGridScaleFactors( self : e_tlmp_shape ) Vec2 // TODO : add a getBoundingBox() method to tilemaps
   {
     const base = Vec2.new( 1.0, 1.0 );
     var tmp = switch( self )
