@@ -32,6 +32,64 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 
 //PEN1, // ( upright ) // TODO : implement me
 //PEN2, // ( sideway ) // TODO : implement me
+
+  //pub fn getTileScaleFactor( self : e_tlmp_shape ) f32
+
+  pub fn getGridScaleFactors( self : e_tlmp_shape ) Vec2
+  {
+    const base = Vec2.new( 1.0, 1.0 );
+    var tmp = switch( self )
+    {
+      .RECT => base.mulVal( RECT_FACTOR ),
+      .DIAM => base.mulVal( DIAM_FACTOR * 2.0 ),
+      .HEX1 => Vec2.new( R3,  1.5 ).mulVal( HEXA_FACTOR ),
+      .HEX2 => Vec2.new( 1.5, R3  ).mulVal( HEXA_FACTOR ),
+      .TRI1 => Vec2.new( HR3, 1.5 ).mulVal( TRIA_FACTOR ),
+      .TRI2 => Vec2.new( 1.5, HR3 ).mulVal( TRIA_FACTOR ),
+    };
+    return tmp.mulVal( 0.5 );
+  }
+
+  pub fn getParityOffset( self : e_tlmp_shape, coords : Coords2 ) Vec2
+  {
+    switch( self )
+    {
+      .RECT => return .{},
+      .DIAM => return .{},
+      .HEX1 =>
+      {
+        //const xOffset = ( @as( f32, @floatFromInt( @mod( coords.y, 2 ))) - 0.5 ) / 2.0;
+
+        const yParity : f32 = @floatFromInt( @mod( coords.y, 2 ));
+        const xOffset = ( yParity - 0.5 ) / 2.0;
+        return Vec2.new( xOffset, 0.0 );
+      },
+      .HEX2 =>
+      {
+        //const yOffset = ( @as( f32, @floatFromInt( @mod( coords.x, 2 ))) - 0.5 ) / 2.0;
+
+        const xParity : f32 = @floatFromInt( @mod( coords.x, 2 ));
+        const yOffset = ( xParity - 0.5 ) / 2.0;
+        return Vec2.new( 0.0, yOffset );
+      },
+      .TRI1 =>
+      {
+        //const yOffset = ( @as( f32, @floatFromInt( @mod( coords.x + coords.y, 2 ))) - 0.5 ) / 3.0;
+
+        const tParity : f32 = @floatFromInt( @mod( coords.x + coords.y, 2 ));
+        const yOffset = ( tParity - 0.5 ) / 3.0;
+        return Vec2.new( 0.0, yOffset );
+      },
+      .TRI2 =>
+      {
+        //const xOffset = ( @as( f32, @floatFromInt( @mod( coords.x + coords.y, 2 ))) - 0.5 ) / 3.0;
+
+        const tParity : f32 = @floatFromInt( @mod( coords.x + coords.y, 2 ));
+        const xOffset = ( tParity - 0.5 ) / 3.0;
+        return Vec2.new( xOffset, 0.0 );
+      },
+    }
+  }
 };
 
 const SIZE_FACTOR   = 1.00; // Base factor to set the size of tiles ( affects all shapes )
@@ -59,49 +117,30 @@ pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
   const baseX = @as( f32, @floatFromInt( gridCoords.x )) - ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 );
   const baseY = @as( f32, @floatFromInt( gridCoords.y )) - ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 );
 
-  const xParity : f32 = @floatFromInt( @mod( gridCoords.y, 2 ));
-  const yParity : f32 = @floatFromInt( @mod( gridCoords.x, 2 ));
-  const dParity : f32 = @floatFromInt( @mod( gridCoords.x + gridCoords.y, 2 ));
+  const offset = tlmp.tileShape.getParityOffset( gridCoords );
 
-  var pos : VecA = undefined;
-
-  switch( tlmp.tileShape )
+  const pos = switch( tlmp.tileShape )
   {
     // Rectangle ( scaled along axis )
-    .RECT => { pos = VecA.new( baseX, baseY, null ).mulVal( RECT_FACTOR ); },
+    .RECT => VecA.new( baseX, baseY, null ).mulVal( RECT_FACTOR ),
 
     // Diamond ( scaled along diagonals )
-    .DIAM => { pos = VecA.new(( baseX - baseY ), ( baseX + baseY ), null ).mulVal( DIAM_FACTOR ); },
+    .DIAM => VecA.new(( baseX - baseY ), ( baseX + baseY ), null ).mulVal( DIAM_FACTOR ),
 
     // Pointy top hexagon
-    .HEX1 =>
-    {
-      const xOffset = xParity * 0.5;
-      pos = VecA.new(( baseX + xOffset ) * R3, baseY * 1.5, null ).mulVal( HEXA_FACTOR );
-    },
+    .HEX1 => VecA.new(( baseX - offset.x ) * R3, baseY * 1.5, null ).mulVal( HEXA_FACTOR ),
 
     // Flat top hexagon
-    .HEX2 =>
-    {
-      const yOffset = yParity * 0.5;
-      pos = VecA.new( baseX * 1.5, ( baseY + yOffset ) * R3, null ).mulVal( HEXA_FACTOR );
-    },
+    .HEX2 => VecA.new( baseX * 1.5, ( baseY - offset.y ) * R3, null ).mulVal( HEXA_FACTOR ),
 
     // Upright triangle
-    .TRI1 =>
-    {
-      const offset = ( dParity - 0.5 ) / 3.0;
-      pos = VecA.new( baseX * HR3, ( baseY - offset ) * 1.5, null ).mulVal( TRIA_FACTOR );
-    },
+    .TRI1 => VecA.new( baseX * HR3, ( baseY - offset.y ) * 1.5, null ).mulVal( TRIA_FACTOR ),
 
     // Sideways triangle
-    .TRI2 =>
-    {
-      const offset = ( dParity - 0.5 ) / 3.0;
-      pos = VecA.new(( baseX - offset ) * 1.5, baseY * HR3, null ).mulVal( TRIA_FACTOR );
-    },
-  }
-  return pos.mul( tlmp.tileScale.toVecA( null ));
+    .TRI2 => VecA.new(( baseX - offset.x ) * 1.5, baseY * HR3, null ).mulVal( TRIA_FACTOR ),
+  };
+
+  return pos.mul( tlmp.tileScale.toVecA( .{} )); // TODO : multiply by factors here isntead
 }
 
 // ================================ POS TO COORDS ================================
@@ -171,10 +210,9 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       {
         const gridY = @round( rawGridY );
 
-        var xOffset : f32 = 0.0;
-        if( @mod( @as( i32, @intFromFloat( gridY )), 2 ) == 1 ){ xOffset = 0.5; }
+        const offset = e_tlmp_shape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridY )));
 
-        const gridX = @round( descaledX - xOffset) ;
+        const gridX = @round( descaledX + offset.x ) ;
 
         coords = Coords2{
           .x = @intFromFloat( gridX ),
@@ -187,10 +225,9 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         // ======== TILE A ========
         const gridYA = @floor( rawGridY );
 
-        var xOffsetA : f32 = 0.0;
-        if( @mod( @as( i32, @intFromFloat( gridYA )), 2 ) == 1 ){ xOffsetA = 0.5; }
+        const offsetA = e_tlmp_shape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridYA )));
 
-        const gridXA = @round( descaledX - xOffsetA );
+        const gridXA = @round( descaledX + offsetA.x );
 
         const coordsA = Coords2{
           .x = @intFromFloat( gridXA ),
@@ -200,8 +237,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         // ======== TILE B ========
         const gridYB = @ceil( rawGridY );
 
-        const xOffsetB = 0.5 - xOffsetA;
-        const gridXB = @round( descaledX - xOffsetB );
+        const gridXB = @round( descaledX - offsetA.x );
 
         const coordsB = Coords2{
           .x = @intFromFloat( gridXB ),
@@ -231,10 +267,9 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       {
         const gridX = @round( rawGridX );
 
-        var yOffset : f32 = 0.0;
-        if( @mod( @as( i32, @intFromFloat( gridX )), 2 ) == 1 ){ yOffset = 0.5; }
+        const offset = e_tlmp_shape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridX ), 0.0 ));
 
-        const gridY = @round( descaledY - yOffset) ;
+        const gridY = @round( descaledY + offset.y) ;
 
         coords = Coords2{
           .x = @intFromFloat( gridX ),
@@ -247,10 +282,9 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         // ======== TILE A ========
         const gridXA = @floor( rawGridX );
 
-        var yOffsetA : f32 = 0.0;
-        if( @mod( @as( i32, @intFromFloat( gridXA )), 2 ) == 1 ){ yOffsetA = 0.5; }
+        const offsetA = e_tlmp_shape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridXA ), 0.0 ));
 
-        const gridYA = @round( descaledY - yOffsetA );
+        const gridYA = @round( descaledY + offsetA.y );
 
         const coordsA = Coords2{
           .x = @intFromFloat( gridXA ),
@@ -260,8 +294,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         // ======== TILE B ========
         const gridXB = @ceil( rawGridX );
 
-        const yOffsetB = 0.5 - yOffsetA;
-        const gridYB = @round( descaledY - yOffsetB );
+        const gridYB = @round( descaledY - offsetA.y );
 
         const coordsB = Coords2{
           .x = @intFromFloat( gridXB ),
@@ -281,7 +314,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
     // TODO : implement TRI1 and TRI2
 
-    else => def.log( .ERROR, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
+    else => def.log( .WARN, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
   }
 
   return null;
@@ -328,11 +361,11 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
       .WE => gridCoords.add( Coords2.new( -1,  0 )),
       .EA => gridCoords.add( Coords2.new(  1,  0 )),
 
-      .NW => if( yParity ) gridCoords.add( Coords2.new(  0, -1 )) else gridCoords.add( Coords2.new( -1, -1 )),
-      .NE => if( yParity ) gridCoords.add( Coords2.new(  1, -1 )) else gridCoords.add( Coords2.new(  0, -1 )),
+      .NW => if( yParity ) gridCoords.add( Coords2.new( -1, -1 )) else gridCoords.add( Coords2.new(  0, -1 )),
+      .NE => if( yParity ) gridCoords.add( Coords2.new(  0, -1 )) else gridCoords.add( Coords2.new(  1, -1 )),
 
-      .SW => if( yParity ) gridCoords.add( Coords2.new(  0,  1 )) else gridCoords.add( Coords2.new( -1,  1 )),
-      .SE => if( yParity ) gridCoords.add( Coords2.new(  1,  1 )) else gridCoords.add( Coords2.new(  0,  1 )),
+      .SW => if( yParity ) gridCoords.add( Coords2.new( -1,  1 )) else gridCoords.add( Coords2.new(  0,  1 )),
+      .SE => if( yParity ) gridCoords.add( Coords2.new(  0,  1 )) else gridCoords.add( Coords2.new(  1,  1 )),
     },
 
     .HEX2 => switch( direction )
@@ -343,11 +376,11 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
       .NO => gridCoords.add( Coords2.new(  0, -1 )),
       .SO => gridCoords.add( Coords2.new(  0,  1 )),
 
-      .NW => if( xParity ) gridCoords.add( Coords2.new( -1,  0 )) else gridCoords.add( Coords2.new( -1, -1 )),
-      .SW => if( xParity ) gridCoords.add( Coords2.new( -1,  1 )) else gridCoords.add( Coords2.new( -1,  0 )),
+      .NW => if( xParity ) gridCoords.add( Coords2.new( -1, -1 )) else gridCoords.add( Coords2.new( -1,  0 )),
+      .SW => if( xParity ) gridCoords.add( Coords2.new( -1,  0 )) else gridCoords.add( Coords2.new( -1,  1 )),
 
-      .NE => if( xParity ) gridCoords.add( Coords2.new(  1,  0 )) else gridCoords.add( Coords2.new(  1, -1 )),
-      .SE => if( xParity ) gridCoords.add( Coords2.new(  1,  1 )) else gridCoords.add( Coords2.new(  1,  0 )),
+      .NE => if( xParity ) gridCoords.add( Coords2.new(  1, -1 )) else gridCoords.add( Coords2.new(  1,  0 )),
+      .SE => if( xParity ) gridCoords.add( Coords2.new(  1,  0 )) else gridCoords.add( Coords2.new(  1,  1 )),
     },
 
     // TODO : implement TRI1 and TRI2

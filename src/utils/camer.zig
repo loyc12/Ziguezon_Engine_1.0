@@ -6,8 +6,8 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 const Angle  = def.Angle;
 
-const MAX_ZOOM = 100;
-const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 10.0;
+const MIN_ZOOM = 0.10;
 
 pub const RayCam = def.ray.Camera2D;
 
@@ -33,6 +33,9 @@ pub inline fn getMouseWorldPos()  Vec2
   return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ng.Cam2D );
 }
 
+inline fn getViewFromZoom( zoom : f32  ) Vec2 { return getHalfScreenSize().mulVal( 1.0 / zoom ); }
+inline fn getZoomFromView( view : Vec2 ) f32  { return getHalfScreenWidth() / ( view.x ); }
+
 
 // ================================ CAMERA STRUCT ================================
 
@@ -40,7 +43,7 @@ pub const Cam2D = struct
 {
   pos   : VecA,                // center of the camera + rotation
   zoom  : f32 = 1.0,
-  dims  : Vec2,
+  view  : Vec2,
 
   track : ?*def.Entity = null, // entity to track ( if any )
 
@@ -49,34 +52,62 @@ pub const Cam2D = struct
 
   pub inline fn new( pos : def.VecA, zoom : f32 ) Cam2D
   {
-    var tmp = Cam2D{ .pos = pos, .zoom = zoom, .dims = .{} };
+    var tmp = Cam2D{ .pos = pos, .zoom = zoom, .view = .{} };
 
-    tmp.updateDims();
+    tmp.updateView();
     return tmp;
   }
 
 
   // ================ CONVERSION ================
 
-  pub inline fn toRayCam( self : *Cam2D ) RayCam
+  pub inline fn fromRayCam( rc : RayCam ) Cam2D
   {
-    self.updateDims();
-    return RayCam{
-      .target   = self.pos.toVec2().sub( self.dims ).toRayVec2(),
-      .offset   = self.dims.toRayVec2(),
-      .rotation = self.pos.a.r,
-      .zoom     = self.zoom,
+    var tmp = Cam2D{
+      .pos  = VecA{ .x = rc.target.x, .y = rc.target.y, .a = Angle{ .r = rc.rotation }},
+      .zoom = rc.zoom,
+      .view = .{},
     };
+
+    tmp.updateView();
+    return tmp;
+  }
+  pub inline fn toRayCam( self : *const Cam2D ) RayCam
+  {
+    var tmp : Cam2D = self.*;
+    tmp.updateView();
+
+    //def.log( .DEBUG, 0, @src(), "Converting from Cam2D ( pos: {d}:{d}, rot: {d}, zoom: {d}, view: {d}:{d} )", .{ tmp.pos.x, tmp.pos.y, tmp.pos.a.r, tmp.zoom, tmp.view.x, tmp.view.y });
+
+    const res = RayCam{
+      .target   = tmp.pos.toRayVec2(),
+      .offset   = getHalfScreenSize().toRayVec2(),
+      .rotation = tmp.pos.a.r,
+      .zoom     = tmp.zoom,
+    };
+
+    //def.log( .DEBUG, 0, @src(), "Converted to RayCam ( target: {d}:{d}, offset: {d}:{d}, rot: {d}, zoom: {d} )", .{ res.target.x, res.target.y, res.offset.x, res.offset.y, res.rotation, res.zoom });
+    return res;
   }
 
-  pub inline fn toViewBox( self : *Cam2D ) Box2
+  pub inline fn fromViewBox( vb : Box2 ) Cam2D
+  {
+    return Cam2D{
+      .pos  = VecA{ .x = vb.center.x, .y = vb.center.y, .a = Angle{ .r = 0.0 } },
+      .zoom = getZoomFromView( vb.scale ),
+      .view = vb,
+    };
+  }
+  pub inline fn toViewBox( self : *const Cam2D ) Box2
   {
     if( !self.pos.a.isZero() ){ def.qlog( .WARN, 0, @src(), "Camera is rotated, viewbox will be inaccurate" ); }
 
-    self.updateDims();
+    var tmp : Cam2D = self.*;
+    tmp.updateView();
+
     return Box2{
-      .center = self.pos.toVec2(),
-      .scale  = self.dims,
+      .center = tmp.pos.toVec2(),
+      .scale  = tmp.view,
     };
   }
 
@@ -95,17 +126,35 @@ pub const Cam2D = struct
     if( self.zoom < MIN_ZOOM ) { self.zoom = MIN_ZOOM; }
     if( self.zoom > MAX_ZOOM ) { self.zoom = MAX_ZOOM; }
 
-    self.updateDims();
+    self.updateView();
   }
 
   // ================ UPDATING ================
 
-  pub inline fn updateDims( self : *Cam2D ) void { self.dims = getScreenSize().mulVal( 0.5 / self.zoom ); }
-  pub inline fn updatePos(  self : *Cam2D ) void { if( self.track )| *e |{ self.pos = e.pos; }}
+  pub inline fn updateView(  self : *Cam2D ) void { self.view = getViewFromZoom( self.zoom ); }
+  pub inline fn updateTrack( self : *Cam2D ) void
+  {
+    if( self.track )| *e |
+    {
+      if( !e.isActive() or e.canBeDel() )
+      {
+        def.qlog( .WARN, 0, @src(), "Tracked entity ( ID: {d} ) either inactive or deleted : stopping tracking", .{ e.id });
+        self.track = null;
+        return;
+      }
+      self.pos = e.pos;
+    }
+  }
 
   // ================ MOVEMENT ================
 
-  pub inline fn moveBy( self : *Cam2D, offset : Vec2  ) void { self.pos.x += offset.x; self.pos.y += offset.y; }
+  pub inline fn moveBy(  self : *Cam2D, offset       : Vec2 ) void { self.pos.x += offset.x; self.pos.y += offset.y; }
+  pub inline fn moveByS( self : *Cam2D, screenOffset : Vec2 ) void
+  {
+    self.updateView();
+    self.pos = self.pos.add( screenOffset.mulVal( 1.0 / self.zoom ).toVecA( .{} ));
+  }
+
   pub inline fn rotBy(  self : *Cam2D, a      : Angle ) void { self.pos.a.rot( a ); }
   pub inline fn zoomBy( self : *Cam2D, factor : f32   ) void { self.setZoom( self.zoom * factor ); }
 

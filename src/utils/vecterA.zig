@@ -53,7 +53,7 @@ pub const VecA = struct
 
   // ================ CONVERSIONS ================
 
-  pub inline fn toRayVec2( self : *const VecA ) RayVec3 { return RayVec3{ .x = self.x, .y = self.y }; }
+  pub inline fn toRayVec2( self : *const VecA ) RayVec2 { return RayVec2{ .x = self.x, .y = self.y }; }
   pub inline fn toVec2(    self : *const VecA ) Vec2    { return Vec2{    .x = self.x, .y = self.y }; }
   pub inline fn toCoords2( self : *const VecA ) Coords2
   {

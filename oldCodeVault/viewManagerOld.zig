@@ -45,7 +45,7 @@ pub const ViewManager = struct
     {
       self.Cam2D = Cam2D{
         .target = def.zeroRayVec2,
-        .offset = def.DEF_SCREEN_DIMS.divVal( 2.0 ).?.toRayVec2(),
+        .offset = def.DEF_SCREEN_DIMS.mulVal( 0.5 ).toRayVec2(),
         .rotation = 0.0,
         .zoom = 1.0,
       };
@@ -148,7 +148,7 @@ pub const ViewManager = struct
       def.qlog( .WARN, 0, @src(), "No main Cam2D initialized" );
       return;
     }
-    self.Cam2D.zoom = def.clmp( self.Cam2D.zoom * factor, MIN_ZOOM, MAX_ZOOM );
+    self.Cam2D.zoom = def.clmp( self.Cam2D.zoom * factor, 1.0, 10.0 );
   }
 
   pub fn clampCam2DOnArea( self : *ViewManager, area : Box2 ) void

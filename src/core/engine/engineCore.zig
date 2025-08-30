@@ -68,25 +68,23 @@ pub const Engine = struct
   pub inline fn getCameraCpy(     ng : *Engine ) ?Cam2D { if( ng.Camera )| c |{ return c; } else { return null; }}
   pub inline fn getCameraViewBox( ng : *Engine ) ?Box2  { if( ng.Camera )| c |{ return c.toViewBox(); } else { return null; }}
 
-  pub inline fn updateCameraDims( ng : *Engine ) void { if( ng.Camera )| *c |{ c.updateDims(); }}
+  pub inline fn updateCameraView( ng : *Engine ) void { if( ng.Camera )| *c |{ c.updateView(); }}
   pub inline fn updateCameraPos(  ng : *Engine ) void { if( ng.Camera )| *c |{ c.updatePos();  }}
 
-  pub inline fn setCameraCenter(  ng : *Engine, center : Vec2  ) void { if( ng.Camera )| *c |{ c.setCenter( center ); }}
-  pub inline fn setCameraZoom(    ng : *Engine, zoom   : f32   ) void { if( ng.Camera )| *c |{ c.setZoom(   zoom   ); }}
-  pub inline fn setCameraRot(     ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.setRot(    angle  ); }}
+  pub inline fn setCameraCenter( ng : *Engine, center : Vec2  ) void { if( ng.Camera )| *c |{ c.setCenter( center ); }}
+  pub inline fn setCameraZoom(   ng : *Engine, zoom   : f32   ) void { if( ng.Camera )| *c |{ c.setZoom(   zoom   ); }}
+  pub inline fn setCameraRot(    ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.setRot(    angle  ); }}
 
-  pub inline fn moveCameraBy(     ng : *Engine, offset : Vec2  ) void { if( ng.Camera )| *c |{ c.moveBy( offset ); }}
-  pub inline fn zoomCameraBy(     ng : *Engine, factor : f32   ) void { if( ng.Camera )| *c |{ c.zoomBy( factor ); }}
-  pub inline fn rotCameraBy(      ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.rotBy(  angle  ); }}
+  pub inline fn moveCameraBy(  ng : *Engine, offset : Vec2  ) void { if( ng.Camera )| *c |{ c.moveBy( offset ); }}
+  pub inline fn moveCameraByS( ng : *Engine, factor : Vec2  ) void { if( ng.Camera )| *c |{ c.moveByS( factor ); }}
+  pub inline fn zoomCameraBy(  ng : *Engine, factor : f32   ) void { if( ng.Camera )| *c |{ c.zoomBy( factor ); }}
+  pub inline fn rotCameraBy(   ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.rotBy(  angle  ); }}
 
-  pub inline fn clampCameraOnArea(  ng : *Engine, area   : Box2  ) void { if( ng.Camera )| *c |{ c.clampOnArea(  area  ); }}
-  pub inline fn clampCameraInArea(  ng : *Engine, area   : Box2  ) void { if( ng.Camera )| *c |{ c.clampInArea(  area  ); }}
-  pub inline fn clampCameraOnPoint( ng : *Engine, point  : Vec2  ) void { if( ng.Camera )| *c |{ c.clampOnPoint( point ); }}
+  pub inline fn clampCameraOnArea(  ng : *Engine, area  : Box2  ) void { if( ng.Camera )| *c |{ c.clampOnArea(  area  ); }}
+  pub inline fn clampCameraInArea(  ng : *Engine, area  : Box2  ) void { if( ng.Camera )| *c |{ c.clampInArea(  area  ); }}
+  pub inline fn clampCameraOnPoint( ng : *Engine, point : Vec2  ) void { if( ng.Camera )| *c |{ c.clampOnPoint( point ); }}
 
-  pub inline fn clampCameraCenterInArea(  ng : *Engine, center : Vec2  ) void
-  {
-    if( ng.Camera )| *c |{ c.clampCenterInArea( ng, center ); }
-  }
+  pub inline fn clampCameraCenterInArea(  ng : *Engine, area : Box2  ) void { if( ng.Camera )| *c |{ c.clampCenterInArea( area ); }}
 
   pub inline fn isCameraInit( ng : *const Engine ) bool { if( ng.Camera != null ){    return true; } else { return false; }}
   pub inline fn getCamera(    ng : *Engine ) !*Cam2D    { if( ng.Camera != null )| *c |{ return c; } else { return error.NullManager; }}

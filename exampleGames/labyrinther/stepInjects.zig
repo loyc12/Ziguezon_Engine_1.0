@@ -43,10 +43,10 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   if( ng.isPlaying() )
   {
     // Move the camera with the WASD or arrow keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraBy( Vec2.new(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraBy( Vec2.new(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraBy( Vec2.new( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraBy( Vec2.new(  8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
 
     // Zoom in and out with the mouse wheel
     if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
@@ -69,13 +69,19 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   };
 
   // Clamp the camera to the maze area
-  var viewableScale = mazeMap.gridSize.toVec2().mul( mazeMap.tileScale ).mulVal( 0.5 );
+  const viewableScale = mazeMap.gridSize.toVec2().mul( mazeMap.tileScale ).mul( mazeMap.tileShape.getGridScaleFactors() );
 
-  if( mazeMap.tileShape == .DIAM ){ viewableScale = viewableScale.mulVal( @sqrt( 2.0 ));
-  }
-  viewableScale = viewableScale.add( ng.getCameraViewBox().?.scale );
+  //switch( mazeMap.tileShape )
+  //{
+  //  .RECT => viewableScale = viewableScale.mulVal( 0.5 ),
+  //  .DIAM => viewableScale = viewableScale.mulVal( def.HR2 ),
+  //  .HEX1 => viewableScale = viewableScale.mul( Vec2.new( def.HR3, 1.5 )),
+  //  .HEX2 => {},
+  //  .TRI1 => {},
+  //  .TRI2 => {},
+  //}
 
-  ng.clampCameraInArea( Box2.new( .{}, viewableScale ));
+  ng.clampCameraCenterInArea( Box2.new( mazeMap.gridPos.toVec2(), viewableScale ));
 
   // Swap tilemap render style if the V key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))

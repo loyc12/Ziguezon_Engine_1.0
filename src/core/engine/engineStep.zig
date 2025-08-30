@@ -54,7 +54,7 @@ pub fn updateInputs( ng : *Engine ) void
       if( ng.isCameraInit() )
       {
         def.qlog( .TRACE, 0, @src(), "Updating camera dimensions" );
-        ng.updateCameraDims();
+        ng.updateCameraView();
       }
       else { def.qlog( .WARN, 0, @src(), "No main camera initialized, skipping camera update" ); }
     }
@@ -124,12 +124,11 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
       }
       else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
 
-
       def.tryHook( .OffRenderWorld, .{ ng });
     }
     def.ray.endMode2D();
   }
-  else { def.qlog( .WARN, 0, @src(), "No main camera initialized, skipping world rendering" ); }
+  else { def.qlog( .WARN, 0, @src(), "No main camera found, skipping world rendering" ); }
 
   def.tryHook( .OnRenderOverlay, .{ ng });
   {
