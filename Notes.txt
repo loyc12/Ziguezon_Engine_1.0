@@ -61,9 +61,10 @@ UTILS ADDITIONS
  > on-screen performance logging util ( time taken by each step )
 
 REVIEW IMPLEMENTATIONS
- > gameHooks
- > timers
+ > gameHooks ( kinda messy rn )
+ > timers ( overly complex )
  > toAABB ( calculated them better for scaled polygons )
+ > engine flags ( like DRAW_HITBOXES ) (add config file to gameHooks ? )
 
 FILE INTERACTION
  > SELECT & LOAD

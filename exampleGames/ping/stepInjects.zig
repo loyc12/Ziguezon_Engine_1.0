@@ -145,14 +145,15 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
     if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveCameraBy( Vec2.new(  8,  0 )); }
 
     // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 1.111 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy( 0.900 ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
 
-    // Reset the camera zoom and position when the middle mouse button is pressed
-    if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
+    // Reset the camera zoom and position when r is pressed
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
     {
-      ng.setCameraZoom( 1.0 );
-      ng.setCameraTarget( .{} );
+      ng.setCameraZoom(   1.0 );
+      ng.setCameraCenter( .{} );
+      ng.setCameraRot(    .{} );
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -426,8 +427,8 @@ pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
   s2_buff[ s2_slice.len ] = 0;
 
   // Find the center of each field in screen space
-  const p1_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() *  0.25, .y = 0 }, cam );
-  const p2_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() * -0.25, .y = 0 }, cam );
+  const p1_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() *  0.25, .y = 0 }, cam.toRayCam() );
+  const p2_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() * -0.25, .y = 0 }, cam.toRayCam() );
 
   // Draw each player's score in the middle of their respective fields
   def.drawCenteredText( &s1_buff, p1_score_pos.x, p1_score_pos.y, 64, def.Colour.blue );
