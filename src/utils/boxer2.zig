@@ -130,6 +130,9 @@ pub const Box2 = struct
 
   // ================ CHECKERS ================
 
+  pub inline fn isEq(    self : *const Box2, other : Box2 ) bool { return self.center.isEq(    other.center ) and self.scale.isEq(   other.scale ); }
+  pub inline fn isDiff(  self : *const Box2, other : Box2 ) bool { return self.center.isDiff(  other.center ) or  self.scale.isDiff( other.scale ); }
+
   // ======== PERMISSIVE RANGE CHECKERS ======== ( can be partially outside the range )
 
   pub inline fn goesLeftOfX(  self : *const Box2, thresholdX : f32 ) bool { return isLeftOf(  self.getLeftX(),   thresholdX ); }

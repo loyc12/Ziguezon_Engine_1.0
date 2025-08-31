@@ -67,6 +67,7 @@ pub const VecA = struct
 
   pub inline fn isPosi( self : *const VecA ) bool { return self.x >= 0 and self.y >= 0; }
   pub inline fn isZero( self : *const VecA ) bool { return self.x == 0 and self.y == 0; }
+  pub inline fn isIso(  self : *const VecA ) bool { return self.x == self.y; }
 
   pub inline fn isEq(    self : *const VecA, other : VecA ) bool { return self.x == other.x and self.y == other.y and self.a == other.a; }
   pub inline fn isDiff(  self : *const VecA, other : VecA ) bool { return self.x != other.x or  self.y != other.y or  self.a != other.a; }

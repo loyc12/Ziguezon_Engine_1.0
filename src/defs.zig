@@ -57,11 +57,11 @@ pub const tlm_m = @import( "core/system/tilemapManager.zig" );
 
 // ================ ENTITY SYSTEM ================
 
-pub const ntt         = @import( "core/entity/entityCore.zig" );
-pub const Entity      = ntt.Entity;
-pub const e_ntt_flags = ntt.e_ntt_flags;
+pub const ntt           = @import( "core/entity/entityCore.zig" );
+pub const Entity        = ntt.Entity;
+pub const e_ntt_flags   = ntt.e_ntt_flags;
 
-pub const DRAW_HITBOXES = false; // Set to true to draw entity hitbox overlay ( for debugging purposes )
+pub const DRAW_HITBOXES = true; // Set to true to draw entity hitbox overlay ( for debugging purposes )
 
 
 // ================ TILEMAP SYSTEM ================

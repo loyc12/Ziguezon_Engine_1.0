@@ -64,6 +64,7 @@ pub const Vec2 = struct
 
   pub inline fn isPosi( self : *const Vec2 ) bool { return self.x >= 0 and self.y >= 0; }
   pub inline fn isZero( self : *const Vec2 ) bool { return self.x == 0 and self.y == 0; }
+  pub inline fn isIso(  self : *const Vec2 ) bool { return self.x == self.y; }
 
   pub inline fn isEq(    self : *const Vec2, other : Vec2 ) bool { return self.x == other.x and self.y == other.y; }
   pub inline fn isDiff(  self : *const Vec2, other : Vec2 ) bool { return self.x != other.x or  self.y != other.y; }
@@ -173,4 +174,6 @@ pub const Vec2 = struct
 
     return Vec2{ .x = newWidth, .y = newHeight };
   }
+
+  //TODO : add distinction between RECT AABB and POLY AABB, so that the hitboxes can be more precise
 };

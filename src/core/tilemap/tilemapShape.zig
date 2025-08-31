@@ -105,16 +105,14 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 
 // ================================ COORDS TO POS ================================
 
-pub fn getAbsTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
+pub fn getAbsTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) VecA
 {
-  const  tilePos = getRelTilePos( tlmp, gridCoords ) orelse return null;
+  const  tilePos = getRelTilePos( tlmp, gridCoords );
   return tilePos.rot( tlmp.gridPos.a ).add( tlmp.gridPos );
 }
 
-pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
+pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) VecA
 {
-  if( !tlmp.isCoordsValid( gridCoords )){ return null; }
-
   const baseX = @as( f32, @floatFromInt( gridCoords.x )) - ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 );
   const baseY = @as( f32, @floatFromInt( gridCoords.y )) - ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 );
 
@@ -138,7 +136,7 @@ pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) ?VecA
 
 pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 {
-  const area = tlmp.getBoundingBox().addScale( tlmp.tileScale.mulVal( 0.5 ));
+  const area = tlmp.getBoundingBox();
 
   if( !area.isOnPoint( pos )) // Quick check to see if pos is even in tilemap bounds
   {
@@ -236,19 +234,10 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         };
 
         // ======== DISTANCE COMPARISON ========
-        const posA = tlmp.getRelTilePos( coordsA );
-        const posB = tlmp.getRelTilePos( coordsB );
+        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ).toVec2() );
+        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ).toVec2() );
 
-        if( posA == null and posB == null ) { return null; }
-        else if( posA == null ) { coords = coordsB; }
-        else if( posB == null ) { coords = coordsA; }
-        else
-        {
-          const distToA = pos.getDistSqr( posA.?.toVec2() );
-          const distToB = pos.getDistSqr( posB.?.toVec2() );
-
-          coords = if( distToA < distToB ) coordsA else coordsB;
-        }
+        coords = if( distToA < distToB ) coordsA else coordsB;
       }
 
       if ( !tlmp.isCoordsValid( coords )){ return null; }
@@ -302,19 +291,10 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         };
 
         // ======== DISTANCE COMPARISON ========
-        const posA = tlmp.getRelTilePos( coordsA );
-        const posB = tlmp.getRelTilePos( coordsB );
+        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ).toVec2() );
+        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ).toVec2() );
 
-        if( posA == null and posB == null ) { return null; }
-        else if( posA == null ) { coords = coordsB; }
-        else if( posB == null ) { coords = coordsA; }
-        else
-        {
-          const distToA = pos.getDistSqr( posA.?.toVec2() );
-          const distToB = pos.getDistSqr( posB.?.toVec2() );
-
-          coords = if( distToA < distToB ) coordsA else coordsB;
-        }
+        coords = if( distToA < distToB ) coordsA else coordsB;
       }
 
       if ( !tlmp.isCoordsValid( coords )){ return null; }
@@ -416,16 +396,25 @@ pub fn getBoundingBox( tlmp : *const Tilemap ) Box2
 
   if( tlmp.tileShape == .DIAM ) { viewableScale = viewableScale.mulVal( 2.0 ); }
 
-  return( Box2.new( tlmp.gridPos.toVec2(), viewableScale.toAABB( tlmp.gridPos.a )));
+  var AABB : Vec2 = undefined;
+
+  if( tlmp.tileShape != .DIAM ){ AABB = viewableScale.toAABB( tlmp.gridPos.a ); }
+  else { AABB = viewableScale.toAABB( tlmp.gridPos.a ); }
+
+  if( tlmp.tileShape != .RECT and tlmp.tileShape != .DIAM ){ AABB = AABB.add( tlmp.tileScale.mulVal( 1.0 / 3.0 )); }
+
+  return( Box2.new( tlmp.gridPos.toVec2(), AABB ));
 }
 
 pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
 {
-  const pos = getAbsTilePos( tlmp, tile.gridCoords ) orelse
+  const pos = getAbsTilePos( tlmp, tile.gridCoords );
+
+  if( !tlmp.isCoordsValid( tile.gridCoords ))
   {
     def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.gridCoords.x, tile.gridCoords.y, tlmp.id });
     return;
-  };
+  }
 
   // TODO : check if pos is in or near screen bounds first
 

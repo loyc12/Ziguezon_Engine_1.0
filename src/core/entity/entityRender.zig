@@ -56,8 +56,6 @@ pub fn renderEntity( e1 : *const Entity ) void
 
   switch( e1.shape )
   {
-    .NONE => {},
-
     .LINE => { drawDirectionLine( e1, e1.colour, 2.0 ); },
     .RECT => { def.drawRect( e1.getCenter(), e1.scale, e1.getRot(), e1.colour ); },
     .STAR => { def.drawStar( e1.getCenter(), e1.scale, e1.getRot(), e1.colour ); },

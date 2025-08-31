@@ -252,8 +252,8 @@ pub const Tilemap = struct // TODO : move to own file ?
   pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
   pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.a; }
 
-  pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecA { return tlmpShape.getAbsTilePos( self, gridCoords ); }
-  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) ?VecA { return tlmpShape.getRelTilePos( self, gridCoords ); }
+  pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) VecA { return tlmpShape.getAbsTilePos( self, gridCoords ); }
+  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) VecA { return tlmpShape.getRelTilePos( self, gridCoords ); }
 
   pub inline fn getNeighbourCoords( self : *const Tilemap, gridCoords : Coords2, direction : def.e_dir_2 ) ?Coords2 { return tlmpShape.getNeighbourCoords( self, gridCoords, direction ); }
 

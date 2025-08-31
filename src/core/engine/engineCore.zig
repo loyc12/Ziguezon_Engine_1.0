@@ -183,10 +183,15 @@ pub const Engine = struct
 //{
 //  if( ng.tilemapManager )| *m |{ m.tickActiveTilemaps( sdt ); }
 //}
+  pub inline fn renderTilemapHitboxes( ng : *Engine ) void
+  {
+    if( ng.tilemapManager )| *m |{ m.renderTilemapHitboxes(); }
+  }
   pub inline fn renderActiveTilemaps( ng : *Engine ) void
   {
     if( ng.tilemapManager )| *m |{ m.renderActiveTilemaps(); }
   }
+
   pub inline fn deleteAllMarkedTilemaps( ng : *Engine ) void
   {
     if( ng.tilemapManager )| *m |{ m.deleteAllMarkedTilemaps(); }

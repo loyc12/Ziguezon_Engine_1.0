@@ -45,6 +45,7 @@ pub const Coords2 = struct
 
   pub inline fn isPosi(  self : Coords2 ) bool { return self.x >= 0 and self.y >= 0; }
   pub inline fn isZero(  self : Coords2 ) bool { return self.x == 0 and self.y == 0; }
+  pub inline fn isIso(   self : Coords2 ) bool { return self.x == self.y; }
 
   pub inline fn isEq(    self : Coords2, other : Coords2 ) bool { return self.x == other.x and self.y == other.y; }
   pub inline fn isDiff(  self : Coords2, other : Coords2 ) bool { return self.x != other.x or  self.y != other.y; }
@@ -136,6 +137,7 @@ pub const Coords3 = struct
 
   pub inline fn isPosi(  self : Coords3 ) bool { return self.x >= 0 and self.y >= 0 and self.z >= 0; }
   pub inline fn isZero(  self : Coords3 ) bool { return self.x == 0 and self.y == 0 and self.z == 0; }
+  pub inline fn isIso(   self : Coords3 ) bool { return self.x == self.y and self.y == self.z; }
 
   pub inline fn isEq(     self : Coords3, other : Coords3 ) bool { return self.x == other.x and self.y == other.y and self.z == other.z; }
   pub inline fn isDiff(   self : Coords3, other : Coords3 ) bool { return self.x != other.x or  self.y != other.y or  self.z != other.z; }

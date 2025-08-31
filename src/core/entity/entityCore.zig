@@ -11,7 +11,6 @@ const VecA   = def.VecA;
 
 pub const e_ntt_shape = enum // FOR DEBUG RENDERING ONLY
 {
-  NONE, // No shape defined ( will not be rendered )
   LINE, // Line ( from center to forward, scaled )
   RECT, // Square / Rectangle
   STAR, // Triangle Star ( two overlaping triangles, pointing along the X axis )
@@ -33,8 +32,8 @@ pub const e_ntt_flags = enum( u8 )
   VISIBLE = 0b00100000, // Entity will be rendered
   MOBILE  = 0b00010000, // Entity can change position
   SOLID   = 0b00001000, // Entity can collide with other entities
-//MORE... = 0b00000100, //
-//MORE... = 0b00000010, //
+  ROUND   = 0b00000100, // Entity has a round hitbox ( no AABB rotation based rescaling )
+//ANIMATE = 0b00000010, //
   DEBUG   = 0b00000001, // Entity will be rendered with debug information
 
   DEFAULT = 0b01111000, // Default flags for default entities ( active, visible, mobile, solid )
@@ -79,11 +78,11 @@ pub const Entity = struct
     if( value ){ self.addFlag( flag ); } else { self.delFlag( flag ); }
   }
   pub inline fn canBeDel(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DELETE  ); }
-  pub inline fn isActive(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ACTIVE  );}
+  pub inline fn isActive(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ACTIVE  ); }
   pub inline fn isMobile(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.MOBILE  ); }
   pub inline fn isSolid(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.SOLID   ); }
   pub inline fn isVisible( self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.VISIBLE ); }
-//pub inline fn isTrigger( self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.TRIGGER ); }
+  pub inline fn isRound(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ROUND   ); }
 //pub inline fn isAnimate( self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ANIMATE ); }
   pub inline fn showDBG(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DEBUG   ); }
 
@@ -94,7 +93,7 @@ pub const Entity = struct
   {
     if( params.canBeDel() ){ def.qlog( .WARN, 0, @src(), "Params should not be a deleted entity"); }
 
-    const tmp = Entity{
+    var tmp = Entity{
       .flags  = params.flags | @intFromEnum( e_ntt_flags.TO_CPY ),
       .pos    = params.pos,
       .vel    = params.vel,
@@ -104,6 +103,12 @@ pub const Entity = struct
       .colour = params.colour,
       .shape  = params.shape,
     };
+
+    if( tmp.shape != .RECT and tmp.scale.isIso() )
+    {
+      def.qlog( .INFO, 0, @src(), "Overiding new entity's ROUND flag due to non RECT, isoscalar shape" );
+      tmp.addFlag( e_ntt_flags.ROUND ); // Non-rectangular entities are always round
+    }
 
     // NOTE : init here if ever needed
     return tmp;
@@ -148,7 +153,8 @@ pub const Entity = struct
   inline fn updateHitbox( self : *Entity ) void
   {
     self.hitbox.center = self.pos.toVec2();
-    self.hitbox.scale  = self.scale.toAABB( self.pos.a );
+    if( self.isRound() ){ self.hitbox.scale = self.scale; }
+    else { self.hitbox.scale = self.scale.toAABB( self.pos.a ); }
   }
 
   pub fn moveSelf( self : *Entity, sdt : f32 ) void

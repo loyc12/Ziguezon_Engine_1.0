@@ -114,6 +114,7 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
       if( ng.isTilemapManagerInit() )
       {
         ng.renderActiveTilemaps();
+        if( def.DRAW_HITBOXES ){ ng.renderTilemapHitboxes(); }
       }
       else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
 

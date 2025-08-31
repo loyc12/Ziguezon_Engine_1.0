@@ -63,6 +63,7 @@ UTILS ADDITIONS
 REVIEW IMPLEMENTATIONS
  > gameHooks
  > timers
+ > toAABB ( calculated them better for scaled polygons )
 
 FILE INTERACTION
  > SELECT & LOAD

@@ -259,6 +259,16 @@ pub const TilemapManager = struct
 
   // ================================ RENDER FUNCTIONS ================================
 
+  pub fn renderTilemapHitboxes( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Entity.renderHitbox()
+  {
+    def.qlog( .TRACE, 0, @src(), "Rendering Tilemap hitboxes" );
+
+    for( self.tilemapList.items )| *tlmp  |{ if( tlmp.isActive() )
+    {
+      tlmp.getBoundingBox().drawSelf( def.newColour( 255, 255, 0, 64 ));
+    }}
+  }
+
   pub fn renderActiveTilemaps( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Tilemap.renderGraphics()
   {
     def.qlog( .TRACE, 0, @src(), "Rendering active Tilemaps" );
