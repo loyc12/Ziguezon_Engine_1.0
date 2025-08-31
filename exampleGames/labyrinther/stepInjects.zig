@@ -68,20 +68,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     return;
   };
 
-  // Clamp the camera to the maze area
-  const viewableScale = mazeMap.gridSize.toVec2().mul( mazeMap.tileScale ).mul( mazeMap.tileShape.getGridScaleFactors() );
-
-  //switch( mazeMap.tileShape )
-  //{
-  //  .RECT => viewableScale = viewableScale.mulVal( 0.5 ),
-  //  .DIAM => viewableScale = viewableScale.mulVal( def.HR2 ),
-  //  .HEX1 => viewableScale = viewableScale.mul( Vec2.new( def.HR3, 1.5 )),
-  //  .HEX2 => {},
-  //  .TRI1 => {},
-  //  .TRI2 => {},
-  //}
-
-  ng.clampCameraCenterInArea( Box2.new( mazeMap.gridPos.toVec2(), viewableScale ));
+  // Keep the camera inside over the maze area
+  ng.clampCameraCenterInArea( mazeMap.getBoundingBox() );
 
   // Swap tilemap render style if the V key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
@@ -91,17 +79,18 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
       .RECT =>
       {
         mazeMap.tileShape = .DIAM;
-        mazeMap.tileScale.y = mazeMap.tileScale.x * 0.5; // skews the map to get an isometric view
+        mazeMap.tileScale.y = mazeMap.tileScale.y * 0.5; // skews the map to get an isometric view
       },
 
       .DIAM =>
       {
         mazeMap.tileShape = .HEX1;
-        mazeMap.tileScale.y = mazeMap.tileScale.x;
+        mazeMap.tileScale.y = mazeMap.tileScale.y * 2.0; // unskews the map back to normal
       },
 
       .HEX1 => mazeMap.tileShape = .HEX2,
       .HEX2 => mazeMap.tileShape = .TRI1,
+
       .TRI1 => mazeMap.tileShape = .TRI2,
       .TRI2 => mazeMap.tileShape = .RECT,
     }

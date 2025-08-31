@@ -8,9 +8,10 @@ pub const Tile         = tileCore.Tile;
 pub const e_tile_type  = tileCore.e_tile_type;
 pub const e_tlmp_shape = tlmpShape.e_tlmp_shape;
 
+const Box2             = def.Box2;
+const Coords2          = def.Coords2;
 const Vec2             = def.Vec2;
 const VecA             = def.VecA;
-const Coords2          = def.Coords2;
 
 const DEF_GRID_SIZE    = Coords2{ .x = 32, .y = 32 };
 const DEF_TILE_SCALE   = Vec2{    .x = 32, .y = 32 };
@@ -279,6 +280,8 @@ pub const Tilemap = struct // TODO : move to own file ?
   //
   //  return isOnRange( Vec2{ .x = -shw, .y = -shh }, Vec2{ .x = shw,  .y = shh });
   //}
+
+  pub inline fn getBoundingBox( self : *const Tilemap ) Box2 { return tlmpShape.getBoundingBox( self ); }
 
   fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2 ) void
   {

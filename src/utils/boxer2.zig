@@ -69,6 +69,21 @@ pub const Box2 = struct
 
   pub fn new( center : Vec2, scale : Vec2 ) Box2 { return Box2{ .center = center, .scale  = scale }; }
 
+  pub inline fn addScale( self : Box2, delta : Vec2 ) Box2
+  {
+    return Box2{
+      .center = self.center,
+      .scale  = self.scale.add( delta ),
+    };
+  }
+  pub inline fn subScale( self : Box2, delta : Vec2 ) Box2
+  {
+    return Box2{
+      .center = self.center,
+      .scale  = self.scale.sub( delta ),
+    };
+  }
+
   pub inline fn mulScale( self : Box2, factors : Vec2 ) Box2
   {
     return Box2{

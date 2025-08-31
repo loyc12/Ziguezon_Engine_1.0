@@ -47,7 +47,7 @@ pub const Vec2 = struct
   // ================ CONVERSIONS ================
 
   pub inline fn toRayVec2( self : *const Vec2 ) RayVec2 { return RayVec2{ .x = self.x, .y = self.y }; }
-  pub inline fn toVecA(    self : *const Vec2, r : ?Angle ) VecA
+  pub inline fn toVecA(    self : *const Vec2, r : ?Angle ) VecA // NOTE : null means "use the vector direction as angle"
   {
     if( r == null ){ return VecA{ .x = self.x, .y = self.y, .a = self.toAngle() }; }
     else           { return VecA{ .x = self.x, .y = self.y, .a = r.? }; }
