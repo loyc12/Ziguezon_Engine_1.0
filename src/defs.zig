@@ -2,7 +2,6 @@ pub const std = @import( "std" );
 pub const ray = @import( "raylib" );
 
 pub const col_u  = @import( "utils/colouriser.zig" );
-pub const tmr_u  = @import( "utils/timer.zig" );
 pub const rng_u  = @import( "utils/rng.zig" );
 
 pub var G_RNG : rng_u.randomiser = .{};
@@ -122,6 +121,17 @@ pub const getMouseScreenPos   = cmr_u.getMouseScreenPos;
 pub const getMouseWorldPos    = cmr_u.getMouseWorldPos;
 
 
+// ================ COORDS SHORTHANDS ================
+
+pub const cor_u   = @import( "utils/coorder.zig" );
+
+pub const Coords2 = cor_u.Coords2;
+pub const Coords3 = cor_u.Coords3;
+
+pub const e_dir_2 = cor_u.e_dir_2;
+pub const e_dir_3 = cor_u.e_dir_3;
+
+
 // ================ DRAWER SHORTHANDS ================
 
 pub const drw_u                    = @import( "utils/drawer.zig" );
@@ -213,15 +223,15 @@ pub const getPolyCircum = mth_u.getPolyCircum;
 pub const getPolyArea   = mth_u.getPolyArea;
 
 
-// ================ COORDS SHORTHANDS ================
+// ================ TIMER SHORTHANDS ================
 
-pub const cor_u   = @import( "utils/coorder.zig" );
+pub const tmr_u         = @import( "utils/timer.zig" );
 
-pub const Coords2 = cor_u.Coords2;
-pub const Coords3 = cor_u.Coords3;
+pub const TimeVal       = tmr_u.TimeVal;
+pub const Timer         = tmr_u.Timer;
+pub const e_timer_flags = tmr_u.e_timer_flags;
 
-pub const e_dir_2 = cor_u.e_dir_2;
-pub const e_dir_3 = cor_u.e_dir_3;
+pub const getNow        = tmr_u.getNow;
 
 
 // ================ VECTER SHORTHANDS ================

@@ -1,6 +1,11 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const TimeVal = def.TimeVal;
+const Timer   = def.Timer;
+
+const getNow = def.getNow;
+
 // This file defines helper functions to conditionally print debug info based on the following enum's value
 // Yes, this might very well be a shittier version of std.log...
 
@@ -47,49 +52,48 @@ var       G_IsFileOpened : bool        = false;              // Flag to check if
 
 // ================================ LOG TIMER ================================
 
-var LOG_TIMER  : def.tmr_u.timer = .{};
-var IS_LT_INIT : bool = false; // Whether the timer has been initialized
-
-var TMP_TIMER : def.tmr_u.timer = .{};
+var LOG_TIMER  : def.tmr_u.Timer = .{}; // Global timer for logging
+var TMP_TIMER  : def.tmr_u.Timer = .{}; // Temporary timer for measuring time between two points in the code
+var IS_LT_INIT : bool = false;          // Whether the timer has been initialized
 
 // NOTE : Initialize the log timer before using it, otherwise it will not work
 pub fn initLogTimer() void
 {
-  LOG_TIMER.qInit( def.tmr_u.getNow(), 0 );
-  TMP_TIMER.qInit( def.tmr_u.getNow(), 0 );
+  LOG_TIMER = Timer.getDefaultTimer();
+  TMP_TIMER = Timer.getDefaultTimer();
   IS_LT_INIT = true;
 }
 
 // Returns the elapsed time since the global epoch
-fn getLogElapsedTime() i128
+fn getLogElapsedTime() TimeVal
 {
-  if( !IS_LT_INIT ){ return def.tmr_u.getNow(); }
+  if( !IS_LT_INIT ){ return def.getNow(); }
 
-  LOG_TIMER.incrementTo( def.tmr_u.getNow() );
+  LOG_TIMER.incrementTo( def.getNow() );
   return LOG_TIMER.getElapsedTime();
 }
 
 // Returns the elapsed time since the last time increment
-fn getLogDeltaTime() i128
+fn getLogDeltaTime() TimeVal
 {
   if( !IS_LT_INIT ){ return 0; }
 
-  LOG_TIMER.incrementTo( def.tmr_u.getNow() );
+  LOG_TIMER.incrementTo( def.getNow() );
   return LOG_TIMER.delta;
 }
 
 // Resets the temporary timer to the current time
-pub fn setTmpTimer() void { TMP_TIMER.qInit( def.tmr_u.getNow(), 0 ); }
+pub fn setTmpTimer() void { TMP_TIMER.qInit( def.getNow(), 0 ); }
 
 // Logs the elapsed time since the last time increment of the temporary timer
 // This is used to measure the time between two arbitrary points in the code
 pub fn logTmpTimer( callLocation : ?std.builtin.SourceLocation ) void
 {
-  TMP_TIMER.incrementTo( def.tmr_u.getNow() );
-  const delta = TMP_TIMER.getElapsedTime();
+  TMP_TIMER.incrementTo( def.getNow() );
+  const tmp = TMP_TIMER.getElapsedTime();
 
-  const sec  : u64 = @intCast( @divTrunc( delta, @as( i128, std.time.ns_per_s )));
-  const nano : u64 = @intCast( @rem(      delta, @as( i128, std.time.ns_per_s )));
+  const sec  : u64 = @intCast( tmp.toSec() );
+  const nano : u64 = @intCast( @rem( tmp.value, TimeVal.nsPerSec() ));
 
   if( callLocation )| loc |{ log( .INFO, 0, loc,    "& Temporary timer : {d}.{d:0>9} ", .{ sec, nano }); }
   else                     { log( .INFO, 0, @src(), "& Temporary timer : {d}.{d:0>9} ", .{ sec, nano }); }
@@ -266,13 +270,11 @@ fn logTime() !void
 {
   if( comptime !SHOW_TIMESTAMP ) return;
 
-  var now : i128 = undefined;
+  // Get the lap time if SHOW_LAPTIME is true,     else, get the elapsed time since the epoch
+  const tmp = if( SHOW_LAPTIME ) getLogDeltaTime() else getLogElapsedTime();
 
-  if( SHOW_LAPTIME ){ now = getLogDeltaTime(); }   // Get the lap time if SHOW_LAPTIME is true
-  else              { now = getLogElapsedTime(); } // else, get the elapsed time since the epoch
-
-  const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
-  const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
+  const sec  : u64 = @intCast( tmp.toSec() );
+  const nano : u64 = @intCast( @rem( tmp.value, TimeVal.nsPerSec() ));
 
   setCol( def.col_u.GRAY );
 
@@ -302,12 +304,12 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 
 pub fn logLapTime() void
 {
-  const now : i128 = getLogDeltaTime();
+  const tmp  : TimeVal = getLogDeltaTime();
 
-  const sec  : u64 = @intCast( @divTrunc( now, @as( i128, std.time.ns_per_s )));
-  const nano : u64 = @intCast( @rem(      now, @as( i128, std.time.ns_per_s )));
+  const sec  : u64 = @intCast( tmp.toSec() );
+  const nano : u64 = @intCast( @rem( tmp.value, TimeVal.nsPerSec() ));
 
-  const fps  : f32 = if( now == 0 ) 0.0 else 1_000_000_000.0 / @as( f32, @floatFromInt( now ));
+  const fps  : f32 = if( !tmp.isSet() ) 0.0 else 1_000_000_000.0 / tmp.convTo( f32 );
 
   log( .INFO, 0, @src(), "@ Lap time : {d}.{d:0>9} ( {d:.2} fps )", .{ sec, nano, fps });
 }

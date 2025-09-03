@@ -63,7 +63,7 @@ UTILS ADDITIONS
 REVIEW IMPLEMENTATIONS
  > gameHooks ( kinda messy rn )
  > timers ( overly complex )
- > toAABB ( calculated them better for scaled polygons )
+ > toPolyAABB ( calculated them better for scaled & rotated polygons )
  > engine flags ( like DRAW_HITBOXES ) (add config file to gameHooks ? )
 
 FILE INTERACTION

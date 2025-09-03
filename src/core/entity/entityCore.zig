@@ -87,7 +87,7 @@ pub const Entity = struct
   pub inline fn showDBG(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DEBUG   ); }
 
 
-  // ================ INITIALIZATION FUNCTIONS ================
+  // ================ INITIALIZATION ================
 
   pub fn createEntityFromParams( params : Entity ) ?Entity
   {
