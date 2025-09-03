@@ -110,14 +110,14 @@ pub const Entity = struct
       tmp.addFlag( e_ntt_flags.ROUND ); // Non-rectangular entities are always round
     }
 
-    // NOTE : init here if ever needed
+    // NOTE : init stuff here if we ever need to
+
     return tmp;
   }
 
   pub fn createEntityFromFile( filePath : []const u8 ) ?Entity
   {
     _ = filePath;
-
     // TODO : implement me
 
     def.qlog( .ERROR, 0, @src(), "Entity loading from file is not yet implemented");
