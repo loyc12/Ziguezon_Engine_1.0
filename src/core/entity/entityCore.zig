@@ -127,22 +127,28 @@ pub const Entity = struct
 
   // ================ POSITION FUNCTIONS ================
 
-  inline fn updateVel( self : *Entity, sdt : f32 ) void
+  inline fn updatePos( self : *Entity, sdt : f32 ) void
   {
+    // NOTE : using velocity verlet integration ( splitting updated in two halves around the position update )
+    // in order to improve stability and accuracy when using variable sdt steps
 
-    self.vel.x += self.acc.x * sdt;
-    self.vel.y += self.acc.y * sdt;
-    self.vel.a  = self.vel.a.rot( self.acc.a.mulVal( sdt ));
+    const accX = self.acc.x * sdt;
+    const accY = self.acc.y * sdt;
+
+    self.vel.x += accX * 0.5;
+    self.pos.x += self.vel.x * sdt;
+    self.vel.x += accX * 0.5;
+
+    self.vel.y += accY * 0.5;
+    self.pos.y += self.vel.y * sdt;
+    self.vel.y += accY * 0.5;
+
+    self.vel.a = self.vel.a.rot( self.acc.a.mulVal( sdt ));
+    self.pos.a = self.pos.a.rot( self.vel.a.mulVal( sdt ));
 
     self.acc.x = 0;
     self.acc.y = 0;
     self.acc.a = .{};
-  }
-  inline fn updatePos( self : *Entity, sdt : f32 ) void
-  {
-    self.pos.x += self.vel.x * sdt;
-    self.pos.y += self.vel.y * sdt;
-    self.pos.a = self.pos.a.rot( self.vel.a.mulVal( sdt ));
   }
 
   inline fn updatePosFromHitbox( self : *Entity ) void
@@ -166,7 +172,6 @@ pub const Entity = struct
     }
     def.log( .TRACE, self.id, @src(), "Moving Entity {d} by velocity {d}:{d} with acceleration {d}:{d} over time {d}", .{ self.id, self.vel.x, self.vel.y, self.acc.x, self.acc.y, sdt });
 
-    self.updateVel( sdt );
     self.updatePos( sdt );
     self.updateHitbox();
   }
