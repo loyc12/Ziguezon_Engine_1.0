@@ -59,6 +59,7 @@ Terraria-like              ( Sandbox )
 
 UTILS ADDITIONS
  > on-screen performance logging util ( time taken by each step )
+ > add way to log time relative to frame start
 
 REVIEW IMPLEMENTATIONS
  > gameHooks ( kinda messy rn )

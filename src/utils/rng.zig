@@ -33,7 +33,7 @@ pub const randomiser = struct
   prng : RandType   = undefined,
   rng  : std.Random = undefined,
 
-  pub fn randInit( self : *randomiser ) void { self.seedInit( def.tmr_u.getNow() ); }
+  pub fn randInit( self : *randomiser ) void { self.seedInit( def.getNow().value ); }
   pub fn seedInit( self : *randomiser, seed : i128 ) void
   {
     const val : u128 = @intCast( seed );

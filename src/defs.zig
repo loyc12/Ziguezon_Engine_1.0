@@ -10,7 +10,7 @@ pub fn initAllUtils( allocator : std.mem.Allocator ) void
 {
   _ = allocator;
 
-  log_u.initLogTimer();
+  log_u.initLogTimers();
   log_u.initFile();
 
   rng_u.initGlobalRNG();

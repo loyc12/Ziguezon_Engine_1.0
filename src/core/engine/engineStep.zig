@@ -22,11 +22,9 @@ pub fn loopLogic( ng : *Engine ) void
 
   while( !def.ray.windowShouldClose() )
   {
-    def.tryHook( .OnLoopCycle, .{ ng });
+    def.log_u.logFrameLapTime( def.ray.getFrameTime() );
 
-    // Debug logging the frame time
-    //if( comptime def.log_u.SHOW_LAPTIME ){ def.qlog( .DEBUG, 0, @src(), "! Looping" ); }
-    //else { def.log_u.logLapTime(); }
+    def.tryHook( .OnLoopCycle, .{ ng });
 
     if( ng.isOpened() )
     {

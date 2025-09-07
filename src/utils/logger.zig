@@ -39,7 +39,6 @@ pub const G_LOG_LVL      : LogLevel    = .DEBUG; // Set the global log level for
 
 pub const SHOW_ID_MSGS   : bool        = true;   // If true, messages with id will not be omitted
 pub const SHOW_TIMESTAMP : bool        = true;   // If true, messages will include a timestamp of the system clock
-pub const SHOW_LAPTIME   : bool        = false;  // If true, the timestamp, if present, will be the time since the last message instead of the system clock
 pub const SHOW_MSG_SRC   : bool        = true;   // If true, messages will include the source file, line number, and function name of the call location
 pub const ADD_PREC_NL    : bool        = true;   // If true, a newline will be before the actual message, to make it more readable
 
@@ -50,54 +49,48 @@ var       G_IsFileOpened : bool        = false;              // Flag to check if
 
 // TODO : have each log level be printed in its own file, on top of the shared main one
 
-// ================================ LOG TIMER ================================
+// ================================ LOG TIMERS ================================
 
-var LOG_TIMER  : def.tmr_u.Timer = .{}; // Global timer for logging
-var TMP_TIMER  : def.tmr_u.Timer = .{}; // Temporary timer for measuring time between two points in the code
-var IS_LT_INIT : bool = false;          // Whether the timer has been initialized
+var GLOBAL_LOG_TIMER : def.Timer = .{};
+var TMP_LOG_TIMER    : def.Timer = .{ .flags = @intFromEnum( def.e_timer_flags.LOOP ) };
 
 // NOTE : Initialize the log timer before using it, otherwise it will not work
-pub fn initLogTimer() void
+pub fn initLogTimers() void
 {
-  LOG_TIMER = Timer.getDefaultTimer();
-  TMP_TIMER = Timer.getDefaultTimer();
-  IS_LT_INIT = true;
+  const now = def.getNow();
+
+  GLOBAL_LOG_TIMER.setEpoch( now );
+  GLOBAL_LOG_TIMER.startSelf();
+
+  TMP_LOG_TIMER.setEpoch( now );
+  TMP_LOG_TIMER.startSelf();
 }
 
 // Returns the elapsed time since the global epoch
-fn getLogElapsedTime() TimeVal
+pub fn getGlobalLogTime() TimeVal
 {
-  if( !IS_LT_INIT ){ return def.getNow(); }
+  if( !GLOBAL_LOG_TIMER.hasEpoch() ){ return .{}; }
 
-  LOG_TIMER.incrementTo( def.getNow() );
-  return LOG_TIMER.getElapsedTime();
+  return GLOBAL_LOG_TIMER.getTimeSinceEpoch();
 }
 
-// Returns the elapsed time since the last time increment
-fn getLogDeltaTime() TimeVal
+pub fn getTmpLogTime() TimeVal
 {
-  if( !IS_LT_INIT ){ return 0; }
+  if( !TMP_LOG_TIMER.hasEpoch() ){ return .{}; }
 
-  LOG_TIMER.incrementTo( def.getNow() );
-  return LOG_TIMER.delta;
+  TMP_LOG_TIMER.forceLap();
+
+  return TMP_LOG_TIMER.getLapProgress();
 }
 
 // Resets the temporary timer to the current time
-pub fn setTmpTimer() void { TMP_TIMER.qInit( def.getNow(), 0 ); }
-
-// Logs the elapsed time since the last time increment of the temporary timer
-// This is used to measure the time between two arbitrary points in the code
-pub fn logTmpTimer( callLocation : ?std.builtin.SourceLocation ) void
+pub fn resetTmpTimer() void
 {
-  TMP_TIMER.incrementTo( def.getNow() );
-  const tmp = TMP_TIMER.getElapsedTime();
-
-  const sec  : u64 = @intCast( tmp.toSec() );
-  const nano : u64 = @intCast( @rem( tmp.value, TimeVal.nsPerSec() ));
-
-  if( callLocation )| loc |{ log( .INFO, 0, loc,    "& Temporary timer : {d}.{d:0>9} ", .{ sec, nano }); }
-  else                     { log( .INFO, 0, @src(), "& Temporary timer : {d}.{d:0>9} ", .{ sec, nano }); }
+  TMP_LOG_TIMER.resetSelf();
+  TMP_LOG_TIMER.setEpoch( def.getNow() );
+  TMP_LOG_TIMER.startSelf();
 }
+
 
 // ================================ CORE FUNCTIONS ================================
 
@@ -270,11 +263,10 @@ fn logTime() !void
 {
   if( comptime !SHOW_TIMESTAMP ) return;
 
-  // Get the lap time if SHOW_LAPTIME is true,     else, get the elapsed time since the epoch
-  const tmp = if( SHOW_LAPTIME ) getLogDeltaTime() else getLogElapsedTime();
+  const prog = getGlobalLogTime();
 
-  const sec  : u64 = @intCast( tmp.toSec() );
-  const nano : u64 = @intCast( @rem( tmp.value, TimeVal.nsPerSec() ));
+  const sec  : u64 = @intCast( prog.toSec() );
+  const nano : u64 = @intCast( @mod( prog.value, TimeVal.nsPerSec() ));
 
   setCol( def.col_u.GRAY );
 
@@ -302,16 +294,33 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
 
 // =============================== SHORTHAND LOGGING ================================
 
-pub fn logLapTime() void
+pub fn logFrameLapTime( frameTime : f32 ) void
 {
-  const tmp  : TimeVal = getLogDeltaTime();
+  const dt  : TimeVal = TimeVal{ .value = @intFromFloat( frameTime * TimeVal.nsPerSec() )};
 
-  const sec  : u64 = @intCast( tmp.toSec() );
-  const nano : u64 = @intCast( @rem( tmp.value, TimeVal.nsPerSec() ));
+  const sec  : u64 = @intCast( dt.toSec() );
+  const nano : u64 = @intCast( @rem( dt.value, TimeVal.nsPerSec() ));
 
-  const fps  : f32 = if( !tmp.isSet() ) 0.0 else 1_000_000_000.0 / tmp.convTo( f32 );
-
-  log( .INFO, 0, @src(), "@ Lap time : {d}.{d:0>9} ( {d:.2} fps )", .{ sec, nano, fps });
+  log( .INFO, 0, @src(), "@ Frame lap time : {d}.{d:0>9} ( {d:.2} fps )", .{ sec, nano, 1.0 / frameTime } );
 }
 
+// Logs the elapsed time since the last time increment of the temporary timer
+// This is used to measure the time between two arbitrary points in the code
+pub fn logTmpTimer( callLocation : ?std.builtin.SourceLocation ) void
+{
+  if( !TMP_LOG_TIMER.hasEpoch() )
+  {
+    log( .WARN, 0, @src(), "Temporary timer not initialized, call resetTmpTimer() first", .{} );
+    return;
+  }
+
+  const prog = getTmpLogTime();
+
+  const sec  = prog.toSec();
+  const nano = @mod( prog.value, TimeVal.nsPerSec() );
+  const laps = TMP_LOG_TIMER.lapCount();
+
+  if( callLocation )| loc |{ log( .INFO, 0, loc,    "& Temporary timer : {d}.{d:0>9} ( lap #{d} )", .{ sec, nano, laps }); }
+  else                     { log( .INFO, 0, @src(), "& Temporary timer : {d}.{d:0>9} ( lap #{d} )", .{ sec, nano, laps }); }
+}
 

@@ -97,7 +97,7 @@ pub const TimeVal = struct
     switch( @typeInfo( retType ))
     {
       .int,   .comptime_int   => return @intCast( self.value ),
-      .float, .comptime_float => return @as( @TypeOf( retType ), @floatFromInt( self.value )),
+      .float, .comptime_float => return @as( retType, @floatFromInt( self.value )),
       else => return error.UnsupportedType,
     }
   }
@@ -110,7 +110,7 @@ pub const e_timer_flags = enum( u8 )
 {
   DELETE  = 0b10000000, // Timer is marked for deletion
   STARTED = 0b01000000, // Timer has started
-  DONE    = 0b00100000, // Timer has completed ( expired )
+  STOPPED = 0b00100000, // Timer has completed ( expired )
   PAUSED  = 0b00010000, // Timer is currently paused
   LOOP    = 0b00001000, // Timer will restart after reaching duration
 //MORE... = 0b00000100,
@@ -128,11 +128,11 @@ pub const e_timer_flags = enum( u8 )
 pub const Timer = struct
 {
   // All times are in nanoseconds
-  flags : e_timer_flags = .NONE, // Timer flags
+  flags    : u8 = @intFromEnum( e_timer_flags.NONE ),
 
-  epoch    : TimeVal = 0, // Start time ( 0 means no epoch )
-  progress : TimeVal = 0, // current progress ( where between epoch and duration )
-  duration : TimeVal = 0, // End time ( 0 means no duration )
+  epoch    : TimeVal = .{}, // Start time ( 0 means no epoch )
+  progress : TimeVal = .{}, // current progress ( where between epoch and duration )
+  duration : TimeVal = .{}, // End time ( 0 means no duration )
 
   lapLimit : u32  = 0, // Maximum number of laps
   lapCount : u32  = 0, // number of laps completed
@@ -157,10 +157,39 @@ pub const Timer = struct
   }
   pub inline fn canBeDel(  self : *const Timer ) bool { return self.hasFlag( e_timer_flags.DELETE  ); }
   pub inline fn isStarted( self : *const Timer ) bool { return self.hasFlag( e_timer_flags.STARTED ); }
-  pub inline fn isDone(    self : *const Timer ) bool { return self.hasFlag( e_timer_flags.DONE    ); }
   pub inline fn isPaused(  self : *const Timer ) bool { return self.hasFlag( e_timer_flags.PAUSED  ); }
+  pub inline fn isStopped( self : *const Timer ) bool { return self.hasFlag( e_timer_flags.STOPPED ); }
   pub inline fn canLoop(   self : *const Timer ) bool { return self.hasFlag( e_timer_flags.LOOP    ); }
   pub inline fn isDebug(   self : *const Timer ) bool { return self.hasFlag( e_timer_flags.DEBUG   ); }
+
+
+  // ================ ACCESSORS & MUTATORS ================
+
+  pub inline fn hasEpoch(    self : *const Timer ) bool { return self.epoch.isSet(); }
+  pub inline fn hasDuration( self : *const Timer ) bool { return self.duration.isSet(); }
+  pub inline fn hasLapLimit( self : *const Timer ) bool { return self.lapLimit != 0; }
+  pub inline fn hasTrueLoop( self : *const Timer ) bool { return self.canLoop() and self.lapLimit != 0; }
+
+  pub inline fn getEpoch(      self : *const Timer ) TimeVal { return self.epoch; }
+  pub inline fn getDuration(   self : *const Timer ) TimeVal { return self.duration; }
+  pub inline fn getMaxLap(     self : *const Timer ) u32     { return self.lapLimit; }
+  pub inline fn getCurrentLap( self : *const Timer ) u32     { return self.lapCount; }
+
+  // NOTE : Be careful when using those setters, as they also update the Timer state
+  pub inline fn setEpoch(      self : *Timer, epoch    : TimeVal ) void { self.epoch    = epoch;    _ = self.updateSelf( .{} ); }
+  pub inline fn setDuration(   self : *Timer, duration : TimeVal ) void { self.duration = duration; _ = self.updateSelf( .{} ); }
+  pub inline fn setMaxLap(     self : *Timer, maxLap   : u32     ) void { self.lapLimit = maxLap;   _ = self.updateSelf( .{} ); }
+  pub inline fn setCurrentLap( self : *Timer, curLap   : u32     ) void { self.lapCount = curLap;   _ = self.updateSelf( .{} ); }
+
+  pub inline fn getTimeSinceEpoch( self : *const Timer ) TimeVal
+  {
+    if( !self.hasEpoch() )
+    {
+      if( self.isDebug() ){ def.qlog( .DEBUG, 0, @src(), "Tried to get time since epoch on a Timer with no epoch" ); }
+      return .{};
+    }
+    return self.epoch.timeSince();
+  }
 
 
   // ================ INITIALIZATION ================
@@ -180,7 +209,7 @@ pub const Timer = struct
   pub fn getDefaultTimer() Timer
   {
     return Timer{
-      .flags    = .NONE,
+      .flags    = @intFromEnum( e_timer_flags.NONE ),
 
       .epoch    = getNow(),
       .progress = .{},
@@ -212,101 +241,127 @@ pub const Timer = struct
 
   pub fn resetSelf( self : *Timer ) void
   {
-    self.progress = 0;
+    self.progress = .{};
     self.lapCount = 0;
 
     self.delFlag( e_timer_flags.STARTED );
-    self.delFlag( e_timer_flags.DONE );
+    self.delFlag( e_timer_flags.STOPPED );
+    self.delFlag( e_timer_flags.PAUSED  );
+  }
+
+  pub fn startSelf( self : *Timer ) void
+  {
+    if( self.isStarted() ){ return; }
+
+    self.progress = .{};
+    self.lapCount = 0;
+
+    if( !self.hasEpoch() )
+    {
+      if( self.isDebug() ){ def.qlog( .WARN, 0, @src(), "Starting Timer with no epoch ; setting epoch to now" ); }
+      self.epoch = getNow();
+    }
+
+    self.addFlag( e_timer_flags.STARTED );
+    self.delFlag( e_timer_flags.STOPPED );
+    self.delFlag( e_timer_flags.PAUSED  );
+  }
+
+  pub fn stopSelf( self : *Timer ) void
+  {
+    if( !self.isStarted() ){ return; }
+
+    self.delFlag( e_timer_flags.STARTED );
+    self.addFlag( e_timer_flags.STOPPED );
     self.delFlag( e_timer_flags.PAUSED  );
   }
 
   // Returns true if the Timer lapped or ended
-  pub fn updateSelf( self : *Timer, deltaTime : TimeVal ) bool
+  pub fn updateSelf( self : *Timer, deltaTime : ?TimeVal ) bool
   {
     if( !self.isStarted() ){ return false; }
     if(  self.isPaused()  ){ return false; }
-    if(  self.isDone()    ){ return false; }
+    if(  self.isStopped() ){ return false; }
 
-    if( deltaTime.isNeg() )
+    if( deltaTime )| dt |
     {
-      def.log( .WARN, 0, @src(), "Tried to update Timer with a negative delta time ({d})", .{ deltaTime.value });
+      self.incrementBy( dt );
+    }
+    else // if deltaTime is null, we assume the caller wants to sinc the Timer to the current time
+    {
+      self.incrementBy( .{ .value = self.getTimeSinceEpoch().value - self.getTotalProgress().value } );
+    }
+
+    return self.tryLap();
+  }
+
+  fn incrementBy( self : *Timer, delta : TimeVal ) void
+  {
+    if( delta.isNeg() )  // TODO : figure out if we want to handle negative delta time as a feature ??
+    {
+      def.log( .WARN, 0, @src(), "Tried to update Timer with a negative delta time ({d})", .{ delta.value });
+    }
+    self.progress.value += delta.value;
+  }
+
+  fn tryLap( self : *Timer ) bool
+  {
+    if( !self.hasDuration() ){ return false; }
+    if( !self.canLoop() )
+    {
+      if( self.progress.value >= self.duration.value )
+      {
+        if( self.isDebug() ){ def.log( .DEBUG, 0, @src(), "Timer completed its duration of {d}ns", .{ self.duration.value }); }
+        self.stopSelf();
+        return true;
+      }
       return false;
     }
-    if( deltaTime.isSet() ){ self.progress.value += deltaTime.value; }
 
-    // TODO : figure out if we want to handle negative delta time as a feature ??
-    if( self.progress.isNeg() )
+    const lapped = self.doLap();
+
+    // Checking if we reached the lap limit
+    if( lapped and self.lapLimit != 0 and self.lapCount >= self.lapLimit )
     {
-      def.log( .WARN, 0, @src(), "Timer progress went negative ({d}) ; reseting to 0", .{ self.progress.value });
-      self.progress.value = 0;
+      if( self.isDebug() ){ def.log( .DEBUG, 0, @src(), "Timer reached its lap limit of {d}", .{ self.lapLimit }); }
+      self.addFlag( e_timer_flags.STOPPED );
     }
-
-    var ret : bool = false;
-
-    // Checking for Timer expiration
-    if( self.duration.isSet() and self.progress.value >= self.duration.value )
-    {
-      // Non-looping Timer behaviour
-      if( !self.canLoop() )
-      {
-        if( self.isDebug() ){ def.qlog( .DEBUG, 0, @src(), "Timer reached its duration of {d}ns", .{ self.duration.value }); }
-        self.addFlag( e_timer_flags.DONE );
-        return true;
-      }
-
-      // Looping Timer behaviour
-      while( self.progress.value >= self.duration.value )
-      {
-        if( self.isDebug() ){ def.qlog( .DEBUG, 0, @src(), "Timer completed a lap of {d}ns", .{ self.duration.value }); }
-        self.progress.value -= self.duration.value;
-        self.lapCount += 1;
-        ret = true;
-      }
-
-      // Checking for lap limit
-      if( self.lapLimit != 0 and self.lapCount >= self.lapLimit )
-      {
-        if( self.isDebug() ){ def.qlog( .DEBUG, 0, @src(), "Timer reached its lap limit of {d}", .{ self.lapLimit }); }
-        self.addFlag( e_timer_flags.DONE );
-        return true;
-      }
-    }
-    return ret;
+    return lapped;
   }
 
-
-  // ================ ACCESSORS & MUTATORS ================
-
-  pub inline fn hasEpoch(    self : *const Timer ) bool { return self.epoch.isSet(); }
-  pub inline fn hasDuration( self : *const Timer ) bool { return self.duration.isSet(); }
-  pub inline fn hasLapLimit( self : *const Timer ) bool { return self.lapLimit != 0; }
-  pub inline fn hasTrueLoop( self : *const Timer ) bool { return self.canLoop() and self.lapLimit != 0; }
-
-  pub inline fn getEpoch(      self : *const Timer ) TimeVal { return self.epoch; }
-  pub inline fn getDuration(   self : *const Timer ) TimeVal { return self.duration; }
-  pub inline fn getMaxLap(     self : *const Timer ) u32     { return self.lapLimit; }
-  pub inline fn getCurrentLap( self : *const Timer ) u32     { return self.lapCount; }
-
-  // NOTE : Be careful when using those setters, as they also update the Timer state
-  pub inline fn setEpoch(      self : *Timer, epoch    : TimeVal ) void { self.epoch    = epoch;    _ = self.updateSelf( 0 ); }
-  pub inline fn setDuration(   self : *Timer, duration : TimeVal ) void { self.duration = duration; _ = self.updateSelf( 0 ); }
-  pub inline fn setMaxLap(     self : *Timer, maxLap   : u32     ) void { self.lapLimit = maxLap;   _ = self.updateSelf( 0 ); }
-  pub inline fn setCurrentLap( self : *Timer, curLap   : u32     ) void { self.lapCount = curLap;   _ = self.updateSelf( 0 ); }
-
-  pub inline fn getTimeSinceEpoch( self : *const Timer ) TimeVal
+  fn doLap( self : *Timer ) bool
   {
-    if( !self.hasEpoch() )
+    var lapped = false;
+
+    // Making sure we lap as many times as needed if the progress exceeded duration
+    while( self.progress.value >= self.duration.value )
     {
-      if( self.isDebug() ){ def.qlog( .DEBUG, 0, @src(), "Tried to get time since epoch on a Timer with no epoch" ); }
-      return .{};
+      if( self.isDebug() ){ def.log( .DEBUG, 0, @src(), "Timer completed a lap of {d}ns", .{ self.duration.value }); }
+      self.progress.value -= self.duration.value;
+      self.lapCount += 1;
+      lapped = lapped;
     }
-    return TimeVal.timeSince( &self.epoch );
+
+    return lapped;
   }
+
+  // Forces a lap, regardless of current progress or flags limitations
+  pub inline fn forceLap( self : *Timer ) void
+  {
+    self.progress.value = 0;
+    self.lapCount += 1;
+
+    if( self.hasLapLimit() and self.lapCount >= self.lapLimit )
+    {
+      if( self.isDebug() ){ def.log( .DEBUG, 0, @src(), "Timer reached its lap limit of {d}", .{ self.lapLimit }); }
+      self.addFlag( e_timer_flags.STOPPED );
+    }
+  }
+
 
   // ======== LAP PROGRESS ========
 
   pub inline fn getLapProgress( self : *const Timer ) TimeVal { return self.progress; }
-
   pub inline fn getLapDuration( self : *const Timer ) TimeVal
   {
     if( !self.hasDuration() )
@@ -330,7 +385,6 @@ pub const Timer = struct
 
     return( prog / dura );
   }
-
 
   // ======== TOTAL PROGRESS ======== ( for lapping timers )
 
@@ -403,7 +457,7 @@ pub const Timer = struct
       return .{};
     }
     if( self.progress.value >= self.duration.value ){ return .{}; }
-    return( TimeVal{ .value = self.duration.value - self.progress.value });
+    return( TimeVal{ .value  = self.duration.value - self.progress.value });
   }
 
   pub inline fn getRemainingTotalTime( self : *const Timer ) TimeVal
