@@ -6,8 +6,8 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 const Angle  = def.Angle;
 
-const MAX_ZOOM = 10.0;
-const MIN_ZOOM = 0.10;
+const MAX_ZOOM = 5.0;
+const MIN_ZOOM = 0.2;
 
 pub const RayCam = def.ray.Camera2D;
 
