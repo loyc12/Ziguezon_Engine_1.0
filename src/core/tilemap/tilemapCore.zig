@@ -213,6 +213,13 @@ pub const Tilemap = struct // TODO : move to own file ?
 
   // ================ GRID FUNCTIONS ================
 
+  pub inline fn resetCachedTilePos( self : *Tilemap ) void
+  {
+    def.log( .INFO, 0, @src(), "! Resetting cached tile positions for tilemap {d}", .{ self.id });
+
+    for( 0 .. self.getTileCount() )| index |{ self.tileArray.items.ptr[ index ].relPos = null; }
+  }
+
   pub fn fillWithType( self : *Tilemap, tileType : e_tile_type ) void
   {
     if( !self.isInit() )
@@ -247,13 +254,27 @@ pub const Tilemap = struct // TODO : move to own file ?
     }
   }
 
+  pub fn setTileShape( self : *Tilemap, shape : e_tlmp_shape ) void
+  {
+    if( self.tileShape == shape )
+    {
+      def.log( .DEBUG, 0, @src(), "Tilemap {d} already has tile shape {s}, no change needed", .{ self.id, @tagName( shape )});
+      return;
+    }
+
+    def.log( .INFO, 0, @src(), "Changing tilemap {d} shape from {s} to {s}", .{ self.id, @tagName( self.tileShape ), @tagName( shape )});
+
+    self.resetCachedTilePos();
+    self.tileShape = shape;
+  }
+
   // ================ POSITION FUNCTIONS ================
 
   pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
   pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.a; }
 
   pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) VecA { return tlmpShape.getAbsTilePos( self, gridCoords ); }
-  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) VecA { return tlmpShape.getRelTilePos( self, gridCoords ); }
+  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) Vec2 { return tlmpShape.getRelTilePos( self, gridCoords ); }
 
   pub inline fn getNeighbourCoords( self : *const Tilemap, gridCoords : Coords2, direction : def.e_dir_2 ) ?Coords2 { return tlmpShape.getNeighbourCoords( self, gridCoords, direction ); }
 
@@ -282,8 +303,12 @@ pub const Tilemap = struct // TODO : move to own file ?
   //}
 
   pub inline fn getBoundingBox( self : *const Tilemap ) Box2 { return tlmpShape.getBoundingBox( self ); }
+  pub inline fn getTileBoundingBox( self : *const Tilemap, relPos : Vec2 ) Box2
+  {
+    return tlmpShape.getTileBoundingBox( self, relPos );
+  }
 
-  fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2 ) void
+  fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2, viewBox : *const Box2 ) void
   {
     if( !self.isCoordsValid( gridCoords ))
     {
@@ -303,7 +328,7 @@ pub const Tilemap = struct // TODO : move to own file ?
       return;
     }
 
-    tlmpShape.drawTileShape( self, tile );
+    tlmpShape.drawTileShape( self, tile, viewBox );
   }
 
   pub fn drawTilemap( self : *const Tilemap ) void
@@ -316,6 +341,14 @@ pub const Tilemap = struct // TODO : move to own file ?
       return;
     }
 
+    const viewBox = def.G_NG.getCameraViewBox() orelse
+    {
+      def.log( .ERROR, 0, @src(), "Cannot draw tilemap {d} : camera is not initialized", .{ self.id });
+      return;
+    };
+
+    if( !viewBox.isOverlapping( &self.getBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
+
     for( 0 .. self.getTileCount() )| index |
     {
       const gridCoords = self.getTileCoords( @intCast( index )) orelse
@@ -323,7 +356,7 @@ pub const Tilemap = struct // TODO : move to own file ?
         def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridSize.x, self.gridSize.y });
         continue;
       };
-      self.drawSingleTile( gridCoords );
+      self.drawSingleTile( gridCoords, &viewBox );
     }
   }
 

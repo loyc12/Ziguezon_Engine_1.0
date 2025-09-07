@@ -107,14 +107,21 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
 
 pub fn getAbsTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) VecA
 {
-  const  tilePos = getRelTilePos( tlmp, gridCoords );
+  const  tilePos = getRelTilePos( tlmp, gridCoords ).toVecA( .{} );
   return tilePos.rot( tlmp.gridPos.a ).add( tlmp.gridPos );
 }
 
-pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) VecA
+pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) Vec2
 {
   const baseX = @as( f32, @floatFromInt( gridCoords.x )) - ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 );
   const baseY = @as( f32, @floatFromInt( gridCoords.y )) - ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 );
+
+  var tile = tlmp.getTile( gridCoords );
+
+  if( tile != null ) // Return cached position if available
+  {
+    if( tile.?.relPos )| pos |{ return pos; }
+  }
 
   var basePos = Vec2.new( baseX, baseY );
 
@@ -129,7 +136,9 @@ pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) VecA
   basePos = basePos.mul( tlmp.tileScale );
   basePos = basePos.mulVal( 2.0 );
 
-  return basePos.toVecA( .{} );
+  if( tile != null ){ tile.?.relPos = basePos; }
+
+  return basePos;
 }
 
 // ================================ POS TO COORDS ================================
@@ -188,8 +197,8 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
     .HEX1 =>
     {
-      const descaledX = ( baseX / ( HEXA_FACTOR * R3  )) + centerOffsetX ;
-      const rawGridY  = ( baseY / ( HEXA_FACTOR * 1.5 )) + centerOffsetY ;
+      const descaledX  = ( baseX / ( HEXA_FACTOR * R3  )) + centerOffsetX ;
+      const rawGridY   = ( baseY / ( HEXA_FACTOR * 1.5 )) + centerOffsetY ;
 
       const gridYFract = rawGridY - @floor( rawGridY );
 
@@ -234,8 +243,8 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         };
 
         // ======== DISTANCE COMPARISON ========
-        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ).toVec2() );
-        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ).toVec2() );
+        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ));
+        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ));
 
         coords = if( distToA < distToB ) coordsA else coordsB;
       }
@@ -291,8 +300,8 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         };
 
         // ======== DISTANCE COMPARISON ========
-        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ).toVec2() );
-        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ).toVec2() );
+        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ));
+        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ));
 
         coords = if( distToA < distToB ) coordsA else coordsB;
       }
@@ -406,18 +415,28 @@ pub fn getBoundingBox( tlmp : *const Tilemap ) Box2
   return( Box2.new( tlmp.gridPos.toVec2(), AABB ));
 }
 
-pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
+pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2
 {
-  const pos = getAbsTilePos( tlmp, tile.gridCoords );
+  const  absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
+  const  radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() ).toAABB( tlmp.gridPos.a );
+  return Box2.new( absPos, radii );
+}
 
+pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *const Box2) void
+{
   if( !tlmp.isCoordsValid( tile.gridCoords ))
   {
     def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.gridCoords.x, tile.gridCoords.y, tlmp.id });
     return;
   }
 
-  // TODO : check if pos is in or near screen bounds first
 
+  const relPos  = tile.relPos orelse getRelTilePos( tlmp, tile.gridCoords );
+  const tileBox = getTileBoundingBox( tlmp, relPos );
+
+  if( !viewBox.isOverlapping( &tileBox )){ return; } // Quick check to see if tile is even in view
+
+  const absPos = getAbsTilePos( tlmp, tile.gridCoords );
   const dParity : f32 = @floatFromInt(( 2 * @mod( tile .gridCoords.x + tile .gridCoords.y, 2 )) - 1 );
 
   var radii = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() * MARGIN_FACTOR );
@@ -425,13 +444,13 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile ) void
 
   switch( tlmp.tileShape )
   {
-    .RECT => def.drawRect( pos.toVec2(), radii, pos.a, tile.colour ),
-    .DIAM => def.drawDiam( pos.toVec2(), radii, pos.a, tile.colour ),
+    .RECT => def.drawRect( absPos.toVec2(), radii, absPos.a, tile.colour ),
+    .DIAM => def.drawDiam( absPos.toVec2(), radii, absPos.a, tile.colour ),
 
-    .HEX1 => def.drawHexa( pos.toVec2(), radii, pos.a.subDeg( 90.0 ), tile.colour ),
-    .HEX2 => def.drawHexa( pos.toVec2(), radii, pos.a,                tile.colour ),
+    .HEX1 => def.drawHexa( absPos.toVec2(), radii, absPos.a.subDeg( 90.0 ), tile.colour ),
+    .HEX2 => def.drawHexa( absPos.toVec2(), radii, absPos.a,                tile.colour ),
 
-    .TRI1 => def.drawTria( pos.toVec2(), radii, pos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
-    .TRI2 => def.drawTria( pos.toVec2(), radii, pos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
+    .TRI1 => def.drawTria( absPos.toVec2(), radii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
+    .TRI2 => def.drawTria( absPos.toVec2(), radii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
   }
 }

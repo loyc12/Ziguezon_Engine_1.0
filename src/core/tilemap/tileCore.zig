@@ -38,6 +38,8 @@ pub const Tile = struct
   // ======== RENDERING DATA ======== ( DEBUG )
   colour     : def.Colour  = def.newColour( 255, 255, 255, 255 ),
 
+  relPos     : ?def.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
+
   // ======== CUSTOM BEHAVIOUR ========
 //data     : ?*anyopaque = null, // Pointer to instance specific data ( if any )
 //script   : ?*anyopaque = null, // Pointer to instance specific scripting ( if any )

@@ -21,7 +21,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
   if( ng.loadTilemapFromParams(
   .{
     .gridPos   = .{ .x = 0, .y = 0 },
-    .gridSize  = .{ .x = 31, .y = 31  },
+    .gridSize  = .{ .x = 256, .y = 256  },
     .tileScale = .{ .x = 64, .y = 64 },
     .tileShape = .RECT,
   }, .RANDOM )

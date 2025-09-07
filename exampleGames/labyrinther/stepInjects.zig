@@ -78,23 +78,22 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     {
       .RECT =>
       {
-        mazeMap.tileShape = .DIAM;
+        mazeMap.setTileShape( .DIAM );
         mazeMap.tileScale.y = mazeMap.tileScale.y * 0.5; // skews the map to get an isometric view
       },
 
       .DIAM =>
       {
-        mazeMap.tileShape = .HEX1;
+        mazeMap.setTileShape( .HEX1 );
         mazeMap.tileScale.y = mazeMap.tileScale.y * 2.0; // unskews the map back to normal
       },
 
-      .HEX1 => mazeMap.tileShape = .HEX2,
-      .HEX2 => mazeMap.tileShape = .TRI1,
+      .HEX1 => mazeMap.setTileShape( .HEX2 ),
+      .HEX2 => mazeMap.setTileShape( .TRI1 ),
 
-      .TRI1 => mazeMap.tileShape = .TRI2,
-      .TRI2 => mazeMap.tileShape = .RECT,
+      .TRI1 => mazeMap.setTileShape( .TRI2 ),
+      .TRI2 => mazeMap.setTileShape( .RECT ),
     }
-    def.log( .INFO, 0, @src(), "Maze tilemap shape changed to {s}", .{ @tagName( mazeMap.tileShape )});
   }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.q )){ mazeMap.gridPos.a = mazeMap.gridPos.a.addDeg( 1 ); }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.gridPos.a = mazeMap.gridPos.a.subDeg( 1 ); }

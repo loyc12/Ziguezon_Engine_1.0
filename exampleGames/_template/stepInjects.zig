@@ -80,12 +80,12 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   {
     switch( exampleTilemap.tileShape )
     {
-      .RECT => exampleTilemap.tileShape = .DIAM,
-      .DIAM => exampleTilemap.tileShape = .HEX1,
-      .HEX1 => exampleTilemap.tileShape = .HEX2,
-      .HEX2 => exampleTilemap.tileShape = .TRI1,
-      .TRI1 => exampleTilemap.tileShape = .TRI2,
-      .TRI2 => exampleTilemap.tileShape = .RECT,
+      .RECT => exampleTilemap.setTileShape( .DIAM ),
+      .DIAM => exampleTilemap.setTileShape( .HEX1 ),
+      .HEX1 => exampleTilemap.setTileShape( .HEX2 ),
+      .HEX2 => exampleTilemap.setTileShape( .TRI1 ),
+      .TRI1 => exampleTilemap.setTileShape( .TRI2 ),
+      .TRI2 => exampleTilemap.setTileShape( .RECT ),
     }
     def.log( .INFO, 0, @src(), "Example tilemap shape changed to {}", .{ exampleTilemap.tileShape });
   }
