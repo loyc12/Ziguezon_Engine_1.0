@@ -27,18 +27,6 @@ pub fn deinitAllUtils() void
 }
 
 
-// ================================ DEBUG FLAGS ================================
-// TODO : move these to a config struct passed via gameHooks.zig
-
-pub const DRAW_HITBOXES = false; // Set to true to draw hitbox overlays
-
-// ================================ DEFINITIONS ================================
-
-pub const DEF_SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
-pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
-
-pub const alloc = std.heap.smp_allocator;
-
 // ================================ HOOK MANAGER ================================
 
 pub const ghk_m = @import( "core/system/gameHookManager.zig" );
@@ -49,11 +37,25 @@ pub fn initHooks( module : anytype ) void                  { G_HK.initHooks( mod
 pub fn tryHook( tag : ghk_m.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 
+// ================================ DEFINITIONS ================================
+
+pub const DEF_SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
+pub const DEF_TARGET_FPS   = 30; // Default target FPS for the game
+
+pub const alloc = std.heap.smp_allocator;
+
+// ================ DEBUG FLAGS ================
+// TODO : move these to a config struct passed via gameHooks.zig
+
+pub const DRAW_HITBOXES = false; // Set to true to draw hitbox overlays
+
+
 // ================================ ENGINE ================================
 
 pub const ng            = @import( "core/engine/engineCore.zig" );
 pub const Engine        = ng.Engine;
 pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
+
 
 // ================ MANAGERS ================
 
