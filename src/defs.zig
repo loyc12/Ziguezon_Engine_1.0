@@ -123,13 +123,15 @@ pub const getMouseWorldPos    = cmr_u.getMouseWorldPos;
 
 // ================ COORDS SHORTHANDS ================
 
-pub const cor_u   = @import( "utils/coorder.zig" );
+pub const cor2_u  = @import( "utils/coorder2.zig" );
 
-pub const Coords2 = cor_u.Coords2;
-pub const Coords3 = cor_u.Coords3;
+pub const e_dir_2 = cor2_u.e_dir_2;
+pub const Coords2 = cor2_u.Coords2;
 
-pub const e_dir_2 = cor_u.e_dir_2;
+pub const cor_u   = @import( "utils/coorder3.zig" );
+
 pub const e_dir_3 = cor_u.e_dir_3;
+pub const Coords3 = cor_u.Coords3;
 
 
 // ================ DRAWER SHORTHANDS ================

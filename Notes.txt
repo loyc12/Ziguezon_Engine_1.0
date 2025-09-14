@@ -1,12 +1,12 @@
 
-  GAME DEV ROADMAP :
+================ GAME DEV ROADMAP ================
 
 ======== TOOLING PROJECTS ========
 
 Maze Builder      ( Labyrinther  ) - WIP
 UI Designer       ( Menu Maker   ) -
 Animation Player  ( Animuter     ) -
-Paint             ( Colorant     ) -
+texture-tool      ( Colorant     ) -
 
 
 ======== MICRO PROJECTS ========
@@ -19,8 +19,8 @@ Duck Hunt         ( Chickenicide ) -
 Asteroid          ( Meteroid     ) -
 Pacman            ( Ratman       ) -
 
-Breakout          ( Wall Wacker  ) - Overlaps with Pong and Breakout
-Space Invader     ( Sky Tyrants  ) - Overlaps with Flappy Bird and Asteroid
+Breakout          ( Wall Wacker  ) - X ( overlaps with Pong and Breakout )
+Space Invader     ( Sky Tyrants  ) - X ( overlaps with Flappy Bird and Asteroid )
 
 
 ======== STARTER PROJECTS ========
@@ -53,35 +53,26 @@ Terraria-like              ( Sandbox )
 
 
 
-  ENGINE FEATURE ROADMAP :
-
-======== PARTS ========
+================ ENGINE FEATURES TODO-LIST ================
 
 UTILS ADDITIONS
  > on-screen performance logging util ( time taken by each step )
  > add way to log time relative to frame start
+ > toPolyAABB method ( calculated them better for scaled & rotated polygons )
 
-REVIEW IMPLEMENTATIONS
- > gameHooks ( kinda messy rn )
- > timers ( overly complex )
- > toPolyAABB ( calculated them better for scaled & rotated polygons )
- > engine flags ( like DRAW_HITBOXES ) (add config file to gameHooks ? )
-
-FILE INTERACTION
- > SELECT & LOAD
- > NAME & SAVE
+ENTITIES
+ > add a way for entities to have an "interaction target" pointer or list of some kind ( ex, trigger entity has target mecanism entity )
 
 CUSTOM RENDER LAYERS
- > RENDER QUEUE ( elements sorted based on layer )
+ > RENDER QUEUE ( sort elements based on layer )
  > UI interaction priority based on layer
 
-SPRITE ATLAS
- > SPRITE DIMS
- > ATLAS DIMS
- > PRE ATLAS FRAME COUNT / SPEED ?
+TO REVIEW
+ > gameHooks ( kinda messy rn )
+ > engine flags ( like DRAW_HITBOXES or MIN_ZOOM ) ( add config file to gameHooks ? )
 
-
-======== SYSTEMS ========
+MISCELLANEOUS
+ > seperate physic ticks from fps properly
 
 INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
@@ -92,25 +83,56 @@ PARTICLE MANAGER
  > Predefined & reusable particle buffer
 
 ANIMATION MANAGER ?
- > Animation frames
- > Animation speed
- > Animation state
+ > Animation speed / frameCount / state ?
 
 UI MANAGER
  > Text, Button, Slider, etc
 
 
-======== OTHER ========
 
-TPS vs FPS : decouple these two OR ensure the physic is stable
+================ ZIGUEZON ENGINE DESIGN DOCUMENTATION ================
 
+Ziguezon Engine aims at being a lightweight 2D, narrow purpose game engine for personal game dev projects
 
+It is build around having a limited lists of well defined features, and its design targets offering
+a variety of logic modules, which can then be assembled into more complex systems based on the desired final game
 
-  REFERENCES :
-
-======== WEB ========
-
-https://float.exposed/         - to see the bit values of floats
-
+This assembly is meant to be done via implementation of specific gameHook functions ( see exampleGames folder ),
+inside a gameHooks.zig file, the path of which is specified at compile time for the engine's use
 
 
+======== PRIMARY FEATURES ========
+
+A simple hook interface, to inject code at various pre-defined points during the engine loop execution
+
+Various utils, which serves specific purposes ( see utils folder and defs.zig ), such as :
+ > logging functions     ( logger.zig )
+ > math functions        ( mather.zig )
+ > float angle wrapper   ( Angler.zig )
+ > float Vectors         ( Vecter_.zig )
+ > int Vectors           ( Coorder_.zig )
+ > simple AABB structs   ( Boxer_.zig )
+ > abstracted drawcalls  ( drawer.zig )
+ > abstracted camera     ( camer.zig )
+ > rng wrapper           ( rng.zig )
+ > ...
+
+Various component systems with an associated manager :
+ > entities              ( OK~ ) - to handle moveable game objects
+ > tilemaps              ( OK~ ) - to handle semi-static game maps
+ > particles             ( TBA ) - to handle render-only, non critical objects
+ > event timers          ( WIP ) - to handle delays and durations
+ > render layers         ( TBA ) - to handle render ordering
+ > ressources system     ( WIP ) - to handle sound, musics, textures, etc
+ > UI system             ( TBA ) - to handle user facing interfaces
+ > animation system      ( TBA ) - to handle texture swaping
+ > save and load system  ( TBA ) - to handle file interactions
+ > input handler         ( TBA ) - abstract away from raylib's input system ???
+
+
+
+
+
+================ REFERENCES ================
+
+https://float.exposed/   - to see the bit values of floats
