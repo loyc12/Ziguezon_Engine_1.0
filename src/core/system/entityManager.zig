@@ -7,8 +7,9 @@ const VecA   = def.VecA;
 
 pub const EntityManager = struct
 {
-  isInit   : bool = false,
-  maxID    : u32  = 0,
+  maxID      : u32  = 0,
+  isInit     : bool = false,
+  allocator  : std.mem.Allocator       = undefined,
   entityList : std.ArrayList( Entity ) = undefined,
 
   // ================================ HELPER FUNCTIONS ================================
@@ -140,9 +141,14 @@ pub const EntityManager = struct
       return;
     }
 
-    self.entityList = std.ArrayList( Entity ).init( allocator  );
+    self.entityList = std.ArrayList( Entity ).initCapacity( allocator, 64 ) catch
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to initialize entityList" );
+      return;
+    };
 
-    self.isInit = true;
+    self.isInit    = true;
+    self.allocator = allocator;
     def.qlog( .INFO, 0, @src(), "Entity manager initialized" );
   }
 
@@ -156,10 +162,11 @@ pub const EntityManager = struct
       return;
     }
 
-    self.entityList.deinit();
+    self.entityList.deinit( self.allocator );
     self.maxID = 0;
 
-    self.isInit = false;
+    self.isInit    = false;
+    self.allocator = undefined;
     def.qlog( .INFO, 0, @src(), "Entity manager deinitialized" );
   }
 
@@ -187,7 +194,7 @@ pub const EntityManager = struct
       def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
     }
 
-    self.entityList.append( tmp ) catch | err |
+    self.entityList.append( self.allocator, tmp ) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to add Entity: {}", .{ err });
       return null;

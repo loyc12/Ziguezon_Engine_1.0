@@ -8,8 +8,9 @@ const VecA    = def.VecA;
 
 pub const TilemapManager = struct
 {
-  isInit      : bool = false,
   maxID       : u32  = 0,
+  isInit      : bool = false,
+  allocator   : std.mem.Allocator        = undefined,
   tilemapList : std.ArrayList( Tilemap ) = undefined,
 
   // ================================ HELPER FUNCTIONS ================================
@@ -139,9 +140,14 @@ pub const TilemapManager = struct
       return;
     }
 
-    self.tilemapList = std.ArrayList( Tilemap ).init( allocator  );
+    self.tilemapList = std.ArrayList( Tilemap ).initCapacity( self.allocator, 2 ) catch
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList" );
+      return;
+    };
 
-    self.isInit = true;
+    self.isInit    = true;
+    self.allocator = allocator;
     def.qlog( .INFO, 0, @src(), "Tilemap manager initialized" );
   }
 
@@ -155,18 +161,19 @@ pub const TilemapManager = struct
       return;
     }
 
-    for( self.tilemapList.items )| *tlmp |{ tlmp.deinit(); }
+    for( self.tilemapList.items )| *tlmp |{ tlmp.deinit( self.allocator ); }
 
-    self.tilemapList.deinit();
+    self.tilemapList.deinit( self.allocator );
     self.maxID = 0;
 
-    self.isInit = false;
+    self.isInit    = false;
+    self.allocator = undefined;
     def.qlog( .INFO, 0, @src(), "Tilemap manager deinitialized" );
   }
 
   // ================================ TILEMAP MANAGEMENT FUNCTIONS ================================
 
-  pub fn loadTilemapFromParams( self : *TilemapManager, allocator : std.mem.Allocator, params : Tilemap, fillType : def.tlm.e_tile_type ) ?*Tilemap
+  pub fn loadTilemapFromParams( self : *TilemapManager, params : Tilemap, fillType : def.tlm.e_tile_type ) ?*Tilemap
   {
     def.qlog( .TRACE, 0, @src(), "Adding new Tilemap" );
 
@@ -176,7 +183,7 @@ pub const TilemapManager = struct
       return null;
     }
 
-    var tmp = Tilemap.createTilemapFromParams( params, fillType, allocator ) orelse
+    var tmp = Tilemap.createTilemapFromParams( params, fillType, self.allocator ) orelse
     {
       def.qlog( .ERROR, 0, @src(), "Failed to create Tilemap from params" );
       return null;
@@ -188,7 +195,7 @@ pub const TilemapManager = struct
       def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
     }
 
-    self.tilemapList.append( tmp ) catch | err |
+    self.tilemapList.append( self.allocator, tmp ) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to add Tilemap: {}", .{ err });
       return null;
@@ -198,14 +205,20 @@ pub const TilemapManager = struct
   }
 
 
-  pub fn loadDefaultTilemap( self : *TilemapManager, allocator : std.mem.Allocator ) ?*Tilemap
+  pub fn loadDefaultTilemap( self : *TilemapManager ) ?*Tilemap
   {
     def.qlog( .TRACE, 0, @src(), "Creating default Tilemap" );
 
-    return self.loadTilemapFromParams( .{}, allocator, .FLOOR );
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
+      return null;
+    }
+
+    return self.loadTilemapFromParams( .{}, .FLOOR );
   }
 
-  // pub fn loadTilemapFromFile( self : *TilemapManager, filePath : []const u8, allocator : std.mem.Allocator ) ?*Tilemap
+  // pub fn loadTilemapFromFile( self : *TilemapManager, filePath : []const u8 ) ?*Tilemap
 
   pub fn getTilemap( self : *TilemapManager, id : u32 ) ?*Tilemap
   {

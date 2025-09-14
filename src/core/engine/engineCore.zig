@@ -176,7 +176,7 @@ pub const Engine = struct
   }
   pub inline fn loadTilemapFromParams( ng : *Engine, params : def.Tilemap, fillType : def.tlm.e_tile_type ) ?*def.Tilemap
   {
-    if( ng.tilemapManager )| *m |{ return m.loadTilemapFromParams( def.alloc, params, fillType ); } else { return null; }
+    if( ng.tilemapManager )| *m |{ return m.loadTilemapFromParams( params, fillType ); } else { return null; }
   }
 
 //pub inline fn tickActiveTilemaps( ng : *Engine, sdt : f32 ) void

@@ -3,13 +3,14 @@ const def = @import( "defs" );
 
 pub const ResourceManager = struct
 {
-  isInit  : bool = false,
-  sounds  : std.StringHashMap( def.ray.Sound     ) = undefined,
-  music   : std.StringHashMap( def.ray.Music     ) = undefined,
-  fonts   : std.StringHashMap( def.ray.Font      ) = undefined,
-  sprites : std.StringHashMap( def.ray.Texture2D ) = undefined,
+  isInit    : bool = false,
+//allocator : std.mem.Allocator = undefined,
+  sounds    : std.StringHashMap( def.ray.Sound     ) = undefined,
+  music     : std.StringHashMap( def.ray.Music     ) = undefined,
+  fonts     : std.StringHashMap( def.ray.Font      ) = undefined,
+  sprites   : std.StringHashMap( def.ray.Texture2D ) = undefined,
 
-  pub fn init( self : *ResourceManager, mapAlloc : std.mem.Allocator ) void
+  pub fn init( self : *ResourceManager, allocator : std.mem.Allocator ) void
   {
     def.qlog( .TRACE, 0, @src(), "Initializing resource manager..." );
 
@@ -19,12 +20,13 @@ pub const ResourceManager = struct
       return;
     }
 
-    self.sounds  = std.StringHashMap( def.ray.Sound     ).init( mapAlloc );
-    self.music   = std.StringHashMap( def.ray.Music     ).init( mapAlloc );
-    self.fonts   = std.StringHashMap( def.ray.Font      ).init( mapAlloc );
-    self.sprites = std.StringHashMap( def.ray.Texture2D ).init( mapAlloc );
+    self.sounds  = std.StringHashMap( def.ray.Sound     ).init( allocator );
+    self.music   = std.StringHashMap( def.ray.Music     ).init( allocator );
+    self.fonts   = std.StringHashMap( def.ray.Font      ).init( allocator );
+    self.sprites = std.StringHashMap( def.ray.Texture2D ).init( allocator );
 
-    self.isInit = true;
+    self.isInit    = true;
+  //self.allocator = allocator;
     def.qlog( .INFO, 0, @src(), "Resource manager initialized." );
   }
 

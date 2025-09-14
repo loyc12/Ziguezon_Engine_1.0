@@ -1,5 +1,6 @@
-const std = @import( "std" );
-const def = @import( "defs" );
+const std    = @import( "std" );
+const def    = @import( "defs" );
+const stdOut = @import( "./outputer.zig" ).demoStdout;
 
 const TimeVal = def.TimeVal;
 const Timer   = def.Timer;
@@ -44,7 +45,7 @@ pub const ADD_PREC_NL    : bool        = true;   // If true, a newline will be b
 
 pub const USE_LOG_FILE   : bool        = false;              // If true, log messages will be written to a file instead of stdout/stderr
 pub const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
-var       G_LOG_FILE     : std.fs.File = std.io.getStdErr(); // The file to write log messages in ( default is stderr )
+var       G_LOG_FILE     : std.fs.File = undefined;             // The file to write log messages in ( default is stderr )
 var       G_IsFileOpened : bool        = false;              // Flag to check if the log file is opened ( and different from stderr )
 
 // TODO : have each log level be printed in its own file, on top of the shared main one
@@ -127,11 +128,12 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   // Shows the message id if SHOW_ID_MSGS is true
   if( id != 0 )
   {
-    G_LOG_FILE.writer().print( "{d:0>4} ", .{ id }) catch | err |
-    {
-      std.debug.print( "Failed to write message id : {}\n", .{ err });
-      return;
-    };
+    //G_LOG_FILE.writer().print( "{d:0>4} ", .{ id }) catch | err |
+    //{
+    //  std.debug.print( "Failed to write message id : {}\n", .{ err });
+    //  return;
+    //};
+    std.debug.print( "{d:0>4} ", .{ id });
   }
 
   // Shows the time of the message relative to the system clock if SHOW_TIMESTAMP is true
@@ -170,19 +172,23 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   if( comptime ADD_PREC_NL )
   {
     // If ADD_PREC_NL is true, print a newline before the actual message
-    G_LOG_FILE.writer().print( "\n > ", .{} ) catch | err |
-    {
-      std.debug.print( "Failed to write newline : {}\n", .{ err });
-      return;
-    };
+    //G_LOG_FILE.writer().print( "\n > ", .{} ) catch | err |
+    //{
+    //  std.debug.print( "Failed to write newline : {}\n", .{ err });
+    //  return;
+    //};
+
+    std.debug.print( "\n > ", .{} );
   }
 
   // Prints the actual message
-  G_LOG_FILE.writer().print( message ++ "\n", args ) catch | err |
-  {
-    std.debug.print( "Failed to write message : {}\n", .{ err });
-    return;
-  };
+  //G_LOG_FILE.writer().print( message ++ "\n", args ) catch | err |
+  //{
+  //  std.debug.print( "Failed to write message : {}\n", .{ err });
+  //  return;
+  //};
+
+  std.debug.print( message ++ "\n", args );
 }
 
 // ================================ HELPER FUNCTIONS ================================
@@ -216,22 +222,26 @@ pub fn deinitFile() void
 
 fn logChar( char : u8 ) void
 {
-  G_LOG_FILE.writer().print( "{c} ", .{ char }) catch | err |
-  {
-    std.debug.print( "Failed to write character : {}\n", .{ err });
-    return;
-  };
+  //G_LOG_FILE.writer().print( "{c} ", .{ char }) catch | err |
+  //{
+  //  std.debug.print( "Failed to write character : {}\n", .{ err });
+  //  return;
+  //};
+
+  std.debug.print( "{c} ", .{ char });
 }
 
 fn setCol( col : []const u8 ) void
 {
   if( comptime USE_LOG_FILE ){ return; }
 
-  G_LOG_FILE.writer().print( "{s}", .{ col }) catch | err |
-  {
-    std.debug.print( "Failed to set ANSI color to {s} : {}\n", .{ col, err });
-    return;
-  };
+  //G_LOG_FILE.writer().print( "{s}", .{ col }) catch | err |
+  //{
+  //  std.debug.print( "Failed to set ANSI color to {s} : {}\n", .{ col, err });
+  //  return;
+  //};
+
+  std.debug.print( "{s}", .{ col });
 }
 
 fn logLevel( level: LogLevel ) !void
@@ -256,7 +266,9 @@ fn logLevel( level: LogLevel ) !void
     LogLevel.TRACE => "[TRACE]",
   };
 
-  try G_LOG_FILE.writer().print( "{s} ", .{ lvl });
+  //try G_LOG_FILE.writer().print( "{s} ", .{ lvl });
+
+  std.debug.print( "{s} ", .{ lvl });
 }
 
 fn logTime() !void
@@ -270,7 +282,8 @@ fn logTime() !void
 
   setCol( def.col_u.GRAY );
 
-  try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
+  //try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
+  std.debug.print( "{d}.{d:0>9} ", .{ sec, nano });
 }
 
 fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
@@ -280,15 +293,19 @@ fn logLoc( callLocation : ?std.builtin.SourceLocation ) !void
   if( callLocation )| loc | // If the call location is defined, print the file, line, and function name
   {
     setCol( def.col_u.BLUE );
-    try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
+    //try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
+    std.debug.print( "{s}:{d} ", .{ loc.file, loc.line });
 
     setCol( def.col_u.GRAY );
-    try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
+    //try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
+    std.debug.print( "| {s} ", .{ loc.fn_name });
   }
   else
   {
     setCol( def.col_u.YELOW );
-    try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
+    //try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
+    std.debug.print( "{s} ", .{ "UNLOCATED" });
+
   }
 }
 

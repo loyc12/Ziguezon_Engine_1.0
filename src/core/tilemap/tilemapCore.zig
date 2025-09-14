@@ -130,7 +130,7 @@ pub const Tilemap = struct // TODO : move to own file ?
     self.fillWithType( fillType );
   }
 
-  pub fn deinit( self : *Tilemap ) void
+  pub fn deinit( self : *Tilemap, allocator : std.mem.Allocator ) void
   {
     def.log( .TRACE, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
 
@@ -139,7 +139,7 @@ pub const Tilemap = struct // TODO : move to own file ?
       def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot deinitialize", .{ self.id });
       return;
     }
-    self.tileArray.deinit();
+    self.tileArray.deinit( allocator );
     self.setFlag( e_tlmp_flags.DELETE,  true );
     self.setFlag( e_tlmp_flags.IS_INIT, false );
     self.setFlag( e_tlmp_flags.ACTIVE,  false );
