@@ -1,17 +1,32 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub fn demoStdout() !void
-{
-  // buffered or unbuffered, buffer when doing many small writes
-  const buffered = true;
-  var   buffer : [ 4096 ]u8 = undefined;
+// TODO : figure me out better
 
-  const write_buffer = if ( buffered ) &buffer else &.{};
-  var output_writer: std.fs.File.Writer = std.fs.File.stdout().writer(write_buffer);
+var outputBuffer : [ 4096 ]u8 = undefined;
+var errorBuffer  : [ 4096 ]u8 = undefined;
+var inputBuffer  : [ 4096 ]u8 = undefined;
+
+// Buffered for multiple small writes
+pub fn outBuf() !void
+{
+  var output_writer: std.fs.File.Writer = std.fs.File.stdout().writer( outputBuffer );
 
   // IMPORTANT: capture an interface pointer
   const writer: *std.Io.Writer = &output_writer.interface;
+
+  try writer.writeAll( "Hello world\n" );
+  try writer.flush();
+}
+
+// Unbuffered for single large writes
+pub fn outUnbuf() !void
+{
+  var output_writer: std.fs.File.Writer = std.fs.File.stdout().writer( &.{} );
+
+  // IMPORTANT: capture an interface pointer
+  const writer: *std.Io.Writer = &output_writer.interface;
+
   try writer.writeAll( "Hello world\n" );
   try writer.flush();
 }

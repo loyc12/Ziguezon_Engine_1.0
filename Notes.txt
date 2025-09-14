@@ -59,6 +59,7 @@ UTILS ADDITIONS
  > on-screen performance logging util ( time taken by each step )
  > add way to log time relative to frame start
  > toPolyAABB method ( calculated them better for scaled & rotated polygons )
+ > re-add a way to log to files ( one per level + a global one ? )
 
 ENTITIES
  > add a way for entities to have an "interaction target" pointer or list of some kind ( ex, trigger entity has target mecanism entity )
@@ -70,9 +71,6 @@ CUSTOM RENDER LAYERS
 TO REVIEW
  > gameHooks ( kinda messy rn )
  > engine flags ( like DRAW_HITBOXES or MIN_ZOOM ) ( add config file to gameHooks ? )
-
-MISCELLANEOUS
- > seperate physic ticks from fps properly
 
 INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
@@ -87,6 +85,9 @@ ANIMATION MANAGER ?
 
 UI MANAGER
  > Text, Button, Slider, etc
+
+MISCELLANEOUS
+ > seperate physic ticks from fps properly
 
 
 

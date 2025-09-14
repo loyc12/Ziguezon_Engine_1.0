@@ -6,13 +6,14 @@ pub const rng_u  = @import( "utils/rng.zig" );
 
 pub var G_RNG : rng_u.randomiser = .{};
 
-pub const alloc = std.heap.smp_allocator; // default allocator for the engine
+pub const alloc = std.heap.smp_allocator; // Global allocator instance
 
 // ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
 
 pub fn initAllUtils( allocator : std.mem.Allocator ) void
 {
-  _ = allocator;
+  std.debug.print( "allocator.ptr    = {}\n", .{ allocator.ptr } );
+  std.debug.print( "allocater.vtable = {}\n", .{ allocator.vtable } );
 
   log_u.initLogTimers();
   log_u.initFile();

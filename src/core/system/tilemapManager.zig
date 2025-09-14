@@ -140,11 +140,12 @@ pub const TilemapManager = struct
       return;
     }
 
-    self.tilemapList = std.ArrayList( Tilemap ).initCapacity( self.allocator, 2 ) catch
-    {
-      def.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList" );
-      return;
-    };
+    self.tilemapList = std.ArrayList( Tilemap ).empty;
+    //self.tilemapList = std.ArrayList( Tilemap ).initCapacity( self.allocator, 2 ) catch
+    //{
+    //  def.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList" );
+    //  return;
+    //};
 
     self.isInit    = true;
     self.allocator = allocator;
