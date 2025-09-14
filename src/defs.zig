@@ -6,6 +6,8 @@ pub const rng_u  = @import( "utils/rng.zig" );
 
 pub var G_RNG : rng_u.randomiser = .{};
 
+// ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
+
 pub fn initAllUtils( allocator : std.mem.Allocator ) void
 {
   _ = allocator;
@@ -23,6 +25,12 @@ pub fn deinitAllUtils() void
 
   G_RNG = undefined;
 }
+
+
+// ================================ DEBUG FLAGS ================================
+// TODO : move these to a config struct passed via gameHooks.zig
+
+pub const DRAW_HITBOXES = false; // Set to true to draw hitbox overlays
 
 // ================================ DEFINITIONS ================================
 
@@ -59,8 +67,6 @@ pub const tlm_m = @import( "core/system/tilemapManager.zig" );
 pub const ntt           = @import( "core/entity/entityCore.zig" );
 pub const Entity        = ntt.Entity;
 pub const e_ntt_flags   = ntt.e_ntt_flags;
-
-pub const DRAW_HITBOXES = true; // Set to true to draw entity hitbox overlay ( for debugging purposes )
 
 
 // ================ TILEMAP SYSTEM ================
