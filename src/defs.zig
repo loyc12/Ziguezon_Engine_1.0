@@ -6,6 +6,8 @@ pub const rng_u  = @import( "utils/rng.zig" );
 
 pub var G_RNG : rng_u.randomiser = .{};
 
+pub const alloc = std.heap.smp_allocator; // default allocator for the engine
+
 // ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
 
 pub fn initAllUtils( allocator : std.mem.Allocator ) void
@@ -37,15 +39,14 @@ pub fn initHooks( module : anytype ) void                  { G_HK.initHooks( mod
 pub fn tryHook( tag : ghk_m.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 
-// ================================ DEFINITIONS ================================
+// ================================ GLOBAL DEFINITIONS ================================
 
 pub const DEF_SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
-pub const DEF_TARGET_FPS   = 30; // Default target FPS for the game
+pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
 
-pub const alloc = std.heap.smp_allocator;
 
-// ================ DEBUG FLAGS ================
-// TODO : move these to a config struct passed via gameHooks.zig
+// ================ GLOBAL DEBUG FLAGS ================
+// TODO : move these to a config struct passed via gameHooks.zig instead
 
 pub const DRAW_HITBOXES = false; // Set to true to draw hitbox overlays
 
