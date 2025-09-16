@@ -37,7 +37,7 @@ pub fn OnLoopCycle( ng : *def.Engine ) void // Called by engine.loopLogic() ( ev
 // NOTE : This is where you should capture inputs to update global flags
 pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
-  // Toggle pause if the P key is pressed // TODO: Use pause to show options
+  // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   if( ng.isPlaying() )
@@ -69,7 +69,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   };
 
   // Keep the camera inside over the maze area
-  ng.clampCameraCenterInArea( mazeMap.getBoundingBox() );
+  ng.clampCameraCenterInArea( mazeMap.getMapBoundingBox() );
 
   // Swap tilemap render style if the V key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))

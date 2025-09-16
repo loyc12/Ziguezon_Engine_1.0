@@ -23,6 +23,21 @@ pub const e_ntt_shape = enum // FOR DEBUG RENDERING ONLY
   OCTA, // Octagon   ( regular )
   DODE, // Dodecagon ( regular )
   ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
+
+  pub fn getSides( self : e_ntt_shape ) u8
+  {
+    return switch( self )
+    {
+      .LINE, .RECT, .STAR, .DSTR => 0,
+      .TRIA => 3,
+      .DIAM => 4,
+      .PENT => 5,
+      .HEXA => 6,
+      .OCTA => 8,
+      .DODE => 12,
+      .ELLI => 24,
+    };
+  }
 };
 
 pub const e_ntt_flags = enum( u8 )
@@ -158,9 +173,8 @@ pub const Entity = struct
   }
   inline fn updateHitbox( self : *Entity ) void
   {
-    self.hitbox.center = self.pos.toVec2();
-    if( self.isRound() ){ self.hitbox.scale = self.scale; }
-    else { self.hitbox.scale = self.scale.toAABB( self.pos.a ); }
+    if( self.isRound() ){ self.hitbox = Box2.newRectAABB( self.pos.toVec2(), self.scale, self.pos.a ); }
+    else {                self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getSides() ); }
   }
 
   pub fn moveSelf( self : *Entity, sdt : f32 ) void

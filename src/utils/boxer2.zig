@@ -106,6 +106,68 @@ pub const Box2 = struct
     };
   }
 
+  // ================ INITIALIZATION METHODS ================
+
+  pub fn newRectAABB( pos : Vec2, radii : Vec2, a : Angle ) Box2
+  {
+    if( a.r == 0.0 or a.r == std.math.pi or a.r == -std.math.pi )
+    {
+      return Box2{
+        .center = pos,
+        .scale  = radii,
+      };
+    }
+
+    const cosOfA = @cos( a.r );
+    const sinOfA = @sin( a.r );
+
+    const newWidth  = @abs( radii.x * cosOfA ) + @abs( radii.y * sinOfA );
+    const newHeight = @abs( radii.x * sinOfA ) + @abs( radii.y * cosOfA );
+
+    return Box2{
+      .center = pos,
+      .scale  = Vec2{ .x = newWidth, .y = newHeight },
+    };
+  }
+
+  pub fn newPolyAABB( pos : Vec2, radii : Vec2, a : Angle, sides : u8 ) Box2
+  {
+    if( sides < 3 )
+    {
+      def.log( .ERROR, 0, @src(), "Cannot create polygon AABB with less than 3 sides ( got {d} )", .{ sides });
+      return newRectAABB( pos, radii, a );
+    }
+
+
+    const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
+
+    const rP0 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+
+    var maxX : f32 = rP0.x;
+    var minX : f32 = rP0.x;
+    var maxY : f32 = rP0.y;
+    var minY : f32 = rP0.y;
+
+    for( 1..sides )| i |
+    {
+      const rVertex = rP0.rot( sideStepAngle.mulVal( @floatFromInt( i )));
+
+      if( rVertex.x > maxX ){ maxX = rVertex.x; }
+      if( rVertex.x < minX ){ minX = rVertex.x; }
+      if( rVertex.y > maxY ){ maxY = rVertex.y; }
+      if( rVertex.y < minY ){ minY = rVertex.y; }
+    }
+
+    const newWidth  = @max( @abs( maxX ), @abs( minX ));
+    const newHeight = @max( @abs( maxY ), @abs( minY ));
+
+    return Box2{
+      .center = pos,
+      .scale  = Vec2{ .x = newWidth, .y = newHeight },
+    };
+
+  }
+
   // ================ ACCESSORS & MUTATORS ================
 
   pub inline fn getLeftX(   self : *const Box2 ) f32 { return self.center.x - self.scale.x; }

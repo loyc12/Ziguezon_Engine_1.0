@@ -49,7 +49,7 @@ pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
 // ================ GLOBAL DEBUG FLAGS ================
 // TODO : move these to a config struct passed via gameHooks.zig instead
 
-pub const DRAW_HITBOXES = false; // Set to true to draw hitbox overlays
+pub const DRAW_HITBOXES = true; // Set to true to draw hitbox overlays
 
 
 // ================================ ENGINE ================================

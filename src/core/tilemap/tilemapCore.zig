@@ -35,7 +35,7 @@ pub const e_tlmp_flags = enum( u8 )
 };
 
 
-pub const Tilemap = struct // TODO : move to own file ?
+pub const Tilemap = struct
 {
   // ================ PROPERTIES ================
   id         : u32 = 0,
@@ -70,9 +70,9 @@ pub const Tilemap = struct // TODO : move to own file ?
     if( value ){ self.addFlag( flag ); } else { self.delFlag( flag ); }
   }
 
-  pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE     ); }
-  pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT    ); }
-  pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.ACTIVE     ); }
+  pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE  ); }
+  pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT ); }
+  pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.ACTIVE  ); }
 
 
   // ================ CHECKERS ================
@@ -302,7 +302,7 @@ pub const Tilemap = struct // TODO : move to own file ?
   //  return isOnRange( Vec2{ .x = -shw, .y = -shh }, Vec2{ .x = shw,  .y = shh });
   //}
 
-  pub inline fn getBoundingBox( self : *const Tilemap ) Box2 { return tlmpShape.getBoundingBox( self ); }
+  pub inline fn getMapBoundingBox(  self : *const Tilemap ) Box2 { return tlmpShape.getMapBoundingBox( self ); }
   pub inline fn getTileBoundingBox( self : *const Tilemap, relPos : Vec2 ) Box2
   {
     return tlmpShape.getTileBoundingBox( self, relPos );
@@ -347,7 +347,7 @@ pub const Tilemap = struct // TODO : move to own file ?
       return;
     };
 
-    if( !viewBox.isOverlapping( &self.getBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
+    if( !viewBox.isOverlapping( &self.getMapBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
 
     for( 0 .. self.getTileCount() )| index |
     {

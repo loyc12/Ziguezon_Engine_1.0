@@ -143,16 +143,16 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
     def.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with less than 3 sides" );
     return;
   }
-  const sideStepAngle = Angle.newRad( 2.0 * def.PI / @as( f32, @floatFromInt( sides )));
+  const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
 
-  const P0 = pos.add( Vec2.fromAngleScaled( .{},  radii ).rot( a ));
-  var   P1 = pos.add( Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a ));
+  const rP0 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+  var   rP1 = rP0.rot( sideStepAngle );
 
   for( 2..sides )| i |
   {
-    var P2 = pos.add( Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a ));
-    ray.drawTriangle( P0.toRayVec2(), P2.toRayVec2(), P1.toRayVec2(), col );
-    P1 = P2;
+    const rP2 = rP0.rot( sideStepAngle.mulVal( @floatFromInt( i )));
+    ray.drawTriangle( rP0.add( pos ).toRayVec2(), rP2.add( pos ).toRayVec2(), rP1.add( pos ).toRayVec2(), col );
+    rP1 = rP2;
   }
 }
 
@@ -160,7 +160,7 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
 // Draws a 6-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, a,                         col, 3 );
+  drawPolygonPlus( pos, radii, a,                        col, 3 );
   drawPolygonPlus( pos, radii, a.rotRad( def.PI / 3.0 ), col, 3 );
 }
 

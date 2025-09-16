@@ -20,40 +20,42 @@ pub fn changeState( ng : *Engine, targetState : e_ng_state ) void
   {
     def.log( .INFO, 0, @src(), "Increasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
 
-    switch( ng.state )
+    while( ng.state != targetState )
     {
-      .OFF     => { start( ng ); },
-      .STARTED => { open(  ng );  },
-      .OPENED  => { play(  ng );  },
-
-      else =>
+      switch( ng.state )
       {
-        def.qlog( .ERROR, 0, @src(), "How did you get here ???");
-        return;
-      },
+        .OFF     => start( ng ),
+        .STARTED => open(  ng ),
+        .OPENED  => play(  ng ),
+
+        else =>
+        {
+          def.qlog( .ERROR, 0, @src(), "How did you get here ???");
+          return;
+        },
+      }
     }
   }
   else
   {
     def.log( .INFO, 0, @src(), "Decreasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
 
-    switch( ng.state )
+    while( ng.state != targetState )
     {
-      .PLAYING => { pause( ng ); },
-      .OPENED  => { close( ng ); },
-      .STARTED => { stop(  ng );  },
-
-      else =>
+      switch( ng.state )
       {
-        def.qlog( .ERROR, 0, @src(), "How did you get here ???");
-        return;
-      },
+        .PLAYING => pause( ng ),
+        .OPENED  => close( ng ),
+        .STARTED => stop(  ng ),
+
+        else =>
+        {
+          def.qlog( .ERROR, 0, @src(), "How did you get here ???");
+          return;
+        },
+      }
     }
   }
-
-  // TODO : use "switch continue" instead of recursion, once it is available in Zig
-  // Recursively calling changeState to pass through all intermediate state changes ( if needed )
-  if( ng.state != targetState ){ ng.changeState( targetState ); }
 }
 
 

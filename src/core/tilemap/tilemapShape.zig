@@ -27,7 +27,7 @@ const HEXA_FACTOR = def.getPolyCircum( 1.0, 6 );
 const TRIA_FACTOR = def.getPolyCircum( 1.0, 3 );
 //const PENT_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 5 );
 
-pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
+pub const e_tlmp_shape = enum( u8 )
 {
   RECT, // []
   DIAM, // <>
@@ -54,7 +54,7 @@ pub const e_tlmp_shape = enum( u8 ) // TODO : fix worldPoint - > tileCoords
     };
   }
 
-  pub fn getGridScaleFactors( self : e_tlmp_shape ) Vec2 // TODO : add a getBoundingBox() method to tilemaps
+  pub fn getGridScaleFactors( self : e_tlmp_shape ) Vec2
   {
     const tmp = switch( self )
     {
@@ -145,7 +145,7 @@ pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) Vec2
 
 pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 {
-  const area = tlmp.getBoundingBox();
+  const area = tlmp.getMapBoundingBox();
 
   if( !area.isOnPoint( pos )) // Quick check to see if pos is even in tilemap bounds
   {
@@ -381,9 +381,9 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
       .SE => if( xParity ) gridCoords.add( Coords2.new(  1,  0 )) else gridCoords.add( Coords2.new(  1,  1 )),
     },
 
-    // TODO : implement TRI1 and TRI2
+    // TODO ! : implement TRI1 and TRI2
 
-    else => null, // TODO : implement me
+    else => null, // TODO : implement PEN1 and 2
   }
   orelse
   {
@@ -397,7 +397,7 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
 
 // ================================ TILE DRAWING ================================
 
-pub fn getBoundingBox( tlmp : *const Tilemap ) Box2
+pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the visuals better ( especially for DIAMS )
 {
   var viewableScale = tlmp.gridSize.toVec2();
       viewableScale = viewableScale.mul( tlmp.tileScale );
@@ -405,22 +405,43 @@ pub fn getBoundingBox( tlmp : *const Tilemap ) Box2
 
   if( tlmp.tileShape == .DIAM ) { viewableScale = viewableScale.mulVal( 2.0 ); }
 
-  var AABB : Vec2 = undefined;
+  var radii : Vec2 = undefined;
 
-  if( tlmp.tileShape != .DIAM ){ AABB = viewableScale.toAABB( tlmp.gridPos.a ); }
-  else { AABB = viewableScale.toAABB( tlmp.gridPos.a ); }
+  if( tlmp.tileShape != .DIAM ){ radii = viewableScale; }
+  else { radii = viewableScale; }
 
-  if( tlmp.tileShape != .RECT and tlmp.tileShape != .DIAM ){ AABB = AABB.add( tlmp.tileScale.mulVal( 1.0 / 3.0 )); }
+  if( tlmp.tileShape != .RECT and tlmp.tileShape != .DIAM ){ radii = radii.add( tlmp.tileScale.mulVal( 1.0 / 3.0 )); }
 
-  return( Box2.new( tlmp.gridPos.toVec2(), AABB ));
+  return( Box2.newRectAABB( tlmp.gridPos.toVec2(), radii, tlmp.gridPos.a ));
 }
 
-pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2
+pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2 // NOTE : Swap for the accurate AABB version
 {
   const  absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
-  const  radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() ).toAABB( tlmp.gridPos.a );
-  return Box2.new( absPos, radii );
+  const  radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
+  return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a );
 }
+
+//pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2 // TODO : fix this shit
+//{
+//  const  absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
+//  const  radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
+//
+//  if( tlmp.tileShape == .RECT ){ return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a ); }
+//  else
+//  {
+//    const aOffset = switch( tlmp.tileShape )
+//    {
+//      .DIAM => 0.0,
+//      .HEX1 => -90.0,
+//      .HEX2 => 0.0,
+//      .TRI1 => 90.0,
+//      .TRI2 => -90.0,
+//      else  => 0.0, // should never happen
+//    };
+//    return Box2.newPolyAABB( absPos, radii, tlmp.gridPos.a );
+//  }
+//}
 
 pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *const Box2) void
 {
@@ -437,7 +458,7 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
   if( !viewBox.isOverlapping( &tileBox )){ return; } // Quick check to see if tile is even in view
 
   const absPos = getAbsTilePos( tlmp, tile.gridCoords );
-  const dParity : f32 = @floatFromInt(( 2 * @mod( tile .gridCoords.x + tile .gridCoords.y, 2 )) - 1 );
+  const dParity : f32 = @floatFromInt(( 2 * @mod( tile.gridCoords.x + tile.gridCoords.y, 2 )) - 1 );
 
   var radii = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() * MARGIN_FACTOR );
   if( tlmp.tileShape == .RECT ){ radii = radii.mulVal( 0.5 ); }

@@ -4,7 +4,7 @@ const def     = @import( "defs" );
 const Coords2 = def.Coords2;
 
 
-pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for custom tile types ?
+pub const e_tile_type = enum( u8 )
 {
   EMPTY   = 0,
   FLOOR   = 1,
@@ -30,7 +30,7 @@ pub const e_tile_type = enum( u8 ) // TODO : abstract this enum to allow for cus
 pub const Tile = struct
 {
   // ================ PROPERTIES ================
-  tType      : e_tile_type = .EMPTY, // NOTE : move this to data instead, to allow for custom tile types ?
+  tType      : e_tile_type = .EMPTY, // TODO : store as u16 isntead, so that it can be customized more easily
 
   // ======== GRID POS DATA ========
   gridCoords : Coords2 = .{},

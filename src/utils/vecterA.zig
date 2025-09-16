@@ -168,15 +168,4 @@ pub const VecA = struct
   }
 
   pub inline fn toAngle( self : *const VecA ) Angle { return Angle.atan2( self.y, self.x ); }
-
-  pub inline fn toAABB( self : *const VecA ) Vec2
-  {
-    const cosOfR = @cos( self.a.a );
-    const sinOfR = @sin( self.a.a );
-
-    const newWidth  = @abs( self.x * cosOfR ) + @abs( self.y * sinOfR );
-    const newHeight = @abs( self.x * sinOfR ) + @abs( self.y * cosOfR );
-
-    return Vec2{ .x = newWidth, .y = newHeight };
-  }
 };

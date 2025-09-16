@@ -163,17 +163,4 @@ pub const Vec2 = struct
   }
 
   pub inline fn toAngle( self : *const Vec2 ) Angle { return Angle.atan2( self.y, self.x ); }
-
-  pub inline fn toAABB( self : *const Vec2, a : Angle ) Vec2
-  {
-    const cosOfA = @cos( a.r );
-    const sinOfA = @sin( a.r );
-
-    const newWidth  = @abs( self.x * cosOfA ) + @abs( self.y * sinOfA );
-    const newHeight = @abs( self.x * sinOfA ) + @abs( self.y * cosOfA );
-
-    return Vec2{ .x = newWidth, .y = newHeight };
-  }
-
-  //TODO : add distinction between RECT AABB and POLY AABB, so that the hitboxes can be more precise
 };

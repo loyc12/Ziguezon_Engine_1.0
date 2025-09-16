@@ -43,6 +43,8 @@ pub const SHOW_TIMESTAMP : bool        = true;   // If true, messages will inclu
 pub const SHOW_MSG_SRC   : bool        = true;   // If true, messages will include the source file, line number, and function name of the call location
 pub const ADD_PREC_NL    : bool        = true;   // If true, a newline will be before the actual message, to make it more readable
 
+// TODO : reimplement logging to file ( need my own io implementation for that )
+
 pub const USE_LOG_FILE   : bool        = false;              // If true, log messages will be written to a file instead of stdout/stderr
 pub const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
 var       G_LOG_FILE     : std.fs.File = undefined;             // The file to write log messages in ( default is stderr )
@@ -113,7 +115,7 @@ pub fn log( level : LogLevel, id : u32, callLocation : ?std.builtin.SourceLocati
   // If the message is IDed and SHOW_ID_MSGS is false, do nothing
   if( comptime !SHOW_ID_MSGS and id != 0 ) return;
 
-  // TODO : Implement the trace system properly, to log/unlog functions when they are called and exited
+  // TODO : Implement the trace system properly, to log/unlog functions when they are called and exited ( maybe via a trace stack file ?)
 
 
   // ================ LOGGING LOGIC ================
