@@ -9,7 +9,7 @@ pub var EXAMPLE_TLM_ID : u32 = 0;
 
 pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()    // NOTE : This is where you should initialize your resources
 {
-  ng.addAudioFromFile( "hit_1", "exampleGames/assets/sounds/Boop_2.wav" ) catch | err |
+  ng.addAudioFromFile( "hit_1", "exampleGames/__assets/sounds/Boop_2.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_2': {}\n", .{ err } );
   };

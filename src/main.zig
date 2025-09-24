@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 
 // ================================ INITIALIZATION ================================
-const gh = @import( "gameHooks" );
+const ngi = @import( "engineInterface" );
 
 pub fn initCriticals() void
 {
@@ -11,8 +11,8 @@ pub fn initCriticals() void
 
   def.initAllUtils( def.alloc );
 
-  // Initialize the game hooks
-  def.initHooks( gh );
+  def.loadHooks(    ngi );
+  def.loadSettings( ngi );
 
   def.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
 }

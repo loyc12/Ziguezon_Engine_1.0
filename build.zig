@@ -12,21 +12,19 @@ pub fn build( b: *std.Build ) void
   // current platform and architecture. It is used to compile the code for the
   // current platform and architecture, and it is the default target for the
   // build system.
-  const target = b.standardTargetOptions(.{} );
-  const optimize = b.standardOptimizeOption(.{} );
+  const target   = b.standardTargetOptions(  .{} );
+  const optimize = b.standardOptimizeOption( .{} );
 
-  // This is a build option that allows the user to specify the path to the
-  // game hook implementations. It is used to allow the user to specify a custom
-  // path to the game hook implementations, which can be useful for testing or
-  // development purposes.
-  const tmp_game_hooks_path = b.option(
+
+  // This is a build option that allows the user to specify the path to the game-specific engine interface module
+  const tmp_engine_interface_path = b.option(
     []const u8,
-    "game_hooks_path",
-    "Path to the gameHooks implementations (e.g., exampleGames/ping/gameHooks.zig)"
+    "engine_interface_path",
+    "Path to the engineInterface implementations (e.g., exampleGames/ping/engineInterface.zig)"
   );
 
-  // This sets the default path for the game hooks module to the template
-  const game_hooks_path = if( tmp_game_hooks_path )| path | path else "exampleGames/_template/gameHooks.zig";
+  // This sets the default path for the engine interface module to the template
+  const engine_interface_path = if( tmp_engine_interface_path )| path | path else "exampleGames/_template/engineInterface.zig";
 
 
   // ================================ EXECUTABLE ================================
@@ -35,17 +33,17 @@ pub fn build( b: *std.Build ) void
   const exe_mod = b.createModule(
   .{
     .root_source_file = b.path( "src/main.zig" ),
-    .target   = target,
-    .optimize = optimize,
+    .target           = target,
+    .optimize         = optimize,
   });
 
   // This adds the executable module to the build graph,
   // which is the main entry point of the application.
   const exe = b.addExecutable(
   .{
-    .name = "ZiguezonEngine",
+    .name        = "ZiguezonEngine",
     .root_module = exe_mod,
-    .use_llvm = false,
+    .use_llvm    = false,
   });
 
   // This declares the intent to install the executable artifact,
@@ -88,18 +86,16 @@ pub fn build( b: *std.Build ) void
   defs.addImport( "defs", defs );
   exe.root_module.addImport( "defs", defs );
 
-  // This adds the game hooks module, which is expected to contain the game-specific
-  // hook implementations. The `hook_path` variable is used to specify the path to
-  // the game hook implementations, allowing the user to specify a custom path.
-  const game_hooks = b.createModule(
+  // This adds the engine interface module, which is expected to contain the game-specific gameHooks & engineSettings implementations.
+  const engine_interface = b.createModule(
   .{
-    .root_source_file = b.path( game_hooks_path ), // NOTE : This path is user defined at build time
-    .target   = target,
-    .optimize = optimize,
+    .root_source_file = b.path( engine_interface_path ), // NOTE : This path is user defined at build time
+    .target           = target,
+    .optimize         = optimize,
   });
-  game_hooks.addImport( "raylib", raylib );
-  game_hooks.addImport( "defs", defs );
-  exe.root_module.addImport( "gameHooks", game_hooks );
+  engine_interface.addImport( "raylib", raylib );
+  engine_interface.addImport( "defs", defs );
+  exe.root_module.addImport( "engineInterface", engine_interface );
 
 
   // ================================ COMMANDS ================================
@@ -115,17 +111,17 @@ pub fn build( b: *std.Build ) void
 
   // This creates a step for the ping game
   const ping_step = b.step( "ping", "Run the ping game" );
-  const ping_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/ping/gameHooks.zig" });
+  const ping_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/ping/engineInterface.zig" });
   ping_step.dependOn( &ping_cli_cmd.step );
 
   // This creates a step for the floppy game
   const floppy_step = b.step( "floppy", "Run the floppy game" );
-  const floppy_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/floppy/gameHooks.zig" });
+  const floppy_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/floppy/engineInterface.zig" });
   floppy_step.dependOn( &floppy_cli_cmd.step );
 
   // This creates a step for the floppy game
   const labyrinth_step = b.step( "labyrinth", "Run the labyrinth game" );
-  const labyrinth_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dgame_hooks_path=exampleGames/labyrinther/gameHooks.zig" });
+  const labyrinth_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/labyrinther/engineInterface.zig" });
   labyrinth_step.dependOn( &labyrinth_cli_cmd.step );
 
 

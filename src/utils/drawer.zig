@@ -144,15 +144,30 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
     return;
   }
   const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
+  const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
 
-  const rP0 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
-  var   rP1 = rP0.rot( sideStepAngle );
-
-  for( 2..sides )| i |
+  if( radii.x != radii.y ) // NOTE : slower, but accounts for non isoscalar polygons
   {
-    const rP2 = rP0.rot( sideStepAngle.mulVal( @floatFromInt( i )));
-    ray.drawTriangle( rP0.add( pos ).toRayVec2(), rP2.add( pos ).toRayVec2(), rP1.add( pos ).toRayVec2(), col );
-    rP1 = rP2;
+    var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+
+    for( 2..sides )| i |
+    {
+      const rP2 = Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a );
+      ray.drawTriangle( rP0.add( pos ).toRayVec2(), rP2.add( pos ).toRayVec2(), rP1.add( pos ).toRayVec2(), col );
+      rP1 = rP2;
+    }
+  }
+  else // NOTE : slightly faster, but requires isoscalar polygons
+  {
+    var rP1 = rP0.rot( sideStepAngle );
+
+    for( 2..sides )| i |
+    {
+      _ = i;
+      const rP2 = rP1.rot( sideStepAngle );
+      drawBasicTria( rP0.add( pos ), rP2.add( pos ), rP1.add( pos ), col );
+      rP1 = rP2;
+    }
   }
 }
 

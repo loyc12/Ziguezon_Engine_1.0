@@ -281,14 +281,12 @@ pub const TilemapManager = struct
     {
       tlmp.getMapBoundingBox().drawSelf( def.newColour( 255, 255, 0, 64 ));
 
-      def.log( .DEBUG, 0, @src(), "Tilemap has {d} tiles", .{ tlmp.getTileCount() });
-
-      for ( 0 .. tlmp.getTileCount() )| index |
+      if( def.G_ST.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
       {
         const tile = tlmp.tileArray.items.ptr[ index ];
         const tilePos = tlmp.getRelTilePos( tile.gridCoords );
         tlmp.getTileBoundingBox( tilePos ).drawSelf( def.newColour( 0, 255, 255, 32 ));
-      }
+      }}
     }}
   }
 

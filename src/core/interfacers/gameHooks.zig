@@ -4,8 +4,8 @@ const def = @import( "defs" );
 // ================================ GAME HOOKS ================================
 
 // This enum defines the tags for each game hook
-// These tags are used to identify which hook to call in the gameHooks struct
-pub const hookTag = enum( u8 )
+// These tags are used to identify which hook to call in the GameHooks struct
+pub const e_hook_tag = enum( u8 )
 {
   // Engine State Hooks
 
@@ -37,8 +37,8 @@ pub const hookTag = enum( u8 )
   OnRenderBackground  = 30, // Called to render the background ( at the start )
 //OffRenderBackground = 31, // Called to render the background ( at the end
 
-  OnRenderWorld  = 32, // Called to render the world ( at the start )
-  OffRenderWorld = 33, // Called to render the world ( at the end  )
+  OnRenderWorld     = 32, // Called to render the world ( at the start )
+  OffRenderWorld    = 33, // Called to render the world ( at the end  )
 
   OnRenderOverlay  = 34, // Called to render overlays ( at the start )
 //OffRenderOverlay = 35, // Called to render overlays ( at the end )
@@ -46,9 +46,9 @@ pub const hookTag = enum( u8 )
 };
 
 // This struct contains a slot for each possible game hook
-// Each are function pointers that can be set with `gameHooks.initHooks()`
+// Each are function pointers that can be set with `GameHooks.loadHooks()`
 // NOTE : Using *fn instead of simply module.fn to avoid storing the entire module, which has an unknown type
-pub const gameHooks = struct
+pub const GameHooks = struct
 {
   // Engine State Hooks
 
@@ -89,13 +89,13 @@ pub const gameHooks = struct
 
   // ================================ GAME HOOKS FUNCTIONS ================================
 
-  pub fn initHooks( self : *gameHooks, module : anytype ) void
+  pub fn loadHooks( self : *GameHooks, module : anytype ) void
   {
     def.qlog( .TRACE, 0, @src(), "Initializing game hooks..." );
 
     if( @typeInfo( module ) != .@"struct" )
     {
-      def.log( .ERROR, 0, @src(), "gameHooks.initHooks() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
+      def.log( .ERROR, 0, @src(), "GameHooks.loadHooks() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
       return;
     }
 
@@ -134,11 +134,12 @@ pub const gameHooks = struct
     def.qlog( .INFO, 0, @src(), "$ Available game hooks initialized\n" );
   }
 
-  pub fn checkHookValidities( self : *const gameHooks ) void
+
+  pub fn checkHookValidities( self : *const GameHooks ) void
   {
     def.qlog( .TRACE, 0, @src(), "Checking game hook validity..." );
 
-    inline for ( @typeInfo( gameHooks ).@"struct".fields )| field |
+    inline for ( @typeInfo( GameHooks ).@"struct".fields )| field |
     {
       const fieldName = field.name;
       const fieldPtr = @field( self, fieldName );
@@ -155,7 +156,7 @@ pub const gameHooks = struct
     }
   }
 
-  pub fn tryHook( self : *const gameHooks, tag : hookTag, args : anytype ) void
+  pub fn tryHook( self : *const GameHooks, tag : e_hook_tag, args : anytype ) void
   {
     const hookFunct = switch( tag )
     {

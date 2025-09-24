@@ -95,8 +95,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
       .TRI2 => mazeMap.setTileShape( .RECT ),
     }
   }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.q )){ mazeMap.gridPos.a = mazeMap.gridPos.a.addDeg( 1 ); }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.gridPos.a = mazeMap.gridPos.a.subDeg( 1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.q )){ mazeMap.gridPos.a = mazeMap.gridPos.a.subDeg( 1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.gridPos.a = mazeMap.gridPos.a.addDeg( 1 ); }
 
   // If left clicked, check if a tile was clicked on the example tilemap
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))

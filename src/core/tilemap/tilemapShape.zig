@@ -403,45 +403,30 @@ pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the
       viewableScale = viewableScale.mul( tlmp.tileScale );
       viewableScale = viewableScale.mul( tlmp.tileShape.getGridScaleFactors());
 
-  if( tlmp.tileShape == .DIAM ) { viewableScale = viewableScale.mulVal( 2.0 ); }
+  if( tlmp.tileShape == .DIAM ){ viewableScale = viewableScale.mulVal( 2.0 ); }
+  if( tlmp.tileShape != .DIAM and tlmp.tileShape != .RECT ){ viewableScale = viewableScale.add( tlmp.tileScale.mulVal( 1.0 / 3.0 )); }
 
-  var radii : Vec2 = undefined;
-
-  if( tlmp.tileShape != .DIAM ){ radii = viewableScale; }
-  else { radii = viewableScale; }
-
-  if( tlmp.tileShape != .RECT and tlmp.tileShape != .DIAM ){ radii = radii.add( tlmp.tileScale.mulVal( 1.0 / 3.0 )); }
-
-  return( Box2.newRectAABB( tlmp.gridPos.toVec2(), radii, tlmp.gridPos.a ));
+  return( Box2.newRectAABB( tlmp.gridPos.toVec2(), viewableScale, tlmp.gridPos.a ));
 }
 
 pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2 // NOTE : Swap for the accurate AABB version
 {
   const  absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
   const  radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
-  return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a );
-}
 
-//pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2 // TODO : fix this shit
-//{
-//  const  absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
-//  const  radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
-//
-//  if( tlmp.tileShape == .RECT ){ return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a ); }
-//  else
-//  {
-//    const aOffset = switch( tlmp.tileShape )
-//    {
-//      .DIAM => 0.0,
-//      .HEX1 => -90.0,
-//      .HEX2 => 0.0,
-//      .TRI1 => 90.0,
-//      .TRI2 => -90.0,
-//      else  => 0.0, // should never happen
-//    };
-//    return Box2.newPolyAABB( absPos, radii, tlmp.gridPos.a );
-//  }
-//}
+  return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a ); // NOTE : approximation for the sake of performance
+
+  //const angle = tlmp.gridPos.a;
+  //return switch( tlmp.tileShape )
+  //{
+  //  .RECT => return Box2.newRectAABB( absPos, radii, angle                                 ),
+  //  .DIAM => return Box2.newPolyAABB( absPos, radii, angle,                              4 ),
+  //  .HEX1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg( 90 ),                 6 ),
+  //  .HEX2 => return Box2.newPolyAABB( absPos, radii, angle,                              6 ),
+  //  .TRI1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg(  1.0 * 90.0 ),        6 ), // TODO : handle triangle orientation
+  //  .TRI2 => return Box2.newPolyAABB( absPos, radii, angle.subDeg(( 1.0 * 90.0 ) - 90 ), 6 ), // TODO : handle triangle orientation
+  //};
+}
 
 pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *const Box2) void
 {
@@ -468,7 +453,7 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
     .RECT => def.drawRect( absPos.toVec2(), radii, absPos.a, tile.colour ),
     .DIAM => def.drawDiam( absPos.toVec2(), radii, absPos.a, tile.colour ),
 
-    .HEX1 => def.drawHexa( absPos.toVec2(), radii, absPos.a.subDeg( 90.0 ), tile.colour ),
+    .HEX1 => def.drawHexa( absPos.toVec2(), radii, absPos.a.addDeg( 90.0 ), tile.colour ),
     .HEX2 => def.drawHexa( absPos.toVec2(), radii, absPos.a,                tile.colour ),
 
     .TRI1 => def.drawTria( absPos.toVec2(), radii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),

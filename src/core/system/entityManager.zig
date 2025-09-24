@@ -288,17 +288,17 @@ pub const EntityManager = struct
 
   pub fn tickActiveEntities( self : *EntityManager, sdt : f32 ) void
   {
-    for( self.entityList.items )| *e |{ if( e.isActive() )
+    if( def.G_ST.AutoApply_Entity_Movement ){ for( self.entityList.items )| *e |{ if( e.isActive() )
     {
       e.moveSelf( sdt );
-    }}
+    }}}
   }
 
-  pub fn collideActiveEntities( self : *EntityManager, sdt : f32 ) void
+  pub fn collideActiveEntities( self : *EntityManager, sdt : f32 ) void // TODO : make it actually collide entity, instead of just logging overlap
   {
     _ = sdt; // Prevent unused variable warning
 
-    for( self.entityList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
+    if( def.G_ST.AutoApply_Entity_Collision ){ for( self.entityList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
     {
       if( index + 1 >= self.entityList.items.len ){ continue; } // Prevents out of bounds access
 
@@ -312,6 +312,6 @@ pub const EntityManager = struct
           def.log( .DEBUG, 0, @src(), "Entity {d} scale:    {d}:{d}, Entity {d} scale:    {d}:{d}", .{ e1.id, e1.scale.x, e1.scale.y, e2.id, e2.scale.x, e2.scale.y });
         }
       }}
-    }}
+    }}}
   }
 };

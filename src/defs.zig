@@ -30,29 +30,28 @@ pub fn deinitAllUtils() void
 }
 
 
-// ================================ HOOK MANAGER ================================
+// ================================ INTERFACER HANDLERS ================================
 
-pub const ghk_m = @import( "core/system/gameHookManager.zig" );
-pub var G_HK : ghk_m.gameHooks = .{}; // NOTE : Global gameHooks struct instance
+// ================ ENGINE SETTINGS ================
+// NOTE : Do not forget to call def.Settings( SpecificGameInterface ) in your main function
 
-// NOTE : Do not forget to call def.initHooks( SpecificGameModule ) in your main function
-pub fn initHooks( module : anytype ) void                  { G_HK.initHooks( module ); }
-pub fn tryHook( tag : ghk_m.hookTag, args : anytype ) void { G_HK.tryHook( tag, args ); }
+const  ngs_h = @import( "core/interfacers/engineSettings.zig" );
+pub var G_ST : ngs_h.EngineSettings = .{}; // NOTE : Global engineSettings struct instance
 
-
-// ================================ GLOBAL DEFINITIONS ================================
-
-pub const DEF_SCREEN_DIMS  = Vec2{ .x = 2048, .y = 1024 };
-pub const DEF_TARGET_FPS   = 120; // Default target FPS for the game
+pub fn loadSettings( module : anytype ) void { G_ST.loadSettings( module ); }
 
 
-// ================ GLOBAL DEBUG FLAGS ================
-// TODO : move these to a config struct passed via gameHooks.zig instead
+// ================ GAME HOOKS ================
+// NOTE : Do not forget to call def.loadHooks( SpecificGameInterface ) in your main function
 
-pub const DRAW_HITBOXES = true; // Set to true to draw hitbox overlays
+const  ghk_h = @import( "core/interfacers/gameHooks.zig" );
+pub var G_HK : ghk_h.GameHooks = .{}; // NOTE : Global gameHooks struct instance
+
+pub fn loadHooks( module : anytype ) void                     { G_HK.loadHooks( module  ); }
+pub fn tryHook( tag : ghk_h.e_hook_tag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 
-// ================================ ENGINE ================================
+// ================================ ENGINE SYSTEMS ================================
 
 pub const ng            = @import( "core/engine/engineCore.zig" );
 pub const Engine        = ng.Engine;
@@ -66,19 +65,20 @@ pub const ntt_m = @import( "core/system/entityManager.zig" );
 pub const tlm_m = @import( "core/system/tilemapManager.zig" );
 
 
-// ================ ENTITY SYSTEM ================
+// ================ ENTITY ================
 
-pub const ntt           = @import( "core/entity/entityCore.zig" );
-pub const Entity        = ntt.Entity;
-pub const e_ntt_flags   = ntt.e_ntt_flags;
+pub const ntt         = @import( "core/entity/entityCore.zig" );
+pub const Entity      = ntt.Entity;
+pub const e_ntt_flags = ntt.e_ntt_flags;
+pub const e_ntt_shape = ntt.e_ntt_shape;
 
 
-// ================ TILEMAP SYSTEM ================
+// ================ TILEMAP ================
 
 pub const tlm          = @import( "core/tilemap/tilemapCore.zig" );
 pub const Tile         = tlm.Tile;
 pub const Tilemap      = tlm.Tilemap;
-pub const e_tlmp_type  = tlm.e_tlmp_type;
+pub const e_tlmp_shape = tlm.e_tlmp_shape;
 
 
 // ================================ UTILS SHORTHANDS ================================

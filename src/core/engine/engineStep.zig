@@ -112,14 +112,14 @@ pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture ins
       if( ng.isTilemapManagerInit() )
       {
         ng.renderActiveTilemaps();
-        if( def.DRAW_HITBOXES ){ ng.renderTilemapHitboxes(); }
+        if( def.G_ST.DebugDraw_Tilemap ){ ng.renderTilemapHitboxes(); }
       }
       else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
 
       if( ng.isEntityManagerInit() )
       {
         ng.renderActiveEntities();
-        if( def.DRAW_HITBOXES ){ ng.renderEntityHitboxes(); }
+        if( def.G_ST.DebugDraw_Entity ){ ng.renderEntityHitboxes(); }
       }
       else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
 

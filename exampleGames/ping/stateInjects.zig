@@ -17,11 +17,11 @@ pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()
     return;
   };
 
-  resM.addAudioFromFile( "hit_1", "exampleGames/assets/sounds/Boop_1.wav" ) catch | err |
+  resM.addAudioFromFile( "hit_1", "exampleGames/__assets/sounds/Boop_1.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
   };
-  resM.addAudioFromFile( "hit_2", "exampleGames/assets/sounds/Boop_2.wav" ) catch | err |
+  resM.addAudioFromFile( "hit_2", "exampleGames/__assets/sounds/Boop_2.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_2': {}\n", .{ err } );
   };

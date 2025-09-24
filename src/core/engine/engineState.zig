@@ -178,10 +178,16 @@ pub fn open( ng : *Engine ) void
       }
     );
 
-    if( !def.ray.isWindowReady() )
+    if( !def.ray.isWindowReady() ) // TODO : move this to its own functions eventually ?
     {
-      def.ray.setTargetFPS( def.DEF_TARGET_FPS );
-      def.ray.initWindow( def.DEF_SCREEN_DIMS.x, def.DEF_SCREEN_DIMS.y, "Ziguezon Engine - Game Window" );
+      def.ray.setTargetFPS(
+        @intCast( def.G_ST.Startup_Window_TargetFps )
+      );
+      def.ray.initWindow(
+        @intCast( def.G_ST.Startup_Window_Width  ),
+        @intCast( def.G_ST.Startup_Window_Height ),
+        def.G_ST.Startup_Window_Title
+      );
     }
   }
   def.tryHook( .OnOpen, .{ ng });
