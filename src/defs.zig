@@ -177,7 +177,7 @@ pub const drawRect                 = drw_u.drawRectanglePlus;
 pub const drawElli                 = drw_u.drawEllipsePlus;
 pub const drawPoly                 = drw_u.drawPolygonPlus;
 
-pub const drawStar                 = drw_u.drawHexStarPlus;
+pub const drawHstr                 = drw_u.drawHexStarPlus;
 pub const drawDstr                 = drw_u.drawOctStarPlus;
 
 pub const drawText                 = drw_u.drawText;

@@ -6,7 +6,8 @@ const Vec2   = def.Vec2;
 const Angle  = def.Angle;
 const Colour = def.Colour;
 
-const ELLIPSE_SIDE_COUNT: u8 = 32; // Number of sides for the ellipse polygon approximation
+pub const ELLIPSE_SIDE_COUNT : u8  = 32; // TODO : move these to settings
+pub const BASE_LINE_WIDTH    : f32 = 2.0;
 
 // ================ SCREEN FUNCTIONS ================
 
@@ -138,22 +139,29 @@ pub inline fn drawEllipsePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour
 // Draws a polygon centered at a given position with specified rotation (rad), colour and facet count, and scaled in x/y by radii
 pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u8 ) void
 {
-  if( sides < 3 )
+  if( sides < 1 )
   {
-    def.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with less than 3 sides" );
+    def.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with 0 sides" );
     return;
   }
   const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
   const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
 
-  if( radii.x != radii.y ) // NOTE : slower, but accounts for non isoscalar polygons
+  if( sides < 3 ) // draw radius or diametre lines
+  {
+    const rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+
+    if( sides == 1 ){ drawLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+    else { drawLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+  }
+  else if( radii.x != radii.y ) // NOTE : slower, but accounts for non isoscalar polygons
   {
     var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
 
     for( 2..sides )| i |
     {
       const rP2 = Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a );
-      ray.drawTriangle( rP0.add( pos ).toRayVec2(), rP2.add( pos ).toRayVec2(), rP1.add( pos ).toRayVec2(), col );
+      drawBasicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
       rP1 = rP2;
     }
   }
@@ -165,7 +173,7 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
     {
       _ = i;
       const rP2 = rP1.rot( sideStepAngle );
-      drawBasicTria( rP0.add( pos ), rP2.add( pos ), rP1.add( pos ), col );
+      drawBasicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
       rP1 = rP2;
     }
   }
@@ -182,7 +190,7 @@ pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour
 // Draws an 8-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
 pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawPolygonPlus( pos, radii, a,                          col, 4 );
+  drawPolygonPlus( pos, radii, a,                        col, 4 );
   drawPolygonPlus( pos, radii, a.rotRad( def.PI / 4.0 ), col, 4 );
 }
 

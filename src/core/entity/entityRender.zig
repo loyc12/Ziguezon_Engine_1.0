@@ -27,17 +27,6 @@ pub fn clampInScreen( e1 : *Entity ) void
 
 // ================ RENDER FUNCTIONS ================
 
-inline fn drawDirectionLine( e1 : *const Entity, color : def.Colour, width : f32 ) void
-{
-  const frontPoint = Vec2.fromAngleScaled( e1.getRot(), e1.scale );
-  def.drawLine( e1.getCenter(), e1.getCenter().add( frontPoint ), color, width );
-}
-
-inline fn drawPolyOne1( e1 : *const Entity, sides : u8 ) void
-{
-  def.drawPoly( e1.getCenter(), e1.scale, e1.getRot(), e1.colour, sides );
-}
-
 pub fn renderEntity( e1 : *const Entity ) void
 {
   if( !e1.isVisible() )
@@ -54,19 +43,25 @@ pub fn renderEntity( e1 : *const Entity ) void
     return;
   }
 
+  const p = e1.getCenter();
+  const s = e1.scale;
+  const r = e1.getRot();
+  const c = e1.colour;
+
   switch( e1.shape )
   {
-    .LINE => { drawDirectionLine( e1, e1.colour, 2.0 ); },
-    .RECT => { def.drawRect( e1.getCenter(), e1.scale, e1.getRot(), e1.colour ); },
-    .STAR => { def.drawStar( e1.getCenter(), e1.scale, e1.getRot(), e1.colour ); },
-    .DSTR => { def.drawDstr( e1.getCenter(), e1.scale, e1.getRot(), e1.colour ); },
-    .ELLI => { def.drawElli( e1.getCenter(), e1.scale, e1.getRot(), e1.colour ); },
+    .RECT => { def.drawRect( p, s, r, c ); },
+    .HSTR => { def.drawHstr( p, s, r, c ); },
+    .DSTR => { def.drawDstr( p, s, r, c ); },
+    .ELLI => { def.drawElli( p, s, r, c ); },
 
-    .TRIA => { drawPolyOne1( e1,  3 ); },
-    .DIAM => { drawPolyOne1( e1,  4 ); },
-    .PENT => { drawPolyOne1( e1,  5 ); },
-    .HEXA => { drawPolyOne1( e1,  6 ); },
-    .OCTA => { drawPolyOne1( e1,  8 ); },
-    .DODE => { drawPolyOne1( e1, 12 ); },
+    .RLIN => { def.drawPoly( p, s, r, c,  1 ); },
+    .DLIN => { def.drawPoly( p, s, r, c,  2 ); },
+    .TRIA => { def.drawPoly( p, s, r, c,  3 ); },
+    .DIAM => { def.drawPoly( p, s, r, c,  4 ); },
+    .PENT => { def.drawPoly( p, s, r, c,  5 ); },
+    .HEXA => { def.drawPoly( p, s, r, c,  6 ); },
+    .OCTA => { def.drawPoly( p, s, r, c,  8 ); },
+    .DODE => { def.drawPoly( p, s, r, c, 12 ); },
   }
 }

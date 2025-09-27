@@ -134,6 +134,7 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
   exampleEntity.pos.a = exampleEntity.pos.a.rotDeg( exampleEntity.pos.a.cos() + 1.5 ); // Example of a simple variable rotation effect
   exampleEntity.pos.y  = 256  * exampleEntity.pos.a.sin();                             // Example of a simple variable vertical movement effect
 
+
   var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
@@ -141,6 +142,60 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
   };
 
   exampleTilemap.gridPos.a = exampleTilemap.gridPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
+
+
+  var exampleRLine = ng.getEntity( stateInj.EXAMPLE_RLIN_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Radius Line ) not found", .{ stateInj.EXAMPLE_RLIN_ID });
+    return;
+  };
+
+  exampleRLine.pos.a = exampleTilemap.gridPos.a;
+
+
+  var exampleDLine = ng.getEntity( stateInj.EXAMPLE_DLIN_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Diametre Line ) not found", .{ stateInj.EXAMPLE_DLIN_ID });
+    return;
+  };
+
+  exampleDLine.pos.a = exampleTilemap.gridPos.a;
+
+
+  var exampleTriangle = ng.getEntity( stateInj.EXAMPLE_TRIA_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Triangle ) not found", .{ stateInj.EXAMPLE_TRIA_ID });
+    return;
+  };
+
+  exampleTriangle.pos.a = exampleTilemap.gridPos.a;
+
+
+  var exampleRectangle = ng.getEntity( stateInj.EXAMPLE_RECT_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Rectangle ) not found", .{ stateInj.EXAMPLE_RECT_ID });
+    return;
+  };
+
+  exampleRectangle.pos.a = exampleTilemap.gridPos.a;
+
+
+  var exampleHexagon = ng.getEntity( stateInj.EXAMPLE_HEXA_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Hexagon ) not found", .{ stateInj.EXAMPLE_HEXA_ID });
+    return;
+  };
+
+  exampleHexagon.pos.a = exampleTilemap.gridPos.a;
+
+
+  var exampleEllipse = ng.getEntity( stateInj.EXAMPLE_ELLI_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Ellipse ) not found", .{ stateInj.EXAMPLE_ELLI_ID });
+    return;
+  };
+
+  exampleEllipse.pos.a = exampleTilemap.gridPos.a;
 }
 
 pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )

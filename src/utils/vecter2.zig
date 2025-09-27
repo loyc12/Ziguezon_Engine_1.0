@@ -76,6 +76,7 @@ pub const Vec2 = struct
 
   pub inline fn abs( self : *const Vec2 ) Vec2 { return Vec2{ .x =  @abs( self.x ), .y =  @abs( self.y ) }; }
   pub inline fn neg( self : *const Vec2 ) Vec2 { return Vec2{ .x = -@abs( self.x ), .y = -@abs( self.y ) }; }
+  pub inline fn flp( self : *const Vec2 ) Vec2 { return Vec2{ .x = -self.x,         .y = -self.y }; }
 
   pub inline fn add( self : *const Vec2, other : Vec2 ) Vec2 { return Vec2{ .x = self.x + other.x, .y = self.y + other.y }; }
   pub inline fn sub( self : *const Vec2, other : Vec2 ) Vec2 { return Vec2{ .x = self.x - other.x, .y = self.y - other.y }; }

@@ -9,11 +9,12 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 
 
-pub const e_ntt_shape = enum // FOR DEBUG RENDERING ONLY
+pub const e_ntt_shape = enum( u8 ) // FOR DEBUG RENDERING ONLY
 {
-  LINE, // Line ( from center to forward, scaled )
+  RLIN, // Radius Line ( from center to forward, scaled )
+  DLIN, // Diametre Line ( from backard to forward, scaled )
   RECT, // Square / Rectangle
-  STAR, // Triangle Star ( two overlaping triangles, pointing along the X axis )
+  HSTR, // Triangle Star ( two overlaping triangles, pointing along the X axis )
   DSTR, // Diamond Star  ( two overlaping diamong,   pointing along the X axis )
 
   TRIA, // Triangle ( equilateral, pointing towards +X ( right ))
@@ -28,7 +29,12 @@ pub const e_ntt_shape = enum // FOR DEBUG RENDERING ONLY
   {
     return switch( self )
     {
-      .LINE, .RECT, .STAR, .DSTR => 0,
+      .RECT => 0,
+      .HSTR => 6,
+      .DSTR => 8,
+
+      .RLIN => 1,
+      .DLIN => 2,
       .TRIA => 3,
       .DIAM => 4,
       .PENT => 5,
@@ -36,15 +42,6 @@ pub const e_ntt_shape = enum // FOR DEBUG RENDERING ONLY
       .OCTA => 8,
       .DODE => 12,
       .ELLI => 24,
-    };
-  }
-
-  pub fn isPoly( self : e_ntt_shape ) bool
-  {
-    return switch( self )
-    {
-      .LINE, .RECT, .STAR, .DSTR => false,
-      else                       => true,
     };
   }
 };
@@ -176,7 +173,7 @@ pub const Entity = struct
   }
   inline fn updateHitbox( self : *Entity ) void
   {
-    if( self.shape.isPoly() ){ self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getSides() ); }
+    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getSides() ); }
     else {                     self.hitbox = Box2.newRectAABB( self.pos.toVec2(), self.scale, self.pos.a                        ); }
   }
 

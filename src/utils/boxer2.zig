@@ -132,30 +132,43 @@ pub const Box2 = struct
 
   pub fn newPolyAABB( pos : Vec2, radii : Vec2, a : Angle, sides : u8 ) Box2
   {
-    if( sides < 3 )
+    if( sides < 1 )
     {
-      def.log( .ERROR, 0, @src(), "Cannot create polygon AABB with less than 3 sides ( got {d} )", .{ sides });
+      def.qlog( .ERROR, 0, @src(), "Cannot create polygon AABB with 0 sides");
       return newRectAABB( pos, radii, a );
     }
 
-
     const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
-
-    const rP0 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+    const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
 
     var maxX : f32 = rP0.x;
     var minX : f32 = rP0.x;
     var maxY : f32 = rP0.y;
     var minY : f32 = rP0.y;
 
-    for( 1..sides )| i |
-    {
-      const rVertex = rP0.rot( sideStepAngle.mulVal( @floatFromInt( i )));
 
-      if( rVertex.x > maxX ){ maxX = rVertex.x; }
-      if( rVertex.x < minX ){ minX = rVertex.x; }
-      if( rVertex.y > maxY ){ maxY = rVertex.y; }
-      if( rVertex.y < minY ){ minY = rVertex.y; }
+    if( sides > 2 ) // 1 == radius line, 2 == diametre line
+    {
+      const iterLimit = if( sides % 2 == 0 ) sides / 2 else sides; // no need to check for both opposite vertices
+
+      if( radii.x != radii.y ){ for( 1..iterLimit )| i | // NOTE : slower, but accounts for non isoscalar polygons
+      {
+        const rVertex = Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a );
+
+        if( rVertex.x > maxX ){ maxX = rVertex.x; }
+        if( rVertex.x < minX ){ minX = rVertex.x; }
+        if( rVertex.y > maxY ){ maxY = rVertex.y; }
+        if( rVertex.y < minY ){ minY = rVertex.y; }
+      }}
+      else { for( 1..iterLimit )| i | // NOTE : slightly faster, but requires isoscalar polygons
+      {
+        const rVertex = rP0.rot( sideStepAngle.mulVal( @floatFromInt( i )));
+
+        if( rVertex.x > maxX ){ maxX = rVertex.x; }
+        if( rVertex.x < minX ){ minX = rVertex.x; }
+        if( rVertex.y > maxY ){ maxY = rVertex.y; }
+        if( rVertex.y < minY ){ minY = rVertex.y; }
+      }}
     }
 
     const newWidth  = @max( @abs( maxX ), @abs( minX ));
@@ -165,8 +178,8 @@ pub const Box2 = struct
       .center = pos,
       .scale  = Vec2{ .x = newWidth, .y = newHeight },
     };
-
   }
+
 
   // ================ ACCESSORS & MUTATORS ================
 
