@@ -81,6 +81,7 @@ pub const Coords2 = struct
   pub inline fn toVecA( self : Coords2, r : f32 ) VecA { return VecA{ .x = @floatFromInt( self.x ), .y = @floatFromInt( self.y ), .z = r }; }
   pub inline fn toVec3( self : Coords2, z : f32 ) Vec3 { return Vec3{ .x = @floatFromInt( self.x ), .y = @floatFromInt( self.y ), .z = z }; }
 
+
   // ================ COMPARISONS ================
 
   pub inline fn isPosi(  self : Coords2 ) bool { return self.x >= 0 and self.y >= 0; }
@@ -91,6 +92,7 @@ pub const Coords2 = struct
   pub inline fn isDiff(  self : Coords2, other : Coords2 ) bool { return self.x != other.x or  self.y != other.y; }
   pub inline fn isInfXY( self : Coords2, other : Coords2 ) bool { return self.x <  other.x or  self.y <  other.y; }
   pub inline fn isSupXY( self : Coords2, other : Coords2 ) bool { return self.x >  other.x or  self.y >  other.y; }
+
 
   // ================ OPERATIONS ================
 
@@ -121,7 +123,9 @@ pub const Coords2 = struct
     };
   }
 
+
   // ================= CONVERSION ================
+
   pub fn getNeighbour( self : Coords2, direction : e_dir_2 ) Coords2
   {
     return switch( direction )
@@ -136,5 +140,22 @@ pub const Coords2 = struct
       .WE => Coords2{ .x = self.x - 1, .y = self.y     },
       .NW => Coords2{ .x = self.x - 1, .y = self.y - 1 },
     };
+  }
+
+
+  //  ================= MISC ================
+
+  pub fn getParityColour( self : Coords2 ) def.Colour
+  {
+    if( @mod( self.x, 2 ) == 1 )
+    {
+      if( @mod( self.y, 2 ) == 1 ){ return def.Colour.init( 224, 224, 224, 255 ); }
+      else {                 return def.Colour.init( 192, 192, 192, 255 ); }
+    }
+    else
+    {
+      if( @mod( self.y, 2 ) == 1 ){ return def.Colour.init( 160, 160, 160, 255 ); }
+      else {                 return def.Colour.init( 128, 128, 128, 255 ); }
+    }
   }
 };

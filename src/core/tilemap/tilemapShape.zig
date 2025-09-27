@@ -19,12 +19,12 @@ const IR3     = def.IR3;
 const HR2     = def.HR2;
 const HR3     = def.HR3;
 
-const MARGIN_FACTOR = 0.96; // Factor to scale down tiles, leaving a margin between them
+const MARGIN_FACTOR = 0.95; // Factor to scale down tiles, leaving a margin between them
 
 const RECT_FACTOR = 1.0; // 1x1 square              R = HR2
+const TRIA_FACTOR = def.getPolyCircum( 1.0, 3 );
 const DIAM_FACTOR = def.getPolyCircum( 1.0, 4 ); // R = 1.0
 const HEXA_FACTOR = def.getPolyCircum( 1.0, 6 );
-const TRIA_FACTOR = def.getPolyCircum( 1.0, 3 );
 //const PENT_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 5 );
 
 pub const e_tlmp_shape = enum( u8 )

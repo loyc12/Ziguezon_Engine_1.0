@@ -147,7 +147,7 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
   const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
   const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
 
-  if( sides < 3 ) // draw radius or diametre lines
+  if( sides < 3 ) // NOTE : only for radius or diametre lines
   {
     const rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
 

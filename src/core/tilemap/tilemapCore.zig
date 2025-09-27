@@ -248,7 +248,8 @@ pub const Tilemap = struct
 
       self.tileArray.items.ptr[ index ] = Tile{
         .tType      = tmp,
-        .colour     = tmp.getTileTypeColour(),
+        //.colour     = tmp.getTileTypeColour(),
+        .colour     = tileCoords.getParityColour(),
         .gridCoords = tileCoords,
       };
     }
