@@ -19,7 +19,7 @@ const IR3     = def.IR3;
 const HR2     = def.HR2;
 const HR3     = def.HR3;
 
-const MARGIN_FACTOR = 0.95; // Factor to scale down tiles, leaving a margin between them
+const MARGIN_FACTOR = 0.96; // Factor to scale down tiles, leaving a margin between them
 
 const RECT_FACTOR = 1.0; // 1x1 square              R = HR2
 const DIAM_FACTOR = def.getPolyCircum( 1.0, 4 ); // R = 1.0
@@ -399,12 +399,26 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
 
 pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the visuals better ( especially for DIAMS )
 {
+
   var viewableScale = tlmp.gridSize.toVec2();
       viewableScale = viewableScale.mul( tlmp.tileScale );
       viewableScale = viewableScale.mul( tlmp.tileShape.getGridScaleFactors());
 
-  if( tlmp.tileShape == .DIAM ){ viewableScale = viewableScale.mulVal( 2.0 ); }
-  if( tlmp.tileShape != .DIAM and tlmp.tileShape != .RECT ){ viewableScale = viewableScale.add( tlmp.tileScale.mulVal( 1.0 / 3.0 )); }
+  if( tlmp.tileShape == .DIAM ){ return Box2.newPolyAABB( tlmp.gridPos.toVec2(), viewableScale.mulVal( 2.0 ), tlmp.gridPos.a, 4 ); }
+
+  viewableScale = switch( tlmp.tileShape )
+  {
+    .HEX1 => .{ .x = viewableScale.x + tlmp.tileScale.x / 4.2, .y = viewableScale.y + tlmp.tileScale.y / 7.2 },
+    .HEX2 => .{ .x = viewableScale.x + tlmp.tileScale.x / 7.2, .y = viewableScale.y + tlmp.tileScale.y / 4.2 },
+
+    .TRI1 => .{ .x = viewableScale.x + tlmp.tileScale.x / 3.0, .y = viewableScale.y },
+    .TRI2 => .{ .x = viewableScale.x, .y = viewableScale.y + tlmp.tileScale.y / 3.0 },
+
+    // NOTE : handle poly grids when added
+
+    else => viewableScale,
+  };
+
 
   return( Box2.newRectAABB( tlmp.gridPos.toVec2(), viewableScale, tlmp.gridPos.a ));
 }
@@ -417,7 +431,7 @@ pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2 // NOTE :
   return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a ); // NOTE : approximation for the sake of performance
 
   //const angle = tlmp.gridPos.a;
-  //return switch( tlmp.tileShape )
+  //return switch( tlmp.tileShape ) // NOTE : slow af
   //{
   //  .RECT => return Box2.newRectAABB( absPos, radii, angle                                 ),
   //  .DIAM => return Box2.newPolyAABB( absPos, radii, angle,                              4 ),

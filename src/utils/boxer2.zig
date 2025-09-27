@@ -149,7 +149,7 @@ pub const Box2 = struct
 
     if( sides > 2 ) // 1 == radius line, 2 == diametre line
     {
-      const iterLimit = if( sides % 2 == 0 ) sides / 2 else sides; // no need to check for both opposite vertices
+      const iterLimit = if( sides % 2 == 0 ) sides / 2 else sides; // no need to check for each two opposite vertices
 
       if( radii.x != radii.y ){ for( 1..iterLimit )| i | // NOTE : slower, but accounts for non isoscalar polygons
       {
@@ -217,7 +217,7 @@ pub const Box2 = struct
 
   pub inline fn isOnX(     self : *const Box2, xVal  : f32  ) bool { if( self.isLeftOfX( xVal ) or self.isRightOfX( xVal )){ return false; } return true; }
   pub inline fn isOnY(     self : *const Box2, yVal  : f32  ) bool { if( self.isAboveY(  yVal ) or self.isBelowY(   yVal )){ return false; } return true; }
-  pub inline fn isOnPoint( self : *const Box2, p : Vec2 ) bool { if( !self.isOnX( p.x ) or !self.isOnY(  p.y )){ return false; } return true; }
+  pub inline fn isOnPoint( self : *const Box2, p     : Vec2 ) bool { if( !self.isOnX(    p.x  ) or !self.isOnY(     p.y  )){ return false; } return true; }
 
   pub fn isOnXRange( self : *const Box2, xMin : f32, xMax : f32 ) bool
   {

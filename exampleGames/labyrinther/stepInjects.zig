@@ -40,26 +40,23 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
-  if( ng.isPlaying() )
+  // Move the camera with the WASD or arrow keys
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
+
+  // Zoom in and out with the mouse wheel
+  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
+
+  // Reset the camera zoom and position when r is pressed
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
   {
-    // Move the camera with the WASD or arrow keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
-
-    // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
-
-    // Reset the camera zoom and position when r is pressed
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
-    {
-      ng.setCameraZoom(   1.0 );
-      ng.setCameraCenter( .{} );
-      ng.setCameraRot(    .{} );
-      def.qlog( .INFO, 0, @src(), "Camera reseted" );
-    }
+    ng.setCameraZoom(   1.0 );
+    ng.setCameraCenter( .{} );
+    ng.setCameraRot(    .{} );
+    def.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 
   var mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
