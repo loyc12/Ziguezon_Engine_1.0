@@ -3,8 +3,6 @@ const def    = @import( "defs" );
 const stdOut = @import( "./outputer.zig" ).demoStdout;
 
 const TimeVal = def.TimeVal;
-const Timer   = def.Timer;
-
 const getNow = def.getNow;
 
 // This file defines helper functions to conditionally print debug info based on the following enum's value
@@ -54,44 +52,39 @@ var       G_IsFileOpened : bool        = false;              // Flag to check if
 
 // ================================ LOG TIMERS ================================
 
-var GLOBAL_LOG_TIMER : def.Timer = .{};
-var TMP_LOG_TIMER    : def.Timer = .{ .flags = @intFromEnum( def.e_timer_flags.LOOP ) };
+var GLOBAL_LOG_EPOCH : def.TimeVal = .{};
+var TMP_LOG_EPOCH    : def.TimeVal = .{};
+var TMP_LOG_LAPS     : u32         =   0;
 
 // NOTE : Initialize the log timer before using it, otherwise it will not work
 pub fn initLogTimers() void
 {
-  const now = def.getNow();
-
-  GLOBAL_LOG_TIMER.setEpoch( now );
-  GLOBAL_LOG_TIMER.startSelf();
-
-  TMP_LOG_TIMER.setEpoch( now );
-  TMP_LOG_TIMER.startSelf();
+  const now = getNow();
+  GLOBAL_LOG_EPOCH = now;
+  TMP_LOG_EPOCH    = now;
 }
 
 // Returns the elapsed time since the global epoch
 pub fn getGlobalLogTime() TimeVal
 {
-  if( !GLOBAL_LOG_TIMER.hasEpoch() ){ return .{}; }
+  if( !GLOBAL_LOG_EPOCH.isSet() ){ return .{}; }
 
-  return GLOBAL_LOG_TIMER.getTimeSinceEpoch();
+  return GLOBAL_LOG_EPOCH.timeSince();
 }
 
+// Returns the time since the last call to resetTmpTimer()
 pub fn getTmpLogTime() TimeVal
 {
-  if( !TMP_LOG_TIMER.hasEpoch() ){ return .{}; }
+  if( !TMP_LOG_EPOCH.isSet() ){ return .{}; }
 
-  TMP_LOG_TIMER.forceLap();
-
-  return TMP_LOG_TIMER.getLapProgress();
+  return TMP_LOG_EPOCH.timeSince();
 }
 
 // Resets the temporary timer to the current time
 pub fn resetTmpTimer() void
 {
-  TMP_LOG_TIMER.resetSelf();
-  TMP_LOG_TIMER.setEpoch( def.getNow() );
-  TMP_LOG_TIMER.startSelf();
+  TMP_LOG_EPOCH = getNow();
+  TMP_LOG_LAPS += 1;
 }
 
 
@@ -327,19 +320,17 @@ pub fn logFrameLapTime( frameTime : f32 ) void
 // This is used to measure the time between two arbitrary points in the code
 pub fn logTmpTimer( callLocation : ?std.builtin.SourceLocation ) void
 {
-  if( !TMP_LOG_TIMER.hasEpoch() )
+  if( !TMP_LOG_EPOCH.isSet() )
   {
     log( .WARN, 0, @src(), "Temporary timer not initialized, call resetTmpTimer() first", .{} );
     return;
   }
 
-  const prog = getTmpLogTime();
-
+  const prog = TMP_LOG_EPOCH.timeSince();
   const sec  = prog.toSec();
   const nano = @mod( prog.value, TimeVal.nsPerSec() );
-  const laps = TMP_LOG_TIMER.lapCount();
 
-  if( callLocation )| loc |{ log( .INFO, 0, loc,    "& Temporary timer : {d}.{d:0>9} ( lap #{d} )", .{ sec, nano, laps }); }
-  else                     { log( .INFO, 0, @src(), "& Temporary timer : {d}.{d:0>9} ( lap #{d} )", .{ sec, nano, laps }); }
+  if( callLocation )| loc |{ log( .INFO, 0, loc,    "& Temporary timer : {d}.{d:0>9} ( lap #{d} )", .{ sec, nano, TMP_LOG_LAPS }); }
+  else                     { log( .INFO, 0, @src(), "& Temporary timer : {d}.{d:0>9} ( lap #{d} )", .{ sec, nano, TMP_LOG_LAPS }); }
 }
 

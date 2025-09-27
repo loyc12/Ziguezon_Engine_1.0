@@ -1,4 +1,3 @@
-
 ================ GAME DEV ROADMAP ================
 
 ======== TOOLING PROJECTS ========
@@ -50,6 +49,7 @@ Fire-Emblem / Advance Wars ( TBS )
 DOOM-like                  ( FPS )
 
 Terraria-like              ( Sandbox )
+Sunrider-like              ( TRPG )    Lost Endeavour
 
 
 
@@ -57,8 +57,6 @@ Terraria-like              ( Sandbox )
 
 UTILS ADDITIONS
  > on-screen performance logging util ( time taken by each step )
- > add way to log time relative to frame start
- > toPolyAABB method ( calculated them better for scaled & rotated polygons )
  > re-add a way to log to files ( one per level + a global one ? )
 
 ENTITIES
@@ -70,7 +68,7 @@ CUSTOM RENDER LAYERS
 
 TO REVIEW
  > gameHooks ( kinda messy rn )
- > engine flags ( like DRAW_HITBOXES or MIN_ZOOM ) ( add config file to gameHooks ? )
+ > turn GLOBAL_LOG_TIME into def variable, usable by engine
 
 INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
@@ -129,8 +127,6 @@ Various component systems with an associated manager :
  > animation system      ( TBA ) - to handle texture swaping
  > save and load system  ( TBA ) - to handle file interactions
  > input handler         ( TBA ) - abstract away from raylib's input system ???
-
-
 
 
 
