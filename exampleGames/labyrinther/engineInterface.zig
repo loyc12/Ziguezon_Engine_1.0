@@ -1,6 +1,23 @@
-// NOTE : You can leave any number of these undefined and the game will still compile
-//      : The engine will simply not call the corresponding hook function
-//      : The most common hooks to use are OnStart, OnOpen, and the Update/Tick/Render hooks
+
+// ================================ ENGINE SETTINGS ================================
+
+// Engine Debug Flags
+
+//pub const DebugDraw_Entity  = true;
+//pub const DebugDraw_Tilemap = true;
+//pub const DebugDraw_Tile    = true;
+
+// Engine Feature Flag
+
+  pub const AutoApply_Entity_Movement  = true;
+  pub const AutoApply_Entity_Collision = false;
+
+// Engine Global Startup Values
+
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Labyrinther";
+
+
+// ================================ GAME HOOKS ================================
 
 const gameState = @import( "stateInjects.zig" );
 

@@ -22,15 +22,20 @@ pub fn loopLogic( ng : *Engine ) void
 
   while( !def.ray.windowShouldClose() )
   {
-    def.log_u.logFrameLapTime( def.ray.getFrameTime() );
+    ng.updateSimTime();
 
+  //def.log_u.logLoopTime( ng.simDelta );
     def.tryHook( .OnLoopCycle, .{ ng });
 
+  //var loopTime = def.getNow();
     if( ng.isOpened() )
     {
-      updateInputs(   ng ); // Inputs and Global Flags
-      tickEntities(   ng ); // Logic and Physics
-      renderGraphics( ng ); // Visuals and UI
+      _ = tryUpdate( ng ); // Inputs and Global Flags
+      _ = tryTick(   ng ); // Logic and Physics
+      _ = tryRender( ng ); // Visuals and UI
+
+    //def.log_u.logDeltaTime( loopTime.timeSince(), @src(), "! Loop delta time" );
+    //loopTime = def.getNow();
     }
   }
   def.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
@@ -41,8 +46,26 @@ pub fn loopLogic( ng : *Engine ) void
 
 // ================ LOOP EVENTS ================
 
-pub fn updateInputs( ng : *Engine ) void
+inline fn tryUpdate( ng : *Engine ) bool
 {
+  // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
+  // TODO : see if we can split them ( or if that is useful to begin with )
+  if( ng.shouldRenderSim() )
+  {
+  //const tmpTime = def.getNow();
+
+  //def.ray.pollInputEvents(); // Resets and fills the input "buffer" with the latest inputs (???)
+    updateInputs( ng );
+
+  //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "@ Input delta time" );
+    return true;
+  }
+  return false;
+}
+
+fn updateInputs( ng : *Engine ) void
+{
+
   def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
 
   def.tryHook( .OnUpdateInputs, .{ ng });
@@ -61,21 +84,35 @@ pub fn updateInputs( ng : *Engine ) void
 }
 
 
-pub fn tickEntities( ng : *Engine ) void    // TODO : use tick rate instead of frame time
+// ======== TICKING ========
+
+inline fn tryTick( ng : *Engine ) bool
+{
+  if( ng.shouldTickSim() )
+  {
+    const tmpTime = def.getNow();
+
+    ng.tickOffset.value -= ng.targetTickTime.value;
+    tickEntities( ng );
+
+    def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick delta time" );
+    return true;
+  }
+  return false;
+}
+
+fn tickEntities( ng : *Engine ) void    // TODO : use tick rate instead of frame time
 {
   if( !ng.isPlaying() ){ return; }
 
-
   def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
-
-  ng.sdt = def.ray.getFrameTime() * ng.timeScale;
 
   if( ng.isEntityManagerInit() )
   {
     def.tryHook( .OnTickEntities, .{ ng });
 
-    ng.tickActiveEntities( ng.sdt );
-    //ng.collideActiveEntities( ng.sdt );
+    ng.tickActiveEntities();
+    //ng.collideActiveEntities();
     ng.deleteAllMarkedEntities();
 
   def.tryHook( .OffTickEntities, .{ ng });
@@ -84,7 +121,26 @@ pub fn tickEntities( ng : *Engine ) void    // TODO : use tick rate instead of f
 }
 
 
-pub fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture instead
+// ======== RENDERING ========
+
+inline fn tryRender( ng : *Engine ) bool
+{
+  if( ng.shouldRenderSim() )
+  {
+  //const tmpTime = def.getNow();
+
+    ng.frameOffset.value -= ng.targetFrameTime.value;
+    renderGraphics( ng );
+
+  //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "& Render delta time" );
+    def.log_u.logFrameTime( @src());
+
+    return true;
+  }
+  return false;
+}
+
+fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture instead
 {
   def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
 

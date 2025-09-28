@@ -13,7 +13,13 @@
 //pub const AutoApply_Entity_Movement  = true;
 //pub const AutoApply_Entity_Collision = true;
 
-// Engine Global Startup Values
+  // Engine Global Startup Values
+
+//pub const Startup_Target_TickRate  : u16 = 30,
+//pub const Startup_Target_FrameRate : u16 = 120,
+
+//pub const Startup_Window_Width     : u16 = 2048,
+//pub const Startup_Window_Height    : u16 = 1024,
 
 //pub const Startup_Window_TargetFps : u16 = 120;
 //pub const Startup_Window_Width     : u16 = 2048;

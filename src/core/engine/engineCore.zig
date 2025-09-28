@@ -1,11 +1,13 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Cam2D = def.Cam2D;
-const Box2  = def.Box2;
-const Vec2  = def.Vec2;
-const VecA  = def.VecA;
-const Angle = def.Angle;
+const Cam2D   = def.Cam2D;
+const Box2    = def.Box2;
+const Vec2    = def.Vec2;
+const VecA    = def.VecA;
+const Angle   = def.Angle;
+const TimeVal = def.TimeVal;
+
 
 // ================================ DEFINITIONS ================================
 
@@ -17,15 +19,24 @@ pub const e_ng_state = enum
   PLAYING, // The game is ticking and can be played
 };
 
+
 pub const Engine = struct
 {
   // Engine Variables
-  state     : e_ng_state = .OFF,
-  timeScale : f32        = 1.0, // Used to speed up or slow down the game
-  sdt       : f32        = 0.0, // Latest scaled delta time ( from last frame ) : == deltaTime * timeScale
-  Camera    : ?Cam2D     = null,
+  state    : e_ng_state = .OFF,
+  simTime  : TimeVal    = .{}, // Time since def.GLOBAL_EPOCH
+  simDelta : TimeVal    = .{}, // delta from latest simTime update
+
+  tickOffset  : TimeVal = .{}, // Time since last tick update
+  frameOffset : TimeVal = .{}, // Time since last frame update
+
+  targetTickTime  : TimeVal = .{}, // How far appart should each tick update be
+  targetFrameTime : TimeVal = .{}, // How far appart should each frame update be
+
+  simTimeScale : f32 = 1.0, // Used to speed up or slow down the game without changing the tickrate
 
   // Engine Components
+  Camera          : ?Cam2D                     = null,
   resourceManager : ?def.res_m.ResourceManager = null,
   entityManager   : ?def.ntt_m.EntityManager   = null,
   tilemapManager  : ?def.tlm_m.TilemapManager  = null,
@@ -37,6 +48,44 @@ pub const Engine = struct
   pub inline fn isOpened(  ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.OPENED  )); }
   pub inline fn isPlaying( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.PLAYING )); }
 
+  pub fn updateSimTime( self : *Engine ) void
+  {
+    def.qlog( .TRACE, 0, @src(), "Updating engine time trackers" );
+
+    if( !def.GLOBAL_EPOCH.isSet() )
+    {
+      def.qlog( .WARN, 0, @src(), "Global Epoch not set, aborting simTime update");
+      return;
+    }
+    const lastSimTime = self.simTime;
+    self.simTime      = def.GLOBAL_EPOCH.timeSince();
+    self.simDelta     = self.simTime.timeDiff( lastSimTime );
+
+    if( self.isPlaying() )
+    {
+      self.tickOffset.value  = self.tickOffset.value  + self.simDelta.value;
+    }
+    self.frameOffset.value = self.frameOffset.value + self.simDelta.value;
+
+  }
+
+  pub inline fn setTargetTickRate( self : *Engine, newTickRate : u16 ) void
+  {
+    def.log( .TRACE, 0, @src(), "Setting tick rate to to {}", .{ newTickRate });
+
+    self.targetTickTime  = TimeVal.fromTimeRate( @floatFromInt( def.G_ST.Startup_Target_TickRate ));
+  }
+
+  pub inline fn setTargetFrameRate( self : *Engine, newFrameRate : u16 ) void
+  {
+    def.log( .TRACE, 0, @src(), "Setting frame rate to to {}", .{ newFrameRate });
+
+    self.targetFrameTime = TimeVal.fromTimeRate( @floatFromInt( def.G_ST.Startup_Target_FrameRate ));
+  }
+
+  pub inline fn shouldTickSim(   self : *Engine ) bool { return ( self.tickOffset.value  >= self.targetTickTime.value  ); }
+  pub inline fn shouldRenderSim( self : *Engine ) bool { return ( self.frameOffset.value >= self.targetFrameTime.value ); }
+
   pub fn setTimeScale( self : *Engine, newTimeScale : f32 ) void
   {
     def.qlog( .TRACE, 0, @src(), "Setting time scale to {d}", .{ newTimeScale });
@@ -46,10 +95,12 @@ pub const Engine = struct
       self.timeScale = 0.0;
       return;
     }
-
     self.timeScale = newTimeScale;
     def.log( .DEBUG, 0, @src(), "Time scale set to {d}", .{ self.timeScale });
   }
+
+  pub inline fn getScaledTickDelta(  self : *Engine ) f32 { return self.simTimeScale * self.targetTickTime.toRayDeltaTime();  }
+  pub inline fn getScaledFrameDelta( self : *Engine ) f32 { return self.simTimeScale * self.targetFrameTime.toRayDeltaTime(); }
 
 
   // ================ CAMERA SHORTHAND FUNCTIONS ================
@@ -88,6 +139,7 @@ pub const Engine = struct
 
   pub inline fn isCameraInit( ng : *const Engine ) bool { if( ng.Camera != null ){    return true; } else { return false; }}
   pub inline fn getCamera(    ng : *Engine ) !*Cam2D    { if( ng.Camera != null )| *c |{ return c; } else { return error.NullManager; }}
+
 
   // ================================ ENGINE STATE FUNCTIONS ================================
 
@@ -150,9 +202,9 @@ pub const Engine = struct
     if( ng.entityManager )| *m |{ m.deleteAllMarkedEntities(); }
   }
 
-  pub inline fn tickActiveEntities( ng : *Engine, sdt : f32 ) void
+  pub inline fn tickActiveEntities( ng : *Engine ) void
   {
-    if( ng.entityManager )| *m |{ m.tickActiveEntities( sdt ); }
+    if( ng.entityManager )| *m |{ m.tickActiveEntities( ng.getScaledTickDelta() ); }
   }
   pub inline fn renderEntityHitboxes( ng : *Engine ) void
   {
@@ -179,9 +231,9 @@ pub const Engine = struct
     if( ng.tilemapManager )| *m |{ return m.loadTilemapFromParams( params, fillType ); } else { return null; }
   }
 
-//pub inline fn tickActiveTilemaps( ng : *Engine, sdt : f32 ) void
+//pub inline fn tickActiveTilemaps( ng : *Engine ) void
 //{
-//  if( ng.tilemapManager )| *m |{ m.tickActiveTilemaps( sdt ); }
+//  if( ng.tilemapManager )| *m |{ m.tickActiveTilemaps( ng.getScaledTickDelta() ); }
 //}
   pub inline fn renderTilemapHitboxes( ng : *Engine ) void
   {

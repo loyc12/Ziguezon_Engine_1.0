@@ -22,24 +22,53 @@ pub const TimeVal = struct
     return TimeVal{ .value = std.time.nanoTimestamp() };
   }
 
-  pub inline fn timeSince( since : *const TimeVal ) TimeVal
+  pub inline fn timeSince( since : TimeVal ) TimeVal
   {
     if( !since.isSet() )
     {
       def.qlog( .WARN, 0, @src(), "Tried to get time since on an uninitialized TimeVal" );
+      return .{};
     }
     return TimeVal{ .value = std.time.nanoTimestamp() - since.value };
   }
 
-  pub inline fn timeUntil( until : *const TimeVal ) TimeVal
+  pub inline fn timeUntil( until : TimeVal ) TimeVal
   {
     if( !until.isSet() )
     {
       def.qlog( .WARN, 0, @src(), "Tried to get time until on an uninitialized TimeVal" );
+      return .{};
     }
     return TimeVal{ .value = until.value - std.time.nanoTimestamp() };
   }
 
+  pub inline fn timeDiff( t1 : TimeVal, t2 : TimeVal ) TimeVal
+  {
+    if( !t1.isSet() or !t2.isSet() )
+    {
+      def.qlog( .WARN, 0, @src(), "Tried to get time diff with an uninitialized TimeVal" );
+      return .{};
+    }
+    return TimeVal.new( @abs( t1.value - t2.value ) );
+  }
+
+  pub inline fn fromRayDeltaTime( deltaTime : f32 ) TimeVal
+  {
+    return TimeVal.new( deltaTime * TimeVal.nsPerSec() );
+  }
+  pub inline fn toRayDeltaTime( deltaTime : TimeVal ) f32
+  {
+    return deltaTime.convTo( f32 ) / @as( f32, @floatFromInt( TimeVal.nsPerSec() ));
+  }
+
+  pub inline fn fromTimeRate( timeRate : f32 ) TimeVal
+  {
+    return TimeVal.new( @as( f32, @floatFromInt( TimeVal.nsPerSec() )) / timeRate );
+  }
+  pub inline fn toTimeRate( deltaTime : TimeVal ) f32
+  {
+    return @as( f32, @floatFromInt( TimeVal.nsPerSec() )) / deltaTime.convTo( f32 );
+  }
 
   // ======== CHECKERS ========
 
@@ -75,32 +104,44 @@ pub const TimeVal = struct
 
   // ======== TYPE CONVERSION ========
 
-  pub inline fn new( value : anytype ) !TimeVal
+  pub inline fn new( value : anytype ) TimeVal
   {
     switch( @typeInfo( @TypeOf( value )))
     {
       .int,   .comptime_int   => return TimeVal{ .value = @intCast( value )},
       .float, .comptime_float => return TimeVal{ .value = @as( i128, @intFromFloat( value ))},
-      else => return error.UnsupportedType,
+      else =>
+      {
+        def.log( .WARN, 0, @src(), "Tried to get TimeVal from unsuported type {}", @typeInfo( @TypeOf( value )));
+        return .{};
+      },
     }
   }
 
-  pub fn setTo( self : *TimeVal, newValue : anytype ) !void
+  pub fn setTo( self : *TimeVal, newValue : anytype ) void
   {
     switch( @typeInfo( @TypeOf( newValue )))
     {
       .int,   .comptime_int   => self.value = @intCast( newValue ),
       .float, .comptime_float => self.value = @as( i128, @intFromFloat( newValue )),
-      else => return error.UnsupportedType,
+      else =>
+      {
+        def.log( .WARN, 0, @src(), "Tried to set TimeVal via unsuported type {}", @typeInfo( @TypeOf( newValue )));
+        return .{};
+      },
     }
   }
-  pub fn convTo( self : *const TimeVal, comptime retType : type ) !retType
+  pub fn convTo( self : *const TimeVal, comptime retType : type ) retType
   {
     switch( @typeInfo( retType ))
     {
       .int,   .comptime_int   => return @intCast( self.value ),
       .float, .comptime_float => return @as( retType, @floatFromInt( self.value )),
-      else => return error.UnsupportedType,
+      else =>
+      {
+        def.log( .WARN, 0, @src(), "Tried to convert TimeVal to unsuported type {}", @typeInfo( retType ));
+        return .{};
+      },
     }
   }
 };

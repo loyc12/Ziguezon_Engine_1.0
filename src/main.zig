@@ -7,12 +7,18 @@ const ngi = @import( "engineInterface" );
 
 pub fn initCriticals() void
 {
+  def.GLOBAL_EPOCH = def.getNow();
+
   def.qlog( .INFO, 0, @src(), "# Initializing all subsystems..." );
 
   def.initAllUtils( def.alloc );
 
   def.loadHooks(    ngi );
   def.loadSettings( ngi );
+
+  def.G_NG.setTargetTickRate(  def.G_ST.Startup_Target_TickRate );
+  def.G_NG.setTargetFrameRate( def.G_ST.Startup_Target_FrameRate );
+  def.G_NG.updateSimTime();
 
   def.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
 }

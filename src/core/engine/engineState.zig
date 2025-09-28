@@ -180,9 +180,6 @@ pub fn open( ng : *Engine ) void
 
     if( !def.ray.isWindowReady() ) // TODO : move this to its own functions eventually ?
     {
-      def.ray.setTargetFPS(
-        @intCast( def.G_ST.Startup_Window_TargetFps )
-      );
       def.ray.initWindow(
         @intCast( def.G_ST.Startup_Window_Width  ),
         @intCast( def.G_ST.Startup_Window_Height ),

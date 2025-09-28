@@ -10,12 +10,15 @@ pub const alloc = std.heap.smp_allocator; // Global allocator instance
 
 // ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
 
+pub var GLOBAL_EPOCH : TimeVal = .{};
+
 pub fn initAllUtils( allocator : std.mem.Allocator ) void
 {
+  //GLOBAL_EPOCH = getNow();
+
   std.debug.print( "allocator.ptr    = {}\n", .{ allocator.ptr } );
   std.debug.print( "allocater.vtable = {}\n", .{ allocator.vtable } );
 
-  log_u.initLogTimers();
   log_u.initFile();
 
   rng_u.initGlobalRNG();
@@ -32,13 +35,14 @@ pub fn deinitAllUtils() void
 
 // ================================ INTERFACER HANDLERS ================================
 
+
 // ================ ENGINE SETTINGS ================
 // NOTE : Do not forget to call def.Settings( SpecificGameInterface ) in your main function
 
 const  ngs_h = @import( "core/interfacers/engineSettings.zig" );
 pub var G_ST : ngs_h.EngineSettings = .{}; // NOTE : Global engineSettings struct instance
 
-pub fn loadSettings( module : anytype ) void { G_ST.loadSettings( module ); }
+pub inline fn loadSettings( module : anytype ) void { G_ST.loadSettings( module ); }
 
 
 // ================ GAME HOOKS ================
@@ -47,8 +51,8 @@ pub fn loadSettings( module : anytype ) void { G_ST.loadSettings( module ); }
 const  ghk_h = @import( "core/interfacers/gameHooks.zig" );
 pub var G_HK : ghk_h.GameHooks = .{}; // NOTE : Global gameHooks struct instance
 
-pub fn loadHooks( module : anytype ) void                     { G_HK.loadHooks( module  ); }
-pub fn tryHook( tag : ghk_h.e_hook_tag, args : anytype ) void { G_HK.tryHook( tag, args ); }
+pub inline fn loadHooks( module : anytype ) void                     { G_HK.loadHooks( module  ); }
+pub inline fn tryHook( tag : ghk_h.e_hook_tag, args : anytype ) void { G_HK.tryHook( tag, args ); }
 
 
 // ================================ ENGINE SYSTEMS ================================
@@ -194,7 +198,7 @@ pub const log_u       = @import( "utils/logger.zig" );
 pub const log         = log_u.log;  // for argument-formatting logging
 pub const qlog        = log_u.qlog; // for quick logging ( no args )
 
-pub const setTmpTimer = log_u.setTmpTimer;
+pub const resetTmpTimer = log_u.resetTmpTimer;
 pub const logTmpTimer = log_u.logTmpTimer;
 
 
