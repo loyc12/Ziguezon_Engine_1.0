@@ -91,7 +91,7 @@ MISCELLANEOUS
 
 ================ ZIGUEZON ENGINE DESIGN DOCUMENTATION ================
 
-Ziguezon Engine aims at being a lightweight 2D, narrow purpose game engine for personal game dev projects
+Ziguezon Engine aims at being a lightweight isometric 2D, narrow purpose game engine for personal game dev projects
 
 It is build around having a limited lists of well defined features, and its design targets offering
 a variety of logic modules, which can then be assembled into more complex systems based on the desired final game
@@ -99,6 +99,8 @@ a variety of logic modules, which can then be assembled into more complex system
 This assembly is meant to be done via implementation of specific gameHooks functions ( see exampleGames folder ),
 inside a gameHooks.zig file, the path of which is specified at compile time for the engine's use
 
+
+Ziguezon will not aim to support any 3D, physics ( bare basic collision ), networking ( for now )
 
 ======== PRIMARY FEATURES ========
 

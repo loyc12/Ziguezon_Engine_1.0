@@ -273,7 +273,9 @@ pub const Vec3   = vec3_u.Vec3;
 
 // ================= RAYLIB SHORTHANDS ================
 
-pub const Colour = ray.Color;
+pub const Colour  = ray.Color;
+pub const Texture = ray.Texture2D;
+pub const RayRect = ray.Rectangle;
 
 pub fn newColour( r : u8, g : u8, b : u8, a : ?u8 ) Colour
 {
