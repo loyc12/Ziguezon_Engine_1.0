@@ -191,15 +191,25 @@ pub const drawTexture              = drw_u.drawTexture;
 pub const drawTextureCentered      = drw_u.drawTextureCentered;
 
 
+// ================ FLAGGER SHORTHANDS ================
+
+pub const flg_u = @import( "utils/flagger.zig" );
+
+pub const BitField8  = flg_u.BitField8;
+pub const BitField16 = flg_u.BitField16;
+pub const BitField32 = flg_u.BitField32;
+pub const BitField64 = flg_u.BitField64;
+
+
 // ================ LOGGER SHORTHANDS ================
 
-pub const log_u       = @import( "utils/logger.zig" );
+pub const log_u = @import( "utils/logger.zig" );
 
-pub const log         = log_u.log;  // for argument-formatting logging
-pub const qlog        = log_u.qlog; // for quick logging ( no args )
+pub const log   = log_u.log;  // for argument-formatting logging
+pub const qlog  = log_u.qlog; // for quick logging ( no args )
 
 pub const resetTmpTimer = log_u.resetTmpTimer;
-pub const logTmpTimer = log_u.logTmpTimer;
+pub const logTmpTimer   = log_u.logTmpTimer;
 
 
 // ================ MATHER SHORTHANDS ================

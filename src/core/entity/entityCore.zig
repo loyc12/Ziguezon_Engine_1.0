@@ -66,8 +66,8 @@ pub const e_ntt_flags = enum( u8 )
 pub const Entity = struct
 {
   // ================ PROPERTIES ================
-  id     : u32  = 0,
-  flags  : u8   = @intFromEnum( e_ntt_flags.DEFAULT ),
+  id     : u32           = 0,
+  flags  : def.BitField8 = def.BitField8.new( e_ntt_flags.DEFAULT ),
 
   // ======== TRANSFORM DATA ========
   pos    : VecA = .{}, // subsequent position. will be applied to hitbox on update
@@ -89,15 +89,13 @@ pub const Entity = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Entity, flag : e_ntt_flags ) bool { return ( self.flags & @intFromEnum( flag )) != 0; }
+  pub inline fn hasFlag( self : *const Entity, flag : e_ntt_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
-  pub inline fn setAllFlags( self : *Entity, flags : u8          ) void { self.flags  =  flags; }
-  pub inline fn addFlag(     self : *Entity, flag  : e_ntt_flags ) void { self.flags |=  @intFromEnum( flag ); }
-  pub inline fn delFlag(     self : *Entity, flag  : e_ntt_flags ) void { self.flags &= ~@intFromEnum( flag ); }
-  pub inline fn setFlag(     self : *Entity, flag  : e_ntt_flags, value : bool ) void
-  {
-    if( value ){ self.addFlag( flag ); } else { self.delFlag( flag ); }
-  }
+  pub inline fn setAllFlags( self : *Entity, flags : u8 )                      void { self.flags.bitField = flags; }
+  pub inline fn setFlag(     self : *Entity, flag  : e_ntt_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Entity, flag  : e_ntt_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Entity, flag  : e_ntt_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+
   pub inline fn canBeDel(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DELETE  ); }
   pub inline fn isActive(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ACTIVE  ); }
   pub inline fn isMobile(  self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.MOBILE  ); }
@@ -115,7 +113,7 @@ pub const Entity = struct
     if( params.canBeDel() ){ def.qlog( .WARN, 0, @src(), "Params should not be a deleted entity"); }
 
     const tmp = Entity{
-      .flags  = params.flags | @intFromEnum( e_ntt_flags.TO_CPY ),
+      .flags  = params.flags.filterField( @intFromEnum( e_ntt_flags.TO_CPY )),
       .pos    = params.pos,
       .vel    = params.vel,
       .acc    = params.acc,

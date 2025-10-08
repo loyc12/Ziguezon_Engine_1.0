@@ -38,8 +38,8 @@ pub const e_tlmp_flags = enum( u8 )
 pub const Tilemap = struct
 {
   // ================ PROPERTIES ================
-  id         : u32 = 0,
-  flags      : u8  = @intFromEnum( e_tlmp_flags.DEFAULT ),
+  id     : u32 = 0,
+  flags  : def.BitField8 = def.BitField8.new( e_tlmp_flags.DEFAULT ),
 
   // ======== GRID DATA ========
   gridPos    : VecA    = .{},
@@ -60,15 +60,12 @@ pub const Tilemap = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Tilemap, flag : e_tlmp_flags ) bool { return ( self.flags & @intFromEnum( flag )) != 0; }
+  pub inline fn hasFlag( self : *const Tilemap, flag : e_tlmp_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
-  pub inline fn setAllFlags( self : *Tilemap, flags : u8           ) void { self.flags  =  flags; }
-  pub inline fn addFlag(     self : *Tilemap, flag  : e_tlmp_flags ) void { self.flags |=  @intFromEnum( flag ); }
-  pub inline fn delFlag(     self : *Tilemap, flag  : e_tlmp_flags ) void { self.flags &= ~@intFromEnum( flag ); }
-  pub inline fn setFlag(     self : *Tilemap, flag  : e_tlmp_flags, value : bool ) void
-  {
-    if( value ){ self.addFlag( flag ); } else { self.delFlag( flag ); }
-  }
+  pub inline fn setAllFlags( self : *Tilemap, flags : u8 )                       void { self.flags.bitField = flags; }
+  pub inline fn setFlag(     self : *Tilemap, flag  : e_tlmp_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Tilemap, flag  : e_tlmp_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Tilemap, flag  : e_tlmp_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
 
   pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE  ); }
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT ); }
@@ -150,7 +147,7 @@ pub const Tilemap = struct
     if( params.isInit() ){ def.qlog( .WARN, 0, @src(), "Params shoul not be an initialized tilemap"); }
 
     var tmp      = Tilemap{
-      .flags     = params.flags | @intFromEnum( e_tlmp_flags.TO_CPY ),
+      .flags     = params.flags.filterField( @intFromEnum( e_tlmp_flags.TO_CPY )),
       .gridPos   = params.gridPos,
       .gridSize  = params.gridSize,
       .tileScale = params.tileScale,
