@@ -69,6 +69,7 @@ CUSTOM RENDER LAYERS
 TO REVIEW
  > gameHooks ( kinda messy rn )
  > turn GLOBAL_LOG_TIME into def variable, usable by engine
+ > check if using an uint & enum( uint ) union for bitField functions' bitFlag parameters might be preferable
 
 INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
