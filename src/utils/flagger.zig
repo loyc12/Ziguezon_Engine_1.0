@@ -47,6 +47,8 @@ fn filteredBitField( srcField : anytype, filter : anytype ) @TypeOf( srcField )
 }
 
 
+// TODO : check if using an uint & enum( uint ) union for bitflag parameters might be preferable
+
 // ================================ BITFIELD STRUCT DEFS ================================
 
 pub const BitField4 = struct

@@ -171,7 +171,7 @@ pub const e_timer_flags = enum( u8 )
 pub const Timer = struct
 {
   // All times are in nanoseconds
-  flags    : u8 = @intFromEnum( e_timer_flags.NONE ),
+  flags  : def.BitField8 = def.BitField8.new( e_timer_flags.NONE ),
 
   progress : TimeVal = .{}, // current progress ( where between 0 and duration )
   duration : TimeVal = .{}, // End time ( 0 means no duration )
@@ -182,15 +182,13 @@ pub const Timer = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Timer, flag : e_timer_flags ) bool { return ( self.flags & @intFromEnum( flag )) != 0; }
+  pub inline fn hasFlag( self : *const Timer, flag : e_timer_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
-  pub inline fn setAllFlags( self : *Timer, flags : u8            ) void { self.flags  =  flags; }
-  pub inline fn addFlag(     self : *Timer, flag  : e_timer_flags ) void { self.flags |=  @intFromEnum( flag ); }
-  pub inline fn delFlag(     self : *Timer, flag  : e_timer_flags ) void { self.flags &= ~@intFromEnum( flag ); }
-  pub inline fn setFlag(     self : *Timer, flag  : e_timer_flags, value : bool ) void
-  {
-    if( value ){ self.addFlag( flag ); } else { self.delFlag( flag ); }
-  }
+  pub inline fn setAllFlags( self : *Timer, flags : u8 )                        void { self.flags.bitField = flags; }
+  pub inline fn setFlag(     self : *Timer, flag  : e_timer_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Timer, flag  : e_timer_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Timer, flag  : e_timer_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+
   pub inline fn pause(       self : *Timer ) void { self.addFlag( e_timer_flags.PAUSED ); }
   pub inline fn play(        self : *Timer ) void { self.delFlag( e_timer_flags.PAUSED ); }
   pub inline fn togglePause( self : *Timer ) void
@@ -224,7 +222,7 @@ pub const Timer = struct
 
   pub fn copyTimerSettings( self : *Timer, params : Timer ) void
   {
-    self.flags    = params.flags | @intFromEnum( e_timer_flags.TO_CPY );
+    self.flags    = params.flags.filterField( e_timer_flags.TO_CPY );
 
     self.progress = .{};
     self.duration = params.duration;
@@ -236,7 +234,7 @@ pub const Timer = struct
   pub fn getDefaultTimer() Timer
   {
     return Timer{
-      .flags    = @intFromEnum( e_timer_flags.NONE ),
+      .flags    = def.BitField8.new( e_timer_flags.NONE ),
 
       .progress = .{},
       .duration = .{},

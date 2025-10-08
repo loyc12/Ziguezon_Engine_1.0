@@ -113,7 +113,7 @@ pub const Entity = struct
     if( params.canBeDel() ){ def.qlog( .WARN, 0, @src(), "Params should not be a deleted entity"); }
 
     const tmp = Entity{
-      .flags  = params.flags.filterField( @intFromEnum( e_ntt_flags.TO_CPY )),
+      .flags  = params.flags.filterField( e_ntt_flags.TO_CPY ),
       .pos    = params.pos,
       .vel    = params.vel,
       .acc    = params.acc,

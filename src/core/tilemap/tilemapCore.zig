@@ -147,7 +147,7 @@ pub const Tilemap = struct
     if( params.isInit() ){ def.qlog( .WARN, 0, @src(), "Params shoul not be an initialized tilemap"); }
 
     var tmp      = Tilemap{
-      .flags     = params.flags.filterField( @intFromEnum( e_tlmp_flags.TO_CPY )),
+      .flags     = params.flags.filterField( e_tlmp_flags.TO_CPY ),
       .gridPos   = params.gridPos,
       .gridSize  = params.gridSize,
       .tileScale = params.tileScale,
