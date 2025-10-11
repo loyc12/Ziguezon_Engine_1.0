@@ -115,3 +115,25 @@ pub const BitField16 = struct
 
   pub inline fn filterField( self : BitField16, filter : anytype ) BitField16 { return filteredBitField( self, filter ); }
 };
+
+
+pub const BitField32 = struct
+{
+  bitField : u32 = 0b00000000_00000000,
+
+  pub inline fn getIntType() type { return u32; }
+  pub inline fn indexToBitFlag( val : u5 ) u32 { return 1 << val ; }
+
+  pub inline fn new( bitField : anytype ) BitField32 { return newBitField( BitField32, bitField ); }
+
+  pub inline fn hasFlag( self : BitField32, bitFlag : u32 )  bool { return ( self.bitField & bitFlag ) != 0; }
+  pub inline fn setFlag( self : BitField32, bitFlag : u32, value : bool ) BitField32
+  {
+    if( value ){ return self.addFlag( bitFlag ); }
+    else {       return self.delFlag( bitFlag ); }
+  }
+  pub inline fn addFlag( self : BitField32, bitFlag : u32 ) BitField32 { return .{ .bitField = self.bitField |  bitFlag }; }
+  pub inline fn delFlag( self : BitField32, bitFlag : u32 ) BitField32 { return .{ .bitField = self.bitField & ~bitFlag }; }
+
+  pub inline fn filterField( self : BitField32, filter : anytype ) BitField32 { return filteredBitField( self, filter ); }
+};
