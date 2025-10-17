@@ -53,7 +53,7 @@ fn filteredBitField( srcField : anytype, filter : anytype ) @TypeOf( srcField )
 
 pub const BitField4 = struct
 {
-  bitField : u4 = 0b00000000,
+  bitField : u4 = 0b0000,
 
   pub inline fn getIntType() type { return u4; }
   pub inline fn indexToBitFlag( val : u2 ) u4 { return 1 << val ; }
@@ -119,7 +119,7 @@ pub const BitField16 = struct
 
 pub const BitField32 = struct
 {
-  bitField : u32 = 0b00000000_00000000,
+  bitField : u32 = 0b00000000_00000000_00000000_00000000,
 
   pub inline fn getIntType() type { return u32; }
   pub inline fn indexToBitFlag( val : u5 ) u32 { return 1 << val ; }

@@ -24,15 +24,9 @@ Space Invader     ( Sky Tyrants  ) - X ( overlaps with Flappy Bird and Asteroid 
 
 ======== STARTER PROJECTS ========
 
-Platformer                 ( RPG ) Dazelia
-
+Platformer                 ( RPG ) Dazel
 Tower Defense              ( RTS )
-Factorio-Simcity           ( RTS ) Factority
-
-Hex Empire                 ( TBS )
-Card Game                  ( TBS )
-
-Cubehead                   ( FPS ) Squarehead
+Hex Empire Clone           ( TBS )
 
 
 ======== MEDIUM PROJECTS ========
@@ -41,12 +35,15 @@ Apo Surviver               ( RPG ) Hydrowar
 Asteroid miner             ( RPG ) Orbiter
 
 City Builder               ( RTS )
-Colony Sim game            ( RTS )
+Polity Sim game            ( RTS )
+Factorio-Simcity           ( RTS ) Factority
 
 Civ-in-space               ( TBS )
 Fire-Emblem / Advance Wars ( TBS )
+Card Game                  ( TBS )
 
 DOOM-like                  ( FPS )
+Cubehead                   ( FPS ) Squarehead
 
 Terraria-like              ( Sandbox )
 Sunrider-like              ( TRPG )    Lost Endeavour
