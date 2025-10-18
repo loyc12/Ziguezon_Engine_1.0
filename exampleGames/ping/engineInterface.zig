@@ -1,3 +1,5 @@
+const std = @import( "std" );
+const def = @import( "defs" );
 
 // ================================ ENGINE SETTINGS ================================
 
@@ -15,6 +17,7 @@
 // Engine Global Startup Values
 
   pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Ping";
+  pub const Startup_Bckgrd_Colour    : def.Colour = def.Colour.black;
 
 
 // ================================ GAME HOOKS ================================
@@ -26,10 +29,9 @@ const gameState = @import( "stateInjects.zig" );
 
 const gameStep = @import( "stepInjects.zig" );
 
-  pub const OnUpdateInputs  = gameStep.OnUpdateInputs;
+  pub const OnUpdateInputs     = gameStep.OnUpdateInputs;
 
-  pub const OnTickEntities  = gameStep.OnTickEntities;
-  pub const OffTickEntities = gameStep.OffTickEntities;
+  pub const OnTickEntities     = gameStep.OnTickEntities;
+  pub const OffTickEntities    = gameStep.OffTickEntities;
 
-  pub const OnRenderBackground = gameStep.OnRenderBackground;
   pub const OnRenderOverlay    = gameStep.OnRenderOverlay;

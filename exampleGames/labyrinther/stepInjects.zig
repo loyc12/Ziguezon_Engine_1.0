@@ -158,14 +158,6 @@ pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities
 }
 
 
-// NOTE : This is where you should render all background effects ( sky, etc. )
-pub fn OnRenderBackground( ng : *def.Engine ) void // Called by engine.renderGraphics()
-{
-  _ = ng; // Prevent unused variable warning
-
-  def.ray.clearBackground( def.Colour.black ); // Clear the screen with a black color
-}
-
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {

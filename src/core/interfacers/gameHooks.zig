@@ -35,7 +35,6 @@ pub const e_hook_tag = enum( u8 )
   // Rendering Hooks
 
   OnRenderBackground  = 30, // Called to render the background ( at the start )
-//OffRenderBackground = 31, // Called to render the background ( at the end
 
   OnRenderWorld     = 32, // Called to render the world ( at the start )
   OffRenderWorld    = 33, // Called to render the world ( at the end  )
@@ -78,7 +77,6 @@ pub const GameHooks = struct
   // Rendering Hooks
 
   OnRenderBackground  : ?*const fn ( *def.Engine ) void = null,
-//OffRenderBackground : ?*const fn ( *def.Engine ) void = null
 
   OnRenderWorld       : ?*const fn ( *def.Engine ) void = null,
   OffRenderWorld      : ?*const fn ( *def.Engine ) void = null,
@@ -122,7 +120,6 @@ pub const GameHooks = struct
 
     // Rendering Hooks
     if( @hasDecl( module, "OnRenderBackground"  )) self.OnRenderBackground  = @field( module, "OnRenderBackground"  );
-  //if( @hasDecl( module, "OffRenderBackground" )) self.OffRenderBackground = @field( module, "OffRenderBackground" );
 
     if( @hasDecl( module, "OnRenderWorld"    )) self.OnRenderWorld    = @field( module, "OnRenderWorld"  );
     if( @hasDecl( module, "OffRenderWorld"   )) self.OffRenderWorld   = @field( module, "OffRenderWorld" );
@@ -184,7 +181,6 @@ pub const GameHooks = struct
 
       // Rendering Hooks
       .OnRenderBackground  => self.OnRenderBackground,
-    //.OffRenderBackground => self.OffRenderBackground,
 
       .OnRenderWorld  => self.OnRenderWorld,
       .OffRenderWorld => self.OffRenderWorld,

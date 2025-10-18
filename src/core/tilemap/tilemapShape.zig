@@ -41,20 +41,28 @@ pub const e_tlmp_shape = enum( u8 )
 //PEN1, // ( upright ) // TODO : implement me
 //PEN2, // ( sideway ) // TODO : implement me
 
-  pub fn getTileScaleFactor( self : e_tlmp_shape ) f32
+  pub inline fn getSideCount( self : e_tlmp_shape ) u8
   {
     return switch( self )
     {
-      .RECT => RECT_FACTOR,
-      .DIAM => DIAM_FACTOR,
-      .HEX1 => HEXA_FACTOR,
-      .HEX2 => HEXA_FACTOR,
-      .TRI1 => TRIA_FACTOR,
-      .TRI2 => TRIA_FACTOR,
+      .RECT, .DIAM => 4,
+      .HEX1, .HEX2 => 6,
+      .TRI1, .TRI2 => 3,
     };
   }
 
-  pub fn getGridScaleFactors( self : e_tlmp_shape ) Vec2
+  pub inline fn getTileScaleFactor( self : e_tlmp_shape ) f32
+  {
+    return switch( self )
+    {
+      .RECT        => RECT_FACTOR,
+      .DIAM        => DIAM_FACTOR,
+      .HEX1, .HEX2 => HEXA_FACTOR,
+      .TRI1, .TRI2 => TRIA_FACTOR,
+    };
+  }
+
+  pub inline fn getGridScaleFactors( self : e_tlmp_shape ) Vec2
   {
     const tmp = switch( self )
     {
@@ -414,8 +422,6 @@ pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the
     .TRI1 => .{ .x = viewableScale.x + tlmp.tileScale.x / 3.0, .y = viewableScale.y },
     .TRI2 => .{ .x = viewableScale.x, .y = viewableScale.y + tlmp.tileScale.y / 3.0 },
 
-    // NOTE : handle poly grids when added
-
     else => viewableScale,
   };
 
@@ -437,8 +443,8 @@ pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2 // NOTE :
   //  .DIAM => return Box2.newPolyAABB( absPos, radii, angle,                              4 ),
   //  .HEX1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg( 90 ),                 6 ),
   //  .HEX2 => return Box2.newPolyAABB( absPos, radii, angle,                              6 ),
-  //  .TRI1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg(  1.0 * 90.0 ),        6 ), // TODO : handle triangle orientation
-  //  .TRI2 => return Box2.newPolyAABB( absPos, radii, angle.subDeg(( 1.0 * 90.0 ) - 90 ), 6 ), // TODO : handle triangle orientation
+  //  .TRI1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg(  1.0 * 90.0 ),        3 ), // TODO : handle triangle orientation
+  //  .TRI2 => return Box2.newPolyAABB( absPos, radii, angle.subDeg(( 1.0 * 90.0 ) - 90 ), 3 ), // TODO : handle triangle orientation
   //};
 }
 

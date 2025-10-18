@@ -1,3 +1,5 @@
+const std = @import( "std" );
+const def = @import( "defs" );
 
 // ================================ ENGINE SETTINGS ================================
 
@@ -41,9 +43,6 @@ const gameStep  = @import( "stepInjects.zig" );
 
   pub const OnTickEntities  = gameStep.OnTickEntities;
 //pub const OffTickEntities = gameStep.OffTickEntities;         // NOTE : Useless for now ( equivalent to OnTickEntities )
-
-  pub const OnRenderBackground  = gameStep.OnRenderBackground;
-//pub const OffRenderBackground = gameStep.OffRenderBackground; // NOTE : Useless for now ( equivalent to OnRenderBackground )
 
   pub const OnRenderWorld  = gameStep.OnRenderWorld;
   pub const OffRenderWorld = gameStep.OffRenderWorld;

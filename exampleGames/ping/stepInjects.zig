@@ -391,12 +391,6 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
 
 }
 
-pub fn OnRenderBackground( ng : *Engine ) void // Called by engine.renderGraphics()
-{
-  _ = ng; // Prevent unused variable warning
-
-  def.ray.clearBackground( def.Colour.black );
-}
 
 pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
 {

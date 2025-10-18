@@ -1,3 +1,6 @@
+const std = @import( "std" );
+const def = @import( "defs" );
+
 // ================================ ENGINE SETTINGS ================================
 
 // Engine Debug Flags
@@ -15,6 +18,9 @@
 
   pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Floppy Disk";
 
+// General Graphic Values
+
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.green;
 
 // ================================ GAME HOOKS ================================
 
@@ -29,5 +35,4 @@ const gameStep = @import( "stepInjects.zig" );
   pub const OnTickEntities   = gameStep.OnTickEntities;
   pub const OffTickEntities  = gameStep.OffTickEntities;
 
-  pub const OnRenderBackground = gameStep.OnRenderBackground;
   pub const OnRenderOverlay    = gameStep.OnRenderOverlay;

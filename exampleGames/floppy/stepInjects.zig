@@ -109,12 +109,6 @@ pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities
   // ================ DISK-PILLAR COLLISIONS ================
 }
 
-pub fn OnRenderBackground( ng : *def.Engine ) void // Called by engine.renderGraphics()
-{
-  _ = ng; // Prevent unused variable warning
-
-  def.ray.clearBackground( def.Colour.green );
-}
 
 pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {
