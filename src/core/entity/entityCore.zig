@@ -9,13 +9,16 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 
 
-pub const e_ntt_shape = enum( u8 ) // FOR DEBUG RENDERING ONLY
+pub const e_ntt_shape = enum( u8 ) // TODO : move to utils
 {
-  RLIN, // Radius Line ( from center to forward, scaled )
-  DLIN, // Diametre Line ( from backard to forward, scaled )
+
   RECT, // Square / Rectangle
+
   HSTR, // Triangle Star ( two overlaping triangles, pointing along the X axis )
   DSTR, // Diamond Star  ( two overlaping diamong,   pointing along the X axis )
+
+  RLIN, // Radius Line ( from center to forward, scaled )
+  DLIN, // Diametre Line ( from backard to forward, scaled )
 
   TRIA, // Triangle ( equilateral, pointing towards +X ( right ))
   DIAM, // Square / Diamond ( rhombus )
@@ -29,12 +32,14 @@ pub const e_ntt_shape = enum( u8 ) // FOR DEBUG RENDERING ONLY
   {
     return switch( self )
     {
-      .RECT => 0,
+      .RECT => 4, // NOTE : do not render as Polygon, as it will show a diamond instead of a rectangle
+
       .HSTR => 6,
       .DSTR => 8,
 
       .RLIN => 1,
       .DLIN => 2,
+
       .TRIA => 3,
       .DIAM => 4,
       .PENT => 5,

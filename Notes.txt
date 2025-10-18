@@ -52,6 +52,12 @@ Sunrider-like              ( TRPG )    Lost Endeavour
 
 ================ ENGINE FEATURES TODO-LIST ================
 
+TO REVIEW
+ > gameHooks ( kinda messy rn )
+ > turn GLOBAL_LOG_TIME into def variable, usable by engine
+ > check if using an uint & enum( uint ) union for bitField functions' bitFlag parameters might be preferable
+ > move entity shapes to Utils
+
 UTILS ADDITIONS
  > on-screen performance logging util ( time taken by each step )
  > re-add a way to log to files ( one per level + a global one ? )
@@ -62,11 +68,6 @@ ENTITIES
 CUSTOM RENDER LAYERS
  > RENDER QUEUE ( sort elements based on layer )
  > UI interaction priority based on layer
-
-TO REVIEW
- > gameHooks ( kinda messy rn )
- > turn GLOBAL_LOG_TIME into def variable, usable by engine
- > check if using an uint & enum( uint ) union for bitField functions' bitFlag parameters might be preferable
 
 INPUT MANAGER ( FULL EVENT SYTEM ? )
  > OnKey
@@ -111,8 +112,8 @@ Various utils, which serves specific purposes ( see utils folder and defs.zig ),
  > float Vectors         ( Vecter_.zig )
  > int Vectors           ( Coorder_.zig )
  > simple AABB structs   ( Boxer_.zig )
- > abstracted drawcalls  ( drawer.zig )
- > abstracted camera     ( camer.zig )
+ > abstract drawcalls    ( drawer.zig )
+ > abstract camera       ( camer.zig )
  > rng wrapper           ( rng.zig )
  > ...
 
