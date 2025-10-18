@@ -114,7 +114,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
       };
 
       // Change the color of the clicked tile
-      clickedTile.colour = def.Colour.gray; //def.G_RNG.getColour();
+      clickedTile.colour = def.G_RNG.getColour();
 
       // Change the color of all neighbouring tiles to their direction color
       const dirArray = [_]def.e_dir_2{ .NO, .NE, .EA, .SE, .SO, .SW, .WE, .NW };

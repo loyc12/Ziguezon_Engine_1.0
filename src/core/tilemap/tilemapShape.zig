@@ -205,8 +205,8 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
     .HEX1 =>
     {
-      const descaledX  = ( baseX / ( HEXA_FACTOR * R3  )) + centerOffsetX ;
-      const rawGridY   = ( baseY / ( HEXA_FACTOR * 1.5 )) + centerOffsetY ;
+      const descaledX  = ( baseX / ( HEXA_FACTOR * R3  )) + centerOffsetX;
+      const rawGridY   = ( baseY / ( HEXA_FACTOR * 1.5 )) + centerOffsetY;
 
       const gridYFract = rawGridY - @floor( rawGridY );
 
@@ -218,7 +218,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
         const offset = e_tlmp_shape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridY )));
 
-        const gridX = @round( descaledX + offset.x ) ;
+        const gridX = @round( descaledX + offset.x );
 
         coords = Coords2{
           .x = @intFromFloat( gridX ),
@@ -260,10 +260,11 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       if ( !tlmp.isCoordsValid( coords )){ return null; }
       return coords;
     },
+
     .HEX2 =>
     {
-      const descaledY = ( baseY / ( HEXA_FACTOR * R3  )) + centerOffsetY ;
-      const rawGridX  = ( baseX / ( HEXA_FACTOR * 1.5 )) + centerOffsetX ;
+      const descaledY = ( baseY / ( HEXA_FACTOR * R3  )) + centerOffsetY;
+      const rawGridX  = ( baseX / ( HEXA_FACTOR * 1.5 )) + centerOffsetX;
 
       const gridXFract = rawGridX - @floor( rawGridX );
 
@@ -275,7 +276,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
         const offset = e_tlmp_shape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridX ), 0.0 ));
 
-        const gridY = @round( descaledY + offset.y) ;
+        const gridY = @round( descaledY + offset.y);
 
         coords = Coords2{
           .x = @intFromFloat( gridX ),
@@ -315,6 +316,41 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       }
 
       if ( !tlmp.isCoordsValid( coords )){ return null; }
+      return coords;
+    },
+
+    .TRI1 =>
+    {
+      const rawGridX = ( baseX / ( TRIA_FACTOR * HR3 )) + centerOffsetX;
+      const rawGridY = ( baseY / ( TRIA_FACTOR * 1.5 )) + centerOffsetY;
+
+      var coords : Coords2 = undefined;
+
+      var   gridX = @floor( rawGridX );
+      const gridY = @round( rawGridY );
+
+      // NOTE : false == up, true == down;
+      const pointsDown : bool = @mod( gridY, 2 ) + @mod( gridX, 2 ) == 1;
+
+      const fracX = rawGridX - gridX;
+      const fracY = rawGridY - gridY + 0.5; // + 0.5 somehow works ???
+
+      const outOfTri : bool = switch( pointsDown )
+      {
+        false => fracX - fracY > 0.0,
+        true  => fracX + fracY > 1.0,
+      };
+
+      if( outOfTri )
+      {
+        gridX += 1;
+      }
+
+      coords = Coords2{
+        .x = @intFromFloat( gridX ),
+        .y = @intFromFloat( gridY ),
+      };
+
       return coords;
     },
 

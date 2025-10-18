@@ -370,7 +370,7 @@ pub const Tilemap = struct
 
     return tlmpShape.getCoordsFromAbsPos( self, p ) orelse
     {
-      def.log( .DEBUG, 0, @src(), "Failed to get tile coordinates in tilemap {d} from p {d}:{d}", .{ p.x, p.y, self.id });
+      def.log( .DEBUG, 0, @src(), "Failed to get tile coordinates in tilemap {d} at {d}:{d}", .{ self.id, p.x, p.y });
       return null;
     };
   }
