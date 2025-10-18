@@ -48,10 +48,9 @@ pub fn loopLogic( ng : *Engine ) void
 
 inline fn tryUpdate( ng : *Engine ) bool
 {
-  // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
-  // TODO : see if we can split them ( or if that is useful to begin with )
-  if( ng.shouldRenderSim() )
-  {
+
+  if( ng.shouldRenderSim() ) // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
+  {                          // TODO : see if we can split them ( if that is even useful to begin with )
   //const tmpTime = def.getNow();
 
   //def.ray.pollInputEvents(); // Resets and fills the input "buffer" with the latest inputs (???)

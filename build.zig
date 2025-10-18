@@ -20,11 +20,11 @@ pub fn build( b: *std.Build ) void
   const tmp_engine_interface_path = b.option(
     []const u8,
     "engine_interface_path",
-    "Path to the engineInterface implementations (e.g., exampleGames/ping/engineInterface.zig)"
+    "Path to a game's engineInterface implementations (e.g., exampleGames/gameFolder/engineInterface.zig)"
   );
 
   // This sets the default path for the engine interface module to the template
-  const engine_interface_path = if( tmp_engine_interface_path )| path | path else "exampleGames/_template/engineInterface.zig";
+  const engine_interface_path = if( tmp_engine_interface_path )| path | path else "exampleGames/debug/engineInterface.zig";
 
 
   // ================================ EXECUTABLE ================================
@@ -106,7 +106,7 @@ pub fn build( b: *std.Build ) void
   run_cmd.step.dependOn( b.getInstallStep() );
   if( b.args )| args |{ run_cmd.addArgs( args ); }
 
-  const run_step = b.step( "run", "Run the template project" );
+  const run_step = b.step( "run", "Run the debug environment" );
   run_step.dependOn( &run_cmd.step );
 
   // This creates a step for the ping game

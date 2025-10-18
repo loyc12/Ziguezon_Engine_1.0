@@ -4,6 +4,7 @@ const def = @import( "defs" );
 // ================================ ENGINE SETTINGS ================================
 // NOTE : All engine settings have a default value - see engineSettingHandler.zig for more info on those
 
+
 // Debug Flags
 
   pub const DebugDraw_Entity  = true;
@@ -13,31 +14,31 @@ const def = @import( "defs" );
 
 // Feature Flag
 
-//AutoApply_Entity_Movement  : bool = true,
-//AutoApply_Entity_Collision : bool = true,
+//pub const AutoApply_Entity_Movement  : bool = true,
+//pub const AutoApply_Entity_Collision : bool = true,
 
 
 // Window Startup Values
 
-//Startup_Target_TickRate  : u16 = 60,
-//Startup_Target_FrameRate : u16 = 120,
+//pub const Startup_Target_TickRate  : u16 = 60,
+//pub const Startup_Target_FrameRate : u16 = 120,
 
-//Startup_Window_Width     : u16 = 2048,
-//Startup_Window_Height    : u16 = 1024,
+//pub const Startup_Window_Width     : u16 = 2048,
+//pub const Startup_Window_Height    : u16 = 1024,
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Template Tests";
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Empty Template";
 
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.dark_gray;
-
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.blue;
 
 
 // ================================ GAME HOOKS ================================
 // NOTE : You can leave any number of these undefined and the game will still compile
 //      : The engine will simply not call the corresponding hook function
 //      : The most common hooks to use are OnStart, OnOpen, and the Update/Tick/Render hooks
+
 
 const gameState = @import( "stateInjects.zig" );
 
