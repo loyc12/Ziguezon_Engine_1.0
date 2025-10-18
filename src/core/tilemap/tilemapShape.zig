@@ -324,16 +324,13 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       const rawGridX = ( baseX / ( TRIA_FACTOR * HR3 )) + centerOffsetX;
       const rawGridY = ( baseY / ( TRIA_FACTOR * 1.5 )) + centerOffsetY;
 
-      var coords : Coords2 = undefined;
-
       var   gridX = @floor( rawGridX );
       const gridY = @round( rawGridY );
 
-      // NOTE : false == up, true == down;
-      const pointsDown : bool = @mod( gridY, 2 ) + @mod( gridX, 2 ) == 1;
+      const pointsDown = ( @mod( gridY, 2 ) + @mod( gridX, 2 ) == 1 );
 
       const fracX = rawGridX - gridX;
-      const fracY = rawGridY - gridY + 0.5; // + 0.5 somehow works ???
+      const fracY = rawGridY - gridY + 0.5; // + 0.5 to offset the origin of the line ( 0.0 : 0.5 )
 
       const outOfTri : bool = switch( pointsDown )
       {
@@ -341,22 +338,36 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         true  => fracX + fracY > 1.0,
       };
 
-      if( outOfTri )
-      {
-        gridX += 1;
-      }
+      if( outOfTri ) { gridX += 1; }
 
-      coords = Coords2{
-        .x = @intFromFloat( gridX ),
-        .y = @intFromFloat( gridY ),
-      };
-
-      return coords;
+      return .{ .x = @intFromFloat( gridX ), .y = @intFromFloat( gridY )};
     },
 
-    // TODO : implement TRI1 and TRI2
+    .TRI2 =>
+    {
+      const rawGridY = ( baseY / ( TRIA_FACTOR * HR3 )) + centerOffsetX;
+      const rawGridX = ( baseX / ( TRIA_FACTOR * 1.5 )) + centerOffsetY;
 
-    else => def.log( .WARN, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
+      var   gridY = @floor( rawGridY );
+      const gridX = @round( rawGridX );
+
+      const pointsRight = ( @mod( gridY, 2 ) + @mod( gridX, 2 ) == 1 );
+
+      const fracY = rawGridY - gridY;
+      const fracX = rawGridX - gridX + 0.5; // + 0.5 to offset the origin of the line ( 0.5 : 0.0 )
+
+      const outOfTri : bool = switch( pointsRight )
+      {
+        false => fracY - fracX > 0.0,
+        true  => fracY + fracX > 1.0,
+      };
+
+      if( outOfTri ) { gridY += 1; }
+
+      return .{ .x = @intFromFloat( gridX ), .y = @intFromFloat( gridY )};
+    },
+
+    //else => def.log( .WARN, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
   }
 
   return null;
@@ -366,8 +377,12 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
 pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, direction : def.e_dir_2 ) ?Coords2
 {
-  const yParity = ( 1 == @mod( gridCoords.y, 2 ));
-  const xParity = ( 1 == @mod( gridCoords.x, 2 ));
+  const xMod2 = @mod( gridCoords.x, 2 );
+  const yMod2 = @mod( gridCoords.y, 2 );
+
+  const xParity  = ( xMod2 == 1 );
+  const yParity  = ( yMod2 == 1 );
+  const xyParity = ( xMod2 + yMod2 == 1 ); // specifies which direction a triangle points towards
 
   const coords = switch( tlmp.tileShape )
   {
@@ -397,8 +412,7 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
 
     .HEX1 => switch( direction )
     {
-      .NO => null,
-      .SO => null,
+      .NO, .SO => null,
 
       .WE => gridCoords.add( Coords2.new( -1,  0 )),
       .EA => gridCoords.add( Coords2.new(  1,  0 )),
@@ -412,8 +426,7 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
 
     .HEX2 => switch( direction )
     {
-      .WE => null,
-      .EA => null,
+      .WE, .EA => null,
 
       .NO => gridCoords.add( Coords2.new(  0, -1 )),
       .SO => gridCoords.add( Coords2.new(  0,  1 )),
@@ -425,9 +438,45 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
       .SE => if( xParity ) gridCoords.add( Coords2.new(  1,  0 )) else gridCoords.add( Coords2.new(  1,  1 )),
     },
 
-    // TODO ! : implement TRI1 and TRI2
+    .TRI1 => switch( xyParity ) // NOTE : could add true diagonals as neighbours
+    {
+      false => switch( direction ) // points up
+      {
+        .NO, .EA, .SE, .SW, .WE => null,
 
-    else => null, // TODO : implement PEN1 and 2
+        .NE => gridCoords.add( Coords2.new(  1,  0 )),
+        .SO => gridCoords.add( Coords2.new(  0,  1 )),
+        .NW => gridCoords.add( Coords2.new( -1,  0 )),
+      },
+      true => switch( direction ) // points down
+      {
+        .NE, .EA, .SO, .WE, .NW => null,
+
+        .SE => gridCoords.add( Coords2.new(  1,  0 )),
+        .NO => gridCoords.add( Coords2.new(  0, -1 )),
+        .SW => gridCoords.add( Coords2.new( -1,  0 )),
+      },
+    },
+
+    .TRI2 => switch( xyParity ) // NOTE : could add true diagonals as neighbours
+    {
+      false => switch( direction ) // points left
+      {
+        .NO, .NE, .SE, .SO, .WE => null,
+
+        .SW => gridCoords.add( Coords2.new(  0,  1 )),
+        .EA => gridCoords.add( Coords2.new(  1,  0 )),
+        .NW => gridCoords.add( Coords2.new(  0, -1 )),
+      },
+      true => switch( direction ) // points right
+      {
+        .NO, .EA, .SO, .SW, .NW => null,
+
+        .SE => gridCoords.add( Coords2.new(  0,  1 )),
+        .WE => gridCoords.add( Coords2.new( -1,  0 )),
+        .NE => gridCoords.add( Coords2.new(  0, -1 )),
+      },
+    },
   }
   orelse
   {
