@@ -9,10 +9,12 @@ const def = @import( "defs" );
 //pub const DebugDraw_Tilemap = true;
 //pub const DebugDraw_Tile    = true;
 
+
 // Engine Feature Flag
 
   pub const AutoApply_Entity_Movement  = true;
   pub const AutoApply_Entity_Collision = false;
+
 
 // Engine Global Startup Values
 
