@@ -6,11 +6,15 @@ const Coords2 = def.Coords2;
 
 pub const e_tile_type = enum( u8 )
 {
+  // True tile types
   EMPTY   = 0,
   FLOOR   = 1,
   WALL    = 2,
 //MORE...
-  PARITY = 254, // Row/Column parity colour coded
+
+  // Tile effect types
+
+  PARITY = 254, // Row / Column paritiy colours
   RANDOM = 255, // For random tile generation only
 
   // an enum method... ? in THIS economy ?!
@@ -22,7 +26,7 @@ pub const e_tile_type = enum( u8 )
       .FLOOR   => def.newColour( 200, 200, 200, 255 ),
       .WALL    => def.newColour( 150, 150, 150, 255 ),
     //.MORE...
-      .PARITY, .RANDOM => def.newColour( 255, 0,   255, 255 ), // Magenta for debug only
+      .PARITY, .RANDOM => def.newColour( 255, 0,   255, 255 ), // Won't ever be seen in normal usecase
     };
   }
 };

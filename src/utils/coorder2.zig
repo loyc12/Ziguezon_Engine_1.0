@@ -147,15 +147,15 @@ pub const Coords2 = struct
 
   pub fn getParityColour( self : Coords2 ) def.Colour
   {
-    if( @mod( self.x, 2 ) == 1 )
+    const parity = @mod( self.x, 2 ) + ( 2 * @mod( self.y, 2 ));
+
+    return switch( parity )
     {
-      if( @mod( self.y, 2 ) == 1 ){ return def.Colour.init( 224, 224, 224, 255 ); }
-      else {                 return def.Colour.init( 192, 192, 192, 255 ); }
-    }
-    else
-    {
-      if( @mod( self.y, 2 ) == 1 ){ return def.Colour.init( 160, 160, 160, 255 ); }
-      else {                 return def.Colour.init( 128, 128, 128, 255 ); }
-    }
+      0    => def.newColour( 224, 224, 224, 255 ),
+      1    => def.newColour( 192, 192, 192, 255 ),
+      2    => def.newColour( 160, 160, 160, 255 ),
+      3    => def.newColour( 128, 128, 128, 255 ),
+      else => def.newColour( 255, 0,   255, 255 ), // Magenta - should never happen
+    };
   }
 };
