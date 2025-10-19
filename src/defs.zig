@@ -1,7 +1,7 @@
 pub const std = @import( "std" );
 pub const ray = @import( "raylib" );
 
-pub const col_u  = @import( "utils/colouriser.zig" );
+pub const tcl_u  = @import( "utils/termColourer.zig" );
 pub const rng_u  = @import( "utils/rng.zig" );
 
 pub var G_RNG : rng_u.randomiser = .{};
@@ -96,6 +96,8 @@ pub const Angle = ngl_u.Angle;
 
 // ================ BOXER SHORTHANDS ================
 
+pub const RayRect = ray.Rectangle;
+
 pub const box2_u = @import( "utils/boxer2.zig" );
 
 pub const Box2 = box2_u.Box2;
@@ -135,6 +137,20 @@ pub const getMouseScreenPos   = cmr_u.getMouseScreenPos;
 pub const getMouseWorldPos    = cmr_u.getMouseWorldPos;
 
 
+// ================ COLOUR SHORTHANDS ================
+
+pub const RayCol  = ray.Color;
+
+pub fn newRayCol( r : u8, g : u8, b : u8, a : ?u8 ) RayCol
+{
+  if( a )| alpha | { return RayCol{ .r = r, .g = g, .b = b, .a = alpha }; }
+  else             { return RayCol{ .r = r, .g = g, .b = b, .a = 255   }; }
+}
+
+pub const col_u   = @import( "utils/colourer.zig" );
+
+pub const Colour  = col_u.Colour;
+
 // ================ COORDS SHORTHANDS ================
 
 pub const cor2_u  = @import( "utils/coorder2.zig" );
@@ -142,10 +158,11 @@ pub const cor2_u  = @import( "utils/coorder2.zig" );
 pub const e_dir_2 = cor2_u.e_dir_2;
 pub const Coords2 = cor2_u.Coords2;
 
-pub const cor_u   = @import( "utils/coorder3.zig" );
 
-pub const e_dir_3 = cor_u.e_dir_3;
-pub const Coords3 = cor_u.Coords3;
+pub const cor3_u  = @import( "utils/coorder3.zig" );
+
+pub const e_dir_3 = cor3_u.e_dir_3;
+pub const Coords3 = cor3_u.Coords3;
 
 
 // ================ DRAWER SHORTHANDS ================
@@ -281,14 +298,8 @@ pub const vec3_u = @import( "utils/vecter3.zig" );
 pub const Vec3   = vec3_u.Vec3;
 
 
-// ================= RAYLIB SHORTHANDS ================
+// ================= OTHER RAYLIB SHORTHANDS ================
 
-pub const Colour  = ray.Color;
 pub const Texture = ray.Texture2D;
-pub const RayRect = ray.Rectangle;
 
-pub fn newColour( r : u8, g : u8, b : u8, a : ?u8 ) Colour
-{
-  if( a )| alpha | { return Colour{ .r = r, .g = g, .b = b, .a = alpha }; }
-  else             { return Colour{ .r = r, .g = g, .b = b, .a = 255   }; }
-}
+

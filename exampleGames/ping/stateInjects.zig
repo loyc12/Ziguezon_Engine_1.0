@@ -57,7 +57,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
-    .colour = def.Colour.dark_gray,
+    .colour = def.Colour.dGray,
     .pos    = .{ .x = 0, .y = 0 },
   });
 
@@ -65,7 +65,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
-    .colour = def.Colour.light_gray,
+    .colour = def.Colour.lGray,
     .pos    = .{ .x = 1024, .y = 0 },
   });
 
@@ -73,7 +73,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
-    .colour = def.Colour.light_gray,
+    .colour = def.Colour.lGray,
     .pos    = .{ .x = -1024, .y = 0 },
   });
 
@@ -81,7 +81,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 1024, .y = 8 },
-    .colour = def.Colour.light_gray,
+    .colour = def.Colour.lGray,
     .pos    = .{ .x = 0, .y = -512 },
   });
 
@@ -89,7 +89,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 6, .y = 6 },
-    .colour = def.Colour.pink,
+    .colour = def.Colour.pMagenta,
     .pos    = .{},
   })
   )| shad1 |{ SHADOW_RANGE_START = shad1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow 1 entity" ); }
@@ -131,7 +131,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 16, .y = 16 },
-      .colour = def.Colour.sky_blue,
+      .colour = def.Colour.cyan,
       .pos    = .{},
     });
 

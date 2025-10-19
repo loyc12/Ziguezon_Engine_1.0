@@ -279,13 +279,13 @@ pub const TilemapManager = struct
 
     for( self.tilemapList.items )| *tlmp  |{ if( tlmp.isActive() )
     {
-      tlmp.getMapBoundingBox().drawSelf( def.newColour( 255, 255, 0, 64 ));
+      tlmp.getMapBoundingBox().drawSelf( def.Colour.yellow.setA( 32 ));
 
       if( def.G_ST.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
       {
         const tile = tlmp.tileArray.items.ptr[ index ];
         const tilePos = tlmp.getRelTilePos( tile.gridCoords );
-        tlmp.getTileBoundingBox( tilePos ).drawSelf( def.newColour( 0, 255, 255, 32 ));
+        tlmp.getTileBoundingBox( tilePos ).drawSelf( def.Colour.green.setA( 32 ));
       }}
     }}
   }

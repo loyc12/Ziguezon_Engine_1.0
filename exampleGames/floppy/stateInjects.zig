@@ -13,7 +13,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = -720, .y = 0 },
     .scale  = .{ .x = 32, .y = 32 },
     .shape  = .RECT,
-    .colour = def.Colour.dark_gray,
+    .colour = def.Colour.dGray,
   })
   )| disk |{ DISK_ID = disk.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create disk entity" ); }
 }

@@ -25,51 +25,51 @@ pub const BASE_LINE_WIDTH    : f32 = 2.0;
 //  );
 //}
 
-pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( def.zeroRayVec2, def.getScreenSize().toRayVec2(), col ); }
+pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( def.zeroRayVec2, def.getScreenSize().toRayVec2(), col.toRayCol() ); }
 
 
 // ================ SIMPLE DRAWING FUNCTIONS ================
 
 pub inline fn drawPixel( pos : Vec2, col : Colour ) void
 {
-  ray.drawPixelV( pos.toRayVec2(), col );
+  ray.drawPixelV( pos.toRayVec2(), col.toRayCol() );
 }
 pub inline fn drawMacroPixel( pos : Vec2, size : f32, col : Colour ) void
 {
-  ray.drawRectangleV( pos.toRayVec2(), size, col );
+  ray.drawRectangleV( pos.toRayVec2(), size, col.toRayCol() );
 }
 
 pub inline fn drawLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f32 ) void
 {
-  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col );
+  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col.toRayCol() );
 }
 // pub fn drawDotedLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f32, spacinf : f32 ) void
 
 pub inline fn drawCircle( pos : Vec2, radius : f32, col : Colour ) void
 {
-  ray.drawCircleV( pos.toRayVec2(), radius, col );
+  ray.drawCircleV( pos.toRayVec2(), radius, col.toRayCol() );
 }
 pub inline fn drawCircleLines( pos : Vec2, radius : f32, col : Colour ) void // TODO : Add line thickness
 {
-  ray.drawCircleLinesV( pos, radius, col );
+  ray.drawCircleLinesV( pos, radius, col.toRayCol() );
 }
 
 pub inline fn drawSimpleEllipse( pos : Vec2, radiusX : f32, radiusY : f32, col : Colour ) void
 {
-  ray.drawEllipseV( pos.toRayVec2(), radiusX, radiusY, col );
+  ray.drawEllipseV( pos.toRayVec2(), radiusX, radiusY, col.toRayCol() );
 }
 pub inline fn drawSimpleEllipseLines( pos : Vec2, radiusX : f32, radiusY : f32, col : Colour ) void // TODO : Add line thickness
 {
-  ray.drawEllipseLinesV( pos.toRayVec2(), radiusX, radiusY, col );
+  ray.drawEllipseLinesV( pos.toRayVec2(), radiusX, radiusY, col.toRayCol() );
 }
 
 pub inline fn drawSimpleRectangle( pos : Vec2, size : Vec2, col : Colour ) void
 {
-  ray.drawRectangleV( pos.toRayVec2(), size, col );
+  ray.drawRectangleV( pos.toRayVec2(), size, col.toRayCol() );
 }
 pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, width : f32  ) void
 {
-  ray.drawRectangleLinesEx( ray.Rectangle{ .x = pos.x, .y = pos.y, .width = size.x, .height = size.y }, width, col );
+  ray.drawRectangleLinesEx( ray.Rectangle{ .x = pos.x, .y = pos.y, .width = size.x, .height = size.y }, width, col.toRayCol() );
 }
 
 // TODO : Add a drawSimplePolygon(Lines) function
@@ -79,35 +79,35 @@ pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, w
 
 pub inline fn drawBasicTria( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour ) void
 {
-  ray.drawTriangle( p1.toRayVec2(), p2.toRayVec2(), p3.toRayVec2(), col );
+  ray.drawTriangle( p1.toRayVec2(), p2.toRayVec2(), p3.toRayVec2(), col.toRayCol() );
 }
 pub inline fn drawBasicTriaLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f32 ) void
 {
-  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col );
-  ray.drawLineEx( p2.toRayVec2(), p3.toRayVec2(), width, col );
-  ray.drawLineEx( p3.toRayVec2(), p1.toRayVec2(), width, col );
+  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col.toRayCol() );
+  ray.drawLineEx( p2.toRayVec2(), p3.toRayVec2(), width, col.toRayCol() );
+  ray.drawLineEx( p3.toRayVec2(), p1.toRayVec2(), width, col.toRayCol() );
 }
 
 pub inline fn drawBasicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour ) void
 {
-  ray.drawTriangle( p1.toRayVec2(), p2.toRayVec2(), p3.toRayVec2(), col );
-  ray.drawTriangle( p3.toRayVec2(), p4.toRayVec2(), p1.toRayVec2(), col );
+  ray.drawTriangle( p1.toRayVec2(), p2.toRayVec2(), p3.toRayVec2(), col.toRayCol() );
+  ray.drawTriangle( p3.toRayVec2(), p4.toRayVec2(), p1.toRayVec2(), col.toRayCol() );
 }
 pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f32  ) void
 {
-  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col );
-  ray.drawLineEx( p2.toRayVec2(), p3.toRayVec2(), width, col );
-  ray.drawLineEx( p3.toRayVec2(), p4.toRayVec2(), width, col );
-  ray.drawLineEx( p4.toRayVec2(), p1.toRayVec2(), width, col );
+  ray.drawLineEx( p1.toRayVec2(), p2.toRayVec2(), width, col.toRayCol() );
+  ray.drawLineEx( p2.toRayVec2(), p3.toRayVec2(), width, col.toRayCol() );
+  ray.drawLineEx( p3.toRayVec2(), p4.toRayVec2(), width, col.toRayCol() );
+  ray.drawLineEx( p4.toRayVec2(), p1.toRayVec2(), width, col.toRayCol() );
 }
 
 pub inline fn drawBasicPoly( pos : Vec2, radius : f32, a : Angle, col : Colour, sides : u8 ) void
 {
-  ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), col );
+  ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), col.toRayCol() );
 }
 pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, a : Angle, col : Colour, width : f32, sides : u8  ) void // TODO : Add line thickness
 {
-  ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), width, col );
+  ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), width, col.toRayCol() );
 }
 
 
@@ -199,7 +199,7 @@ pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour
 
 pub inline fn drawText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
 {
-  ray.drawText( text, @intFromFloat( posX ), @intFromFloat( posY ), @intFromFloat( fontSize ), col );
+  ray.drawText( text, @intFromFloat( posX ), @intFromFloat( posY ), @intFromFloat( fontSize ), col.toRayCol() );
 }
 
 pub inline fn drawCenteredText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
@@ -214,7 +214,7 @@ pub inline fn drawCenteredText( text : [:0] const u8, posX : f32, posY : f32, fo
 
 pub inline fn drawTexture( image : ray.Texture2D, posX : f32, posY : f32, a : Angle, scale : Vec2, col : Colour ) void
 {
-  ray.drawTextureEx( image, ray.Vector2{ .x = posX, .y = posY }, a, scale.x, col );
+  ray.drawTextureEx( image, ray.Vector2{ .x = posX, .y = posY }, a, scale.x, col.toRayCol() );
 }
 
 pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32, a : Angle, scale : Vec2, col : Colour ) void
@@ -226,5 +226,5 @@ pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32
 
 pub inline fn drawTexturePlus( image : ray.Texture2D, source : ray.Rectangle, dest : ray.Rectangle, origin : Vec2, a : Angle, col : Colour ) void
 {
-  ray.drawTexturePro( image, source, dest, origin, def.RtD( a ), col );
+  ray.drawTexturePro( image, source, dest, origin, def.RtD( a ), col.toRayCol() );
 }

@@ -117,13 +117,13 @@ pub fn log( level : LogLevel, id : u32, cLoc : ?std.builtin.SourceLocation, comp
   {
     switch ( message[ 0 ])
     {
-      '!'  => setCol( def.col_u.RED    ),
-      '@'  => setCol( def.col_u.MAGEN  ),
-      '#'  => setCol( def.col_u.YELLOW ),
-      '$'  => setCol( def.col_u.GREEN  ),
-      '%'  => setCol( def.col_u.BLUE   ),
-      '&'  => setCol( def.col_u.CYAN   ),
-      else => setCol( def.col_u.RESET  ),
+      '!'  => setCol( def.tcl_u.RED    ),
+      '@'  => setCol( def.tcl_u.MAGEN  ),
+      '#'  => setCol( def.tcl_u.YELLOW ),
+      '$'  => setCol( def.tcl_u.GREEN  ),
+      '%'  => setCol( def.tcl_u.BLUE   ),
+      '&'  => setCol( def.tcl_u.CYAN   ),
+      else => setCol( def.tcl_u.RESET  ),
     }
   }
 
@@ -160,7 +160,7 @@ pub fn initFile() void
     std.debug.print( "Failed to create or open log file '{s}': {}\nLogging to stderr isntead\n", .{ LOG_FILE_NAME, err });
     return;
   };
-  std.debug.print( def.col_u.YELLOW ++ "Logging to file '{s}'\n" ++ def.col_u.RESET, .{ LOG_FILE_NAME });
+  std.debug.print( def.tcl_u.YELLOW ++ "Logging to file '{s}'\n" ++ def.tcl_u.RESET, .{ LOG_FILE_NAME });
   G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
 
   qlog( .INFO, 0, @src(), "Logfile initialized\n\n" );
@@ -206,12 +206,12 @@ fn logLevel( level: LogLevel ) !void
 {
   switch ( level )
   {
-    LogLevel.NONE  => setCol( def.col_u.RESET  ),
-    LogLevel.ERROR => setCol( def.col_u.RED    ),
-    LogLevel.WARN  => setCol( def.col_u.YELLOW ),
-    LogLevel.INFO  => setCol( def.col_u.GREEN  ),
-    LogLevel.DEBUG => setCol( def.col_u.CYAN   ),
-    LogLevel.TRACE => setCol( def.col_u.GRAY   ),
+    LogLevel.NONE  => setCol( def.tcl_u.RESET  ),
+    LogLevel.ERROR => setCol( def.tcl_u.RED    ),
+    LogLevel.WARN  => setCol( def.tcl_u.YELLOW ),
+    LogLevel.INFO  => setCol( def.tcl_u.GREEN  ),
+    LogLevel.DEBUG => setCol( def.tcl_u.CYAN   ),
+    LogLevel.TRACE => setCol( def.tcl_u.GRAY   ),
   }
 
   const lvl : []const u8 = switch ( level )
@@ -238,7 +238,7 @@ fn logTime() !void
   const sec  : u64 = @intCast( prog.toSec() );
   const nano : u64 = @intCast( @mod( prog.value, TimeVal.nsPerSec() ));
 
-  setCol( def.col_u.GRAY );
+  setCol( def.tcl_u.GRAY );
 
   //try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
   std.debug.print( "{d}.{d:0>9} ", .{ sec, nano });
@@ -250,17 +250,17 @@ fn logLoc( cLoc : ?std.builtin.SourceLocation ) !void
 
   if( cLoc )| loc | // If the call location is defined, print the file, line, and function name
   {
-    setCol( def.col_u.BLUE );
+    setCol( def.tcl_u.BLUE );
     //try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
     std.debug.print( "{s}:{d} ", .{ loc.file, loc.line });
 
-    setCol( def.col_u.GRAY );
+    setCol( def.tcl_u.GRAY );
     //try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
     std.debug.print( "| {s} ", .{ loc.fn_name });
   }
   else
   {
-    setCol( def.col_u.YELLOW );
+    setCol( def.tcl_u.YELLOW );
     //try G_LOG_FILE.writer().print( "{s} ", .{ "UNLOCATED" });
     std.debug.print( "{s} ", .{ "UNLOCATED" });
 

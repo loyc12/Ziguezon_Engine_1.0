@@ -268,8 +268,8 @@ pub const EntityManager = struct
 
     for( self.entityList.items )| *e |{ if( e.isActive() )
     {
-      if( e.isSolid() ){ e.hitbox.drawSelf( def.newColour( 0, 0, 255, 64 )); }
-      else             { e.hitbox.drawSelf( def.newColour( 255, 0, 0, 64 )); }
+      if( e.isSolid() ){ e.hitbox.drawSelf( def.Colour.blue.setA( 32 )); }
+      else             { e.hitbox.drawSelf( def.Colour.red.setA(  32 )); }
 
     }}
   }
@@ -278,20 +278,20 @@ pub const EntityManager = struct
   {
     def.qlog( .TRACE, 0, @src(), "Rendering active Entities" );
 
-    for( self.entityList.items )| *e |{ if( e.isActive() )
+    for( self.entityList.items )| *e |
     {
-      e.renderSelf();
-    }}
+      if( e.isActive() ){ e.renderSelf(); }
+    }
   }
 
   // ================================ TICK FUNCTIONS ================================
 
   pub fn tickActiveEntities( self : *EntityManager, sdt : f32 ) void
   {
-    if( def.G_ST.AutoApply_Entity_Movement ){ for( self.entityList.items )| *e |{ if( e.isActive() )
+    if( def.G_ST.AutoApply_Entity_Movement ){ for( self.entityList.items )| *e |
     {
-      e.moveSelf( sdt );
-    }}}
+      if( e.isActive() ){ e.moveSelf( sdt ); }
+    }}
   }
 
   pub fn collideActiveEntities( self : *EntityManager, sdt : f32 ) void // TODO : make it actually collide entity, instead of just logging overlap

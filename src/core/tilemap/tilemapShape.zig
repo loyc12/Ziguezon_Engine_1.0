@@ -514,12 +514,12 @@ pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the
   return( Box2.newRectAABB( tlmp.gridPos.toVec2(), viewableScale, tlmp.gridPos.a ));
 }
 
-pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2 // NOTE : Swap for the accurate AABB version
+pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2
 {
-  const  absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
-  const  radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
+  const absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
+  const radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
 
-  return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a ); // NOTE : approximation for the sake of performance
+  return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a ); // NOTE : gross approximation for the sake of performance
 
   //const angle = tlmp.gridPos.a;
   //return switch( tlmp.tileShape ) // NOTE : slow af

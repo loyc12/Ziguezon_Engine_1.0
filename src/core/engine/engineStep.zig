@@ -150,7 +150,7 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   defer def.ray.endDrawing();
 
   // NOTE : set Graphic_Bckgrd_Colour to null in settings to skip this step
-  if( def.G_ST.Graphic_Bckgrd_Colour != null ){ def.ray.clearBackground( def.G_ST.Graphic_Bckgrd_Colour.? ); }
+  if( def.G_ST.Graphic_Bckgrd_Colour != null ){ def.ray.clearBackground( def.G_ST.Graphic_Bckgrd_Colour.?.toRayCol() ); }
 
   def.tryHook( .OnRenderBckgrnd, .{ ng });
 

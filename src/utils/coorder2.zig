@@ -17,11 +17,11 @@ pub const e_dir_2 = enum( u8 )
       .NW => def.Colour.red,
       .WE => def.Colour.purple,
       .SW => def.Colour.blue,
-      .SO => def.Colour.sky_blue,
+      .SO => def.Colour.cerul,
       .SE => def.Colour.green,
       .EA => def.Colour.yellow,
       .NE => def.Colour.white,
-      .NO => def.Colour.pink,
+      .NO => def.Colour.pRed,
     };
   }
 
@@ -151,11 +151,11 @@ pub const Coords2 = struct
 
     return switch( parity )
     {
-      0    => def.newColour( 224, 224, 224, 255 ),
-      1    => def.newColour( 192, 192, 192, 255 ),
-      2    => def.newColour( 160, 160, 160, 255 ),
-      3    => def.newColour( 128, 128, 128, 255 ),
-      else => def.newColour( 255, 0,   255, 255 ), // Magenta - should never happen
+      0    => .nWhite,
+      1    => .pGray,
+      2    => .lGray,
+      3    => .mGray,
+      else => .magenta, // Won't ever be seen in normal usecase
     };
   }
 };

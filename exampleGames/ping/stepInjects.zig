@@ -430,7 +430,7 @@ pub fn OnRenderOverlay( ng : *Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.coverScreenWith( def.Colour.init( 0, 0, 0, 128 ));
+    def.coverScreenWith( .new( 0, 0, 0, 128 ));
   }
 
   if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )

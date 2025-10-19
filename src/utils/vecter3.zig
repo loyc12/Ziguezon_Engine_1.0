@@ -61,10 +61,10 @@ pub const Vec3 = struct
   pub inline fn isZero( self : *const Vec3 ) bool { return self.x == 0 and self.y == 0 and self.z == 0; }
   pub inline fn isIso(  self : *const Vec3 ) bool { return self.x == self.y and self.y == self.z; }
 
-  pub inline fn isEq(    self : *const Vec3, other : Vec3 ) bool { return self.x == other.x and self.y == other.y and self.z == other.z; }
-  pub inline fn isDiff(  self : *const Vec3, other : Vec3 ) bool { return self.x != other.x or  self.y != other.y or  self.z != other.z; }
-  pub inline fn isInfXY( self : *const Vec3, other : Vec3 ) bool { return self.x <  other.x or  self.y <  other.y or  self.z <  other.z; }
-  pub inline fn isSupXY( self : *const Vec3, other : Vec3 ) bool { return self.x >  other.x or  self.y >  other.y or  self.z >  other.z; }
+  pub inline fn isEq(     self : *const Vec3, other : Vec3 ) bool { return self.x == other.x and self.y == other.y and self.z == other.z; }
+  pub inline fn isDiff(   self : *const Vec3, other : Vec3 ) bool { return self.x != other.x or  self.y != other.y or  self.z != other.z; }
+  pub inline fn isInfXYZ( self : *const Vec3, other : Vec3 ) bool { return self.x <  other.x or  self.y <  other.y or  self.z <  other.z; }
+  pub inline fn isSupXYZ( self : *const Vec3, other : Vec3 ) bool { return self.x >  other.x or  self.y >  other.y or  self.z >  other.z; }
 
 
   // ================ BACIS MATHS ================

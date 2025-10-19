@@ -22,11 +22,11 @@ pub const e_tile_type = enum( u8 )
   {
     return switch( self )
     {
-      .EMPTY   => def.newColour( 0,   0,   0,   0 ),
-      .FLOOR   => def.newColour( 200, 200, 200, 255 ),
-      .WALL    => def.newColour( 150, 150, 150, 255 ),
+      .EMPTY   => .new( 0,   0,   0,   0 ),
+      .FLOOR   => .new( 200, 200, 200, 255 ),
+      .WALL    => .new( 150, 150, 150, 255 ),
     //.MORE...
-      .PARITY, .RANDOM => def.newColour( 255, 0,   255, 255 ), // Won't ever be seen in normal usecase
+      .PARITY, .RANDOM => .magenta, // Won't ever be seen in normal usecase
     };
   }
 };
@@ -38,10 +38,10 @@ pub const Tile = struct
   tType      : e_tile_type = .EMPTY, // TODO : store as u16 isntead, so that it can be customized more easily
 
   // ======== GRID POS DATA ========
-  gridCoords : Coords2 = .{},
+  gridCoords : Coords2     = .{},
 
   // ======== RENDERING DATA ======== ( DEBUG )
-  colour     : def.Colour  = def.newColour( 255, 255, 255, 255 ),
+  colour     : def.Colour  = .magenta, // Won't ever be seen in normal usecase
 
   relPos     : ?def.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
 

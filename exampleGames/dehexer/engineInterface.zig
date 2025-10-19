@@ -23,7 +23,7 @@ const def = @import( "defs" );
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour : ?def.Colour = def.Colour.dark_gray;
+  pub const Graphic_Bckgrd_Colour : ?def.Colour = def.Colour.sGray;
 
 
 // ================================ GAME HOOKS ================================
