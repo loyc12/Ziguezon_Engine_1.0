@@ -17,9 +17,10 @@ var SCORE        : u8  = 0;     // Score of the player
 var IS_GAME_OVER  : bool = false; // Flag to check if the game is over ( hit bottom of screen or pillar )
 var IS_JUMPING    : bool = false; // Flag to check if the disk is jumping
 
+
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *def.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
@@ -57,7 +58,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   }
 }
 
-pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+
+pub fn OnTickWorld( ng : *def.Engine ) void
 {
   var disk = ng.getEntity( stateInj.DISK_ID ) orelse
   {
@@ -81,7 +83,7 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
   else { disk.acc.y = GRAVITY; } // Apply gravity
 }
 
-pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OffTickWorld( ng : *def.Engine ) void
 {
   const hHeight : f32 = def.getScreenHeight() / 2.0;
 
@@ -110,7 +112,7 @@ pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities
 }
 
 
-pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   // Declare the buffer to hold the formatted scores
   var s_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 };

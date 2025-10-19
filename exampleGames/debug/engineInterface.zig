@@ -9,12 +9,12 @@ const def = @import( "defs" );
   pub const DebugDraw_Tilemap = true;
   pub const DebugDraw_Tile    = true;
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - DebugEnv";
+  pub const Startup_Window_Title  : [ :0 ] const u8 = "Ziguezon Engine - DebugEnv";
 
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.dark_gray;
+  pub const Graphic_Bckgrd_Colour : ?def.Colour = def.Colour.dark_gray;
 
 
 // ================================ GAME HOOKS ================================
@@ -27,8 +27,10 @@ const gameState = @import( "stateInjects.zig" );
 
 const gameStep  = @import( "stepInjects.zig" );
 
-  pub const OnUpdateInputs      = gameStep.OnUpdateInputs;
+  pub const OnLoopStart     = gameStep.OnLoopStart;
 
-  pub const OnTickEntities      = gameStep.OnTickEntities;
+  pub const OnUpdateInputs  = gameStep.OnUpdateInputs;
 
-  pub const OnRenderOverlay     = gameStep.OnRenderOverlay;
+  pub const OnTickWorld     = gameStep.OnTickWorld;
+
+  pub const OnRenderOverlay = gameStep.OnRenderOverlay;

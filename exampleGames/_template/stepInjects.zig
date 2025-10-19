@@ -18,7 +18,7 @@ var DRAW_TEST : bool = true; // Example input-toggled flag
 
 pub fn OnLoopStart( ng : *def.Engine ) void // Called by engine.loopLogic()
 {
-  _ = ng; // Prevent unused variable warning
+  ng.changeState( .PLAYING ); // force the game to unpause on start
 }
 
 pub fn OnLoopEnd( ng : *def.Engine ) void // Called by engine.loopLogic()
@@ -67,19 +67,19 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 }
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OffTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OffTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
   _ = ng; // Prevent unused variable warning
 }
 
 
 // NOTE : This is where you should render all background effects besides the background reset ( done via )
-pub fn OnRenderBackground( ng : *def.Engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderBckgrnd( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {
   _ = ng; // Prevent unused variable warning
 }

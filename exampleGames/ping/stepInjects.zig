@@ -97,7 +97,7 @@ pub fn ensureBallMinSpeeds( ball : *Entity ) void
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *Engine ) void
 {
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
   {
@@ -175,7 +175,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void // Called by engine.updateInputs() ( 
   }
 }
 
-pub fn OnTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OnTickWorld( ng : *Engine ) void
 {
   var ball = ng.getEntity( stateInj.BALL_ID ) orelse
   {
@@ -210,7 +210,7 @@ pub fn OnTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( 
   }
 }
 
-pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+pub fn OffTickWorld( ng : *Engine ) void
 {
   // ================ VARIABLES AND CONSTANTS ================
 
@@ -392,7 +392,7 @@ pub fn OffTickEntities( ng : *Engine ) void // Called by engine.tickEntities() (
 }
 
 
-pub fn OnRenderOverlay( ng : *Engine ) void // Called by engine.renderGraphics()
+pub fn OnRenderOverlay( ng : *Engine ) void
 {
   const cam = ng.getCameraCpy() orelse
   {

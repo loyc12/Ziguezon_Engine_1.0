@@ -12,11 +12,14 @@ const VecA   = def.VecA;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
-// These functions are called by the engine at various points in the game loop ( see loopLogic() in engine.zig ).
+
+pub fn OnLoopStart( ng : *def.Engine ) void // Called by engine.loopLogic()
+{
+  ng.changeState( .PLAYING ); // force the game to unpause on start
+}
 
 
-// NOTE : This is where you should capture inputs to update global flags
-pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *def.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
@@ -95,8 +98,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   }
 }
 
-// NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities() ( every frame, when not paused )
+
+pub fn OnTickWorld( ng : *def.Engine ) void
 {
   var exampleEntity = ng.getEntity( stateInj.EXAMPLE_NTT_ID ) orelse
   {
@@ -105,7 +108,7 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
   };
 
   exampleEntity.pos.a = exampleEntity.pos.a.rotDeg( exampleEntity.pos.a.cos() + 1.5 ); // Example of a simple variable rotation effect
-  exampleEntity.pos.y  = 256  * exampleEntity.pos.a.sin();                             // Example of a simple variable vertical movement effect
+  exampleEntity.pos.y = 256  * exampleEntity.pos.a.sin();                              // Example of a simple variable vertical movement effect
 
 
   var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
@@ -171,8 +174,8 @@ pub fn OnTickEntities( ng : *def.Engine ) void // Called by engine.tickEntities(
   exampleEllipse.pos.a = exampleTilemap.gridPos.a;
 }
 
-// NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
-pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphics()
+
+pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {

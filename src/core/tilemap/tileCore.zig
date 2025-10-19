@@ -10,6 +10,7 @@ pub const e_tile_type = enum( u8 )
   FLOOR   = 1,
   WALL    = 2,
 //MORE...
+  PARITY = 254, // Row/Column parity colour coded
   RANDOM = 255, // For random tile generation only
 
   // an enum method... ? in THIS economy ?!
@@ -21,7 +22,7 @@ pub const e_tile_type = enum( u8 )
       .FLOOR   => def.newColour( 200, 200, 200, 255 ),
       .WALL    => def.newColour( 150, 150, 150, 255 ),
     //.MORE...
-      .RANDOM  => def.newColour( 255, 0,   255, 255 ), // Magenta for debug only
+      .PARITY, .RANDOM => def.newColour( 255, 0,   255, 255 ), // Magenta for debug only
     };
   }
 };

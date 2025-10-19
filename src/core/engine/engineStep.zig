@@ -89,10 +89,17 @@ inline fn tryTick( ng : *Engine ) bool
 {
   if( ng.shouldTickSim() )
   {
+    if( !ng.isPlaying() ){ return false; }
+
     const tmpTime = def.getNow();
 
     ng.tickOffset.value -= ng.targetTickTime.value;
-    tickEntities( ng );
+
+    def.tryHook( .OnTickWorld, .{ ng });
+    {
+      tickEntities( ng );
+    }
+    def.tryHook( .OffTickWorld, .{ ng });
 
     def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick delta time" );
     return true;
@@ -100,21 +107,15 @@ inline fn tryTick( ng : *Engine ) bool
   return false;
 }
 
-fn tickEntities( ng : *Engine ) void    // TODO : use tick rate instead of frame time
+fn tickEntities( ng : *Engine ) void
 {
-  if( !ng.isPlaying() ){ return; }
-
   def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
 
   if( ng.isEntityManagerInit() )
   {
-    def.tryHook( .OnTickEntities, .{ ng });
-
     ng.tickActiveEntities();
     //ng.collideActiveEntities();
     ng.deleteAllMarkedEntities();
-
-  def.tryHook( .OffTickEntities, .{ ng });
   }
   else { def.qlog( .WARN, 0, @src(), "Cannot tick entities: Entity manager is not initialized" ); }
 }
@@ -126,6 +127,8 @@ inline fn tryRender( ng : *Engine ) bool
 {
   if( ng.shouldRenderSim() )
   {
+    if( !ng.isOpened() ){ return false; }
+
   //const tmpTime = def.getNow();
 
     ng.frameOffset.value -= ng.targetFrameTime.value;
@@ -139,7 +142,7 @@ inline fn tryRender( ng : *Engine ) bool
   return false;
 }
 
-fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture instead
+fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
 {
   def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
 
@@ -149,7 +152,7 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use a render texture instead
   // NOTE : set Graphic_Bckgrd_Colour to null in settings to skip this step
   if( def.G_ST.Graphic_Bckgrd_Colour != null ){ def.ray.clearBackground( def.G_ST.Graphic_Bckgrd_Colour.? ); }
 
-  def.tryHook( .OnRenderBackground, .{ ng });
+  def.tryHook( .OnRenderBckgrnd, .{ ng });
 
   if( !ng.isCameraInit() )
   {

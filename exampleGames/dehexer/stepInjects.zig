@@ -17,65 +17,19 @@ const Box2   = def.Box2;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
+pub fn OnLoopStart( ng : *def.Engine ) void
+{
+  ng.changeState( .PLAYING ); // force the game to unpause on start
+}
+
+
 pub fn OnUpdateInputs( ng : *def.Engine ) void
 {
-  // Toggle pause if the P key is pressed
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
-
-  // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
-
-  // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
-
-  // Reset the camera zoom and position when r is pressed
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
-  {
-    ng.setCameraZoom(   1.0 );
-    ng.setCameraCenter( .{} );
-    ng.setCameraRot(    .{} );
-    def.qlog( .INFO, 0, @src(), "Camera reseted" );
-  }
-
   var mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
     return;
   };
-
-  // Keep the camera inside over the maze area
-  ng.clampCameraCenterInArea( mazeMap.getMapBoundingBox() );
-
-  // Swap tilemap render style if the V key is pressed
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
-  {
-    switch( mazeMap.tileShape )
-    {
-      .RECT =>
-      {
-        mazeMap.setTileShape( .DIAM );
-        mazeMap.tileScale.y = mazeMap.tileScale.y * 0.5; // skews the map to get an isometric view
-      },
-
-      .DIAM =>
-      {
-        mazeMap.setTileShape( .HEX1 );
-        mazeMap.tileScale.y = mazeMap.tileScale.y * 2.0; // unskews the map back to normal
-      },
-
-      .HEX1 => mazeMap.setTileShape( .HEX2 ),
-      .HEX2 => mazeMap.setTileShape( .TRI1 ),
-
-      .TRI1 => mazeMap.setTileShape( .TRI2 ),
-      .TRI2 => mazeMap.setTileShape( .RECT ),
-    }
-  }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.q )){ mazeMap.gridPos.a = mazeMap.gridPos.a.subDeg( 1 ); }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.gridPos.a = mazeMap.gridPos.a.addDeg( 1 ); }
 
   // If left clicked, check if a tile was clicked on the example tilemap
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
@@ -150,12 +104,5 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
 pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
-  if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
-  {
-    const screenCenter = def.getHalfScreenSize();
-
-    def.coverScreenWith( def.Colour.init( 0, 0, 0, 128 ));
-    def.drawCenteredText( "Paused", screenCenter.x, screenCenter.y - 20, 40, def.Colour.white );
-    def.drawCenteredText( "Press P or Enter to resume", screenCenter.x, screenCenter.y + 20, 20, def.Colour.white );
-  }
+  _ = ng; // Prevent unused variable warning
 }

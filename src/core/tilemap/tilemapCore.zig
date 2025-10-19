@@ -233,20 +233,26 @@ pub const Tilemap = struct
         continue;
       };
 
-      var tmp : e_tile_type = undefined;
+      var tmpType : e_tile_type = undefined;
 
-      if( tileType != .RANDOM ){ tmp = tileType; }
+      if( tileType != .RANDOM ){ tmpType = tileType; }
       else switch( def.G_RNG.getClampedInt( 1, 2 ))
       {
-        1 => tmp    = .FLOOR,
-        2 => tmp    = .WALL,
-        else => tmp = .EMPTY, // Should never happen
+        1    => tmpType = .FLOOR,
+        2    => tmpType = .WALL,
+        else => tmpType = .EMPTY, // Should never happen
       }
 
-      self.tileArray.items.ptr[ index ] = Tile{
-        .tType      = tmp,
-        //.colour     = tmp.getTileTypeColour(),
-        .colour     = tileCoords.getParityColour(),
+      const col = switch( tmpType )
+      {
+        .PARITY => tileCoords.getParityColour(),
+        else    => tmpType.getTileTypeColour(),
+      };
+
+      self.tileArray.items.ptr[ index ] = Tile
+      {
+        .tType      = tmpType,
+        .colour     = col,
         .gridCoords = tileCoords,
       };
     }

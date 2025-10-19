@@ -119,10 +119,15 @@ pub fn build( b: *std.Build ) void
   const floppy_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/floppy/engineInterface.zig" });
   floppy_step.dependOn( &floppy_cli_cmd.step );
 
-  // This creates a step for the floppy game
+  // This creates a step for the labyrinther game
   const labyrinth_step = b.step( "labyrinth", "Run the labyrinth game" );
   const labyrinth_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/labyrinther/engineInterface.zig" });
   labyrinth_step.dependOn( &labyrinth_cli_cmd.step );
+
+  // This creates a step for the dehexer game
+  const dehexer_step = b.step( "dehexer", "Run the dehexer game" );
+  const dehexer_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/dehexer/engineInterface.zig" });
+  dehexer_step.dependOn( &dehexer_cli_cmd.step );
 
 
   // ================================ TESTS ================================

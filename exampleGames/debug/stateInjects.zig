@@ -16,7 +16,7 @@ pub var EXAMPLE_ELLI_ID : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()    // NOTE : This is where you should initialize your resources
+pub fn OnStart( ng : *def.Engine ) void
 {
   ng.addAudioFromFile( "hit_1", "exampleGames/__assets/sounds/Boop_2.wav" ) catch | err |
   {
@@ -24,7 +24,7 @@ pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()    // NOTE :
   };
 }
 
-pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your entities
+pub fn OnOpen( ng : *def.Engine ) void
 {
   if( ng.loadEntityFromParams(
   .{

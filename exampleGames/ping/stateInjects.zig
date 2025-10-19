@@ -9,7 +9,7 @@ pub var BALL_ID            : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()
+pub fn OnStart( ng : *def.Engine ) void
 {
   var resM = ng.getResourceManager() catch | err |
   {
@@ -27,7 +27,7 @@ pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()
   };
 }
 
-pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()
+pub fn OnOpen( ng : *def.Engine ) void
 {
   var nttM = ng.getEntityManager() catch | err |
   {

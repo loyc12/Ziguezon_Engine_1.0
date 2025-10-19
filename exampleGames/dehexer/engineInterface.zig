@@ -9,14 +9,21 @@ const def = @import( "defs" );
 //pub const DebugDraw_Tilemap = true;
 //pub const DebugDraw_Tile    = true;
 
+
 // Engine Feature Flag
 
-  pub const AutoApply_Entity_Movement  = true;
+  pub const AutoApply_Entity_Movement  = false;
   pub const AutoApply_Entity_Collision = false;
+
 
 // Engine Global Startup Values
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Labyrinther";
+  pub const Startup_Window_Title  : [ :0 ] const u8 = "Ziguezon Engine - Dehexer";
+
+
+// Graphical Values
+
+  pub const Graphic_Bckgrd_Colour : ?def.Colour = def.Colour.dark_gray;
 
 
 // ================================ GAME HOOKS ================================
@@ -28,6 +35,8 @@ const gameState = @import( "stateInjects.zig" );
 
 
 const gameStep  = @import( "stepInjects.zig" );
+
+  pub const OnLoopStart      = gameStep.OnLoopStart;
 
   pub const OnUpdateInputs   = gameStep.OnUpdateInputs;
   pub const OffUpdateInputs  = gameStep.OffUpdateInputs;
