@@ -3,7 +3,9 @@ const def    = @import( "defs" );
 const stdOut = @import( "./outputer.zig" ).demoStdout;
 
 const TimeVal = def.TimeVal;
-const getNow = def.getNow;
+const getNow  = def.getNow;
+
+var LoggedLastMsg : bool = false;
 
 // This file defines helper functions to conditionally print debug info based on the following enum's value
 // Yes, this might very well be a shittier version of std.log...
@@ -16,32 +18,32 @@ pub const LogLevel = enum
   // The higher the value, the more verbose the output.
   // This means each value prints all values below it.
 
-  NONE,  // No output ( deactivates the debug print system entirely )
+  NONE,  // No output      ( deactivates the debug print system entirely )
   ERROR, // Error messages ( critical issues that prevent normal execution )
-  WARN,  // Warnings   ( non critical issues that do not prevent normal execution )
-  INFO,  // Long term informational messages ( key events in the program )
-  DEBUG, // tracing of abnormal execution flow ( unhappy path ) and short term debugging messages
-  TRACE, // Tracing of normal execution flow   ( happy path )
+  WARN,  // Warnings too   ( non critical issues that do not prevent normal execution )
+  INFO,  // Long term informational messages   ( key events in the program )
+  DEBUG, // Tracing of abnormal execution flow ( unhappy path ) and short term debugging messages
+  TRACE, // Tracing of normal   execution flow ( happy path )
+  CONT,  // Continues the latest log message if it was printed ( does not print message header )
 
 
   // an enum method... ? in THIS economy ?!
   pub fn canLog( self : LogLevel ) bool
   {
+    if( self == .CONT and LoggedLastMsg == true ){         return true;  }
     if( comptime G_LOG_LVL == .NONE ){                     return false; }
-    if( @intFromEnum( self ) > @intFromEnum( G_LOG_LVL )){ return false;  }
+    if( @intFromEnum( self ) > @intFromEnum( G_LOG_LVL )){ return false; }
     return true;
   }
 };
 
 // Global configuration variables for the debug logging system
-pub const G_LOG_LVL      : LogLevel    = .DEBUG; // Set the global log level for debug printing
+pub const G_LOG_LVL      : LogLevel    = .DEBUG; // Set the global log level for debug printing ( do not use CONT here )
 
 pub const SHOW_ID_MSGS   : bool        = true;   // If true, messages with id will not be omitted
 pub const SHOW_TIMESTAMP : bool        = true;   // If true, messages will include a timestamp of the system clock
 pub const SHOW_MSG_SRC   : bool        = true;   // If true, messages will include the source file, line number, and function name of the call location
 pub const ADD_PREC_NL    : bool        = true;   // If true, a newline will be before the actual message, to make it more readable
-
-// TODO : reimplement logging to file ( need my own io implementation for that )
 
 pub const USE_LOG_FILE   : bool        = false;              // If true, log messages will be written to a file instead of stdout/stderr
 pub const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
@@ -65,54 +67,67 @@ pub fn log( level : LogLevel, id : u32, cLoc : ?std.builtin.SourceLocation, comp
 
     // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main)
     // > This is a debug message
+    //   This is a message continuation (.CONT )
 
-  if( !level.canLog() ) return;
+  if( !level.canLog() ){ LoggedLastMsg = false; return; }
+
+  LoggedLastMsg = false;
 
   // If the message is IDed and SHOW_ID_MSGS is false, do nothing
   if( comptime !SHOW_ID_MSGS and id != 0 ) return;
 
+
+  // TODO : reimplement logging to file ( need my own io implementation for that )
   // TODO : Implement the trace system properly, to log/unlog functions when they are called and exited ( maybe via a trace stack file ?)
 
 
   // ================ LOGGING LOGIC ================
 
-  // Show the log level as a string
-  logLevel( level ) catch | err |
-  {
-    std.debug.print( "Failed to write log level : {}\n", .{ err });
-    return;
-  };
+  // Setting the success flag for the next .CONT canLog() check
+  LoggedLastMsg = true;
 
-  // Shows the message id if SHOW_ID_MSGS is true
-  if( id != 0 )
+
+  if( level != .CONT )
   {
-    //G_LOG_FILE.writer().print( "{d:0>4} ", .{ id }) catch | err |
-    //{
-    //  std.debug.print( "Failed to write message id : {}\n", .{ err });
-    //  return;
-    //};
-    std.debug.print( "{d:0>4} ", .{ id });
+    // Show the log level as a string
+    logLevel( level ) catch | err |
+    {
+      std.debug.print( "Failed to write log level : {}\n", .{ err });
+      return;
+    };
+
+    // Shows the message id if SHOW_ID_MSGS is true
+    if( id != 0 )
+    {
+      //G_LOG_FILE.writer().print( "{d:0>4} ", .{ id }) catch | err |
+      //{
+      //  std.debug.print( "Failed to write message id : {}\n", .{ err });
+      //  return;
+      //};
+      std.debug.print( "{d:0>4} ", .{ id });
+    }
+
+    // Shows the time of the message relative to the system clock if SHOW_TIMESTAMP is true
+    logTime() catch | err |
+    {
+      std.debug.print( "Failed to write timestamp : {}\n", .{ err });
+      return;
+    };
+
+    logChar( ':' );
+
+    // Shows the file location if SHOW_MSG_SRC is true
+    logLoc( cLoc ) catch | err |
+    {
+      std.debug.print( "Failed to write source location : {}\n", .{ err });
+      return;
+    };
+
+    logChar( ':' ); // Print a separator character
   }
 
-  // Shows the time of the message relative to the system clock if SHOW_TIMESTAMP is true
-  logTime() catch | err |
-  {
-    std.debug.print( "Failed to write timestamp : {}\n", .{ err });
-    return;
-  };
-
-  logChar( ':' );
-
-  // Shows the file location if SHOW_MSG_SRC is true
-  logLoc( cLoc ) catch | err |
-  {
-    std.debug.print( "Failed to write source location : {}\n", .{ err });
-    return;
-  };
-
-  logChar( ':' ); // Print a separator character
-
   // If the message starts with '!', set the color to red
+
   if( message.len >= 0 )
   {
     switch ( message[ 0 ])
@@ -136,7 +151,9 @@ pub fn log( level : LogLevel, id : u32, cLoc : ?std.builtin.SourceLocation, comp
     //  return;
     //};
 
-    std.debug.print( "\n > ", .{} );
+    if( level == .CONT ){ std.debug.print( "   ", .{} ); }
+    else                { std.debug.print( "\n > ", .{} );}
+
   }
 
   // Prints the actual message
@@ -208,10 +225,11 @@ fn logLevel( level: LogLevel ) !void
   {
     LogLevel.NONE  => setCol( def.tcl_u.RESET  ),
     LogLevel.ERROR => setCol( def.tcl_u.RED    ),
-    LogLevel.WARN  => setCol( def.tcl_u.YELLOW ),
+    LogLevel.WARN  => setCol( def.tcl_u.MAGEN ),
     LogLevel.INFO  => setCol( def.tcl_u.GREEN  ),
     LogLevel.DEBUG => setCol( def.tcl_u.CYAN   ),
     LogLevel.TRACE => setCol( def.tcl_u.GRAY   ),
+    else => {},
   }
 
   const lvl : []const u8 = switch ( level )
@@ -222,6 +240,7 @@ fn logLevel( level: LogLevel ) !void
     LogLevel.INFO  => "[INFO ]",
     LogLevel.DEBUG => "[DEBUG]",
     LogLevel.TRACE => "[TRACE]",
+    else           => "[N/A]"
   };
 
   //try G_LOG_FILE.writer().print( "{s} ", .{ lvl });
@@ -276,8 +295,8 @@ pub fn logFrameTime( cLoc : ?std.builtin.SourceLocation ) void
   const sec  : u64 = @intCast( frameTime.toSec() );
   const nano : u64 = @intCast( @rem( frameTime.value, TimeVal.nsPerSec() ));
 
-  if( cLoc )| loc |{ log( .INFO, 0, loc,    "$ Full frame time : {d}.{d:0>9} ( {d:.2} fps )", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
-  else {             log( .INFO, 0, @src(), "$ Full frame time : {d}.{d:0>9} ( {d:.2} fps )", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
+  if( cLoc )| loc |{ log( .INFO, 0, loc,    "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
+  else {             log( .INFO, 0, @src(), "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
 }
 
 pub fn logDeltaTime( deltaTime : TimeVal, cLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void

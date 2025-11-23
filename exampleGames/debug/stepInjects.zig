@@ -179,6 +179,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.coverScreenWith( .new( 0, 0, 0, 128 ));
+    def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
   }
 }

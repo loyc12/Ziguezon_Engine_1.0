@@ -9,7 +9,7 @@ pub fn initCriticals() void
 {
   def.GLOBAL_EPOCH = def.getNow();
 
-  def.qlog( .INFO, 0, @src(), "# Initializing all subsystems..." );
+  def.qlog( .TRACE, 0, @src(), "# Initializing all subsystems..." );
 
   def.initAllUtils( def.alloc );
 
@@ -25,11 +25,11 @@ pub fn initCriticals() void
 
 pub fn deinitCriticals() void
 {
-  def.qlog( .INFO, 0, @src(), "# Deinitializing all subsystems..." );
+  def.qlog( .TRACE, 0, @src(), "# Deinitializing all subsystems..." );
 
   def.deinitAllUtils();
 
-  def.qlog( .INFO, 0, @src(), "$ Deinitialized all subsystems\n" );
+  def.qlog( .INFO, 0, @src(), "$ Deinitialized all subsystems !\n" );
 }
 
 // ================================ MAIN FUNCTION ================================

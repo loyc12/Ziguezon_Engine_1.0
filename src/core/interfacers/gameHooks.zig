@@ -140,7 +140,7 @@ pub const GameHooks = struct
 
   pub fn checkHookValidities( self : *const GameHooks ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Checking game hook validity..." );
+    def.qlog( .DEBUG, 0, @src(), "Checking game hook validity..." );
 
     inline for ( @typeInfo( GameHooks ).@"struct".fields )| field |
     {
@@ -150,11 +150,11 @@ pub const GameHooks = struct
       if( fieldPtr )| func |
       {
         _ = func;
-        def.log( .DEBUG, 0, @src(), "Game hook for '{s}' is set", .{ fieldName });
+        def.log( .CONT, 0, @src(), "$ Game hook for '{s}' is set", .{ fieldName });
       }
       else
       {
-        def.log( .DEBUG, 0, @src(), "@ Game hook for '{s}' is NOT set", .{ fieldName });
+        def.log( .CONT, 0, @src(), "@ Game hook for '{s}' is NOT set", .{ fieldName });
       }
     }
   }

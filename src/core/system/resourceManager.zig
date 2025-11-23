@@ -12,11 +12,11 @@ pub const ResourceManager = struct
 
   pub fn init( self : *ResourceManager, allocator : std.mem.Allocator ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Initializing resource manager..." );
+    def.qlog( .TRACE, 0, @src(), "# Initializing resource manager..." );
 
     if( self.isInit )
     {
-      def.qlog( .WARN, 0, @src(), "Resource manager is already initialized" );
+      def.qlog( .WARN, 0, @src(), "@ Resource manager is already initialized" );
       return;
     }
 
@@ -27,16 +27,16 @@ pub const ResourceManager = struct
 
     self.isInit    = true;
   //self.allocator = allocator;
-    def.qlog( .INFO, 0, @src(), "Resource manager initialized." );
+    def.qlog( .INFO, 0, @src(), "$ Resource manager initialized !\n" );
   }
 
   pub fn deinit( self : *ResourceManager ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Deinitializing resource manager..." );
+    def.qlog( .TRACE, 0, @src(), "# Deinitializing resource manager..." );
 
     if( !self.isInit )
     {
-      def.qlog( .WARN, 0, @src(), "Resource manager is not initialized" );
+      def.qlog( .WARN, 0, @src(), "@ Resource manager was not initialized" );
       return;
     }
 
@@ -58,7 +58,7 @@ pub const ResourceManager = struct
     self.sprites.clearAndFree();
 
     self.isInit = false;
-    def.qlog( .INFO, 0, @src(), "Resource manager deinitialized." );
+    def.qlog( .INFO, 0, @src(), "$ Resource manager deinitialized !\n" );
   }
 
   // Get resources from the map

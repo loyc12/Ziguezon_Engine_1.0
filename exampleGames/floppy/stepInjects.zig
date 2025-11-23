@@ -130,7 +130,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {
-    def.coverScreenWith( .new( 0, 0, 0, 128 ));
+    def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
   }
 
   // Draw each the score in the middle of the screen

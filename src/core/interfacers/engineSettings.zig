@@ -11,6 +11,7 @@ pub const EngineSettings = struct
   DebugDraw_Entity  : bool = false,
   DebugDraw_Tilemap : bool = false,
   DebugDraw_Tile    : bool = false,
+  DebugDraw_FPS     : bool = false,
 
   // Feature Flag
 
@@ -30,6 +31,7 @@ pub const EngineSettings = struct
   // Graphical Values
 
   Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.black,
+  Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf",
 
 
   // ================================ ENGINE SETTINGS FUNCTIONS ================================
@@ -50,6 +52,7 @@ pub const EngineSettings = struct
     if( @hasDecl( module, "DebugDraw_Entity"  )){ self.DebugDraw_Entity  = @field( module, "DebugDraw_Entity"  ); hasFoundSettings = true; }
     if( @hasDecl( module, "DebugDraw_Tilemap" )){ self.DebugDraw_Tilemap = @field( module, "DebugDraw_Tilemap" ); hasFoundSettings = true; }
     if( @hasDecl( module, "DebugDraw_Tile"    )){ self.DebugDraw_Tile    = @field( module, "DebugDraw_Tile"    ); hasFoundSettings = true; }
+    if( @hasDecl( module, "DebugDraw_FPS"     )){ self.DebugDraw_FPS     = @field( module, "DebugDraw_FPS"     ); hasFoundSettings = true; }
 
     // Debug Flags
     if( @hasDecl( module, "AutoApply_Entity_Movement"  )){ self.AutoApply_Entity_Movement  = @field( module, "AutoApply_Entity_Movement"  ); hasFoundSettings = true; }
@@ -63,6 +66,7 @@ pub const EngineSettings = struct
 
 
     if( @hasDecl( module, "Graphic_Bckgrd_Colour"    )){ self.Graphic_Bckgrd_Colour    = @field( module, "Graphic_Bckgrd_Colour"    ); hasFoundSettings = true; }
+    if( @hasDecl( module, "Graphic_Default_Font"     )){ self.Graphic_Default_Font     = @field( module, "Graphic_Default_Font"     ); hasFoundSettings = true; }
 
 
     // Logging the outcome

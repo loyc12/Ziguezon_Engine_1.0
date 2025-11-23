@@ -132,11 +132,11 @@ pub const TilemapManager = struct
 
   pub fn init( self : *TilemapManager, allocator : std.mem.Allocator ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Initializing Tilemap manager" );
+    def.qlog( .TRACE, 0, @src(), "# Initializing Tilemap manager..." );
 
     if( self.isInit )
     {
-      def.qlog( .WARN, 0, @src(), "Tilemap manager is already initialized" );
+      def.qlog( .WARN, 0, @src(), "@ Tilemap manager is already initialized" );
       return;
     }
 
@@ -149,16 +149,16 @@ pub const TilemapManager = struct
 
     self.isInit    = true;
     self.allocator = allocator;
-    def.qlog( .INFO, 0, @src(), "Tilemap manager initialized" );
+    def.qlog( .INFO, 0, @src(), "$ Tilemap manager initialized !\n" );
   }
 
   pub fn deinit( self : *TilemapManager ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Deinitializing Tilemap manager" );
+    def.qlog( .TRACE, 0, @src(), "# Deinitializing Tilemap manager..." );
 
     if( !self.isInit )
     {
-      def.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
+      def.qlog( .WARN, 0, @src(), "@ Tilemap manager was not initialized" );
       return;
     }
 
@@ -169,7 +169,7 @@ pub const TilemapManager = struct
 
     self.isInit    = false;
     self.allocator = undefined;
-    def.qlog( .INFO, 0, @src(), "Tilemap manager deinitialized" );
+    def.qlog( .INFO, 0, @src(), "$ Tilemap manager deinitialized\n" );
   }
 
   // ================================ TILEMAP MANAGEMENT FUNCTIONS ================================

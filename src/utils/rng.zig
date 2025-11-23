@@ -16,7 +16,7 @@ pub var G_RNG : randomiser = .{};
 pub fn initGlobalRNG() void
 {
   G_RNG.randInit();
-  def.qlog( .INFO, 0, @src(), "Random number generator initialized" );
+  def.qlog( .INFO, 0, @src(), "Random number generator initialized\n" );
 }
 
 pub fn seedGlobalRNG( seed : i128 ) void

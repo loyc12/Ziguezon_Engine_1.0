@@ -93,11 +93,13 @@ inline fn tryTick( ng : *Engine ) bool
 
     const tmpTime = def.getNow();
 
-    ng.tickOffset.value -= ng.targetTickTime.value;
+    ng.tickOffset.value -= ng.targetTickTime.value; // TODO : ensure this doesn't create a giant backlog of tick events during lag
 
     def.tryHook( .OnTickWorld, .{ ng });
     {
       tickEntities( ng );
+
+      // NOTE : tick other world objects here
     }
     def.tryHook( .OffTickWorld, .{ ng });
 
@@ -131,11 +133,11 @@ inline fn tryRender( ng : *Engine ) bool
 
   //const tmpTime = def.getNow();
 
-    ng.frameOffset.value -= ng.targetFrameTime.value;
+    ng.frameOffset.value -= ng.targetFrameTime.value; // TODO : ensure this doesn't create a giant backlog of frame events during lag
     renderGraphics( ng );
 
   //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "& Render delta time" );
-    def.log_u.logFrameTime( @src());
+  //def.log_u.logFrameTime( @src());
 
     return true;
   }
@@ -182,7 +184,20 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
 
       def.tryHook( .OffRenderWorld, .{ ng });
     }
+
     def.ray.endMode2D();
+
+    if( def.G_ST.DebugDraw_FPS )
+    {
+      const frameTime = def.TimeVal.fromRayDeltaTime( def.ray.getFrameTime() );
+
+      const sec : u64 = @intCast( frameTime.toSec() );
+      const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
+
+      //const x =
+
+      def.drawTextFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16, 16, 32, def.Colour.yellow );
+    }
   }
   else { def.qlog( .WARN, 0, @src(), "No main camera found, skipping world rendering" ); }
 

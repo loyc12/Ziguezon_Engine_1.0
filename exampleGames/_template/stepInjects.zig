@@ -107,6 +107,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
 
   if( ng.isPaused() )
   {
-    def.coverScreenWith( def.Colour.init( 0, 0, 0, 128 )); // grays out the screen
+    def.coverScreenWithCol( def.Colour.init( 0, 0, 0, 128 )); // grays out the screen
   }
 }

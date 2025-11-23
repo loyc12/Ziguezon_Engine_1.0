@@ -180,11 +180,16 @@ pub fn open( ng : *Engine ) void
 
     if( !def.ray.isWindowReady() ) // TODO : move this to its own functions eventually ?
     {
+      def.qlog( .INFO, 0, @src(), "# Opening the window..." );
+
       def.ray.initWindow(
         @intCast( def.G_ST.Startup_Window_Width  ),
         @intCast( def.G_ST.Startup_Window_Height ),
         def.G_ST.Startup_Window_Title
       );
+
+      // TODO : Check if this font leaks
+      _ = def.setDefaultFont( def.G_ST.Graphic_Default_Font );
     }
   }
   def.tryHook( .OnOpen, .{ ng });

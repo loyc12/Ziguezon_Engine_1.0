@@ -91,6 +91,13 @@ pub const TimeVal = struct
   pub inline fn toUs(   self : *const TimeVal ) i128 { return @divTrunc( self.value, TimeVal.nsPerUs()   ); }
   pub inline fn toNs(   self : *const TimeVal ) i128 { return self.value; }
 
+  pub inline fn secPerYear() i128 { return 31_536_000; }
+  pub inline fn secPerWeek() i128 { return 604_800; }
+  pub inline fn secPerDay()  i128 { return 86_400; }
+  pub inline fn secPerHour() i128 { return 3_600; }
+  pub inline fn secPerMin()  i128 { return 60; }
+  pub inline fn secPerSec()  i128 { return 1; }
+
   pub inline fn nsPerYear() i128 { return 31_536_000_000_000_000; }
   pub inline fn nsPerWeek() i128 { return 604_800_000_000_000; }
   pub inline fn nsPerDay()  i128 { return 86_400_000_000_000; }
@@ -100,6 +107,10 @@ pub const TimeVal = struct
   pub inline fn nsPerMs()   i128 { return 1_000_000; }
   pub inline fn nsPerUs()   i128 { return 1_000; }
   pub inline fn nsPerNs()   i128 { return 1; }
+
+  pub inline fn msPerSec()  i128 { return 1_000; }
+  pub inline fn usPerSec()  i128 { return 1_000_000; }
+
 
 
   // ======== TYPE CONVERSION ========

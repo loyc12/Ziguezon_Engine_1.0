@@ -9,6 +9,46 @@ const Colour = def.Colour;
 pub const ELLIPSE_SIDE_COUNT : u8  = 32; // TODO : move these to settings
 pub const BASE_LINE_WIDTH    : f32 = 2.0;
 
+var DEFAULT_FONT : def.ray.Font = undefined;
+var SPACING_FACTOR : f32        = 0.0;
+
+
+pub fn getDefaultFont() ray.Font { return DEFAULT_FONT; }
+
+pub fn setDefaultFont( fontPath : ?[:0] const u8 ) bool
+{
+  if( fontPath ) | path |
+  {
+    const result = ray.Font.init( path );
+
+    if( result )| font |
+    {
+
+      def.log( .DEBUG, 0, @src(), "Default font params : baseSize = {}, glyphCount = {}, texture id = {}", .{ font.baseSize, font.glyphCount, font.texture.id });
+
+      if( font.isReady() )
+      {
+        DEFAULT_FONT = font;
+        return true;
+      }
+      else { def.qlog( .ERROR, 0, @src(), "Invalid font : " ); }
+
+      if( font.glyphCount == 0 ) { def.qlog( .CONT, 0, @src(), "( glyphCount == 0 )" ); }
+      if( font.texture.id == 0 ) { def.qlog( .CONT, 0, @src(), "( texture id == 0 )" ); }
+    }
+    else | err |
+    {
+      def.log( .ERROR, 0, @src(), "Failed to set default font : {}", .{ err });
+      def.qlog( .CONT, 0, @src(), "Defaulting to raylib defaults" );
+    }
+  }
+
+  SPACING_FACTOR = 1.0 / 8.0;
+  DEFAULT_FONT = ray.getFontDefault() catch @panic( "Failed to get raylib default font" );
+  return false;
+}
+
+
 // ================ SCREEN FUNCTIONS ================
 
 //pub inline fn isPixelInScreen( pos : Vec2 ) bool
@@ -25,7 +65,7 @@ pub const BASE_LINE_WIDTH    : f32 = 2.0;
 //  );
 //}
 
-pub inline fn coverScreenWith( col : Colour ) void { ray.drawRectangleV( def.zeroRayVec2, def.getScreenSize().toRayVec2(), col.toRayCol() ); }
+pub inline fn coverScreenWithCol( col : Colour ) void { ray.drawRectangleV( def.zeroRayVec2, def.getScreenSize().toRayVec2(), col.toRayCol() ); }
 
 
 // ================ SIMPLE DRAWING FUNCTIONS ================
@@ -199,13 +239,35 @@ pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour
 
 pub inline fn drawText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
 {
-  ray.drawText( text, @intFromFloat( posX ), @intFromFloat( posY ), @intFromFloat( fontSize ), col.toRayCol() );
+  ray.drawTextEx( DEFAULT_FONT, text, ray.Vector2{ .x = posX, .y = posY }, fontSize, fontSize * SPACING_FACTOR, col.toRayCol() );
+}
+
+pub inline fn drawTextFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  var   buf : [ 1024 ]u8 = undefined;
+  const text = std.fmt.bufPrintZ( &buf, fmt, args ) catch @panic( "drawCenteredTextFmt : Formatted text too long" );
+
+  drawText( text, posX, posY, fontSize, col );
 }
 
 pub inline fn drawCenteredText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
 {
-  const textHalfWidth  = @as( f32, @floatFromInt( ray.measureText( text, @intFromFloat( fontSize )))) / 2.0;
-  const textHalfHeight = fontSize / 2.0;
+  const textDims       = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
+  const textHalfWidth  = textDims.x / 2.0;
+  const textHalfHeight = textDims.y / 2.0;
+
+  drawText( text, posX - textHalfWidth, posY - textHalfHeight, fontSize, col );
+}
+
+pub inline fn drawCenteredTextFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  var   buf : [ 1024 ]u8 = undefined;
+  const text = std.fmt.bufPrintZ( &buf, fmt, args ) catch @panic( "drawCenteredTextFmt : Formatted text too long" );
+
+  const textDims       = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
+  const textHalfWidth  = textDims.x / 2.0;
+  const textHalfHeight = textDims.y / 2.0;
+
   drawText( text, posX - textHalfWidth, posY - textHalfHeight, fontSize, col );
 }
 

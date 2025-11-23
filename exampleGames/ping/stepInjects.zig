@@ -430,11 +430,18 @@ pub fn OnRenderOverlay( ng : *Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.coverScreenWith( .new( 0, 0, 0, 128 ));
+    def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
+
+    def.drawCenteredText( "Hold A or D to accelerate", ( def.getScreenWidth() * 0.5 ) - 512, 128, 32, def.Colour.yellow );
+    def.drawCenteredText( "Press S or Space to break", ( def.getScreenWidth() * 0.5 ) - 512, 192, 32, def.Colour.yellow );
+
+    def.drawCenteredText( "Hold Left or Right to accelerate", ( def.getScreenWidth() * 0.5 ) + 512, 128, 32, def.Colour.yellow );
+    def.drawCenteredText( "Press Down or KP enter to break",  ( def.getScreenWidth() * 0.5 ) + 512, 192, 32, def.Colour.yellow );
   }
 
   if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )
   {
+
     const winner_msg = if( WINNER == 1 ) "Player 1 wins!" else "Player 2 wins!";
     def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.Colour.green );
     def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.Colour.yellow );
@@ -442,6 +449,6 @@ pub fn OnRenderOverlay( ng : *Engine ) void
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawCenteredText( "Press Enter to resume", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press Enter to resume", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 128, 128, def.Colour.yellow );
   }
 }

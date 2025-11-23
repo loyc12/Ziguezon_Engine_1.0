@@ -169,7 +169,10 @@ pub const Coords3 = cor3_u.Coords3;
 
 pub const drw_u                    = @import( "utils/drawer.zig" );
 
-pub const coverScreenWith          = drw_u.coverScreenWith;
+pub const getDefaultFont           = drw_u.getDefaultFont;
+pub const setDefaultFont           = drw_u.setDefaultFont;
+
+pub const coverScreenWithCol       = drw_u.coverScreenWithCol;
 
 pub const drawPixel                = drw_u.drawPixel;
 pub const drawMacroPixel           = drw_u.drawMacroPixel;
@@ -202,7 +205,9 @@ pub const drawHstr                 = drw_u.drawHexStarPlus;
 pub const drawDstr                 = drw_u.drawOctStarPlus;
 
 pub const drawText                 = drw_u.drawText;
+pub const drawTextFmt              = drw_u.drawTextFmt;
 pub const drawCenteredText         = drw_u.drawCenteredText;
+pub const drawCenteredTextFmt      = drw_u.drawCenteredTextFmt;
 
 pub const drawTexture              = drw_u.drawTexture;
 pub const drawTextureCentered      = drw_u.drawTextureCentered;

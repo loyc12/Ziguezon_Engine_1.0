@@ -133,11 +133,11 @@ pub const EntityManager = struct
 
   pub fn init( self : *EntityManager, allocator : std.mem.Allocator ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Initializing Entity manager" );
+    def.qlog( .TRACE, 0, @src(), "# Initializing Entity manager..." );
 
     if( self.isInit )
     {
-      def.qlog( .WARN, 0, @src(), "Entity manager is already initialized" );
+      def.qlog( .WARN, 0, @src(), "@ Entity manager is already initialized" );
       return;
     }
 
@@ -150,16 +150,16 @@ pub const EntityManager = struct
 
     self.isInit    = true;
     self.allocator = allocator;
-    def.qlog( .INFO, 0, @src(), "Entity manager initialized" );
+    def.qlog( .INFO, 0, @src(), "$ Entity manager initialized !\n" );
   }
 
   pub fn deinit( self : *EntityManager ) void
   {
-    def.qlog( .TRACE, 0, @src(), "Deinitializing Entity manager" );
+    def.qlog( .TRACE, 0, @src(), "# Deinitializing Entity manager..." );
 
     if( !self.isInit )
     {
-      def.qlog( .WARN, 0, @src(), "Entity manager is not initialized" );
+      def.qlog( .WARN, 0, @src(), "@ Entity manager was not initialized" );
       return;
     }
 
@@ -168,7 +168,7 @@ pub const EntityManager = struct
 
     self.isInit    = false;
     self.allocator = undefined;
-    def.qlog( .INFO, 0, @src(), "Entity manager deinitialized" );
+    def.qlog( .INFO, 0, @src(), "$ Entity manager deinitialized !\n" );
   }
 
   // ================================ ENTITY MANAGEMENT FUNCTIONS ================================

@@ -64,7 +64,7 @@ pub const Engine = struct
 
     if( self.isPlaying() )
     {
-      self.tickOffset.value  = self.tickOffset.value  + self.simDelta.value;
+      self.tickOffset.value = self.tickOffset.value + self.simDelta.value;
     }
     self.frameOffset.value = self.frameOffset.value + self.simDelta.value;
 
