@@ -81,12 +81,12 @@ pub const Tilemap = struct
   {
     if( !coords.isPosi() )
     {
-      def.log( .DEBUG, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
+      def.log( .TRACE, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
       return false;
     }
     if( coords.isSupXY( self.gridSize.subVal( 1 )))
     {
-      def.log( .DEBUG, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.gridSize.x, self.gridSize.y });
+      def.log( .TRACE, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.gridSize.x, self.gridSize.y });
       return false;
     }
     return true;
@@ -238,8 +238,14 @@ pub const Tilemap = struct
       if( tileType != .RANDOM ){ tmpType = tileType; }
       else switch( def.G_RNG.getClampedInt( 1, 2 ))
       {
-        1    => tmpType = .FLOOR,
-        2    => tmpType = .WALL,
+        1    => tmpType = .T1,
+        2    => tmpType = .T2,
+        3    => tmpType = .T3,
+        4    => tmpType = .T4,
+        5    => tmpType = .T5,
+        6    => tmpType = .T6,
+        7    => tmpType = .T7,
+        8    => tmpType = .T8,
         else => tmpType = .EMPTY, // Should never happen
       }
 

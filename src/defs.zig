@@ -80,7 +80,10 @@ pub const e_ntt_shape = ntt.e_ntt_shape;
 // ================ TILEMAP ================
 
 pub const tlm          = @import( "core/tilemap/tilemapCore.zig" );
+
 pub const Tile         = tlm.Tile;
+pub const e_tile_type  = tlm.e_tile_type;
+
 pub const Tilemap      = tlm.Tilemap;
 pub const e_tlmp_shape = tlm.e_tlmp_shape;
 

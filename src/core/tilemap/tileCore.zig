@@ -8,8 +8,14 @@ pub const e_tile_type = enum( u8 )
 {
   // True tile types
   EMPTY   = 0,
-  FLOOR   = 1,
-  WALL    = 2,
+  T1      = 1,
+  T2      = 2,
+  T3      = 3,
+  T4      = 4,
+  T5      = 5,
+  T6      = 6,
+  T7      = 7,
+  T8      = 8,
 //MORE...
 
   // Tile effect types
@@ -23,10 +29,10 @@ pub const e_tile_type = enum( u8 )
     return switch( self )
     {
       .EMPTY   => .new( 0,   0,   0,   0 ),
-      .FLOOR   => .new( 200, 200, 200, 255 ),
-      .WALL    => .new( 150, 150, 150, 255 ),
     //.MORE...
       .PARITY, .RANDOM => .magenta, // Won't ever be seen in normal usecase
+
+      else    => .new( 150, 150, 150, 255 ),
     };
   }
 };

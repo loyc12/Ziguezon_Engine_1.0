@@ -10,6 +10,8 @@ pub const e_dir_2 = enum( u8 )
   SE, EA, NE, SO,
   NO, SW, WE, NW,
 
+  pub const arr = [_]def.e_dir_2{ .NO, .NE, .EA, .SE, .SO, .SW, .WE, .NW };
+
   pub fn getDebugColour( self : e_dir_2 ) def.Colour
   {
     return switch( self )
