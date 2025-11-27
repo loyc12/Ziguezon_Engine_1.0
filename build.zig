@@ -8,10 +8,7 @@ pub fn build( b: *std.Build ) void
 {
   // ================================ BUILD CONFIGURATION ================================
 
-  // This is the "standard" build target, which is the default target for the
-  // current platform and architecture. It is used to compile the code for the
-  // current platform and architecture, and it is the default target for the
-  // build system.
+  // This is the "standard" build target, which is the default for the current platform and architecture.
   const target   = b.standardTargetOptions(  .{} );
   const optimize = b.standardOptimizeOption( .{} );
 

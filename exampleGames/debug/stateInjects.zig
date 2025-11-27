@@ -97,7 +97,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .gridSize  = .{ .x = 8,  .y = 8  },
     .tileScale = .{ .x = 64, .y = 64 },
     .tileShape = .TRI1,
-  }, .FLOOR )
+  }, .T1 )
   )| tlm |{ EXAMPLE_TLM_ID = tlm.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example tilemap" ); }
 }
 
