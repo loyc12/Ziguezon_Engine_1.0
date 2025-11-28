@@ -75,7 +75,7 @@ pub fn build( b: *std.Build ) void
   // and it is used to provide a simple way to access commonly used src definitions
   const defs = b.createModule(
   .{
-    .root_source_file = b.path( "src/defs.zig" ),
+    .root_source_file = b.path( "./src/defs.zig" ),
     .target   = target,
     .optimize = optimize,
   });
@@ -92,7 +92,7 @@ pub fn build( b: *std.Build ) void
   });
   engine_interface.addImport( "raylib", raylib );
   engine_interface.addImport( "defs", defs );
-  exe.root_module.addImport( "engineInterface", engine_interface );
+  exe.root_module.addImport(  "engineInterface", engine_interface );
 
 
   // ================================ COMMANDS ================================

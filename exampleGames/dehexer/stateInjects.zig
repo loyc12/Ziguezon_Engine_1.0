@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 pub var GRID_ID     : u32 = 0;
-pub var MINE_COUNT  : u32 = 256;
+pub var MINE_COUNT  : u32 = 200;
 
 pub var GRID_SCALE  : f32 = 43;
 
@@ -59,9 +59,9 @@ pub fn OnOpen( ng : *def.Engine ) void
       remaingingMineCount -= 1;
       const mineTypeNoiseVal = def.G_RNG.getFloat( f32 );
 
-      if(      mineTypeNoiseVal < 0.5 ){ tile.tType  = TILE_MINE_1; tile.colour = .lGreen; }
-      else if( mineTypeNoiseVal < 0.8 ){ tile.tType  = TILE_MINE_2; tile.colour = .mGreen; }
-      else{                              tile.tType  = TILE_MINE_3; tile.colour = .dGreen; }
+      if(      mineTypeNoiseVal < 0.5 ){ tile.tType  = TILE_MINE_1; } //tile.colour = .lGreen; }
+      else if( mineTypeNoiseVal < 0.8 ){ tile.tType  = TILE_MINE_2; } //tile.colour = .mGreen; }
+      else{                              tile.tType  = TILE_MINE_3; } //tile.colour = .dGreen; }
     }
     remaingingTileCount -= 1;
   }
