@@ -113,18 +113,18 @@ pub const e_tlmp_shape = enum( u8 )
 
 // ================================ COORDS TO POS ================================
 
-pub fn getAbsTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) VecA
+pub fn getAbsTilePos( tlmp : *const Tilemap, mapCoords : Coords2 ) VecA
 {
-  const  tilePos = getRelTilePos( tlmp, gridCoords ).toVecA( .{} );
-  return tilePos.rot( tlmp.gridPos.a ).add( tlmp.gridPos );
+  const  tilePos = getRelTilePos( tlmp, mapCoords ).toVecA( .{} );
+  return tilePos.rot( tlmp.mapPos.a ).add( tlmp.mapPos );
 }
 
-pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) Vec2
+pub fn getRelTilePos( tlmp : *const Tilemap, mapCoords : Coords2 ) Vec2
 {
-  const baseX = @as( f32, @floatFromInt( gridCoords.x )) - ( @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) / 2.0 );
-  const baseY = @as( f32, @floatFromInt( gridCoords.y )) - ( @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) / 2.0 );
+  const baseX = @as( f32, @floatFromInt( mapCoords.x )) - ( @as( f32, @floatFromInt( tlmp.mapSize.x - 1 )) / 2.0 );
+  const baseY = @as( f32, @floatFromInt( mapCoords.y )) - ( @as( f32, @floatFromInt( tlmp.mapSize.y - 1 )) / 2.0 );
 
-  var tile = tlmp.getTile( gridCoords );
+  var tile = tlmp.getTile( mapCoords );
 
   if( tile != null ) // Return cached position if available
   {
@@ -139,7 +139,7 @@ pub fn getRelTilePos( tlmp : *const Tilemap, gridCoords : Coords2 ) Vec2
     basePos.y += baseX;
   }
 
-  basePos = basePos.sub( tlmp.tileShape.getParityOffset( gridCoords ));
+  basePos = basePos.sub( tlmp.tileShape.getParityOffset( mapCoords ));
   basePos = basePos.mul( tlmp.tileShape.getGridScaleFactors() );
   basePos = basePos.mul( tlmp.tileScale );
   basePos = basePos.mulVal( 2.0 );
@@ -161,7 +161,7 @@ pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
     return null;
   }
 
-  const relPos = pos.sub( tlmp.gridPos.toVec2() ).rot( tlmp.gridPos.a.neg() );
+  const relPos = pos.sub( tlmp.mapPos.toVec2() ).rot( tlmp.mapPos.a.neg() );
   return getCoordsFromRelPos( tlmp, relPos );
 }
 
@@ -170,8 +170,8 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
   const baseX = pos.x / tlmp.tileScale.x;
   const baseY = pos.y / tlmp.tileScale.y;
 
-  const centerOffsetX = @as( f32, @floatFromInt( tlmp.gridSize.x - 1 )) * 0.5;
-  const centerOffsetY = @as( f32, @floatFromInt( tlmp.gridSize.y - 1 )) * 0.5;
+  const centerOffsetX = @as( f32, @floatFromInt( tlmp.mapSize.x - 1 )) * 0.5;
+  const centerOffsetY = @as( f32, @floatFromInt( tlmp.mapSize.y - 1 )) * 0.5;
 
   switch( tlmp.tileShape )
   {
@@ -375,10 +375,10 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
 // ================================ COORDS TO COORDS ================================
 
-pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, direction : def.e_dir_2 ) ?Coords2
+pub fn getNeighbourCoords( tlmp : *const Tilemap, mapCoords : Coords2, direction : def.e_dir_2 ) ?Coords2
 {
-  const xMod2 = @mod( gridCoords.x, 2 );
-  const yMod2 = @mod( gridCoords.y, 2 );
+  const xMod2 = @mod( mapCoords.x, 2 );
+  const yMod2 = @mod( mapCoords.y, 2 );
 
   const xParity  = ( xMod2 == 1 );
   const yParity  = ( yMod2 == 1 );
@@ -388,54 +388,54 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
   {
     .RECT => switch( direction )
     {
-      .NW => gridCoords.add( Coords2.new( -1, -1 )),
-      .NO => gridCoords.add( Coords2.new(  0, -1 )),
-      .NE => gridCoords.add( Coords2.new(  1, -1 )),
-      .EA => gridCoords.add( Coords2.new(  1,  0 )),
-      .SE => gridCoords.add( Coords2.new(  1,  1 )),
-      .SO => gridCoords.add( Coords2.new(  0,  1 )),
-      .SW => gridCoords.add( Coords2.new( -1,  1 )),
-      .WE => gridCoords.add( Coords2.new( -1,  0 )),
+      .NW => mapCoords.add( Coords2.new( -1, -1 )),
+      .NO => mapCoords.add( Coords2.new(  0, -1 )),
+      .NE => mapCoords.add( Coords2.new(  1, -1 )),
+      .EA => mapCoords.add( Coords2.new(  1,  0 )),
+      .SE => mapCoords.add( Coords2.new(  1,  1 )),
+      .SO => mapCoords.add( Coords2.new(  0,  1 )),
+      .SW => mapCoords.add( Coords2.new( -1,  1 )),
+      .WE => mapCoords.add( Coords2.new( -1,  0 )),
     },
 
     .DIAM => switch( direction )
     {
-      .NW => gridCoords.add( Coords2.new( -1,  0 )),
-      .NO => gridCoords.add( Coords2.new( -1, -1 )),
-      .NE => gridCoords.add( Coords2.new(  0, -1 )),
-      .EA => gridCoords.add( Coords2.new(  1, -1 )),
-      .SE => gridCoords.add( Coords2.new(  1,  0 )),
-      .SO => gridCoords.add( Coords2.new(  1,  1 )),
-      .SW => gridCoords.add( Coords2.new(  0,  1 )),
-      .WE => gridCoords.add( Coords2.new( -1,  1 )),
+      .NW => mapCoords.add( Coords2.new( -1,  0 )),
+      .NO => mapCoords.add( Coords2.new( -1, -1 )),
+      .NE => mapCoords.add( Coords2.new(  0, -1 )),
+      .EA => mapCoords.add( Coords2.new(  1, -1 )),
+      .SE => mapCoords.add( Coords2.new(  1,  0 )),
+      .SO => mapCoords.add( Coords2.new(  1,  1 )),
+      .SW => mapCoords.add( Coords2.new(  0,  1 )),
+      .WE => mapCoords.add( Coords2.new( -1,  1 )),
     },
 
     .HEX1 => switch( direction )
     {
       .NO, .SO => null,
 
-      .WE => gridCoords.add( Coords2.new( -1,  0 )),
-      .EA => gridCoords.add( Coords2.new(  1,  0 )),
+      .WE => mapCoords.add( Coords2.new( -1,  0 )),
+      .EA => mapCoords.add( Coords2.new(  1,  0 )),
 
-      .NW => if( yParity ) gridCoords.add( Coords2.new( -1, -1 )) else gridCoords.add( Coords2.new(  0, -1 )),
-      .NE => if( yParity ) gridCoords.add( Coords2.new(  0, -1 )) else gridCoords.add( Coords2.new(  1, -1 )),
+      .NW => if( yParity ) mapCoords.add( Coords2.new( -1, -1 )) else mapCoords.add( Coords2.new(  0, -1 )),
+      .NE => if( yParity ) mapCoords.add( Coords2.new(  0, -1 )) else mapCoords.add( Coords2.new(  1, -1 )),
 
-      .SW => if( yParity ) gridCoords.add( Coords2.new( -1,  1 )) else gridCoords.add( Coords2.new(  0,  1 )),
-      .SE => if( yParity ) gridCoords.add( Coords2.new(  0,  1 )) else gridCoords.add( Coords2.new(  1,  1 )),
+      .SW => if( yParity ) mapCoords.add( Coords2.new( -1,  1 )) else mapCoords.add( Coords2.new(  0,  1 )),
+      .SE => if( yParity ) mapCoords.add( Coords2.new(  0,  1 )) else mapCoords.add( Coords2.new(  1,  1 )),
     },
 
     .HEX2 => switch( direction )
     {
       .WE, .EA => null,
 
-      .NO => gridCoords.add( Coords2.new(  0, -1 )),
-      .SO => gridCoords.add( Coords2.new(  0,  1 )),
+      .NO => mapCoords.add( Coords2.new(  0, -1 )),
+      .SO => mapCoords.add( Coords2.new(  0,  1 )),
 
-      .NW => if( xParity ) gridCoords.add( Coords2.new( -1, -1 )) else gridCoords.add( Coords2.new( -1,  0 )),
-      .SW => if( xParity ) gridCoords.add( Coords2.new( -1,  0 )) else gridCoords.add( Coords2.new( -1,  1 )),
+      .NW => if( xParity ) mapCoords.add( Coords2.new( -1, -1 )) else mapCoords.add( Coords2.new( -1,  0 )),
+      .SW => if( xParity ) mapCoords.add( Coords2.new( -1,  0 )) else mapCoords.add( Coords2.new( -1,  1 )),
 
-      .NE => if( xParity ) gridCoords.add( Coords2.new(  1, -1 )) else gridCoords.add( Coords2.new(  1,  0 )),
-      .SE => if( xParity ) gridCoords.add( Coords2.new(  1,  0 )) else gridCoords.add( Coords2.new(  1,  1 )),
+      .NE => if( xParity ) mapCoords.add( Coords2.new(  1, -1 )) else mapCoords.add( Coords2.new(  1,  0 )),
+      .SE => if( xParity ) mapCoords.add( Coords2.new(  1,  0 )) else mapCoords.add( Coords2.new(  1,  1 )),
     },
 
     .TRI1 => switch( xyParity ) // NOTE : could add true diagonals as neighbours
@@ -444,17 +444,17 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
       {
         .NO, .EA, .SE, .SW, .WE => null,
 
-        .NE => gridCoords.add( Coords2.new(  1,  0 )),
-        .SO => gridCoords.add( Coords2.new(  0,  1 )),
-        .NW => gridCoords.add( Coords2.new( -1,  0 )),
+        .NE => mapCoords.add( Coords2.new(  1,  0 )),
+        .SO => mapCoords.add( Coords2.new(  0,  1 )),
+        .NW => mapCoords.add( Coords2.new( -1,  0 )),
       },
       true => switch( direction ) // points down
       {
         .NE, .EA, .SO, .WE, .NW => null,
 
-        .SE => gridCoords.add( Coords2.new(  1,  0 )),
-        .NO => gridCoords.add( Coords2.new(  0, -1 )),
-        .SW => gridCoords.add( Coords2.new( -1,  0 )),
+        .SE => mapCoords.add( Coords2.new(  1,  0 )),
+        .NO => mapCoords.add( Coords2.new(  0, -1 )),
+        .SW => mapCoords.add( Coords2.new( -1,  0 )),
       },
     },
 
@@ -464,17 +464,17 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
       {
         .NO, .NE, .SE, .SO, .WE => null,
 
-        .SW => gridCoords.add( Coords2.new(  0,  1 )),
-        .EA => gridCoords.add( Coords2.new(  1,  0 )),
-        .NW => gridCoords.add( Coords2.new(  0, -1 )),
+        .SW => mapCoords.add( Coords2.new(  0,  1 )),
+        .EA => mapCoords.add( Coords2.new(  1,  0 )),
+        .NW => mapCoords.add( Coords2.new(  0, -1 )),
       },
       true => switch( direction ) // points right
       {
         .NO, .EA, .SO, .SW, .NW => null,
 
-        .SE => gridCoords.add( Coords2.new(  0,  1 )),
-        .WE => gridCoords.add( Coords2.new( -1,  0 )),
-        .NE => gridCoords.add( Coords2.new(  0, -1 )),
+        .SE => mapCoords.add( Coords2.new(  0,  1 )),
+        .WE => mapCoords.add( Coords2.new( -1,  0 )),
+        .NE => mapCoords.add( Coords2.new(  0, -1 )),
       },
     },
   }
@@ -493,11 +493,11 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, gridCoords : Coords2, directio
 pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the visuals better ( especially for DIAMS )
 {
 
-  var viewableScale = tlmp.gridSize.toVec2();
+  var viewableScale = tlmp.mapSize.toVec2();
       viewableScale = viewableScale.mul( tlmp.tileScale );
       viewableScale = viewableScale.mul( tlmp.tileShape.getGridScaleFactors());
 
-  if( tlmp.tileShape == .DIAM ){ return Box2.newPolyAABB( tlmp.gridPos.toVec2(), viewableScale.mulVal( 2.0 ), tlmp.gridPos.a, 4 ); }
+  if( tlmp.tileShape == .DIAM ){ return Box2.newPolyAABB( tlmp.mapPos.toVec2(), viewableScale.mulVal( 2.0 ), tlmp.mapPos.a, 4 ); }
 
   viewableScale = switch( tlmp.tileShape )
   {
@@ -511,17 +511,17 @@ pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the
   };
 
 
-  return( Box2.newRectAABB( tlmp.gridPos.toVec2(), viewableScale, tlmp.gridPos.a ));
+  return( Box2.newRectAABB( tlmp.mapPos.toVec2(), viewableScale, tlmp.mapPos.a ));
 }
 
 pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2
 {
-  const absPos = relPos.rot( tlmp.gridPos.a ).add( tlmp.gridPos.toVec2() );
+  const absPos = relPos.rot( tlmp.mapPos.a ).add( tlmp.mapPos.toVec2() );
   const radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
 
-  return Box2.newRectAABB( absPos, radii, tlmp.gridPos.a ); // NOTE : gross approximation for the sake of performance
+  return Box2.newRectAABB( absPos, radii, tlmp.mapPos.a ); // NOTE : gross approximation for the sake of performance
 
-  //const angle = tlmp.gridPos.a;
+  //const angle = tlmp.mapPos.a;
   //return switch( tlmp.tileShape ) // NOTE : slow af
   //{
   //  .RECT => return Box2.newRectAABB( absPos, radii, angle                                 ),
@@ -535,20 +535,20 @@ pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2
 
 pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *const Box2) void
 {
-  if( !tlmp.isCoordsValid( tile.gridCoords ))
+  if( !tlmp.isCoordsValid( tile.mapCoords ))
   {
-    def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.gridCoords.x, tile.gridCoords.y, tlmp.id });
+    def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.mapCoords.x, tile.mapCoords.y, tlmp.id });
     return;
   }
 
 
-  const relPos  = tile.relPos orelse getRelTilePos( tlmp, tile.gridCoords );
+  const relPos  = tile.relPos orelse getRelTilePos( tlmp, tile.mapCoords );
   const tileBox = getTileBoundingBox( tlmp, relPos );
 
   if( !viewBox.isOverlapping( &tileBox )){ return; } // Quick check to see if tile is even in view
 
-  const absPos = getAbsTilePos( tlmp, tile.gridCoords );
-  const dParity : f32 = @floatFromInt(( 2 * @mod( tile.gridCoords.x + tile.gridCoords.y, 2 )) - 1 );
+  const absPos = getAbsTilePos( tlmp, tile.mapCoords );
+  const dParity : f32 = @floatFromInt(( 2 * @mod( tile.mapCoords.x + tile.mapCoords.y, 2 )) - 1 );
 
   var radii = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() * MARGIN_FACTOR );
   if( tlmp.tileShape == .RECT ){ radii = radii.mulVal( 0.5 ); }

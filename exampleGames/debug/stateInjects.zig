@@ -93,8 +93,8 @@ pub fn OnOpen( ng : *def.Engine ) void
 
   if( ng.loadTilemapFromParams(
   .{
-    .gridPos   = .{ .x = -512, .y = 0 },
-    .gridSize  = .{ .x = 8,  .y = 8  },
+    .mapPos    = .{ .x = -512, .y = 0 },
+    .mapSize   = .{ .x = 8,  .y = 8  },
     .tileScale = .{ .x = 64, .y = 64 },
     .tileShape = .TRI1,
   }, .T1 )

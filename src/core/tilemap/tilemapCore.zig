@@ -42,8 +42,8 @@ pub const Tilemap = struct
   flags  : def.BitField8 = def.BitField8.new( e_tlmp_flags.DEFAULT ),
 
   // ======== GRID DATA ========
-  gridPos    : VecA    = .{},
-  gridSize   : Coords2 = DEF_GRID_SIZE,
+  mapPos    : VecA    = .{},
+  mapSize   : Coords2 = DEF_GRID_SIZE,
 
   tileArray  : std.ArrayList( Tile ) = undefined,
 
@@ -75,7 +75,7 @@ pub const Tilemap = struct
   // ================ CHECKERS ================
 
 
-  pub inline fn getTileCount(  self : *const Tilemap ) u32 { return @intCast( self.gridSize.x * self.gridSize.y ); }
+  pub inline fn getTileCount(  self : *const Tilemap ) u32 { return @intCast( self.mapSize.x * self.mapSize.y ); }
   pub inline fn isIndexValid(  self : *const Tilemap, index : u32 ) bool { return( index < self.getTileCount() ); }
   pub inline fn isCoordsValid( self : *const Tilemap, coords : Coords2 ) bool
   {
@@ -84,9 +84,9 @@ pub const Tilemap = struct
       def.log( .TRACE, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
       return false;
     }
-    if( coords.isSupXY( self.gridSize.subVal( 1 )))
+    if( coords.isSupXY( self.mapSize.subVal( 1 )))
     {
-      def.log( .TRACE, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.gridSize.x, self.gridSize.y });
+      def.log( .TRACE, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.mapSize.x, self.mapSize.y });
       return false;
     }
     return true;
@@ -104,9 +104,9 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Tilemap {d} is already initialized, cannot reinitialize", .{ self.id });
       return;
     }
-    if( self.gridSize.x == 0 or self.gridSize.y == 0 )
+    if( self.mapSize.x == 0 or self.mapSize.y == 0 )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ self.gridSize.x, self.gridSize.y });
+      def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ self.mapSize.x, self.mapSize.y });
       return;
     }
     if( self.tileScale.x <= 0 or self.tileScale.y <= 0 )
@@ -148,8 +148,8 @@ pub const Tilemap = struct
 
     var tmp      = Tilemap{
       .flags     = params.flags.filterField( e_tlmp_flags.TO_CPY ),
-      .gridPos   = params.gridPos,
-      .gridSize  = params.gridSize,
+      .mapPos   = params.mapPos,
+      .mapSize  = params.mapSize,
       .tileScale = params.tileScale,
       .tileShape = params.tileShape,
     };
@@ -175,36 +175,47 @@ pub const Tilemap = struct
   {
     if( !self.isIndexValid( index ))
     {
-      def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridSize.x, self.gridSize.y });
+      def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.mapSize.x, self.mapSize.y });
       return null;
     }
 
     const tmp = @as( i32, @intCast( index ));
 
     return Coords2{
-      .x = @mod(      tmp, self.gridSize.x ),
-      .y = @divTrunc( tmp, self.gridSize.x ),
+      .x = @mod(      tmp, self.mapSize.x ),
+      .y = @divTrunc( tmp, self.mapSize.x ),
     };
   }
 
-  pub inline fn getTileIndex( self : *const Tilemap, gridCoords : Coords2 ) ?u32
+  pub inline fn getTileIndex( self : *const Tilemap, mapCoords : Coords2 ) ?u32
   {
-    if( !self.isCoordsValid( gridCoords )){ return null; }
+    if( !self.isCoordsValid( mapCoords )){ return null; }
 
-    return @intCast(( gridCoords.y * self.gridSize.x ) + gridCoords.x );
+    return @intCast(( mapCoords.y * self.mapSize.x ) + mapCoords.x );
   }
 
-  pub inline fn getTile( self : *const Tilemap, gridCoords : Coords2 ) ?*Tile
+  pub inline fn getTile( self : *const Tilemap, mapCoords : Coords2 ) ?*Tile
   {
     if( !self.isInit() )
     {
-      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot get tile at {d}:{d}", .{ self.id, gridCoords.x, gridCoords.y });
+      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot get tile at {d}:{d}", .{ self.id, mapCoords.x, mapCoords.y });
       return null;
     }
-    if( !self.isCoordsValid( gridCoords )){ return null; }
+    if( !self.isCoordsValid( mapCoords )){ return null; }
 
-    const index = self.getTileIndex( gridCoords ) orelse return null;
+    const index = self.getTileIndex( mapCoords ) orelse return null;
     return &self.tileArray.items.ptr[ index ];
+  }
+
+  pub inline fn getNeighbourTile( self : *const Tilemap, mapCoords : Coords2, dir : def.e_dir_2 ) ?*Tile
+  {
+    const nCoords : Coords2 = self.getNeighbourCoords( mapCoords, dir ) orelse
+    {
+      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), mapCoords.x, mapCoords.y});
+      return null;
+    };
+
+    return self.getTile( nCoords );
   }
 
 
@@ -229,7 +240,7 @@ pub const Tilemap = struct
     {
       const tileCoords = self.getTileCoords( @intCast( index )) orelse
       {
-        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridSize.x, self.gridSize.y });
+        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.mapSize.x, self.mapSize.y });
         continue;
       };
 
@@ -257,9 +268,9 @@ pub const Tilemap = struct
 
       self.tileArray.items.ptr[ index ] = Tile
       {
-        .tType      = tmpType,
-        .colour     = col,
-        .gridCoords = tileCoords,
+        .tType     = tmpType,
+        .colour    = col,
+        .mapCoords = tileCoords,
       };
     }
   }
@@ -280,27 +291,27 @@ pub const Tilemap = struct
 
   // ================ POSITION FUNCTIONS ================
 
-  pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.gridPos.x, .y = self.gridPos.y }; }
-  pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.gridPos.a; }
+  pub inline fn getGridPos( self : *const Tilemap ) Vec2 { return Vec2{ .x = self.mapPos.x, .y = self.mapPos.y }; }
+  pub inline fn getGridRot( self : *const Tilemap ) f32  { return self.mapPos.a; }
 
-  pub inline fn getAbsTilePos( self : *const Tilemap, gridCoords : Coords2 ) VecA { return tlmpShape.getAbsTilePos( self, gridCoords ); }
-  pub inline fn getRelTilePos( self : *const Tilemap, gridCoords : Coords2 ) Vec2 { return tlmpShape.getRelTilePos( self, gridCoords ); }
+  pub inline fn getAbsTilePos( self : *const Tilemap, mapCoords : Coords2 ) VecA { return tlmpShape.getAbsTilePos( self, mapCoords ); }
+  pub inline fn getRelTilePos( self : *const Tilemap, mapCoords : Coords2 ) Vec2 { return tlmpShape.getRelTilePos( self, mapCoords ); }
 
-  pub inline fn getNeighbourCoords( self : *const Tilemap, gridCoords : Coords2, direction : def.e_dir_2 ) ?Coords2 { return tlmpShape.getNeighbourCoords( self, gridCoords, direction ); }
+  pub inline fn getNeighbourCoords( self : *const Tilemap, mapCoords : Coords2, direction : def.e_dir_2 ) ?Coords2 { return tlmpShape.getNeighbourCoords( self, mapCoords, direction ); }
 
   // =============== DRAW FUNCTIONS ================
 
-  //pub fn isTileOnScreen( self : *const Tilemap, gridCoords : Coords2 ) bool
+  //pub fn isTileOnScreen( self : *const Tilemap, mapCoords : Coords2 ) bool
   //{
-  //  if( !self.isCoordsValid( gridCoords ))
+  //  if( !self.isCoordsValid( mapCoords ))
   //  {
-  //    def.log( .ERROR, 0, @src(), "Cannot check if tile at {d}:{d} is on screen in tilemap {d} : coords are invalid", .{ gridCoords.x, gridCoords.y, self.id });
+  //    def.log( .ERROR, 0, @src(), "Cannot check if tile at {d}:{d} is on screen in tilemap {d} : coords are invalid", .{ mapCoords.x, mapCoords.y, self.id });
   //    return false;
   //  }
   //
-  //  const tilePos = self.getTileWorldPos( gridCoords ) orelse
+  //  const tilePos = self.getTileWorldPos( mapCoords ) orelse
   //  {
-  //    def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridCoords.x, gridCoords.y, self.id });
+  //    def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ mapCoords.x, mapCoords.y, self.id });
   //    return false;
   //  };
   //
@@ -318,23 +329,23 @@ pub const Tilemap = struct
     return tlmpShape.getTileBoundingBox( self, relPos );
   }
 
-  fn drawSingleTile( self : *const Tilemap, gridCoords : Coords2, viewBox : *const Box2 ) void
+  fn drawSingleTile( self : *const Tilemap, mapCoords : Coords2, viewBox : *const Box2 ) void
   {
-    if( !self.isCoordsValid( gridCoords ))
+    if( !self.isCoordsValid( mapCoords ))
     {
-      def.log( .ERROR, 0, @src(), "Unable to draw tile at position {d}:{d} in tilemap {d} : coords are invalid", .{ gridCoords.x, gridCoords.y, self.id });
+      def.log( .ERROR, 0, @src(), "Unable to draw tile at position {d}:{d} in tilemap {d} : coords are invalid", .{ mapCoords.x, mapCoords.y, self.id });
       return;
     }
 
-    const tile = self.getTile( gridCoords ) orelse
+    const tile = self.getTile( mapCoords ) orelse
     {
-      def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ gridCoords.x, gridCoords.y, self.id });
+      def.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ mapCoords.x, mapCoords.y, self.id });
       return;
     };
 
     if( tile.tType == .EMPTY )
     {
-      def.log( .TRACE, 0, @src(), "Tile at position {d}:{d} is empty, not drawing", .{ gridCoords.x, gridCoords.y });
+      def.log( .TRACE, 0, @src(), "Tile at position {d}:{d} is empty, not drawing", .{ mapCoords.x, mapCoords.y });
       return;
     }
 
@@ -343,7 +354,7 @@ pub const Tilemap = struct
 
   pub fn drawTilemap( self : *const Tilemap ) void
   {
-    def.log( .TRACE, 0, @src(), "Drawing Tilemap {d} at position {d}:{d} with scale {d}:{d}", .{ self.id, self.gridPos.x, self.gridPos.y, self.gridSize.x, self.gridSize.y });
+    def.log( .TRACE, 0, @src(), "Drawing Tilemap {d} at position {d}:{d} with scale {d}:{d}", .{ self.id, self.mapPos.x, self.mapPos.y, self.mapSize.x, self.mapSize.y });
 
     if( !self.isInit() )
     {
@@ -361,12 +372,12 @@ pub const Tilemap = struct
 
     for( 0 .. self.getTileCount() )| index |
     {
-      const gridCoords = self.getTileCoords( @intCast( index )) orelse
+      const mapCoords = self.getTileCoords( @intCast( index )) orelse
       {
-        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.gridSize.x, self.gridSize.y });
+        def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.mapSize.x, self.mapSize.y });
         continue;
       };
-      self.drawSingleTile( gridCoords, &viewBox );
+      self.drawSingleTile( mapCoords, &viewBox );
     }
   }
 

@@ -26,8 +26,8 @@ pub fn OnOpen( ng : *def.Engine ) void
 {
   const tlm = ng.loadTilemapFromParams(
   .{
-    .gridPos   = .{ .x = 0,  .y = 32 },
-    .gridSize  = .{ .x = GRID_WIDTH, .y = GRID_HEIGHT },
+    .mapPos    = .{ .x = 0,  .y = 32 },
+    .mapSize   = .{ .x = GRID_WIDTH, .y = GRID_HEIGHT },
     .tileScale = .{ .x = GRID_SCALE, .y = GRID_SCALE },
     .tileShape = .HEX1,
   }, TILE_HIDDEN);
@@ -45,6 +45,8 @@ pub fn OnOpen( ng : *def.Engine ) void
   for( 0 .. grid.getTileCount() )| index |
   {
     var tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
+
+    tile.colour = .mGray;
 
     // getting a random value between 0.0 and 1.0
     const noiseVal = def.G_RNG.getFloat( f32 );

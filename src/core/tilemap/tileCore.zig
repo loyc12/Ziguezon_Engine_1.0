@@ -28,11 +28,12 @@ pub const e_tile_type = enum( u8 )
   {
     return switch( self )
     {
-      .EMPTY   => .new( 0,   0,   0,   0 ),
-    //.MORE...
-      .PARITY, .RANDOM => .magenta, // Won't ever be seen in normal usecase
+      .EMPTY  => .transpa,
 
-      else    => .new( 150, 150, 150, 255 ),
+    //.T_ ...
+
+      .PARITY, .RANDOM => .magenta, // Won't ever be seen in normal usecase
+      else             => .nWhite,  // Idem
     };
   }
 };
@@ -41,15 +42,15 @@ pub const e_tile_type = enum( u8 )
 pub const Tile = struct
 {
   // ================ PROPERTIES ================
-  tType      : e_tile_type = .EMPTY, // TODO : store as u16 isntead, so that it can be customized more easily
+  tType     : e_tile_type = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
 
   // ======== GRID POS DATA ========
-  gridCoords : Coords2     = .{},
+  mapCoords : Coords2     = .{},
 
   // ======== RENDERING DATA ======== ( DEBUG )
-  colour     : def.Colour  = .magenta, // Won't ever be seen in normal usecase
+  colour    : def.Colour  = .transpa,
 
-  relPos     : ?def.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
+  relPos    : ?def.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
 
   // ======== CUSTOM BEHAVIOUR ========
 //data     : ?*anyopaque = null, // Pointer to instance specific data ( if any )

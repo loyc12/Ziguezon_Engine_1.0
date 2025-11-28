@@ -84,7 +84,7 @@ pub const Entity = struct
   hitbox : Box2 = .{}, // current hitbox position and scale ( after rotation ). will be changed on update ( or when clamping )
 
   // ======== RENDERING DATA ======== ( DEBUG )
-  colour : def.Colour  = def.Colour.white,
+  colour : def.Colour  = .nWhite,
   shape  : e_ntt_shape = .RECT,
 
   // ======== CUSTOM BEHAVIOUR ========

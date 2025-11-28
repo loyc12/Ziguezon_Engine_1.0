@@ -21,6 +21,7 @@ pub const Colour = struct
 
   pub inline fn newGray( v : u8,             a : u8 ) Colour { return Colour{ .r = v, .g = v, .b = v, .a = a }; }
 
+  pub const transpa  = Colour{ .r = 0, .g = 0, .b = 0, .a = 0 }; // Transparent ? Clear
 
   pub const black    = Colour{ .r = 0,   .g = 0,   .b = 0   }; // True Black
   pub const nBlack   = Colour{ .r = 32,  .g = 32,  .b = 32  }; // Near Black

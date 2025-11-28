@@ -36,15 +36,9 @@ fn getNeighbourMineCount( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Til
 
   for( def.e_dir_2.arr )| dir |
   {
-    const nCoords = grid.getNeighbourCoords( tile.gridCoords, dir ) orelse
+    const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
-      def.log( .TRACE, 0, @src(), "No northern neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.gridCoords.x, tile.gridCoords.y });
-      continue;
-    };
-
-    const n = grid.getTile( nCoords ) orelse
-    {
-      def.log( .WARN, 0, @src(), "No tile found at {d}:{d}", .{ nCoords.x, nCoords.y });
+      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
       continue;
     };
 
@@ -63,21 +57,15 @@ fn getNeighbourFlagCount( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Til
 
   for( def.e_dir_2.arr )| dir |
   {
-    const nCoords = grid.getNeighbourCoords( tile.gridCoords, dir ) orelse
+    const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
-      def.log( .TRACE, 0, @src(), "No northern neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.gridCoords.x, tile.gridCoords.y });
+      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
       continue;
     };
 
-    const n = grid.getTile( nCoords ) orelse
-    {
-      def.log( .WARN, 0, @src(), "No tile found at {d}:{d}", .{ nCoords.x, nCoords.y });
-      continue;
-    };
-
-    if( n.colour.isEq( .lBlue ) ){ res += 1; }
-    if( n.colour.isEq( .mBlue ) ){ res += 2; }
-    if( n.colour.isEq( .dBlue ) ){ res += 3; }
+    if( n.colour.isEq( .blue  ) ){ res += 1; }
+    if( n.colour.isEq( .lBlue ) ){ res += 2; }
+    if( n.colour.isEq( .mBlue ) ){ res += 3; }
   }
   return res;
 }
@@ -86,9 +74,9 @@ fn getNeighbourFlagCount( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Til
 fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
 {
   // Does nothing if a flagged tile was clicked
-  if( tile.colour.isEq( .lBlue )){  return; }
-  if( tile.colour.isEq( .mBlue  )){ return; }
-  if( tile.colour.isEq( .dBlue )){  return; }
+  if( tile.colour.isEq( .blue  )){  return; }
+  if( tile.colour.isEq( .lBlue  )){ return; }
+  if( tile.colour.isEq( .mBlue )){  return; }
 
   // Does nothing if an uncovered mine was clicked
   if( tile.colour.isEq( .yellow )){ return; }
@@ -102,7 +90,7 @@ fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
     FLAG_COUNT += 1;
     LIFE_COUNT -= 1;
 
-    def.log( .INFO, 0, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.gridCoords.x, tile.gridCoords.y });
+    def.log( .INFO, 0, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     return;
   }
   if( tile.tType == TILE_MINE_2 )
@@ -111,16 +99,16 @@ fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
     FLAG_COUNT += 1;
     LIFE_COUNT -= 2;
 
-    def.log( .INFO, 0, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.gridCoords.x, tile.gridCoords.y });
+    def.log( .INFO, 0, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     return;
   }
   if( tile.tType == TILE_MINE_3 )
   {
-    tile.colour = .orange;
+    tile.colour = .red;
     FLAG_COUNT += 1;
     LIFE_COUNT -= 3;
 
-    def.log( .INFO, 0, @src(), "@ Clicked on a large mine at {d}:{d}", .{ tile.gridCoords.x, tile.gridCoords.y });
+    def.log( .INFO, 0, @src(), "@ Clicked on a large mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     return;
   }
 
@@ -133,15 +121,9 @@ fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
     {
       for( def.e_dir_2.arr )| dir |
       {
-        const nCoords = grid.getNeighbourCoords( tile.gridCoords, dir ) orelse
+        const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
         {
-          def.log( .TRACE, 0, @src(), "No northern neighbour in direction {s} found for tile at {d}:{d} ", .{ @tagName( dir ), tile.gridCoords.x, tile.gridCoords.y });
-          continue;
-        };
-
-        const n = grid.getTile( nCoords ) orelse
-        {
-          def.log( .WARN, 0, @src(), "No tile found at {d}:{d}", .{ nCoords.x, nCoords.y });
+          def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
           continue;
         };
 
@@ -173,18 +155,18 @@ fn rightCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) voi
   or  tile.colour.isEq( .red    )){ return; }
 
   // Using current colour to check if flagged or not ( sketchy roundabout bullshit )
-  if(      tile.colour.isEq( .lBlue )){ tile.colour = .mBlue; }
-  else if( tile.colour.isEq( .mBlue )){ tile.colour = .dBlue; }
-  else if( tile.colour.isEq( .dBlue ))
+  if(      tile.colour.isEq( .blue  )){ tile.colour = .lBlue; }
+  else if( tile.colour.isEq( .lBlue )){ tile.colour = .mBlue; }
+  else if( tile.colour.isEq( .mBlue ))
   {
-    def.log( .INFO, 0, @src(), "# Adding a flag on {d}:{d}", .{ tile.gridCoords.x, tile.gridCoords.y });
+    def.log( .INFO, 0, @src(), "# Removing a flag on {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     FLAG_COUNT += 1;
-    tile.colour = .lGray;
+    tile.colour = .mGray;
   }
   else
   {
-    def.log( .INFO, 0, @src(), "# Removing a flag on {d}:{d}", .{ tile.gridCoords.x, tile.gridCoords.y });
-    tile.colour = .lBlue;
+    def.log( .INFO, 0, @src(), "# Adding a flag on {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+    tile.colour = .blue ;
     FLAG_COUNT += 1;
   }
 }
@@ -198,11 +180,11 @@ fn floodDiscoverCheck( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile )
   // Setting the tile as discovered
   tile.tType = TILE_SHOWN;
 
-  if( tile.colour.isEq( .lBlue )
-  or  tile.colour.isEq( .mBlue )
-  or  tile.colour.isEq( .dBlue )){ FLAG_COUNT -= 1; }
+  if( tile.colour.isEq( .blue  )
+  or  tile.colour.isEq( .lBlue )
+  or  tile.colour.isEq( .mBlue )){ FLAG_COUNT -= 1; }
 
-  tile.colour = .pGray;
+  tile.colour = .lGray;
   // finding the tile's new colour
   const nMineCount = getNeighbourMineCount( ng, grid, tile );
 
@@ -213,16 +195,9 @@ fn floodDiscoverCheck( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile )
   // Recursively check all neighbours
   for( def.e_dir_2.arr )| dir |
   {
-    const nCoords = grid.getNeighbourCoords( tile.gridCoords, dir ) orelse
+    const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
-      def.log( .TRACE, 0, @src(), "No northern neighbour in direction {s} found for tile at {d}:{d}",
-              .{ @tagName( dir ), tile.gridCoords.x, tile.gridCoords.y});
-      continue;
-    };
-
-    const n = grid.getTile( nCoords ) orelse
-    {
-      def.log( .WARN, 0, @src(), "No tile found at {d}:{d}", .{ nCoords.x, nCoords.y });
+      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
       continue;
     };
 
@@ -369,11 +344,15 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   {
     const tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
 
-    const tileCenter = def.ray.getWorldToScreen2D( grid.getAbsTilePos( tile.gridCoords ).toRayVec2(), cam.toRayCam() );
+    const tileCenter = def.ray.getWorldToScreen2D( grid.getAbsTilePos( tile.mapCoords ).toRayVec2(), cam.toRayCam() );
 
-    if(      tile.colour.isEq( .lBlue )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
-    else if( tile.colour.isEq( .mBlue )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
-    else if( tile.colour.isEq( .dBlue )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
+    if(      tile.colour.isEq( .blue   )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
+    else if( tile.colour.isEq( .lBlue  )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
+    else if( tile.colour.isEq( .mBlue  )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
+
+    else if( tile.colour.isEq( .yellow )){ def.drawCenteredText( "X", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
+    else if( tile.colour.isEq( .orange )){ def.drawCenteredText( "X", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
+    else if( tile.colour.isEq( .red    )){ def.drawCenteredText( "X", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
 
     if( tile.tType != TILE_SHOWN ){ continue; }
 

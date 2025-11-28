@@ -86,7 +86,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
         return;
       };
 
-      def.log( .INFO, 0, @src(), "Clicked on tile with coords {d}:{d} in tilemap {d}", .{ clickedTile.gridCoords.x, clickedTile.gridCoords.y, exampleTilemap.id });
+      def.log( .INFO, 0, @src(), "Clicked on tile with coords {d}:{d} in tilemap {d}", .{ clickedTile.mapCoords.x, clickedTile.mapCoords.y, exampleTilemap.id });
 
       // Change the tile color to a random color
       clickedTile.colour = def.G_RNG.getColour();
@@ -117,7 +117,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  exampleTilemap.gridPos.a = exampleTilemap.gridPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
+  exampleTilemap.mapPos.a = exampleTilemap.mapPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
 
 
   var exampleRLine = ng.getEntity( stateInj.EXAMPLE_RLIN_ID ) orelse
@@ -126,7 +126,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  exampleRLine.pos.a = exampleTilemap.gridPos.a;
+  exampleRLine.pos.a = exampleTilemap.mapPos.a;
 
 
   var exampleDLine = ng.getEntity( stateInj.EXAMPLE_DLIN_ID ) orelse
@@ -135,7 +135,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  exampleDLine.pos.a = exampleTilemap.gridPos.a;
+  exampleDLine.pos.a = exampleTilemap.mapPos.a;
 
 
   var exampleTriangle = ng.getEntity( stateInj.EXAMPLE_TRIA_ID ) orelse
@@ -144,7 +144,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  exampleTriangle.pos.a = exampleTilemap.gridPos.a;
+  exampleTriangle.pos.a = exampleTilemap.mapPos.a;
 
 
   var exampleRectangle = ng.getEntity( stateInj.EXAMPLE_RECT_ID ) orelse
@@ -153,7 +153,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  exampleRectangle.pos.a = exampleTilemap.gridPos.a;
+  exampleRectangle.pos.a = exampleTilemap.mapPos.a;
 
 
   var exampleHexagon = ng.getEntity( stateInj.EXAMPLE_HEXA_ID ) orelse
@@ -162,7 +162,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  exampleHexagon.pos.a = exampleTilemap.gridPos.a;
+  exampleHexagon.pos.a = exampleTilemap.mapPos.a;
 
 
   var exampleEllipse = ng.getEntity( stateInj.EXAMPLE_ELLI_ID ) orelse
@@ -171,7 +171,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  exampleEllipse.pos.a = exampleTilemap.gridPos.a;
+  exampleEllipse.pos.a = exampleTilemap.mapPos.a;
 }
 
 

@@ -74,8 +74,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       .TRI2 => mazeMap.setTileShape( .RECT ),
     }
   }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.q )){ mazeMap.gridPos.a = mazeMap.gridPos.a.subDeg( 1 ); }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.gridPos.a = mazeMap.gridPos.a.addDeg( 1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.q )){ mazeMap.mapPos.a = mazeMap.mapPos.a.subDeg( 1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.mapPos.a = mazeMap.mapPos.a.addDeg( 1 ); }
 
   // If left clicked, check if a tile was clicked on the example tilemap
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
@@ -99,24 +99,15 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       clickedTile.colour = def.G_RNG.getColour();
 
       // Change the color of all neighbouring tiles to their direction color
-      const dirArray = [_]def.e_dir_2{ .NO, .NE, .EA, .SE, .SO, .SW, .WE, .NW };
-      for( dirArray )| dir |
+    for( def.e_dir_2.arr )| dir |
+    {
+      const n = mazeMap.getNeighbourTile( clickedTile.mapCoords, dir ) orelse
       {
+        def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), clickedTile.mapCoords.x, clickedTile.mapCoords.y });
+        continue;
+      };
 
-        const n_coords = mazeMap.getNeighbourCoords( clickedTile.gridCoords, dir ) orelse
-        {
-          def.log( .TRACE, 0, @src(), "No northern neighbour in direcetion {s} found for tile at {d}:{d} in tilemap {d}",
-                  .{ @tagName( dir ), clickedTile.gridCoords.x, clickedTile.gridCoords.y, mazeMap.id });
-          continue;
-        };
-
-        var n_tile = mazeMap.getTile( n_coords ) orelse
-        {
-          def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ n_coords.x, n_coords.y, mazeMap.id });
-          continue;
-        };
-
-        n_tile.colour = dir.getDebugColour();
+        n.colour = dir.getDebugColour();
       }
     }
   }

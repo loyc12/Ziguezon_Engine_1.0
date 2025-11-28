@@ -216,7 +216,7 @@ pub const TilemapManager = struct
       return null;
     }
 
-    return self.loadTilemapFromParams( .{}, .FLOOR );
+    return self.loadTilemapFromParams( .{}, .T1 );
   }
 
   // pub fn loadTilemapFromFile( self : *TilemapManager, filePath : []const u8 ) ?*Tilemap
@@ -284,7 +284,7 @@ pub const TilemapManager = struct
       if( def.G_ST.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
       {
         const tile = tlmp.tileArray.items.ptr[ index ];
-        const tilePos = tlmp.getRelTilePos( tile.gridCoords );
+        const tilePos = tlmp.getRelTilePos( tile.mapCoords );
         tlmp.getTileBoundingBox( tilePos ).drawSelf( def.Colour.green.setA( 32 ));
       }}
     }}
