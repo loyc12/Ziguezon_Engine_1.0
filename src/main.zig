@@ -11,7 +11,7 @@ pub fn initCriticals() void
 
   def.qlog( .TRACE, 0, @src(), "# Initializing all subsystems..." );
 
-  def.initAllUtils( def.alloc );
+  def.initAllUtils( def.getAlloc() );
 
   def.loadHooks(    ngi );
   def.loadSettings( ngi );

@@ -9,7 +9,7 @@ pub const EntityManager = struct
 {
   maxID      : u32  = 0,
   isInit     : bool = false,
-  allocator  : std.mem.Allocator       = undefined,
+  allocator  : std.mem.Allocator      = undefined,
   entityList : std.ArrayList( Entity ) = undefined,
 
   // ================================ HELPER FUNCTIONS ================================

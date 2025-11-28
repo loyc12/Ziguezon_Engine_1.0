@@ -1,8 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub var GRID_ID    : u32 = 0;
-pub var MINE_COUNT : u32 = 256;
+pub var GRID_ID     : u32 = 0;
+pub var MINE_COUNT  : u32 = 256;
 
 pub var GRID_SCALE  : f32 = 43;
 

@@ -10,7 +10,7 @@ pub const TilemapManager = struct
 {
   maxID       : u32  = 0,
   isInit      : bool = false,
-  allocator   : std.mem.Allocator        = undefined,
+  allocator   : std.mem.Allocator       = undefined,
   tilemapList : std.ArrayList( Tilemap ) = undefined,
 
   // ================================ HELPER FUNCTIONS ================================

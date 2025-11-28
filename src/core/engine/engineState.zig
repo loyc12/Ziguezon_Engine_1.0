@@ -84,19 +84,19 @@ pub fn start( ng : *Engine ) void
     {
       def.qlog( .TRACE, 0, @src(), "Initializing Resource manager" );
       ng.resourceManager = .{};
-      ng.resourceManager.?.init( def.alloc );
+      ng.resourceManager.?.init( def.getAlloc() );
     }
     if( !ng.isTilemapManagerInit() )
     {
       def.qlog( .TRACE, 0, @src(), "Initializing Tilemap manager" );
       ng.tilemapManager = .{};
-      ng.tilemapManager.?.init( def.alloc );
+      ng.tilemapManager.?.init( def.getAlloc() );
     }
     if( !ng.isEntityManagerInit() )
     {
       def.qlog( .TRACE, 0, @src(), "Initializing Entity manager" );
       ng.entityManager = .{};
-      ng.entityManager.?.init( def.alloc );
+      ng.entityManager.?.init( def.getAlloc() );
     }
   }
   def.tryHook( .OnStart, .{ ng });

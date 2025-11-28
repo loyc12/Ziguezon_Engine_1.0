@@ -32,8 +32,8 @@ pub inline fn getMouseWorldPos()  Vec2
 
 pub const ViewManager = struct
 {
-  isInit : bool       = false,
-  Cam2D : Cam2D = undefined,
+  isInit : bool  = false,
+  Cam2D  : Cam2D = undefined,
 
   pub fn init( self : *ViewManager, alloc : std.mem.Allocator ) void
   {

@@ -6,9 +6,9 @@ pub const rng_u  = @import( "utils/rng.zig" );
 
 pub var G_RNG : rng_u.randomiser = .{};
 
-pub const alloc = std.heap.smp_allocator; // Global allocator instance
-
 // ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
+
+pub fn getAlloc() std.mem.Allocator { return std.heap.page_allocator; }
 
 pub var GLOBAL_EPOCH : TimeVal = .{};
 
