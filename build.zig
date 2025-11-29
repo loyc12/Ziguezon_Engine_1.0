@@ -10,8 +10,7 @@ pub fn build( b: *std.Build ) void
 
   // This is the "standard" build target, which is the default for the current platform and architecture.
   const target   = b.standardTargetOptions(  .{} );
-  const optimize = b.standardOptimizeOption( .{} );
-
+  const optimize = b.standardOptimizeOption( .{ .preferred_optimize_mode = .Debug } );
 
   // This is a build option that allows the user to specify the path to the game-specific engine interface module
   const tmp_engine_interface_path = b.option(
@@ -32,6 +31,7 @@ pub fn build( b: *std.Build ) void
     .root_source_file = b.path( "src/main.zig" ),
     .target           = target,
     .optimize         = optimize,
+  //.linkage          = .static,
   });
 
   // This adds the executable module to the build graph,
@@ -42,6 +42,9 @@ pub fn build( b: *std.Build ) void
     .root_module = exe_mod,
     .use_llvm    = false,
   });
+
+  exe.linkLibC();
+  exe.bundle_compiler_rt = true;
 
   // This declares the intent to install the executable artifact,
   // which is the binary that will be built by the build system.
@@ -58,6 +61,7 @@ pub fn build( b: *std.Build ) void
   .{
     .target   = target,
     .optimize = optimize,
+    .linkage  = .static,
   });
 
   // This imports the raylib module from the raylib_zig package
@@ -97,37 +101,82 @@ pub fn build( b: *std.Build ) void
 
   // ================================ COMMANDS ================================
 
-  // This creates a Run step in the build graph, to be executed when call, or if
+  // This creates steps in the build graph, to be executed when called, or if
   // another step is evaluated that depends on it ( similar to Makefile targets ).
-  const run_cmd = b.addRunArtifact( exe );
-  run_cmd.step.dependOn( b.getInstallStep() );
+
+
+  // ================ GENERIC COMANDS ================
+
+  const run_step = b.step( "run", "Run the engine with the provided game path" );
+  const run_cmd  = b.addRunArtifact( exe );
+  run_step.dependOn( &run_cmd.step );
   if( b.args )| args |{ run_cmd.addArgs( args ); }
 
-  const run_step = b.step( "run", "Run the debug environment" );
-  run_step.dependOn( &run_cmd.step );
 
-  // This creates a step for the ping game
-  const ping_step = b.step( "ping", "Run the ping game" );
-  const ping_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/ping/engineInterface.zig" });
-  ping_step.dependOn( &ping_cli_cmd.step );
+  // ================ GAME SPECIFIC COMMANDS ================
 
-  // This creates a step for the floppy game
-  const floppy_step = b.step( "floppy", "Run the floppy game" );
-  const floppy_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/floppy/engineInterface.zig" });
-  floppy_step.dependOn( &floppy_cli_cmd.step );
+  const games =
+  .{
+    .{ "ping",        "exampleGames/ping/engineInterface.zig"        },
+    .{ "debug",       "exampleGames/debug/engineInterface.zig"       }, // Default
+    .{ "floppy",      "exampleGames/floppy/engineInterface.zig"      },
+    .{ "dehexer",     "exampleGames/dehexer/engineInterface.zig"     },
+    .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
+  };
 
-  // This creates a step for the labyrinther game
-  const labyrinth_step = b.step( "labyrinth", "Run the labyrinth game" );
-  const labyrinth_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/labyrinther/engineInterface.zig" });
-  labyrinth_step.dependOn( &labyrinth_cli_cmd.step );
+  inline for( games )| game |
+  {
+    const name = game[ 0 ];
+    const path = game[ 1 ];
 
-  // This creates a step for the dehexer game
-  const dehexer_step = b.step( "dehexer", "Run the dehexer game" );
-  const dehexer_cli_cmd = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=exampleGames/dehexer/engineInterface.zig" });
-  dehexer_step.dependOn( &dehexer_cli_cmd.step );
+    const game_step = b.step( name, "Compiles and runs " ++ name );
+    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path });
+    game_step.dependOn( &game_cmd.step );
+  }
 
 
-  // ================================ TESTS ================================
+  // ================ TARGET SPECIFIC COMANDS ================
+
+  const platforms =
+  .{
+    .{ "lnx", "x86_64-linux-gnu"   },
+    .{ "win", "x86_64-windows-gnu" },
+    .{ "mac", "x86_64-macos"       },
+  };
+
+  inline for( platforms )| plat |
+  {
+    const name = plat[ 0 ];
+    const comp = plat[ 1 ];
+
+    const comp_step = b.step( "comp_" ++ name, "Compiles for " ++ comp );
+    const comp_cmd  = b.addSystemCommand( &.{ "zig", "build", "-Dtarget=" ++ comp });
+    comp_step.dependOn( &comp_cmd.step );
+  }
+
+
+  // ================ MODE SPECIFIC COMANDS ================
+
+  const optimizations =
+  .{
+    .{ "dbg",   "Debug"        }, // Default
+    .{ "fast",  "ReleaseFast"  },
+    .{ "safe",  "ReleaseSafe"  },
+    .{ "small", "ReleaseSmall" },
+  };
+
+  inline for( optimizations )| opt |
+  {
+    const name = opt[ 0 ];
+    const mode = opt[ 1 ];
+
+    const mode_step = b.step( "mode_" ++ name, "Compiles in " ++ name );
+    const mode_cmd  = b.addSystemCommand( &.{ "zig", "build", "-Doptimize=" ++ "." ++ mode });
+    mode_step.dependOn( &mode_cmd.step );
+  }
+
+
+  // ================ TEST COMANDS ================
 
   const exe_unit_tests     = b.addTest(.{ .root_module = exe_mod });
   const run_exe_unit_tests = b.addRunArtifact( exe_unit_tests );
