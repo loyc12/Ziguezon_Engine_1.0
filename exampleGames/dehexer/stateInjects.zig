@@ -1,8 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub var GRID_ID     : u32 = 0;
-pub var MINE_COUNT  : u32 = 200;
+pub var GRID_ID     : u32 = 0;   //        12%        16%            20%         24%           28%
+pub var MINE_COUNT  : u32 = 250; // baby = 150 easy = 200, normal == 250, hard = 300, insane = 350
 
 pub var GRID_SCALE  : f32 = 43;
 
@@ -39,44 +39,12 @@ pub fn OnOpen( ng : *def.Engine ) void
 
   GRID_ID = grid.id;
 
-  var remaingingMineCount = MINE_COUNT;
-  var remaingingTileCount = grid.getTileCount();
-
   for( 0 .. grid.getTileCount() )| index |
   {
     var tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
 
     tile.colour = .mGray;
-
-    // getting a random value between 0.0 and 1.0
-    const noiseVal = def.G_RNG.getFloat( f32 );
-
-    // determining the odds of this tile being a mine
-    var threshold : f32 = @floatFromInt( remaingingMineCount );
-        threshold      /= @floatFromInt( remaingingTileCount );
-
-    // if value > odds, tile is set as mine ( wall )
-    if( remaingingMineCount > 0 and noiseVal < threshold )
-    {
-      remaingingMineCount -= 1;
-      const mineTypeNoiseVal = def.G_RNG.getFloat( f32 );
-
-      if(      mineTypeNoiseVal < 0.5 ){ tile.tType  = TILE_MINE_1; } //tile.colour = .lGreen; }
-      else if( mineTypeNoiseVal < 0.8 ){ tile.tType  = TILE_MINE_2; } //tile.colour = .mGreen; }
-      else{                              tile.tType  = TILE_MINE_3; } //tile.colour = .dGreen; }
-    }
-    remaingingTileCount -= 1;
   }
-
-  if( remaingingMineCount != 0 )
-  {
-    def.qlog( .ERROR, 0, @src(), "@ Failed to assign the proper amount of mines !" );
-  }
-  else
-  {
-    def.qlog( .INFO, 0, @src(), "$ Assigned all mines properly !" );
-  }
-
 }
 
 

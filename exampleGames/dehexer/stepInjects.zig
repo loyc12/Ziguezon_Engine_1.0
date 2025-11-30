@@ -24,6 +24,8 @@ var FLAG_COUNT : u32 = 0;
 var LIFE_COUNT : i32 = 5;
 
 var HAS_WON : bool = false;
+var IS_INIT : bool = false;
+
 
 
 // ================================ HELPER FUNCTIONS ================================
@@ -63,20 +65,75 @@ fn getNeighbourFlagCount( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Til
       continue;
     };
 
-    if( n.colour.isEq( .blue  ) ){ res += 1; }
-    if( n.colour.isEq( .lBlue ) ){ res += 2; }
-    if( n.colour.isEq( .mBlue ) ){ res += 3; }
+    if( n.colour.isEq( .blue  ) or n.colour.isEq( .yellow )){ res += 1; }
+    if( n.colour.isEq( .lBlue ) or n.colour.isEq( .orange )){ res += 2; }
+    if( n.colour.isEq( .mBlue ) or n.colour.isEq( .red    )){ res += 3; }
   }
   return res;
 }
 
+fn initGrid( ng : *def.Engine, grid : *def.Tilemap, startTile : *def.Tile ) void
+{
+  _ = ng;
+
+  IS_INIT = true;
+
+  var remaingingMineCount = stateInj.MINE_COUNT;
+
+  for( 0 .. grid.getTileCount() )| index |
+  {
+    const remaingingTileCount = grid.getTileCount() - index; // preemptively decrease the count to avoid duplicating code
+
+    var tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
+
+    // Prevents having tiles at or around the first clicked cell
+    if( tile.mapCoords.isEq( startTile.mapCoords )){ continue; }
+    if( grid.areCoordsNeighbours( tile.mapCoords, startTile.mapCoords )){ continue; }
+
+    tile.colour = .mGray;
+
+    // getting a random value between 0.0 and 1.0
+    const noiseVal = def.G_RNG.getFloat( f32 );
+
+    // determining the odds of this tile being a mine
+    var threshold : f32 = @floatFromInt( remaingingMineCount );
+        threshold      /= @floatFromInt( remaingingTileCount );
+
+    // if value > odds, tile is set as mine ( wall )
+    if( remaingingMineCount > 0 and noiseVal < threshold )
+    {
+      remaingingMineCount -= 1;
+      const mineTypeNoiseVal = def.G_RNG.getFloat( f32 );
+
+      if(      mineTypeNoiseVal < 0.5 ){ tile.tType  = TILE_MINE_1; } //tile.colour = .lGreen; }
+      else if( mineTypeNoiseVal < 0.8 ){ tile.tType  = TILE_MINE_2; } //tile.colour = .mGreen; }
+      else{                              tile.tType  = TILE_MINE_3; } //tile.colour = .dGreen; }
+    }
+  }
+
+
+  if( remaingingMineCount != 0 )
+  {
+    def.qlog( .ERROR, 0, @src(), "@ Failed to assign the proper amount of mines !" );
+  }
+  else
+  {
+    def.qlog( .INFO, 0, @src(), "$ Assigned all mines properly !" );
+  }
+}
+
+
 // revealing a tile
 fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
 {
+
   // Does nothing if a flagged tile was clicked
   if( tile.colour.isEq( .blue  )){  return; }
   if( tile.colour.isEq( .lBlue  )){ return; }
   if( tile.colour.isEq( .mBlue )){  return; }
+
+  // Initialize the board on first click, so that no mine is struct first
+  if( !IS_INIT ){ initGrid( ng, grid, tile ); }
 
   // Does nothing if an uncovered mine was clicked
   if( tile.colour.isEq( .yellow )){ return; }
@@ -223,7 +280,6 @@ fn playerHasWon( ng : *def.Engine, grid : *def.Tilemap ) bool
   return true;
 }
 
-
 // ================================ STEP INJECTION FUNCTIONS ================================
 
 pub fn OnLoopStart( ng : *def.Engine ) void
@@ -304,17 +360,17 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ stateInj.MINE_COUNT }) catch | err |
   {
-      def.log(.ERROR, 0, @src(), "Failed to format mineCount : {}", .{err});
+      def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
       return;
   };
   const flagCountSlice = std.fmt.bufPrint( &flagBuff, "Flags : {d}", .{ FLAG_COUNT }) catch | err |
   {
-      def.log(.ERROR, 0, @src(), "Failed to format flagCount : {}", .{err});
+      def.log( .ERROR, 0, @src(), "Failed to format flagCount : {}", .{ err });
       return;
   };
   const lifeCountSlice = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
   {
-      def.log(.ERROR, 0, @src(), "Failed to format lifeCount : {}", .{err});
+      def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
       return;
   };
 
@@ -350,9 +406,9 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     else if( tile.colour.isEq( .lBlue  )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
     else if( tile.colour.isEq( .mBlue  )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
 
-    else if( tile.colour.isEq( .yellow )){ def.drawCenteredText( "X", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
-    else if( tile.colour.isEq( .orange )){ def.drawCenteredText( "X", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
-    else if( tile.colour.isEq( .red    )){ def.drawCenteredText( "X", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
+    else if( tile.colour.isEq( .yellow )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
+    else if( tile.colour.isEq( .orange )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
+    else if( tile.colour.isEq( .red    )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
 
     if( tile.tType != TILE_SHOWN ){ continue; }
 

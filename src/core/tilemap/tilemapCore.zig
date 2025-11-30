@@ -92,6 +92,23 @@ pub const Tilemap = struct
     return true;
   }
 
+  pub fn areCoordsNeighbours( self : *const Tilemap, c1 : Coords2, c2 : Coords2 ) bool
+  {
+    for( def.e_dir_2.arr )| dir |
+    {
+      const nCoords = self.getNeighbourCoords( c1, dir ) orelse
+      {
+        def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), c1.x, c1.y });
+        continue;
+      };
+
+      if( nCoords.isEq( c2 )){ return true; }
+    }
+
+    def.log( .TRACE, 0, @src(), "{d}:{d} and {d}:{d} are not neighbours", .{ c1.x, c1.y, c2.x, c2.y });
+    return false;
+  }
+
 
   // ================ INITIALIZATION FUNCTIONS ================
 
@@ -148,8 +165,8 @@ pub const Tilemap = struct
 
     var tmp      = Tilemap{
       .flags     = params.flags.filterField( e_tlmp_flags.TO_CPY ),
-      .mapPos   = params.mapPos,
-      .mapSize  = params.mapSize,
+      .mapPos    = params.mapPos,
+      .mapSize   = params.mapSize,
       .tileScale = params.tileScale,
       .tileShape = params.tileShape,
     };
@@ -171,7 +188,7 @@ pub const Tilemap = struct
 
   // ================ TILE FUNCTIONS ================
 
-  pub inline fn getTileCoords( self : *const Tilemap, index : u32 ) ?Coords2
+  pub inline fn getTileCoordsFromIndex( self : *const Tilemap, index : u32 ) ?Coords2
   {
     if( !self.isIndexValid( index ))
     {
@@ -186,6 +203,7 @@ pub const Tilemap = struct
       .y = @divTrunc( tmp, self.mapSize.x ),
     };
   }
+
 
   pub inline fn getTileIndex( self : *const Tilemap, mapCoords : Coords2 ) ?u32
   {
@@ -218,6 +236,34 @@ pub const Tilemap = struct
     return self.getTile( nCoords );
   }
 
+  pub inline fn getNextTile( self : *const Tilemap, mapCoords : Coords2 ) ?*Tile
+  {
+    var index : u32 = self.getTileIndex( mapCoords ) orelse
+    {
+      def.log( .TRACE, 0, @src(), "No index found for tile at {d}:{d}", .{ mapCoords.x, mapCoords.y});
+      return null;
+    };
+
+    index += 1;
+
+    index = @mod( index, self.getTileCount() );
+    return &self.tileArray.items.ptr[ index ];
+  }
+
+  pub inline fn getPreviousTile( self : *const Tilemap, mapCoords : Coords2 ) ?*Tile
+  {
+    var index : u32 = self.getTileIndex( mapCoords ) orelse
+    {
+      def.log( .TRACE, 0, @src(), "No index found for tile at {d}:{d}", .{ mapCoords.x, mapCoords.y});
+      return null;
+    };
+
+    index -= 1;
+    index = @mod( index, self.getTileCount() );
+
+    return &self.tileArray.items.ptr[ index ];
+  }
+
 
   // ================ GRID FUNCTIONS ================
 
@@ -238,7 +284,7 @@ pub const Tilemap = struct
 
     for( 0 .. self.getTileCount() )| index |
     {
-      const tileCoords = self.getTileCoords( @intCast( index )) orelse
+      const tileCoords = self.getTileCoordsFromIndex( @intCast( index )) orelse
       {
         def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.mapSize.x, self.mapSize.y });
         continue;
@@ -372,7 +418,7 @@ pub const Tilemap = struct
 
     for( 0 .. self.getTileCount() )| index |
     {
-      const mapCoords = self.getTileCoords( @intCast( index )) orelse
+      const mapCoords = self.getTileCoordsFromIndex( @intCast( index )) orelse
       {
         def.log( .ERROR, 0, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.mapSize.x, self.mapSize.y });
         continue;
