@@ -8,9 +8,6 @@ pub fn build( b: *std.Build ) void
 {
   // ================================ BUILD CONFIGURATION ================================
 
-  // This is the "standard" build target, which is the default for the current platform and architecture.
-  const target   = b.standardTargetOptions(  .{} );
-  const optimize = b.standardOptimizeOption( .{ .preferred_optimize_mode = .Debug } );
 
   // This is a build option that allows the user to specify the path to the game-specific engine interface module
   const tmp_engine_interface_path = b.option(
@@ -18,10 +15,19 @@ pub fn build( b: *std.Build ) void
     "engine_interface_path",
     "Path to a game's engineInterface implementations (e.g., exampleGames/gameFolder/engineInterface.zig)"
   );
-
-  // This sets the default path for the engine interface module to the template
   const engine_interface_path = if( tmp_engine_interface_path )| path | path else "exampleGames/debug/engineInterface.zig";
 
+
+  const tmp_executable_name = b.option(
+    []const u8,
+    "executable_name",
+    "Name to give the compiled executable"
+  );
+  const executable_name = if( tmp_executable_name )| name | name else "ZE_Game";
+
+  // This is the "standard" build target, which is the default for the current platform and architecture.
+  const target   = b.standardTargetOptions(  .{} );
+  const optimize = b.standardOptimizeOption( .{ .preferred_optimize_mode = .Debug } );
 
   // ================================ EXECUTABLE ================================
 
@@ -31,16 +37,15 @@ pub fn build( b: *std.Build ) void
     .root_source_file = b.path( "src/main.zig" ),
     .target           = target,
     .optimize         = optimize,
-  //.linkage          = .static,
   });
 
   // This adds the executable module to the build graph,
   // which is the main entry point of the application.
   const exe = b.addExecutable(
   .{
-    .name        = "ZiguezonEngine",
+    .name        = executable_name,
     .root_module = exe_mod,
-    .use_llvm    = false,
+    .use_llvm    = true,
   });
 
   exe.linkLibC();
@@ -107,13 +112,13 @@ pub fn build( b: *std.Build ) void
 
   // ================ GENERIC COMANDS ================
 
-  const run_step = b.step( "run", "Run the engine with the provided game path" );
+  const run_step = b.step( "run", "Runs the engine with the provided game path" );
   const run_cmd  = b.addRunArtifact( exe );
   run_step.dependOn( &run_cmd.step );
   if( b.args )| args |{ run_cmd.addArgs( args ); }
 
 
-  // ================ GAME SPECIFIC COMMANDS ================
+  // ================ SPECIFIC COMMANDS ================
 
   const games =
   .{
@@ -124,19 +129,6 @@ pub fn build( b: *std.Build ) void
     .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
   };
 
-  inline for( games )| game |
-  {
-    const name = game[ 0 ];
-    const path = game[ 1 ];
-
-    const game_step = b.step( name, "Compiles and runs " ++ name );
-    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path });
-    game_step.dependOn( &game_cmd.step );
-  }
-
-
-  // ================ TARGET SPECIFIC COMANDS ================
-
   const platforms =
   .{
     .{ "lnx", "x86_64-linux-gnu"   },
@@ -144,36 +136,56 @@ pub fn build( b: *std.Build ) void
     .{ "mac", "x86_64-macos"       },
   };
 
-  inline for( platforms )| plat |
-  {
-    const name = plat[ 0 ];
-    const comp = plat[ 1 ];
-
-    const comp_step = b.step( "comp_" ++ name, "Compiles for " ++ comp );
-    const comp_cmd  = b.addSystemCommand( &.{ "zig", "build", "-Dtarget=" ++ comp });
-    comp_step.dependOn( &comp_cmd.step );
-  }
-
-
-  // ================ MODE SPECIFIC COMANDS ================
-
   const optimizations =
   .{
-    .{ "dbg",   "Debug"        }, // Default
-    .{ "fast",  "ReleaseFast"  },
-    .{ "safe",  "ReleaseSafe"  },
-    .{ "small", "ReleaseSmall" },
+  //.{ "dbg",   "Debug"        }, // Default
+    .{ "fast",  "Release Fast"  },
+    .{ "safe",  "Release Safe"  },
+    .{ "small", "Release Small" },
   };
 
-  inline for( optimizations )| opt |
+  inline for( games )| game |
   {
-    const name = opt[ 0 ];
-    const mode = opt[ 1 ];
+    const n1   = game[ 0 ];
+    const path = game[ 1 ];
 
-    const mode_step = b.step( "mode_" ++ name, "Compiles in " ++ name );
-    const mode_cmd  = b.addSystemCommand( &.{ "zig", "build", "-Doptimize=" ++ "." ++ mode });
-    mode_step.dependOn( &mode_cmd.step );
+    const game_step = b.step( n1, "Compiles and runs " ++ n1 ++ " on the current platform in Debug mode" );
+    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path, "--release=Debug" });
+    game_step.dependOn( &game_cmd.step );
+
+    inline for( platforms )| plat |
+    {
+      const n2   = plat[ 0 ];
+      const comp = plat[ 1 ];
+
+      const comp_step = b.step( n2 ++ "_" ++ n1, "  Compiles " ++ n1 ++ " for " ++ comp ++ " in Debug mode" );
+      const comp_cmd  = b.addSystemCommand( &.{ "zig", "build", "-Dengine_interface_path=" ++ path, "-Dtarget=" ++ comp });
+      comp_step.dependOn( &comp_cmd.step );
+
+      inline for( optimizations )| opt |
+      {
+        const n3   = opt[ 0 ];
+        const mode = opt[ 1 ];
+
+        const cmd_name = n3 ++ "_" ++ n2 ++ "_" ++ n1;
+
+        const mode_step = b.step( cmd_name, "    Compiles " ++ n1 ++ " for " ++ comp ++ " in " ++ mode ++ " mode" );
+        const mode_cmd  = b.addSystemCommand(
+        &.{
+          "zig",
+          "build",
+          "-Dexecutable_name="       ++ cmd_name,
+          "-Dengine_interface_path=" ++ path,
+          "-Dtarget="                ++ comp,
+          "--release="               ++ n3,
+        });
+
+        mode_step.dependOn( &mode_cmd.step );
+      }
+    }
   }
+
+
 
 
   // ================ TEST COMANDS ================
@@ -183,6 +195,6 @@ pub fn build( b: *std.Build ) void
 
   // Similar to creating the run step earlier, this exposes a `test` step to the `zig build --help` menu,
   // providing a way for the user to request running the unit tests instead of the main application.
-  const test_step = b.step( "test", "Run unit tests" );
+  const test_step = b.step( "test", "Runs unit tests (N/A)" );
   test_step.dependOn( &run_exe_unit_tests.step );
 }
