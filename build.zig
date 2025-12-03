@@ -150,7 +150,7 @@ pub fn build( b: *std.Build ) void
     const path = game[ 1 ];
 
     const game_step = b.step( n1, "Compiles and runs " ++ n1 ++ " on the current platform in Debug mode" );
-    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path, "--release=Debug" });
+    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path, "--release=off" });
     game_step.dependOn( &game_cmd.step );
 
     inline for( platforms )| plat |

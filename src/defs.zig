@@ -274,6 +274,13 @@ pub const getPolyCircum = mth_u.getPolyCircum;
 pub const getPolyArea   = mth_u.getPolyArea;
 
 
+// ================ SHAKER SHORTHANDS ================
+
+pub const shk_u    = @import( "utils/shaker2.zig" );
+
+pub const Shaker2D = shk_u.Shake2D;
+
+
 // ================ TIMER SHORTHANDS ================
 
 pub const tmr_u         = @import( "utils/timer.zig" );

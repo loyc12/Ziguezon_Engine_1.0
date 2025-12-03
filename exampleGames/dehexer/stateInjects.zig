@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 pub var GRID_ID     : u32 = 0;   //        12%        16%            20%         24%           28%
-pub var MINE_COUNT  : u32 = 250; // baby = 150 easy = 200, normal == 250, hard = 300, insane = 350
+pub var MINE_COUNT  : u32 = 300; // baby = 150 easy = 200, normal == 250, hard = 300, insane = 350
 
 pub var GRID_SCALE  : f32 = 43;
 

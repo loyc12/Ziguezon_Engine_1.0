@@ -138,8 +138,8 @@ pub const Engine = struct
 
   pub inline fn clampCameraCenterInArea(  ng : *Engine, area : Box2  ) void { if( ng.Camera )| *c |{ c.clampCenterInArea( area ); }}
 
-  pub inline fn isCameraInit( ng : *const Engine ) bool { if( ng.Camera != null ){    return true; } else { return false; }}
-  pub inline fn getCamera(    ng : *Engine ) !*Cam2D    { if( ng.Camera != null )| *c |{ return c; } else { return error.NullManager; }}
+  pub inline fn isCameraInit( ng : *const Engine ) bool { if( ng.Camera != null ){ return true; } else { return false; }}
+  pub inline fn getCamera(    ng : *Engine ) !*Cam2D    { if( ng.Camera )| *c |{   return c;    } else { return error.NullManager; }}
 
 
   // ================================ ENGINE STATE FUNCTIONS ================================

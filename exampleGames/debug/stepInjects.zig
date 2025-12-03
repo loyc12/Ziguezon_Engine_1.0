@@ -10,6 +10,28 @@ const VecA   = def.VecA;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
+var   s_time : f32 = 0.0;
+
+const shaker : def.Shaker2D = .{
+  .beg_factor    = .{ .x = 0.0, .y = 0.0, .a = .{} },
+  .mid_factor    = .{ .x = 1.0, .y = 1.0, .a = .{ .r = 1.0 } },
+  .end_factor    = .{ .x = 0.0, .y = 0.0, .a = .{} },
+
+  .beg_lenght    = 4.0,
+  .mid_lenght    = 4.0,
+  .end_lenght    = 4.0,
+
+  .shake_speed   = 8.00,
+  .octave_freq_f = 2.00,
+  .octave_amp_f  = 0.50,
+  .octave_depth  = 4,
+
+  .octave_offset = 1.618,
+  .x_offset      = 0.000,
+  .y_offset      = 1.917,
+  .r_offset      = 2.269,
+};
+
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
@@ -23,6 +45,22 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
+
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.h ))
+  {
+    var cam = ng.getCamera() catch
+    {
+      def.qlog( .WARN, 0, @src(), "Failed to optain main camera" );
+      return;
+    };
+
+    const offset = shaker.getOffsetAtTime( s_time );
+
+    cam.pos = .{ .x = offset.x * 64, .y = offset.y * 64, .a = .{ .r = offset.a.r * 16, }};
+    s_time += 1.0 / @as( f32, @floatFromInt( def.ray.getFPS() ));
+
+    def.log( .WARN, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
+  }
 
   // Move the camera with the WASD or arrow keys
   if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
@@ -42,7 +80,6 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     ng.setCameraRot(    .{} );
     def.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
-
 
   var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {

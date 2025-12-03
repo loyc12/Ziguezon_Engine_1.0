@@ -203,6 +203,8 @@ fn rightCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) voi
   _ = ng;
   _ = grid;
 
+  if( !IS_INIT ){return; }
+
   // Does nothing if a uncovered tile was clicked
   if( tile.tType == TILE_SHOWN ){ return; }
 
@@ -217,7 +219,7 @@ fn rightCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) voi
   else if( tile.colour.isEq( .mBlue ))
   {
     def.log( .INFO, 0, @src(), "# Removing a flag on {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
-    FLAG_COUNT += 1;
+    FLAG_COUNT -= 1;
     tile.colour = .mGray;
   }
   else
@@ -325,7 +327,6 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   }
 }
 
-
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
   const grid = ng.getTilemap( stateInj.GRID_ID ) orelse
@@ -354,18 +355,12 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   var mineBuff : [ 16:0 ]u8 = .{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-  var flagBuff : [ 16:0 ]u8 = .{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
   var lifeBuff : [ 16:0 ]u8 = .{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 
-  const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ stateInj.MINE_COUNT }) catch | err |
+  const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ stateInj.MINE_COUNT - FLAG_COUNT }) catch | err |
   {
       def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
-      return;
-  };
-  const flagCountSlice = std.fmt.bufPrint( &flagBuff, "Flags : {d}", .{ FLAG_COUNT }) catch | err |
-  {
-      def.log( .ERROR, 0, @src(), "Failed to format flagCount : {}", .{ err });
       return;
   };
   const lifeCountSlice = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
@@ -375,7 +370,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   };
 
   mineBuff[ mineCountSlice.len ] = 0;
-  flagBuff[ flagCountSlice.len ] = 0;
   lifeBuff[ lifeCountSlice.len ] = 0;
 
   const cam = ng.getCameraCpy() orelse
@@ -385,9 +379,8 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   };
   const screenCenter = def.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, cam.toRayCam() );
 
-  def.drawCenteredText( &mineBuff, screenCenter.x - 320, 64, 32, def.Colour.red   );
-  def.drawCenteredText( &flagBuff, screenCenter.x,       64, 32, def.Colour.blue  );
-  def.drawCenteredText( &lifeBuff, screenCenter.x + 320, 64, 32, def.Colour.green );
+  def.drawCenteredText( &mineBuff, screenCenter.x - 256, 64, 32, def.Colour.red   );
+  def.drawCenteredText( &lifeBuff, screenCenter.x + 256, 64, 32, def.Colour.green );
 
 
   var grid = ng.getTilemap( stateInj.GRID_ID ) orelse
