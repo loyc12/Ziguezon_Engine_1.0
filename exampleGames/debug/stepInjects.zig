@@ -46,6 +46,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
+  // Play a shake animation the camera when H is held
   if( def.ray.isKeyDown( def.ray.KeyboardKey.h ))
   {
     var cam = ng.getCamera() catch
