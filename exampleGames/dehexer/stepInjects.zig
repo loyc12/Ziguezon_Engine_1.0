@@ -224,15 +224,15 @@ fn rightCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) voi
 
   if( !IS_INIT ){return; }
 
-  // Does nothing if a uncovered tile was clicked
+  // Does nothing if an uncovered tile was clicked
   if( tile.tType == TILE_SHOWN ){ return; }
 
-  // Does nothing if a uncovered mine was clicked
+  // Does nothing if an uncovered mine was clicked
   if( tile.colour.isEq( .yellow )
   or  tile.colour.isEq( .orange )
   or  tile.colour.isEq( .red    )){ return; }
 
-  // Using current colour to check if flagged or not ( sketchy roundabout bullshit )
+  // Using current colour to check if flagged or not ( sketchy roundabout bullshit way )
   if(      tile.colour.isEq( .blue  )){ tile.colour = .lBlue; }
   else if( tile.colour.isEq( .lBlue )){ tile.colour = .mBlue; }
   else if( tile.colour.isEq( .mBlue ))
@@ -329,7 +329,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
     const offset = shaker.getOffsetAtTime( shake_prog );
 
-    cam.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 4, }};
+    cam.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 2, }};
 
     shake_prog += ( 1.0 / 120.0 );
   }

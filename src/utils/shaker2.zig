@@ -21,7 +21,7 @@ pub const Shake2D = struct
 
   // Noise scalers
   shake_speed   : f32 = 32.0, // 0.0 <      Global shake speed multiplier
-  octave_freq_f : f32 = 2.00,  // 1.0 <     Relative lenght of successive octaves
+  octave_freq_f : f32 = 2.00, // 1.0 <      Relative lenght of successive octaves
   octave_amp_f  : f32 = 0.80, // 0.0 - 1.0  Relative height of successive octaves
   octave_depth  : u32 = 8,    // 1 - ~16    Total number of octaves layered
 
