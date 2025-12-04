@@ -11,22 +11,22 @@ pub const Shake2D = struct
 {
   // Intensity of each phase's boundary ( b-m-m-e)
   beg_factor : VecA = .{ .x = 0.0, .y = 0.0, .a = .{} },
-  mid_factor : VecA = .{ .x = 1.0, .y = 1.0, .a = .{} },
+  mid_factor : VecA = .{ .x = 1.0, .y = 1.0, .a = .{ .r = 1.0 }},
   end_factor : VecA = .{ .x = 0.0, .y = 0.0, .a = .{} },
 
   // Duration of each phase in seconds ( b-m-e)
-  beg_lenght : f32 = 1.0,
-  mid_lenght : f32 = 2.0,
-  end_lenght : f32 = 1.0,
+  beg_lenght : f32 = 0.25,
+  mid_lenght : f32 = 0.50,
+  end_lenght : f32 = 0.25,
 
   // Noise scalers
-  shake_speed   : f32 = 8.00, // 0.0 <      Global shake speed multiplier
-  octave_freq_f : f32 = 2.00, // 1.0 <      Relative lenght of successive octaves
-  octave_amp_f  : f32 = 0.50, // 0.0 - 1.0  Relative height of successive octaves
-  octave_depth  : u32 = 4,    // 1 - ~8     Total number of octaves layered
+  shake_speed   : f32 = 32.0, // 0.0 <      Global shake speed multiplier
+  octave_freq_f : f32 = 2.00,  // 1.0 <     Relative lenght of successive octaves
+  octave_amp_f  : f32 = 0.80, // 0.0 - 1.0  Relative height of successive octaves
+  octave_depth  : u32 = 8,    // 1 - ~16    Total number of octaves layered
 
   octave_offset : f32 = 1.618, // any       Relative offset of successive octave origins
-  x_offset      : f32 = 0.000, // any       Relative offset of x values
+  x_offset      : f32 = 0.793, // any       Relative offset of x values
   y_offset      : f32 = 1.917, // any       Relative offset of y values
   r_offset      : f32 = 2.269, // any       Relative offset of r values
 

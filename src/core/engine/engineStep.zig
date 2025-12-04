@@ -91,7 +91,7 @@ inline fn tryTick( ng : *Engine ) bool
   {
     if( !ng.isPlaying() ){ return false; }
 
-    const tmpTime = def.getNow();
+  //const tmpTime = def.getNow();
 
     ng.tickOffset.value -= ng.targetTickTime.value; // TODO : ensure this doesn't create a giant backlog of tick events during lag
 
@@ -103,7 +103,7 @@ inline fn tryTick( ng : *Engine ) bool
     }
     def.tryHook( .OffTickWorld, .{ ng });
 
-    def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick delta time" );
+  //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick delta time" );
     return true;
   }
   return false;

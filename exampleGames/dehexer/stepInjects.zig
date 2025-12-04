@@ -23,12 +23,55 @@ const NUM_SIZE : f32 = 24;
 var FLAG_COUNT : u32 = 0;
 var LIFE_COUNT : i32 = 5;
 
-var HAS_WON : bool = false;
-var IS_INIT : bool = false;
+var HAS_WON    : bool = false;
+var IS_INIT    : bool = false;
+
+var shake_prog : f32 = 0.0;
+
+const shaker : def.Shaker2D = .{
+  .beg_lenght = 0.03,
+  .mid_lenght = 0.04,
+  .end_lenght = 0.03,
+};
 
 
 
 // ================================ HELPER FUNCTIONS ================================
+
+fn blowUpMine( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile, damage : u32 ) void
+{
+  FLAG_COUNT += 1;
+  shake_prog  = 0.0;
+
+  _ = ng;
+  _ = grid;
+
+  switch( damage )
+  {
+    0 => return,
+
+    1 =>
+    {
+      tile.colour = .yellow;
+      LIFE_COUNT -= 1;
+      def.log( .INFO, 0, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+    },
+
+    2 =>
+    {
+      tile.colour = .orange;
+      LIFE_COUNT -= 2;
+      def.log( .INFO, 0, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+    },
+
+    else =>
+    {
+      tile.colour = .red;
+      LIFE_COUNT -= 3;
+      def.log( .INFO, 0, @src(), "@ Clicked on a large mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+    },
+  }
+}
 
 fn getNeighbourMineCount( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) u32
 {
@@ -141,34 +184,11 @@ fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
   if( tile.colour.isEq( .red    )){ return; }
 
   // Check if a mine was clicked
-  if( tile.tType == TILE_MINE_1 )
-  {
-    tile.colour = .yellow;
-    FLAG_COUNT += 1;
-    LIFE_COUNT -= 1;
+  if( tile.tType == TILE_MINE_1 ){ return blowUpMine( ng, grid, tile, 1 ); }
+  if( tile.tType == TILE_MINE_2 ){ return blowUpMine( ng, grid, tile, 2 ); }
+  if( tile.tType == TILE_MINE_3 ){ return blowUpMine( ng, grid, tile, 3 ); }
 
-    def.log( .INFO, 0, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
-    return;
-  }
-  if( tile.tType == TILE_MINE_2 )
-  {
-    tile.colour = .orange;
-    FLAG_COUNT += 1;
-    LIFE_COUNT -= 2;
-
-    def.log( .INFO, 0, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
-    return;
-  }
-  if( tile.tType == TILE_MINE_3 )
-  {
-    tile.colour = .red;
-    FLAG_COUNT += 1;
-    LIFE_COUNT -= 3;
-
-    def.log( .INFO, 0, @src(), "@ Clicked on a large mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
-    return;
-  }
-
+  // Autoclick neighbouring tiles when number matched flagged + revealed
   if( tile.tType == TILE_SHOWN )
   {
     const tileMineCount = getNeighbourMineCount( ng, grid, tile );
@@ -191,10 +211,7 @@ fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
 
   floodDiscoverCheck( ng, grid, tile );
 
-  if( !HAS_WON and LIFE_COUNT > 0 )
-  {
-    HAS_WON = playerHasWon( ng, grid );
-  }
+  if( !HAS_WON and LIFE_COUNT > 0 ){ HAS_WON = playerHasWon( ng, grid ); }
 }
 
 // (un)flagging a tile
@@ -299,11 +316,24 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     return;
   };
 
-  if( HAS_WON or LIFE_COUNT <= 0 )
+  // Shake the screen on mine explosion
+  if( shake_prog < 0.2 )
   {
-    // prevent further action if game was won or lost
-    return;
+    var cam = ng.getCamera() catch
+    {
+      def.qlog( .WARN, 0, @src(), "Failed to optain main camera" );
+      return;
+    };
+
+    const offset = shaker.getOffsetAtTime( shake_prog );
+
+    cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+
+    shake_prog += ( 1.0 / 120.0 );
   }
+
+  // Prevents further action if game was won or lost
+  if( HAS_WON or LIFE_COUNT <= 0 ){ return; }
 
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ) or def.ray.isMouseButtonPressed( def.ray.MouseButton.right ))
   {
@@ -325,6 +355,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left  )){ leftCLickTile(  ng, grid, clickedTile ); }
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.right )){ rightCLickTile( ng, grid, clickedTile ); }
   }
+
 }
 
 pub fn OnTickWorld( ng : *def.Engine ) void
@@ -446,4 +477,20 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 128 ));
     def.drawCenteredText( "W + SKILLFUL + HELL YEAH + ROFL + STAY GLAD", screenCenter.x, screenCenter.y, 50, .green );
   }
+
+  // Make it so screen shake affects what is currently rendered on the UI ( the whole game )
+//if( shake_prog < 0.2 )
+//{
+//  var cam = ng.getCamera() catch
+//  {
+//    def.qlog( .WARN, 0, @src(), "Failed to optain main camera" );
+//    return;
+//  };
+
+//  const offset = shaker.getOffsetAtTime( shake_prog );
+
+//  cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+
+//  shake_prog += ( 1.0 / 120.0 );
+//}
 }

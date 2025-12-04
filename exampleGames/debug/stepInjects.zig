@@ -10,26 +10,14 @@ const VecA   = def.VecA;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-var   s_time : f32 = 0.0;
+const SHOW_SHAKE_GRAPHS = true;
+
+var s_time : f32 = 0.0;
 
 const shaker : def.Shaker2D = .{
-  .beg_factor    = .{ .x = 0.0, .y = 0.0, .a = .{} },
-  .mid_factor    = .{ .x = 1.0, .y = 1.0, .a = .{ .r = 1.0 } },
-  .end_factor    = .{ .x = 0.0, .y = 0.0, .a = .{} },
-
-  .beg_lenght    = 4.0,
-  .mid_lenght    = 4.0,
-  .end_lenght    = 4.0,
-
-  .shake_speed   = 8.00,
-  .octave_freq_f = 2.00,
-  .octave_amp_f  = 0.50,
-  .octave_depth  = 4,
-
-  .octave_offset = 1.618,
-  .x_offset      = 0.000,
-  .y_offset      = 1.917,
-  .r_offset      = 2.269,
+  .beg_lenght    = 0.03,
+  .mid_lenght    = 0.04,
+  .end_lenght    = 0.03,
 };
 
 
@@ -47,7 +35,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Play a shake animation the camera when H is held
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.h ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.j )){ s_time = 0.0; }
+  if( def.ray.isKeyDown(    def.ray.KeyboardKey.h ))
   {
     var cam = ng.getCamera() catch
     {
@@ -57,11 +46,12 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
     const offset = shaker.getOffsetAtTime( s_time );
 
-    cam.pos = .{ .x = offset.x * 64, .y = offset.y * 64, .a = .{ .r = offset.a.r * 16, }};
-    s_time += 1.0 / @as( f32, @floatFromInt( def.ray.getFPS() ));
+    cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+    s_time += ( 1.0 / 120.0 );
 
     def.log( .WARN, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
   }
+
 
   // Move the camera with the WASD or arrow keys
   if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
@@ -218,5 +208,40 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
+  }
+
+  if( SHOW_SHAKE_GRAPHS )
+  {
+    const width  = def.getScreenWidth();
+    const height = def.getScreenHeight();
+
+    def.drawLine( .{ .x = 0, .y = height * 0.25 }, .{ .x = width, .y = height * 0.25 }, .nBlack, 4 );
+    def.drawLine( .{ .x = 0, .y = height * 0.50 }, .{ .x = width, .y = height * 0.50 }, .nBlack, 4 );
+    def.drawLine( .{ .x = 0, .y = height * 0.75 }, .{ .x = width, .y = height * 0.75 }, .nBlack, 4 );
+
+    const l1 = width *           shaker.beg_lenght / shaker.getTotalLenght();
+    const l2 = width * ( 1.0 - ( shaker.end_lenght / shaker.getTotalLenght() ));
+
+    def.drawLine( .{ .x = l1, .y = 0 }, .{ .x = l1, .y = height }, .nBlack, 4 );
+    def.drawLine( .{ .x = l2, .y = 0 }, .{ .x = l2, .y = height }, .nBlack, 4 );
+
+    for( 0 .. @intFromFloat( width ))| pos |
+    {
+      const x : f32 = @floatFromInt( pos );
+      const offset  = shaker.getOffsetAtProg( x / width );
+
+
+      var hx : f32 = height * 0.25;
+      var hy : f32 = height * 0.50;
+      var hr : f32 = height * 0.75;
+
+      hx += offset.x   * 128;
+      hy += offset.y   * 128;
+      hr += offset.a.r * 128;
+
+      def.drawCenteredText( "|", x , hx, 12, .red );
+      def.drawCenteredText( "|", x , hy, 12, .green );
+      def.drawCenteredText( "|", x , hr, 12, .blue );
+    }
   }
 }
