@@ -26,7 +26,8 @@ var LIFE_COUNT : i32 = 5;
 var HAS_WON    : bool = false;
 var IS_INIT    : bool = false;
 
-var shake_prog : f32 = 0.0;
+var shake_prog  : f32 = 0.0;
+var shake_force : f32 = 0.0;
 
 const shaker : def.Shaker2D = .{
   .beg_lenght = 0.03,
@@ -42,6 +43,7 @@ fn blowUpMine( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile, damage :
 {
   FLAG_COUNT += 1;
   shake_prog  = 0.0;
+  shake_force = @floatFromInt( damage );
 
   _ = ng;
   _ = grid;
@@ -327,7 +329,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
     const offset = shaker.getOffsetAtTime( shake_prog );
 
-    cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+    cam.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 4, }};
 
     shake_prog += ( 1.0 / 120.0 );
   }
