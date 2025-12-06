@@ -47,48 +47,54 @@ pub const e_hook_tag = enum( u8 )
 
 };
 
+
+pub const HookCntx = *def.Engine; // Hook Context ( Engine ptr )
+
+// Hook functions mandatory format
+pub const HookFunc = *const fn( cntx : HookCntx ) void;
+
+
 // This struct contains a slot for each possible game hook
-// Each are function pointers that can be set with `GameHooks.loadHooks()`
-// NOTE : Using *fn instead of simply module.fn to avoid storing the entire module, which has an unknown type
+// Each are function pointers that can be set with `GameHooks.loadHooks( function definition module )`
 pub const GameHooks = struct
 {
   // Engine State Hooks
 
-  OnStart : ?*const fn ( *def.Engine ) void = null,
-  OnStop  : ?*const fn ( *def.Engine ) void = null,
+  OnStart : ?HookFunc = null,
+  OnStop  : ?HookFunc = null,
 
-  OnOpen  : ?*const fn ( *def.Engine ) void = null,
-  OnClose : ?*const fn ( *def.Engine ) void = null,
+  OnOpen  : ?HookFunc = null,
+  OnClose : ?HookFunc = null,
 
-  OnPlay  : ?*const fn ( *def.Engine ) void = null,
-  OnPause : ?*const fn ( *def.Engine ) void = null,
+  OnPlay  : ?HookFunc = null,
+  OnPause : ?HookFunc = null,
 
 
   // Engine Step Hooks
 
-  OnLoopStart : ?*const fn ( *def.Engine ) void = null,
-  OnLoopEnd   : ?*const fn ( *def.Engine ) void = null,
-  OnLoopCycle : ?*const fn ( *def.Engine ) void = null,
+  OnLoopStart : ?HookFunc = null,
+  OnLoopEnd   : ?HookFunc = null,
+  OnLoopCycle : ?HookFunc = null,
 
 
   // Update and Tick Hooks
 
-  OnUpdateInputs   : ?*const fn ( *def.Engine ) void = null,
-//OffUpdateInputs  : ?*const fn ( *def.Engine ) void = null,
+  OnUpdateInputs   : ?HookFunc = null,
+//OffUpdateInputs  : ?HookFunc = null,
 
-  OnTickWorld      : ?*const fn ( *def.Engine ) void = null,
-  OffTickWorld     : ?*const fn ( *def.Engine ) void = null,
+  OnTickWorld      : ?HookFunc = null,
+  OffTickWorld     : ?HookFunc = null,
 
 
   // Rendering Hooks
 
-  OnRenderBckgrnd  : ?*const fn ( *def.Engine ) void = null,
+  OnRenderBckgrnd  : ?HookFunc = null,
 
-  OnRenderWorld    : ?*const fn ( *def.Engine ) void = null,
-  OffRenderWorld   : ?*const fn ( *def.Engine ) void = null,
+  OnRenderWorld    : ?HookFunc = null,
+  OffRenderWorld   : ?HookFunc = null,
 
-  OnRenderOverlay  : ?*const fn ( *def.Engine ) void = null,
-//OffRenderOverlay : ?*const fn ( *def.Engine ) void = null,
+  OnRenderOverlay  : ?HookFunc = null,
+//OffRenderOverlay : ?HookFunc = null,
 
 
   // ================================ GAME HOOKS FUNCTIONS ================================
@@ -159,7 +165,7 @@ pub const GameHooks = struct
     }
   }
 
-  pub fn tryHook( self : *const GameHooks, tag : e_hook_tag, args : anytype ) void
+  pub fn tryHook( self : *const GameHooks, tag : e_hook_tag, cntx : HookCntx ) void
   {
     const hookFunct = switch( tag )
     {
@@ -195,14 +201,10 @@ pub const GameHooks = struct
     //.OffRenderOverlay => self.OffRenderOverlay,
     };
 
-    if( hookFunct  )| func |
+    if( hookFunct  )| f |
     {
       def.log( .TRACE, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
-      switch( args.len )
-      {
-        1 => func( args[ 0 ] ),
-        else => @compileError( "Unsupported number of arguments for game hook" ),
-      }
+      f( cntx );
       return;
     }
   }

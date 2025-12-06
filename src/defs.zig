@@ -51,8 +51,11 @@ pub inline fn loadSettings( module : anytype ) void { G_ST.loadSettings( module 
 const  ghk_h = @import( "core/interfacers/gameHooks.zig" );
 pub var G_HK : ghk_h.GameHooks = .{}; // NOTE : Global gameHooks struct instance
 
-pub inline fn loadHooks( module : anytype ) void                     { G_HK.loadHooks( module  ); }
-pub inline fn tryHook( tag : ghk_h.e_hook_tag, args : anytype ) void { G_HK.tryHook( tag, args ); }
+pub const HookCntx = ghk_h.HookCntx;
+pub const HookFunc = ghk_h.HookFunc;
+
+pub inline fn loadHooks( module : anytype ) void                      { G_HK.loadHooks( module  ); }
+pub inline fn tryHook( tag : ghk_h.e_hook_tag, cntx : HookCntx ) void { G_HK.tryHook( tag, cntx ); }
 
 
 // ================================ ENGINE SYSTEMS ================================

@@ -14,7 +14,7 @@ pub fn loopLogic( ng : *Engine ) void
   }
 
   def.qlog( .TRACE, 0, @src(), "Starting the game loop..." );
-  def.tryHook( .OnLoopStart, .{ ng });
+  def.tryHook( .OnLoopStart, ng );
   def.qlog( .INFO, 0, @src(), "& Game loop started\n" );
 
   // NOTE : this is a blocking loop, it will not return until the game is closed
@@ -25,7 +25,7 @@ pub fn loopLogic( ng : *Engine ) void
     ng.updateSimTime();
 
   //def.log_u.logLoopTime( ng.simDelta );
-    def.tryHook( .OnLoopCycle, .{ ng });
+    def.tryHook( .OnLoopCycle, ng );
 
   //var loopTime = def.getNow();
     if( ng.isOpened() )
@@ -39,7 +39,7 @@ pub fn loopLogic( ng : *Engine ) void
     }
   }
   def.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
-  def.tryHook( .OnLoopEnd, .{ ng });
+  def.tryHook( .OnLoopEnd, ng );
   def.qlog( .INFO, 0, @src(), "& Game loop stopped\n" );
 }
 
@@ -67,7 +67,7 @@ fn updateInputs( ng : *Engine ) void
 
   def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
 
-  def.tryHook( .OnUpdateInputs, .{ ng });
+  def.tryHook( .OnUpdateInputs, ng );
   {
     if( def.ray.isWindowResized() )
     {
@@ -79,7 +79,7 @@ fn updateInputs( ng : *Engine ) void
       else { def.qlog( .WARN, 0, @src(), "No main camera initialized, skipping camera update" ); }
     }
   }
-  //def.tryHook( .OffUpdateInputs, .{ ng });
+  //def.tryHook( .OffUpdateInputs, ng );
 }
 
 
@@ -95,14 +95,14 @@ inline fn tryTick( ng : *Engine ) bool
 
     ng.tickOffset.value -= ng.targetTickTime.value; // TODO : ensure this doesn't create a giant backlog of tick events during lag
 
-    def.tryHook( .OnTickWorld, .{ ng });
+    def.tryHook( .OnTickWorld, ng );
     {
     //tickTilemaps( ng ); // NOTE : HERE
       tickEntities( ng );
 
       // NOTE : tick other world objects here
     }
-    def.tryHook( .OffTickWorld, .{ ng });
+    def.tryHook( .OffTickWorld, ng );
 
   //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick delta time" );
     return true;
@@ -166,7 +166,7 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   // NOTE : set Graphic_Bckgrd_Colour to null in settings to skip this step
   if( def.G_ST.Graphic_Bckgrd_Colour != null ){ def.ray.clearBackground( def.G_ST.Graphic_Bckgrd_Colour.?.toRayCol() ); }
 
-  def.tryHook( .OnRenderBckgrnd, .{ ng });
+  def.tryHook( .OnRenderBckgrnd, ng );
 
   if( !ng.isCameraInit() )
   {
@@ -178,12 +178,12 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   {
     def.ray.beginMode2D( cam.toRayCam() );
     {
-      def.tryHook( .OnRenderWorld, .{ ng });
+      def.tryHook( .OnRenderWorld, ng );
 
       renderTilemaps( ng );
       renderEntities( ng );
 
-      def.tryHook( .OffRenderWorld, .{ ng });
+      def.tryHook( .OffRenderWorld, ng );
     }
 
     def.ray.endMode2D();
@@ -193,11 +193,11 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   }
   else { def.qlog( .WARN, 0, @src(), "No main camera found, skipping world rendering" ); }
 
-  def.tryHook( .OnRenderOverlay, .{ ng });
+  def.tryHook( .OnRenderOverlay, ng );
   {
     // TODO : Render the UI elements here
   }
-  //def.tryHook( .OffRenderOverlay, .{ ng });
+  //def.tryHook( .OffRenderOverlay, ng );
 }
 
 fn renderTilemaps( ng : *Engine ) void

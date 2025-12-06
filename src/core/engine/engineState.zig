@@ -99,7 +99,7 @@ pub fn start( ng : *Engine ) void
       ng.entityManager.?.init( def.getAlloc() );
     }
   }
-  def.tryHook( .OnStart, .{ ng });
+  def.tryHook( .OnStart, ng );
 
   def.qlog( .INFO, 0, @src(), "& Hello, world !\n" );
   ng.state = .STARTED;
@@ -114,7 +114,7 @@ pub fn stop( ng : *Engine ) void
   }
   else { def.qlog( .TRACE, 0, @src(), "Stoping the engine..." ); }
 
-  def.tryHook( .OnStop, .{ ng });
+  def.tryHook( .OnStop, ng );
 
   // Deinitialize relevant engine components
   {
@@ -192,7 +192,7 @@ pub fn open( ng : *Engine ) void
       _ = def.setDefaultFont( def.G_ST.Graphic_Default_Font );
     }
   }
-  def.tryHook( .OnOpen, .{ ng });
+  def.tryHook( .OnOpen, ng );
 
   // TODO : Start the game loop in a second thread here ?
 
@@ -209,7 +209,7 @@ pub fn close( ng : *Engine ) void
   }
   else { def.qlog( .TRACE, 0, @src(), "Stopping the game..." ); }
 
-  def.tryHook( .OnClose, .{ ng });
+  def.tryHook( .OnClose, ng );
 
   // Deinitialize relevant raylib components
   {
@@ -244,7 +244,7 @@ pub fn play( ng : *Engine ) void
   }
   else { def.qlog( .TRACE, 0, @src(), "Resuming the game..." ); }
 
-  def.tryHook( .OnPlay, .{ ng });
+  def.tryHook( .OnPlay, ng );
   ng.state = .PLAYING;
 }
 
@@ -258,7 +258,7 @@ pub fn pause( ng : *Engine ) void
   }
   else { def.qlog( .TRACE, 0, @src(), "Pausing the game..." ); }
 
-  def.tryHook( .OnPause, .{ ng });
+  def.tryHook( .OnPause, ng );
   ng.state = .OPENED;
 }
 

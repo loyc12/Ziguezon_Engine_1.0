@@ -5,7 +5,7 @@ pub const ScriptCntx = *def.Engine; // Script Context ( Engine ptr )
 pub const ScriptData = *anyopaque;  // Script Data    ( Struct ptr )
 
 // Script functions mandatory format
-pub const ScriptFunc = fn( cntx : ScriptCntx, data : ScriptData ) void;
+pub const ScriptFunc = *const fn( cntx : ScriptCntx, data : ScriptData ) void;
 
 
 // ================================ SCRIPTER STRUCT ================================
@@ -43,11 +43,11 @@ pub const Scripter = struct
   pub inline fn setExit( self : *const Scripter, f : ?ScriptFunc ) void{ self.onExit = f; }
 
 
-  pub inline fn init( self : *Scripter, cntx : ScriptCntx ) bool
+  pub fn init( self : *Scripter, cntx : ScriptCntx ) bool
   {
     if( self.data )| data |
     {
-      if( self.onInit()  )| f |
+      if( self.onInit )| f |
       {
         f( cntx, data );
         return true;
@@ -56,11 +56,11 @@ pub const Scripter = struct
     return false;
   }
 
-  pub inline fn tick( self : *Scripter, cntx : ScriptCntx, sdt : f32 ) bool
+  pub fn tick( self : *Scripter, cntx : ScriptCntx, sdt : f32 ) bool
   {
     if( self.data )| data |
     {
-      if( self.onTick()  )| f |
+      if( self.onTick )| f |
       {
         _ = sdt; // TODO : allow usage of std ?
 
@@ -71,11 +71,11 @@ pub const Scripter = struct
     return false;
   }
 
-  pub inline fn rndr( self : *Scripter, cntx : ScriptCntx ) bool
+  pub fn rndr( self : *Scripter, cntx : ScriptCntx ) bool
   {
     if( self.data )| data |
     {
-      if( self.onRndr()  )| f |
+      if( self.onRndr )| f |
       {
         f( cntx, data );
         return true;
@@ -84,11 +84,11 @@ pub const Scripter = struct
     return false;
   }
 
-  pub inline fn exit( self : *Scripter, cntx : ScriptCntx ) bool
+  pub fn exit( self : *Scripter, cntx : ScriptCntx ) bool
   {
     if( self.data )| data |
     {
-      if( self.onExit()  )| f |
+      if( self.onExit )| f |
       {
         f( cntx, data );
         return true;
