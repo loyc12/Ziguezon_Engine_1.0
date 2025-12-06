@@ -51,21 +51,18 @@ fn blowUpMine( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile, damage :
   switch( damage )
   {
     0 => return,
-
     1 =>
     {
       tile.colour = .yellow;
       LIFE_COUNT -= 1;
       def.log( .INFO, 0, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
-
     2 =>
     {
       tile.colour = .orange;
       LIFE_COUNT -= 2;
       def.log( .INFO, 0, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
-
     else =>
     {
       tile.colour = .red;
