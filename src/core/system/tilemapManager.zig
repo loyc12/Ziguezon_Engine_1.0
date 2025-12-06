@@ -297,8 +297,7 @@ pub const TilemapManager = struct
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {
       tlmp.drawTilemap();
-      _ = ng;
-    //if( tlmp.script.hasScript() ){ tlmp.script.rndr( ng ); } // NOTE : HERE
+      if( tlmp.script.hasScript() ){ _ = tlmp.script.rndr( ng ); }
     }}
   }
 
@@ -313,7 +312,7 @@ pub const TilemapManager = struct
       if( tlmp.isActive() )
       {
         tlmp.moveSelf( sdt );
-      //if( tlmp.script.hasScript() ){ tlmp.script.tick( ng, sdt ); } // NOTE : HERE
+        if( tlmp.script.hasScript() ){ _ = tlmp.script.tick( ng, sdt ); }
       }
     }}
   }

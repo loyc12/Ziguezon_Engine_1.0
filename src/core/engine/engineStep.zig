@@ -97,7 +97,7 @@ inline fn tryTick( ng : *Engine ) bool
 
     def.tryHook( .OnTickWorld, ng );
     {
-    //tickTilemaps( ng ); // NOTE : HERE
+      tickTilemaps( ng );
       tickEntities( ng );
 
       // NOTE : tick other world objects here

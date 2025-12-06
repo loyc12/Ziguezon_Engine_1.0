@@ -283,8 +283,7 @@ pub const EntityManager = struct
       if( e.isActive() )
       {
         e.renderSelf();
-        _ = ng;
-      //if( e.script.hasScript() ){ e.script.rndr( ng ); } // NOTE : HERE
+        if( e.script.hasScript() ){ _ = e.script.rndr( ng ); }
       }
     }
   }
@@ -302,7 +301,7 @@ pub const EntityManager = struct
       if( e.isActive() )
       {
         e.moveSelf( sdt );
-      //if( e.script.hasScript() ){ e.script.tick( ng, sdt ); } // NOTE : HERE
+        if( e.script.hasScript() ){ _ = e.script.tick( ng, sdt ); }
       }
     }}
 
