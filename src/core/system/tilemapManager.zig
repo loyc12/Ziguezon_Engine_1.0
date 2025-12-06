@@ -311,7 +311,7 @@ pub const TilemapManager = struct
     {
       if( tlmp.isActive() )
       {
-        tlmp.moveSelf( sdt );
+      //tlmp.moveSelf( sdt ); // DNE
         if( tlmp.script.hasScript() ){ _ = tlmp.script.tick( ng, sdt ); }
       }
     }}
