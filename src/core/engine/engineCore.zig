@@ -205,7 +205,7 @@ pub const Engine = struct
 
   pub inline fn tickActiveEntities( ng : *Engine ) void
   {
-    if( ng.entityManager )| *m |{ m.tickActiveEntities( ng.getScaledTickDelta() ); }
+    if( ng.entityManager )| *m |{ m.tickActiveEntities( ng ); }
   }
   pub inline fn renderEntityHitboxes( ng : *Engine ) void
   {
@@ -213,7 +213,7 @@ pub const Engine = struct
   }
   pub inline fn renderActiveEntities( ng : *Engine ) void
   {
-    if( ng.entityManager )| *m |{ m.renderActiveEntities(); }
+    if( ng.entityManager )| *m |{ m.renderActiveEntities( ng ); }
   }
 
 
@@ -231,23 +231,22 @@ pub const Engine = struct
   {
     if( ng.tilemapManager )| *m |{ return m.loadTilemapFromParams( params, fillType ); } else { return null; }
   }
+  pub inline fn deleteAllMarkedTilemaps( ng : *Engine ) void
+  {
+    if( ng.tilemapManager )| *m |{ m.deleteAllMarkedTilemaps(); }
+  }
 
-//pub inline fn tickActiveTilemaps( ng : *Engine ) void
-//{
-//  if( ng.tilemapManager )| *m |{ m.tickActiveTilemaps( ng.getScaledTickDelta() ); }
-//}
+  pub inline fn tickActiveTilemaps( ng : *Engine ) void
+  {
+    if( ng.tilemapManager )| *m |{ m.tickActiveTilemaps( ng ); }
+  }
   pub inline fn renderTilemapHitboxes( ng : *Engine ) void
   {
     if( ng.tilemapManager )| *m |{ m.renderTilemapHitboxes(); }
   }
   pub inline fn renderActiveTilemaps( ng : *Engine ) void
   {
-    if( ng.tilemapManager )| *m |{ m.renderActiveTilemaps(); }
-  }
-
-  pub inline fn deleteAllMarkedTilemaps( ng : *Engine ) void
-  {
-    if( ng.tilemapManager )| *m |{ m.deleteAllMarkedTilemaps(); }
+    if( ng.tilemapManager )| *m |{ m.renderActiveTilemaps( ng ); }
   }
 
 };

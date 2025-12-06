@@ -290,23 +290,31 @@ pub const TilemapManager = struct
     }}
   }
 
-  pub fn renderActiveTilemaps( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Tilemap.renderGraphics()
+  pub fn renderActiveTilemaps( self : *TilemapManager, ng : *def.Engine ) void // TODO : have this take in a renderer construct and pass it to Tilemap.renderGraphics()
   {
     def.qlog( .TRACE, 0, @src(), "Rendering active Tilemaps" );
 
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {
       tlmp.drawTilemap();
+      _ = ng;
+    //if( tlmp.script.hasScript() ){ tlmp.script.rndr( ng ); } // NOTE : HERE
     }}
   }
 
   // ================================ TICK FUNCTIONS ================================
 
-  //pub fn tickActiveTilemaps( self : *TilemapManager, sdt : f32 ) void
-  //{
-  //  for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
-  //  {
-  //    tlmp.moveSelf( sdt );
-  //  }}
-  //}
+  pub fn tickActiveTilemaps( self : *TilemapManager, ng : *def.Engine ) void
+  {
+    const sdt = ng.getScaledTickDelta();
+
+    for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
+    {
+      if( tlmp.isActive() )
+      {
+        tlmp.moveSelf( sdt );
+      //if( tlmp.script.hasScript() ){ tlmp.script.tick( ng, sdt ); } // NOTE : HERE
+      }
+    }}
+  }
 };

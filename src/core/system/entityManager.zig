@@ -274,29 +274,47 @@ pub const EntityManager = struct
     }}
   }
 
-  pub fn renderActiveEntities( self : *EntityManager ) void // TODO : have this take in a renderer construct and pass it to Entity.renderGraphics()
+  pub fn renderActiveEntities( self : *EntityManager, ng : *def.Engine ) void // TODO : have this take in a renderer construct and pass it to Entity.renderGraphics()
   {
     def.qlog( .TRACE, 0, @src(), "Rendering active Entities" );
 
     for( self.entityList.items )| *e |
     {
-      if( e.isActive() ){ e.renderSelf(); }
+      if( e.isActive() )
+      {
+        e.renderSelf();
+        _ = ng;
+      //if( e.script.hasScript() ){ e.script.rndr( ng ); } // NOTE : HERE
+      }
     }
   }
 
   // ================================ TICK FUNCTIONS ================================
 
-  pub fn tickActiveEntities( self : *EntityManager, sdt : f32 ) void
+  pub fn tickActiveEntities( self : *EntityManager, ng : *def.Engine ) void
   {
+    def.qlog( .TRACE, 0, @src(), "Ticking active Entities" );
+
+    const sdt = ng.getScaledTickDelta();
+
     if( def.G_ST.AutoApply_Entity_Movement ){ for( self.entityList.items )| *e |
     {
-      if( e.isActive() ){ e.moveSelf( sdt ); }
+      if( e.isActive() )
+      {
+        e.moveSelf( sdt );
+      //if( e.script.hasScript() ){ e.script.tick( ng, sdt ); } // NOTE : HERE
+      }
     }}
+
+    //ng.collideActiveEntities( ng );
   }
 
-  pub fn collideActiveEntities( self : *EntityManager, sdt : f32 ) void // TODO : make it actually collide entity, instead of just logging overlap
+  pub fn collideActiveEntities( self : *EntityManager, ng : *def.Engine ) void // TODO : make it actually collide entity, instead of just logging overlap
   {
-    _ = sdt; // Prevent unused variable warning
+    def.qlog( .TRACE, 0, @src(), "Coliding active Entities" );
+
+    const sdt = ng.getScaledTickDelta();
+    _ = sdt;
 
     if( def.G_ST.AutoApply_Entity_Collision ){ for( self.entityList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
     {

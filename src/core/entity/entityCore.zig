@@ -88,8 +88,7 @@ pub const Entity = struct
   shape  : e_ntt_shape = .RECT,
 
   // ======== CUSTOM BEHAVIOUR ========
-//data   : ?*anyopaque = null, // Pointer to instance specific data ( if any )
-//script : ?*anyopaque = null, // Pointer to instance specific scripting ( if any )
+  script : def.Scripter = .{},
 
 
   // ================ FLAG MANAGEMENT ================

@@ -73,6 +73,7 @@ pub const tlm_m = @import( "core/system/tilemapManager.zig" );
 
 pub const ntt         = @import( "core/entity/entityCore.zig" );
 pub const Entity      = ntt.Entity;
+
 pub const e_ntt_flags = ntt.e_ntt_flags;
 pub const e_ntt_shape = ntt.e_ntt_shape;
 
@@ -86,6 +87,16 @@ pub const e_tile_type  = tlm.e_tile_type;
 
 pub const Tilemap      = tlm.Tilemap;
 pub const e_tlmp_shape = tlm.e_tlmp_shape;
+
+
+// ================ SCRIPT ================
+
+pub const spt        = @import( "core/script/scripter.zig" );
+
+pub const Scripter   = spt.Scripter;
+pub const ScriptData = spt.ScriptData;
+pub const ScriptCntx = spt.ScriptCntx;
+pub const ScriptFunc = spt.ScriptFunc;
 
 
 // ================================ UTILS SHORTHANDS ================================

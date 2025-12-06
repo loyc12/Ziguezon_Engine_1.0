@@ -97,6 +97,7 @@ inline fn tryTick( ng : *Engine ) bool
 
     def.tryHook( .OnTickWorld, .{ ng });
     {
+    //tickTilemaps( ng ); // NOTE : HERE
       tickEntities( ng );
 
       // NOTE : tick other world objects here
@@ -109,14 +110,25 @@ inline fn tryTick( ng : *Engine ) bool
   return false;
 }
 
+fn tickTilemaps( ng : *Engine ) void
+{
+  def.qlog( .TRACE, 0, @src(), "Updating Tilemap game logic..." );
+
+  if( ng.isTilemapManagerInit() )
+  {
+    ng.tickActiveTilemaps();
+    ng.deleteAllMarkedTilemaps();
+  }
+  else { def.qlog( .WARN, 0, @src(), "Cannot tick tilemaps: Tilemap manager is not initialized" ); }
+}
+
 fn tickEntities( ng : *Engine ) void
 {
-  def.qlog( .TRACE, 0, @src(), "Updating game logic..." );
+  def.qlog( .TRACE, 0, @src(), "Updating Entity game logic..." );
 
   if( ng.isEntityManagerInit() )
   {
     ng.tickActiveEntities();
-    //ng.collideActiveEntities();
     ng.deleteAllMarkedEntities();
   }
   else { def.qlog( .WARN, 0, @src(), "Cannot tick entities: Entity manager is not initialized" ); }
@@ -168,36 +180,16 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
     {
       def.tryHook( .OnRenderWorld, .{ ng });
 
-      if( ng.isTilemapManagerInit() )
-      {
-        ng.renderActiveTilemaps();
-        if( def.G_ST.DebugDraw_Tilemap ){ ng.renderTilemapHitboxes(); }
-      }
-      else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
-
-      if( ng.isEntityManagerInit() )
-      {
-        ng.renderActiveEntities();
-        if( def.G_ST.DebugDraw_Entity ){ ng.renderEntityHitboxes(); }
-      }
-      else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
+      renderTilemaps( ng );
+      renderEntities( ng );
 
       def.tryHook( .OffRenderWorld, .{ ng });
     }
 
     def.ray.endMode2D();
 
-    if( def.G_ST.DebugDraw_FPS )
-    {
-      const frameTime = def.TimeVal.fromRayDeltaTime( def.ray.getFrameTime() );
-
-      const sec : u64 = @intCast( frameTime.toSec() );
-      const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
-
-      //const x =
-
-      def.drawTextFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16, 16, 32, def.Colour.yellow );
-    }
+    drawDebugFpsCount( ng );
+  //drawDebugTpsCount( ng );
   }
   else { def.qlog( .WARN, 0, @src(), "No main camera found, skipping world rendering" ); }
 
@@ -207,3 +199,60 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   }
   //def.tryHook( .OffRenderOverlay, .{ ng });
 }
+
+fn renderTilemaps( ng : *Engine ) void
+{
+  def.qlog( .TRACE, 0, @src(), "Updating Tilemap visuals..." );
+
+  if( ng.isTilemapManagerInit() )
+  {
+    ng.renderActiveTilemaps();
+    if( def.G_ST.DebugDraw_Tilemap ){ ng.renderTilemapHitboxes(); }
+  }
+  else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
+}
+
+fn renderEntities( ng : *Engine ) void
+{
+  def.qlog( .TRACE, 0, @src(), "Updating Entity visuals..." );
+
+  if( ng.isEntityManagerInit() )
+  {
+    ng.renderActiveEntities();
+    if( def.G_ST.DebugDraw_Entity ){ ng.renderEntityHitboxes(); }
+  }
+  else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
+}
+
+
+// ======== DEBUG INFO ========
+
+fn drawDebugFpsCount( ng : *Engine ) void
+{
+  _ = ng;
+
+  if( def.G_ST.DebugDraw_FPS )
+  {
+    const frameTime = def.TimeVal.fromRayDeltaTime( def.ray.getFrameTime() );
+
+    const sec : u64 = @intCast( frameTime.toSec() );
+    const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
+
+    def.drawTextFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16, 16, 32, def.Colour.yellow );
+  }
+}
+
+//fn drawDebugTpsCount( ng : *Engine ) void
+//{
+//  _ = ng;
+//
+//  if( def.G_ST.DebugDraw_FPS )
+//  {
+//    const frameTime = def.TimeVal.fromRayDeltaTime( ng. );
+//
+//    const sec : u64 = @intCast( frameTime.toSec() );
+//    const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
+//
+//    def.drawTextFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 48, 16, 32, def.Colour.yellow );
+//  }
+//}

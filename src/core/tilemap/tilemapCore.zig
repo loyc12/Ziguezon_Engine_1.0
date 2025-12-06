@@ -51,11 +51,8 @@ pub const Tilemap = struct
   tileScale  : Vec2         = DEF_TILE_SCALE,
   tileShape  : e_tlmp_shape = .RECT,
 
-//baseFillType : e_tile_type = .EMPTY,
-
   // ======= CUSTOM BEHAVIOUR ========
-//data     : ?*anyopaque = null, // Pointer to instance specific data ( if any )
-//script   : ?*anyopaque = null, // Pointer to instance specific scripting ( if any )
+  script : def.Scripter = .{},
 
 
   // ================ FLAG MANAGEMENT ================

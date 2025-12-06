@@ -4,7 +4,7 @@ const rlz = @import( "raylib_zig" );
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
-pub fn build( b: *std.Build ) void
+pub fn build( b : *std.Build ) void
 {
   // ================================ BUILD CONFIGURATION ================================
 
@@ -13,7 +13,7 @@ pub fn build( b: *std.Build ) void
   const tmp_engine_interface_path = b.option(
     []const u8,
     "engine_interface_path",
-    "Path to a game's engineInterface implementations (e.g., exampleGames/gameFolder/engineInterface.zig)"
+    "Path to a game's engineInterface implementations ( default : exampleGames/gameFolder/engineInterface.zig )"
   );
   const engine_interface_path = if( tmp_engine_interface_path )| path | path else "exampleGames/debug/engineInterface.zig";
 
@@ -150,7 +150,8 @@ pub fn build( b: *std.Build ) void
     const path = game[ 1 ];
 
     const game_step = b.step( n1, "Compiles and runs " ++ n1 ++ " on the current platform in Debug mode" );
-    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path, "--release=off" });
+    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path });
+
     game_step.dependOn( &game_cmd.step );
 
     inline for( platforms )| plat |
