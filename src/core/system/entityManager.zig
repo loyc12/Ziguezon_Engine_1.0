@@ -294,7 +294,7 @@ pub const EntityManager = struct
   {
     def.qlog( .TRACE, 0, @src(), "Ticking active Entities" );
 
-    const sdt = ng.getScaledTickDelta();
+    const sdt = ng.getScaledTargetTickDelta();
 
     if( def.G_ST.AutoApply_Entity_Movement ){ for( self.entityList.items )| *e |
     {
@@ -312,7 +312,7 @@ pub const EntityManager = struct
   {
     def.qlog( .TRACE, 0, @src(), "Coliding active Entities" );
 
-    const sdt = ng.getScaledTickDelta();
+    const sdt = ng.getScaledTargetTickDelta();
     _ = sdt;
 
     if( def.G_ST.AutoApply_Entity_Collision ){ for( self.entityList.items, 0 .. )| *e1, index |{ if( e1.isActive() )

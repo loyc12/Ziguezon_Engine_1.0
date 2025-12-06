@@ -18,7 +18,7 @@ pub fn initCriticals() void
 
   def.G_NG.setTargetTickRate(  def.G_ST.Startup_Target_TickRate );
   def.G_NG.setTargetFrameRate( def.G_ST.Startup_Target_FrameRate );
-  def.G_NG.updateSimTime();
+  def.G_NG.simTimeUpdate();
 
   def.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
 }

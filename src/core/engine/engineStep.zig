@@ -22,9 +22,9 @@ pub fn loopLogic( ng : *Engine ) void
 
   while( !def.ray.windowShouldClose() )
   {
-    ng.updateSimTime();
+    ng.simTimeUpdate();
 
-  //def.log_u.logLoopTime( ng.simDelta );
+  //def.log_u.logLoopTime( ng.times.simDelta );
     def.tryHook( .OnLoopCycle, ng );
 
   //var loopTime = def.getNow();
@@ -93,7 +93,7 @@ inline fn tryTick( ng : *Engine ) bool
 
   //const tmpTime = def.getNow();
 
-    ng.tickOffset.value -= ng.targetTickTime.value; // TODO : ensure this doesn't create a giant backlog of tick events during lag
+    ng.times.tickOffset.value -= ng.times.targetTickDelta.value; // TODO : ensure this doesn't create a giant backlog of tick events during lag
 
     def.tryHook( .OnTickWorld, ng );
     {
@@ -145,7 +145,7 @@ inline fn tryRender( ng : *Engine ) bool
 
   //const tmpTime = def.getNow();
 
-    ng.frameOffset.value -= ng.targetFrameTime.value; // TODO : ensure this doesn't create a giant backlog of frame events during lag
+    ng.times.frameOffset.value -= ng.times.targetFrameDelta.value; // TODO : ensure this doesn't create a giant backlog of frame events during lag
     renderGraphics( ng );
 
   //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "& Render delta time" );
@@ -227,13 +227,15 @@ fn renderEntities( ng : *Engine ) void
 
 // ======== DEBUG INFO ========
 
+// TODO : Implement ng.times.frameEpoch and frameDelta
+
 fn drawDebugFpsCount( ng : *Engine ) void
 {
   _ = ng;
 
   if( def.G_ST.DebugDraw_FPS )
   {
-    const frameTime = def.TimeVal.fromRayDeltaTime( def.ray.getFrameTime() );
+    const frameTime = def.TimeVal.fromRayDeltaTime( def.ray.getFrameTime() ); // ng.times.frameDelta );
 
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
@@ -242,13 +244,15 @@ fn drawDebugFpsCount( ng : *Engine ) void
   }
 }
 
+// TODO : Implement ng.times.tickEpoch and tickDelta
+
 //fn drawDebugTpsCount( ng : *Engine ) void
 //{
 //  _ = ng;
 //
 //  if( def.G_ST.DebugDraw_FPS )
 //  {
-//    const frameTime = def.TimeVal.fromRayDeltaTime( ng. );
+//    const frameTime = def.TimeVal.fromRayDeltaTime( ng.times.tickDelta );
 //
 //    const sec : u64 = @intCast( frameTime.toSec() );
 //    const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
