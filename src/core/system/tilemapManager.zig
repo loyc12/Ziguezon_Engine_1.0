@@ -97,7 +97,7 @@ pub const TilemapManager = struct
       return null;
     }
 
-    for( self.tilemapList.items, 0.. )| tlmp, index |{ if( tlmp.id == id ){ return index; }}
+    for( self.tilemapList.items, 0 .. )| tlmp, index |{ if( tlmp.id == id ){ return index; }}
 
     def.log( .TRACE, 0, @src(), "Tilemap with ID {d} not found", .{ id });
     return null;
@@ -202,7 +202,11 @@ pub const TilemapManager = struct
       return null;
     };
 
-    return &self.tilemapList.items[ self.tilemapList.items.len - 1 ];
+    const tlmp : *Tilemap = &self.tilemapList.items[ self.tilemapList.items.len - 1 ];
+
+    //if( tlmp.script.hasScript() ){ _ = tlmp.script.init( ng ); } // TODO : see if this needs implementing
+
+    return tlmp;
   }
 
 
@@ -244,10 +248,12 @@ pub const TilemapManager = struct
       return;
     }
 
-    var tilemap = &self.tilemapList.items[ index ];
-    tilemap.deinit();
+    var tlmp = &self.tilemapList.items[ index ];
 
+    //if( tlmp.script.hasScript() ){ _ = tlmp.script.exit( ng ); } // TODO : see if this needs implementing
+    tlmp.deinit( self.allocator );
     _ = self.tilemapList.swapRemove( index );
+
     def.log( .DEBUG, 0, @src(), "Tilemap with ID {d} deleted", .{ id });
   }
 
@@ -262,10 +268,15 @@ pub const TilemapManager = struct
     }
 
     // Iterate through all tilemaps and delete those marked for deletion via the .DELETE flag
-    for( self.tilemapList.items, 0.. )| tlmp, index |
+    for( self.tilemapList.items, 0 .. )| *tlmp, index |
     {
       if( index >= self.tilemapList.items.len ){ break; }
-      if( tlmp.canBeDel() ){ _ = self.tilemapList.swapRemove( index ); }
+      if( tlmp.canBeDel() )
+      {
+      //if( tlmp.script.hasScript() ){ _ = tlmp.script.exit( ng ); } // TODO : see if this needs implementing
+        tlmp.deinit( self.allocator );
+        _ = self.tilemapList.swapRemove( index );
+      }
     }
 
     self.recalcMaxID();

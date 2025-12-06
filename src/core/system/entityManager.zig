@@ -95,7 +95,7 @@ pub const EntityManager = struct
       return null;
     }
 
-    for( self.entityList.items, 0.. )| e, index |
+    for( self.entityList.items, 0 .. )| e, index |
     {
       if( e.id == id ){ return index; }
     }
@@ -201,7 +201,11 @@ pub const EntityManager = struct
       return null;
     };
 
-    return &self.entityList.items[ self.entityList.items.len - 1 ];
+    const e : *Entity = &self.entityList.items[ self.entityList.items.len - 1 ];
+
+    //if( e.script.hasScript() ){ _ = e.script.init( ng ); } // TODO : see if this needs implementing
+
+    return e;
   }
 
   pub fn loadDefaultEntity( self : *EntityManager ) ?*Entity
@@ -211,7 +215,7 @@ pub const EntityManager = struct
     return self.loadEntityFromParams( .{} );
   }
 
-  // pub fn loadEntitiesFromFile( self : *EntityManager, filePath : []const u8 ) ?*Entity
+  //pub fn loadEntitiesFromFile( self : *EntityManager, filePath : []const u8 ) ?*Entity
 
   pub fn getEntity( self : *EntityManager, id : u32 ) ?*Entity
   {
@@ -236,6 +240,11 @@ pub const EntityManager = struct
       return;
     }
 
+    const e = &self.entityList.items[ index ];
+
+    //if( e.script.hasScript() ){ _ = e.script.exit( ng ); } // TODO : see if this needs implementing
+    _ = e;
+
     _ = self.entityList.swapRemove( index );
     def.log( .DEBUG, 0, @src(), "Entity with ID {d} deleted", .{ id });
   }
@@ -246,15 +255,19 @@ pub const EntityManager = struct
 
     if( !self.isInit )
     {
-      def.qlog( .WARN, 0, @src(), "Entity manager is not initialized" );
+      def.qlog( .WARN, 0, @src(), "Entity manager is not initialized : returning" );
       return;
     }
 
     // Iterate through all entities and delete those marked for deletion via the .DELETE flag
-    for( self.entityList.items, 0.. )| e, index |
+    for( self.entityList.items, 0 .. )| *e, index |
     {
       if( index >= self.entityList.items.len ){ break; }
-      if( e.canBeDel() ){ _ = self.entityList.swapRemove( index ); }
+      if( e.canBeDel() )
+      {
+      //if( e.script.hasScript() ){ _ = e.script.exit( ng ); } // TODO : see if this needs implementing
+        _ = self.entityList.swapRemove( index );
+      }
     }
 
     self.recalcMaxID();
