@@ -318,6 +318,20 @@ pub const Tilemap = struct
     }
   }
 
+  pub fn fillWithColour( self : *Tilemap, colour : def.Colour ) void
+  {
+    if( !self.isInit() )
+    {
+      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with given colour", .{ self.id });
+      return;
+    }
+
+    for( 0 .. self.getTileCount() )| index |
+    {
+      self.tileArray.items.ptr[ index ].colour = colour;
+    }
+  }
+
   pub fn setTileShape( self : *Tilemap, shape : e_tlmp_shape ) void
   {
     if( self.tileShape == shape )

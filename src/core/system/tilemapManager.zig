@@ -24,7 +24,6 @@ pub const TilemapManager = struct
       def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
-
     self.maxID += 1;
     return self.maxID;
   }
@@ -36,7 +35,6 @@ pub const TilemapManager = struct
       def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
-
     return self.maxID;
   }
 

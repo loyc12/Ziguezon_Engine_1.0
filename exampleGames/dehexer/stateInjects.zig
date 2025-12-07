@@ -1,13 +1,12 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub var GRID_ID     : u32 = 0;   //        12%        16%            20%         24%           28%
-pub var MINE_COUNT  : u32 = 300; // baby = 150 easy = 200, normal == 250, hard = 300, insane = 350
-
-pub var GRID_SCALE  : f32 = 43;
+pub var GRID_ID     : u32 = 0;
 
 pub var GRID_WIDTH  : i32 = 50;
 pub var GRID_HEIGHT : i32 = 25;
+
+pub var GRID_SCALE  : f32 = 50; // NOTE : Will be overwritten
 
 pub const TILE_MINE_1 = def.e_tile_type.T1;
 pub const TILE_MINE_2 = def.e_tile_type.T2;
@@ -24,13 +23,20 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
+  // Adjusting grid scalling to fit the screen
+  const scaleFactor : f32 = @floatFromInt( 1 + @max( GRID_WIDTH, GRID_HEIGHT * 2 ));
+
+  GRID_SCALE = 2150 / scaleFactor;
+
+
+  // Setting up the grid
   const tlm = ng.loadTilemapFromParams(
   .{
-    .mapPos    = .{ .x = 0,  .y = 32 },
+    .mapPos    = .{ .x = 0,          .y = GRID_SCALE  },
     .mapSize   = .{ .x = GRID_WIDTH, .y = GRID_HEIGHT },
-    .tileScale = .{ .x = GRID_SCALE, .y = GRID_SCALE },
+    .tileScale = .{ .x = GRID_SCALE, .y = GRID_SCALE  },
     .tileShape = .HEX1,
-  }, TILE_HIDDEN);
+  }, TILE_HIDDEN );
 
 
   if( tlm == null ){ def.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }

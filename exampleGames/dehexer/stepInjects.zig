@@ -20,14 +20,20 @@ const TILE_SHOWN  = stateInj.TILE_SHOWN;
 
 const NUM_SIZE : f32 = 24;
 
-var FLAG_COUNT : u32 = 0;
+var DIFFICULTY : f32 = 20.0; // baby = 12% easy = 16%, normal == 20%, hard = 24%, insane = 28%
+var MINE_COUNT : u32 = 250;  // baby = 150 easy = 200, normal == 250, hard = 300, insane = 350
+
 var LIFE_COUNT : i32 = 5;
+var FLAG_COUNT : u32 = 0;
 
 var HAS_WON    : bool = false;
 var IS_INIT    : bool = false;
 
 var shake_prog  : f32 = 0.0;
 var shake_force : f32 = 0.0;
+
+var end_text_size : f32 = 0;
+var MAX_TEXT_SIZE : f32 = 64;
 
 const shaker : def.Shaker2D = .{
   .beg_lenght = 0.03,
@@ -39,6 +45,18 @@ const shaker : def.Shaker2D = .{
 
 // ================================ HELPER FUNCTIONS ================================
 
+fn setMinecolour( tile : *def.Tile ) void
+{
+  switch( tile.tType )
+  {
+    TILE_MINE_1 => tile.colour = .yellow,
+    TILE_MINE_2 => tile.colour = .orange,
+    TILE_MINE_3 => tile.colour = .red,
+    else => {},
+  }
+}
+
+
 fn blowUpMine( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile, damage : u32 ) void
 {
   FLAG_COUNT += 1;
@@ -46,29 +64,38 @@ fn blowUpMine( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile, damage :
   shake_force = @floatFromInt( damage );
 
   _ = ng;
-  _ = grid;
 
   switch( damage )
   {
     0 => return,
     1 =>
     {
-      tile.colour = .yellow;
       LIFE_COUNT -= 1;
       def.log( .INFO, 0, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
     2 =>
     {
-      tile.colour = .orange;
       LIFE_COUNT -= 2;
       def.log( .INFO, 0, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
     else =>
     {
-      tile.colour = .red;
       LIFE_COUNT -= 3;
       def.log( .INFO, 0, @src(), "@ Clicked on a large mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
+  }
+
+  setMinecolour( tile );
+
+  // Reveal remaining mines if player died
+  if( LIFE_COUNT <= 0 )
+  {
+    for( 0 .. grid.getTileCount() )| index |
+    {
+      const iTile : *def.Tile = &grid.tileArray.items.ptr[ index ];
+
+      setMinecolour( iTile );
+    }
   }
 }
 
@@ -118,13 +145,18 @@ fn initGrid( ng : *def.Engine, grid : *def.Tilemap, startTile : *def.Tile ) void
 {
   _ = ng;
 
-  IS_INIT = true;
+  const tileCount : u32 = grid.getTileCount();
 
-  var remaingingMineCount = stateInj.MINE_COUNT;
+  var initMineCount  = DIFFICULTY * 0.01;
+      initMineCount *= @floatFromInt( tileCount );
 
-  for( 0 .. grid.getTileCount() )| index |
+  MINE_COUNT = @intFromFloat( initMineCount );
+
+  var remaingingMineCount = MINE_COUNT;
+
+  for( 0 .. tileCount )| index |
   {
-    const remaingingTileCount = grid.getTileCount() - index; // preemptively decrease the count to avoid duplicating code
+    const remaingingTileCount = tileCount - index; // preemptively decrease the count to avoid duplicating code
 
     var tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
 
@@ -153,7 +185,6 @@ fn initGrid( ng : *def.Engine, grid : *def.Tilemap, startTile : *def.Tile ) void
     }
   }
 
-
   if( remaingingMineCount != 0 )
   {
     def.qlog( .ERROR, 0, @src(), "@ Failed to assign the proper amount of mines !" );
@@ -162,6 +193,8 @@ fn initGrid( ng : *def.Engine, grid : *def.Tilemap, startTile : *def.Tile ) void
   {
     def.qlog( .INFO, 0, @src(), "$ Assigned all mines properly !" );
   }
+
+  IS_INIT = true;
 }
 
 
@@ -211,6 +244,7 @@ fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
   floodDiscoverCheck( ng, grid, tile );
 
   if( !HAS_WON and LIFE_COUNT > 0 ){ HAS_WON = playerHasWon( ng, grid ); }
+
 }
 
 // (un)flagging a tile
@@ -219,7 +253,7 @@ fn rightCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) voi
   _ = ng;
   _ = grid;
 
-  if( !IS_INIT ){return; }
+  if( !IS_INIT ){ return; }
 
   // Does nothing if an uncovered tile was clicked
   if( tile.tType == TILE_SHOWN ){ return; }
@@ -331,8 +365,25 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     shake_prog += ( 1.0 / 120.0 );
   }
 
-  // Prevents further action if game was won or lost
-  if( HAS_WON or LIFE_COUNT <= 0 ){ return; }
+
+  // Restarting Logic
+  if( HAS_WON or LIFE_COUNT <= 0 )
+  {
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.kp_enter ))
+    {
+      HAS_WON = false;
+      IS_INIT = false;
+
+      LIFE_COUNT    = 5;
+      end_text_size = 0.0;
+
+      grid.fillWithType( TILE_HIDDEN );
+      grid.fillWithColour( .mGray );
+    }
+
+
+    return; // NOTE : Prevents further action if game was won or lost
+  }
 
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ) or def.ray.isMouseButtonPressed( def.ray.MouseButton.right ))
   {
@@ -353,6 +404,29 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left  )){ leftCLickTile(  ng, grid, clickedTile ); }
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.right )){ rightCLickTile( ng, grid, clickedTile ); }
+  }
+
+  if( !IS_INIT )
+  {
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.up ))
+    {
+      DIFFICULTY = def.clmp( DIFFICULTY + 2.0, 10.0, 30.0 );
+    //DIFFICULTY = @min( @max( DIFFICULTY + 2.0, 10.0 ), 30.0 );
+    }
+    else if( def.ray.isKeyPressed( def.ray.KeyboardKey.down ))
+    {
+      DIFFICULTY = def.clmp( DIFFICULTY - 2.0, 10.0, 30.0 );
+    //DIFFICULTY = @min( @max( DIFFICULTY - 2.0, 10.0 ), 30.0 );
+    }
+
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.left ))
+    {
+      LIFE_COUNT = def.clmp( LIFE_COUNT - 1, 1, 12 );
+    }
+    else if( def.ray.isKeyPressed( def.ray.KeyboardKey.right ))
+    {
+      LIFE_COUNT = def.clmp( LIFE_COUNT + 1, 1, 12 );
+    }
   }
 
 }
@@ -384,23 +458,45 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
 pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
-  var mineBuff : [ 16:0 ]u8 = .{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-  var lifeBuff : [ 16:0 ]u8 = .{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  var mineBuff = std.mem.zeroes([ 32:0 ]u8 );
+  var lifeBuff = std.mem.zeroes([ 32:0 ]u8 );
 
 
-  const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ stateInj.MINE_COUNT - FLAG_COUNT }) catch | err |
+  if( !IS_INIT )
   {
-      def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
-      return;
-  };
-  const lifeCountSlice = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
-  {
-      def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
-      return;
-  };
+    const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Difficulty : {d}%", .{ DIFFICULTY }) catch | err |
+    {
+        def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
+        return;
+    };
 
-  mineBuff[ mineCountSlice.len ] = 0;
-  lifeBuff[ lifeCountSlice.len ] = 0;
+    const lifeCountSlice = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
+    {
+        def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
+        return;
+    };
+
+    mineBuff[ mineCountSlice.len ] = 0;
+    lifeBuff[ lifeCountSlice.len ] = 0;
+  }
+  else
+  {
+    const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ MINE_COUNT - FLAG_COUNT }) catch | err |
+    {
+        def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
+        return;
+    };
+
+    const lifeCountSlice = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
+    {
+        def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
+        return;
+    };
+
+    mineBuff[ mineCountSlice.len ] = 0;
+    lifeBuff[ lifeCountSlice.len ] = 0;
+  }
+
 
   const cam = ng.getCameraCpy() orelse
   {
@@ -445,7 +541,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       def.log(.ERROR, 0, @src(), "Failed to format value : {}", .{ err });
       return;
     };
-
     numBuff[ numSlice.len ] = 0;
 
     const numCol = switch( nMineCount )
@@ -463,19 +558,35 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     };
 
     def.drawCenteredText( &numBuff, tileCenter.x, tileCenter.y, NUM_SIZE, numCol );
-
   }
 
-  if( LIFE_COUNT <= 0 )
+  if( !IS_INIT )
   {
-    def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 128 ));
-    def.drawCenteredText( "L + SKILL ISSUE + WOMP WOMP + LMFAO + STAY MAD", screenCenter.x, screenCenter.y, 50, .red );
+    def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 32 ));
+
+    def.drawCenteredText( "Use up & down arrows to change mine count",    screenCenter.x, screenCenter.y - 64, 32, .yellow );
+    def.drawCenteredText( "Use left & right arrows to change life count", screenCenter.x, screenCenter.y,      32, .yellow );
+    def.drawCenteredText( "Click a cell to start",                        screenCenter.x, screenCenter.y + 64, 32, .yellow );
   }
-  else if( HAS_WON )
+
+  if( LIFE_COUNT <= 0 or HAS_WON )
   {
-    def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 128 ));
-    def.drawCenteredText( "W + SKILLFUL + HELL YEAH + ROFL + STAY GLAD", screenCenter.x, screenCenter.y, 50, .green );
+    if( end_text_size < MAX_TEXT_SIZE ){ end_text_size = @min( 4.0 + end_text_size, MAX_TEXT_SIZE ); }
+
+    def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 192 ));
+
+    if( HAS_WON )
+    {
+      def.drawCenteredText( "W + SKILLFUL + HELL YEAH + ROFL + STAY GLAD", screenCenter.x, screenCenter.y - 64, end_text_size,       .green );
+      def.drawCenteredText( "Press Enter to Restart, champ",               screenCenter.x, screenCenter.y + 64, end_text_size * 0.5, .yellow );
+    }
+    else
+    {
+      def.drawCenteredText( "L + SKILL ISSUE + WOMP WOMP + LMFAO + STAY MAD", screenCenter.x, screenCenter.y - 64, end_text_size,       .red );
+      def.drawCenteredText( "Press Enter to Restart, loser",                  screenCenter.x, screenCenter.y + 64, end_text_size * 0.5, .yellow );
+    }
   }
+
 
   // Make it so screen shake affects what is currently rendered on the UI ( the whole game )
 //if( shake_prog < 0.2 )

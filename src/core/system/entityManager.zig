@@ -23,7 +23,6 @@ pub const EntityManager = struct
       def.qlog( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0" );
       return 0;
     }
-
     self.maxID += 1;
     return self.maxID;
   }
@@ -35,7 +34,6 @@ pub const EntityManager = struct
       def.qlog( .ERROR, 0, @src(), "Entity manager is not initialized : returning id 0" );
       return 0;
     }
-
     return self.maxID;
   }
 
