@@ -9,7 +9,7 @@ pub const GRID_HEIGHT = 128;
 pub const TileData = struct
 {
   popCount : u32 = 0, // Population on the tile
-  resCount : u32 = 0, // Usable ressources on the tile
+  resCount : u32 = 0, // Usable resources on the tile
 
   nextPopCount : u32 = 0,
   nextResCount : u32 = 0,

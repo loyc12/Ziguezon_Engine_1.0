@@ -98,7 +98,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     var ownData : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
-    // Calculating tile ressource availability
+    // Calculating tile resource availability
     var ownResPerPop : f32 = @floatFromInt( ownData.popCount );
         ownResPerPop      /= @floatFromInt( ownData.resCount );
 
@@ -115,7 +115,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     ownData.nextPopCount += @intFromFloat( basePopGrowth );
 
 
-    // Updating ressources
+    // Updating resources
     var popConsumption : f32 = @floatFromInt( ownData.nextPopCount );
         popConsumption      *= POP_RES_CONSUMPTION;
 
@@ -143,7 +143,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
       const nData : *TileData = @alignCast( @ptrCast( n.script.data.? ));
 
 
-      // Calculating neighbour ressource availability
+      // Calculating neighbour resource availability
       var nResPerPop : f32 = @floatFromInt( nData.resCount );
 
       if( nData.popCount > 1 ){ nResPerPop /= @floatFromInt( nData.popCount ); }
@@ -157,7 +157,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     }
   }
 
-  // Updating pop and ressources for each tiles based on previous calculation
+  // Updating pop and resources for each tiles based on previous calculation
   for( 0 .. tileCount )| index |
   {
     const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
