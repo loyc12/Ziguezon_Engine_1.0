@@ -27,12 +27,7 @@ pub fn OnOpen( ng : *def.Engine ) void
 
   MAZE_ID = grid.id;
 
-  for( 0 .. grid.getTileCount() )| index |
-  {
-    var tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
-
-    tile.colour = .lGray;
-  }
+  grid.fillWithColour( .lGray );
 }
 
 

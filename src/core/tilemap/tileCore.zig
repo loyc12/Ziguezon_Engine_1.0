@@ -53,5 +53,5 @@ pub const Tile = struct
   relPos    : ?def.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
 
   // ======== CUSTOM BEHAVIOUR ========
-  //script : def.Scripter = .{}, // TODO : implement tile ticking if necessary
+  script : def.Scripter = .{},
 };

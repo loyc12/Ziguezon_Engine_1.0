@@ -10,6 +10,7 @@ const def = @import( "defs" );
   pub const DebugDraw_Entity  = true;
   pub const DebugDraw_Tilemap = true;
   pub const DebugDraw_Tile    = true;
+  pub const DebugDraw_FPS     = true;
 
 
 // Feature Flag
