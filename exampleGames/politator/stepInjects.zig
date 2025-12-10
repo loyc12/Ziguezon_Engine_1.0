@@ -28,7 +28,7 @@ const POP_MIGRATION_RATE  : f32 = 0.01; // < 0.1666
 const POP_DEATH_RATE      : f32 = 0.02; // < 1.0
 
 const RES_MAX_SIZE        : u32 = 1024; // > 0
-const RES_GROWTH_BONUS    : u32 = 4;
+const RES_GROWTH_BONUS    : u32 = 4;    // > 0 to avoid total resource collapse
 const RES_GROWTH_RATE     : f32 = 0.05; // > 1.0
 
 
