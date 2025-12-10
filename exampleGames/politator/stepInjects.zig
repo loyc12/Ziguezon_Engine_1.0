@@ -19,7 +19,7 @@ const TileData = stateInj.TileData;
 var TILEMAP_DATA = stateInj.TILEMAP_DATA;
 
 var SELECTED_TILE : ?*Tile = null;
-var MAX_POP_SEEN  : u32 = 0;
+var POP_MAX_SEEN  : u32 = 0;
 
 const POP_MAX_SIZE        : u32 = 1024 * 1024; // > 0
 const POP_GROWTH_RATE     : f32 = 0.01; // > 1.0
@@ -40,10 +40,10 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
   if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 1.1 ); }
@@ -151,8 +151,6 @@ pub fn OnTickWorld( ng : *def.Engine ) void
   const tileCount = worldGrid.getTileCount();
 
   // Reseting key tile values
-  MAX_POP_SEEN = 0;
-
   for( 0 .. tileCount )| index |
   {
     const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
@@ -189,43 +187,6 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     var migrationSize : f32 = @floatFromInt( ownData.popCount );
         migrationSize      *= POP_MIGRATION_RATE;
         migrationSize       = @ceil( migrationSize );
-
-
-//    // Updating in-tile population growth
-//    var basePopGrowth : f32 = @floatFromInt( ownData.popCount );
-//
-//        if( ownResPerPop > POP_RES_CONSUMPTION )
-//        { basePopGrowth *= POP_GROWTH_RATE; }
-//        else { basePopGrowth = 0; }
-//
-//        basePopGrowth = @ceil( basePopGrowth );
-//
-//    // Updating in-tile population growth
-//    const basePop : f32 = @floatFromInt( ownData.popCount );
-//    var popChange = basePop;
-//
-//        if( ownResPerPop > POP_RES_CONSUMPTION )
-//        { popChange *= POP_GROWTH_RATE; }
-//        else { popChange = 0; }
-//
-//        popChange = @ceil( popChange );
-//
-//    ownData.lastPopGrowth = @intFromFloat( popChange );
-//    ownData.nextPopCount += ownData.lastPopGrowth;
-//
-//
-//    // Updating in-tile population loss
-//    if( ownResPerPop < POP_RES_CONSUMPTION )
-//    {
-//      var deadPop : f32 = @floatFromInt( ownData.nextPopCount );
-//          deadPop      *= POP_DEATH_RATE;
-//          deadPop       = @ceil( deadPop );
-//
-//      ownData.lastPopLoss   = @intFromFloat( deadPop );
-//      ownData.nextPopCount -= ownData.lastPopLoss;
-//
-//      if( ownData.nextPopCount > MAX_POP_SEEN ){ MAX_POP_SEEN = ownData.nextPopCount; }
-//    }
 
 
     // Updating in-tile population
@@ -311,12 +272,41 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     var data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
-    MAX_POP_SEEN  = def.clmp( data.nextPopCount, 255, POP_MAX_SIZE );
     data.popCount = def.clmp( data.nextPopCount, 0, POP_MAX_SIZE );
     data.resCount = def.clmp( data.nextResCount, 0, RES_MAX_SIZE );
+  }
+}
+
+
+pub fn OnRenderWorld( ng : *def.Engine ) void
+{
+   POP_MAX_SEEN = 0;
+
+  const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+    return;
+  };
+
+  const tileCount = worldGrid.getTileCount();
+
+  for( 0 .. tileCount )| index |
+  {
+    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
+
+    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+
+    if( data.popCount > POP_MAX_SEEN ){ POP_MAX_SEEN = data.popCount; }
+  }
+
+  for( 0 .. tileCount )| index |
+  {
+    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
+
+    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
     var displayPop : f32 = @floatFromInt( data.popCount );
-        displayPop      /= @floatFromInt( MAX_POP_SEEN );
+        displayPop      /= @floatFromInt( POP_MAX_SEEN );
 
     var displayRes : f32 = @floatFromInt( data.resCount );
         displayRes      /= @floatFromInt( RES_MAX_SIZE );
@@ -325,15 +315,8 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     const blue : f32 = @floor( 255.0 * def.lerp( 0.0, 1.0, displayRes ));
 
     tile.colour = .{ .r = @intFromFloat( red ), .g = 0, .b = @intFromFloat( blue ), .a = 255 };
+
   }
-}
-
-
-pub fn OnRenderWorld( ng : *def.Engine ) void
-{
-  // NOTE : All active entities are rendered after the function is called, so no need to render them here.
-
-  _ = ng; // Prevent unused variable warning
 }
 
 pub fn OffRenderWorld( ng : *def.Engine ) void
