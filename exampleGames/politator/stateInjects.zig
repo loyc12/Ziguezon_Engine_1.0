@@ -13,6 +13,15 @@ pub const TileData = struct
 
   nextPopCount : u32 = 0,
   nextResCount : u32 = 0,
+
+  lastPopGrowth : u32 = 0,
+  lastPopLoss   : u32 = 0,
+
+  lastPopIn  : u32 = 0,
+  lastPopOut : u32 = 0,
+
+  lastResGrowth : u32 = 0,
+  lastResLoss   : u32 = 0,
 };
 
 pub var TILEMAP_DATA      = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );

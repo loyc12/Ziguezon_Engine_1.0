@@ -464,37 +464,37 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( !IS_INIT )
   {
-    const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Difficulty : {d}%", .{ DIFFICULTY }) catch | err |
+    _ = std.fmt.bufPrint( &mineBuff, "Difficulty : {d}%", .{ DIFFICULTY }) catch | err |
     {
         def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
         return;
     };
 
-    const lifeCountSlice = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
+    _ = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
     {
         def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
         return;
     };
 
-    mineBuff[ mineCountSlice.len ] = 0;
-    lifeBuff[ lifeCountSlice.len ] = 0;
+    //mineBuff[ mineCountSlice.len ] = 0;
+    //lifeBuff[ lifeCountSlice.len ] = 0;
   }
   else
   {
-    const mineCountSlice = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ MINE_COUNT - FLAG_COUNT }) catch | err |
+    _ = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ MINE_COUNT - FLAG_COUNT }) catch | err |
     {
         def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
         return;
     };
 
-    const lifeCountSlice = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
+    _ = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
     {
         def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
         return;
     };
 
-    mineBuff[ mineCountSlice.len ] = 0;
-    lifeBuff[ lifeCountSlice.len ] = 0;
+    //mineBuff[ mineCountSlice.len ] = 0;
+    //lifeBuff[ lifeCountSlice.len ] = 0;
   }
 
 
