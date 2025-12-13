@@ -410,12 +410,12 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   {
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.up ))
     {
-      DIFFICULTY = def.clmp( DIFFICULTY + 2.0, 10.0, 30.0 );
+      DIFFICULTY = def.clmp( DIFFICULTY + 2.0, 2.0, 32.0 );
     //DIFFICULTY = @min( @max( DIFFICULTY + 2.0, 10.0 ), 30.0 );
     }
     else if( def.ray.isKeyPressed( def.ray.KeyboardKey.down ))
     {
-      DIFFICULTY = def.clmp( DIFFICULTY - 2.0, 10.0, 30.0 );
+      DIFFICULTY = def.clmp( DIFFICULTY - 2.0, 2.0, 32.0 );
     //DIFFICULTY = @min( @max( DIFFICULTY - 2.0, 10.0 ), 30.0 );
     }
 
@@ -461,6 +461,16 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   var mineBuff = std.mem.zeroes([ 32:0 ]u8 );
   var lifeBuff = std.mem.zeroes([ 32:0 ]u8 );
 
+  // This shit ugly af, no cap
+  const diffName = if ( DIFFICULTY <=  2 ) "Bruh fr?"
+              else if ( DIFFICULTY <=  8 ) "Babymode"
+              else if ( DIFFICULTY <= 12 ) "Easypeasy"
+              else if ( DIFFICULTY <= 16 ) "Easy"
+              else if ( DIFFICULTY <= 20 ) "Normal"
+              else if ( DIFFICULTY <= 24 ) "Hard"
+              else if ( DIFFICULTY <= 28 ) "Extreme"
+              else                         "Insane";
+
 
   if( !IS_INIT )
   {
@@ -481,7 +491,10 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   }
   else
   {
-    _ = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ MINE_COUNT - FLAG_COUNT }) catch | err |
+    var unmarkedMineCount : i32 = @intCast( MINE_COUNT );
+        unmarkedMineCount      -= @intCast( FLAG_COUNT );
+
+    _ = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ unmarkedMineCount }) catch | err |
     {
         def.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
         return;
@@ -567,6 +580,8 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     def.drawCenteredText( "Use up & down arrows to change mine count",    screenCenter.x, screenCenter.y - 64, 32, .yellow );
     def.drawCenteredText( "Use left & right arrows to change life count", screenCenter.x, screenCenter.y,      32, .yellow );
     def.drawCenteredText( "Click a cell to start",                        screenCenter.x, screenCenter.y + 64, 32, .yellow );
+
+    def.drawCenteredText( diffName, screenCenter.x, screenCenter.y * 0.5, 64, .red );
   }
 
   if( LIFE_COUNT <= 0 or HAS_WON )
