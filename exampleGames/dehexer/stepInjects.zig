@@ -150,7 +150,8 @@ fn initGrid( ng : *def.Engine, grid : *def.Tilemap, startTile : *def.Tile ) void
   var initMineCount  = DIFFICULTY * 0.01;
       initMineCount *= @floatFromInt( tileCount );
 
-  MINE_COUNT = @intFromFloat( initMineCount );
+  MINE_COUNT = @intFromFloat( @floor( initMineCount ));
+  FLAG_COUNT = 0;
 
   var remaingingMineCount = MINE_COUNT;
 
@@ -201,7 +202,6 @@ fn initGrid( ng : *def.Engine, grid : *def.Tilemap, startTile : *def.Tile ) void
 // revealing a tile
 fn leftCLickTile( ng : *def.Engine, grid : *def.Tilemap, tile : *def.Tile ) void
 {
-
   // Does nothing if a flagged tile was clicked
   if( tile.colour.isEq( .blue  )){  return; }
   if( tile.colour.isEq( .lBlue  )){ return; }
