@@ -10,15 +10,20 @@ pub const TileData = struct
 {
   popCount : u32 = 0, // Population on the tile
   resCount : u32 = 0, // Usable resources on the tile
+  infCount : u32 = 0, // Maintained infrastructure on the tile
 
   nextPopCount : u32 = 0,
   nextResCount : u32 = 0,
+  nextInfCount : u32 = 0,
 
   lastPopGrowth : u32 = 0,
   lastPopLoss   : u32 = 0,
 
   lastPopIn  : u32 = 0,
   lastPopOut : u32 = 0,
+
+  lastInfGrowth : u32 = 0,
+  lastInfLoss   : u32 = 0,
 
   lastResGrowth : u32 = 0,
   lastResLoss   : u32 = 0,
@@ -60,7 +65,8 @@ pub fn OnOpen( ng : *def.Engine ) void
 
     TILEMAP_DATA[ index ] =
     .{
-      .popCount = @intCast( def.G_RNG.getClampedInt( 0, 128 )),
+      .popCount = @intCast( def.G_RNG.getClampedInt( 0, 256 )),
+      .infCount = @intCast( def.G_RNG.getClampedInt( 0, 128 )),
       .resCount = @intCast( def.G_RNG.getClampedInt( 0, 512 )),
     };
 

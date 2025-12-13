@@ -18,18 +18,35 @@ const TileData = stateInj.TileData;
 
 var TILEMAP_DATA = stateInj.TILEMAP_DATA;
 
+const dis_mode_e = enum( u2 )
+{
+  ALL,
+  POP,
+  INF,
+  RES,
+};
+
+var DISPLAY_MODE  : dis_mode_e = .ALL;
 var SELECTED_TILE : ?*Tile = null;
 var POP_MAX_SEEN  : u32 = 0;
 
 const POP_MAX_SIZE        : u32 = 1024 * 1024; // > 0
 const POP_GROWTH_RATE     : f32 = 0.01; // > 1.0
-const POP_RES_CONSUMPTION : f32 = 0.10; // < 1.0
 const POP_MIGRATION_RATE  : f32 = 0.01; // < 0.1666
-const POP_DEATH_RATE      : f32 = 0.02; // < 1.0
+const POP_DEATH_RATE      : f32 = 0.03; // < 1.0
+
+const POP_RES_CONSUMPTION : f32 = 0.10; // < 1.0
+const POP_INF_PRODUCTION  : f32 = 0.05; // < 1.0
+
+const INF_MAX_SIZE        : u32 = 1024; // > 0
+const INF_DECAY_RATE      : f32 = 0.02; // > 0
+const INF_POP_DEMAND      : f32 = 1.00; // > 0
+const INF_RES_PRODUCTION  : f32 = 0.10; // > 0
 
 const RES_MAX_SIZE        : u32 = 1024; // > 0
-const RES_GROWTH_BONUS    : u32 = 4;    // > 0 to avoid total resource collapse
-const RES_GROWTH_RATE     : f32 = 0.05; // > 1.0
+const RES_GROWTH_RATE     : f32 = 0.05; // > 0
+const RES_GROWTH_BONUS    : f32 = 4.00; // > 0 to avoid total resource collapse
+
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -56,6 +73,18 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     ng.setCameraCenter( .{} );
     ng.setCameraRot(    .{} );
     def.qlog( .INFO, 0, @src(), "Camera reset" );
+  }
+
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
+  {
+    DISPLAY_MODE = switch( DISPLAY_MODE )
+    {
+      .ALL => .POP,
+      .POP => .INF,
+      .INF => .RES,
+      .RES => .ALL,
+    };
+    def.log( .INFO, 0, @src(), "Swapped display mode to {s}", .{ @tagName( DISPLAY_MODE )});
   }
 
   var worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
@@ -135,6 +164,24 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       data.resCount = def.clmp( data.resCount, 0, RES_MAX_SIZE );
     }
 
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add ))
+    {
+      var newInfCount : f32 = @floatFromInt( data.infCount );
+          newInfCount      *= 1.1;
+          newInfCount       = @ceil( newInfCount );
+
+      data.infCount = @intFromFloat( newInfCount );
+      data.infCount = def.clmp( data.infCount, 0, INF_MAX_SIZE );
+    }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract ))
+    {
+      var newInfCount : f32 = @floatFromInt( data.infCount );
+          newInfCount      *= 0.9;
+          newInfCount       = @ceil( newInfCount );
+
+      data.infCount = @intFromFloat( newInfCount );
+      data.infCount = def.clmp( data.infCount, 0, INF_MAX_SIZE );
+    }
   }
 
 }
@@ -159,6 +206,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     data.nextPopCount = 0;
     data.nextResCount = 0;
+    data.nextInfCount = 0;
 
     data.lastPopGrowth = 0;
     data.lastPopLoss   = 0;
@@ -168,6 +216,9 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     data.lastResGrowth = 0;
     data.lastResLoss   = 0;
+
+    data.lastInfGrowth = 0;
+    data.lastInfLoss   = 0;
   }
 
   // Calculating next pop and resources for each tile
@@ -178,32 +229,43 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     var ownData : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
 
-    // Calculating tile resource availability
-    var ownResPerPop : f32 = @floatFromInt( ownData.resCount );
-        ownResPerPop      /= @floatFromInt( ownData.popCount );
+    // Calculating tile resource & population availability
+    var ownPopResAccess : f32 = @floatFromInt( ownData.resCount );
+
+        if( ownData.popCount > 1 ){ ownPopResAccess /= @floatFromInt( ownData.popCount ); }
+
+        ownPopResAccess      /= POP_RES_CONSUMPTION;
+
+    var ownInfPopAccess : f32 = @floatFromInt( ownData.popCount );
+
+        if( ownData.infCount > 1 ){ ownInfPopAccess /= @floatFromInt( ownData.infCount ); }
+
+        ownInfPopAccess      /= INF_POP_DEMAND;
 
 
     // Calculating size of migrant cohorts
-    var migrationSize : f32 = @floatFromInt( ownData.popCount );
-        migrationSize      *= POP_MIGRATION_RATE;
-        migrationSize       = @ceil( migrationSize );
+    var maxMigrationSize : f32 = @floatFromInt( ownData.popCount );
+        maxMigrationSize      *= POP_MIGRATION_RATE;
+        maxMigrationSize       = @ceil( maxMigrationSize );
 
 
     // Updating in-tile population
+
     var popLoss : f32 = @floatFromInt( ownData.popCount );
         popLoss      *= POP_DEATH_RATE;
+        popLoss      *= ownPopResAccess;
 
-        if( ownResPerPop >= POP_RES_CONSUMPTION ){ popLoss = 0; }
+        if( ownPopResAccess >= 1.0 ){ popLoss = 0; }
 
-    ownData.lastPopLoss = @intFromFloat( @ceil( popLoss ));
+    ownData.lastPopLoss += @intFromFloat( @ceil( popLoss ));
 
 
     var popGrowth : f32 = @floatFromInt( ownData.popCount );
         popGrowth      *= POP_GROWTH_RATE;
 
-        if( ownResPerPop < POP_RES_CONSUMPTION ){ popGrowth = 0; }
+        if( ownPopResAccess < 1.0 ){ popGrowth = 0; }
 
-    ownData.lastPopGrowth = @intFromFloat( @ceil( popGrowth ));
+    ownData.lastPopGrowth += @intFromFloat( @ceil( popGrowth ));
 
 
     var newPopCount : i32 = @intCast( ownData.popCount );
@@ -214,18 +276,54 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     ownData.nextPopCount += @intCast( newPopCount );
 
 
+    // Updating in-tile infrastructure
+
+    var infLoss : f32 = @floatFromInt( ownData.infCount );
+        infLoss      *= INF_DECAY_RATE;
+        infLoss      *= ownInfPopAccess;
+
+        if( ownInfPopAccess >= 1.0 ){ infLoss = 0; }
+
+    ownData.lastInfLoss += @intFromFloat( @ceil( infLoss ));
+
+
+    var infGrowth : f32 = @floatFromInt( ownData.popCount );
+        infGrowth      *= POP_INF_PRODUCTION;
+
+        if( ownInfPopAccess < 1.0 ){ infGrowth = 0; }
+
+    ownData.lastInfGrowth += @intFromFloat( @ceil( infGrowth ));
+
+
+    var newInfCount : i32 = @intCast( ownData.infCount );
+        newInfCount      -= @intCast( ownData.lastInfLoss );
+        newInfCount      += @intCast( ownData.lastInfGrowth );
+        newInfCount       = def.clmp( newInfCount, 0, @intCast( INF_MAX_SIZE ));
+
+    ownData.nextInfCount += @intCast( newInfCount );
+
+
     // Updating in-tile resources
-    var resLoss : f32 = @floatFromInt( ownData.popCount );
-        resLoss      *= POP_RES_CONSUMPTION;
 
-    ownData.lastResLoss = @intFromFloat( @ceil( resLoss ));
+    var resPopLoss : f32 = @floatFromInt( ownData.popCount );
+        resPopLoss      *= POP_RES_CONSUMPTION;
+
+    ownData.lastResLoss = @intFromFloat( @ceil( resPopLoss ));
 
 
-    var resGrowth : f32 = @floatFromInt( ownData.resCount );
-        resGrowth      *= RES_GROWTH_RATE;
-        resGrowth      += RES_GROWTH_BONUS;
+    var resNatGrowth : f32 = @floatFromInt( ownData.resCount );
+        resNatGrowth      *= RES_GROWTH_RATE;
+        resNatGrowth      += RES_GROWTH_BONUS;
 
-    ownData.lastResGrowth = @intFromFloat( @ceil( resGrowth ));
+    ownData.lastResGrowth += @intFromFloat( @ceil( resNatGrowth ));
+
+
+    var resInfGrowth : f32 = @floatFromInt( ownData.infCount );
+        resInfGrowth      *= INF_RES_PRODUCTION;
+
+        if( ownInfPopAccess < 1.0 ){ resInfGrowth *= ownInfPopAccess; }
+
+    ownData.lastResGrowth += @intFromFloat( @ceil( resInfGrowth ));
 
 
     var newResCount : i32 = @intCast( ownData.resCount );
@@ -233,10 +331,11 @@ pub fn OnTickWorld( ng : *def.Engine ) void
         newResCount      += @intCast( ownData.lastResGrowth );
         newResCount       = def.clmp( newResCount, 0, @intCast( RES_MAX_SIZE ));
 
-    ownData.nextResCount  = @intCast( newResCount );
+    ownData.nextResCount += @intCast( newResCount );
 
 
     // Migrating populations to richer neighbours
+
     for( def.e_dir_2.arr )| dir |
     {
       const n = worldGrid.getNeighbourTile( tile.mapCoords, dir ) orelse
@@ -248,14 +347,24 @@ pub fn OnTickWorld( ng : *def.Engine ) void
       const nData : *TileData = @alignCast( @ptrCast( n.script.data.? ));
 
       // Calculating neighbour resource availability
-      var nResPerPop : f32 = @floatFromInt( nData.resCount );
-      if( nData.popCount > 1 ){ nResPerPop /= @floatFromInt( nData.popCount ); }
+      var nPopResAccess : f32 = @floatFromInt( nData.resCount );
+
+      if( nData.popCount > 1 ){ nPopResAccess /= @floatFromInt( nData.popCount ); }
+
+          nPopResAccess /= POP_RES_CONSUMPTION;
 
       // Migrating 1 cohort out if need be
-      const migrantCount : u32 = @intFromFloat( migrationSize );
 
-      if( nResPerPop > ownResPerPop and ownData.nextPopCount >= migrantCount )
+      if( nPopResAccess > ownPopResAccess )
       {
+        var migrantCount : u32 = @intFromFloat( @ceil( maxMigrationSize * ownPopResAccess / nPopResAccess ));
+
+        var maxMigrantOut : f32 = @floatFromInt( ownData.nextPopCount );
+            maxMigrantOut      /= 6.0;
+            maxMigrantOut       = @floor( maxMigrantOut );
+
+            migrantCount = def.clmp( migrantCount, 0, @intFromFloat( maxMigrantOut ));
+
         ownData.lastPopOut   += migrantCount;
         ownData.nextPopCount -= migrantCount;
 
@@ -265,7 +374,9 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     }
   }
 
+
   // Updating pop and resources for each tiles based on previous calculation
+
   for( 0 .. tileCount )| index |
   {
     const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
@@ -274,6 +385,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     data.popCount = def.clmp( data.nextPopCount, 0, POP_MAX_SIZE );
     data.resCount = def.clmp( data.nextResCount, 0, RES_MAX_SIZE );
+    data.infCount = def.clmp( data.nextInfCount, 0, INF_MAX_SIZE );
   }
 }
 
@@ -311,11 +423,20 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
     var displayRes : f32 = @floatFromInt( data.resCount );
         displayRes      /= @floatFromInt( RES_MAX_SIZE );
 
-    const red  : f32 = @floor( 255.0 * def.lerp( 0.0, 1.0, displayPop ));
-    const blue : f32 = @floor( 255.0 * def.lerp( 0.0, 1.0, displayRes ));
+    var displayInf : f32 = @floatFromInt( data.infCount );
+        displayInf      /= @floatFromInt( INF_MAX_SIZE );
 
-    tile.colour = .{ .r = @intFromFloat( red ), .g = 0, .b = @intFromFloat( blue ), .a = 255 };
+    const r : f32 = @floor( 255.0 * def.lerp( 0.0, 1.0, displayPop ));
+    const g : f32 = @floor( 255.0 * def.lerp( 0.0, 1.0, displayRes ));
+    const b : f32 = @floor( 255.0 * def.lerp( 0.0, 1.0, displayInf ));
 
+    switch( DISPLAY_MODE )
+    {
+      .ALL => tile.colour = .{ .r = @intFromFloat( r ), .g = @intFromFloat( g ), .b = @intFromFloat( b ), .a = 255 },
+      .POP => tile.colour = .{ .r = @intFromFloat( r ), .g = 0,                  .b = 0,                  .a = 255 },
+      .INF => tile.colour = .{ .r = 0,                  .g = @intFromFloat( g ), .b = 0,                  .a = 255 },
+      .RES => tile.colour = .{ .r = 0,                  .g = 0,                  .b = @intFromFloat( b ), .a = 255 },
+    }
   }
 }
 
@@ -340,22 +461,18 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
     var popBuff  = std.mem.zeroes([ 32:0 ]u8 );
-    var resBuff  = std.mem.zeroes([ 32:0 ]u8 );
-
     var dPopBuff = std.mem.zeroes([ 32:0 ]u8 );
     var migBuff  = std.mem.zeroes([ 32:0 ]u8 );
 
+    var resBuff  = std.mem.zeroes([ 32:0 ]u8 );
     var dResBuff = std.mem.zeroes([ 32:0 ]u8 );
+
+    var infBuff  = std.mem.zeroes([ 32:0 ]u8 );
+    var dInfBuff = std.mem.zeroes([ 32:0 ]u8 );
 
     _ = std.fmt.bufPrint( &popBuff, "PopCount : {d}", .{ data.popCount }) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to format pop count : {}", .{ err });
-      return;
-    };
-
-    _ = std.fmt.bufPrint( &resBuff, "ResCount : {d}", .{ data.resCount }) catch | err |
-    {
-      def.log( .ERROR, 0, @src(), "Failed to format res count : {}", .{ err });
       return;
     };
 
@@ -371,19 +488,39 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       return;
     };
 
+
+    _ = std.fmt.bufPrint( &resBuff, "ResCount : {d}", .{ data.resCount }) catch | err |
+    {
+      def.log( .ERROR, 0, @src(), "Failed to format res count : {}", .{ err });
+      return;
+    };
+
     _ = std.fmt.bufPrint( &dResBuff, "ResDelta : +{d}, -{d}", .{ data.lastResGrowth, data.lastResLoss }) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to format res delta : {}", .{ err });
       return;
     };
 
-    def.drawCenteredText( &popBuff,  screenCenter.x, 32, 32, def.Colour.yellow );
-    def.drawCenteredText( &resBuff,  screenCenter.x, 64, 32, def.Colour.yellow );
+    _ = std.fmt.bufPrint( &infBuff, "InfCount : {d}", .{ data.infCount }) catch | err |
+    {
+      def.log( .ERROR, 0, @src(), "Failed to format inf count : {}", .{ err });
+      return;
+    };
 
-    def.drawCenteredText( &dPopBuff, screenCenter.x, 96, 32, def.Colour.yellow );
-    def.drawCenteredText( &migBuff,  screenCenter.x, 128, 32, def.Colour.yellow );
+    _ = std.fmt.bufPrint( &dInfBuff, "InfDelta : +{d}, -{d}", .{ data.lastInfGrowth, data.lastInfLoss }) catch | err |
+    {
+      def.log( .ERROR, 0, @src(), "Failed to format inf delta : {}", .{ err });
+      return;
+    };
 
-    def.drawCenteredText( &dResBuff, screenCenter.x, 160, 32, def.Colour.yellow );
+    def.drawCenteredText( &popBuff,  screenCenter.x * 0.5, 32, 24, def.Colour.nWhite );
+    def.drawCenteredText( &dPopBuff, screenCenter.x * 0.5, 64, 24, def.Colour.nWhite );
+    def.drawCenteredText( &migBuff,  screenCenter.x * 0.5, 96, 24, def.Colour.nWhite );
 
+    def.drawCenteredText( &resBuff,  screenCenter.x * 1.0, 32, 24, def.Colour.nWhite );
+    def.drawCenteredText( &dResBuff, screenCenter.x * 1.0, 64, 24, def.Colour.nWhite );
+
+    def.drawCenteredText( &infBuff,  screenCenter.x * 1.5, 32, 24, def.Colour.nWhite );
+    def.drawCenteredText( &dInfBuff, screenCenter.x * 1.5, 64, 24, def.Colour.nWhite );
   }
 }
