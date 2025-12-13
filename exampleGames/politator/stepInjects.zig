@@ -31,20 +31,20 @@ var SELECTED_TILE : ?*Tile = null;
 var POP_MAX_SEEN  : u32 = 0;
 
 const POP_MAX_SIZE        : u32 = 1024 * 1024; // > 0
-const POP_GROWTH_RATE     : f32 = 0.01; // > 1.0
-const POP_MIGRATION_RATE  : f32 = 0.01; // < 0.1666
-const POP_DEATH_RATE      : f32 = 0.03; // < 1.0
+const POP_GROWTH_RATE     : f32 = 0.01; // < 1
+const POP_MIGRATION_RATE  : f32 = 0.01; // < 1/6
+const POP_DEATH_RATE      : f32 = 0.03; // < 1
 
-const POP_RES_CONSUMPTION : f32 = 0.10; // < 1.0
-const POP_INF_PRODUCTION  : f32 = 0.05; // < 1.0
+const POP_RES_CONSUMPTION : f32 = 0.10; // > 0
+const POP_INF_PRODUCTION  : f32 = 0.02; // > 0
 
-const INF_MAX_SIZE        : u32 = 1024; // > 0
-const INF_DECAY_RATE      : f32 = 0.02; // > 0
+const INF_MAX_SIZE        : u32 = 1024; // > 256
+const INF_DECAY_RATE      : f32 = 0.01; // < 1
 const INF_POP_DEMAND      : f32 = 1.00; // > 0
 const INF_RES_PRODUCTION  : f32 = 0.10; // > 0
 
-const RES_MAX_SIZE        : u32 = 1024; // > 0
-const RES_GROWTH_RATE     : f32 = 0.05; // > 0
+const RES_MAX_SIZE        : u32 = 1024; // > 256
+const RES_GROWTH_RATE     : f32 = 0.04; // > 0
 const RES_GROWTH_BONUS    : f32 = 4.00; // > 0 to avoid total resource collapse
 
 
@@ -253,7 +253,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     var popLoss : f32 = @floatFromInt( ownData.popCount );
         popLoss      *= POP_DEATH_RATE;
-        popLoss      *= ownPopResAccess;
+        popLoss      *= 1.0 - ownPopResAccess;
 
         if( ownPopResAccess >= 1.0 ){ popLoss = 0; }
 
@@ -280,7 +280,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     var infLoss : f32 = @floatFromInt( ownData.infCount );
         infLoss      *= INF_DECAY_RATE;
-        infLoss      *= ownInfPopAccess;
+        infLoss      *= 1.0 - ownInfPopAccess;
 
         if( ownInfPopAccess >= 1.0 ){ infLoss = 0; }
 
@@ -449,6 +449,8 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   const screenCenter = def.getHalfScreenSize();
+
+  def.drw_u.drawRectanglePlus( .{ .x = screenCenter.x, .y = 0 }, .{ .x = screenCenter.x, .y = 128 }, .{}, .{ .r = 0, .g = 0, .b = 0, .a = 64 });
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
