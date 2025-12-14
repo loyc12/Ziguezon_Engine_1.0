@@ -462,14 +462,15 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   var lifeBuff = std.mem.zeroes([ 32:0 ]u8 );
 
   // This shit ugly af, no cap
-  const diffName = if ( DIFFICULTY <=  2 ) "Bruh fr?"
-              else if ( DIFFICULTY <=  8 ) "Babymode"
-              else if ( DIFFICULTY <= 12 ) "Easypeasy"
-              else if ( DIFFICULTY <= 16 ) "Easy"
-              else if ( DIFFICULTY <= 20 ) "Normal"
-              else if ( DIFFICULTY <= 24 ) "Hard"
-              else if ( DIFFICULTY <= 28 ) "Extreme"
-              else                         "Insane";
+  const diffName =
+    if      ( DIFFICULTY <=  2 ) "Difficulty : Bruh fr?"
+    else if ( DIFFICULTY <=  8 ) "Difficulty : Babymode"
+    else if ( DIFFICULTY <= 12 ) "Difficulty : Easypeasy"
+    else if ( DIFFICULTY <= 16 ) "Difficulty : Easy"
+    else if ( DIFFICULTY <= 20 ) "Difficulty : Normal"
+    else if ( DIFFICULTY <= 24 ) "Difficulty : Hard"
+    else if ( DIFFICULTY <= 28 ) "Difficulty : Extreme"
+    else                         "Difficulty : Insane";
 
 
   if( !IS_INIT )
@@ -577,11 +578,15 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   {
     def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 32 ));
 
-    def.drawCenteredText( "Use up & down arrows to change mine count",    screenCenter.x, screenCenter.y - 64, 32, .yellow );
-    def.drawCenteredText( "Use left & right arrows to change life count", screenCenter.x, screenCenter.y,      32, .yellow );
-    def.drawCenteredText( "Click a cell to start",                        screenCenter.x, screenCenter.y + 64, 32, .yellow );
+    def.drawCenteredText( "Dehexer plays like classic minesweeper, with two exception :",                     screenCenter.x, ( screenCenter.y * 1.75 ) - 48, 24, .nWhite );
+    def.drawCenteredText( "Mines can count for either 1, 2 or 3 'damage', which impacts the displayed value", screenCenter.x, ( screenCenter.y * 1.75 )     , 24, .nWhite );
+    def.drawCenteredText( "You also only lose the game once you take more damage than you have lives",        screenCenter.x, ( screenCenter.y * 1.75 ) + 48, 24, .nWhite );
 
-    def.drawCenteredText( diffName, screenCenter.x, screenCenter.y * 0.5, 64, .red );
+    def.drawCenteredText( "Use up & down arrows to change mine count ( difficulty )", screenCenter.x, screenCenter.y - 48,  24, .red    );
+    def.drawCenteredText( "Use left & right arrows to change life count",             screenCenter.x, screenCenter.y,       24, .green  );
+    def.drawCenteredText( "Click any cell to start",                                  screenCenter.x, screenCenter.y + 128, 64, .nWhite );
+
+    def.drawCenteredText( diffName, screenCenter.x, screenCenter.y * 0.5, 48, .yellow );
   }
 
   if( LIFE_COUNT <= 0 or HAS_WON )
