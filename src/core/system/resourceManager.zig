@@ -8,7 +8,7 @@ pub const ResourceManager = struct
   sounds    : std.StringHashMap( def.ray.Sound     ) = undefined,
   music     : std.StringHashMap( def.ray.Music     ) = undefined,
   fonts     : std.StringHashMap( def.ray.Font      ) = undefined,
-  sprites   : std.StringHashMap( def.ray.Texture2D ) = undefined,
+  sprites   : std.StringHashMap( def.Spritemap     ) = undefined,
 
   pub fn init( self : *ResourceManager, allocator : std.mem.Allocator ) void
   {
@@ -20,10 +20,10 @@ pub const ResourceManager = struct
       return;
     }
 
-    self.sounds  = std.StringHashMap( def.ray.Sound     ).init( allocator );
-    self.music   = std.StringHashMap( def.ray.Music     ).init( allocator );
-    self.fonts   = std.StringHashMap( def.ray.Font      ).init( allocator );
-    self.sprites = std.StringHashMap( def.ray.Texture2D ).init( allocator );
+    self.sounds  = std.StringHashMap( def.ray.Sound ).init( allocator );
+    self.music   = std.StringHashMap( def.ray.Music ).init( allocator );
+    self.fonts   = std.StringHashMap( def.ray.Font  ).init( allocator );
+    self.sprites = std.StringHashMap( def.Spritemap ).init( allocator );
 
     self.isInit    = true;
   //self.allocator = allocator;
@@ -40,6 +40,8 @@ pub const ResourceManager = struct
       return;
     }
 
+    self.isInit = false;
+
     var it_audio = self.sounds.iterator();
     while( it_audio.next()) | entry | def.ray.unloadSound( entry.value_ptr.* );
 
@@ -50,14 +52,17 @@ pub const ResourceManager = struct
     while( it_fonts.next()) | entry | def.ray.unloadFont( entry.value_ptr.* );
 
     var it_sprites = self.sprites.iterator();
-    while( it_sprites.next()) | entry | def.ray.unloadTexture( entry.value_ptr.* );
+    while( it_sprites.next()) | entry |
+    {
+      var spritemap : *def.Spritemap = entry.value_ptr;
+      spritemap.deinit();
+    }
 
     self.sounds.clearAndFree();
     self.music.clearAndFree();
     self.fonts.clearAndFree();
     self.sprites.clearAndFree();
 
-    self.isInit = false;
     def.qlog( .INFO, 0, @src(), "$ Resource manager deinitialized !\n" );
   }
 
@@ -74,7 +79,7 @@ pub const ResourceManager = struct
   {
     return self.fonts.get( name );
   }
-  pub fn getSprite( self : *const ResourceManager, name : [ :0 ]const u8 ) ?def.ray.Texture2
+  pub fn getSprite( self : *const ResourceManager, name : [ :0 ]const u8 ) ?def.Spritemap
   {
     return self.sprites.get( name );
   }
@@ -95,7 +100,7 @@ pub const ResourceManager = struct
     def.log( .DEBUG, 0, @src(), "Adding font: {s}", .{ name });
     try self.fonts.put( name, font );
   }
-  pub fn addSprite( self : *ResourceManager, name : [ :0 ]const u8, sprite : def.ray.Texture2 ) !void
+  pub fn addSprite( self : *ResourceManager, name : [ :0 ]const u8, sprite : def.Spritemap ) !void
   {
     def.log( .DEBUG, 0, @src(), "Adding sprite: {s}", .{ name });
     try self.sprites.put( name, sprite );
@@ -105,7 +110,7 @@ pub const ResourceManager = struct
   pub fn addAudioFromFile( self : *ResourceManager, name : [ :0 ]const u8, filePath : [ :0 ]const u8 ) !void
   {
     def.log( .DEBUG, 0, @src(), "Adding audio from file: {s}", .{ filePath });
-    const sound : def.ray.Sound = try def.ray.loadSound( filePath ); // catch | err |
+    const sound : def.ray.Sound = try def.ray.loadSound( filePath );
     try self.addAudio( name, sound );
   }
 
@@ -123,11 +128,15 @@ pub const ResourceManager = struct
     try self.addFont( name, font );
   }
 
-  pub fn addSpriteFromFile( self : *ResourceManager, name : [ :0 ]const u8, filePath : [ :0 ]const u8 ) !void
+  pub fn addSpriteFromFile( self : *ResourceManager, name : [ :0 ]const u8, frameSize : def.Vec2, frameCount : u32, filePath : [ :0 ]const u8 ) !void
   {
     def.log( .DEBUG, 0, @src(), "Adding sprite from file: {s}", .{ filePath });
-    const texture : def.ray.texture2D = try def.ray.loadTexture( filePath );
-    try self.addSprite( name, texture );
+    var spritemap : def.Spritemap = .{};
+        spritemap.init( filePath, frameSize, frameCount );
+
+    if( spritemap.atlas == null ) return error.LoadImage;
+
+    try self.addSprite( name, spritemap );
   }
 
   // Sound action Shortcuts
@@ -159,6 +168,18 @@ pub const ResourceManager = struct
       return;
     };
     def.ray.stopMusicStream( music );
+  }
+
+  pub fn drawFromSprite( self : *ResourceManager, name : [ :0 ]const u8, index : u32, pos : def.VecA, scale : def.Vec2, col : def.Colour ) void
+  {
+    const spritemap = self.getSprite( name ) orelse
+    {
+      def.log( .ERROR, 0, @src(), "Sprite '{s}' not found", .{ name });
+      return;
+    };
+
+    def.log( .TRACE, 0, @src(), "Drawing from sprite '{s}'", .{ name });
+    spritemap.drawSprite( index, pos, scale, col );
   }
 
 };

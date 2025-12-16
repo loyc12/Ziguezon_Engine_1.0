@@ -288,5 +288,5 @@ pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32
 
 pub inline fn drawTexturePlus( image : ray.Texture2D, source : ray.Rectangle, dest : ray.Rectangle, origin : Vec2, a : Angle, col : Colour ) void
 {
-  ray.drawTexturePro( image, source, dest, origin, def.RtD( a ), col.toRayCol() );
+  ray.drawTexturePro( image, source, dest, origin, a.toDeg(), col.toRayCol() );
 }

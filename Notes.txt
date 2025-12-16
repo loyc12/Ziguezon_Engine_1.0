@@ -53,17 +53,11 @@ Sunrider-like              ( TRPG )    Lost Endeavour
 ================ ENGINE FEATURES TODO-LIST ================
 
 TO REVIEW
- > gameHooks ( kinda messy rn )
- > turn GLOBAL_LOG_TIME into def variable, usable by engine
- > check if using an uint & enum( uint ) union for bitField functions' bitFlag parameters might be preferable
- > move entity shapes to Utils
+ > move entity shapes to Utils ?
+ > split sprite management from other ressources, since depends on an open window ?
 
 UTILS ADDITIONS
- > on-screen performance logging util ( time taken by each step )
  > re-add a way to log to files ( one per level + a global one ? )
-
-ENTITIES
- > add a way for entities to have an "interaction target" pointer or list of some kind ( ex, trigger entity has target mecanism entity )
 
 CUSTOM RENDER LAYERS
  > RENDER QUEUE ( sort elements based on layer )
@@ -77,14 +71,12 @@ INPUT MANAGER ( FULL EVENT SYTEM ? )
 PARTICLE MANAGER
  > Predefined & reusable particle buffer
 
-ANIMATION MANAGER ?
- > Animation speed / frameCount / state ?
+ANIMATION MANAGER
+ > holds disctinct fram instances
+ > Animation speed / current state ?
 
 UI MANAGER
  > Text, Button, Slider, etc
-
-MISCELLANEOUS
- > seperate physic ticks from fps properly
 
 
 

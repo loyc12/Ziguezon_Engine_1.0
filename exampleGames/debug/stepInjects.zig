@@ -21,6 +21,12 @@ const shaker : def.Shaker2D = .{
 };
 
 
+const SHOW_SPRITE_ANIM = true;
+
+var sprite_i : i32 = 0;
+var sprite_r : f32 = 0;
+
+
 // ================================ STEP INJECTION FUNCTIONS ================================
 
 pub fn OnLoopStart( ng : *def.Engine ) void // Called by engine.loopLogic()
@@ -35,7 +41,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Play a shake animation the camera when H is held
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.j )){ s_time = 0.0; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.j )){ s_time   = 0.0; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.i )){ sprite_i = @mod( sprite_i + 1, 256 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.o )){ sprite_i = @mod( sprite_i - 1, 256 ); }
   if( def.ray.isKeyDown(    def.ray.KeyboardKey.h ))
   {
     var cam = ng.getCamera() catch
@@ -200,6 +208,8 @@ pub fn OnTickWorld( ng : *def.Engine ) void
   };
 
   exampleEllipse.pos.a = exampleTilemap.mapPos.a;
+
+  sprite_r = @mod( sprite_r + ( def.TAU / ( 60.0 * 4.0 )), def.TAU );
 }
 
 
@@ -210,10 +220,16 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
   }
 
+  const width  = def.getScreenWidth();
+  const height = def.getScreenHeight();
+
+  if( SHOW_SPRITE_ANIM )
+  {
+    ng.drawFromSprite( "cubes_1", @intCast( sprite_i ), .{ .x = width / 2, .y = height / 2, .a = .{ .r = sprite_r }}, .{ .x = 4.0, .y = 4.0 }, .white );
+  }
+
   if( SHOW_SHAKE_GRAPHS )
   {
-    const width  = def.getScreenWidth();
-    const height = def.getScreenHeight();
 
     def.drawLine( .{ .x = 0, .y = height * 0.25 }, .{ .x = width, .y = height * 0.25 }, .nBlack, 4 );
     def.drawLine( .{ .x = 0, .y = height * 0.50 }, .{ .x = width, .y = height * 0.50 }, .nBlack, 4 );

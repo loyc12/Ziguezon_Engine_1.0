@@ -183,15 +183,28 @@ pub const Engine = struct
 
   pub inline fn addAudio( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) void
   {
-    if ( self.resourceManager )| *m |{ m.addAudio( name, path ); }
+    if( self.resourceManager )| *m |{ m.addAudio( name, path ); }
   }
   pub inline fn addAudioFromFile( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) !void
   {
-    if ( self.resourceManager )| *m |{ return m.addAudioFromFile( name, path ); } else { return error.NullManager; }
+    if( self.resourceManager )| *m |{ return m.addAudioFromFile( name, path ); } else { return error.NullManager; }
   }
   pub inline fn playAudio( self : *Engine, name : [ :0 ]const u8 ) void
   {
-    if ( self.resourceManager )| *m |{ m.playAudio( name ); }
+    if( self.resourceManager )| *m |{ m.playAudio( name ); }
+  }
+
+  pub inline fn addSprite( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) void
+  {
+    if( self.resourceManager )| *m |{ m.addSprite( name, path ); }
+  }
+  pub inline fn addSpriteFromFile( self : *Engine, name : [ :0 ]const u8, frameSize : def.Vec2, frameCount : u32, path : [ :0 ]const u8 ) !void
+  {
+    if( self.resourceManager )| *m |{ return m.addSpriteFromFile( name, frameSize, frameCount, path ); } else { return error.NullManager; }
+  }
+  pub inline fn drawFromSprite( self : *Engine, name : [ :0 ]const u8, index : u32, pos : def.VecA, scale : def.Vec2, col : def.Colour ) void
+  {
+    if( self.resourceManager )| *m |{ m.drawFromSprite( name, index, pos, scale, col ); }
   }
 
 

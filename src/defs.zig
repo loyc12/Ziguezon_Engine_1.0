@@ -295,6 +295,12 @@ pub const shk_u    = @import( "utils/shaker2.zig" );
 pub const Shaker2D = shk_u.Shake2D;
 
 
+// ================ SHAKER SHORTHANDS ================
+
+pub const spm_u    = @import( "utils/spritemap.zig" );
+
+pub const Spritemap = spm_u.Spritemap;
+
 // ================ TIMER SHORTHANDS ================
 
 pub const tmr_u         = @import( "utils/timer.zig" );
