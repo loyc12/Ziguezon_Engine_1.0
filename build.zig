@@ -8,6 +8,10 @@ pub fn build( b : *std.Build ) void
 {
   // ================================ BUILD CONFIGURATION ================================
 
+  // This is the "standard" build target, which is the default for the current platform and architecture.
+  const target   = b.standardTargetOptions(  .{} );
+  const optimize = b.standardOptimizeOption( .{} );
+
 
   // This is a build option that allows the user to specify the path to the game-specific engine interface module
   const tmp_engine_interface_path = b.option(
@@ -25,9 +29,27 @@ pub fn build( b : *std.Build ) void
   );
   const executable_name = if( tmp_executable_name )| name | name else "ZE_Game";
 
-  // This is the "standard" build target, which is the default for the current platform and architecture.
-  const target   = b.standardTargetOptions(  .{} );
-  const optimize = b.standardOptimizeOption( .{ .preferred_optimize_mode = .Debug } );
+
+  const link_mode :std.builtin.LinkMode = switch( optimize )
+  {
+    .Debug => .dynamic,
+
+    else => switch( target.result.os.tag )
+    {
+      .linux   => .dynamic,
+      .macos   => .dynamic,
+      .windows => .static,
+      else     => .static,
+    },
+  };
+
+  const use_llvm = switch( target.result.os.tag )
+  {
+    .windows => true,
+    else     => true, // false, // NOTE : deactivated for now, as switching between compiler is slow af
+  };
+
+
 
   // ================================ EXECUTABLE ================================
 
@@ -45,15 +67,16 @@ pub fn build( b : *std.Build ) void
   .{
     .name        = executable_name,
     .root_module = exe_mod,
-    .use_llvm    = true,
+    .use_llvm    = use_llvm,
   });
 
-  exe.linkLibC();
-  exe.bundle_compiler_rt = true;
+  exe.root_module.link_libc = true;
+  exe.bundle_compiler_rt    = true;
 
   // This declares the intent to install the executable artifact,
   // which is the binary that will be built by the build system.
   b.installArtifact( exe );
+
 
 
   // ================================ LIBRARIES ================================
@@ -66,7 +89,7 @@ pub fn build( b : *std.Build ) void
   .{
     .target   = target,
     .optimize = optimize,
-    .linkage  = .static,
+    .linkage  = link_mode,
   });
 
   // This imports the raylib module from the raylib_zig package
@@ -74,8 +97,10 @@ pub fn build( b : *std.Build ) void
 
   // This links the raylib library to the executable,
   // allowing it to use the raylib functions and types.
-  exe.linkLibrary( raylib_dep.artifact( "raylib" ) );
+  exe.root_module.linkLibrary( raylib_dep.artifact( "raylib" ) );
   exe.root_module.addImport( "raylib", raylib );
+
+
 
   // ================================ INTERNAL MODULES ================================
 
@@ -104,6 +129,8 @@ pub fn build( b : *std.Build ) void
   exe.root_module.addImport(  "engineInterface", engine_interface );
 
 
+
+
   // ================================ COMMANDS ================================
 
   // This creates steps in the build graph, to be executed when called, or if
@@ -116,6 +143,10 @@ pub fn build( b : *std.Build ) void
   const run_cmd  = b.addRunArtifact( exe );
   run_step.dependOn( &run_cmd.step );
   if( b.args )| args |{ run_cmd.addArgs( args ); }
+
+  //const all_step = b.step( "all", "Compiles all predefined executables in ther debug versions" );
+  //const all_cmd  = b.addSystemCommand(
+  //all_step.dependOn( &all_cmd.step );
 
 
   // ================ SPECIFIC COMMANDS ================
@@ -130,19 +161,19 @@ pub fn build( b : *std.Build ) void
     .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
   };
 
-  const platforms =
-  .{
-    .{ "lnx", "x86_64-linux-gnu"   },
-    .{ "win", "x86_64-windows-gnu" },
-    .{ "mac", "x86_64-macos"       },
-  };
-
   const optimizations =
   .{
-  //.{ "dbg",   "Debug"        }, // Default
+  //.{ "dbg",   "Debug"         }, // Default
     .{ "fast",  "Release Fast"  },
     .{ "safe",  "Release Safe"  },
     .{ "small", "Release Small" },
+  };
+
+  const platforms =
+  .{
+  //.{ "lnx", "native"             }, // Default
+    .{ "win", "x86_64-windows-gnu" },
+    .{ "mac", "x86_64-macos"       },
   };
 
   inline for( games )| game |
@@ -150,44 +181,62 @@ pub fn build( b : *std.Build ) void
     const n1   = game[ 0 ];
     const path = game[ 1 ];
 
-    const game_step = b.step( n1, "Compiles and runs " ++ n1 ++ " on the current platform in Debug mode" );
-    const game_cmd  = b.addSystemCommand( &.{ "zig", "build", "run", "-Dengine_interface_path=" ++ path });
+    const dbg_exe_name = "lnx_dbg_" ++ n1;
+
+    const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode and runs it" );
+    const game_cmd  = b.addSystemCommand(
+      &.{
+        "zig",
+        "build",
+        //"run",
+        "--release="               ++ "off",
+        "-Dexecutable_name="       ++ dbg_exe_name,
+        "-Dengine_interface_path=" ++ path,
+      });
 
     game_step.dependOn( &game_cmd.step );
 
-    inline for( platforms )| plat |
+    inline for( optimizations )| opt |
     {
-      const n2   = plat[ 0 ];
-      const comp = plat[ 1 ];
+      const n2   = opt[ 0 ];
+      const mode = opt[ 1 ];
 
-      const comp_step = b.step( n2 ++ "_" ++ n1, "  Compiles " ++ n1 ++ " for " ++ comp ++ " in Debug mode" );
-      const comp_cmd  = b.addSystemCommand( &.{ "zig", "build", "-Dengine_interface_path=" ++ path, "-Dtarget=" ++ comp });
-      comp_step.dependOn( &comp_cmd.step );
+      const opt_exe_name = "lnx_" ++ n2 ++ "_" ++ n1;
 
-      inline for( optimizations )| opt |
-      {
-        const n3   = opt[ 0 ];
-        const mode = opt[ 1 ];
-
-        const cmd_name = n3 ++ "_" ++ n2 ++ "_" ++ n1;
-
-        const mode_step = b.step( cmd_name, "    Compiles " ++ n1 ++ " for " ++ comp ++ " in " ++ mode ++ " mode" );
-        const mode_cmd  = b.addSystemCommand(
+      const mode_step = b.step( n2 ++ "_" ++ n1, "  Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform" );
+      const mode_cmd  = b.addSystemCommand(
         &.{
           "zig",
           "build",
-          "-Dexecutable_name="       ++ cmd_name,
+          "--release="               ++ n2,
+          "-Dexecutable_name="       ++ opt_exe_name,
           "-Dengine_interface_path=" ++ path,
-          "-Dtarget="                ++ comp,
-          "--release="               ++ n3,
         });
 
-        mode_step.dependOn( &mode_cmd.step );
+      mode_step.dependOn( &mode_cmd.step );
+
+      inline for( platforms )| plat |
+      {
+        const n3   = plat[ 0 ];
+        const targ = plat[ 1 ];
+
+        const plt_exe_name = n3 ++ "_" ++ n2 ++ "_" ++ n1;
+
+        const targ_step = b.step( plt_exe_name, "    Compiles " ++ n1 ++ " in " ++ mode ++ " for " ++ targ );
+        const targ_cmd  = b.addSystemCommand(
+          &.{
+            "zig",
+            "build",
+            "--release="               ++ n2,
+            "-Dexecutable_name="       ++ plt_exe_name,
+            "-Dengine_interface_path=" ++ path,
+            "-Dtarget="                ++ targ,
+          });
+
+        targ_step.dependOn( &targ_cmd.step );
       }
     }
   }
-
-
 
 
   // ================ TEST COMANDS ================

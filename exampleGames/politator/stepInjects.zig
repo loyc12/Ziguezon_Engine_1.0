@@ -454,8 +454,9 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.drawCenteredText( "Paused",                     screenCenter.x, ( screenCenter.y * 2 ) - 96, 64, def.Colour.yellow );
-    def.drawCenteredText( "Press P or Enter to resume", screenCenter.x, ( screenCenter.y * 2 ) - 32, 32, def.Colour.yellow );
+    def.drawCenteredText( "Paused",                      screenCenter.x, ( screenCenter.y * 2 ) - 96, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press P or Enter to resume",  screenCenter.x, ( screenCenter.y * 2 ) - 32, 32, def.Colour.yellow );
+    def.drawCenteredText( "Press V to change view mode", screenCenter.x, screenCenter.y + 60, 20, def.Colour.white );
   }
 
   if( SELECTED_TILE )| tile |
