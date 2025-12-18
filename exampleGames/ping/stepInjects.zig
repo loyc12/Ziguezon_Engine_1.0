@@ -8,6 +8,8 @@ const Angle  = def.Angle;
 const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 
+var pendingBallParticles : u32 = 0;
+
 // ================================ HELPER FUNCTIONS ================================
 
 pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
@@ -30,6 +32,9 @@ pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 // Emit particles in a given position and velocity range, with the given colour
 pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : def.Colour ) void
 {
+  // NOTE : WILL POTENTIALLY INVALIDATE ALL ENTITY POINTERS AFTER USE
+  //        ONLY CALL AT THE END OF ENTITY POINTERS USAGE IN FUNCTION
+
   for( 0 .. amount )| i |
   {
     _ = i; // Ignore the index, we don't need it
@@ -48,18 +53,23 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
   }
 }
 
-pub fn emitParticlesOnBounce( ng : *Engine, ball : *Entity ) void
+pub fn emitBounceParticles( ng : *Engine, ball : *Entity ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
-  emitParticles( ng,
-    ball.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
-    .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ) },
-    .{ .x = 16,  .y = 16, .a = Angle.newRad( 1.0 )},
-    .{ .x = 128, .y = 32, .a = Angle.newRad( 2.0 )},
-    12, def.Colour.yellow );
+  if( pendingBallParticles > 0 )
+  {
+    emitParticles(
+      ng,
+      ball.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
+      .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ) },
+      .{ .x = 16,  .y = 16, .a = Angle.newRad( 1.0 )},
+      .{ .x = 128, .y = 32, .a = Angle.newRad( 2.0 )},
+      pendingBallParticles, def.Colour.yellow );
 
-  ng.playAudio( "hit_1" );
+    ng.playAudio( "hit_1" );
+    pendingBallParticles = 0;
+  }
 }
 
 
@@ -315,7 +325,7 @@ pub fn OffTickWorld( ng : *Engine ) void
       ball.vel.x *=  wallBounceFactorY; // Inverted X and Y because this is a horizontal wall
       ball.vel.y *= -wallBounceFactorX; // Inverted X and Y because this is a horizontal wall
 
-      emitParticlesOnBounce( ng, ball );
+      pendingBallParticles += 6;
     }
   }
 
@@ -330,7 +340,7 @@ pub fn OffTickWorld( ng : *Engine ) void
       ball.vel.x *= -wallBounceFactorX;
       ball.vel.y *=  wallBounceFactorY;
 
-      emitParticlesOnBounce( ng, ball );
+      pendingBallParticles += 12;
     }
   }
   else if( ball.getLeftX() <= -hWidth ) // Bounce the ball if it goes past the left edge
@@ -343,7 +353,7 @@ pub fn OffTickWorld( ng : *Engine ) void
       ball.vel.x *= -wallBounceFactorX;
       ball.vel.y *=  wallBounceFactorY;
 
-      emitParticlesOnBounce( ng, ball );
+      pendingBallParticles += 12;
     }
   }
 
@@ -356,6 +366,8 @@ pub fn OffTickWorld( ng : *Engine ) void
 
     ball.setBottomY( p1.getTopY() );
 
+    //def.qlog( .DEBUG, 0, @src(), "HERE" );
+
     if( ball.vel.y > 0 )
     {
       ball.vel.y  = -ball.vel.y * playerBounceFactorY;
@@ -365,7 +377,7 @@ pub fn OffTickWorld( ng : *Engine ) void
       ball.vel.x += p1.vel.x * B_KIN_TRANS_FACTOR_X;
 
       ensureBallMinSpeeds( ball );
-      emitParticlesOnBounce( ng, ball );
+      pendingBallParticles += 6;
     }
   }
 
@@ -385,10 +397,11 @@ pub fn OffTickWorld( ng : *Engine ) void
       ball.vel.x += p2.vel.x * B_KIN_TRANS_FACTOR_X;
 
       ensureBallMinSpeeds( ball );
-      emitParticlesOnBounce( ng, ball );
+      pendingBallParticles += 6;
     }
   }
 
+  emitBounceParticles( ng, ball );
 }
 
 

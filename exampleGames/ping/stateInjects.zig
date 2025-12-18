@@ -11,11 +11,11 @@ pub var BALL_ID            : u32 = 0;
 
 pub fn OnStart( ng : *def.Engine ) void
 {
-  ng.addAudioFromFile( "hit_1", "exampleGames/__assets/sounds/Boop_1.wav" ) catch | err |
+  ng.addAudioFromFile( "hit_1", "src/assets/sounds/Boop_1.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
   };
-  ng.addAudioFromFile( "hit_2", "exampleGames/__assets/sounds/Boop_2.wav" ) catch | err |
+  ng.addAudioFromFile( "hit_2", "src/assets/sounds/Boop_2.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_2': {}\n", .{ err } );
   };

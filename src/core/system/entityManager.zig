@@ -142,7 +142,7 @@ pub const EntityManager = struct
     self.entityList = std.ArrayList( Entity ).empty;
     //self.entityList = std.ArrayList( Entity ).initCapacity( allocator, 64 ) catch
     //{
-    //  def.qlog( .ERROR, 0, @src(), "Failed to initialize entityList" );
+    //  def.qlog( .ERROR, 0, @src(), "Failed to initialize entityList to proper default lenght" );
     //  return;
     //};
 

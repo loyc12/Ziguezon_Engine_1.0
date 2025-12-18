@@ -45,13 +45,13 @@ pub fn build( b : *std.Build ) void
 
   const use_llvm = switch( target.result.os.tag )
   {
-    .windows => true,
-    else     => true, // false, // NOTE : deactivated for now, as switching between compiler is slow af
+    .windows => true,  // NOTE : Zig's built-in compiler backend cannot properly handle windows builds yet
+    else     => false,
   };
 
 
 
-  // ================================ EXECUTABLE ================================
+  // ================================ EXECUTABLE ============ ====================
 
   // This creates a module for the executable itself
   const exe_mod = b.createModule(
@@ -188,7 +188,7 @@ pub fn build( b : *std.Build ) void
       &.{
         "zig",
         "build",
-        //"run",
+        //"run", // NOTE : comment "run" out to avoid launching debug ver on build
         "--release="               ++ "off",
         "-Dexecutable_name="       ++ dbg_exe_name,
         "-Dengine_interface_path=" ++ path,

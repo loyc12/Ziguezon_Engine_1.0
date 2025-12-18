@@ -313,7 +313,7 @@ pub const Entity = struct
 
   pub inline fn isOverlapping( self : *const Entity, other : *const Entity ) bool  { return nttCld.isOverlapping( self, other ); }
   pub inline fn getOverlap(    self : *const Entity, other : *const Entity ) ?Vec2 { return nttCld.getOverlap(    self, other ); }
-  pub inline fn collideWith(   self :       *Entity, other :       *Entity ) bool  { return nttCld.collideWith( self, other ); }
+  pub inline fn collideWith(   self :       *Entity, other :       *Entity ) bool  { return nttCld.collideWith(   self, other ); }
 
   // ================ RENDER FUNCTIONS ================
 

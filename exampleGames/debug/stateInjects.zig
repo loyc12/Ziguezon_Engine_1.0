@@ -23,12 +23,12 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
-  ng.addAudioFromFile( "hit_1", "exampleGames/__assets/sounds/Boop_2.wav" ) catch | err |
+  ng.addAudioFromFile( "hit_1", "src/assets/sounds/Boop_2.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
   };
 
-  ng.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "exampleGames/__assets/textures/Cubes.png" ) catch | err |
+  ng.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "src/assets/textures/Cubes.png" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
   };

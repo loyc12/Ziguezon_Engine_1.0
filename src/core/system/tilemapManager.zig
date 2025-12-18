@@ -139,9 +139,9 @@ pub const TilemapManager = struct
     }
 
     self.tilemapList = std.ArrayList( Tilemap ).empty;
-    //self.tilemapList = std.ArrayList( Tilemap ).initCapacity( self.allocator, 2 ) catch
+    //self.tilemapList = std.ArrayList( Tilemap ).initCapacity( self.allocator, 4 ) catch
     //{
-    //  def.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList" );
+    //  def.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList to proper default lenght" );
     //  return;
     //};
 
