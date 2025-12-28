@@ -20,6 +20,8 @@ fn changeDefault( r : *e_flood_rule, t : *Tile ) void { _ = r; _ = t; return; }
 
 pub const e_flood_rule = struct
 {
+  // TODO : implement a "max travel distance for ranged floodfills"
+
   filterData : Tile = .{},
   changeData : Tile = .{},
 
@@ -37,7 +39,7 @@ pub const e_flood_rule = struct
 pub inline fn resetFloodFillFlags( tlmp : *Tilemap ) void { tlmp.fillWithTileFlagVal( .FLOODED, false ); }
 
 
-// TODO : implement a "max travel distance for ranged floods"
+
 
 pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, expectedIter : u32, rules : *e_flood_rule ) void
 {
