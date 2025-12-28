@@ -4,25 +4,42 @@ const def          = @import( "defs" );
 const Tile         = def.Tile;
 const Tilemap      = def.Tilemap;
 
-const e_tile_type  = Tilemap.e_tile_type;
-const e_tile_flags = Tilemap.e_tile_flags;
+const e_tile_type  = def.e_tile_type;
+const e_tile_flags = def.e_tile_flags;
 
 const Box2         = def.Box2;
 const Coords2      = def.Coords2;
 const Vec2         = def.Vec2;
 const VecA         = def.VecA;
 
-const floodFunc = *const fn ( *Tile ) bool; // NOTE : defines which functions floodFillWithParams() can take in as args
 
-// TODO : WIP, use this file
+// ================================ FLOODRULE STRUCT ================================
+
+fn filterDefault( r : *e_flood_rule, t : *Tile ) bool { _ = r; _ = t; return true; }
+fn changeDefault( r : *e_flood_rule, t : *Tile ) void { _ = r; _ = t; return; }
+
+pub const e_flood_rule = struct
+{
+  filterData : Tile = .{},
+  changeData : Tile = .{},
+
+  filterFunc : *const fn( *e_flood_rule, *Tile ) bool = filterDefault,
+  changeFunc : *const fn( *e_flood_rule, *Tile ) void = changeDefault,
+
+  pub fn filter( self : *e_flood_rule, tile : *Tile ) bool { return self.filterFunc( self, tile ); }
+  pub fn change( self : *e_flood_rule, tile : *Tile ) void {        self.changeFunc( self, tile ); }
+};
 
 
-pub inline fn resetFloodFillFlags( self : *Tilemap ) void { self.fillWithTileFlagVal( .FLOODED, false ); }
+
+// ================================ BASE FLOODFILL FUNCTIONS ================================
+
+pub inline fn resetFloodFillFlags( tlmp : *Tilemap ) void { tlmp.fillWithTileFlagVal( .FLOODED, false ); }
 
 
-// TODO : implement a "max step distance"
+// TODO : implement a "max travel distance for ranged floods"
 
-pub fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, filterFunc : floodFunc, changeFunc : floodFunc ) void
+pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, expectedIter : u32, rules : *e_flood_rule ) void
 {
   const alloc = def.getAlloc();
 
@@ -34,7 +51,7 @@ pub fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, 
   };
   defer stack.deinit( alloc );
 
-  if( start.isFlooded() or !filterFunc( start ))
+  if( start.isFlooded() or !rules.filter( start ))
   {
     def.qlog( .TRACE, 0, @src(), "Invalid start location for floodFill : returning" );
     return;
@@ -49,13 +66,13 @@ pub fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, 
 
   while( stack.pop() )| cTile |
   {
-    _ = changeFunc( cTile );
+    rules.change( cTile );
 
     for( def.e_dir_2.arr )| dir |
     {
-      if( self.getNeighbourTile( cTile.mapCoords, dir ))| nTile |
+      if( tlmp.getNeighbourTile( cTile.mapCoords, dir ))| nTile |
       {
-        if( nTile.isFlooded() or !filterFunc( nTile ) ){ continue; }
+        if( nTile.isFlooded() or !rules.filter( nTile ) ){ continue; }
 
         nTile.addFlag( .FLOODED );
         stack.append( alloc, nTile ) catch | err |
@@ -66,23 +83,40 @@ pub fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, 
     }
   }
 
-  self.resetFloodFillFlags();
+  tlmp.resetFloodFillFlags();
 }
 
-pub fn floodFillWithType( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : e_tile_type, newType : e_tile_type ) void
-{
-  // NOTE : ugly af
-  const filterFunc = struct{ fn f( t: *Tile ) bool { return t.tType == targetType;   }}.f;
-  const changeFunc = struct{ fn f( t: *Tile ) bool { t.tType = newType; return true; }}.f;
 
-  self.floodFillWithParams( start, expectedIter, filterFunc, changeFunc );
+// ================================ FLOODFILL FUNCTION WRAPPERS ================================
+
+fn filterType( r : *e_flood_rule, t : *Tile ) bool { return t.tType == r.filterData.tType; }
+fn changeType( r : *e_flood_rule, t : *Tile ) void { t.tType = r.changeData.tType; }
+
+pub fn floodFillWithType( tlmp : *Tilemap, start : *Tile, expectedIter : u32 , targetType : e_tile_type, newType : e_tile_type ) void
+{
+  var rules : e_flood_rule =
+  .{
+    .filterData = .{ .tType = targetType },
+    .changeData = .{ .tType = newType },
+    .filterFunc = filterType,
+    .changeFunc = changeType,
+  };
+
+  tlmp.floodFillWithParams( start, expectedIter, &rules );
 }
 
-pub fn floodFillWithColour( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : e_tile_type, newCol : def.Colour ) void
-{
-  // NOTE : ugly af
-  const filterFunc = struct{ fn f( t: *Tile ) bool { return t.tType == targetType;   }}.f;
-  const changeFunc = struct{ fn f( t: *Tile ) bool { t.colour = newCol; return true; }}.f;
 
-  self.floodFillWithParams( start, expectedIter, filterFunc, changeFunc );
+fn changeColour( r : *e_flood_rule, t : *Tile ) void { t.colour = r.changeData.colour; }
+
+pub fn floodFillWithColour( tlmp : *Tilemap, start : *Tile, expectedIter : u32 , targetType : e_tile_type, newCol : def.Colour ) void
+{
+  var rules : e_flood_rule =
+  .{
+    .filterData = .{ .tType  = targetType },
+    .changeData = .{ .colour = newCol     },
+    .filterFunc = filterType,
+    .changeFunc = changeColour,
+  };
+
+  tlmp.floodFillWithParams( start, expectedIter, &rules );
 }
