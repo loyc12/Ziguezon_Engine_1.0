@@ -373,7 +373,8 @@ pub const Tilemap = struct
 
   pub inline fn resetFloodFillFlags( self : *Tilemap ) void { self.fillWithTileFlagVal( .FLOODED, false ); }
 
-  pub fn floodFillWithType( self : *Tilemap, start : *Tile, targetType : e_tile_type, newType : e_tile_type, expectedIter : u32 ) void
+
+  pub fn floodFillWithType( self : *Tilemap, start : *Tile, expectedIter : u32, targetType : e_tile_type, newType : e_tile_type ) void
   {
     const alloc = def.getAlloc();
 
@@ -420,32 +421,7 @@ pub const Tilemap = struct
     self.resetFloodFillFlags();
   }
 
-//pub fn _floodFillType( self : *Tilemap, tile : *Tile, targetType : e_tile_type, newType : e_tile_type ) void
-//{
-//  if( !self.isInit() )
-//  {
-//    def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with given colour", .{ self.id });
-//    return;
-//  }
-//
-//  if( tile.isFlooded() or tile.tType != targetType ){ return; }
-//
-//  tile.addFlag( .FLOODED );
-//  tile.tType = newType;
-//
-//  for( def.e_dir_2.arr )| dir |
-//  {
-//    const nTile = self.getNeighbourTile( tile.mapCoords, dir ) orelse
-//    {
-//      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d} : continuing", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
-//      continue;
-//    };
-//
-//    _floodFillType( self, nTile, targetType, newType );
-//  }
-//}
-
-  pub fn floodFillWithColour( self : *Tilemap, start : *Tile, targetType : e_tile_type, newCol : def.Colour, expectedIter : u32 ) void
+  pub fn floodFillWithColour( self : *Tilemap, start : *Tile, expectedIter : u32, targetType : e_tile_type, newCol : def.Colour ) void
   {
     const alloc = def.getAlloc();
 
@@ -491,32 +467,6 @@ pub const Tilemap = struct
 
     self.resetFloodFillFlags();
   }
-
-//pub fn _floodFillColour( self : *Tilemap, tile : *Tile, targetType : e_tile_type, newCol : def.Colour ) void
-//{
-//  if( !self.isInit() )
-//  {
-//    def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with given colour", .{ self.id });
-//    return;
-//  }
-//
-//  if( tile.isFlooded() or tile.tType != targetType ){ return; }
-//
-//  tile.addFlag( .FLOODED );
-//  tile.colour = newCol;
-//
-//  for( def.e_dir_2.arr )| dir |
-//  {
-//    const nTile = self.getNeighbourTile( tile.mapCoords, dir ) orelse
-//    {
-//      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d} : continuing", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
-//      continue;
-//    };
-//
-//    _floodFillColour( self, nTile, targetType, newCol );
-//  }
-//}
-
 
   // ================ POSITION FUNCTIONS ================
 

@@ -133,7 +133,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       return;
     };
 
-    mazeMap.floodFillWithColour( clickedTile, .T1, .white, 0 );
+    mazeMap.floodFillWithColour( clickedTile, 1, .T1, .white );
   }
 }
 
