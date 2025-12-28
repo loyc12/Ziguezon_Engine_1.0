@@ -157,7 +157,7 @@ pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
   if( !area.isOnPoint( pos )) // Quick check to see if pos is even in tilemap bounds
   {
-    def.log( .DEBUG, 0, @src(), "Position {d},{d} is out of tilemap bounding box", .{ pos.x, pos.y });
+    def.log( .TRACE, 0, @src(), "Position {d},{d} is out of tilemap bounding box", .{ pos.x, pos.y });
     return null;
   }
 

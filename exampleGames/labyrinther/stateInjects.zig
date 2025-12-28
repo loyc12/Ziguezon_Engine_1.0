@@ -19,7 +19,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .mapSize   = .{ .x = 256, .y = 256  },
     .tileScale = .{ .x = 64, .y = 64 },
     .tileShape = .RECT,
-  }, .RANDOM );
+  }, .T1 );
 
   if( tlm == null ){ def.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
 
@@ -29,7 +29,4 @@ pub fn OnOpen( ng : *def.Engine ) void
 
   grid.fillWithColour( .lGray );
 }
-
-
-
 

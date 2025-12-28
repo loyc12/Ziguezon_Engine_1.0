@@ -77,39 +77,63 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.q )){ mazeMap.mapPos.a = mazeMap.mapPos.a.subDeg( 1 ); }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.mapPos.a = mazeMap.mapPos.a.addDeg( 1 ); }
 
-  // If left clicked, check if a tile was clicked on the example tilemap
-  if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
+
+  const mouseScreemPos = def.ray.getMousePosition();
+  const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().?.toRayCam() );
+
+  const worldCoords = mazeMap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
+
+  // If left clicked on tile, colour its neighbours
+  if( worldCoords != null and def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
   {
-    const mouseScreemPos = def.ray.getMousePosition();
-    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().?.toRayCam() );
+    def.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-    const worldCoords = mazeMap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
-
-    if( worldCoords != null )
+    var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
     {
-      def.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+      def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      return;
+    };
 
-      var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
-      {
-        def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
-        return;
-      };
+    // Change the colour of the clicked tile
+    clickedTile.colour = def.G_RNG.getColour();
 
-      // Change the color of the clicked tile
-      clickedTile.colour = def.G_RNG.getColour();
-
-      // Change the color of all neighbouring tiles to their direction color
+    // Set the colour of all neighbouring tiles to their direction's debug colour
     for( def.e_dir_2.arr )| dir |
     {
       const n = mazeMap.getNeighbourTile( clickedTile.mapCoords, dir ) orelse
       {
-        def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), clickedTile.mapCoords.x, clickedTile.mapCoords.y });
+        def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d} : continuing", .{ @tagName( dir ), clickedTile.mapCoords.x, clickedTile.mapCoords.y });
         continue;
       };
 
-        n.colour = dir.getDebugColour();
-      }
+      n.colour = dir.getDebugColour();
     }
+  }
+
+  // If right clicked on tile, set its type to T2
+  if( worldCoords != null and def.ray.isMouseButtonPressed( def.ray.MouseButton.right ))
+  {
+    var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
+    {
+      def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      return;
+    };
+
+    // Change the type and colour of the clicked tile
+    clickedTile.tType  = .T2;
+    clickedTile.colour = def.Colour.mGray;
+  }
+
+  // If middle clicked on tile, floodFill T1 tiles with nWhite
+  if( worldCoords != null and def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
+  {
+    const clickedTile = mazeMap.getTile( worldCoords.? ) orelse
+    {
+      def.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      return;
+    };
+
+    mazeMap.floodFillWithColour( clickedTile, .T1, .white, 0 );
   }
 }
 

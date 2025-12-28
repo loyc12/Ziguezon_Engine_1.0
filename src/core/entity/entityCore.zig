@@ -107,7 +107,7 @@ pub const Entity = struct
   pub inline fn isVisible( self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.VISIBLE ); }
 //pub inline fn isRound(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ROUND   ); }
 //pub inline fn isAnimate( self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.ANIMATE ); }
-  pub inline fn showDBG(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DEBUG   ); }
+  pub inline fn viewDBG(   self : *const Entity ) bool { return self.hasFlag( e_ntt_flags.DEBUG   ); }
 
 
   // ================ INITIALIZATION ================

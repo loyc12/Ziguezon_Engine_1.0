@@ -56,22 +56,27 @@ var       G_IsFileOpened : bool        = false;              // Flag to check if
 // ================================ CORE FUNCTIONS ================================
 
 // Shortcut to log a message with no arguments ( for simple text with no formatting )
-pub fn qlog( level : LogLevel, id : u32, cLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
+pub fn qlog( level : LogLevel, id : u32, logLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
 {
-  log( level, id, cLoc, message, .{} );
+  LoggedLastMsg = false;
+  if( !level.canLog() ){ return; }
+  _log( level, id, logLoc, message, .{} );
 }
 
-pub fn log( level : LogLevel, id : u32, cLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8, args : anytype ) void
+pub fn log( level : LogLevel, id : u32, logLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8, args : anytype ) void
+{
+  LoggedLastMsg = false;
+  if( !level.canLog() ){ return; }
+  _log( level, id, logLoc, message, args );
+}
+
+fn _log( level : LogLevel, id : u32, logLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8, args : anytype ) void
 {
   // LOG EXAMPLE :
 
     // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main)
     // > This is a debug message
     //   This is a message continuation (.CONT )
-
-  if( !level.canLog() ){ LoggedLastMsg = false; return; }
-
-  LoggedLastMsg = false;
 
   // If the message is IDed and SHOW_ID_MSGS is false, do nothing
   if( comptime !SHOW_ID_MSGS and id != 0 ) return;
@@ -117,7 +122,7 @@ pub fn log( level : LogLevel, id : u32, cLoc : ?std.builtin.SourceLocation, comp
     logChar( ':' );
 
     // Shows the file location if SHOW_MSG_SRC is true
-    logLoc( cLoc ) catch | err |
+    logLocation( logLoc ) catch | err |
     {
       std.debug.print( "Failed to write source location : {}\n", .{ err });
       return;
@@ -263,11 +268,11 @@ fn logTime() !void
   std.debug.print( "{d}.{d:0>9} ", .{ sec, nano });
 }
 
-fn logLoc( cLoc : ?std.builtin.SourceLocation ) !void
+fn logLocation( logloc : ?std.builtin.SourceLocation ) !void
 {
   if( comptime !SHOW_MSG_SRC ){ return; }
 
-  if( cLoc )| loc | // If the call location is defined, print the file, line, and function name
+  if( logloc )| loc | // If the call location is defined, print the file, line, and function name
   {
     setCol( def.tcl_u.BLUE );
     //try G_LOG_FILE.writer().print( "{s}:{d} ", .{ loc.file, loc.line });
@@ -275,7 +280,7 @@ fn logLoc( cLoc : ?std.builtin.SourceLocation ) !void
 
     setCol( def.tcl_u.GRAY );
     //try G_LOG_FILE.writer().print( "| {s} ", .{ loc.fn_name });
-    std.debug.print( "| {s} ", .{ loc.fn_name });
+    std.debug.print( "| {s}() ", .{ loc.fn_name });
   }
   else
   {
@@ -288,23 +293,23 @@ fn logLoc( cLoc : ?std.builtin.SourceLocation ) !void
 
 // =============================== SHORTHAND LOGGING ================================
 
-pub fn logFrameTime( cLoc : ?std.builtin.SourceLocation ) void
+pub fn logFrameTime( logloc : ?std.builtin.SourceLocation ) void
 {
   const frameTime = TimeVal.fromRayDeltaTime( def.ray.getFrameTime() );
 
   const sec  : u64 = @intCast( frameTime.toSec() );
   const nano : u64 = @intCast( @rem( frameTime.value, TimeVal.nsPerSec() ));
 
-  if( cLoc )| loc |{ log( .INFO, 0, loc,    "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
-  else {             log( .INFO, 0, @src(), "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
+  if( logloc )| loc |{ log( .INFO, 0, loc,    "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
+  else {               log( .INFO, 0, @src(), "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
 }
 
-pub fn logDeltaTime( deltaTime : TimeVal, cLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
+pub fn logDeltaTime( deltaTime : TimeVal, logloc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
 {
   const sec  : u64 = @intCast( deltaTime.toSec() );
   const nano : u64 = @intCast( @rem( deltaTime.value, TimeVal.nsPerSec() ));
 
-  if( cLoc )| loc |{ log( .INFO, 0, loc,    message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
-  else {             log( .INFO, 0, @src(), message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
+  if( logloc )| loc |{ log( .INFO, 0, loc,    message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
+  else {               log( .INFO, 0, @src(), message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
 }
 

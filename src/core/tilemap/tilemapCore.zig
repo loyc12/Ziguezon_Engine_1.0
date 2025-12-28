@@ -6,6 +6,7 @@ const tlmpShape        = @import( "tilemapShape.zig" );
 
 pub const Tile         = tileCore.Tile;
 pub const e_tile_type  = tileCore.e_tile_type;
+pub const e_tile_flags = tileCore.e_tile_flags;
 pub const e_tlmp_shape = tlmpShape.e_tlmp_shape;
 
 const Box2             = def.Box2;
@@ -28,7 +29,7 @@ pub const e_tlmp_flags = enum( u8 )
 //MORE... = 0b00000010, //
   DEBUG   = 0b00000001, // Tilemap will be rendered with debug information
 
-  DEFAULT = 0b00111000, // Default flags for a new tilemap
+  DEFAULT = 0b00111110, // Default flags for a new tilemap
   TO_CPY  = 0b00011111, // Flags to copy when creating a new tilemap from params
   NONE    = 0b00000000, // No flags set
   ALL     = 0b11111111, // All flags set
@@ -67,6 +68,8 @@ pub const Tilemap = struct
   pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE  ); }
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT ); }
   pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.ACTIVE  ); }
+
+  pub inline fn viewDBG(  self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DEBUG   ); }
 
 
   // ================ CHECKERS ================
@@ -183,6 +186,7 @@ pub const Tilemap = struct
     return null;
   }
 
+
   // ================ TILE FUNCTIONS ================
 
   pub inline fn getTileCoordsFromIndex( self : *const Tilemap, index : u32 ) ?Coords2
@@ -264,11 +268,43 @@ pub const Tilemap = struct
 
   // ================ GRID FUNCTIONS ================
 
+  pub fn setTileShape( self : *Tilemap, shape : e_tlmp_shape ) void
+  {
+    if( self.tileShape == shape )
+    {
+      def.log( .DEBUG, 0, @src(), "Tilemap {d} already has tile shape {s}, no change needed", .{ self.id, @tagName( shape )});
+      return;
+    }
+
+    def.log( .INFO, 0, @src(), "Changing tilemap {d} shape from {s} to {s}", .{ self.id, @tagName( self.tileShape ), @tagName( shape )});
+
+    self.resetCachedTilePos();
+    self.tileShape = shape;
+  }
+
   pub inline fn resetCachedTilePos( self : *Tilemap ) void
   {
-    def.log( .INFO, 0, @src(), "! Resetting cached tile positions for tilemap {d}", .{ self.id });
+    def.log( .INFO, 0, @src(), "@ Resetting cached tile positions for tilemap {d}", .{ self.id });
 
     for( 0 .. self.getTileCount() )| index |{ self.tileArray.items.ptr[ index ].relPos = null; }
+  }
+
+  // ======== STANDARD FILL FUNCTIONS ========
+
+  pub fn fillWithTileFlagVal( self : *Tilemap, flag : e_tile_flags, val : bool ) void
+  {
+    def.log( .DEBUG, 0, @src(), "@ Mass changing tile flags for tilemap {d}", .{ self.id });
+
+    if( !self.isInit() )
+    {
+      def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with given flag value", .{ self.id });
+      return;
+    }
+
+    for( 0 .. self.getTileCount() )| index |
+    {
+      self.tileArray.items.ptr[ index ].setFlag( flag, val );
+    }
   }
 
   pub fn fillWithType( self : *Tilemap, tileType : e_tile_type ) void
@@ -290,7 +326,7 @@ pub const Tilemap = struct
       var tmpType : e_tile_type = undefined;
 
       if( tileType != .RANDOM ){ tmpType = tileType; }
-      else switch( def.G_RNG.getClampedInt( 1, 2 ))
+      else switch( def.G_RNG.getClampedInt( 1, 8 ))
       {
         1    => tmpType = .T1,
         2    => tmpType = .T2,
@@ -300,7 +336,7 @@ pub const Tilemap = struct
         6    => tmpType = .T6,
         7    => tmpType = .T7,
         8    => tmpType = .T8,
-        else => tmpType = .EMPTY, // Should never happen
+        else => unreachable, // Should never happen
       }
 
       const col = switch( tmpType )
@@ -318,7 +354,7 @@ pub const Tilemap = struct
     }
   }
 
-  pub fn fillWithColour( self : *Tilemap, colour : def.Colour ) void
+  pub fn fillWithColour( self : *Tilemap, col : def.Colour ) void
   {
     if( !self.isInit() )
     {
@@ -328,23 +364,159 @@ pub const Tilemap = struct
 
     for( 0 .. self.getTileCount() )| index |
     {
-      self.tileArray.items.ptr[ index ].colour = colour;
+      self.tileArray.items.ptr[ index ].colour = col;
     }
   }
 
-  pub fn setTileShape( self : *Tilemap, shape : e_tlmp_shape ) void
+
+  // ======== FLOOD FILL FUNCTIONS ========
+
+  pub inline fn resetFloodFillFlags( self : *Tilemap ) void { self.fillWithTileFlagVal( .FLOODED, false ); }
+
+  pub fn floodFillWithType( self : *Tilemap, start : *Tile, targetType : e_tile_type, newType : e_tile_type, expectedIter : u32 ) void
   {
-    if( self.tileShape == shape )
+    const alloc = def.getAlloc();
+
+    // Using a stack to avoid Depth-First Search, thus avoiding stack overflows due to recursivity
+    var stack = std.ArrayList( *Tile ).initCapacity( alloc, expectedIter ) catch | err |
     {
-      def.log( .DEBUG, 0, @src(), "Tilemap {d} already has tile shape {s}, no change needed", .{ self.id, @tagName( shape )});
+      def.log( .ERROR, 0, @src(), "Stack initialization error : {} : returning", .{ err });
+      return;
+    };
+    defer stack.deinit( alloc );
+
+    if( start.isFlooded() or start.tType != targetType )
+    {
+      def.qlog( .TRACE, 0, @src(), "Invalid start location for floodFill : returning" );
       return;
     }
 
-    def.log( .INFO, 0, @src(), "Changing tilemap {d} shape from {s} to {s}", .{ self.id, @tagName( self.tileShape ), @tagName( shape )});
+    start.addFlag( .FLOODED );
+    stack.append( alloc, start ) catch | err |
+    {
+      def.log( .ERROR, 0, @src(), "Early stack error : {} : returning", .{ err });
+      return;
+    };
 
-    self.resetCachedTilePos();
-    self.tileShape = shape;
+    while( stack.pop() )| cTile |
+    {
+      cTile.tType = newType; // NOTE : core change from Colour variant
+
+      for( def.e_dir_2.arr )| dir |
+      {
+        if( self.getNeighbourTile( cTile.mapCoords, dir ))| nTile |
+        {
+          if( nTile.isFlooded() or nTile.tType != targetType ){ continue; }
+
+          nTile.addFlag( .FLOODED );
+          stack.append( alloc, nTile ) catch | err |
+          {
+            def.log( .WARN, 0, @src(), "Late stack error : {} : ignoring", .{ err });
+          };
+        }
+      }
+    }
+
+    self.resetFloodFillFlags();
   }
+
+//pub fn _floodFillType( self : *Tilemap, tile : *Tile, targetType : e_tile_type, newType : e_tile_type ) void
+//{
+//  if( !self.isInit() )
+//  {
+//    def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with given colour", .{ self.id });
+//    return;
+//  }
+//
+//  if( tile.isFlooded() or tile.tType != targetType ){ return; }
+//
+//  tile.addFlag( .FLOODED );
+//  tile.tType = newType;
+//
+//  for( def.e_dir_2.arr )| dir |
+//  {
+//    const nTile = self.getNeighbourTile( tile.mapCoords, dir ) orelse
+//    {
+//      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d} : continuing", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
+//      continue;
+//    };
+//
+//    _floodFillType( self, nTile, targetType, newType );
+//  }
+//}
+
+  pub fn floodFillWithColour( self : *Tilemap, start : *Tile, targetType : e_tile_type, newCol : def.Colour, expectedIter : u32 ) void
+  {
+    const alloc = def.getAlloc();
+
+    // Using a stack to avoid Depth-First Search, thus avoiding stack overflows due to recursivity
+    var stack = std.ArrayList( *Tile ).initCapacity( alloc, expectedIter ) catch | err |
+    {
+      def.log( .ERROR, 0, @src(), "Stack initialization error : {} : returning", .{ err });
+      return;
+    };
+    defer stack.deinit( alloc );
+
+    if( start.isFlooded() or start.tType != targetType )
+    {
+      def.qlog( .TRACE, 0, @src(), "Invalid start location for floodFill : returning" );
+      return;
+    }
+
+    start.addFlag( .FLOODED );
+    stack.append( alloc, start ) catch | err |
+    {
+      def.log( .ERROR, 0, @src(), "Early stack error : {} : returning", .{ err });
+      return;
+    };
+
+    while( stack.pop() )| cTile |
+    {
+      cTile.colour = newCol; // NOTE : core change from Type variant
+
+      for( def.e_dir_2.arr )| dir |
+      {
+        if( self.getNeighbourTile( cTile.mapCoords, dir ))| nTile |
+        {
+          if( nTile.isFlooded() or nTile.tType != targetType ){ continue; }
+
+          nTile.addFlag( .FLOODED );
+          stack.append( alloc, nTile ) catch | err |
+          {
+            def.log( .WARN, 0, @src(), "Late stack error : {} : ignoring", .{ err });
+          };
+        }
+      }
+    }
+
+    self.resetFloodFillFlags();
+  }
+
+//pub fn _floodFillColour( self : *Tilemap, tile : *Tile, targetType : e_tile_type, newCol : def.Colour ) void
+//{
+//  if( !self.isInit() )
+//  {
+//    def.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot fill grid with given colour", .{ self.id });
+//    return;
+//  }
+//
+//  if( tile.isFlooded() or tile.tType != targetType ){ return; }
+//
+//  tile.addFlag( .FLOODED );
+//  tile.colour = newCol;
+//
+//  for( def.e_dir_2.arr )| dir |
+//  {
+//    const nTile = self.getNeighbourTile( tile.mapCoords, dir ) orelse
+//    {
+//      def.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d} : continuing", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
+//      continue;
+//    };
+//
+//    _floodFillColour( self, nTile, targetType, newCol );
+//  }
+//}
+
 
   // ================ POSITION FUNCTIONS ================
 
@@ -358,6 +530,7 @@ pub const Tilemap = struct
 
   // =============== DRAW FUNCTIONS ================
 
+  // NOTE : why is this commented out ? was it too costly to run per tile ?
   //pub fn isTileOnScreen( self : *const Tilemap, mapCoords : Coords2 ) bool
   //{
   //  if( !self.isCoordsValid( mapCoords ))
@@ -444,13 +617,13 @@ pub const Tilemap = struct
 
     if( !self.isInit() )
     {
-      def.log( .WARN, 0, @src(), "Tilemap {d} is not initialized, cannot find hit tile", .{ self.id });
+      def.log( .WARN, 0, @src(), "Tilemap {d} is not initialized, cannot find hit tile : returning null", .{ self.id });
       return null;
     }
 
     return tlmpShape.getCoordsFromAbsPos( self, p ) orelse
     {
-      def.log( .DEBUG, 0, @src(), "Failed to get tile coordinates in tilemap {d} at {d}:{d}", .{ self.id, p.x, p.y });
+      def.log( .TRACE, 0, @src(), "Failed to get tile coordinates in tilemap {d} at {d}:{d} : return null", .{ self.id, p.x, p.y });
       return null;
     };
   }
