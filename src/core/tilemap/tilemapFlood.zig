@@ -14,13 +14,13 @@ const VecA         = def.VecA;
 
 const floodFunc = *const fn ( *Tile ) bool; // NOTE : defines which functions floodFillWithParams() can take in as args
 
-// TODO : WIP, use me
+// TODO : WIP, use this file
 
 
 pub inline fn resetFloodFillFlags( self : *Tilemap ) void { self.fillWithTileFlagVal( .FLOODED, false ); }
 
 
-// TODO : implement a "max distance" param, or a "walk distance" floodFill
+// TODO : implement a "max step distance"
 
 pub fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, filterFunc : floodFunc, changeFunc : floodFunc ) void
 {
