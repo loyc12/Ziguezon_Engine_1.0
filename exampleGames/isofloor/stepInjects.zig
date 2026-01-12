@@ -72,21 +72,38 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     {
       def.log( .INFO, 0, @src(), "Left-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      _ = data;
+      data.mobile = switch( data.mobile )
+      {
+        .Empty  => .Player,
+        .Player => .Enemy,
+        .Enemy  => .Empty,
+      };
     }
 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
     {
       def.log( .INFO, 0, @src(), "Middle-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      _ = data;
+      tile.colour.g = switch( data.object )
+      {
+        .Empty => .Key1,
+        .Key1  => .Empty,
+      };
     }
 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.right ))
     {
       def.log( .INFO, 0, @src(), "Right-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      _ = data;
+      tile.colour.b = switch( data.mobile )
+      {
+        .Empty => .Floor,
+        .Floor => .Wall,
+        .Wall  => .Entry,
+        .Entry => .Exit ,
+        .Exit  => .Door1,
+        .Door1 => .Empty,
+      };
     }
   }
 
@@ -101,7 +118,36 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     return;
   };
 
-  _ = worldGrid; // Prevent unused variable warning
+  for( 0 .. worldGrid.getTileCount() )| index |
+  {
+    const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
+
+    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+
+    tile.colour.r = switch( data.mobile )
+    {
+      .Empty => 0,
+      .Player => 128,
+      .Enemy  => 255,
+    };
+
+    tile.colour.g = switch( data.object )
+    {
+      .Empty => 0,
+      .Key1  => 255,
+    };
+
+    tile.colour.b = switch( data.mobile )
+    {
+      .Empty => 0,
+      .Floor => 51,
+      .Wall  => 102,
+      .Entry => 153,
+      .Exit  => 204,
+      .Door1 => 255,
+    };
+
+  }
 }
 
 
