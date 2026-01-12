@@ -76,9 +76,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       {
         .Empty => .Floor,
         .Floor => .Wall,
-        .Wall  => .Entry,
-        .Entry => .Exit ,
-        .Exit  => .Door1,
+        .Wall  => .Door1,
         .Door1 => .Empty,
       };
 
@@ -90,7 +88,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
       data.object = switch( data.object )
       {
-        .Empty => .Key1,
+        .Empty => .Entry,
+        .Entry => .Exit,
+        .Exit  => .Key1,
         .Key1  => .Empty,
       };
     }
@@ -122,33 +122,30 @@ pub fn OnTickWorld( ng : *def.Engine ) void
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
-
     const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
     tile.colour.r = switch( data.mobile )
-    {
-      .Empty => 0,
-      .Floor => 51,
-      .Wall  => 102,
-      .Entry => 153,
-      .Exit  => 204,
-      .Door1 => 255,
-    };
-
-
-    tile.colour.g = switch( data.object )
-    {
-      .Empty => 0,
-      .Key1  => 255,
-    };
-
-    tile.colour.b = switch( data.ground )
     {
       .Empty  => 0,
       .Player => 128,
       .Enemy  => 255,
     };
 
+    tile.colour.g = switch( data.object )
+    {
+      .Empty => 0,
+      .Entry => 85,
+      .Exit  => 190,
+      .Key1  => 255,
+    };
+
+    tile.colour.b = switch( data.ground )
+    {
+      .Empty => 0,
+      .Floor => 85,
+      .Wall  => 190,
+      .Door1 => 255,
+    };
   }
 }
 
@@ -160,9 +157,108 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
   _ = ng; // Prevent unused variable warning
 }
 
+const FLOOR_ID  : u32 = (  7 * 16 ) + 1;
+const WALL_ID   : u32 = (  0 * 16 ) + 0;
+
+const ENTRY_ID  : u32 = ( 11 * 16 ) + 0;
+const EXIT_1_ID : u32 = ( 15 * 16 ) + 3;
+const EXIT_2_ID : u32 = ( 15 * 16 ) + 2;
+
+const KEY_1_ID  : u32 = (  0 * 16 ) + 5;
+const DOOR_1_ID : u32 = (  8 * 16 ) + 5;
+
+const PLAYER_ID : u32 = ( 15 * 16 ) + 1;
+const ENEMY_ID  : u32 = (  4 * 16 ) + 0;
+
+const sScale  : f32 = 32 * 0.08839;
+const sOffset : f32 = sScale / 4;
+
 pub fn OffRenderWorld( ng : *def.Engine ) void
 {
-  _ = ng; // Prevent unused variable warning
+  const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
+    return;
+  };
+
+  for( 0 .. worldGrid.getTileCount() )| index |
+  {
+    const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+
+    var groundID : ?u32 = null;
+
+    groundID = switch( data.ground )
+    {
+      .Empty => null,
+      .Floor => FLOOR_ID,
+      .Wall  => WALL_ID,
+      .Door1 => DOOR_1_ID,
+    };
+
+
+    var tilePos : VecA = tile.relPos.?.toVecA( .{} ).add( worldGrid.mapPos );
+
+    tilePos.y -= worldGrid.tileScale.y * sOffset;
+
+    if( groundID )| spriteID |
+    {
+      ng.drawFromSprite( "cubes_1", spriteID, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    }
+  }
+
+  for( 0 .. worldGrid.getTileCount() )| index |
+  {
+    const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+
+    var objectID : ?u32 = null;
+
+    objectID = switch( data.object )
+    {
+      .Empty => null,
+      .Entry => ENTRY_ID,
+      .Exit  => EXIT_1_ID,
+      .Key1  => KEY_1_ID,
+    };
+
+
+    var tilePos : VecA = tile.relPos.?.toVecA( .{} ).add( worldGrid.mapPos );
+
+    tilePos.y -= worldGrid.tileScale.y * sOffset;
+
+    if( objectID )| spriteID |
+    {
+      ng.drawFromSprite( "cubes_1", spriteID, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    }
+  }
+
+  for( 0 .. worldGrid.getTileCount() )| index |
+  {
+    const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+
+    var mobileID : ?u32 = null;
+
+    mobileID = switch( data.mobile )
+    {
+      .Empty  => null,
+      .Player => PLAYER_ID,
+      .Enemy  => ENEMY_ID,
+    };
+
+    var tilePos : VecA = tile.relPos.?.toVecA( .{} ).add( worldGrid.mapPos );
+
+    tilePos.y -= worldGrid.tileScale.y * sOffset;
+
+    if( data.object == .Entry ){ tilePos.y -= worldGrid.tileScale.y * sOffset; }
+    if( data.object == .Exit and mobileID == PLAYER_ID ){ mobileID = EXIT_2_ID; }
+
+    if( mobileID )| spriteID |
+    {
+      ng.drawFromSprite( "cubes_1", spriteID, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    }
+  }
 }
 
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )

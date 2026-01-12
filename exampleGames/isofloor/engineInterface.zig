@@ -25,7 +25,7 @@ const def = @import( "defs" );
   pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Isofloor";
 
 
-  pub const Camera_Max_Zoom : f32 = 2.5;
+  pub const Camera_Max_Zoom : f32 = 10;
   pub const Camera_Min_Zoom : f32 = 0.5;
 
 

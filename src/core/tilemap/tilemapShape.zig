@@ -541,11 +541,20 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
     return;
   }
 
-
   const relPos  = tile.relPos orelse getRelTilePos( tlmp, tile.mapCoords );
   const tileBox = getTileBoundingBox( tlmp, relPos );
 
-  if( !viewBox.isOverlapping( &tileBox )){ return; } // Quick check to see if tile is even in view
+  if( tile.tType == .EMPTY )
+  {
+    def.qlog( .TRACE, 0, @src(), "Cannot draw an empty tile : returning" );
+    return;
+  }
+
+  if( !viewBox.isOverlapping( &tileBox ))
+  {
+    def.qlog( .TRACE, 0, @src(), "not drawing tiles outside of viewbox : returning" );
+    return;
+  }
 
   const absPos = getAbsTilePos( tlmp, tile.mapCoords );
   const dParity : f32 = @floatFromInt(( 2 * @mod( tile.mapCoords.x + tile.mapCoords.y, 2 )) - 1 );

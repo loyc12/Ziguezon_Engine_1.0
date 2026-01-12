@@ -12,8 +12,7 @@ pub const ground_type_e = enum
   Empty,
   Floor,
   Wall,
-  Entry,
-  Exit,
+
   Door1,
 };
 
@@ -27,6 +26,9 @@ pub const mobile_type_e = enum
 pub const object_type_e = enum
 {
   Empty,
+  Entry,
+  Exit,
+
   Key1,
 };
 
@@ -50,13 +52,19 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
+
+  ng.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "src/assets/textures/Cubes.png" ) catch | err |
+  {
+    def.log( .ERROR, 0, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
+  };
+
   const tlm = ng.loadTilemapFromParams(
   .{
     .mapPos    = .{ .x = 0,          .y = 0            },
     .mapSize   = .{ .x = GRID_WIDTH, .y = GRID_HEIGHT  },
     .tileScale = .{ .x = 64,         .y = 32           },
     .tileShape = .DIAM,
-  }, .T1 );
+  }, .EMPTY );
 
   if( tlm == null ){ def.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
 
@@ -68,6 +76,8 @@ pub fn OnOpen( ng : *def.Engine ) void
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     var tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
+
+    TILEMAP_DATA[ index ] = .{};
 
     tile.script.data = &TILEMAP_DATA[ index ];
   }

@@ -444,12 +444,6 @@ pub const Tilemap = struct
       return;
     };
 
-    if( tile.tType == .EMPTY )
-    {
-      def.log( .TRACE, 0, @src(), "Tile at position {d}:{d} is empty, not drawing", .{ mapCoords.x, mapCoords.y });
-      return;
-    }
-
     tlmpShape.drawTileShape( self, tile, viewBox );
   }
 
