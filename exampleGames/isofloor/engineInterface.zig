@@ -21,6 +21,7 @@ const def = @import( "defs" );
 
 // Engine Global Startup Values
 
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.dGray;
   pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Isofloor";
 
 

@@ -72,19 +72,23 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     {
       def.log( .INFO, 0, @src(), "Left-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      data.mobile = switch( data.mobile )
+      data.ground = switch( data.ground )
       {
-        .Empty  => .Player,
-        .Player => .Enemy,
-        .Enemy  => .Empty,
+        .Empty => .Floor,
+        .Floor => .Wall,
+        .Wall  => .Entry,
+        .Entry => .Exit ,
+        .Exit  => .Door1,
+        .Door1 => .Empty,
       };
+
     }
 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
     {
       def.log( .INFO, 0, @src(), "Middle-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      tile.colour.g = switch( data.object )
+      data.object = switch( data.object )
       {
         .Empty => .Key1,
         .Key1  => .Empty,
@@ -95,14 +99,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     {
       def.log( .INFO, 0, @src(), "Right-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      tile.colour.b = switch( data.mobile )
+      data.mobile = switch( data.mobile )
       {
-        .Empty => .Floor,
-        .Floor => .Wall,
-        .Wall  => .Entry,
-        .Entry => .Exit ,
-        .Exit  => .Door1,
-        .Door1 => .Empty,
+        .Empty  => .Player,
+        .Player => .Enemy,
+        .Enemy  => .Empty,
       };
     }
   }
@@ -127,9 +128,13 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     tile.colour.r = switch( data.mobile )
     {
       .Empty => 0,
-      .Player => 128,
-      .Enemy  => 255,
+      .Floor => 51,
+      .Wall  => 102,
+      .Entry => 153,
+      .Exit  => 204,
+      .Door1 => 255,
     };
+
 
     tile.colour.g = switch( data.object )
     {
@@ -137,14 +142,11 @@ pub fn OnTickWorld( ng : *def.Engine ) void
       .Key1  => 255,
     };
 
-    tile.colour.b = switch( data.mobile )
+    tile.colour.b = switch( data.ground )
     {
-      .Empty => 0,
-      .Floor => 51,
-      .Wall  => 102,
-      .Entry => 153,
-      .Exit  => 204,
-      .Door1 => 255,
+      .Empty  => 0,
+      .Player => 128,
+      .Enemy  => 255,
     };
 
   }
