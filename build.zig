@@ -13,14 +13,13 @@ pub fn build( b : *std.Build ) void
   const optimize = b.standardOptimizeOption( .{} );
 
 
-  // This is a build option that allows the user to specify the path to the game-specific engine interface module
+  // Build options ( additional, specifiable cli arguments )
   const tmp_engine_interface_path = b.option(
     []const u8,
     "engine_interface_path",
     "Path to a game's engineInterface implementations ( default : exampleGames/gameFolder/engineInterface.zig )"
   );
   const engine_interface_path = if( tmp_engine_interface_path )| path | path else "exampleGames/debug/engineInterface.zig";
-
 
   const tmp_executable_name = b.option(
     []const u8,
@@ -38,7 +37,7 @@ pub fn build( b : *std.Build ) void
     {
       .linux   => .dynamic,
       .macos   => .dynamic,
-      .windows => .static,
+      .windows => .static, // windows being windows, not willing to play ball with dynamic for now
       else     => .static,
     },
   };
@@ -61,8 +60,7 @@ pub fn build( b : *std.Build ) void
     .optimize         = optimize,
   });
 
-  // This adds the executable module to the build graph,
-  // which is the main entry point of the application.
+  // This adds the executable module to the build graph, which is the main entry point of the application.
   const exe = b.addExecutable(
   .{
     .name        = executable_name,
@@ -73,8 +71,7 @@ pub fn build( b : *std.Build ) void
   exe.root_module.link_libc = true;
   exe.bundle_compiler_rt    = true;
 
-  // This declares the intent to install the executable artifact,
-  // which is the binary that will be built by the build system.
+  // This declares the intent to install the executable artifact, which is the binary that will be built by the build system.
   b.installArtifact( exe );
 
 
@@ -133,8 +130,7 @@ pub fn build( b : *std.Build ) void
 
   // ================================ COMMANDS ================================
 
-  // This creates steps in the build graph, to be executed when called, or if
-  // another step is evaluated that depends on it ( similar to Makefile targets ).
+  // These create steps in the build graph, to be executed when called, or if another step is evaluated that depends on it ( similar to Makefile targets ).
 
 
   // ================ GENERIC COMANDS ================
@@ -241,6 +237,7 @@ pub fn build( b : *std.Build ) void
 
 
   // ================ TEST COMANDS ================
+  // NOTE : NOT IN CURRENT USE
 
   const exe_unit_tests     = b.addTest(.{ .root_module = exe_mod });
   const run_exe_unit_tests = b.addRunArtifact( exe_unit_tests );
