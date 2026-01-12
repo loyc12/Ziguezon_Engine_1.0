@@ -157,6 +157,7 @@ pub fn build( b : *std.Build ) void
     .{ "debug",       "exampleGames/debug/engineInterface.zig"       }, // Default
     .{ "floppy",      "exampleGames/floppy/engineInterface.zig"      },
     .{ "dehexer",     "exampleGames/dehexer/engineInterface.zig"     },
+    .{ "isofloor",    "exampleGames/isofloor/engineInterface.zig"    },
     .{ "politator",   "exampleGames/politator/engineInterface.zig"   },
     .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
   };

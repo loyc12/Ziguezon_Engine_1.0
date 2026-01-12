@@ -42,6 +42,8 @@ pub fn main() !void
 
   def.G_NG.changeState( .OPENED );
 
+  if( def.G_ST.AutoApply_State_Playing ){ def.G_NG.changeState( .PLAYING ); }
+
   def.G_NG.loopLogic();
 
   def.G_NG.changeState( .OFF );

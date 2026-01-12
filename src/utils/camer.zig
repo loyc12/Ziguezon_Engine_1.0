@@ -6,9 +6,6 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 const Angle  = def.Angle;
 
-const MAX_ZOOM = 5.0;
-const MIN_ZOOM = 0.2;
-
 pub const RayCam = def.ray.Camera2D;
 
 // ================================ HELPER FUNCTIONS ================================
@@ -123,8 +120,11 @@ pub const Cam2D = struct
   {
     self.zoom = z;
 
-    if( self.zoom < MIN_ZOOM ) { self.zoom = MIN_ZOOM; }
-    if( self.zoom > MAX_ZOOM ) { self.zoom = MAX_ZOOM; }
+    const maxZoom = def.G_ST.Camera_Max_Zoom;
+    const minZoom = def.G_ST.Camera_Min_Zoom;
+
+    if( self.zoom < minZoom ) { self.zoom = minZoom; }
+    if( self.zoom > maxZoom ) { self.zoom = maxZoom; }
 
     self.updateView();
   }

@@ -32,8 +32,6 @@ pub const TileData = struct
 pub var TILEMAP_DATA      = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
 pub var TILEMAP_DATA_NEXT = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
 
-//: [ GRID_WIDTH * GRID_HEIGHT ]TileData = .{ .{} ** ( GRID_WIDTH * GRID_HEIGHT )};
-
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
