@@ -14,7 +14,31 @@ const Box2   = def.Box2;
 
 const TileData = stateInj.TileData;
 
-var TILEMAP_DATA = stateInj.TILEMAP_DATA;
+const TILEMAP_DATA = stateInj.TILEMAP_DATA;
+
+
+// Defining the position index of each sprite
+
+const LOGO_1_ID  : u32 = (  7 * 16 ) + 3;
+const LOGO_2_ID  : u32 = (  7 * 16 ) + 4;
+
+const FLOOR_ID  : u32 = (  6 * 16 ) + 0;
+const ENTRY_ID  : u32 = ( 14 * 16 ) + 0;
+const EXIT_1_ID : u32 = ( 15 * 16 ) + 3;
+const EXIT_2_ID : u32 = ( 15 * 16 ) + 2; // Exit with player in
+
+const WALL_ID   : u32 = (  8 * 16 ) + 0;
+const DOOR_1_ID : u32 = (  0 * 16 ) + 5;
+const KEY_1_ID  : u32 = (  8 * 16 ) + 5;
+
+const PLAYER_ID : u32 = ( 15 * 16 ) + 1;
+const ENEMY_ID  : u32 = (  7 * 16 ) + 1;
+
+
+// Defining some graphical constants
+
+const sScale  : f32 = 32 * 0.08839;
+const sOffset : f32 = sScale / 4;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -49,7 +73,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     return;
   };
 
-  // Keep the camera inside over the map area
+  // Keep the camera looking over the map area
   ng.clampCameraCenterInArea( worldGrid.getMapBoundingBox() );
 
 
@@ -99,7 +123,6 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       };
     }
   }
-
 }
 
 
@@ -147,24 +170,6 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
   _ = ng; // Prevent unused variable warning
 }
 
-// Defining the position index of each sprite
-
-const FLOOR_ID  : u32 = (  6 * 16 ) + 0;
-
-const ENTRY_ID  : u32 = ( 14 * 16 ) + 0;
-const EXIT_1_ID : u32 = ( 15 * 16 ) + 3;
-const EXIT_2_ID : u32 = ( 15 * 16 ) + 2; // Exit with player in
-
-const PLAYER_ID : u32 = ( 15 * 16 ) + 1;
-const ENEMY_ID  : u32 = (  7 * 16 ) + 1;
-
-const WALL_ID   : u32 = (  8 * 16 ) + 0;
-const DOOR_1_ID : u32 = (  0 * 16 ) + 5;
-const KEY_1_ID  : u32 = (  8 * 16 ) + 5;
-
-
-const sScale  : f32 = 32 * 0.08839;
-const sOffset : f32 = sScale / 4;
 
 pub fn OffRenderWorld( ng : *def.Engine ) void
 {
@@ -248,10 +253,13 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
 pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
+  const screenCenter = def.getHalfScreenSize();
+
+  ng.drawFromSprite( "cubes_1", LOGO_1_ID, .{ .x = screenCenter.x - 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
+  ng.drawFromSprite( "cubes_1", LOGO_2_ID, .{ .x = screenCenter.x + 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
+
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    const screenCenter = def.getHalfScreenSize();
-
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
     def.drawCenteredText( "Paused",                     screenCenter.x, screenCenter.y - 20, 40, def.Colour.white );
     def.drawCenteredText( "Press P or Enter to resume", screenCenter.x, screenCenter.y + 20, 20, def.Colour.white );

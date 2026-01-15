@@ -3,8 +3,8 @@ const def = @import( "defs" );
 
 pub var GRID_ID : u32 = 0;
 
-pub const GRID_WIDTH  = 15;
-pub const GRID_HEIGHT = 15;
+pub const GRID_WIDTH  = 64;
+pub const GRID_HEIGHT = 64;
 
 
 pub const ground_type_e = enum
