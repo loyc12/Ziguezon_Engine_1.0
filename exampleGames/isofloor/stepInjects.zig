@@ -75,35 +75,27 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       data.ground = switch( data.ground )
       {
         .Empty => .Floor,
-        .Floor => .Wall,
-        .Wall  => .Door1,
-        .Door1 => .Empty,
-      };
-
-    }
-
-    if( def.ray.isMouseButtonPressed( def.ray.MouseButton.middle ))
-    {
-      def.log( .INFO, 0, @src(), "Middle-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
-
-      data.object = switch( data.object )
-      {
-        .Empty => .Entry,
+        .Floor => .Entry,
         .Entry => .Exit,
-        .Exit  => .Key1,
-        .Key1  => .Empty,
+        .Exit  => .Empty,
       };
+
     }
 
     if( def.ray.isMouseButtonPressed( def.ray.MouseButton.right ))
     {
       def.log( .INFO, 0, @src(), "Right-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
-      data.mobile = switch( data.mobile )
+      data.object = switch( data.object )
       {
-        .Empty  => .Player,
-        .Player => .Enemy,
-        .Enemy  => .Empty,
+        .Empty  => .Wall,
+        .Wall   => .Door1,
+
+        .Door1  => .Key1,
+        .Key1   => .Enemy,
+
+        .Enemy  => .Player,
+        .Player => .Empty,
       };
     }
   }
@@ -124,27 +116,25 @@ pub fn OnTickWorld( ng : *def.Engine ) void
     const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
     const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
-    tile.colour.r = switch( data.mobile )
-    {
-      .Empty  => 0,
-      .Player => 128,
-      .Enemy  => 255,
-    };
 
-    tile.colour.g = switch( data.object )
-    {
-      .Empty => 0,
-      .Entry => 85,
-      .Exit  => 190,
-      .Key1  => 255,
-    };
-
-    tile.colour.b = switch( data.ground )
+    tile.colour.r = switch( data.ground )
     {
       .Empty => 0,
       .Floor => 85,
-      .Wall  => 190,
-      .Door1 => 255,
+      .Entry => 190,
+      .Exit  => 255,
+    };
+
+    tile.colour.b = switch( data.object )
+    {
+      .Empty  => 0,
+      .Wall   => 51,
+
+      .Door1  => 102,
+      .Key1   => 153,
+
+      .Enemy  => 204,
+      .Player => 255,
     };
   }
 }
@@ -157,18 +147,21 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
   _ = ng; // Prevent unused variable warning
 }
 
-const FLOOR_ID  : u32 = (  7 * 16 ) + 1;
-const WALL_ID   : u32 = (  0 * 16 ) + 0;
+// Defining the position index of each sprite
 
-const ENTRY_ID  : u32 = ( 11 * 16 ) + 0;
+const FLOOR_ID  : u32 = (  6 * 16 ) + 0;
+
+const ENTRY_ID  : u32 = ( 14 * 16 ) + 0;
 const EXIT_1_ID : u32 = ( 15 * 16 ) + 3;
-const EXIT_2_ID : u32 = ( 15 * 16 ) + 2;
-
-const KEY_1_ID  : u32 = (  0 * 16 ) + 5;
-const DOOR_1_ID : u32 = (  8 * 16 ) + 5;
+const EXIT_2_ID : u32 = ( 15 * 16 ) + 2; // Exit with player in
 
 const PLAYER_ID : u32 = ( 15 * 16 ) + 1;
-const ENEMY_ID  : u32 = (  4 * 16 ) + 0;
+const ENEMY_ID  : u32 = (  7 * 16 ) + 1;
+
+const WALL_ID   : u32 = (  8 * 16 ) + 0;
+const DOOR_1_ID : u32 = (  0 * 16 ) + 5;
+const KEY_1_ID  : u32 = (  8 * 16 ) + 5;
+
 
 const sScale  : f32 = 32 * 0.08839;
 const sOffset : f32 = sScale / 4;
@@ -181,83 +174,74 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
     return;
   };
 
+  // Draw base floor everywhere that isn't empty
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
     const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
-    var groundID : ?u32 = null;
-
-    groundID = switch( data.ground )
-    {
-      .Empty => null,
-      .Floor => FLOOR_ID,
-      .Wall  => WALL_ID,
-      .Door1 => DOOR_1_ID,
-    };
-
+    if( data.ground == .Empty ){ continue; }
 
     var tilePos : VecA = tile.relPos.?.toVecA( .{} ).add( worldGrid.mapPos );
 
     tilePos.y -= worldGrid.tileScale.y * sOffset;
 
-    if( groundID )| spriteID |
-    {
-      ng.drawFromSprite( "cubes_1", spriteID, tilePos, .{ .x = sScale, .y = sScale }, .white );
-    }
+    ng.drawFromSprite( "cubes_1", FLOOR_ID, tilePos, .{ .x = sScale, .y = sScale }, .white );
   }
 
+  // Draw non-floor ground tiles
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
     const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
-    var objectID : ?u32 = null;
+    if( data.ground == .Empty or data.ground == .Floor ){ continue; }
 
-    objectID = switch( data.object )
+    const groundID = switch( data.ground )
     {
-      .Empty => null,
       .Entry => ENTRY_ID,
       .Exit  => EXIT_1_ID,
-      .Key1  => KEY_1_ID,
-    };
 
+      else   => unreachable,
+    };
 
     var tilePos : VecA = tile.relPos.?.toVecA( .{} ).add( worldGrid.mapPos );
 
     tilePos.y -= worldGrid.tileScale.y * sOffset;
 
-    if( objectID )| spriteID |
-    {
-      ng.drawFromSprite( "cubes_1", spriteID, tilePos, .{ .x = sScale, .y = sScale }, .white );
-    }
+    ng.drawFromSprite( "cubes_1", groundID, tilePos, .{ .x = sScale, .y = sScale }, .white );
+
   }
 
+  // Draw objects onto floor
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
     const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
-    var mobileID : ?u32 = null;
+    if( data.object == .Empty ){ continue; }
 
-    mobileID = switch( data.mobile )
+    var objectID = switch( data.object )
     {
-      .Empty  => null,
-      .Player => PLAYER_ID,
+      .Wall   => WALL_ID,
+
+      .Door1  => DOOR_1_ID,
+      .Key1   => KEY_1_ID,
+
       .Enemy  => ENEMY_ID,
+      .Player => PLAYER_ID,
+
+      else    => unreachable,
     };
 
     var tilePos : VecA = tile.relPos.?.toVecA( .{} ).add( worldGrid.mapPos );
 
     tilePos.y -= worldGrid.tileScale.y * sOffset;
 
-    if( data.object == .Entry ){ tilePos.y -= worldGrid.tileScale.y * sOffset; }
-    if( data.object == .Exit and mobileID == PLAYER_ID ){ mobileID = EXIT_2_ID; }
+  //if( data.ground == .Entry ){ tilePos.y -= worldGrid.tileScale.y * sOffset; } // raise objects onto entry podium
+    if( data.ground == .Exit and objectID == PLAYER_ID ){ objectID = EXIT_2_ID; }
 
-    if( mobileID )| spriteID |
-    {
-      ng.drawFromSprite( "cubes_1", spriteID, tilePos, .{ .x = sScale, .y = sScale }, .white );
-    }
+    ng.drawFromSprite( "cubes_1", objectID, tilePos, .{ .x = sScale, .y = sScale }, .white );
   }
 }
 
@@ -269,7 +253,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     const screenCenter = def.getHalfScreenSize();
 
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
-    def.drawCenteredText( "Paused",                      screenCenter.x, screenCenter.y - 20, 40, def.Colour.white );
-    def.drawCenteredText( "Press P or Enter to resume",  screenCenter.x, screenCenter.y + 20, 20, def.Colour.white );
+    def.drawCenteredText( "Paused",                     screenCenter.x, screenCenter.y - 20, 40, def.Colour.white );
+    def.drawCenteredText( "Press P or Enter to resume", screenCenter.x, screenCenter.y + 20, 20, def.Colour.white );
   }
 }

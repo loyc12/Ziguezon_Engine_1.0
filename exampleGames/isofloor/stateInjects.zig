@@ -11,31 +11,28 @@ pub const ground_type_e = enum
 {
   Empty,
   Floor,
-  Wall,
 
-  Door1,
-};
-
-pub const mobile_type_e = enum
-{
-  Empty,
-  Player,
-  Enemy,
+  Entry,
+  Exit,
 };
 
 pub const object_type_e = enum
 {
   Empty,
-  Entry,
-  Exit,
 
+  Player,
+  Enemy,
+
+  Wall,
+
+  Door1,
   Key1,
 };
+
 
 pub const TileData = struct
 {
   ground : ground_type_e = .Floor,
-  mobile : mobile_type_e = .Empty,
   object : object_type_e = .Empty,
 };
 
