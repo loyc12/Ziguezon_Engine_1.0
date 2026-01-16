@@ -35,8 +35,8 @@ pub fn build( b : *std.Build ) void
 
     else => switch( target.result.os.tag )
     {
-      .linux   => .dynamic,
-      .macos   => .dynamic,
+      .linux   => .static,
+      .macos   => .static,
       .windows => .static, // windows being windows, not willing to play ball with dynamic for now
       else     => .static,
     },
@@ -82,6 +82,22 @@ pub fn build( b : *std.Build ) void
   // around the raylib C library. The `raylib_zig` package is expected to be
   // available in the Zig package registry, or in the local filesystem if the
   // user has specified a local path to it.
+  //const raylib_zig = b.dependency( "raylib_zig_url",
+  //.{
+  //  .target   = target,
+  //  .optimize = optimize,
+  //  .linkage  = link_mode,
+  //});
+
+  // This imports the raylib module from the raylib_zig package
+  //const raylib = raylib_zig.module( "raylib" );
+
+  // This links the raylib library to the executable,
+  // allowing it to use the raylib functions and types.
+  //exe.root_module.linkLibrary( raylib_zig.artifact( "raylib" ) );
+  //exe.root_module.addImport( "raylib", raylib );
+
+
   const raylib_dep = b.dependency( "raylib_zig",
   .{
     .target   = target,
@@ -89,14 +105,13 @@ pub fn build( b : *std.Build ) void
     .linkage  = link_mode,
   });
 
-  // This imports the raylib module from the raylib_zig package
-  const raylib = raylib_dep.module( "raylib" );
+  const raylibC = raylib_dep.artifact( "raylib" ); // raylib C library
+  const raylib  = raylib_dep.module(   "raylib" ); // main raylib module
+//const raygui  = raylib_dep.module(   "raygui" ); // raygui module
 
-  // This links the raylib library to the executable,
-  // allowing it to use the raylib functions and types.
-  exe.root_module.linkLibrary( raylib_dep.artifact( "raylib" ) );
+  exe.linkLibrary( raylibC );
   exe.root_module.addImport( "raylib", raylib );
-
+//exe.root_module.addImport( "raygui", raygui );
 
 
   // ================================ INTERNAL MODULES ================================
@@ -110,8 +125,11 @@ pub fn build( b : *std.Build ) void
     .target   = target,
     .optimize = optimize,
   });
+  defs.addImport( "defs",   defs   ); // Allows def to call import itself
   defs.addImport( "raylib", raylib );
-  defs.addImport( "defs", defs );
+//defs.addImport( "raygui", raygui );
+
+
   exe.root_module.addImport( "defs", defs );
 
   // This adds the engine interface module, which is expected to contain the game-specific gameHooks & engineSettings implementations.
@@ -121,8 +139,8 @@ pub fn build( b : *std.Build ) void
     .target           = target,
     .optimize         = optimize,
   });
-  engine_interface.addImport( "raylib", raylib );
-  engine_interface.addImport( "defs", defs );
+  engine_interface.addImport( "defs",   defs   );
+
   exe.root_module.addImport(  "engineInterface", engine_interface );
 
 
