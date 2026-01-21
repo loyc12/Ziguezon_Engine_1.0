@@ -173,6 +173,7 @@ pub fn build( b : *std.Build ) void
     .{ "dehexer",     "exampleGames/dehexer/engineInterface.zig"     },
     .{ "isofloor",    "exampleGames/isofloor/engineInterface.zig"    },
     .{ "politator",   "exampleGames/politator/engineInterface.zig"   },
+  //.{ "granulater",  "exampleGames/granulater/engineInterface.zig"  },
     .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
   };
 

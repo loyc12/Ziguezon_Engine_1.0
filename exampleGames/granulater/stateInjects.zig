@@ -8,29 +8,10 @@ pub const GRID_HEIGHT = 128;
 
 pub const TileData = struct
 {
-  popCount : u32 = 0, // Population on the tile
-  resCount : u32 = 0, // Usable resources on the tile
-  infCount : u32 = 0, // Maintained infrastructure on the tile
-
-  nextPopCount : u32 = 0,
-  nextResCount : u32 = 0,
-  nextInfCount : u32 = 0,
-
-  lastPopGrowth : u32 = 0,
-  lastPopLoss   : u32 = 0,
-
-  lastPopIn     : u32 = 0,
-  lastPopOut    : u32 = 0,
-
-  lastInfGrowth : u32 = 0,
-  lastInfLoss   : u32 = 0,
-
-  lastResGrowth : u32 = 0,
-  lastResLoss   : u32 = 0,
+  noiseVal : f32 = 0.0,
 };
 
-pub var TILEMAP_DATA      = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
-pub var TILEMAP_DATA_NEXT = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
+pub var TILEMAP_DATA = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
 
 
 // ================================ STATE INJECTION FUNCTIONS ================================
@@ -63,13 +44,12 @@ pub fn OnOpen( ng : *def.Engine ) void
 
     TILEMAP_DATA[ index ] =
     .{
-      .popCount = @intCast( def.G_RNG.getClampedInt( 0, 256 )),
-      .infCount = @intCast( def.G_RNG.getClampedInt( 0, 128 )),
-      .resCount = @intCast( def.G_RNG.getClampedInt( 0, 512 )),
+      .noiseVal = @intCast( def.G_RNG.getFloat( f32 )),
     };
 
-    tile.colour = .{ .r = 0, .g = 0, .b = 0, .a = 255 };
+    const col : u8 = @intFromFloat( @floor(( 256.0 - def.EPS ) * def.clmp( TILEMAP_DATA[ index ].noiseVal, 0.0, 1.0 )));
 
+    tile.colour      = .{ .r = col, .g = col, .b = col, .a = 255 };
     tile.script.data = &TILEMAP_DATA[ index ];
   }
 

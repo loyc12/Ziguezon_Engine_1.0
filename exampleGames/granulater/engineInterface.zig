@@ -12,11 +12,11 @@ const def = @import( "defs" );
 
   pub const AutoApply_Entity_Movement  = false;
   pub const AutoApply_Entity_Collision = false;
-  pub const AutoApply_State_Playing    = false;
+
 
 // Engine Global Startup Values
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Politator";
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Granulater";
 
 
 // ================================ GAME HOOKS ================================
