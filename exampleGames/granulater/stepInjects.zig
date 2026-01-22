@@ -151,7 +151,8 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
     }
     else if( data.noiseVal > -0.05 ) // SAND
     {
-      tile.colour.b -= 32;
+      tile.colour.r += 64;
+      tile.colour.g += 32;
     }
     else // SEA
     {
