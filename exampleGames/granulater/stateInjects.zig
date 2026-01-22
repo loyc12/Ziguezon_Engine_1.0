@@ -13,8 +13,16 @@ pub const TileData = struct
 
 pub var TILEMAP_DATA = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
 
-pub var NOISE_GEN : def.Noise2D = .{ .seed = 0, .octaveCount = 6 };
 pub const NOISE_SCALE : f32 = 1.0 / 32.0;
+pub var NOISE_GEN : def.Noise2D =
+.{
+  .seed = 0,
+
+  .warpCount    = 2,
+  .warpStrenght = 1.5,
+
+  .octaveCount = 6,
+};
 
 
 // ================================ STATE INJECTION FUNCTIONS ================================
