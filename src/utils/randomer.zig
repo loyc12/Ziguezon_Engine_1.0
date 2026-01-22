@@ -11,7 +11,7 @@ const RandType : type = std.Random.Xoshiro256;
 
 // ================================ GLOBAL RANDOM NUMBER GENERATOR ================================
 
-pub var G_RNG : randomiser = .{};
+pub var G_RNG : Randomiser = .{};
 
 pub fn initGlobalRNG() void
 {
@@ -28,28 +28,30 @@ pub fn seedGlobalRNG( seed : i128 ) void
 
 // ================================ RANDOMISER STRUCT ================================
 
-pub const randomiser = struct
+pub const Randomiser = struct
 {
   prng : RandType   = undefined,
   rng  : std.Random = undefined,
 
-  pub fn randInit( self : *randomiser ) void { self.seedInit( def.getNow().value ); }
-  pub fn seedInit( self : *randomiser, seed : i128 ) void
+  pub fn randInit( self : *Randomiser ) void { self.seedInit( def.getNow().value ); }
+  pub fn seedInit( self : *Randomiser, seed : i128 ) void
   {
-    const val : u128 = @intCast( seed );
-    const top : u64  = @intCast(( val >> 16 ) & 0x0000000000000000FFFFFFFFFFFFFFFF );
-    const bot : u64  = @intCast(( val       ) & 0x0000000000000000FFFFFFFFFFFFFFFF );
+    const raw : u128 = @intCast( @abs( seed ));
+    const top : u64  = @intCast( raw & 0xFFFFFFFFFFFFFFFF0000000000000000 ) ;
+    var   bot : u64  = @intCast( raw & 0x0000000000000000FFFFFFFFFFFFFFFF );
 
-    self.prng = RandType.init( top + bot );
+    bot ^= ( top >> 16 );
+
+    self.prng = RandType.init( bot );
 
     // Reinitializing the rng wrapper with the new prng
     self.rng = std.Random.init( &self.prng, std.Random.Xoshiro256.fill );
   }
 
-  pub fn getBool(  self : *randomiser ) bool { return self.rng.int( u1 ) == 1; }
-  pub fn getInt(   self : *randomiser, comptime t : type ) t { return self.rng.int( t ); }
-  pub fn getFloat( self : *randomiser, comptime t : type ) t { return self.rng.float( t ); }
-  pub fn getVal(   self : *randomiser, comptime t : type ) t // for any type supported by std.rand
+  pub fn getBool(  self : *Randomiser ) bool { return self.rng.int( u1 ) == 1; }
+  pub fn getInt(   self : *Randomiser, comptime t : type ) t { return self.rng.int( t ); }
+  pub fn getFloat( self : *Randomiser, comptime t : type ) t { return self.rng.float( t ); }
+  pub fn getVal(   self : *Randomiser, comptime t : type ) t // for any type supported by std.rand
   {
     switch( @typeInfo( t ))
     {
@@ -62,7 +64,7 @@ pub const randomiser = struct
   }
 
   // Returns a random integer in the range [ min, max ] ( inclusive for both )
-  pub fn getClampedInt( self : *randomiser, min : i32, max : i32 ) i32
+  pub fn getClampedInt( self : *Randomiser, min : i32, max : i32 ) i32
   {
 
     var tmp : f32 = @floatFromInt( max - min ); // Getting the size of the range between [ min, max ]
@@ -74,9 +76,9 @@ pub const randomiser = struct
   }
 
   // Returns a random angle in radians in the range [ 0, 2*PI )
-  pub fn getAngle( self : *randomiser ) Angle { return Angle.newRad( self.rng.float( f32 ) * def.TAU ); }
+  pub fn getAngle( self : *Randomiser ) Angle { return Angle.newRad( self.rng.float( f32 ) * def.TAU ); }
 
-  pub fn getScaledAngle( self : *randomiser, scale : Angle, offset : Angle ) Angle
+  pub fn getScaledAngle( self : *Randomiser, scale : Angle, offset : Angle ) Angle
   {
     var tmp = self.rng.float( f32 ); // Get a random float in the range [ 0.0, 1.0 )
 
@@ -87,7 +89,7 @@ pub const randomiser = struct
   }
 
   // Returns a random float in in range [ offset - scale, offset + scale ]
-  pub fn getScaledFloat( self : *randomiser, scale : f32, offset : f32 ) f32
+  pub fn getScaledFloat( self : *Randomiser, scale : f32, offset : f32 ) f32
   {
     var tmp = self.rng.float( f32 );
 
@@ -96,7 +98,7 @@ pub const randomiser = struct
   }
 
   // Returns a random unit vector ( length of 1 in a random direction )
-  pub fn getVec2( self : *randomiser ) Vec2
+  pub fn getVec2( self : *Randomiser ) Vec2
   {
     const angle = self.getAngleRad();
 
@@ -104,7 +106,7 @@ pub const randomiser = struct
   }
 
   // Returns a random vector scaled by the given scale and offset by a given amount
-  pub fn getScaledVec2( self : *randomiser, scale : Vec2, offset : Vec2 ) Vec2
+  pub fn getScaledVec2( self : *Randomiser, scale : Vec2, offset : Vec2 ) Vec2
   {
     var tmp = self.getVec2(); // Get a random unit vector
 
@@ -118,14 +120,14 @@ pub const randomiser = struct
   }
 
   // Returns a random vector in 2D + rotation space ( length of 1 in a random direction and rotation )
-  pub fn getVecA( self : *randomiser ) VecA
+  pub fn getVecA( self : *Randomiser ) VecA
   {
     const a = self.getAngle();
     return VecA{ .x = a.cos(), .y = a.sin(), .a = self.getAngle() };
   }
 
   // Returns a random vector in 2D + rotation space scaled by the given scale and offset by a given amount
-  pub fn getScaledVecA( self : *randomiser, scale : VecA, offset : VecA ) VecA
+  pub fn getScaledVecA( self : *Randomiser, scale : VecA, offset : VecA ) VecA
   {
     var tmp = self.getVecA(); // Get a random unit vector
 
@@ -140,7 +142,7 @@ pub const randomiser = struct
 
 
   // Returns a random unit vector in 3D space ( length of 1 in a random direction )
-  pub fn getVec3( self : *randomiser ) Vec3
+  pub fn getVec3( self : *Randomiser ) Vec3
   {
     const theta = self.rng.float( f32 ) * def.TAU; // [0, 2π)
     const z =   ( self.rng.float( f32 ) * 2.0 ) - 1.0;  // [-1, 1] // NOTE : Prevents the vector from being too close to the poles, garanteeing a uniform distribution in 3D space
@@ -154,7 +156,7 @@ pub const randomiser = struct
   }
 
   // Returns a random vector in 3D space scaled by the given scale and offset by a given amount
-  pub fn getScaledVec3( self : *randomiser, scale : Vec3, offset : Vec3 ) Vec3
+  pub fn getScaledVec3( self : *Randomiser, scale : Vec3, offset : Vec3 ) Vec3
   {
     var tmp = self.getVec3(); // Get a random unit vector
 
@@ -169,7 +171,7 @@ pub const randomiser = struct
     return tmp;
   }
 
-  pub fn getColour( self : *randomiser ) def.Colour
+  pub fn getColour( self : *Randomiser ) def.Colour
   {
     return def.Colour{
       .r = @intFromFloat( @floor( self.rng.float( f32 ) * 255.999 )),

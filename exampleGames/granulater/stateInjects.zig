@@ -13,6 +13,9 @@ pub const TileData = struct
 
 pub var TILEMAP_DATA = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
 
+pub const NOISE_GEN : def.Noise2D = .{ .seed = 42 };
+pub const NOISE_SCALE : f32 = 0.125;
+
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
@@ -42,7 +45,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   {
     var tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
 
-    TILEMAP_DATA[ index ] = .{ .noiseVal = def.G_RNG.getFloat( f32 )};
+    TILEMAP_DATA[ index ] = .{ .noiseVal = NOISE_GEN.sample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ))};
 
     const shade : u8 = @intFromFloat( @floor( 256 * def.clmp( TILEMAP_DATA[ index ].noiseVal, 0.0, 1.0 - def.EPS )));
 

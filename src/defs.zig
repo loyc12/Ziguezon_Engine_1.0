@@ -4,7 +4,7 @@ pub const ray = @import( "raylib" );
 pub const tcl_u  = @import( "utils/termColourer.zig" );
 pub const rng_u  = @import( "utils/randomer.zig" );
 
-pub var G_RNG : rng_u.randomiser = .{};
+pub var G_RNG : rng_u.Randomiser = .{};
 
 // ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
 
@@ -288,6 +288,13 @@ pub const getPolyCircumRad = mth_u.getPolyCircumRad;
 pub const getPolyArea   = mth_u.getPolyArea;
 
 
+// ================ NOISER SHORTHANDS ================
+
+pub const nsr_u   = @import( "utils/noiser.zig" );
+
+pub const Noise2D = nsr_u.Noise2D;
+
+
 // ================ SHAKER SHORTHANDS ================
 
 pub const shk_u    = @import( "utils/shaker2.zig" );
@@ -295,9 +302,9 @@ pub const shk_u    = @import( "utils/shaker2.zig" );
 pub const Shaker2D = shk_u.Shake2D;
 
 
-// ================ SHAKER SHORTHANDS ================
+// ================ SPRITEMAP SHORTHANDS ================
 
-pub const spm_u    = @import( "utils/spritemap.zig" );
+pub const spm_u     = @import( "utils/spritemap.zig" );
 
 pub const Spritemap = spm_u.Spritemap;
 
