@@ -559,18 +559,18 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
   const absPos = getAbsTilePos( tlmp, tile.mapCoords );
   const dParity : f32 = @floatFromInt(( 2 * @mod( tile.mapCoords.x + tile.mapCoords.y, 2 )) - 1 );
 
-  var radii = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() * MARGIN_FACTOR );
-  if( tlmp.tileShape == .RECT ){ radii = radii.mulVal( 0.5 ); }
+  var displayRadii = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() * MARGIN_FACTOR ); // NOTE : Scales down render shape to let background show in between tiles
+  if( tlmp.tileShape == .RECT ){ displayRadii = displayRadii.mulVal( 0.5 ); }
 
   switch( tlmp.tileShape )
   {
-    .RECT => def.drawRect( absPos.toVec2(), radii, absPos.a, tile.colour ),
-    .DIAM => def.drawDiam( absPos.toVec2(), radii, absPos.a, tile.colour ),
+    .RECT => def.drawRect( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
+    .DIAM => def.drawDiam( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
 
-    .HEX1 => def.drawHexa( absPos.toVec2(), radii, absPos.a.addDeg( 90.0 ), tile.colour ),
-    .HEX2 => def.drawHexa( absPos.toVec2(), radii, absPos.a,                tile.colour ),
+    .HEX1 => def.drawHexa( absPos.toVec2(), displayRadii, absPos.a.addDeg( 90.0 ), tile.colour ),
+    .HEX2 => def.drawHexa( absPos.toVec2(), displayRadii, absPos.a,                tile.colour ),
 
-    .TRI1 => def.drawTria( absPos.toVec2(), radii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
-    .TRI2 => def.drawTria( absPos.toVec2(), radii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
+    .TRI1 => def.drawTria( absPos.toVec2(), displayRadii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
+    .TRI2 => def.drawTria( absPos.toVec2(), displayRadii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
   }
 }
