@@ -18,7 +18,7 @@ pub var NOISE_GEN : def.Noise2D =
 .{
   .seed = 0,
 
-  .warpCount    = 2,
+  .warpCount    = 1,
   .warpStrenght = 1.5,
 
   .octaveCount = 6,
