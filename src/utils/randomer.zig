@@ -37,8 +37,8 @@ pub const randomiser = struct
   pub fn seedInit( self : *randomiser, seed : i128 ) void
   {
     const val : u128 = @intCast( seed );
-    const top : u64  = @intCast( val & 0xFFFFFFFFFFFFFFFF0000000000000000 );
-    const bot : u64  = @intCast( val & 0x0000000000000000FFFFFFFFFFFFFFFF );
+    const top : u64  = @intCast(( val >> 16 ) & 0x0000000000000000FFFFFFFFFFFFFFFF );
+    const bot : u64  = @intCast(( val       ) & 0x0000000000000000FFFFFFFFFFFFFFFF );
 
     self.prng = RandType.init( top + bot );
 
