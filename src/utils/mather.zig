@@ -140,7 +140,7 @@ pub fn getPolyArea( circumradius : f32, sideCount : u8 ) f32
   return ( 0.5 * n * circumradius * circumradius * std.math.sin( facetAngle ));
 }
 
-pub fn getPolyCircum( area : f32, sideCount : u8 ) f32
+pub fn getPolyCircumRad( area : f32, sideCount : u8 ) f32
 {
   if( sideCount < 3 )
   {

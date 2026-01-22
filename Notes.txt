@@ -106,7 +106,7 @@ Various utils, which serves specific purposes ( see utils folder and defs.zig ),
  > simple AABB structs   ( Boxer_.zig )
  > abstract drawcalls    ( drawer.zig )
  > abstract camera       ( camer.zig )
- > rng wrapper           ( rng.zig )
+ > rng wrapper           ( randomer.zig )
  > ...
 
 Various component systems with an associated manager :

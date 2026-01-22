@@ -2,7 +2,7 @@ pub const std = @import( "std" );
 pub const ray = @import( "raylib" );
 
 pub const tcl_u  = @import( "utils/termColourer.zig" );
-pub const rng_u  = @import( "utils/rng.zig" );
+pub const rng_u  = @import( "utils/randomer.zig" );
 
 pub var G_RNG : rng_u.randomiser = .{};
 
@@ -284,7 +284,7 @@ pub const norm   = mth_u.norm;
 pub const denorm = mth_u.denorm;
 pub const renorm = mth_u.renorm;
 
-pub const getPolyCircum = mth_u.getPolyCircum;
+pub const getPolyCircumRad = mth_u.getPolyCircumRad;
 pub const getPolyArea   = mth_u.getPolyArea;
 
 

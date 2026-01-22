@@ -130,8 +130,6 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
 
     const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
 
-    if( data.noiseVal > 0.9999 ){ def.log( .WARN, 0, @src(), "noiseVal : {d}", .{ data.noiseVal }); }
-
     const shade : u8 = @intFromFloat( @floor( 256 * def.clmp( data.noiseVal, 0.0, 1.0 - def.EPS )));
 
     tile.colour = .{ .r = shade, .g = shade, .b = shade, .a = 255 };

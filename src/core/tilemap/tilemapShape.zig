@@ -19,35 +19,35 @@ const IR3     = def.IR3;
 const HR2     = def.HR2;
 const HR3     = def.HR3;
 
-const MARGIN_FACTOR = 0.95; // Factor to scale down tiles, leaving a margin between them
+const MARGIN_FACTOR = 0.96; // Factor to scale down tiles, leaving a margin between them // TODO : move this to engineSettings
 
 const RECT_FACTOR = 1.0; // 1x1 square              R = HR2
-const TRIA_FACTOR = def.getPolyCircum( 1.0, 3 );
-const DIAM_FACTOR = def.getPolyCircum( 1.0, 4 ); // R = 1.0
-const HEXA_FACTOR = def.getPolyCircum( 1.0, 6 );
-//const PENT_FACTOR = SIZE_FACTOR * def.getPolyCircum( SIZE_FACTOR, 5 );
+const TRIA_FACTOR = def.getPolyCircumRad( 1.0, 3 );
+const DIAM_FACTOR = def.getPolyCircumRad( 1.0, 4 ); // R = 1.0
+const HEXA_FACTOR = def.getPolyCircumRad( 1.0, 6 );
+//const PENT_FACTOR = SIZE_FACTOR * def.getPolyCircumRad( SIZE_FACTOR, 5 );
 
 pub const e_tlmp_shape = enum( u8 )
 {
+  TRI1, // A V ( upright )
+  TRI2, // > < ( sideway )
+
   RECT, // []
   DIAM, // <>
 
   HEX1, // <_> ( pointy top )
   HEX2, // <_> (  flat top  )
 
-  TRI1, // /\  ( upright )
-  TRI2, // >   ( sideway )
-
 //PEN1, // ( upright ) // TODO : implement me
-//PEN2, // ( sideway ) // TODO : implement me
+//PEN2, // ( sideway )
 
   pub inline fn getSides( self : e_tlmp_shape ) u8
   {
     return switch( self )
     {
+      .TRI1, .TRI2 => 3,
       .RECT, .DIAM => 4,
       .HEX1, .HEX2 => 6,
-      .TRI1, .TRI2 => 3,
     };
   }
 
