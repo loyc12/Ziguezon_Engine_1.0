@@ -42,14 +42,11 @@ pub fn OnOpen( ng : *def.Engine ) void
   {
     var tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
 
-    TILEMAP_DATA[ index ] =
-    .{
-      .noiseVal = @intCast( def.G_RNG.getFloat( f32 )),
-    };
+    TILEMAP_DATA[ index ] = .{ .noiseVal = def.G_RNG.getFloat( f32 )};
 
-    const col : u8 = @intFromFloat( @floor(( 256.0 - def.EPS ) * def.clmp( TILEMAP_DATA[ index ].noiseVal, 0.0, 1.0 )));
+    const shade : u8 = @intFromFloat( @floor( 256 * def.clmp( TILEMAP_DATA[ index ].noiseVal, 0.0, 1.0 - def.EPS )));
 
-    tile.colour      = .{ .r = col, .g = col, .b = col, .a = 255 };
+    tile.colour      = .{ .r = shade, .g = shade, .b = shade, .a = 255 };
     tile.script.data = &TILEMAP_DATA[ index ];
   }
 

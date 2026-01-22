@@ -9,7 +9,7 @@ pub const E     = std.math.e;
 pub const PI    = std.math.pi;
 pub const TAU   = std.math.tau;
 pub const PHI   = std.math.phi;
-pub const EPS   = 0.00000001;
+pub const EPS   = 0.0000001;
 
 pub const R2  = @sqrt( 2.0 );
 pub const HR2 = R2 / 2.0;

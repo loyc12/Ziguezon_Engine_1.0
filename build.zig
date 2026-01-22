@@ -173,7 +173,7 @@ pub fn build( b : *std.Build ) void
     .{ "dehexer",     "exampleGames/dehexer/engineInterface.zig"     },
     .{ "isofloor",    "exampleGames/isofloor/engineInterface.zig"    },
     .{ "politator",   "exampleGames/politator/engineInterface.zig"   },
-  //.{ "granulater",  "exampleGames/granulater/engineInterface.zig"  },
+    .{ "granulater",  "exampleGames/granulater/engineInterface.zig"  },
     .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
   };
 
@@ -204,7 +204,7 @@ pub fn build( b : *std.Build ) void
       &.{
         "zig",
         "build",
-        //"run", // NOTE : comment "run" out to avoid launching debug ver on build
+        "run", // NOTE : comment "run" out to avoid launching debug ver on build
         "--release="               ++ "off",
         "-Dexecutable_name="       ++ dbg_exe_name,
         "-Dengine_interface_path=" ++ path,
