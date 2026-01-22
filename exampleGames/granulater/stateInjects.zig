@@ -13,8 +13,8 @@ pub const TileData = struct
 
 pub var TILEMAP_DATA = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData );
 
-pub const NOISE_GEN : def.Noise2D = .{ .seed = 42 };
-pub const NOISE_SCALE : f32 = 0.125;
+pub var NOISE_GEN : def.Noise2D = .{ .seed = 0, .octaveCount = 6 };
+pub const NOISE_SCALE : f32 = 1.0 / 32.0;
 
 
 // ================================ STATE INJECTION FUNCTIONS ================================
@@ -41,18 +41,28 @@ pub fn OnOpen( ng : *def.Engine ) void
 
   GRID_ID = worldGrid.id;
 
+
+  var min_noise : f32 = 1.0;
+  var max_noise : f32 = 0.0;
+
+  NOISE_GEN.seed = def.G_RNG.getInt( u64 );
+
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     var tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
 
-    TILEMAP_DATA[ index ] = .{ .noiseVal = NOISE_GEN.sample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ))};
 
-    const shade : u8 = @intFromFloat( @floor( 256 * def.clmp( TILEMAP_DATA[ index ].noiseVal, 0.0, 1.0 - def.EPS )));
+    const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 
-    tile.colour      = .{ .r = shade, .g = shade, .b = shade, .a = 255 };
+    if( noise < min_noise ){ min_noise = noise; }
+    if( noise > max_noise ){ max_noise = noise; }
+
+
+    TILEMAP_DATA[ index ] = .{ .noiseVal = noise };
     tile.script.data = &TILEMAP_DATA[ index ];
   }
 
+  def.log( .INFO, 0, @src(), "Min : {d}, Max : {d}", .{ min_noise, max_noise });
 }
 
 

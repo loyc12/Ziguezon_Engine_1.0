@@ -274,6 +274,7 @@ pub const HR3    = mth_u.HR3;
 pub const IR3    = mth_u.IR3;
 
 pub const sign   = mth_u.sign;
+pub const pow2   = mth_u.pow2;
 
 pub const lerp   = mth_u.lerp;
 pub const med3   = mth_u.med3;

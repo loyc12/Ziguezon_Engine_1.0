@@ -89,11 +89,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.up ))
     {
-      data.noiseVal = def.clmp( data.noiseVal + 0.01, 0.0, 1.0 - def.EPS );
+      data.noiseVal = def.clmp( data.noiseVal + 0.05, 0.0, 1.0 - def.EPS );
     }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.down ))
     {
-      data.noiseVal = def.clmp( data.noiseVal - 0.01, 0.0, 1.0 - def.EPS );
+      data.noiseVal = def.clmp( data.noiseVal - 0.05, 0.0, 1.0 - def.EPS );
     }
   }
 
@@ -133,6 +133,30 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
     const shade : u8 = @intFromFloat( 128 + @floor( 128 * def.clmp( data.noiseVal, -1.0, 1.0 - def.EPS )));
 
     tile.colour = .{ .r = shade, .g = shade, .b = shade, .a = 255 };
+
+    if( data.noiseVal > 0.35 ) // ICE CAPS
+    {
+      // Do nothing for snow
+    }
+    else if( data.noiseVal > 0.25 ) // MOUNTAINS
+    {
+      tile.colour.r -= 64;
+      tile.colour.g -= 64;
+      tile.colour.b -= 64;
+    }
+    else if( data.noiseVal > 0.0 ) // GRASS
+    {
+      tile.colour.r -= 64;
+      tile.colour.b -= 128;
+    }
+    else if( data.noiseVal > -0.05 ) // SAND
+    {
+      tile.colour.b -= 32;
+    }
+    else // SEA
+    {
+      tile.colour.b += 128;
+    }
   }
 }
 

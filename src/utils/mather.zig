@@ -41,6 +41,29 @@ pub fn sign( val : anytype ) @TypeOf( val )
   }
 }
 
+pub fn pow2( val : anytype ) @TypeOf( val )
+{
+  switch( @typeInfo( @TypeOf( val )))
+  {
+    .float, .comptime_float =>
+    {
+      return @exp2( val );
+    },
+    .int, .comptime_int =>
+    {
+      var ret : @TypeOf( val ) = 1;
+      var i   : @TypeOf( val ) = 0;
+
+      if( val <= 0 ){ return 0; } // NOTE : does not work with negative integer exponents
+
+      while( i < val ){ ret *= 2; i += 1; }
+
+      return val;
+    },
+    else => @compileError( "sign() only supports Int and Float types" ),
+  }
+}
+
 pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 {
   switch( @typeInfo( @TypeOf( a )))
