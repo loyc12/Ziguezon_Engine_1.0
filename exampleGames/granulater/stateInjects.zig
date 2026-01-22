@@ -29,7 +29,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .mapPos    = .{ .x = 0,   .y = 0   },
     .mapSize   = .{ .x = 128, .y = 128 },
     .tileScale = .{ .x = 64,  .y = 64  },
-    .tileShape = .HEX2,
+    .tileShape = .RECT,
   }, .RANDOM );
 
   if( tlm == null ){ def.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
