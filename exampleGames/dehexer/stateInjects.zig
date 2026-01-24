@@ -26,7 +26,9 @@ pub fn OnOpen( ng : *def.Engine ) void
   // Adjusting grid scalling to fit the screen
   const scaleFactor : f32 = @floatFromInt( 1 + @max( GRID_WIDTH, GRID_HEIGHT * 2 ));
 
-  GRID_SCALE = 2150 / scaleFactor;
+  const scale2 = def.getScreenSize().addVal( 128 ).divVal( scaleFactor ).?;
+
+  GRID_SCALE = @max( scale2.x, scale2.y );
 
 
   // Setting up the grid

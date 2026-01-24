@@ -173,8 +173,8 @@ pub fn open( ng : *Engine ) void
   {
     def.ray.setConfigFlags( // Set the window flags
       .{
-        //.window_resizable   = true, // Allow the window to be resized
-        //.window_undecorated = true, // Show the window decorations ( title bar, close button, etc. )
+        .window_resizable   = true, // Allow the window to be resized
+      //.window_undecorated = true, // Hides the window decorations ( title bar, close button, etc. )
       }
     );
 

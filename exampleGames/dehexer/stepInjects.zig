@@ -18,7 +18,7 @@ const TILE_MINE_3 = stateInj.TILE_MINE_3;
 const TILE_HIDDEN = stateInj.TILE_HIDDEN;
 const TILE_SHOWN  = stateInj.TILE_SHOWN;
 
-const NUM_SIZE : f32 = 24;
+//const NUM_SIZE : f32 = 24;
 
 var DIFFICULTY : f32 = 20.0; // baby = 12% easy = 16%, normal == 20%, hard = 24%, insane = 28%
 var MINE_COUNT : u32 = 250;  // baby = 150 easy = 200, normal == 250, hard = 300, insane = 350
@@ -32,8 +32,7 @@ var IS_INIT    : bool = false;
 var shake_prog  : f32 = 0.0;
 var shake_force : f32 = 0.0;
 
-var end_text_size : f32 = 0;
-var MAX_TEXT_SIZE : f32 = 64;
+var end_text_scale : f32 = 0;
 
 const shaker : def.Shaker2D = .{
   .beg_lenght = 0.03,
@@ -375,7 +374,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       IS_INIT = false;
 
       LIFE_COUNT    = 5;
-      end_text_size = 0.0;
+      end_text_scale = 0.0;
 
       grid.fillWithType( TILE_HIDDEN );
       grid.fillWithColour( .mGray );
@@ -486,9 +485,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
         def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
         return;
     };
-
-    //mineBuff[ mineCountSlice.len ] = 0;
-    //lifeBuff[ lifeCountSlice.len ] = 0;
   }
   else
   {
@@ -506,9 +502,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
         def.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
         return;
     };
-
-    //mineBuff[ mineCountSlice.len ] = 0;
-    //lifeBuff[ lifeCountSlice.len ] = 0;
   }
 
 
@@ -519,9 +512,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   };
   const screenCenter = def.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, cam.toRayCam() );
 
-  def.drawCenteredText( &mineBuff, screenCenter.x - 256, 64, 32, def.Colour.red   );
-  def.drawCenteredText( &lifeBuff, screenCenter.x + 256, 64, 32, def.Colour.green );
-
 
   var grid = ng.getTilemap( stateInj.GRID_ID ) orelse
   {
@@ -529,19 +519,38 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     return;
   };
 
+  const scale2 = def.getScreenSize().div( grid.mapSize.toVec2() ).?;
+
+  const scale = @min( scale2.x * 1.0, scale2.y * 1.0 );
+
+  if( grid.tileScale.x != scale )
+  {
+    grid.tileScale.x = scale;
+    grid.tileScale.y = scale;
+    grid.mapPos.y    = scale; // gives some space for top UI
+
+    grid.resetCachedTilePos();
+  }
+
+  const text_scale = scale * 0.6;
+
+  def.drawCenteredText( &mineBuff, screenCenter.x * 0.75, screenCenter.y * 0.1, text_scale * 2.0, def.Colour.red   );
+  def.drawCenteredText( &lifeBuff, screenCenter.x * 1.25, screenCenter.y * 0.1, text_scale * 2.0, def.Colour.green );
+
+
   for( 0 .. grid.getTileCount() )| index |
   {
     const tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
 
     const tileCenter = def.ray.getWorldToScreen2D( grid.getAbsTilePos( tile.mapCoords ).toRayVec2(), cam.toRayCam() );
 
-    if(      tile.colour.isEq( .blue   )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
-    else if( tile.colour.isEq( .lBlue  )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
-    else if( tile.colour.isEq( .mBlue  )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, NUM_SIZE, .white ); }
+    if(      tile.colour.isEq( .blue   )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, text_scale, .white ); }
+    else if( tile.colour.isEq( .lBlue  )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, text_scale, .white ); }
+    else if( tile.colour.isEq( .mBlue  )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, text_scale, .white ); }
 
-    else if( tile.colour.isEq( .yellow )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
-    else if( tile.colour.isEq( .orange )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
-    else if( tile.colour.isEq( .red    )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, NUM_SIZE, .black ); }
+    else if( tile.colour.isEq( .yellow )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, text_scale, .black ); }
+    else if( tile.colour.isEq( .orange )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, text_scale, .black ); }
+    else if( tile.colour.isEq( .red    )){ def.drawCenteredText( "3", tileCenter.x, tileCenter.y, text_scale, .black ); }
 
     if( tile.tType != TILE_SHOWN ){ continue; }
 
@@ -571,39 +580,38 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       else => def.Colour.indigo,
     };
 
-    def.drawCenteredText( &numBuff, tileCenter.x, tileCenter.y, NUM_SIZE, numCol );
+    def.drawCenteredText( &numBuff, tileCenter.x, tileCenter.y, text_scale, numCol );
   }
 
   if( !IS_INIT )
   {
     def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 32 ));
 
-    def.drawCenteredText( "Dehexer plays like classic minesweeper, with two exception :",                     screenCenter.x, ( screenCenter.y * 1.75 ) - 48, 24, .nWhite );
-    def.drawCenteredText( "Mines can count for either 1, 2 or 3 'damage', which impacts the displayed value", screenCenter.x, ( screenCenter.y * 1.75 )     , 24, .nWhite );
-    def.drawCenteredText( "You also only lose the game once you take more damage than you have lives",        screenCenter.x, ( screenCenter.y * 1.75 ) + 48, 24, .nWhite );
+    def.drawCenteredText( diffName, screenCenter.x, screenCenter.y * 0.5, text_scale * 3.0, .yellow );
 
-    def.drawCenteredText( "Use up & down arrows to change mine count ( difficulty )", screenCenter.x, screenCenter.y - 48,  24, .red    );
-    def.drawCenteredText( "Use left & right arrows to change life count",             screenCenter.x, screenCenter.y,       24, .green  );
-    def.drawCenteredText( "Click any cell to start",                                  screenCenter.x, screenCenter.y + 128, 64, .nWhite );
-
-    def.drawCenteredText( diffName, screenCenter.x, screenCenter.y * 0.5, 48, .yellow );
+    def.drawCenteredText( "Use up & down arrows to change mine count ( difficulty )",                         screenCenter.x, screenCenter.y * 0.80, text_scale * 2.0, .red    );
+    def.drawCenteredText( "Use left & right arrows to change life count",                                     screenCenter.x, screenCenter.y * 1.00, text_scale * 2.0, .green  );
+    def.drawCenteredText( "Click any cell to start",                                                          screenCenter.x, screenCenter.y * 1.50, text_scale * 2.0, .yellow );
+    def.drawCenteredText( "Dehexer plays like classic minesweeper, with two exception :",                     screenCenter.x, screenCenter.y * 1.65, text_scale * 1.0, .nWhite );
+    def.drawCenteredText( "Mines can count for either 1, 2 or 3 'damage', which impacts the displayed value", screenCenter.x, screenCenter.y * 1.75, text_scale * 1.0, .nWhite );
+    def.drawCenteredText( "You also only lose the game once you take more damage than you have lives",        screenCenter.x, screenCenter.y * 1.85, text_scale * 1.0, .nWhite );
   }
 
   if( LIFE_COUNT <= 0 or HAS_WON )
   {
-    if( end_text_size < MAX_TEXT_SIZE ){ end_text_size = @min( 4.0 + end_text_size, MAX_TEXT_SIZE ); }
+    if( end_text_scale < text_scale * 2.5 ){ end_text_scale = @min( 2.0 + end_text_scale, text_scale * 2.5 ); }
 
     def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 192 ));
 
     if( HAS_WON )
     {
-      def.drawCenteredText( "W + SKILLFUL + HELL YEAH + ROFL + STAY GLAD", screenCenter.x, screenCenter.y - 64, end_text_size,       .green );
-      def.drawCenteredText( "Press Enter to Restart, champ",               screenCenter.x, screenCenter.y + 64, end_text_size * 0.5, .yellow );
+      def.drawCenteredText( "W + SKILLFUL + HELL YEAH + ROFL + STAY GLAD", screenCenter.x, screenCenter.y * 0.90, end_text_scale,       .green );
+      def.drawCenteredText( "Press Enter to Restart, champ",               screenCenter.x, screenCenter.y * 1.10, end_text_scale * 0.5, .yellow );
     }
     else
     {
-      def.drawCenteredText( "L + SKILL ISSUE + WOMP WOMP + LMFAO + STAY MAD", screenCenter.x, screenCenter.y - 64, end_text_size,       .red );
-      def.drawCenteredText( "Press Enter to Restart, loser",                  screenCenter.x, screenCenter.y + 64, end_text_size * 0.5, .yellow );
+      def.drawCenteredText( "L + SKILL ISSUE + WOMP WOMP + LMFAO + STAY MAD", screenCenter.x, screenCenter.y * 0.90, end_text_scale,       .red );
+      def.drawCenteredText( "Press Enter to Restart, loser",                  screenCenter.x, screenCenter.y * 1.10, end_text_scale * 0.5, .yellow );
     }
   }
 
