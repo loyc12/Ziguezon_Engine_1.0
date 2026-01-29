@@ -33,9 +33,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       IS_GAME_OVER  = false;
       IS_JUMPING    = false;
 
-      var disk = ng.getEntity( stateInj.DISK_ID ) orelse
+      var disk = ng.getBody( stateInj.DISK_ID ) orelse
       {
-        def.log( .WARN, 0, @src(), "Entity with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+        def.log( .WARN, 0, @src(), "Body with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
         return;
       };
 
@@ -61,9 +61,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  var disk = ng.getEntity( stateInj.DISK_ID ) orelse
+  var disk = ng.getBody( stateInj.DISK_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
     return;
   };
 
@@ -87,9 +87,9 @@ pub fn OffTickWorld( ng : *def.Engine ) void
 {
   const hHeight : f32 = def.getScreenHeight() / 2.0;
 
-  var disk = ng.getEntity( stateInj.DISK_ID ) orelse
+  var disk = ng.getBody( stateInj.DISK_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.DISK_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.DISK_ID });
     return;
   };
 

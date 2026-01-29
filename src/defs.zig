@@ -68,14 +68,14 @@ pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 // ================ MANAGERS ================
 
 pub const res_m = @import( "core/system/resourceManager.zig" );
-pub const ntt_m = @import( "core/system/entityManager.zig" );
+pub const ntt_m = @import( "core/system/bodyManager.zig" );
 pub const tlm_m = @import( "core/system/tilemapManager.zig" );
 
 
-// ================ ENTITY ================
+// ================ BODY ================
 
-pub const ntt         = @import( "core/entity/entityCore.zig" );
-pub const Entity      = ntt.Entity;
+pub const ntt         = @import( "core/body/bodyCore.zig" );
+pub const Body      = ntt.Body;
 
 pub const e_ntt_flags = ntt.e_ntt_flags;
 pub const e_ntt_shape = ntt.e_ntt_shape;

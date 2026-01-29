@@ -172,7 +172,7 @@ pub const e_timer_flags = enum( u8 )
   DEBUG   = 0b00000001, // Timer will output debug info
 
 //DEFAULT = 0b00000000, // Default flags for default timers
-  TO_CPY  = 0b00011111, // Flags to copy when creating a new entity from params
+  TO_CPY  = 0b00011111, // Flags to copy when creating a new body from params
   NONE    = 0b00000000, // No flags set
   ALL     = 0b11111111, // All flags set
 };

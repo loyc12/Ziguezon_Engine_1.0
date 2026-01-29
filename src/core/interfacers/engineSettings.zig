@@ -8,15 +8,15 @@ pub const EngineSettings = struct
 {
   // Debug Flags
 
-  DebugDraw_Entity  : bool = false,
+  DebugDraw_Body  : bool = false,
   DebugDraw_Tilemap : bool = false,
   DebugDraw_Tile    : bool = false,
   DebugDraw_FPS     : bool = false,
 
   // Feature Flag
 
-  AutoApply_Entity_Movement  : bool = true,
-  AutoApply_Entity_Collision : bool = true,
+  AutoApply_Body_Movement  : bool = true,
+  AutoApply_Body_Collision : bool = true,
 
   AutoApply_State_Playing    : bool = true,
 
@@ -54,14 +54,14 @@ pub const EngineSettings = struct
     }
 
     // Debug Flags
-    if( @hasDecl( module, "DebugDraw_Entity"           )){ self.DebugDraw_Entity           = @field( module, "DebugDraw_Entity"           ); hasFoundSettings = true; }
+    if( @hasDecl( module, "DebugDraw_Body"           )){ self.DebugDraw_Body           = @field( module, "DebugDraw_Body"           ); hasFoundSettings = true; }
     if( @hasDecl( module, "DebugDraw_Tilemap"          )){ self.DebugDraw_Tilemap          = @field( module, "DebugDraw_Tilemap"          ); hasFoundSettings = true; }
     if( @hasDecl( module, "DebugDraw_Tile"             )){ self.DebugDraw_Tile             = @field( module, "DebugDraw_Tile"             ); hasFoundSettings = true; }
     if( @hasDecl( module, "DebugDraw_FPS"              )){ self.DebugDraw_FPS              = @field( module, "DebugDraw_FPS"              ); hasFoundSettings = true; }
 
     // Feature Flags
-    if( @hasDecl( module, "AutoApply_Entity_Movement"  )){ self.AutoApply_Entity_Movement  = @field( module, "AutoApply_Entity_Movement"  ); hasFoundSettings = true; }
-    if( @hasDecl( module, "AutoApply_Entity_Collision" )){ self.AutoApply_Entity_Collision = @field( module, "AutoApply_Entity_Collision" ); hasFoundSettings = true; }
+    if( @hasDecl( module, "AutoApply_Body_Movement"  )){ self.AutoApply_Body_Movement  = @field( module, "AutoApply_Body_Movement"  ); hasFoundSettings = true; }
+    if( @hasDecl( module, "AutoApply_Body_Collision" )){ self.AutoApply_Body_Collision = @field( module, "AutoApply_Body_Collision" ); hasFoundSettings = true; }
     if( @hasDecl( module, "AutoApply_State_Playing"    )){ self.AutoApply_State_Playing    = @field( module, "AutoApply_State_Playing"    ); hasFoundSettings = true; }
 
     // Global Values

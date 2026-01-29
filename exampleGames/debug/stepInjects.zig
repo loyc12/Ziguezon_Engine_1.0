@@ -3,7 +3,7 @@ const def      = @import( "defs" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = def.Engine;
-const Entity = def.Entity;
+const Body = def.Body;
 const Angle  = def.Angle;
 const Vec2   = def.Vec2;
 const VecA   = def.VecA;
@@ -137,14 +137,14 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  var exampleEntity = ng.getEntity( stateInj.EXAMPLE_NTT_ID ) orelse
+  var exampleBody = ng.getBody( stateInj.EXAMPLE_NTT_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Entity ) not found", .{ stateInj.EXAMPLE_NTT_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Body ) not found", .{ stateInj.EXAMPLE_NTT_ID });
     return;
   };
 
-  exampleEntity.pos.a = exampleEntity.pos.a.rotDeg( exampleEntity.pos.a.cos() + 1.5 ); // Example of a simple variable rotation effect
-  exampleEntity.pos.y = 256  * exampleEntity.pos.a.sin();                              // Example of a simple variable vertical movement effect
+  exampleBody.pos.a = exampleBody.pos.a.rotDeg( exampleBody.pos.a.cos() + 1.5 ); // Example of a simple variable rotation effect
+  exampleBody.pos.y = 256  * exampleBody.pos.a.sin();                              // Example of a simple variable vertical movement effect
 
 
   var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
@@ -156,54 +156,54 @@ pub fn OnTickWorld( ng : *def.Engine ) void
   exampleTilemap.mapPos.a = exampleTilemap.mapPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
 
 
-  var exampleRLine = ng.getEntity( stateInj.EXAMPLE_RLIN_ID ) orelse
+  var exampleRLine = ng.getBody( stateInj.EXAMPLE_RLIN_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Radius Line ) not found", .{ stateInj.EXAMPLE_RLIN_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Radius Line ) not found", .{ stateInj.EXAMPLE_RLIN_ID });
     return;
   };
 
   exampleRLine.pos.a = exampleTilemap.mapPos.a;
 
 
-  var exampleDLine = ng.getEntity( stateInj.EXAMPLE_DLIN_ID ) orelse
+  var exampleDLine = ng.getBody( stateInj.EXAMPLE_DLIN_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Diametre Line ) not found", .{ stateInj.EXAMPLE_DLIN_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Diametre Line ) not found", .{ stateInj.EXAMPLE_DLIN_ID });
     return;
   };
 
   exampleDLine.pos.a = exampleTilemap.mapPos.a;
 
 
-  var exampleTriangle = ng.getEntity( stateInj.EXAMPLE_TRIA_ID ) orelse
+  var exampleTriangle = ng.getBody( stateInj.EXAMPLE_TRIA_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Triangle ) not found", .{ stateInj.EXAMPLE_TRIA_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Triangle ) not found", .{ stateInj.EXAMPLE_TRIA_ID });
     return;
   };
 
   exampleTriangle.pos.a = exampleTilemap.mapPos.a;
 
 
-  var exampleRectangle = ng.getEntity( stateInj.EXAMPLE_RECT_ID ) orelse
+  var exampleRectangle = ng.getBody( stateInj.EXAMPLE_RECT_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Rectangle ) not found", .{ stateInj.EXAMPLE_RECT_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Rectangle ) not found", .{ stateInj.EXAMPLE_RECT_ID });
     return;
   };
 
   exampleRectangle.pos.a = exampleTilemap.mapPos.a;
 
 
-  var exampleHexagon = ng.getEntity( stateInj.EXAMPLE_HEXA_ID ) orelse
+  var exampleHexagon = ng.getBody( stateInj.EXAMPLE_HEXA_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Hexagon ) not found", .{ stateInj.EXAMPLE_HEXA_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Hexagon ) not found", .{ stateInj.EXAMPLE_HEXA_ID });
     return;
   };
 
   exampleHexagon.pos.a = exampleTilemap.mapPos.a;
 
 
-  var exampleEllipse = ng.getEntity( stateInj.EXAMPLE_ELLI_ID ) orelse
+  var exampleEllipse = ng.getBody( stateInj.EXAMPLE_ELLI_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Example Ellipse ) not found", .{ stateInj.EXAMPLE_ELLI_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Ellipse ) not found", .{ stateInj.EXAMPLE_ELLI_ID });
     return;
   };
 

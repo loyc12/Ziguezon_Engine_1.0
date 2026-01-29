@@ -53,7 +53,7 @@ Sunrider-like              ( TRPG )    Lost Endeavour
 ================ ENGINE FEATURES TODO-LIST ================
 
 TO REVIEW
- > move entity shapes to Utils ?
+ > move body shapes to Utils ?
  > split sprite management from other ressources, since depends on an open window ?
 
 UTILS ADDITIONS
@@ -110,7 +110,7 @@ Various utils, which serves specific purposes ( see utils folder and defs.zig ),
  > ...
 
 Various component systems with an associated manager :
- > entities              ( OK~ ) - to handle moveable game objects
+ > bodies              ( OK~ ) - to handle moveable game objects
  > tilemaps              ( OK~ ) - to handle semi-static game maps
  > particles             ( TBA ) - to handle render-only, non critical objects
  > event timers          ( WIP ) - to handle delays and durations

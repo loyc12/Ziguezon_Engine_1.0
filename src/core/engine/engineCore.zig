@@ -49,7 +49,7 @@ pub const Engine = struct
   // Engine Components
   Camera          : ?Cam2D                     = null,
   resourceManager : ?def.res_m.ResourceManager = null,
-  entityManager   : ?def.ntt_m.EntityManager   = null,
+  bodyManager   : ?def.ntt_m.BodyManager   = null,
   tilemapManager  : ?def.tlm_m.TilemapManager  = null,
 
 
@@ -171,11 +171,11 @@ pub const Engine = struct
   // ================================ MANAGER SHORTHAND FUNCTIONS ================================
 
   pub inline fn isResourceManagerInit( ng : *const Engine ) bool { if( ng.resourceManager )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isEntityManagerInit(   ng : *const Engine ) bool { if( ng.entityManager   )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isBodyManagerInit(   ng : *const Engine ) bool { if( ng.bodyManager   )| *m |{ return m.isInit; } else { return false; }}
   pub inline fn isTilemapManagerInit(  ng : *const Engine ) bool { if( ng.tilemapManager  )| *m |{ return m.isInit; } else { return false; }}
 
   pub inline fn getResourceManager( ng : *Engine ) !*def.res_m.ResourceManager { if( ng.resourceManager )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getEntityManager(   ng : *Engine ) !*def.ntt_m.EntityManager   { if( ng.entityManager   )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getBodyManager(   ng : *Engine ) !*def.ntt_m.BodyManager   { if( ng.bodyManager   )| *m |{ return m; } else { return error.NullManager; }}
   pub inline fn getTilemapManager(  ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager  )| *m |{ return m; } else { return error.NullManager; }}
 
 
@@ -208,36 +208,36 @@ pub const Engine = struct
   }
 
 
-  // ================ ENTITY MANAGER ================
+  // ================ BODY MANAGER ================
 
-  pub inline fn getMaxEntityID( ng : *Engine ) u32
+  pub inline fn getMaxBodyID( ng : *Engine ) u32
   {
-    if( ng.entityManager )| *m |{ return m.getMaxID(); } else { return 0; }
+    if( ng.bodyManager )| *m |{ return m.getMaxID(); } else { return 0; }
   }
-  pub inline fn getEntity( ng : *Engine, id : u32 ) ?*def.Entity
+  pub inline fn getBody( ng : *Engine, id : u32 ) ?*def.Body
   {
-    if( ng.entityManager )| *m |{ return m.getEntity( id ); } else { return null; }
+    if( ng.bodyManager )| *m |{ return m.getBody( id ); } else { return null; }
   }
-  pub inline fn loadEntityFromParams( ng : *Engine, params : def.Entity ) ?*def.Entity
+  pub inline fn loadBodyFromParams( ng : *Engine, params : def.Body ) ?*def.Body
   {
-    if( ng.entityManager )| *m |{ return m.loadEntityFromParams( params ); } else { return null; }
+    if( ng.bodyManager )| *m |{ return m.loadBodyFromParams( params ); } else { return null; }
   }
-  pub inline fn deleteAllMarkedEntities( ng : *Engine ) void
+  pub inline fn deleteAllMarkedBodies( ng : *Engine ) void
   {
-    if( ng.entityManager )| *m |{ m.deleteAllMarkedEntities(); }
+    if( ng.bodyManager )| *m |{ m.deleteAllMarkedBodies(); }
   }
 
-  pub inline fn tickActiveEntities( ng : *Engine ) void
+  pub inline fn tickActiveBodies( ng : *Engine ) void
   {
-    if( ng.entityManager )| *m |{ m.tickActiveEntities( ng ); }
+    if( ng.bodyManager )| *m |{ m.tickActiveBodies( ng ); }
   }
-  pub inline fn renderEntityHitboxes( ng : *Engine ) void
+  pub inline fn renderBodyHitboxes( ng : *Engine ) void
   {
-    if( ng.entityManager )| *m |{ m.renderEntityHitboxes(); }
+    if( ng.bodyManager )| *m |{ m.renderBodyHitboxes(); }
   }
-  pub inline fn renderActiveEntities( ng : *Engine ) void
+  pub inline fn renderActiveBodies( ng : *Engine ) void
   {
-    if( ng.entityManager )| *m |{ m.renderActiveEntities( ng ); }
+    if( ng.bodyManager )| *m |{ m.renderActiveBodies( ng ); }
   }
 
 

@@ -3,7 +3,7 @@ const def      = @import( "defs" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = def.Engine;
-const Entity = def.Entity;
+const Body = def.Body;
 const Angle  = def.Angle;
 const Vec2   = def.Vec2;
 const VecA   = def.VecA;
@@ -12,17 +12,17 @@ var pendingBallParticles : u32 = 0;
 
 // ================================ HELPER FUNCTIONS ================================
 
-pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
+pub fn cpyBodyPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 {
-  const src = ng.getEntity( srcID ) orelse
+  const src = ng.getBody( srcID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ srcID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} not found", .{ srcID });
     return;
   };
 
-  const dst = ng.getEntity( dstID ) orelse
+  const dst = ng.getBody( dstID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} not found", .{ dstID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} not found", .{ dstID });
     return;
   };
 
@@ -32,8 +32,8 @@ pub fn cpyEntityPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
 // Emit particles in a given position and velocity range, with the given colour
 pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : def.Colour ) void
 {
-  // NOTE : WILL POTENTIALLY INVALIDATE ALL ENTITY POINTERS AFTER USE
-  //        ONLY CALL AT THE END OF ENTITY POINTERS USAGE IN FUNCTION
+  // NOTE : WILL POTENTIALLY INVALIDATE ALL BODY POINTERS AFTER USE
+  //        ONLY CALL AT THE END OF BODY POINTERS USAGE IN FUNCTION
 
   for( 0 .. amount )| i |
   {
@@ -41,7 +41,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
 
     const size = def.G_RNG.getScaledFloat( 2.0, 7.0 );
 
-    _ = ng.loadEntityFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
+    _ = ng.loadBodyFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .pos    = def.G_RNG.getScaledVecA( dPos, pos ),
       .vel    = def.G_RNG.getScaledVecA( dVel, vel ),
@@ -53,7 +53,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
   }
 }
 
-pub fn emitBounceParticles( ng : *Engine, ball : *Entity ) void
+pub fn emitBounceParticles( ng : *Engine, ball : *Body ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
@@ -95,7 +95,7 @@ const B_MIN_BOUNCE_SPEED_Y : f32 = 256.0; // Minimum perpendicular speed of the 
 const B_KIN_TRANS_FACTOR_X : f32 = 0.25; // How much of the player's velocity is given to the ball on bounce ( horizontal )
 const B_KIN_TRANS_FACTOR_Y : f32 = 0.25; // How much of the player's velocity is given to the ball on bounce ( vertical )
 
-pub fn ensureBallMinSpeeds( ball : *Entity ) void
+pub fn ensureBallMinSpeeds( ball : *Body ) void
 {
   if( ball.vel.x > 0 ){ ball.vel.x = @max( ball.vel.x,  B_MIN_BOUNCE_SPEED_X ); }
   if( ball.vel.x < 0 ){ ball.vel.x = @min( ball.vel.x, -B_MIN_BOUNCE_SPEED_X ); }
@@ -119,9 +119,9 @@ pub fn OnUpdateInputs( ng : *Engine ) void
       WINNER = 0;         // Reset winner
 
       // Reset the ball position and velocity
-      var ball = ng.getEntity( stateInj.BALL_ID ) orelse
+      var ball = ng.getBody( stateInj.BALL_ID ) orelse
       {
-        def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+        def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
         return;
       };
 
@@ -130,7 +130,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void
       ball.acc = .{};
 
       // Reset the positions of the ball shadows
-      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
+      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
 
       def.qlog( .INFO, 0, @src(), "Match reseted" );
     }
@@ -187,24 +187,24 @@ pub fn OnUpdateInputs( ng : *Engine ) void
 
 pub fn OnTickWorld( ng : *Engine ) void
 {
-  var ball = ng.getEntity( stateInj.BALL_ID ) orelse
+  var ball = ng.getBody( stateInj.BALL_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 
   ball.acc.y = B_GRAVITY;
 
   // Chainwap the positions of the ball shadows
-  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyEntityPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
+  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
 
-  cpyEntityPosViaID( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
+  cpyBodyPosViaID( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
 
-  if( ng.getMaxEntityID() == stateInj.BALL_ID ){ return; }
+  if( ng.getMaxBodyID() == stateInj.BALL_ID ){ return; }
 
-  for( stateInj.BALL_ID + 1 .. 1 + ng.getMaxEntityID() )| i |
+  for( stateInj.BALL_ID + 1 .. 1 + ng.getMaxBodyID() )| i |
   {
-    const part = ng.getEntity( @intCast( i )) orelse continue;
+    const part = ng.getBody( @intCast( i )) orelse continue;
 
     if( part.canBeDel() ){ continue; } // skip pre-marked particles
 
@@ -236,21 +236,21 @@ pub fn OffTickWorld( ng : *Engine ) void
   const playerBounceFactorY : f32 = 0.80; // Perpendicular bounce factor for the ball when hitting players
   const playerBounceFactorX : f32 = 0.75; // Parallel bounce factor for the ball when hitting players
 
-  var p1 = ng.getEntity( stateInj.P1_ID ) orelse
+  var p1 = ng.getBody( stateInj.P1_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( P1 ) not found", .{ stateInj.P1_ID } );
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( P1 ) not found", .{ stateInj.P1_ID } );
     return;
   };
 
-  var p2 = ng.getEntity( stateInj.P2_ID ) orelse
+  var p2 = ng.getBody( stateInj.P2_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( P2 ) not found", .{ stateInj.P2_ID } );
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( P2 ) not found", .{ stateInj.P2_ID } );
     return;
   };
 
-  var ball = ng.getEntity( stateInj.BALL_ID ) orelse
+  var ball = ng.getBody( stateInj.BALL_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Entity with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+    def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 

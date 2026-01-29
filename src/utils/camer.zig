@@ -42,7 +42,7 @@ pub const Cam2D = struct
   zoom  : f32 = 1.0,
   view  : Vec2,
 
-  track : ?*def.Entity = null, // entity to track ( if any )
+  track : ?*def.Body = null, // body to track ( if any )
 
 
   // ================ GENERATION ================
@@ -138,7 +138,7 @@ pub const Cam2D = struct
     {
       if( !e.isActive() or e.canBeDel() )
       {
-        def.qlog( .WARN, 0, @src(), "Tracked entity ( ID: {d} ) either inactive or deleted : stopping tracking", .{ e.id });
+        def.qlog( .WARN, 0, @src(), "Tracked body ( ID: {d} ) either inactive or deleted : stopping tracking", .{ e.id });
         self.track = null;
         return;
       }

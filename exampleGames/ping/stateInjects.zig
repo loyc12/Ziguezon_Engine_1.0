@@ -23,31 +23,31 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
-  var nttM = ng.getEntityManager() catch | err |
+  var nttM = ng.getBodyManager() catch | err |
   {
-    def.log( .ERROR, 0, @src(), "Failed to get Entity Manager: {}\n", .{ err } );
+    def.log( .ERROR, 0, @src(), "Failed to get Body Manager: {}\n", .{ err } );
     return;
   };
 
-  if( nttM.loadEntityFromParams( // player 1
+  if( nttM.loadBodyFromParams( // player 1
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
     .colour = def.Colour.blue,
     .pos    = .{ .x = -512, .y = 512 },
   })
-  )| p1 |{ P1_ID = p1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 1 entity" ); }
+  )| p1 |{ P1_ID = p1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 1 body" ); }
 
-  if( nttM.loadEntityFromParams( // player 2
+  if( nttM.loadBodyFromParams( // player 2
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
     .colour = def.Colour.red,
     .pos    = .{ .x = 512, .y = 512 },
   })
-  )| p2 |{ P2_ID = p2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 2 entity" ); }
+  )| p2 |{ P2_ID = p2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 2 body" ); }
 
-  _ = nttM.loadEntityFromParams( // separator
+  _ = nttM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -55,7 +55,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = 0, .y = 0 },
   });
 
-  _ = nttM.loadEntityFromParams( // separator
+  _ = nttM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -63,7 +63,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = 1024, .y = 0 },
   });
 
-  _ = nttM.loadEntityFromParams( // separator
+  _ = nttM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -71,7 +71,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = -1024, .y = 0 },
   });
 
-  _ = nttM.loadEntityFromParams( // separator
+  _ = nttM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 1024, .y = 8 },
@@ -79,17 +79,17 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = 0, .y = -512 },
   });
 
-  if( nttM.loadEntityFromParams( // ball shadow
+  if( nttM.loadBodyFromParams( // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 6, .y = 6 },
     .colour = def.Colour.pMagenta,
     .pos    = .{},
   })
-  )| shad1 |{ SHADOW_RANGE_START = shad1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow 1 entity" ); }
+  )| shad1 |{ SHADOW_RANGE_START = shad1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow 1 body" ); }
 
   {
-    _ = nttM.loadEntityFromParams( // ball shadow
+    _ = nttM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 8, .y = 8 },
@@ -97,7 +97,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadEntityFromParams( // ball shadow
+    _ = nttM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 10, .y = 10 },
@@ -105,7 +105,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadEntityFromParams( // ball shadow
+    _ = nttM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 12, .y = 12 },
@@ -113,7 +113,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadEntityFromParams( // ball shadow
+    _ = nttM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 14, .y = 14 },
@@ -121,7 +121,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadEntityFromParams( // ball shadow
+    _ = nttM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 16, .y = 16 },
@@ -129,7 +129,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadEntityFromParams( // ball shadow
+    _ = nttM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 18, .y = 18 },
@@ -137,7 +137,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadEntityFromParams( // ball shadow
+    _ = nttM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 20, .y = 20 },
@@ -146,21 +146,21 @@ pub fn OnOpen( ng : *def.Engine ) void
     });
   }
 
-  if( nttM.loadEntityFromParams( // ball shadow
+  if( nttM.loadBodyFromParams( // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 22, .y = 22 },
     .colour = def.Colour.magenta,
     .pos    = .{},
   })
-  )| shad2 |{ SHADOW_RANGE_END = shad2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow * entity" ); }
+  )| shad2 |{ SHADOW_RANGE_END = shad2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow * body" ); }
 
-  if( nttM.loadEntityFromParams( // ball
+  if( nttM.loadBodyFromParams( // ball
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 24, .y = 24 },
     .colour = def.Colour.white,
     .pos    = .{},
   })
-  )| ball |{ BALL_ID = ball.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball entity" ); }
+  )| ball |{ BALL_ID = ball.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball body" ); }
 }

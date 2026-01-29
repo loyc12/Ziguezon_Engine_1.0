@@ -14,7 +14,7 @@ pub fn OnStop( ng : *def.Engine ) void // Called by engine.stop()
 }
 
 
-pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your entities
+pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your bodies
 {
   _ = ng; // Prevent unused variable warning
 }

@@ -282,7 +282,7 @@ pub const TilemapManager = struct
 
   // ================================ RENDER FUNCTIONS ================================
 
-  pub fn renderTilemapHitboxes( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Entity.renderHitbox()
+  pub fn renderTilemapHitboxes( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Body.renderHitbox()
   {
     def.qlog( .TRACE, 0, @src(), "Rendering Tilemap hitboxes" );
 

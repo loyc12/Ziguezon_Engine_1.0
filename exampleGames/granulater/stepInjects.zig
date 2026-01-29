@@ -3,7 +3,7 @@ const def      = @import( "defs" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine  = def.Engine;
-const Entity  = def.Entity;
+const Body  = def.Body;
 
 const Angle   = def.Angle;
 const Vec2    = def.Vec2;

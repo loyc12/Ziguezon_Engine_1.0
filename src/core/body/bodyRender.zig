@@ -1,23 +1,23 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Entity = def.ntt.Entity;
+const Body = def.ntt.Body;
 const Vec2   = def.Vec2;
 
 // ================ HELPER FUNCTIONS ================
 
-pub fn isOnScreen( e1 : *const Entity ) bool
+pub fn isOnScreen( e1 : *const Body ) bool
 {
-  def.log( .TRACE, 0, @src(), "Checking if Entity {d} is on screen", .{ e1.id });
+  def.log( .TRACE, 0, @src(), "Checking if Body {d} is on screen", .{ e1.id });
 
   const screenScale = def.getHalfScreenSize();
 
   return e1.isOnArea( screenScale.neg(), screenScale.abs() );
 }
 
-pub fn clampInScreen( e1 : *Entity ) void
+pub fn clampInScreen( e1 : *Body ) void
 {
-  def.log( .TRACE, 0, @src(), "Clamping Entity {d} on screen", .{ e1.id });
+  def.log( .TRACE, 0, @src(), "Clamping Body {d} on screen", .{ e1.id });
 
   const screenScale = def.getHalfScreenSize();
 
@@ -27,19 +27,19 @@ pub fn clampInScreen( e1 : *Entity ) void
 
 // ================ RENDER FUNCTIONS ================
 
-pub fn renderEntity( e1 : *const Entity ) void
+pub fn renderBody( e1 : *const Body ) void
 {
   if( !e1.isVisible() )
   {
-    def.log( .TRACE, e1.id, @src(), "Entity {d} is not visible and will not be rendered", .{ e1.id });
+    def.log( .TRACE, e1.id, @src(), "Body {d} is not visible and will not be rendered", .{ e1.id });
     return;
   }
 
-  def.log(   .TRACE, e1.id, @src(), "Rendering Entity {d} at position {d}:{d} with shape {s}", .{ e1.id, e1.pos.x, e1.pos.y, @tagName( e1.shape ) });
+  def.log(   .TRACE, e1.id, @src(), "Rendering Body {d} at position {d}:{d} with shape {s}", .{ e1.id, e1.pos.x, e1.pos.y, @tagName( e1.shape ) });
 
   if( !isOnScreen( e1 ))
   {
-    def.log( .TRACE, e1.id, @src(), "Entity {d} is out of range and will not be rendered", .{ e1.id });
+    def.log( .TRACE, e1.id, @src(), "Body {d} is out of range and will not be rendered", .{ e1.id });
     return;
   }
 

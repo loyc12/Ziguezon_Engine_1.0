@@ -3,7 +3,7 @@ const def      = @import( "defs" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = def.Engine;
-const Entity = def.Entity;
+const Body = def.Body;
 
 const Angle  = def.Angle;
 const Vec2   = def.Vec2;
@@ -444,7 +444,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
 pub fn OnRenderWorld( ng : *def.Engine ) void
 {
-  // NOTE : All active entities are rendered after the function is called, so no need to render them here.
+  // NOTE : All active bodies are rendered after the function is called, so no need to render them here.
 
   _ = ng; // Prevent unused variable warning
 }

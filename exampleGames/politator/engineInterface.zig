@@ -10,8 +10,8 @@ const def = @import( "defs" );
 
 // Engine Feature Flag
 
-  pub const AutoApply_Entity_Movement  = false;
-  pub const AutoApply_Entity_Collision = false;
+  pub const AutoApply_Body_Movement  = false;
+  pub const AutoApply_Body_Collision = false;
   pub const AutoApply_State_Playing    = false;
 
 // Engine Global Startup Values

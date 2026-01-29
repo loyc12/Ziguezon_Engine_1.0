@@ -98,7 +98,7 @@ inline fn tryTick( ng : *Engine ) bool
     def.tryHook( .OnTickWorld, ng );
     {
       tickTilemaps( ng );
-      tickEntities( ng );
+      tickBodies( ng );
 
       // NOTE : tick other world objects here
     }
@@ -122,16 +122,16 @@ fn tickTilemaps( ng : *Engine ) void
   else { def.qlog( .WARN, 0, @src(), "Cannot tick tilemaps: Tilemap manager is not initialized" ); }
 }
 
-fn tickEntities( ng : *Engine ) void
+fn tickBodies( ng : *Engine ) void
 {
-  def.qlog( .TRACE, 0, @src(), "Updating Entity game logic..." );
+  def.qlog( .TRACE, 0, @src(), "Updating Body game logic..." );
 
-  if( ng.isEntityManagerInit() )
+  if( ng.isBodyManagerInit() )
   {
-    ng.tickActiveEntities();
-    ng.deleteAllMarkedEntities();
+    ng.tickActiveBodies();
+    ng.deleteAllMarkedBodies();
   }
-  else { def.qlog( .WARN, 0, @src(), "Cannot tick entities: Entity manager is not initialized" ); }
+  else { def.qlog( .WARN, 0, @src(), "Cannot tick bodies: Body manager is not initialized" ); }
 }
 
 
@@ -181,7 +181,7 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
       def.tryHook( .OnRenderWorld, ng );
 
       renderTilemaps( ng );
-      renderEntities( ng );
+      renderBodies( ng );
 
       def.tryHook( .OffRenderWorld, ng );
     }
@@ -212,16 +212,16 @@ fn renderTilemaps( ng : *Engine ) void
   else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
 }
 
-fn renderEntities( ng : *Engine ) void
+fn renderBodies( ng : *Engine ) void
 {
-  def.qlog( .TRACE, 0, @src(), "Updating Entity visuals..." );
+  def.qlog( .TRACE, 0, @src(), "Updating Body visuals..." );
 
-  if( ng.isEntityManagerInit() )
+  if( ng.isBodyManagerInit() )
   {
-    ng.renderActiveEntities();
-    if( def.G_ST.DebugDraw_Entity ){ ng.renderEntityHitboxes(); }
+    ng.renderActiveBodies();
+    if( def.G_ST.DebugDraw_Body ){ ng.renderBodyHitboxes(); }
   }
-  else { def.qlog( .WARN, 0, @src(), "Cannot redner entities: Entity manager is not initialized" ); }
+  else { def.qlog( .WARN, 0, @src(), "Cannot redner bodies: Body manager is not initialized" ); }
 }
 
 

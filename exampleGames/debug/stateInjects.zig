@@ -33,16 +33,16 @@ pub fn OnOpen( ng : *def.Engine ) void
     def.log( .ERROR, 0, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
   };
 
-  if( ng.loadEntityFromParams(
+  if( ng.loadBodyFromParams(
   .{
     .shape  = .HSTR,
     .scale  = .{ .x = 64, .y = 64 },
     .colour = def.Colour.white,
     .pos    = .{ .x = 512, .y = 0 },
   })
-  )| ntt |{ EXAMPLE_NTT_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example entity" ); }
+  )| ntt |{ EXAMPLE_NTT_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example body" ); }
 
-  if( ng.loadEntityFromParams(
+  if( ng.loadBodyFromParams(
   .{
     .shape  = .RLIN,
     .scale  = .{ .x = 32, .y = 16 },
@@ -51,7 +51,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| ntt |{ EXAMPLE_RLIN_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example radius line" ); }
 
-  if( ng.loadEntityFromParams(
+  if( ng.loadBodyFromParams(
   .{
     .shape  = .DLIN,
     .scale  = .{ .x = 32, .y = 16 },
@@ -60,7 +60,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| ntt |{ EXAMPLE_DLIN_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example diametre line" ); }
 
-  if( ng.loadEntityFromParams(
+  if( ng.loadBodyFromParams(
   .{
     .shape  = .TRIA,
     .scale  = .{ .x = 32, .y = 16 },
@@ -69,7 +69,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| ntt |{ EXAMPLE_TRIA_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example triangle" ); }
 
-  if( ng.loadEntityFromParams(
+  if( ng.loadBodyFromParams(
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 32, .y = 16 },
@@ -78,7 +78,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| ntt |{ EXAMPLE_RECT_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example rectangle" ); }
 
-  if( ng.loadEntityFromParams(
+  if( ng.loadBodyFromParams(
   .{
     .shape  = .HEXA,
     .scale  = .{ .x = 32, .y = 16 },
@@ -88,7 +88,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   )| ntt |{ EXAMPLE_HEXA_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example hexagon" ); }
 
 
-  if( ng.loadEntityFromParams(
+  if( ng.loadBodyFromParams(
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 32, .y = 16 },

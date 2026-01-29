@@ -7,7 +7,7 @@ const def = @import( "defs" );
 
 // Debug Flags
 
-  pub const DebugDraw_Entity  = true;
+  pub const DebugDraw_Body  = true;
   pub const DebugDraw_Tilemap = true;
   pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
@@ -15,8 +15,8 @@ const def = @import( "defs" );
 
 // Feature Flag
 
-//pub const AutoApply_Entity_Movement  : bool = true,
-//pub const AutoApply_Entity_Collision : bool = true,
+//pub const AutoApply_Body_Movement  : bool = true,
+//pub const AutoApply_Body_Collision : bool = true,
 
 
 // Window Startup Values
@@ -46,7 +46,7 @@ const gameState = @import( "stateInjects.zig" );
   pub const OnStart = gameState.OnStart; // NOTE : Initialize resources in the OnStart Hook
   pub const OnStop  = gameState.OnStop;
 
-  pub const OnOpen  = gameState.OnOpen;  // NOTE : Instanciate entities in the OnOpen Hook
+  pub const OnOpen  = gameState.OnOpen;  // NOTE : Instanciate bodies in the OnOpen Hook
   pub const OnClose = gameState.OnClose;
 
   pub const OnPlay  = gameState.OnPlay;

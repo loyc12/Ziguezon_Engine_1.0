@@ -92,11 +92,11 @@ pub fn start( ng : *Engine ) void
       ng.tilemapManager = .{};
       ng.tilemapManager.?.init( def.getAlloc() );
     }
-    if( !ng.isEntityManagerInit() )
+    if( !ng.isBodyManagerInit() )
     {
-      def.qlog( .TRACE, 0, @src(), "Initializing Entity manager" );
-      ng.entityManager = .{};
-      ng.entityManager.?.init( def.getAlloc() );
+      def.qlog( .TRACE, 0, @src(), "Initializing Body manager" );
+      ng.bodyManager = .{};
+      ng.bodyManager.?.init( def.getAlloc() );
     }
   }
   def.tryHook( .OnStart, ng );
@@ -118,10 +118,10 @@ pub fn stop( ng : *Engine ) void
 
   // Deinitialize relevant engine components
   {
-    if( ng.isEntityManagerInit() )
+    if( ng.isBodyManagerInit() )
     {
-      def.qlog( .TRACE, 0, @src(), "Deinitializing Entity manager" );
-      ng.entityManager.?.deinit();
+      def.qlog( .TRACE, 0, @src(), "Deinitializing Body manager" );
+      ng.bodyManager.?.deinit();
     }
     if( ng.isTilemapManagerInit() )
     {
@@ -133,7 +133,7 @@ pub fn stop( ng : *Engine ) void
       def.qlog( .TRACE, 0, @src(), "Deinitializing Resource manager" );
       ng.resourceManager.?.deinit();
     }
-    ng.entityManager   = null;
+    ng.bodyManager   = null;
     ng.tilemapManager  = null;
     ng.resourceManager = null;
   }

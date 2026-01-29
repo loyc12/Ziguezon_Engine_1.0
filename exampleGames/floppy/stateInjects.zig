@@ -8,12 +8,12 @@ pub var DISK_ID : u32 = 0;
 pub fn OnOpen( ng : *def.Engine ) void
 {
 
-  if( ng.loadEntityFromParams( // disk
+  if( ng.loadBodyFromParams( // disk
   .{
     .pos    = .{ .x = -720, .y = 0 },
     .scale  = .{ .x = 32, .y = 32 },
     .shape  = .RECT,
     .colour = def.Colour.dGray,
   })
-  )| disk |{ DISK_ID = disk.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create disk entity" ); }
+  )| disk |{ DISK_ID = disk.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create disk body" ); }
 }
