@@ -36,11 +36,11 @@ pub const Uuid = struct
 
     // TODO : tie into a hypothetical UuidManager here, if it is ever needed
     // this manager should be able to do these things :
-    // - list all currently used IDs
-    // - have flags associated to each ID ( perhaps even directly in this Uuid struct )
-    // - mark an ID as "destroyed" ( aka no longer in use )
+    // - list all currently used Ids
+    // - have flags associated to each Id ( perhaps even directly in this Uuid struct )
+    // - mark an Id as "destroyed" ( aka no longer in use )
     // - be able to reuse the destroyed id if we want to
-    // - show what type of object an ID is tied to
+    // - show what type of object an Id is tied to
     // - give a pointer to any IDed object
 
     return .{ .token = retToken };

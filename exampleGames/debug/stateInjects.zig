@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 // ================================ GLOBAL IDs ================================
 
-pub var EXAMPLE_NTT_ID : u32 = 0;
+pub var EXAMPLE_BDY_ID : u32 = 0;
 pub var EXAMPLE_TLM_ID : u32 = 0;
 
 pub var EXAMPLE_RLIN_ID : u32 = 0;
@@ -40,7 +40,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .colour = def.Colour.white,
     .pos    = .{ .x = 512, .y = 0 },
   })
-  )| ntt |{ EXAMPLE_NTT_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example body" ); }
+  )| bdy |{ EXAMPLE_BDY_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example body" ); }
 
   if( ng.loadBodyFromParams(
   .{
@@ -49,7 +49,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .colour = def.Colour.white,
     .pos    = .{ .x = -256, .y = 256 },
   })
-  )| ntt |{ EXAMPLE_RLIN_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example radius line" ); }
+  )| bdy |{ EXAMPLE_RLIN_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example radius line" ); }
 
   if( ng.loadBodyFromParams(
   .{
@@ -58,7 +58,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .colour = def.Colour.white,
     .pos    = .{ .x = -128, .y = 256 },
   })
-  )| ntt |{ EXAMPLE_DLIN_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example diametre line" ); }
+  )| bdy |{ EXAMPLE_DLIN_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example diametre line" ); }
 
   if( ng.loadBodyFromParams(
   .{
@@ -67,7 +67,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .colour = def.Colour.white,
     .pos    = .{ .x = 0, .y = 256 },
   })
-  )| ntt |{ EXAMPLE_TRIA_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example triangle" ); }
+  )| bdy |{ EXAMPLE_TRIA_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example triangle" ); }
 
   if( ng.loadBodyFromParams(
   .{
@@ -76,7 +76,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .colour = def.Colour.white,
     .pos    = .{ .x = 128, .y = 256 },
   })
-  )| ntt |{ EXAMPLE_RECT_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example rectangle" ); }
+  )| bdy |{ EXAMPLE_RECT_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example rectangle" ); }
 
   if( ng.loadBodyFromParams(
   .{
@@ -85,7 +85,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .colour = def.Colour.white,
     .pos    = .{ .x = 256, .y = 256 },
   })
-  )| ntt |{ EXAMPLE_HEXA_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example hexagon" ); }
+  )| bdy |{ EXAMPLE_HEXA_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example hexagon" ); }
 
 
   if( ng.loadBodyFromParams(
@@ -95,7 +95,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .colour = def.Colour.white,
     .pos    = .{ .x = 380, .y = 256 },
   })
-  )| ntt |{ EXAMPLE_ELLI_ID = ntt.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example ellipse" ); }
+  )| bdy |{ EXAMPLE_ELLI_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example ellipse" ); }
 
 
   if( ng.loadTilemapFromParams(

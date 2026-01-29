@@ -35,7 +35,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
       var disk = ng.getBody( stateInj.DISK_ID ) orelse
       {
-        def.log( .WARN, 0, @src(), "Body with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+        def.log( .WARN, 0, @src(), "Body with Id {d} ( Disk ) not found", .{ stateInj.DISK_ID });
         return;
       };
 
@@ -63,7 +63,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 {
   var disk = ng.getBody( stateInj.DISK_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Disk ) not found", .{ stateInj.DISK_ID });
     return;
   };
 
@@ -89,7 +89,7 @@ pub fn OffTickWorld( ng : *def.Engine ) void
 
   var disk = ng.getBody( stateInj.DISK_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.DISK_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.DISK_ID });
     return;
   };
 

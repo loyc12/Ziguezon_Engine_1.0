@@ -43,7 +43,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   var mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
     return;
   };
 
@@ -142,7 +142,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 {
   const mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.MAZE_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.MAZE_ID });
     return;
   };
 

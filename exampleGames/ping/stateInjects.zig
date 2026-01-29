@@ -23,13 +23,13 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
-  var nttM = ng.getBodyManager() catch | err |
+  var bdyM = ng.getBodyManager() catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to get Body Manager: {}\n", .{ err } );
     return;
   };
 
-  if( nttM.loadBodyFromParams( // player 1
+  if( bdyM.loadBodyFromParams( // player 1
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
@@ -38,7 +38,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| p1 |{ P1_ID = p1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 1 body" ); }
 
-  if( nttM.loadBodyFromParams( // player 2
+  if( bdyM.loadBodyFromParams( // player 2
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
@@ -47,7 +47,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| p2 |{ P2_ID = p2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create player 2 body" ); }
 
-  _ = nttM.loadBodyFromParams( // separator
+  _ = bdyM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -55,7 +55,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = 0, .y = 0 },
   });
 
-  _ = nttM.loadBodyFromParams( // separator
+  _ = bdyM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -63,7 +63,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = 1024, .y = 0 },
   });
 
-  _ = nttM.loadBodyFromParams( // separator
+  _ = bdyM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -71,7 +71,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = -1024, .y = 0 },
   });
 
-  _ = nttM.loadBodyFromParams( // separator
+  _ = bdyM.loadBodyFromParams( // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 1024, .y = 8 },
@@ -79,7 +79,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .pos    = .{ .x = 0, .y = -512 },
   });
 
-  if( nttM.loadBodyFromParams( // ball shadow
+  if( bdyM.loadBodyFromParams( // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 6, .y = 6 },
@@ -89,7 +89,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   )| shad1 |{ SHADOW_RANGE_START = shad1.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow 1 body" ); }
 
   {
-    _ = nttM.loadBodyFromParams( // ball shadow
+    _ = bdyM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 8, .y = 8 },
@@ -97,7 +97,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadBodyFromParams( // ball shadow
+    _ = bdyM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 10, .y = 10 },
@@ -105,7 +105,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadBodyFromParams( // ball shadow
+    _ = bdyM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 12, .y = 12 },
@@ -113,7 +113,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadBodyFromParams( // ball shadow
+    _ = bdyM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 14, .y = 14 },
@@ -121,7 +121,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadBodyFromParams( // ball shadow
+    _ = bdyM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 16, .y = 16 },
@@ -129,7 +129,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadBodyFromParams( // ball shadow
+    _ = bdyM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 18, .y = 18 },
@@ -137,7 +137,7 @@ pub fn OnOpen( ng : *def.Engine ) void
       .pos    = .{},
     });
 
-    _ = nttM.loadBodyFromParams( // ball shadow
+    _ = bdyM.loadBodyFromParams( // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 20, .y = 20 },
@@ -146,7 +146,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     });
   }
 
-  if( nttM.loadBodyFromParams( // ball shadow
+  if( bdyM.loadBodyFromParams( // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 22, .y = 22 },
@@ -155,7 +155,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| shad2 |{ SHADOW_RANGE_END = shad2.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create ball shadow * body" ); }
 
-  if( nttM.loadBodyFromParams( // ball
+  if( bdyM.loadBodyFromParams( // ball
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 24, .y = 24 },

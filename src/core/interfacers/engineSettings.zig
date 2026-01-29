@@ -8,7 +8,7 @@ pub const EngineSettings = struct
 {
   // Debug Flags
 
-  DebugDraw_Body  : bool = false,
+  DebugDraw_Body    : bool = false,
   DebugDraw_Tilemap : bool = false,
   DebugDraw_Tile    : bool = false,
   DebugDraw_FPS     : bool = false,
@@ -18,7 +18,7 @@ pub const EngineSettings = struct
   AutoApply_Body_Movement  : bool = true,
   AutoApply_Body_Collision : bool = true,
 
-  AutoApply_State_Playing    : bool = true,
+  AutoApply_State_Playing  : bool = true,
 
   // Window Startup Values
 

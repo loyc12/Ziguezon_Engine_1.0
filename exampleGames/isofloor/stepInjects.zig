@@ -69,7 +69,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   var worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( World ) not found", .{ stateInj.GRID_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -130,7 +130,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 {
   const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -175,7 +175,7 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 {
   const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -202,7 +202,7 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 
     if( data.ground == .Empty or data.ground == .Floor ){ continue; }
 
-    const groundID = switch( data.ground )
+    const groundId = switch( data.ground )
     {
       .Entry => ENTRY_ID,
       .Exit  => EXIT_1_ID,
@@ -214,7 +214,7 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 
     tilePos.y -= worldGrid.tileScale.y * sOffset;
 
-    ng.drawFromSprite( "cubes_1", groundID, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    ng.drawFromSprite( "cubes_1", groundId, tilePos, .{ .x = sScale, .y = sScale }, .white );
 
   }
 
@@ -226,7 +226,7 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 
     if( data.object == .Empty ){ continue; }
 
-    var objectID = switch( data.object )
+    var objectId = switch( data.object )
     {
       .Wall   => WALL_ID,
 
@@ -244,9 +244,9 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
     tilePos.y -= worldGrid.tileScale.y * sOffset;
 
   //if( data.ground == .Entry ){ tilePos.y -= worldGrid.tileScale.y * sOffset; } // raise objects onto entry podium
-    if( data.ground == .Exit and objectID == PLAYER_ID ){ objectID = EXIT_2_ID; }
+    if( data.ground == .Exit and objectId == PLAYER_ID ){ objectId = EXIT_2_ID; }
 
-    ng.drawFromSprite( "cubes_1", objectID, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    ng.drawFromSprite( "cubes_1", objectId, tilePos, .{ .x = sScale, .y = sScale }, .white );
   }
 }
 

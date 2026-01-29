@@ -1,8 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Body = def.ntt.Body;
-const Vec2   = def.Vec2;
+const Body = def.bdy.Body;
+const Vec2 = def.Vec2;
 
 // ================ HELPER FUNCTIONS ================
 

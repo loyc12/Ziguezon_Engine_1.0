@@ -12,17 +12,17 @@ var pendingBallParticles : u32 = 0;
 
 // ================================ HELPER FUNCTIONS ================================
 
-pub fn cpyBodyPosViaID( ng : *Engine , dstID : u32, srcID : u32, ) void
+pub fn cpyBodyPosViaId( ng : *Engine , dstId : u32, srcId : u32, ) void
 {
-  const src = ng.getBody( srcID ) orelse
+  const src = ng.getBody( srcId ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} not found", .{ srcID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} not found", .{ srcId });
     return;
   };
 
-  const dst = ng.getBody( dstID ) orelse
+  const dst = ng.getBody( dstId ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} not found", .{ dstID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} not found", .{ dstId });
     return;
   };
 
@@ -47,7 +47,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
       .vel    = def.G_RNG.getScaledVecA( dVel, vel ),
       .scale  = Vec2.new( size, size ),
 
-      .shape  = def.G_RNG.getVal( def.ntt.e_ntt_shape ),
+      .shape  = def.G_RNG.getVal( def.bdy.e_bdy_shape ),
       .colour = colour,
     });
   }
@@ -121,7 +121,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void
       // Reset the ball position and velocity
       var ball = ng.getBody( stateInj.BALL_ID ) orelse
       {
-        def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+        def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
         return;
       };
 
@@ -130,7 +130,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void
       ball.acc = .{};
 
       // Reset the positions of the ball shadows
-      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaID( ng, @intCast( i ), stateInj.BALL_ID ); }
+      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( ng, @intCast( i ), stateInj.BALL_ID ); }
 
       def.qlog( .INFO, 0, @src(), "Match reseted" );
     }
@@ -189,20 +189,20 @@ pub fn OnTickWorld( ng : *Engine ) void
 {
   var ball = ng.getBody( stateInj.BALL_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 
   ball.acc.y = B_GRAVITY;
 
   // Chainwap the positions of the ball shadows
-  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaID( ng, @intCast( i ), @intCast( i + 1 ) ); }
+  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( ng, @intCast( i ), @intCast( i + 1 ) ); }
 
-  cpyBodyPosViaID( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
+  cpyBodyPosViaId( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
 
-  if( ng.getMaxBodyID() == stateInj.BALL_ID ){ return; }
+  if( ng.getMaxBodyId() == stateInj.BALL_ID ){ return; }
 
-  for( stateInj.BALL_ID + 1 .. 1 + ng.getMaxBodyID() )| i |
+  for( stateInj.BALL_ID + 1 .. 1 + ng.getMaxBodyId() )| i |
   {
     const part = ng.getBody( @intCast( i )) orelse continue;
 
@@ -238,19 +238,19 @@ pub fn OffTickWorld( ng : *Engine ) void
 
   var p1 = ng.getBody( stateInj.P1_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( P1 ) not found", .{ stateInj.P1_ID } );
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( P1 ) not found", .{ stateInj.P1_ID } );
     return;
   };
 
   var p2 = ng.getBody( stateInj.P2_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( P2 ) not found", .{ stateInj.P2_ID } );
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( P2 ) not found", .{ stateInj.P2_ID } );
     return;
   };
 
   var ball = ng.getBody( stateInj.BALL_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Ball ) not found", .{ stateInj.BALL_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
   };
 

@@ -68,17 +68,17 @@ pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 // ================ MANAGERS ================
 
 pub const res_m = @import( "core/system/resourceManager.zig" );
-pub const ntt_m = @import( "core/system/bodyManager.zig" );
+pub const bdy_m = @import( "core/system/bodyManager.zig" );
 pub const tlm_m = @import( "core/system/tilemapManager.zig" );
 
 
 // ================ BODY ================
 
-pub const ntt         = @import( "core/body/bodyCore.zig" );
-pub const Body      = ntt.Body;
+pub const bdy         = @import( "core/body/bodyCore.zig" );
+pub const Body        = bdy.Body;
 
-pub const e_ntt_flags = ntt.e_ntt_flags;
-pub const e_ntt_shape = ntt.e_ntt_shape;
+pub const e_bdy_flags = bdy.e_bdy_flags;
+pub const e_bdy_shape = bdy.e_bdy_shape;
 
 
 // ================ TILEMAP ================
@@ -100,6 +100,15 @@ pub const Scripter   = spt.Scripter;
 pub const ScriptData = spt.ScriptData;
 pub const ScriptCntx = spt.ScriptCntx;
 pub const ScriptFunc = spt.ScriptFunc;
+
+
+// ================ ECS ================
+
+pub const ntt            = @import( "core/ecs/entity.zig" );
+
+pub const EntityId       = ntt.EntityId;
+pub const getNewEntityId = ntt.getNewEntityId();
+
 
 
 // ================================ UTILS SHORTHANDS ================================

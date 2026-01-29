@@ -1,7 +1,7 @@
 const std    = @import( "std" );
 const def    = @import( "defs" );
 
-const nttRdr = @import( "bodyRender.zig" );
+const bdyRdr = @import( "bodyRender.zig" );
 
 const Angle  = def.Angle;
 const Box2   = def.Box2;
@@ -9,7 +9,7 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 
 
-pub const e_ntt_shape = enum( u8 ) // TODO : move to utils
+pub const e_bdy_shape = enum( u8 ) // TODO : move to utils
 {
 
   RECT, // Square / Rectangle
@@ -28,7 +28,7 @@ pub const e_ntt_shape = enum( u8 ) // TODO : move to utils
   DODE, // Dodecagon ( regular )
   ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
 
-  pub fn getSides( self : e_ntt_shape ) u8
+  pub fn getSides( self : e_bdy_shape ) u8
   {
     return switch( self )
     {
@@ -51,7 +51,7 @@ pub const e_ntt_shape = enum( u8 ) // TODO : move to utils
   }
 };
 
-pub const e_ntt_flags = enum( u8 )
+pub const e_bdy_flags = enum( u8 )
 {
   DELETE  = 0b10000000, // Body is marked for deletion ( will be cleaned up at the end of the frame )
   ACTIVE  = 0b01000000, // Body is active ( overrides the following flags if set to false )
@@ -72,7 +72,7 @@ pub const Body = struct
 {
   // ================ PROPERTIES ================
   id     : u32           = 0,
-  flags  : def.BitField8 = def.BitField8.new( e_ntt_flags.DEFAULT ),
+  flags  : def.BitField8 = def.BitField8.new( e_bdy_flags.DEFAULT ),
 
   // ======== TRANSFORM DATA ========
   pos    : VecA = .{}, // subsequent position. will be applied to hitbox on update
@@ -85,7 +85,7 @@ pub const Body = struct
 
   // ======== RENDERING DATA ======== ( DEBUG )
   colour : def.Colour  = .nWhite,
-  shape  : e_ntt_shape = .RECT,
+  shape  : e_bdy_shape = .RECT,
 
   // ======== CUSTOM BEHAVIOUR ========
   script : def.Scripter = .{},
@@ -93,21 +93,21 @@ pub const Body = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Body, flag : e_ntt_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
+  pub inline fn hasFlag( self : *const Body, flag : e_bdy_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
   pub inline fn setAllFlags( self : *Body, flags : u8 )                      void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Body, flag  : e_ntt_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Body, flag  : e_ntt_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Body, flag  : e_ntt_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setFlag(     self : *Body, flag  : e_bdy_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Body, flag  : e_bdy_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Body, flag  : e_bdy_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
 
-  pub inline fn canBeDel(  self : *const Body ) bool { return self.hasFlag( e_ntt_flags.DELETE  ); }
-  pub inline fn isActive(  self : *const Body ) bool { return self.hasFlag( e_ntt_flags.ACTIVE  ); }
-  pub inline fn isMobile(  self : *const Body ) bool { return self.hasFlag( e_ntt_flags.MOBILE  ); }
-  pub inline fn isSolid(   self : *const Body ) bool { return self.hasFlag( e_ntt_flags.SOLID   ); }
-  pub inline fn isVisible( self : *const Body ) bool { return self.hasFlag( e_ntt_flags.VISIBLE ); }
-//pub inline fn isRound(   self : *const Body ) bool { return self.hasFlag( e_ntt_flags.ROUND   ); }
-//pub inline fn isAnimate( self : *const Body ) bool { return self.hasFlag( e_ntt_flags.ANIMATE ); }
-  pub inline fn viewDBG(   self : *const Body ) bool { return self.hasFlag( e_ntt_flags.DEBUG   ); }
+  pub inline fn canBeDel(  self : *const Body ) bool { return self.hasFlag( e_bdy_flags.DELETE  ); }
+  pub inline fn isActive(  self : *const Body ) bool { return self.hasFlag( e_bdy_flags.ACTIVE  ); }
+  pub inline fn isMobile(  self : *const Body ) bool { return self.hasFlag( e_bdy_flags.MOBILE  ); }
+  pub inline fn isSolid(   self : *const Body ) bool { return self.hasFlag( e_bdy_flags.SOLID   ); }
+  pub inline fn isVisible( self : *const Body ) bool { return self.hasFlag( e_bdy_flags.VISIBLE ); }
+//pub inline fn isRound(   self : *const Body ) bool { return self.hasFlag( e_bdy_flags.ROUND   ); }
+//pub inline fn isAnimate( self : *const Body ) bool { return self.hasFlag( e_bdy_flags.ANIMATE ); }
+  pub inline fn viewDBG(   self : *const Body ) bool { return self.hasFlag( e_bdy_flags.DEBUG   ); }
 
 
   // ================ INITIALIZATION ================
@@ -117,7 +117,7 @@ pub const Body = struct
     if( params.canBeDel() ){ def.qlog( .WARN, 0, @src(), "Params should not be a deleted body"); }
 
     const tmp = Body{
-      .flags  = params.flags.filterField( e_ntt_flags.TO_CPY ),
+      .flags  = params.flags.filterField( e_bdy_flags.TO_CPY ),
       .pos    = params.pos,
       .vel    = params.vel,
       .acc    = params.acc,
@@ -307,19 +307,19 @@ pub const Body = struct
   // ================ HITBOX COLLISION FUNCTIONS ================
   // Assumes AABB hitboxes for all shapes and orientations
 
-  const nttCld = @import( "bodyColide.zig" );
+  const bdyCld = @import( "bodyColide.zig" );
 
   // COLLISION FUNCTIONS
 
-  pub inline fn isOverlapping( self : *const Body, other : *const Body ) bool  { return nttCld.isOverlapping( self, other ); }
-  pub inline fn getOverlap(    self : *const Body, other : *const Body ) ?Vec2 { return nttCld.getOverlap(    self, other ); }
-  pub inline fn collideWith(   self :       *Body, other :       *Body ) bool  { return nttCld.collideWith(   self, other ); }
+  pub inline fn isOverlapping( self : *const Body, other : *const Body ) bool  { return bdyCld.isOverlapping( self, other ); }
+  pub inline fn getOverlap(    self : *const Body, other : *const Body ) ?Vec2 { return bdyCld.getOverlap(    self, other ); }
+  pub inline fn collideWith(   self :       *Body, other :       *Body ) bool  { return bdyCld.collideWith(   self, other ); }
 
   // ================ RENDER FUNCTIONS ================
 
-  pub inline fn isOnScreen(    self : *const Body ) bool { return nttRdr.isOnScreen( self ); }
-  pub inline fn clampInScreen( self :       *Body ) void { nttRdr.clampInScreen(     self ); }
-  pub inline fn renderSelf(    self : *const Body ) void { nttRdr.renderBody(      self ); }
+  pub inline fn isOnScreen(    self : *const Body ) bool { return bdyRdr.isOnScreen( self ); }
+  pub inline fn clampInScreen( self :       *Body ) void { bdyRdr.clampInScreen(     self ); }
+  pub inline fn renderSelf(    self : *const Body ) void { bdyRdr.renderBody(        self ); }
 };
 
 

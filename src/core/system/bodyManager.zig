@@ -1,13 +1,13 @@
-const std    = @import( "std" );
-const def    = @import( "defs" );
+const std  = @import( "std" );
+const def  = @import( "defs" );
 
-const Body = def.ntt.Body;
-const Vec2   = def.Vec2;
-const VecA   = def.VecA;
+const Body = def.bdy.Body;
+const Vec2 = def.Vec2;
+const VecA = def.VecA;
 
 pub const BodyManager = struct
 {
-  maxID      : u32  = 0,
+  maxId      : u32  = 0,
   isInit     : bool = false,
   allocator  : std.mem.Allocator      = undefined,
   bodyList : std.ArrayList( Body ) = undefined,
@@ -16,62 +16,62 @@ pub const BodyManager = struct
 
   // ================ ID FUNCTIONS ================
 
-  fn getNewID( self : *BodyManager ) u32
+  fn getNewId( self : *BodyManager ) u32
   {
     if( !self.isInit )
     {
       def.qlog( .ERROR, 0, @src(), "Body manager is not initialized : returning id 0" );
       return 0;
     }
-    self.maxID += 1;
-    return self.maxID;
+    self.maxId += 1;
+    return self.maxId;
   }
 
-  pub fn getMaxID( self : *BodyManager ) u32
+  pub fn getMaxId( self : *BodyManager ) u32
   {
     if( !self.isInit )
     {
       def.qlog( .ERROR, 0, @src(), "Body manager is not initialized : returning id 0" );
       return 0;
     }
-    return self.maxID;
+    return self.maxId;
   }
 
-  pub fn recalcMaxID( self : *BodyManager ) void
+  pub fn recalcMaxId( self : *BodyManager ) void
   {
     if( !self.isInit )
     {
-      def.qlog( .ERROR, 0, @src(), "Body manager is not initialized : cannot recalculate maxID" );
+      def.qlog( .ERROR, 0, @src(), "Body manager is not initialized : cannot recalculate maxId" );
       return;
     }
-    var newMaxID: u32 = 0;
+    var newMaxId: u32 = 0;
 
     for( self.bodyList.items )| *e |
     {
-      if( e.id > newMaxID ) { newMaxID = e.id; }
+      if( e.id > newMaxId ) { newMaxId = e.id; }
     }
 
-    if( newMaxID < self.maxID )
+    if( newMaxId < self.maxId )
     {
-      def.log( .TRACE, 0, @src(), "Recalculated maxID {d} is less than previous maxID {d}", .{ newMaxID, self.maxID });
+      def.log( .TRACE, 0, @src(), "Recalculated maxId {d} is less than previous maxId {d}", .{ newMaxId, self.maxId });
     }
-    else if( newMaxID > self.maxID )
+    else if( newMaxId > self.maxId )
     {
-      def.log( .WARN, 0, @src(), "Recalculated maxID {d} is greater than previous maxID {d}", .{ newMaxID, self.maxID });
+      def.log( .WARN, 0, @src(), "Recalculated maxId {d} is greater than previous maxId {d}", .{ newMaxId, self.maxId });
     }
-    self.maxID = newMaxID;
+    self.maxId = newMaxId;
   }
 
   pub fn isIdValid( self : *BodyManager, id : u32 ) bool
   {
     if( id <= 0 )
     {
-      def.qlog( .WARN, 0, @src(), "Body ID cannot be 0 or less" );
+      def.qlog( .WARN, 0, @src(), "Body Id cannot be 0 or less" );
       return false;
     }
-    if( id > self.maxID )
+    if( id > self.maxId )
     {
-      def.log( .WARN, 0, @src(), "Body ID {d} is greater than maxID {d}", .{ id, self.maxID });
+      def.log( .WARN, 0, @src(), "Body Id {d} is greater than maxId {d}", .{ id, self.maxId });
       return false;
     }
     return true;
@@ -89,7 +89,7 @@ pub const BodyManager = struct
 
     if( !self.isIdValid( id ))
     {
-      def.log( .WARN, 0, @src(), "Body ID {d} is not valid", .{ id });
+      def.log( .WARN, 0, @src(), "Body Id {d} is not valid", .{ id });
       return null;
     }
 
@@ -98,7 +98,7 @@ pub const BodyManager = struct
       if( e.id == id ){ return index; }
     }
 
-    def.log( .TRACE, 0, @src(), "Body with ID {d} not found", .{ id });
+    def.log( .TRACE, 0, @src(), "Body with Id {d} not found", .{ id });
     return null;
   }
 
@@ -162,7 +162,7 @@ pub const BodyManager = struct
     }
 
     self.bodyList.deinit( self.allocator );
-    self.maxID = 0;
+    self.maxId = 0;
 
     self.isInit    = false;
     self.allocator = undefined;
@@ -187,7 +187,7 @@ pub const BodyManager = struct
       return null;
     };
 
-    tmp.id = self.getNewID();
+    tmp.id = self.getNewId();
     if( params.id != 0 and params.id != tmp.id )
     {
       def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
@@ -217,11 +217,11 @@ pub const BodyManager = struct
 
   pub fn getBody( self : *BodyManager, id : u32 ) ?*Body
   {
-    def.log( .TRACE, 0, @src(), "Getting Body with ID {d}", .{ id });
+    def.log( .TRACE, 0, @src(), "Getting Body with Id {d}", .{ id });
 
     const index = self.getIndexOf( id ) orelse
     {
-      def.log( .TRACE, 0, @src(), "Body with ID {d} not found : returning null", .{ id });
+      def.log( .TRACE, 0, @src(), "Body with Id {d} not found : returning null", .{ id });
       return null;
     };
 
@@ -234,7 +234,7 @@ pub const BodyManager = struct
 
     if( index == null )
     {
-      def.log( .WARN, 0, @src(), "Body with ID {d} not found : returning", .{ id });
+      def.log( .WARN, 0, @src(), "Body with Id {d} not found : returning", .{ id });
       return;
     }
 
@@ -244,7 +244,7 @@ pub const BodyManager = struct
     _ = e;
 
     _ = self.bodyList.swapRemove( index );
-    def.log( .DEBUG, 0, @src(), "Body with ID {d} deleted", .{ id });
+    def.log( .DEBUG, 0, @src(), "Body with Id {d} deleted", .{ id });
   }
 
   pub fn deleteAllMarkedBodies( self : *BodyManager ) void
@@ -268,7 +268,7 @@ pub const BodyManager = struct
       }
     }
 
-    self.recalcMaxID();
+    self.recalcMaxId();
   }
 
   // ================================ RENDER FUNCTIONS ================================

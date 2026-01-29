@@ -89,7 +89,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   var worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -191,7 +191,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 {
   const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -396,7 +396,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
 
   const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 

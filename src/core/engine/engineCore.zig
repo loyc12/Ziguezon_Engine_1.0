@@ -49,7 +49,7 @@ pub const Engine = struct
   // Engine Components
   Camera          : ?Cam2D                     = null,
   resourceManager : ?def.res_m.ResourceManager = null,
-  bodyManager   : ?def.ntt_m.BodyManager   = null,
+  bodyManager     : ?def.bdy_m.BodyManager     = null,
   tilemapManager  : ?def.tlm_m.TilemapManager  = null,
 
 
@@ -171,11 +171,11 @@ pub const Engine = struct
   // ================================ MANAGER SHORTHAND FUNCTIONS ================================
 
   pub inline fn isResourceManagerInit( ng : *const Engine ) bool { if( ng.resourceManager )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isBodyManagerInit(   ng : *const Engine ) bool { if( ng.bodyManager   )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isBodyManagerInit(     ng : *const Engine ) bool { if( ng.bodyManager     )| *m |{ return m.isInit; } else { return false; }}
   pub inline fn isTilemapManagerInit(  ng : *const Engine ) bool { if( ng.tilemapManager  )| *m |{ return m.isInit; } else { return false; }}
 
   pub inline fn getResourceManager( ng : *Engine ) !*def.res_m.ResourceManager { if( ng.resourceManager )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getBodyManager(   ng : *Engine ) !*def.ntt_m.BodyManager   { if( ng.bodyManager   )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getBodyManager(     ng : *Engine ) !*def.bdy_m.BodyManager     { if( ng.bodyManager     )| *m |{ return m; } else { return error.NullManager; }}
   pub inline fn getTilemapManager(  ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager  )| *m |{ return m; } else { return error.NullManager; }}
 
 
@@ -210,9 +210,9 @@ pub const Engine = struct
 
   // ================ BODY MANAGER ================
 
-  pub inline fn getMaxBodyID( ng : *Engine ) u32
+  pub inline fn getMaxBodyId( ng : *Engine ) u32
   {
-    if( ng.bodyManager )| *m |{ return m.getMaxID(); } else { return 0; }
+    if( ng.bodyManager )| *m |{ return m.getMaxId(); } else { return 0; }
   }
   pub inline fn getBody( ng : *Engine, id : u32 ) ?*def.Body
   {
@@ -243,9 +243,9 @@ pub const Engine = struct
 
   // ================ TILEMAP MANAGER ================
 
-  pub inline fn getMaxTilemapID( ng : *Engine ) u32
+  pub inline fn getMaxTilemapId( ng : *Engine ) u32
   {
-    if( ng.tilemapManager )| *m |{ return m.getMaxID(); } else { return 0; }
+    if( ng.tilemapManager )| *m |{ return m.getMaxId(); } else { return 0; }
   }
   pub inline fn getTilemap( ng : *Engine, id : u32 ) ?*def.Tilemap
   {

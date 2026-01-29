@@ -82,7 +82,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
     return;
   };
 
@@ -137,9 +137,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  var exampleBody = ng.getBody( stateInj.EXAMPLE_NTT_ID ) orelse
+  var exampleBody = ng.getBody( stateInj.EXAMPLE_BDY_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Body ) not found", .{ stateInj.EXAMPLE_NTT_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Example Body ) not found", .{ stateInj.EXAMPLE_BDY_ID });
     return;
   };
 
@@ -149,7 +149,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   var exampleTilemap = ng.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Tilemap with ID {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+    def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
     return;
   };
 
@@ -158,7 +158,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   var exampleRLine = ng.getBody( stateInj.EXAMPLE_RLIN_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Radius Line ) not found", .{ stateInj.EXAMPLE_RLIN_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Example Radius Line ) not found", .{ stateInj.EXAMPLE_RLIN_ID });
     return;
   };
 
@@ -167,7 +167,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   var exampleDLine = ng.getBody( stateInj.EXAMPLE_DLIN_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Diametre Line ) not found", .{ stateInj.EXAMPLE_DLIN_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Example Diametre Line ) not found", .{ stateInj.EXAMPLE_DLIN_ID });
     return;
   };
 
@@ -176,7 +176,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   var exampleTriangle = ng.getBody( stateInj.EXAMPLE_TRIA_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Triangle ) not found", .{ stateInj.EXAMPLE_TRIA_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Example Triangle ) not found", .{ stateInj.EXAMPLE_TRIA_ID });
     return;
   };
 
@@ -185,7 +185,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   var exampleRectangle = ng.getBody( stateInj.EXAMPLE_RECT_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Rectangle ) not found", .{ stateInj.EXAMPLE_RECT_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Example Rectangle ) not found", .{ stateInj.EXAMPLE_RECT_ID });
     return;
   };
 
@@ -194,7 +194,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   var exampleHexagon = ng.getBody( stateInj.EXAMPLE_HEXA_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Hexagon ) not found", .{ stateInj.EXAMPLE_HEXA_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Example Hexagon ) not found", .{ stateInj.EXAMPLE_HEXA_ID });
     return;
   };
 
@@ -203,7 +203,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   var exampleEllipse = ng.getBody( stateInj.EXAMPLE_ELLI_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with ID {d} ( Example Ellipse ) not found", .{ stateInj.EXAMPLE_ELLI_ID });
+    def.log( .WARN, 0, @src(), "Body with Id {d} ( Example Ellipse ) not found", .{ stateInj.EXAMPLE_ELLI_ID });
     return;
   };
 

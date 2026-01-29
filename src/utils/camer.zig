@@ -138,7 +138,7 @@ pub const Cam2D = struct
     {
       if( !e.isActive() or e.canBeDel() )
       {
-        def.qlog( .WARN, 0, @src(), "Tracked body ( ID: {d} ) either inactive or deleted : stopping tracking", .{ e.id });
+        def.qlog( .WARN, 0, @src(), "Tracked body ( Id : {d} ) either inactive or deleted : stopping tracking", .{ e.id });
         self.track = null;
         return;
       }

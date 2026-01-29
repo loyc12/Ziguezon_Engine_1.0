@@ -8,7 +8,7 @@ const VecA    = def.VecA;
 
 pub const TilemapManager = struct
 {
-  maxID       : u32  = 0,
+  maxId       : u32  = 0,
   isInit      : bool = false,
   allocator   : std.mem.Allocator       = undefined,
   tilemapList : std.ArrayList( Tilemap ) = undefined,
@@ -17,63 +17,63 @@ pub const TilemapManager = struct
 
   // ================ ID FUNCTIONS ================
 
-  fn getNewID( self : *TilemapManager ) u32
+  fn getNewId( self : *TilemapManager ) u32
   {
     if( !self.isInit )
     {
       def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
-    self.maxID += 1;
-    return self.maxID;
+    self.maxId += 1;
+    return self.maxId;
   }
 
-  pub fn getMaxID( self : *TilemapManager ) u32
+  pub fn getMaxId( self : *TilemapManager ) u32
   {
     if( !self.isInit )
     {
       def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
-    return self.maxID;
+    return self.maxId;
   }
 
-  pub fn recalcMaxID( self : *TilemapManager ) void
+  pub fn recalcMaxId( self : *TilemapManager ) void
   {
     if( !self.isInit )
     {
-      def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : cannot recalculate maxID" );
+      def.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : cannot recalculate maxId" );
       return;
     }
-    var newMaxID: u32 = 0;
+    var newMaxId: u32 = 0;
 
     for( self.tilemapList.items )| *tlmp |
     {
-      if( tlmp.id > newMaxID ) { newMaxID = tlmp.id; }
+      if( tlmp.id > newMaxId ) { newMaxId = tlmp.id; }
     }
 
-    if( newMaxID < self.maxID )
+    if( newMaxId < self.maxId )
     {
-      def.log( .TRACE, 0, @src(), "Recalculated maxID {d} is less than previous maxID {d}", .{ newMaxID, self.maxID });
+      def.log( .TRACE, 0, @src(), "Recalculated maxId {d} is less than previous maxId {d}", .{ newMaxId, self.maxId });
     }
-    else if( newMaxID > self.maxID )
+    else if( newMaxId > self.maxId )
     {
-      def.log( .WARN, 0, @src(), "Recalculated maxID {d} is greater than previous maxID {d}", .{ newMaxID, self.maxID });
+      def.log( .WARN, 0, @src(), "Recalculated maxId {d} is greater than previous maxId {d}", .{ newMaxId, self.maxId });
     }
 
-    self.maxID = newMaxID;
+    self.maxId = newMaxId;
   }
 
   pub fn isIdValid( self : *TilemapManager, id : u32 ) bool
   {
     if( id <= 0 )
     {
-      def.qlog( .WARN, 0, @src(), "Tilemap ID cannot be 0 or less" );
+      def.qlog( .WARN, 0, @src(), "Tilemap Id cannot be 0 or less" );
       return false;
     }
-    if( id > self.maxID )
+    if( id > self.maxId )
     {
-      def.log( .WARN, 0, @src(), "Tilemap ID {d} is greater than maxID {d}", .{ id, self.maxID });
+      def.log( .WARN, 0, @src(), "Tilemap Id {d} is greater than maxId {d}", .{ id, self.maxId });
       return false;
     }
     return true;
@@ -91,13 +91,13 @@ pub const TilemapManager = struct
 
     if( !self.isIdValid( id ))
     {
-      def.log( .WARN, 0, @src(), "Tilemap ID {d} is not valid", .{ id });
+      def.log( .WARN, 0, @src(), "Tilemap Id {d} is not valid", .{ id });
       return null;
     }
 
     for( self.tilemapList.items, 0 .. )| tlmp, index |{ if( tlmp.id == id ){ return index; }}
 
-    def.log( .TRACE, 0, @src(), "Tilemap with ID {d} not found", .{ id });
+    def.log( .TRACE, 0, @src(), "Tilemap with Id {d} not found", .{ id });
     return null;
   }
 
@@ -163,7 +163,7 @@ pub const TilemapManager = struct
     for( self.tilemapList.items )| *tlmp |{ tlmp.deinit( self.allocator ); }
 
     self.tilemapList.deinit( self.allocator );
-    self.maxID = 0;
+    self.maxId = 0;
 
     self.isInit    = false;
     self.allocator = undefined;
@@ -188,7 +188,7 @@ pub const TilemapManager = struct
       return null;
     };
 
-    tmp.id = self.getNewID();
+    tmp.id = self.getNewId();
     if( params.id != 0 and params.id != tmp.id )
     {
       def.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
@@ -225,11 +225,11 @@ pub const TilemapManager = struct
 
   pub fn getTilemap( self : *TilemapManager, id : u32 ) ?*Tilemap
   {
-    def.log( .TRACE, 0, @src(), "Getting Tilemap with ID {d}", .{ id });
+    def.log( .TRACE, 0, @src(), "Getting Tilemap with Id {d}", .{ id });
 
     const index = self.getIndexOf( id ) orelse
     {
-      def.log( .TRACE, 0, @src(), "Tilemap with ID {d} not found : returning null", .{ id });
+      def.log( .TRACE, 0, @src(), "Tilemap with Id {d} not found : returning null", .{ id });
       return null;
     };
 
@@ -242,7 +242,7 @@ pub const TilemapManager = struct
 
     if( index == null )
     {
-      def.log( .WARN, 0, @src(), "Tilemap with ID {d} not found : returning", .{ id });
+      def.log( .WARN, 0, @src(), "Tilemap with Id {d} not found : returning", .{ id });
       return;
     }
 
@@ -252,7 +252,7 @@ pub const TilemapManager = struct
     tlmp.deinit( self.allocator );
     _ = self.tilemapList.swapRemove( index );
 
-    def.log( .DEBUG, 0, @src(), "Tilemap with ID {d} deleted", .{ id });
+    def.log( .DEBUG, 0, @src(), "Tilemap with Id {d} deleted", .{ id });
   }
 
   pub fn deleteAllMarkedTilemaps( self : *TilemapManager ) void
@@ -277,7 +277,7 @@ pub const TilemapManager = struct
       }
     }
 
-    self.recalcMaxID();
+    self.recalcMaxId();
   }
 
   // ================================ RENDER FUNCTIONS ================================

@@ -161,7 +161,7 @@ pub const Uuid = struct
       def.qlog( .WARN, 0, @src(), "Freed IDs list is not initialized. Deleted ID will not be tracked or reused" );
     }
 
-    def.log( .DEBUG, 0, @src(), "Marking UUID {d} for deletion", .{ id });
+    def.log( .DEBUG, 0, @src(), "Marking UUId {d} for deletion", .{ id });
 
     toDelete.activateFlag(   .DELETE ); // Activate the DELETE flag
     toDelete.deactivateFlag( .ACTIVE ); // Deactivate the ACTIVE flag
@@ -182,14 +182,14 @@ pub const Uuid = struct
     }
     if( !isAvailabilityInit )
     {
-      def.log( .WARN, 0, @src(), "AvailableUUIDs list is not initialized. AvailableUUID with ID {d} will not be tracked or reused", .{ id });
+      def.log( .WARN, 0, @src(), "AvailableUUIDs list is not initialized. AvailableUUID with Id {d} will not be tracked or reused", .{ id });
     }
     if( !toFree.willFree() )
     {
-      def.log( .WARN, 0, @src(), "Freeing UUID with ID {d} that was not properly marked for deletion beforehand", .{ id });
+      def.log( .WARN, 0, @src(), "Freeing UUID with Id {d} that was not properly marked for deletion beforehand", .{ id });
     }
 
-    def.log( .DEBUG, 0, @src(), "Freeing UUID {d}", .{ id });
+    def.log( .DEBUG, 0, @src(), "Freeing UUId {d}", .{ id });
 
     toFree.activateFlag(   .FREE );   // Activate the FREE flag
     toFree.deactivateFlag( .DELETE ); // Deactivate the DELETE flag
@@ -198,10 +198,10 @@ pub const Uuid = struct
     {
       availableUUIDs.append( *toFree ) catch | err | // TODO : use addAvailableUUID instead
       {
-        def.log( .ERROR, 0, @src(), "Error appending freed UUID {d} to the list: {}", .{ id, err });
+        def.log( .ERROR, 0, @src(), "Error appending freed UUId {d} to the list: {}", .{ id, err });
         return;
       };
-      def.qlog( .DEBUG, 0, @src(), "UUID {d} has been freed and added to the list of freed IDs", .{ id });
+      def.qlog( .DEBUG, 0, @src(), "UUId {d} has been freed and added to the list of freed IDs", .{ id });
     }
   }
 
@@ -233,7 +233,7 @@ pub const Uuid = struct
       if( availableUUIDs.pop() )| old |
       {
         old.setAllFlags( flags ); // Reset its flags to ACTIVE only
-        def.qlog( .DEBUG, 0, @src(), "Reusing old UUID {d}", .{ old.getId() });
+        def.qlog( .DEBUG, 0, @src(), "Reusing old UUId {d}", .{ old.getId() });
         return old;
       }
       def.qlog( .ERROR, 0, @src(), "Failed to pop an old UUID from the list" );
@@ -263,7 +263,7 @@ pub const Uuid = struct
     {
       if( reuseUUID())| old |
       {
-        def.qlog( .DEBUG, 0, @src(), "Reusing old UUID {d}", .{ old.getId() });
+        def.qlog( .DEBUG, 0, @src(), "Reusing old UUId {d}", .{ old.getId() });
         return old;
       }
       def.qlog( .WARN, 0, @src(), "Error reusing UUID, falling back to generating a new one instead" );
@@ -271,7 +271,7 @@ pub const Uuid = struct
 
     if( createNewUUID( flags ))| new |
     {
-      def.qlog( .DEBUG, 0, @src(), "Creating new UUID {d}", .{ new.getId() });
+      def.qlog( .DEBUG, 0, @src(), "Creating new UUId {d}", .{ new.getId() });
       return new;
     }
 
