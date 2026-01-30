@@ -1,5 +1,5 @@
-const std    = @import( "std" );
-const def    = @import( "defs" );
+const std = @import( "std" );
+const def = @import( "defs" );
 
 // Generates a new BitField of a given size from either an unsigned Int or Enum
 fn newBitField( BitFieldType : type, value : anytype ) BitFieldType

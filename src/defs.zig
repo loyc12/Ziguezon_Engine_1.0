@@ -109,6 +109,15 @@ pub const ntt            = @import( "core/ecs/entity.zig" );
 pub const EntityId       = ntt.EntityId;
 pub const getNewEntityId = ntt.getNewEntityId();
 
+pub const Entity         = ntt.Entity;
+pub const getNewEntity   = ntt.getNewEntity();
+
+
+pub const cmp                = @import( "core/ecs/component.zig" );
+
+pub const ComponentRegistry  = cmp.ComponentRegistry;
+pub const initComponentStore = cmp.initComponentStore;
+
 
 
 // ================================ UTILS SHORTHANDS ================================

@@ -9,8 +9,8 @@ pub const BodyManager = struct
 {
   maxId      : u32  = 0,
   isInit     : bool = false,
-  allocator  : std.mem.Allocator      = undefined,
-  bodyList : std.ArrayList( Body ) = undefined,
+  allocator  : std.mem.Allocator     = undefined,
+  bodyList   : std.ArrayList( Body ) = undefined,
 
   // ================================ HELPER FUNCTIONS ================================
 

@@ -52,6 +52,8 @@ pub const Engine = struct
   bodyManager     : ?def.bdy_m.BodyManager     = null,
   tilemapManager  : ?def.tlm_m.TilemapManager  = null,
 
+//componentManager : ?def.ComponentRegistry     = null, // TODO : implement me
+
 
   // ================================ HELPER FUNCTIONS ================================
 
