@@ -120,7 +120,7 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
         }
         else
         {
-          def.log( .DEBUG, 0, @src(), "Cannot add Entity {d} to ComponentStore of type {s} : key already in use", .{ id, TypeName });
+          def.log( .WARN, 0, @src(), "Cannot add Entity {d} to ComponentStore of type {s} : key already in use", .{ id, TypeName });
         }
       }
     }
