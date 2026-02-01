@@ -4,7 +4,20 @@ const def = @import( "defs" );
 
 pub const EntityId = u64;
 
-pub var nextEntityId : EntityId = 1;
+var maxId : EntityId = 0; // NOTE : Id 0 is never attributed
+
+//var freedIds : std.ArrayList( EntityId ) = undefined;
+
+inline fn getMaxId() EntityId
+{
+  return maxId;
+}
+
+inline fn getNewId() EntityId
+{
+  maxId += 1;
+  return maxId;
+}
 
 
 pub const Entity = struct
@@ -13,13 +26,7 @@ pub const Entity = struct
 //mask : def.BitField64 = 0, // TODO : use me
 };
 
-pub inline fn getNewEntityId() EntityId
-{
-  nextEntityId += 1;
-  return( nextEntityId - 1 );
-}
-
 pub inline fn getNewEntity() Entity
 {
-  return .{ .id = getNewEntityId() };
+  return .{ .id = getNewId() };
 }

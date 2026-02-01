@@ -4,53 +4,57 @@ const def = @import( "defs" );
 const EntityId = def.EntityId;
 
 
+
+// NOTE: ComponentRegistry does NOT own ComponentStore lifetimes
+//       Stores must be initialized and deinitialized externally
+
 pub const ComponentRegistry = struct
 {
   // Wrapper around the underlying componentStoreType
-  const ComponentStoreEntry = struct
+  const RegistryEntry = struct
   {
-    ptr : *anyopaque, // Points to an anonymous ComponentStore instance
+    storePtr : *anyopaque, // Points to an anonymous ComponentStore instance
   };
 
-//isInit     : bool = false,
-//allocator  : std.mem.Allocator = undefined, // NOTE : would this be useful in any way ?
-  map        : std.StringHashMap( ComponentStoreEntry ),
+  data   : std.StringHashMap( RegistryEntry ),
+  isInit : bool = false,
 
 
   pub fn init( alloc : std.mem.Allocator ) ComponentRegistry
   {
     def.qlog( .INFO, 0, @src(), "Initializing component registry" );
-    return .{ .map = std.StringHashMap( ComponentStoreEntry ).init( alloc ) };
+    return .{ .data = std.StringHashMap( RegistryEntry ).init( alloc ), .isInit = true };
   }
 
   pub fn deinit( self : *ComponentRegistry ) void
   {
     def.qlog( .INFO, 0, @src(), "Deinitializing component registry" );
-    self.map.deinit();
+    self.data.deinit();
+    self.isInit = false;
   }
 
-  pub fn register( self : *ComponentRegistry, name : []const u8, store_ptr : *anyopaque ) void
+  pub fn register( self : *ComponentRegistry, name : []const u8, storePtr : *anyopaque ) void
   {
-    // store_ptr is a pointer to an instance of a ComponentStore
-    // this ptr is then wrapped in a generic ComponentStoreEntry
+    // storePtr is a pointer to an instance of a ComponentStore
+    // this ptr is then wrapped in a generic RegistryEntry
 
-    if( self.map.getOrPut( name ) catch unreachable )| res | // TODO : handle unreachable
+    if( self.data.getOrPut( name ) catch unreachable )| res | // TODO : handle unreachable
     {
-      if( !res.found_existing ) // Initialize ComponentStoreEntry instance if a matching one does not exist
+      if( !res.found_existing ) // Initialize RegistryEntry instance if a matching one does not exist
       {
-        res.value = .{ .ptr = store_ptr };
+        res.value = .{ .storePtr = storePtr };
         def.log( .TRACE, 0, @src(), "Registered ComponentStore {s} in ComponentRegistry", .{ name });
       }
       else
       {
-        def.log( .DEBUG, 0, @src(), "Cannot register ComponentStore {s} in ComponentRegistry : key already in use", .{ name } );
+        def.log( .WARN, 0, @src(), "Cannot register ComponentStore {s} in ComponentRegistry : key already in use", .{ name } );
       }
     }
   }
 
   pub fn unregister( self : *ComponentRegistry, name : []const u8 ) void
   {
-    if( self.map.remove( name ))
+    if( self.data.remove( name ))
     {
       def.log( .TRACE, 0, @src(), "Unregistered ComponentStore {s} from ComponentRegistry", .{ name });
     }
@@ -60,11 +64,12 @@ pub const ComponentRegistry = struct
     }
   }
 
+  // NOTE : REQUIRES MANUAL ALLIGMENT OF RETURNED PTR
   pub fn get( self : *ComponentRegistry, name : []const u8 ) ?*anyopaque
   {
-    if ( self.map.get( name )) | e |
+    if ( self.data.getPtr( name )) | ptr |
     {
-      return e.ptr;
+      return ptr.storePtr; // Accessing the Wrapped value
     }
     else
     {
@@ -72,35 +77,41 @@ pub const ComponentRegistry = struct
     }
     return null;
   }
+
+  pub fn has( self : *ComponentRegistry, name : []const u8 ) bool
+  {
+    if( self.data.getPtr( name ) != null ){ return true; }
+    return false;
+  }
 };
 
 
-pub fn initComponentStore( comptime ComponentType : type ) type
+pub fn componentStoreFactory( comptime ComponentType : type ) type
 {
   return struct
   {
-    const TypeName = @typeName( ComponentType );
-    const ComponentStoreType = @This();
+    const TypeName = @typeName( ComponentType ); // NOTE : FOR LOGGING ONLY
+    const ComponentStore = @This();
 
 
     data : std.AutoHashMap( EntityId, ComponentType ),
 
 
-    pub fn init( alloc : std.mem.Allocator ) ComponentStoreType
+    pub fn init( alloc : std.mem.Allocator ) ComponentStore
     {
       def.log( .INFO, 0, @src(), "Initializing ComponentStore of type {s}", .{ TypeName });
       return .{ .data = std.AutoHashMap( EntityId, ComponentType ).init( alloc )};
     }
 
-    pub fn deinit( self : *ComponentStoreType ) void
+    pub fn deinit( self : *ComponentStore ) void
     {
       def.log( .INFO, 0, @src(), "Deinitializing ComponentStore of type {s}", .{ TypeName });
       self.data.deinit();
     }
 
-    pub fn add( self : *ComponentStoreType, id : EntityId, value : ComponentType ) void
+    pub fn add( self : *ComponentStore, id : EntityId, value : ComponentType ) void
     {
-      if( self.map.getOrPut( id ) catch unreachable )| res | // TODO : handle unreachable
+      if( self.data.getOrPut( id ) catch unreachable )| res | // TODO : handle unreachable
       {
         if( !res.found_existing ) // Initialize Component instance if one does not exist for this Entity
         {
@@ -114,7 +125,7 @@ pub fn initComponentStore( comptime ComponentType : type ) type
       }
     }
 
-    pub fn remove( self : *ComponentStoreType, id: EntityId ) void
+    pub fn remove( self : *ComponentStore, id: EntityId ) void
     {
       if( self.data.remove( id ))
       {
@@ -126,11 +137,11 @@ pub fn initComponentStore( comptime ComponentType : type ) type
       }
     }
 
-    pub fn get( self : *ComponentStoreType, id: EntityId ) ?*ComponentType
+    pub fn get( self : *ComponentStore, id: EntityId ) ?*ComponentType
     {
-      if( self.map.get( id )) | *c |
+      if( self.data.getPtr( id )) | ptr |
       {
-        return c;
+        return ptr;
       }
       else
       {
@@ -139,10 +150,12 @@ pub fn initComponentStore( comptime ComponentType : type ) type
       return null;
     }
 
-    pub fn iterator( self : *ComponentStoreType ) @TypeOf( self.data.iterator() )
+    pub fn has( self : *ComponentStore, id: EntityId ) bool
     {
-      def.log( .TRACE, 0, @src(), "generating Iterator for ComponentStore of type {s}", .{ TypeName });
-      return self.data.iterator();
+      if( self.data.getPtr( id ) != null ){ return true; }
+      return false;
     }
+
+    pub fn iterator( self : *ComponentStore ) @TypeOf( self.data.iterator() ){ return self.data.iterator(); }
   };
 }
