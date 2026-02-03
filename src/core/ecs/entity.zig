@@ -4,29 +4,32 @@ const def = @import( "defs" );
 
 pub const EntityId = u64;
 
-var maxId : EntityId = 0; // NOTE : Id 0 is never attributed
-
-//var freedIds : std.ArrayList( EntityId ) = undefined;
-
-inline fn getMaxId() EntityId
-{
-  return maxId;
-}
-
-inline fn getNewId() EntityId
-{
-  maxId += 1;
-  return maxId;
-}
-
-
 pub const Entity = struct
 {
-  id    : EntityId,
+  id    : EntityId = 0,
 //mask : def.BitField64 = 0, // TODO : use me
 };
 
-pub inline fn getNewEntity() Entity
+pub const IdRegistry = struct
 {
-  return .{ .id = getNewId() };
-}
+
+  maxId : EntityId = 0, // NOTE : Id 0 is never attributed
+
+  //var freedIds : std.ArrayList( EntityId ) = undefined;
+
+  inline fn getMaxId( self : *IdRegistry ) EntityId
+  {
+    return self.maxId;
+  }
+
+  inline fn getNewId( self : *IdRegistry ) EntityId
+  {
+    self.maxId += 1;
+    return self.maxId;
+  }
+
+  pub inline fn getNewEntity( self : *IdRegistry ) Entity
+  {
+    return .{ .id = self.getNewId() };
+  }
+};

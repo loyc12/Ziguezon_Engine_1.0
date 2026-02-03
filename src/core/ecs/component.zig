@@ -1,7 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const EntityId = def.EntityId;
+const EntityId   = def.EntityId;
+const IdRegistry = def.IdRegistry;
 
 
 
@@ -16,51 +17,60 @@ pub const ComponentRegistry = struct
     storePtr : *anyopaque, // Points to an anonymous ComponentStore instance
   };
 
-  data   : std.StringHashMap( RegistryEntry ),
+  data   : std.StringHashMap( RegistryEntry ) = undefined,
+  idReg  : IdRegistry = .{},
   isInit : bool = false,
 
 
-  pub fn init( alloc : std.mem.Allocator ) ComponentRegistry
+  pub fn init( self : *ComponentRegistry, alloc : std.mem.Allocator ) void
   {
-    def.qlog( .INFO, 0, @src(), "Initializing component registry" );
-    return .{ .data = std.StringHashMap( RegistryEntry ).init( alloc ), .isInit = true };
+    def.qlog( .TRACE, 0, @src(), "# Initializing component registry..." );
+    self.data = .init( alloc );
+    self.isInit = true;
+    def.qlog( .INFO, 0, @src(), "& Component registry initialized !" );
   }
 
   pub fn deinit( self : *ComponentRegistry ) void
   {
-    def.qlog( .INFO, 0, @src(), "Deinitializing component registry" );
+    def.qlog( .TRACE, 0, @src(), "# Deinitializing component registry..." );
     self.data.deinit();
     self.isInit = false;
+    def.qlog( .INFO, 0, @src(), "& Component registry denitialized !" );
   }
 
-  pub fn register( self : *ComponentRegistry, name : []const u8, storePtr : *anyopaque ) void
+  pub fn register( self : *ComponentRegistry, name : []const u8, storePtr : *anyopaque ) bool
   {
     // storePtr is a pointer to an instance of a ComponentStore
     // this ptr is then wrapped in a generic RegistryEntry
+    // ComponentStore is user-managed, and of a type generated via componentStoreFactory()
 
-    if( self.data.getOrPut( name ) catch unreachable )| res | // TODO : handle unreachable
+    const res = self.data.getOrPut( name ) catch { return false; }; // TODO : handle catch properly
     {
       if( !res.found_existing ) // Initialize RegistryEntry instance if a matching one does not exist
       {
-        res.value = .{ .storePtr = storePtr };
+        res.value_ptr.*.storePtr = storePtr;
         def.log( .TRACE, 0, @src(), "Registered ComponentStore {s} in ComponentRegistry", .{ name });
+        return true;
       }
       else
       {
         def.log( .WARN, 0, @src(), "Cannot register ComponentStore {s} in ComponentRegistry : key already in use", .{ name } );
+        return false;
       }
     }
   }
 
-  pub fn unregister( self : *ComponentRegistry, name : []const u8 ) void
+  pub fn unregister( self : *ComponentRegistry, name : []const u8 ) bool
   {
     if( self.data.remove( name ))
     {
       def.log( .TRACE, 0, @src(), "Unregistered ComponentStore {s} from ComponentRegistry", .{ name });
+      return true;
     }
     else
     {
       def.log( .DEBUG, 0, @src(), "Cannot unregister ComponentStore {s} from ComponentRegistry : key not found", .{ name });
+      return false;
     }
   }
 
@@ -94,46 +104,50 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
     const ComponentStore = @This();
 
 
-    data : std.AutoHashMap( EntityId, ComponentType ),
+    data : std.AutoHashMap( EntityId, ComponentType ) = undefined,
 
 
-    pub fn init( alloc : std.mem.Allocator ) ComponentStore
+    pub fn init( self : *ComponentStore, alloc : std.mem.Allocator ) void
     {
-      def.log( .INFO, 0, @src(), "Initializing ComponentStore of type {s}", .{ TypeName });
-      return .{ .data = std.AutoHashMap( EntityId, ComponentType ).init( alloc )};
+      def.log( .INFO, 0, @src(), "Initializing ComponentStore for type {s}", .{ TypeName });
+      self.data = .init( alloc );
     }
 
     pub fn deinit( self : *ComponentStore ) void
     {
-      def.log( .INFO, 0, @src(), "Deinitializing ComponentStore of type {s}", .{ TypeName });
+      def.log( .INFO, 0, @src(), "Deinitializing ComponentStore for type {s}", .{ TypeName });
       self.data.deinit();
     }
 
-    pub fn add( self : *ComponentStore, id : EntityId, value : ComponentType ) void
+    pub fn add( self : *ComponentStore, id : EntityId, value : ComponentType ) bool
     {
-      if( self.data.getOrPut( id ) catch unreachable )| res | // TODO : handle unreachable
+      const res = self.data.getOrPut( id ) catch { return false; }; // TODO : handle catch properly
       {
         if( !res.found_existing ) // Initialize Component instance if one does not exist for this Entity
         {
-          res.value = value;
-          def.log( .TRACE, 0, @src(), "Added Entity {d} to ComponentStore of type {s}", .{ id, TypeName });
+          res.value_ptr.* = value;
+          def.log( .TRACE, 0, @src(), "Added Entity {d} to ComponentStore for type {s}", .{ id, TypeName });
+          return true;
         }
         else
         {
-          def.log( .WARN, 0, @src(), "Cannot add Entity {d} to ComponentStore of type {s} : key already in use", .{ id, TypeName });
+          def.log( .WARN, 0, @src(), "Cannot add Entity {d} to ComponentStore for type {s} : key already in use", .{ id, TypeName });
+          return false;
         }
       }
     }
 
-    pub fn remove( self : *ComponentStore, id: EntityId ) void
+    pub fn remove( self : *ComponentStore, id: EntityId ) bool
     {
       if( self.data.remove( id ))
       {
-        def.log( .TRACE, 0, @src(), "Removed Entity {d} from ComponentStore of type {s}", .{ id, TypeName });
+        def.log( .TRACE, 0, @src(), "Removed Entity {d} from ComponentStore for type {s}", .{ id, TypeName });
+        return true;
       }
       else
       {
-        def.log( .DEBUG, 0, @src(), "Cannot removed Entity {d} from ComponentStore of type {s} : key not found", .{ id, TypeName });
+        def.log( .DEBUG, 0, @src(), "Cannot removed Entity {d} from ComponentStore for type {s} : key not found", .{ id, TypeName });
+        return false;
       }
     }
 
@@ -145,7 +159,7 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
       }
       else
       {
-        def.log( .TRACE, 0, @src(), "Cannot find Entity {d} in ComponentStore of type {s}", .{ id, TypeName });
+        def.log( .WARN, 0, @src(), "Cannot find entity with id {d} in ComponentStore for type {s}", .{ id, TypeName });
       }
       return null;
     }

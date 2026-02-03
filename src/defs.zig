@@ -12,6 +12,7 @@ pub fn getAlloc() std.mem.Allocator { return std.heap.page_allocator; }
 
 pub var GLOBAL_EPOCH : TimeVal = .{};
 
+
 pub fn initAllUtils( allocator : std.mem.Allocator ) void
 {
   //GLOBAL_EPOCH = getNow();
@@ -104,19 +105,17 @@ pub const ScriptFunc = spt.ScriptFunc;
 
 // ================ ECS ================
 
-pub const ntt            = @import( "core/ecs/entity.zig" );
+pub const ntt        = @import( "core/ecs/entity.zig" );
 
-pub const EntityId       = ntt.EntityId;
-pub const getNewEntityId = ntt.getNewEntityId();
-
-pub const Entity         = ntt.Entity;
-pub const getNewEntity   = ntt.getNewEntity();
+pub const EntityId   = ntt.EntityId;
+pub const Entity     = ntt.Entity;
+pub const IdRegistry = ntt.IdRegistry;
 
 
-pub const cmp                = @import( "core/ecs/component.zig" );
+pub const cmp                   = @import( "core/ecs/component.zig" );
 
-pub const ComponentRegistry  = cmp.ComponentRegistry;
-pub const initComponentStore = cmp.initComponentStore;
+pub const ComponentRegistry     = cmp.ComponentRegistry;
+pub const componentStoreFactory = cmp.componentStoreFactory;
 
 
 

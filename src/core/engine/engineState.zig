@@ -74,29 +74,32 @@ pub fn start( ng : *Engine ) void
   {
     if( !def.ray.isAudioDeviceReady() )
     {
-      def.qlog( .INFO, 0, @src(), "# Initializing the audio device..." );
+      def.qlog( .INFO, 0, @src(), "# Initializing audio device..." );
       def.ray.initAudioDevice();
+      def.qlog( .INFO, 0, @src(), "& Audio device initialized !" );
     }
   }
-  // Initialize relevant engine components
+  // Initialize relevant engine managers
   {
     if( !ng.isResourceManagerInit() )
     {
-      def.qlog( .TRACE, 0, @src(), "Initializing Resource manager" );
       ng.resourceManager = .{};
       ng.resourceManager.?.init( def.getAlloc() );
     }
     if( !ng.isTilemapManagerInit() )
     {
-      def.qlog( .TRACE, 0, @src(), "Initializing Tilemap manager" );
       ng.tilemapManager = .{};
       ng.tilemapManager.?.init( def.getAlloc() );
     }
     if( !ng.isBodyManagerInit() )
     {
-      def.qlog( .TRACE, 0, @src(), "Initializing Body manager" );
       ng.bodyManager = .{};
       ng.bodyManager.?.init( def.getAlloc() );
+    }
+    if( !ng.isComponentManagerInit() )
+    {
+      ng.componentManager = .{};
+      ng.componentManager.?.init( def.getAlloc() );
     }
   }
   def.tryHook( .OnStart, ng );
@@ -116,8 +119,13 @@ pub fn stop( ng : *Engine ) void
 
   def.tryHook( .OnStop, ng );
 
-  // Deinitialize relevant engine components
+  // Deinitialize relevant engine managers
   {
+    if( ng.isComponentManagerInit() )
+    {
+      def.qlog( .TRACE, 0, @src(), "Deinitializing Component manager" );
+      ng.componentManager.?.deinit();
+    }
     if( ng.isBodyManagerInit() )
     {
       def.qlog( .TRACE, 0, @src(), "Deinitializing Body manager" );
@@ -133,9 +141,10 @@ pub fn stop( ng : *Engine ) void
       def.qlog( .TRACE, 0, @src(), "Deinitializing Resource manager" );
       ng.resourceManager.?.deinit();
     }
-    ng.bodyManager   = null;
-    ng.tilemapManager  = null;
-    ng.resourceManager = null;
+    ng.componentManager = null;
+    ng.bodyManager      = null;
+    ng.tilemapManager   = null;
+    ng.resourceManager  = null;
   }
   // Deinitialize relevant raylib components
   {

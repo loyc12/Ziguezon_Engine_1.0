@@ -249,7 +249,7 @@ fn logTime() !void
   try setCol( def.tcl_u.GRAY );
 
   //try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
-  std.debug.print( "{d}.{d:0>9} :", .{ sec, nano });
+  std.debug.print( "{d}.{d:0>9} : ", .{ sec, nano });
 }
 
 fn logLocation( logloc : ?std.builtin.SourceLocation ) !void
@@ -267,7 +267,7 @@ fn logLocation( logloc : ?std.builtin.SourceLocation ) !void
   else
   {
     try setCol( def.tcl_u.YELLOW );
-    std.debug.print( "{s} :", .{ "UNLOCATED" });
+    std.debug.print( "{s} : ", .{ "UNLOCATED" });
   }
 }
 

@@ -22,6 +22,7 @@ var IS_JUMPING    : bool = false; // Flag to check if the disk is jumping
 
 pub fn OnUpdateInputs( ng : *def.Engine ) void
 {
+
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.p ) or def.ray.isKeyPressed( def.ray.KeyboardKey.enter ))
   {
@@ -33,9 +34,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       IS_GAME_OVER  = false;
       IS_JUMPING    = false;
 
-      var disk = ng.getBody( stateInj.DISK_ID ) orelse
+      const mobileStore : *stateInj.MobileStore = @alignCast( @ptrCast( ng.getComponentStorePtr( "mobileStore" )));
+
+      var disk = mobileStore.get( stateInj.DISK_ID ) orelse
       {
-        def.log( .WARN, 0, @src(), "Body with Id {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+        def.log( .WARN, 0, @src(), "Failed to find mobile component for Entity {}", .{ stateInj.DISK_ID });
         return;
       };
 
@@ -61,9 +64,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  var disk = ng.getBody( stateInj.DISK_ID ) orelse
+  const mobileStore : *stateInj.MobileStore = @alignCast( @ptrCast( ng.getComponentStorePtr( "mobileStore" )));
+
+  var disk = mobileStore.get( stateInj.DISK_ID ) orelse
   {
-    def.log( .WARN, 0, @src(), "Body with Id {d} ( Disk ) not found", .{ stateInj.DISK_ID });
+    def.log( .ERROR, 0, @src(), "Failed to find mobile component for entity with id {}", .{ stateInj.DISK_ID });
     return;
   };
 
@@ -77,38 +82,46 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
     IS_JUMPING = false;
 
-    // NOTE : TESTS SCORE
+    // NOTE : DEBUG SCORE ( 1 POINT PER JUMP )
     SCORE += 1;
   }
   else { disk.acc.y = GRAVITY; } // Apply gravity
-}
 
-pub fn OffTickWorld( ng : *def.Engine ) void
-{
-  const hHeight : f32 = def.getScreenHeight() / 2.0;
 
-  var disk = ng.getBody( stateInj.DISK_ID ) orelse
-  {
-    def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.DISK_ID });
-    return;
-  };
 
   // ================ CLAMPING THE DISK POSITIONS ================
 
-  if( disk.getTopY() < -hHeight )
+  const hHeight : f32 = def.getScreenHeight() / 2.0;
+
+  if( disk.pos.y < -hHeight + disk.scale.y )
   {
-    disk.clampInTopY( -hHeight );
+    disk.pos.y = -hHeight + disk.scale.y;
     disk.vel.y = 0;
   }
 
-  if( disk.getBottomY() > hHeight )
+  if( disk.pos.y > hHeight - disk.scale.y )
   {
-    def.log( .DEBUG, 0, @src(), "Disk {d} has fallen off the screen", .{ disk.id });
+    def.log( .DEBUG, 0, @src(), "Disk {d} has fallen off the screen", .{ stateInj.DISK_ID });
     IS_GAME_OVER = true;
     return;
   }
 
+
   // ================ DISK-PILLAR COLLISIONS ================
+
+
+  // DEBUG INFO
+
+  def.qlog( .DEBUG, 0, @src(), "DISK DATA" );
+  def.log(  .CONT,  0, @src(), "pos.y :{}", .{ disk.pos.y });
+  def.log(  .CONT,  0, @src(), "vel.y :{}", .{ disk.vel.y });
+  def.log(  .CONT,  0, @src(), "acc.y :{}", .{ disk.acc.y });
+
+}
+
+pub fn OffTickWorld( ng : *def.Engine ) void
+{
+  _ = ng;
 }
 
 
@@ -126,7 +139,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   // Null terminate the string
   s_buff[ s_slice.len ] = 0;
-  def.log( .DEBUG, 0, @src(), "Score: {s}", .{ s_slice });
+  //def.log( .DEBUG, 0, @src(), "Score: {s}", .{ s_slice });
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {

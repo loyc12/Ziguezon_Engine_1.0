@@ -52,7 +52,7 @@ pub const Engine = struct
   bodyManager     : ?def.bdy_m.BodyManager     = null,
   tilemapManager  : ?def.tlm_m.TilemapManager  = null,
 
-//componentManager : ?def.ComponentRegistry     = null, // TODO : implement me
+  componentManager : ?def.ComponentRegistry    = null,
 
 
   // ================================ HELPER FUNCTIONS ================================
@@ -172,13 +172,17 @@ pub const Engine = struct
 
   // ================================ MANAGER SHORTHAND FUNCTIONS ================================
 
-  pub inline fn isResourceManagerInit( ng : *const Engine ) bool { if( ng.resourceManager )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isBodyManagerInit(     ng : *const Engine ) bool { if( ng.bodyManager     )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isTilemapManagerInit(  ng : *const Engine ) bool { if( ng.tilemapManager  )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isResourceManagerInit(  ng : *const Engine ) bool { if( ng.resourceManager  )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isBodyManagerInit(      ng : *const Engine ) bool { if( ng.bodyManager      )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isTilemapManagerInit(   ng : *const Engine ) bool { if( ng.tilemapManager   )| *m |{ return m.isInit; } else { return false; }}
+  pub inline fn isComponentManagerInit( ng : *const Engine ) bool { if( ng.componentManager )| *m |{ return m.isInit; } else { return false; }}
 
-  pub inline fn getResourceManager( ng : *Engine ) !*def.res_m.ResourceManager { if( ng.resourceManager )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getBodyManager(     ng : *Engine ) !*def.bdy_m.BodyManager     { if( ng.bodyManager     )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getTilemapManager(  ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager  )| *m |{ return m; } else { return error.NullManager; }}
+
+  pub inline fn getResourceManager(  ng : *Engine ) !*def.res_m.ResourceManager { if( ng.resourceManager  )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getBodyManager(      ng : *Engine ) !*def.bdy_m.BodyManager     { if( ng.bodyManager      )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getTilemapManager(   ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager   )| *m |{ return m; } else { return error.NullManager; }}
+  pub inline fn getComponentManager( ng : *Engine ) !*def.cmp.ComponentRegistry { if( ng.componentManager )| *m |{ return m; } else { return error.NullManager; }}
+
 
 
   // ================ RESOURCE MANAGER ================
@@ -273,6 +277,47 @@ pub const Engine = struct
   pub inline fn renderActiveTilemaps( ng : *Engine ) void
   {
     if( ng.tilemapManager )| *m |{ m.renderActiveTilemaps( ng ); }
+  }
+
+
+  // ================ ENTITY-COMPONMENT MANAGER ================
+
+  // Used to registers user-created ComponentStores for later access
+  pub inline fn registerComponentStore( ng : *Engine, name : []const u8, storePtr : *anyopaque ) bool
+  {
+    if( ng.componentManager )| *m |{ return m.register( name, storePtr ); }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
+      return false;
+    }
+  }
+  pub inline fn unregisterComponentStore( ng : *Engine, name : []const u8 ) bool
+  {
+    if( ng.componentManager )| *m |{ return m.unregister( name ); }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
+      return false;
+    }
+  }
+  pub inline fn getComponentStorePtr( ng : *Engine, name : []const u8 ) ?*anyopaque
+  {
+    if( ng.componentManager )| *m |{ return m.get( name ); }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
+      return null;
+    }
+  }
+  pub inline fn hasComponentStorePtr( ng : *Engine, name : []const u8 ) bool
+  {
+    if( ng.componentManager )| *m |{ return m.has( name ); }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
+      return false;
+    }
   }
 
 };
