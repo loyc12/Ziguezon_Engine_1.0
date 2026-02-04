@@ -34,7 +34,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       IS_GAME_OVER  = false;
       IS_JUMPING    = false;
 
-      const mobileStore : *stateInj.MobileStore = @alignCast( @ptrCast( ng.getComponentStorePtr( "mobileStore" )));
+      const mobileStore : *stateInj.MobileStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "mobileStore" )));
 
       var disk = mobileStore.get( stateInj.DISK_ID ) orelse
       {
@@ -64,7 +64,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  const mobileStore : *stateInj.MobileStore = @alignCast( @ptrCast( ng.getComponentStorePtr( "mobileStore" )));
+  const mobileStore : *stateInj.MobileStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "mobileStore" )));
 
   var disk = mobileStore.get( stateInj.DISK_ID ) orelse
   {

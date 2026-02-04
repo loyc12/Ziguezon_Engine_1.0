@@ -15,12 +15,13 @@ pub const Mobile = struct
 
 pub const MobileStore = def.componentStoreFactory( Mobile );
 
+pub var mobileStore : MobileStore = .{};
+
 // ================================ STATE INJECTION FUNCTIONS ================================
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
-  var mobileStore : MobileStore = .{};
-      mobileStore.init( def.getAlloc() );
+  mobileStore.init( def.getAlloc() );
 
   if( !ng.registerComponentStore( "mobileStore", &mobileStore ))
   {
@@ -49,4 +50,10 @@ pub fn OnOpen( ng : *def.Engine ) void
   {
     def.qlog( .ERROR, 0, @src(), "Failed to add disk entity to mobileStore" );
   }
+}
+
+pub fn OnClose( ng : *def.Engine ) void
+{
+  _ = ng;
+  mobileStore.deinit();
 }

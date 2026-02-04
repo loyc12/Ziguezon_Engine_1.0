@@ -26,7 +26,8 @@ const def = @import( "defs" );
 
 const gameState = @import( "stateInjects.zig" );
 
-  pub const OnOpen = gameState.OnOpen;
+  pub const OnOpen  = gameState.OnOpen;
+  pub const OnClose = gameState.OnClose;
 
 
 const gameStep = @import( "stepInjects.zig" );

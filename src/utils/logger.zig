@@ -119,16 +119,18 @@ fn _log( level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, compt
     // > This is a debug message
     //   This is a message continuation (.CONT )
 
-  // If the message is IDed and SHOW_ID_MSGS is false, do nothing
-
-  LoggedLastMsg = false;
-
-  if( level == .CONT and !LoggedLastMsg ){ return; }
-  if( comptime !SHOW_ID_MSGS and id != 0 ){   return; }
-
-
   // TODO : reimplement logging to file ( need my own io implementation for that )
   // TODO : Implement the trace system properly, to log/unlog functions when they are called and exited ( maybe via a trace stack file ?)
+
+  // ================ LOGGING CHECKS ================
+
+  if( level == .CONT and !LoggedLastMsg  ){ return; }
+
+  LoggedLastMsg = false; // Leaves this at false unless the message ends up being logged
+
+  if( comptime !SHOW_ID_MSGS and id != 0 ){ return; }
+
+
 
 
   // ================ LOGGING LOGIC ================
@@ -155,16 +157,18 @@ fn _log( level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, compt
   }
 
   std.debug.print( message ++ "\n", args ); // Prints the actual message
+  //stream.flush();
 
   LoggedLastMsg = true;
 
-  //stream.flush();
 }
 
 // ================================ FILE FUNCTIONS ================================
 
 pub fn initFile() void
 {
+  std.debug.assert( G_LOG_LVL != .CONT );
+
 //if( comptime !USE_LOG_FILE ){ return; }
 //
 //G_LOG_FILE = std.fs.cwd().createFile( LOG_FILE_NAME, .{ .truncate = false }) catch | err |
@@ -291,16 +295,24 @@ fn setMsgColour( message : [] const u8 ) !void
 // =============================== SHORTHAND FUNCTIONS ================================
 
 // Shortcut to log a message with no arguments ( for simple text with no formatting )
-pub fn qlog( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
+pub fn qlog( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8 ) void
 {
   if( comptime !level.canLog() ){ return; }
-  _log( level, id, logLoc, message, .{} ) catch | err |{ std.debug.print( "Logging failed : {}", .{ err }); };
+
+  _log( level, id, logLoc, message, .{} ) catch | err |
+  {
+    std.debug.print( "Logging failed : {}", .{ err });
+  };
 }
 
-pub fn log( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : [:0] const u8, args : anytype ) void
+pub fn log( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8, args : anytype ) void
 {
   if( comptime !level.canLog() ){ return; }
-  _log( level, id, logLoc, message, args ) catch | err |{ std.debug.print( "Logging failed : {}", .{ err }); };
+
+  _log( level, id, logLoc, message, args ) catch | err |
+  {
+    std.debug.print( "Logging failed : {}", .{ err });
+  };
 }
 
 
