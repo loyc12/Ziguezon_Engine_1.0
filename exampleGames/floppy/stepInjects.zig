@@ -123,10 +123,10 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   // DEBUG INFO
 
-  def.qlog( .DEBUG, 0, @src(), "DISK DATA" );
-  def.log(  .CONT,  0, @src(), "pos.y :{}", .{ disk.pos.y });
-  def.log(  .CONT,  0, @src(), "vel.y :{}", .{ disk.vel.y });
-  def.log(  .CONT,  0, @src(), "acc.y :{}", .{ disk.acc.y });
+  //def.qlog( .DEBUG, 0, @src(), "DISK DATA" );
+  //def.log(  .CONT,  0, @src(), "pos.y :{}", .{ disk.pos.y });
+  //def.log(  .CONT,  0, @src(), "vel.y :{}", .{ disk.vel.y });
+  //def.log(  .CONT,  0, @src(), "acc.y :{}", .{ disk.acc.y });
 
 }
 
