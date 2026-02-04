@@ -10,6 +10,10 @@ pub const Entity = struct
 //mask : def.BitField64 = 0, // TODO : use me
 };
 
+
+
+// ================ ENTITY ID REGISTRY ================
+
 pub const EntityIdRegistry = struct
 {
 

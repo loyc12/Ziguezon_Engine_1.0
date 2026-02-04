@@ -28,7 +28,7 @@ pub const e_bdy_shape = enum( u8 ) // TODO : move to utils
   DODE, // Dodecagon ( regular )
   ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
 
-  pub fn getSides( self : e_bdy_shape ) u8
+  pub fn getSideCount( self : e_bdy_shape ) u8
   {
     return switch( self )
     {
@@ -175,8 +175,8 @@ pub const Body = struct
   }
   inline fn updateHitbox( self : *Body ) void
   {
-    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getSides() ); }
-    else {                     self.hitbox = Box2.newRectAABB( self.pos.toVec2(), self.scale, self.pos.a                        ); }
+    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getSideCount() ); }
+    else {                     self.hitbox = Box2.newRectAABB( self.pos.toVec2(), self.scale, self.pos.a                            ); }
   }
 
   pub fn moveSelf( self : *Body, sdt : f32 ) void

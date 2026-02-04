@@ -3,8 +3,12 @@ const def = @import( "defs" );
 
 const EntityId   = def.EntityId;
 
+
+// ================ COMPONENT REGISTRY ================
+
 // NOTE: ComponentRegistry does NOT own ComponentStore lifetimes
 //       Stores must be initialized and deinitialized externally
+
 
 pub const ComponentRegistry = struct
 {
@@ -131,6 +135,8 @@ pub const ComponentRegistry = struct
   }
 };
 
+
+// ================ COMPONENT STORE FUNCTIONS ================
 
 pub fn componentStoreFactory( comptime ComponentType : type ) type
 {

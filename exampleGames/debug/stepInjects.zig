@@ -57,7 +57,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
     s_time += ( 1.0 / 120.0 );
 
-    def.log( .WARN, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
+    def.log( .INFO, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
   }
 
 

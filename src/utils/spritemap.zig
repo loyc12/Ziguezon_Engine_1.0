@@ -4,9 +4,46 @@ const def  = @import( "defs" );
 const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 const Angle  = def.Angle;
+const Colour = def.Colour;
 
 const Texture   = def.ray.Texture2D;
 const Rectangle = def.ray.Rectangle;
+
+
+// ================================ SPRITE STRUCT ================================
+
+pub const Sprite = struct
+{
+  spritemapPtr : *Spritemap,
+  spritemapIdx : u32,
+
+  animStartIdx : u32 = 0,
+  animEndIdx   : u32 = 0,
+  animLeapSize : u32 = 1,
+
+  pos    : VecA,
+  scale  : Vec2,
+  colour : Colour = .white,
+
+
+  pub inline fn drawSelf( self : *Sprite ) void
+  {
+    self.spritemapPtr.drawSprite( self.spritemapIdx, self.pos, self.scale, self.colour );
+  }
+
+  pub fn tickAnimation( self : *Sprite ) void
+  {
+    std.debug.assert( self.animStartIdx <= self.animEndIdx );
+
+    self.spritemapIdx += 1;
+
+    if( self.spritemapIdx > self.animEndIdx )
+    {
+      self.spritemapIdx = self.animStartIdx;
+    }
+  }
+};
+
 
 // ================================ SPRITEMAP STRUCT ================================
 

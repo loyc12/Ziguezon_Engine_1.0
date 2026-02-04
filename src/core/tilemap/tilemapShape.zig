@@ -41,7 +41,7 @@ pub const e_tlmp_shape = enum( u8 )
 //PEN1, // ( upright ) // TODO : implement me
 //PEN2, // ( sideway )
 
-  pub inline fn getSides( self : e_tlmp_shape ) u8
+  pub inline fn getSideCount( self : e_tlmp_shape ) u8
   {
     return switch( self )
     {

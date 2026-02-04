@@ -325,6 +325,7 @@ pub const Shaker2D = shk_u.Shake2D;
 pub const spm_u     = @import( "utils/spritemap.zig" );
 
 pub const Spritemap = spm_u.Spritemap;
+pub const Sprite    = spm_u.Sprite;
 
 // ================ TIMER SHORTHANDS ================
 
