@@ -118,6 +118,14 @@ pub const ComponentRegistry     = cmp.ComponentRegistry;
 pub const componentStoreFactory = cmp.componentStoreFactory;
 
 
+pub const cmp2 = @import( "core/ecs/baseComps.zig" );
+
+pub const TransComp  = cmp2.TransComp;
+pub const ShapeComp  = cmp2.ShapeComp;
+pub const SpriteComp = cmp2.SpriteComp;
+
+
+
 
 // ================================ UTILS SHORTHANDS ================================
 

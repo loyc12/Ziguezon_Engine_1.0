@@ -13,6 +13,7 @@ const def = @import( "defs" );
 
   pub const AutoApply_Body_Movement  = true;
   pub const AutoApply_Body_Collision = false;
+  pub const AutoApply_State_Playing  = false;
 
 // Engine Global Startup Values
 

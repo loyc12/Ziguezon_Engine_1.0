@@ -3,52 +3,87 @@ const def = @import( "defs" );
 
 pub var DISK_ID : def.EntityId = 0;
 
-pub const Mobile = struct
-{
-  scale : def.Vec2   = .{},
-  pos   : def.VecA   = .{},
-  vel   : def.Vec2   = .{},
-  acc   : def.Vec2   = .{},
+//pub const Mobile = struct
+//{
+//  scale : def.Vec2   = .{},
+//  pos   : def.VecA   = .{},
+//  vel   : def.Vec2   = .{},
+//  acc   : def.Vec2   = .{},
+//
+//  col   : def.Colour = def.Colour.white,
+//};
+//
+//pub const MobileStore = def.componentStoreFactory( Mobile );
+//
+//pub var mobileStore : MobileStore = .{};
 
-  col   : def.Colour = def.Colour.white,
-};
+pub const TransformStore = def.TransComp.getStoreType();
+pub const ShapeStore     = def.ShapeComp.getStoreType();
 
-pub const MobileStore = def.componentStoreFactory( Mobile );
+var transformStore : TransformStore = .{};
+var shapeStore     : ShapeStore = .{};
 
-pub var mobileStore : MobileStore = .{};
+
+pub const diskStartPos = def.VecA.new( -800,   400, .{} );
+pub const diskStartVel = def.VecA.new(    0, -2400, .{} );
+
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
 pub fn OnOpen( ng : *def.Engine ) void // Init and register ComponentStores here
 {
-  mobileStore.init( def.getAlloc() );
+  transformStore.init( def.getAlloc() );
+  shapeStore.init(     def.getAlloc() );
 
-  if( !ng.registerComponentStore( "mobileStore", &mobileStore ))
+
+  if( !ng.registerComponentStore( "transformStore", &transformStore ))
   {
-    def.qlog( .ERROR, 0, @src(), "Failed to register mobileStore" );
+    def.qlog( .ERROR, 0, @src(), "Failed to register transformStore" );
   }
+  if( !ng.registerComponentStore( "shapeStore", &shapeStore ))
+  {
+    def.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
+  }
+
 
   DISK_ID = ng.EntityIdRegistry.getNewEntity().id;
 
-  if( mobileStore.add( DISK_ID,
+
+  if( transformStore.add( DISK_ID,
     .{
-      .scale = .{ .x =   32, .y =    32 },
-      .pos   = .{ .x = -800, .y =     0 },
-      .vel   = .{ .x =    0, .y = -1000 },
-      .col   = def.Colour.green,
+      .pos   = diskStartPos,
+      .vel   = diskStartVel,
     }
   ))
   {
-    def.log( .INFO, 0, @src(), "Added disk entity with Id {} to mobileStore", .{ DISK_ID });
+    def.log( .INFO, 0, @src(), "Added disk entity with Id {} to transformStore", .{ DISK_ID });
   }
   else
   {
-    def.qlog( .ERROR, 0, @src(), "Failed to add disk entity to mobileStore" );
+    def.qlog( .ERROR, 0, @src(), "Failed to add disk entity to transformStore" );
+  }
+
+  if( shapeStore.add( DISK_ID,
+    .{
+      .hitbox    = .{ .center = diskStartPos.toVec2() },
+      .baseScale = .{ .x = 32, .y = 32 },
+      .colour    = .green,
+    }
+  ))
+  {
+    def.log( .INFO, 0, @src(), "Added disk entity with Id {} to shapeStore", .{ DISK_ID });
+  }
+  else
+  {
+    def.qlog( .ERROR, 0, @src(), "Failed to add disk entity to shapeStore" );
   }
 }
+
 
 pub fn OnClose( ng : *def.Engine ) void // Deinit ComponentStores here
 {
   _ = ng;
-  mobileStore.deinit();
+
+  transformStore.deinit();
+  shapeStore.deinit();
 }

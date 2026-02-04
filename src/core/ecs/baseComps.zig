@@ -1,12 +1,6 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const EntityId = def.EntityId;
-const Entity   = def.Entity;
-
-const ComponentRegistry     = def.ComponentRegistry;
-const componentStoreFactory = def.componentStoreFactory;
-
 const Box2  = def.Box2;
 const Vec2  = def.Vec2;
 const VecA  = def.VecA;
@@ -21,6 +15,8 @@ const Angle = def.Angle;
 
 pub const TransComp = struct
 {
+  pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
+
   pos : VecA,
   vel : VecA = .{},
   acc : VecA = .{},
@@ -31,13 +27,13 @@ pub const TransComp = struct
   {
     const scaledHalfAcc = self.acc.mulVal( 0.5 * sdt );
 
-    self.vel.x += scaledHalfAcc * 0.5;
+    self.vel.x += scaledHalfAcc.x * 0.5;
     self.pos.x += self.vel.x * sdt;
-    self.vel.x += scaledHalfAcc * 0.5;
+    self.vel.x += scaledHalfAcc.x * 0.5;
 
-    self.vel.y += scaledHalfAcc * 0.5;
+    self.vel.y += scaledHalfAcc.y * 0.5;
     self.pos.y += self.vel.y * sdt;
-    self.vel.y += scaledHalfAcc * 0.5;
+    self.vel.y += scaledHalfAcc.y * 0.5;
 
     self.vel.a = self.vel.a.rot( self.acc.a.mulVal( sdt ));
     self.pos.a = self.pos.a.rot( self.vel.a.mulVal( sdt ));
@@ -98,28 +94,31 @@ pub const e_shape_2D = enum( u8 ) // TODO : move to utils
 
 pub const ShapeComp = struct
 {
-  hitbox : Box2,
-  angle  : Angle = .{},
+  pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
+
+  baseScale : Vec2,
+  hitbox    : Box2 = .{},
+  angle     : Angle = .{},
 
   shape  : e_shape_2D = .RECT,
   colour : def.Colour = .nWhite,
 
 
-  pub inline fn updatehitbox( self : *ShapeComp ) void
+  pub inline fn updateHitbox( self : *ShapeComp, newCenter : Vec2 ) void
   {
-    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getSideCount() ); }
-    else {                     self.hitbox = Box2.newRectAABB( self.pos.toVec2(), self.scale, self.pos.a ); }
+    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( newCenter, self.baseScale, self.angle, self.shape.getSideCount() ); }
+    else {                     self.hitbox = Box2.newRectAABB( newCenter, self.baseScale, self.angle ); }
   }
 
-  pub inline fn getPos( self : *ShapeComp ) VecA
+  pub inline fn getPos( self : *const ShapeComp ) VecA
   {
     return VecA.new( self.hitbox.center.x, self.hitbox.center.y, self.angle );
   }
 
-  pub fn render( self : *ShapeComp ) void
+  pub fn render( self : *const ShapeComp ) void
   {
     const p = self.hitbox.center;
-    const s = self.scale;
+    const s = self.baseScale;
     const r = self.angle;
     const c = self.colour;
 
@@ -150,15 +149,12 @@ pub const ShapeComp = struct
 
 pub const SpriteComp = struct
 {
+  pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
+
   sprite      : def.Sprite,
   frameTime   : u32 = 1.0,  // How long to show each frame for
   frameElapse : u32 = 0.0,  // How long the current frame has been shown
 
-
-  pub inline fn render( self : *SpriteComp ) void
-  {
-    self.sprite.drawSelf();
-  }
 
   pub fn updateSprite( self : *SpriteComp, frameStep : f32 ) void
   {
@@ -176,5 +172,10 @@ pub const SpriteComp = struct
         self.frameElapse = self.frameTime;
       }
     }
+  }
+
+  pub inline fn render( self : *const SpriteComp ) void
+  {
+    self.sprite.drawSelf();
   }
 };

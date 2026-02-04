@@ -7,15 +7,21 @@ const stateInj = @import( "stateInjects.zig" );
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-const GRAVITY    : f32 = 2000.0;  // Base gravity of the disk
-const JUMP_FORCE : f32 = 60000.0; // Force applied when the disk jumps
-const MAX_VEL_Y  : f32 = 2000.0;  // Maximum vertical velocity of the disk
+const GRAVITY    : f32 = 8000.0;   // Base gravity of the disk
+const JUMP_FORCE : f32 = 160000.0; // Force applied when the disk jumps
+const MAX_VEL_Y  : f32 = 4000.0;   // Maximum vertical velocity of the disk
 
 //var SCROLL_SPEED : f32 = 100.0; // Base speed of the pillars
 var SCORE        : u8  = 0;     // Score of the player
 
 var IS_GAME_OVER  : bool = false; // Flag to check if the game is over ( hit bottom of screen or pillar )
 var IS_JUMPING    : bool = false; // Flag to check if the disk is jumping
+
+
+
+const DISK_ID        = &stateInj.DISK_ID;
+const TransformStore = stateInj.TransformStore;
+const ShapeStore     = stateInj.ShapeStore;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -34,16 +40,17 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       IS_GAME_OVER  = false;
       IS_JUMPING    = false;
 
-      const mobileStore : *stateInj.MobileStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "mobileStore" )));
+      const transformStore : *TransformStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "transformStore" )));
 
-      var disk = mobileStore.get( stateInj.DISK_ID ) orelse
+      var diskTransform = transformStore.get( DISK_ID.* ) orelse
       {
-        def.log( .WARN, 0, @src(), "Failed to find mobile component for Entity {}", .{ stateInj.DISK_ID });
+        def.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
         return;
       };
 
-      disk.pos.y = 0;
-      disk.vel.y = -MAX_VEL_Y;
+      diskTransform.pos = stateInj.diskStartPos;
+      diskTransform.vel = stateInj.diskStartVel;
+      diskTransform.acc = .{};
 
       def.qlog( .INFO, 0, @src(), "Game reseted" );
     }
@@ -65,54 +72,62 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  const mobileStore : *stateInj.MobileStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "mobileStore" )));
+  const transformStore : *TransformStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "transformStore" )));
 
-  var disk = mobileStore.get( stateInj.DISK_ID ) orelse
+  var diskTransform = transformStore.get( DISK_ID.* ) orelse
   {
-    def.log( .ERROR, 0, @src(), "Failed to find mobile component for entity with id {}", .{ stateInj.DISK_ID });
+    def.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
-  disk.vel.y = def.clmp( disk.vel.y, -MAX_VEL_Y, MAX_VEL_Y );
 
-  if( IS_JUMPING ) // Apply jump force
+  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "shapeStore" )));
+
+  var diskShape = shapeStore.get( DISK_ID.* ) orelse
   {
-    disk.acc.y = -JUMP_FORCE;
-
-    if( disk.vel.y > 0 ){ disk.vel.y = 0; }
-
-    IS_JUMPING = false;
-
-    // NOTE : DEBUG SCORE ( 1 POINT PER JUMP )
-    SCORE += 1;
-  }
-  else { disk.acc.y = GRAVITY; } // Apply gravity
+    def.log( .WARN, 0, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
+    return;
+  };
 
 
   // ================ APPLYING ACC AND VEL ================
 
-  const sdt = ng.getScaledTargetTickDelta();
+  diskTransform.vel.y = def.clmp( diskTransform.vel.y, -MAX_VEL_Y, MAX_VEL_Y );
 
-  const halfScaledAcc = disk.acc.mulVal( 0.5 * sdt );
+  if( IS_JUMPING ) // Apply jump force
+  {
+    diskTransform.acc.y = -JUMP_FORCE;
 
-  disk.vel = disk.vel.add( halfScaledAcc );
-  disk.pos = disk.pos.add( disk.vel.mulVal( sdt ).toVecA( .{} ));
-  disk.vel = disk.vel.add( halfScaledAcc );
+    if( diskTransform.vel.y > 0 ){ diskTransform.vel.y = 0; }
+
+    IS_JUMPING = false;
+
+    SCORE += 1; // NOTE : DEBUG SCORE ( 1 POINT PER JUMP )
+  }
+  else { diskTransform.acc.y = GRAVITY; } // Apply gravity
+
+
+  diskTransform.updatePos( ng.getScaledTargetTickDelta() );
+
+  diskShape.angle = diskTransform.pos.a;
+
+  diskShape.updateHitbox( diskTransform.pos.toVec2() );
 
 
   // ================ CLAMPING THE DISK POSITIONS ================
 
   const hHeight : f32 = def.getHalfScreenHeight();
 
-  if( disk.pos.y < -hHeight + disk.scale.y )
+  if( diskShape.hitbox.getTopY() < -hHeight )
   {
-    disk.pos.y = -hHeight + disk.scale.y;
-    disk.vel.y = 0;
+    diskShape.hitbox.setTopY( -hHeight );
+    diskTransform.pos.y = diskShape.hitbox.center.y;
+    diskTransform.vel.y = 0;
   }
 
-  if( disk.pos.y > hHeight - disk.scale.y )
+  if( diskShape.hitbox.getBottomY() > hHeight )
   {
-    def.log( .DEBUG, 0, @src(), "Disk {d} has fallen off the screen", .{ stateInj.DISK_ID });
+    def.log( .DEBUG, 0, @src(), "Disk {d} has fallen off the screen", .{ DISK_ID.* });
     IS_GAME_OVER = true;
     return;
   }
@@ -138,15 +153,15 @@ pub fn OffTickWorld( ng : *def.Engine ) void
 
 pub fn OnRenderWorld( ng : *def.Engine ) void
 {
-  const mobileStore : *stateInj.MobileStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "mobileStore" )));
+  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "shapeStore" )));
 
-  const disk = mobileStore.get( stateInj.DISK_ID ) orelse
+  var diskShape = shapeStore.get( DISK_ID.* ) orelse
   {
-    def.log( .ERROR, 0, @src(), "Failed to find mobile component for entity with id {}", .{ stateInj.DISK_ID });
+    def.log( .WARN, 0, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
-  def.drawRect( disk.pos.toVec2(), disk.scale, disk.pos.a, disk.col );
+  diskShape.render();
 }
 
 
@@ -164,14 +179,17 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   s_buff[ s_slice.len ] = 0;
 
+
   const halfScreenSize = def.getHalfScreenSize();
 
   def.drawCenteredText( &s_buff, halfScreenSize.x * 1.6, halfScreenSize.y, 128, def.Colour.yellow );
+
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
   }
+
 
   if( IS_GAME_OVER ) // If the player lost, display the game over message
   {
