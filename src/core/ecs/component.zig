@@ -2,9 +2,6 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const EntityId   = def.EntityId;
-const IdRegistry = def.IdRegistry;
-
-
 
 // NOTE: ComponentRegistry does NOT own ComponentStore lifetimes
 //       Stores must be initialized and deinitialized externally
@@ -18,24 +15,39 @@ pub const ComponentRegistry = struct
   };
 
   data   : std.StringHashMap( RegistryEntry ) = undefined,
-  idReg  : IdRegistry = .{},
   isInit : bool = false,
 
 
   pub fn init( self : *ComponentRegistry, alloc : std.mem.Allocator ) void
   {
     def.qlog( .TRACE, 0, @src(), "# Initializing component registry..." );
+
+    if( self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "ComponentRegistry is already initialized : returning" );
+      return;
+    }
+
     self.data = .init( alloc );
     self.isInit = true;
-    def.qlog( .INFO, 0, @src(), "& Component registry initialized !" );
+
+    def.qlog( .INFO, 0, @src(), "& ComponentRegistry initialized !" );
   }
 
   pub fn deinit( self : *ComponentRegistry ) void
   {
     def.qlog( .TRACE, 0, @src(), "# Deinitializing component registry..." );
+
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "ComponentRegistry is uninitialized : returning" );
+      return;
+    }
+
     self.data.deinit();
     self.isInit = false;
-    def.qlog( .INFO, 0, @src(), "& Component registry denitialized !" );
+
+    def.qlog( .INFO, 0, @src(), "& ComponentRegistry denitialized !" );
   }
 
   pub fn register( self : *ComponentRegistry, name : []const u8, storePtr : *anyopaque ) bool
@@ -43,6 +55,12 @@ pub const ComponentRegistry = struct
     // storePtr is a pointer to an instance of a ComponentStore
     // this ptr is then wrapped in a generic RegistryEntry
     // ComponentStore is user-managed, and of a type generated via componentStoreFactory()
+
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot register in ComponentRegistry : uninitialized" );
+      return false;
+    }
 
     const res = self.data.getOrPut( name ) catch { return false; }; // TODO : handle catch properly
     {
@@ -62,6 +80,12 @@ pub const ComponentRegistry = struct
 
   pub fn unregister( self : *ComponentRegistry, name : []const u8 ) bool
   {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot unregister from ComponentRegistry : uninitialized" );
+      return false;
+    }
+
     if( self.data.remove( name ))
     {
       def.log( .TRACE, 0, @src(), "Unregistered ComponentStore {s} from ComponentRegistry", .{ name });
@@ -74,9 +98,15 @@ pub const ComponentRegistry = struct
     }
   }
 
-  // NOTE : REQUIRES MANUAL ALLIGMENT OF RETURNED PTR
+  // NOTE : REQUIRES MANUAL ALLIGMENT OF RETURNED PTR VIA "@ptrCast( @alignCast( .get() ))""
   pub fn get( self : *ComponentRegistry, name : []const u8 ) ?*anyopaque
   {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot obtain from ComponentRegistry : uninitialized" );
+      return null;
+    }
+
     if ( self.data.getPtr( name )) | ptr |
     {
       return ptr.storePtr; // Accessing the Wrapped value
@@ -90,6 +120,12 @@ pub const ComponentRegistry = struct
 
   pub fn has( self : *ComponentRegistry, name : []const u8 ) bool
   {
+    if( !self.isInit )
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot peer into ComponentRegistry : uninitialized" );
+      return false;
+    }
+
     if( self.data.getPtr( name ) != null ){ return true; }
     return false;
   }
@@ -105,22 +141,45 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
 
 
     data : std.AutoHashMap( EntityId, ComponentType ) = undefined,
+    isInit : bool = false,
 
 
     pub fn init( self : *ComponentStore, alloc : std.mem.Allocator ) void
     {
       def.log( .INFO, 0, @src(), "Initializing ComponentStore for type {s}", .{ TypeName });
+
+      if( self.isInit )
+      {
+        def.log( .WARN, 0, @src(), "ComponentStore for type {s} is already initialized : returning", .{ TypeName } );
+        return;
+      }
+
       self.data = .init( alloc );
+      self.isInit = true;
     }
 
     pub fn deinit( self : *ComponentStore ) void
     {
       def.log( .INFO, 0, @src(), "Deinitializing ComponentStore for type {s}", .{ TypeName });
+
+      if( self.isInit )
+      {
+        def.log( .WARN, 0, @src(), "ComponentStore for type {s} is unnitialized : returning", .{ TypeName } );
+        return;
+      }
+
       self.data.deinit();
+      self.isInit = false;
     }
 
     pub fn add( self : *ComponentStore, id : EntityId, value : ComponentType ) bool
     {
+      if( !self.isInit )
+      {
+        def.log( .WARN, 0, @src(), "Cannot add to ComponentStore for type {s} : uninitialized", .{ TypeName } );
+        return false;
+      }
+
       const res = self.data.getOrPut( id ) catch { return false; }; // TODO : handle catch properly
       {
         if( !res.found_existing ) // Initialize Component instance if one does not exist for this Entity
@@ -139,6 +198,11 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
 
     pub fn remove( self : *ComponentStore, id: EntityId ) bool
     {
+      if( !self.isInit )
+      {
+        def.log( .WARN, 0, @src(), "Cannot remove from ComponentStore for type {s} : uninitialized", .{ TypeName } );
+        return false;
+      }
       if( self.data.remove( id ))
       {
         def.log( .TRACE, 0, @src(), "Removed Entity {d} from ComponentStore for type {s}", .{ id, TypeName });
@@ -153,6 +217,11 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
 
     pub fn get( self : *ComponentStore, id: EntityId ) ?*ComponentType
     {
+      if( !self.isInit )
+      {
+        def.log( .WARN, 0, @src(), "Cannot obtain from ComponentStore for type {s} : uninitialized", .{ TypeName } );
+        return null;
+      }
       if( self.data.getPtr( id )) | ptr |
       {
         return ptr;
@@ -166,6 +235,11 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
 
     pub fn has( self : *ComponentStore, id: EntityId ) bool
     {
+      if( !self.isInit )
+      {
+        def.log( .WARN, 0, @src(), "Cannot Cannot peer into ComponentStore for type {s} : uninitialized", .{ TypeName } );
+        return false;
+      }
       if( self.data.getPtr( id ) != null ){ return true; }
       return false;
     }

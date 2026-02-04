@@ -10,25 +10,30 @@ pub const Entity = struct
 //mask : def.BitField64 = 0, // TODO : use me
 };
 
-pub const IdRegistry = struct
+pub const EntityIdRegistry = struct
 {
 
   maxId : EntityId = 0, // NOTE : Id 0 is never attributed
 
-  //var freedIds : std.ArrayList( EntityId ) = undefined;
+//var freedIds : std.ArrayList( EntityId ) = undefined;
 
-  inline fn getMaxId( self : *IdRegistry ) EntityId
+  pub inline fn reinit( self : *EntityIdRegistry ) void
+  {
+    self.maxId = 0;
+  }
+
+  inline fn getMaxId( self : *EntityIdRegistry ) EntityId
   {
     return self.maxId;
   }
 
-  inline fn getNewId( self : *IdRegistry ) EntityId
+  inline fn getNewId( self : *EntityIdRegistry ) EntityId
   {
     self.maxId += 1;
     return self.maxId;
   }
 
-  pub inline fn getNewEntity( self : *IdRegistry ) Entity
+  pub inline fn getNewEntity( self : *EntityIdRegistry ) Entity
   {
     return .{ .id = self.getNewId() };
   }

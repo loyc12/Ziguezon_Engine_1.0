@@ -20,7 +20,7 @@ const def = @import( "defs" );
 
 // General Graphic Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.green;
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.dGray;
 
 // ================================ GAME HOOKS ================================
 
@@ -37,4 +37,5 @@ const gameStep = @import( "stepInjects.zig" );
   pub const OnTickWorld     = gameStep.OnTickWorld;
   pub const OffTickWorld    = gameStep.OffTickWorld;
 
+  pub const OnRenderWorld   = gameStep.OnRenderWorld;
   pub const OnRenderOverlay = gameStep.OnRenderOverlay;

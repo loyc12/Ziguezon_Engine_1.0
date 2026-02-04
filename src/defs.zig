@@ -105,11 +105,11 @@ pub const ScriptFunc = spt.ScriptFunc;
 
 // ================ ECS ================
 
-pub const ntt        = @import( "core/ecs/entity.zig" );
+pub const ntt              = @import( "core/ecs/entity.zig" );
 
-pub const EntityId   = ntt.EntityId;
-pub const Entity     = ntt.Entity;
-pub const IdRegistry = ntt.IdRegistry;
+pub const Entity           = ntt.Entity;
+pub const EntityId         = ntt.EntityId;
+pub const EntityIdRegistry = ntt.EntityIdRegistry;
 
 
 pub const cmp                   = @import( "core/ecs/component.zig" );

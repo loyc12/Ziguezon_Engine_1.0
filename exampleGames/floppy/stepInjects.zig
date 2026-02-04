@@ -7,9 +7,9 @@ const stateInj = @import( "stateInjects.zig" );
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-const GRAVITY    : f32 = 1000.0;   // Base gravity of the disk
-const JUMP_FORCE : f32 = 100000.0; // Force applied when the disk jumps
-const MAX_VEL_Y  : f32 = 1000.0;   // Maximum vertical velocity of the disk
+const GRAVITY    : f32 = 2000.0;  // Base gravity of the disk
+const JUMP_FORCE : f32 = 60000.0; // Force applied when the disk jumps
+const MAX_VEL_Y  : f32 = 2000.0;  // Maximum vertical velocity of the disk
 
 //var SCROLL_SPEED : f32 = 100.0; // Base speed of the pillars
 var SCORE        : u8  = 0;     // Score of the player
@@ -43,7 +43,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       };
 
       disk.pos.y = 0;
-      disk.vel.y = 0;
+      disk.vel.y = -MAX_VEL_Y;
 
       def.qlog( .INFO, 0, @src(), "Game reseted" );
     }
@@ -53,10 +53,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   {
     if( IS_GAME_OVER ){ ng.changeState( .OPENED ); return; }
 
-    if( def.ray.isKeyPressed( def.ray.KeyboardKey.space ) or def.ray.isKeyPressed( def.ray.KeyboardKey.up ) or def.ray.isKeyPressed( def.ray.KeyboardKey.w ))
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.space ) or
+        def.ray.isKeyPressed( def.ray.KeyboardKey.up ) or
+        def.ray.isKeyPressed( def.ray.KeyboardKey.w ))
     {
       IS_JUMPING = true;
-      def.log( .DEBUG, 0, @src(), "Disk {d} jumped", .{ stateInj.DISK_ID });
     }
   }
 }
@@ -78,7 +79,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
   {
     disk.acc.y = -JUMP_FORCE;
 
-    if( disk.vel.y < 0 ){ disk.vel.y = 0; }
+    if( disk.vel.y > 0 ){ disk.vel.y = 0; }
 
     IS_JUMPING = false;
 
@@ -88,10 +89,20 @@ pub fn OnTickWorld( ng : *def.Engine ) void
   else { disk.acc.y = GRAVITY; } // Apply gravity
 
 
+  // ================ APPLYING ACC AND VEL ================
+
+  const sdt = ng.getScaledTargetTickDelta();
+
+  const halfScaledAcc = disk.acc.mulVal( 0.5 * sdt );
+
+  disk.vel = disk.vel.add( halfScaledAcc );
+  disk.pos = disk.pos.add( disk.vel.mulVal( sdt ).toVecA( .{} ));
+  disk.vel = disk.vel.add( halfScaledAcc );
+
 
   // ================ CLAMPING THE DISK POSITIONS ================
 
-  const hHeight : f32 = def.getScreenHeight() / 2.0;
+  const hHeight : f32 = def.getHalfScreenHeight();
 
   if( disk.pos.y < -hHeight + disk.scale.y )
   {
@@ -125,10 +136,24 @@ pub fn OffTickWorld( ng : *def.Engine ) void
 }
 
 
+pub fn OnRenderWorld( ng : *def.Engine ) void
+{
+  const mobileStore : *stateInj.MobileStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "mobileStore" )));
+
+  const disk = mobileStore.get( stateInj.DISK_ID ) orelse
+  {
+    def.log( .ERROR, 0, @src(), "Failed to find mobile component for entity with id {}", .{ stateInj.DISK_ID });
+    return;
+  };
+
+  def.drawRect( disk.pos.toVec2(), disk.scale, disk.pos.a, disk.col );
+}
+
+
 pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   // Declare the buffer to hold the formatted scores
-  var s_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 };
+  var s_buff : [ 6:0 ]u8 = std.mem.zeroes( [ 6:0 ]u8 );
 
   // Convert the score to strings
   const s_slice = std.fmt.bufPrint( &s_buff, "{d}", .{ SCORE }) catch | err |
@@ -137,30 +162,30 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       return;
   };
 
-  // Null terminate the string
   s_buff[ s_slice.len ] = 0;
-  //def.log( .DEBUG, 0, @src(), "Score: {s}", .{ s_slice });
+
+  const halfScreenSize = def.getHalfScreenSize();
+
+  def.drawCenteredText( &s_buff, halfScreenSize.x * 1.6, halfScreenSize.y, 128, def.Colour.yellow );
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
   }
 
-  // Draw each the score in the middle of the screen
-  def.drawCenteredText( &s_buff, def.getScreenWidth() * 0.8, def.getScreenHeight() * 0.5, 128, def.Colour.yellow );
-
-  if( IS_GAME_OVER ) // If there is a winner, display the winner message ( not grayed out )
+  if( IS_GAME_OVER ) // If the player lost, display the game over message
   {
-    const winner_msg = "Womp Womp..."; // TODO : Change message based on final score
-    def.drawCenteredText( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.Colour.red );
-    def.drawCenteredText( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.Colour.yellow );
-    def.drawCenteredText( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.Colour.yellow );
+    const game_over_msg = "Final score : ";
+
+    def.drawCenteredText( game_over_msg ++ &s_buff, halfScreenSize.x, halfScreenSize.y - 192, 128, def.Colour.red );
+    def.drawCenteredText( "Press Enter to restart", halfScreenSize.x, halfScreenSize.y,       64,  def.Colour.yellow );
+    def.drawCenteredText( "Press Escape to exit",   halfScreenSize.x, halfScreenSize.y + 128, 64,  def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawCenteredText( "Press Enter to resume",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 256, 64, def.Colour.yellow );
-    def.drawCenteredText( "Press Escape to exit",    def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 128, 64, def.Colour.yellow );
-    def.drawCenteredText( "Press W, Up or Space to", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64, def.Colour.yellow );
-    def.drawCenteredText( "jump during the game",    def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 256, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press Enter to resume",   halfScreenSize.x, halfScreenSize.y - 256, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press Escape to exit",    halfScreenSize.x, halfScreenSize.y - 128, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press W, Up or Space to", halfScreenSize.x, halfScreenSize.y + 128, 64, def.Colour.yellow );
+    def.drawCenteredText( "jump during the game",    halfScreenSize.x, halfScreenSize.y + 256, 64, def.Colour.yellow );
   }
 }

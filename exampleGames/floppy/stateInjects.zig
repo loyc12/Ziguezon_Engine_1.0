@@ -19,7 +19,7 @@ pub var mobileStore : MobileStore = .{};
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnOpen( ng : *def.Engine ) void
+pub fn OnOpen( ng : *def.Engine ) void // Init and register ComponentStores here
 {
   mobileStore.init( def.getAlloc() );
 
@@ -28,19 +28,14 @@ pub fn OnOpen( ng : *def.Engine ) void
     def.qlog( .ERROR, 0, @src(), "Failed to register mobileStore" );
   }
 
-  const compMngr = ng.getComponentManager() catch | err |
-  {
-    def.log( .ERROR, 0, @src(), "Failed to obtain componentManager : {}", .{ err });
-    return;
-  };
-
-  DISK_ID = compMngr.idReg.getNewEntity().id;
+  DISK_ID = ng.EntityIdRegistry.getNewEntity().id;
 
   if( mobileStore.add( DISK_ID,
     .{
-      .scale = .{ .x =   32, .y = 32 },
-      .pos   = .{ .x = -720, .y =  0 },
-      .col   = def.Colour.dGray,
+      .scale = .{ .x =   32, .y =    32 },
+      .pos   = .{ .x = -800, .y =     0 },
+      .vel   = .{ .x =    0, .y = -1000 },
+      .col   = def.Colour.green,
     }
   ))
   {
@@ -52,7 +47,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   }
 }
 
-pub fn OnClose( ng : *def.Engine ) void
+pub fn OnClose( ng : *def.Engine ) void // Deinit ComponentStores here
 {
   _ = ng;
   mobileStore.deinit();

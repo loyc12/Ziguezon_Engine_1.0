@@ -1,12 +1,12 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Cam2D   = def.Cam2D;
-const Box2    = def.Box2;
-const Vec2    = def.Vec2;
-const VecA    = def.VecA;
-const Angle   = def.Angle;
-const TimeVal = def.TimeVal;
+const Cam2D      = def.Cam2D;
+const Box2       = def.Box2;
+const Vec2       = def.Vec2;
+const VecA       = def.VecA;
+const Angle      = def.Angle;
+const TimeVal    = def.TimeVal;
 
 
 // ================================ DEFINITIONS ================================
@@ -53,6 +53,8 @@ pub const Engine = struct
   tilemapManager  : ?def.tlm_m.TilemapManager  = null,
 
   componentManager : ?def.ComponentRegistry    = null,
+  EntityIdRegistry : def.EntityIdRegistry      = .{},
+
 
 
   // ================================ HELPER FUNCTIONS ================================
