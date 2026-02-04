@@ -24,6 +24,7 @@ pub const EntityIdRegistry = struct
   pub inline fn reinit( self : *EntityIdRegistry ) void
   {
     self.maxId = 0;
+    // Clear freedIds here
   }
 
   inline fn getMaxId( self : *EntityIdRegistry ) EntityId

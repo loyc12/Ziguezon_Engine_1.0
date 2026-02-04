@@ -38,9 +38,9 @@ inline fn getZoomFromView( view : Vec2 ) f32  { return getHalfScreenWidth() / ( 
 
 pub const Cam2D = struct
 {
-  pos   : VecA,                // center of the camera + rotation
-  zoom  : f32 = 1.0,
-  view  : Vec2,
+  pos   : VecA = .{}, // center of the camera + rotation
+  zoom  : f32  = 1.0,
+  view  : Vec2 = .{},
 
   track : ?*def.Body = null, // body to track ( if any )
 

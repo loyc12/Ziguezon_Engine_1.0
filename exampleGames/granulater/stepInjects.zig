@@ -3,7 +3,7 @@ const def      = @import( "defs" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine  = def.Engine;
-const Body  = def.Body;
+const Body    = def.Body;
 
 const Angle   = def.Angle;
 const Vec2    = def.Vec2;
@@ -16,7 +16,10 @@ const TileMap = def.Tilemap;
 
 const TileData = stateInj.TileData;
 
-var TILEMAP_DATA = stateInj.TILEMAP_DATA;
+var   TILEMAP_DATA = &stateInj.TILEMAP_DATA;
+const NOISE_SCALE  = stateInj.NOISE_SCALE;
+var   NOISE_GEN    = &stateInj.NOISE_GEN;
+
 
 var SELECTED_TILE : ?*Tile = null;
 
@@ -30,37 +33,36 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 1.1 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy( 0.9 ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 1.1 ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy( 0.9 ); }
 
   // Reset the camera zoom and position when r is pressed
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
   {
-    ng.setCameraZoom(   1.0 );
-    ng.setCameraCenter( .{} );
-    ng.setCameraRot(    .{} );
+    ng.camera.setZoom(   1.0 );
+    ng.camera.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reset" );
   }
 
-  var worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  var worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
   // Keep the camera over the world grid
-  ng.clampCameraCenterInArea( worldGrid.getMapBoundingBox() );
+  ng.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
 
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
   {
     const mouseScreemPos = def.ray.getMousePosition();
-    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().?.toRayCam() );
+    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.camera.toRayCam() );
 
     const worldCoords = worldGrid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -97,12 +99,36 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     }
   }
 
+  // Reset the camera zoom and position when r is pressed
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.q ))
+  {
+    var min_noise : f32 = 1.0;
+    var max_noise : f32 = 0.0;
+
+    NOISE_GEN.seed = def.G_RNG.getInt( u64 );
+    def.log( .INFO, 0, @src(), "Reenerating world with seed '{}'", .{ NOISE_GEN.seed });
+
+    for( 0 .. worldGrid.getTileCount() )| index |
+    {
+      var tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
+
+      const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
+
+      if( noise < min_noise ){ min_noise = noise; }
+      if( noise > max_noise ){ max_noise = noise; }
+
+      TILEMAP_DATA[ index ] = .{ .noiseVal = noise };
+      tile.script.data = &TILEMAP_DATA[ index ];
+    }
+  }
+
+
 }
 
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
@@ -116,7 +142,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
 pub fn OnRenderWorld( ng : *def.Engine ) void
 {
-  const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;

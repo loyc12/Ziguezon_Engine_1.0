@@ -23,17 +23,17 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
-  ng.addAudioFromFile( "hit_1", "src/assets/sounds/Boop_2.wav" ) catch | err |
+  ng.resourceManager.addAudioFromFile( "hit_1", "src/assets/sounds/Boop_2.wav" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
   };
 
-  ng.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "src/assets/textures/Cubes.png" ) catch | err |
+  ng.resourceManager.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "src/assets/textures/Cubes.png" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
   };
 
-  if( ng.loadBodyFromParams(
+  if( ng.bodyManager.loadBodyFromParams(
   .{
     .shape  = .HSTR,
     .scale  = .{ .x = 64, .y = 64 },
@@ -42,7 +42,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| bdy |{ EXAMPLE_BDY_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example body" ); }
 
-  if( ng.loadBodyFromParams(
+  if( ng.bodyManager.loadBodyFromParams(
   .{
     .shape  = .RLIN,
     .scale  = .{ .x = 32, .y = 16 },
@@ -51,7 +51,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| bdy |{ EXAMPLE_RLIN_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example radius line" ); }
 
-  if( ng.loadBodyFromParams(
+  if( ng.bodyManager.loadBodyFromParams(
   .{
     .shape  = .DLIN,
     .scale  = .{ .x = 32, .y = 16 },
@@ -60,7 +60,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| bdy |{ EXAMPLE_DLIN_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example diametre line" ); }
 
-  if( ng.loadBodyFromParams(
+  if( ng.bodyManager.loadBodyFromParams(
   .{
     .shape  = .TRIA,
     .scale  = .{ .x = 32, .y = 16 },
@@ -69,7 +69,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| bdy |{ EXAMPLE_TRIA_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example triangle" ); }
 
-  if( ng.loadBodyFromParams(
+  if( ng.bodyManager.loadBodyFromParams(
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 32, .y = 16 },
@@ -78,7 +78,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   })
   )| bdy |{ EXAMPLE_RECT_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example rectangle" ); }
 
-  if( ng.loadBodyFromParams(
+  if( ng.bodyManager.loadBodyFromParams(
   .{
     .shape  = .HEXA,
     .scale  = .{ .x = 32, .y = 16 },
@@ -88,7 +88,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   )| bdy |{ EXAMPLE_HEXA_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example hexagon" ); }
 
 
-  if( ng.loadBodyFromParams(
+  if( ng.bodyManager.loadBodyFromParams(
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 32, .y = 16 },
@@ -98,7 +98,7 @@ pub fn OnOpen( ng : *def.Engine ) void
   )| bdy |{ EXAMPLE_ELLI_ID = bdy.id; } else { def.qlog( .ERROR, 0, @src(), "Failed to create example ellipse" ); }
 
 
-  if( ng.loadTilemapFromParams(
+  if( ng.tilemapManager.loadTilemapFromParams(
   .{
     .mapPos    = .{ .x = -512, .y = 0 },
     .mapSize   = .{ .x = 8,  .y = 8  },

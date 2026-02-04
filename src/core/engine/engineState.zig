@@ -79,29 +79,19 @@ pub fn start( ng : *Engine ) void
       def.qlog( .INFO, 0, @src(), "& Audio device initialized !" );
     }
   }
+
   // Initialize relevant engine managers
   {
-    if( !ng.isResourceManagerInit() )
-    {
-      ng.resourceManager = .{};
-      ng.resourceManager.?.init( def.getAlloc() );
-    }
-    if( !ng.isTilemapManagerInit() )
-    {
-      ng.tilemapManager = .{};
-      ng.tilemapManager.?.init( def.getAlloc() );
-    }
-    if( !ng.isBodyManagerInit() )
-    {
-      ng.bodyManager = .{};
-      ng.bodyManager.?.init( def.getAlloc() );
-    }
-    if( !ng.isComponentManagerInit() )
-    {
-      ng.componentManager = .{};
-      ng.componentManager.?.init( def.getAlloc() );
-    }
+    def.qlog( .INFO, 0, @src(), "# Initializing engine substructs..." );
+
+    ng.resourceManager.init(   def.getAlloc() );
+    ng.tilemapManager.init(    def.getAlloc() );
+    ng.bodyManager.init(       def.getAlloc() );
+    ng.componentRegistry.init( def.getAlloc() );
+
+    def.qlog( .INFO, 0, @src(), "& Engine substructs initialized !" );
   }
+
   def.tryHook( .OnStart, ng );
 
   def.qlog( .INFO, 0, @src(), "& Hello, world !\n" );
@@ -121,31 +111,16 @@ pub fn stop( ng : *Engine ) void
 
   // Deinitialize relevant engine managers
   {
-    if( ng.isComponentManagerInit() )
-    {
-      def.qlog( .TRACE, 0, @src(), "Deinitializing Component manager" );
-      ng.componentManager.?.deinit();
-    }
-    if( ng.isBodyManagerInit() )
-    {
-      def.qlog( .TRACE, 0, @src(), "Deinitializing Body manager" );
-      ng.bodyManager.?.deinit();
-    }
-    if( ng.isTilemapManagerInit() )
-    {
-      def.qlog( .TRACE, 0, @src(), "Deinitializing Tilemap manager" );
-      ng.tilemapManager.?.deinit();
-    }
-    if( ng.isResourceManagerInit() )
-    {
-      def.qlog( .TRACE, 0, @src(), "Deinitializing Resource manager" );
-      ng.resourceManager.?.deinit();
-    }
-    ng.componentManager = null;
-    ng.bodyManager      = null;
-    ng.tilemapManager   = null;
-    ng.resourceManager  = null;
+    def.qlog( .INFO, 0, @src(), "# Deinitializing engine substructs..." );
+
+    ng.componentRegistry.deinit();
+    ng.bodyManager.deinit();
+    ng.tilemapManager.deinit();
+    ng.resourceManager.deinit();
+
+    def.qlog( .INFO, 0, @src(), "& Engine substructs deinitialized !" );
   }
+
   // Deinitialize relevant raylib components
   {
     if( def.ray.isAudioDeviceReady() )
@@ -170,14 +145,6 @@ pub fn open( ng : *Engine ) void
   }
   else { def.qlog( .TRACE, 0, @src(), "Launching the game..." ); }
 
-  // Initialize relevant engine components
-  {
-    if( !ng.isCameraInit() )
-    {
-      def.qlog( .TRACE, 0, @src(), "Initializing Main Camera" );
-      ng.initCamera();
-    }
-  }
   // Initialize relevant raylib components
   {
     def.ray.setConfigFlags( // Set the window flags
@@ -226,14 +193,6 @@ pub fn close( ng : *Engine ) void
     {
       def.qlog( .INFO, 0, @src(), "# Closing the window..." );
       def.ray.closeWindow();
-    }
-  }
-  // Deinitialize relevant engine components
-  {
-    if( ng.isCameraInit() )
-    {
-      def.qlog( .TRACE, 0, @src(), "Deinitializing Camera" );
-      ng.deinitCamera();
     }
   }
 

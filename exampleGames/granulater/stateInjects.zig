@@ -35,7 +35,7 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
-  const tlm = ng.loadTilemapFromParams(
+  const tlm = ng.tilemapManager.loadTilemapFromParams(
   .{
     .mapPos    = .{ .x = 0,   .y = 0   },
     .mapSize   = .{ .x = 128, .y = 128 },
@@ -54,17 +54,16 @@ pub fn OnOpen( ng : *def.Engine ) void
   var max_noise : f32 = 0.0;
 
   NOISE_GEN.seed = def.G_RNG.getInt( u64 );
+  def.log( .INFO, 0, @src(), "Generating world with seed '{}'", .{ NOISE_GEN.seed });
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     var tile : *def.Tile = &worldGrid.tileArray.items.ptr[ index ];
 
-
     const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 
     if( noise < min_noise ){ min_noise = noise; }
     if( noise > max_noise ){ max_noise = noise; }
-
 
     TILEMAP_DATA[ index ] = .{ .noiseVal = noise };
     tile.script.data = &TILEMAP_DATA[ index ];

@@ -13,7 +13,7 @@ pub fn OnStart( ng : *def.Engine ) void
 
 pub fn OnOpen( ng : *def.Engine ) void
 {
-  const tlm = ng.loadTilemapFromParams(
+  const tlm = ng.tilemapManager.loadTilemapFromParams(
   .{
     .mapPos    = .{ .x = 0, .y = 0 },
     .mapSize   = .{ .x = 256, .y = 256  },

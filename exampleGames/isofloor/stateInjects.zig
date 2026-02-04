@@ -50,12 +50,12 @@ pub fn OnStart( ng : *def.Engine ) void
 pub fn OnOpen( ng : *def.Engine ) void
 {
 
-  ng.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "src/assets/textures/Cubes.png" ) catch | err |
+  ng.resourceManager.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "src/assets/textures/Cubes.png" ) catch | err |
   {
     def.log( .ERROR, 0, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
   };
 
-  const tlm = ng.loadTilemapFromParams(
+  const tlm = ng.tilemapManager.loadTilemapFromParams(
   .{
     .mapPos    = .{ .x = 0,          .y = 0            },
     .mapSize   = .{ .x = GRID_WIDTH, .y = GRID_HEIGHT  },

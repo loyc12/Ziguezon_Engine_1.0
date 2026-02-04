@@ -23,32 +23,31 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 11.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy(  9.0 / 10.0 ); }
 
   // Reset the camera zoom and position when r is pressed
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
   {
-    ng.setCameraZoom(   1.0 );
-    ng.setCameraCenter( .{} );
-    ng.setCameraRot(    .{} );
+    ng.camera.setZoom(   1.0 );
+    ng.camera.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 
-  var mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
+  var mazeMap = ng.tilemapManager.getTilemap( stateInj.MAZE_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
     return;
   };
 
   // Keep the camera inside over the maze area
-  ng.clampCameraCenterInArea( mazeMap.getMapBoundingBox() );
+  ng.camera.clampCenterInArea( mazeMap.getMapBoundingBox() );
 
   // Swap tilemap render style if the V key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
@@ -79,7 +78,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 
   const mouseScreemPos = def.ray.getMousePosition();
-  const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.getCameraCpy().?.toRayCam() );
+  const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.camera.toRayCam() );
 
   const worldCoords = mazeMap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -140,7 +139,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  const mazeMap = ng.getTilemap( stateInj.MAZE_ID ) orelse
+  const mazeMap = ng.tilemapManager.getTilemap( stateInj.MAZE_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.MAZE_ID });
     return;

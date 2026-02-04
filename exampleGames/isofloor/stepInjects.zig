@@ -49,36 +49,35 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.moveCameraByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.moveCameraByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.moveCameraByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.moveCameraByS( Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 11.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy(  9.0 / 10.0 ); }
 
   // Reset the camera zoom and position when r is pressed
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
   {
-    ng.setCameraZoom(   1.0 );
-    ng.setCameraCenter( .{} );
-    ng.setCameraRot(    .{} );
+    ng.camera.setZoom(   1.0 );
+    ng.camera.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 
-  var worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  var worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
   // Keep the camera looking over the map area
-  ng.clampCameraCenterInArea( worldGrid.getMapBoundingBox() );
+  ng.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
 
 
   const mouseScreenPos = def.ray.getMousePosition();
-  const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreenPos, ng.getCameraCpy().?.toRayCam() );
+  const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreenPos, ng.camera.toRayCam() );
 
   const worldCoords = worldGrid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -128,7 +127,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
     return;
@@ -173,7 +172,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void
 
 pub fn OffRenderWorld( ng : *def.Engine ) void
 {
-  const worldGrid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
     return;
@@ -191,7 +190,7 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 
     tilePos.y -= worldGrid.tileScale.y * sOffset;
 
-    ng.drawFromSprite( "cubes_1", FLOOR_ID, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    ng.resourceManager.drawFromSprite( "cubes_1", FLOOR_ID, tilePos, .{ .x = sScale, .y = sScale }, .white );
   }
 
   // Draw non-floor ground tiles
@@ -214,7 +213,7 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
 
     tilePos.y -= worldGrid.tileScale.y * sOffset;
 
-    ng.drawFromSprite( "cubes_1", groundId, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    ng.resourceManager.drawFromSprite( "cubes_1", groundId, tilePos, .{ .x = sScale, .y = sScale }, .white );
 
   }
 
@@ -246,7 +245,7 @@ pub fn OffRenderWorld( ng : *def.Engine ) void
   //if( data.ground == .Entry ){ tilePos.y -= worldGrid.tileScale.y * sOffset; } // raise objects onto entry podium
     if( data.ground == .Exit and objectId == PLAYER_ID ){ objectId = EXIT_2_ID; }
 
-    ng.drawFromSprite( "cubes_1", objectId, tilePos, .{ .x = sScale, .y = sScale }, .white );
+    ng.resourceManager.drawFromSprite( "cubes_1", objectId, tilePos, .{ .x = sScale, .y = sScale }, .white );
   }
 }
 
@@ -255,8 +254,8 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   const screenCenter = def.getHalfScreenSize();
 
-  ng.drawFromSprite( "cubes_1", LOGO_1_ID, .{ .x = screenCenter.x - 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
-  ng.drawFromSprite( "cubes_1", LOGO_2_ID, .{ .x = screenCenter.x + 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
+  ng.resourceManager.drawFromSprite( "cubes_1", LOGO_1_ID, .{ .x = screenCenter.x - 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
+  ng.resourceManager.drawFromSprite( "cubes_1", LOGO_2_ID, .{ .x = screenCenter.x + 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {

@@ -342,7 +342,7 @@ pub fn OnLoopStart( ng : *def.Engine ) void
 
 pub fn OnUpdateInputs( ng : *def.Engine ) void
 {
-  var grid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
     return;
@@ -351,15 +351,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   // Shake the screen on mine explosion
   if( shake_prog < 0.2 )
   {
-    var cam = ng.getCamera() catch
-    {
-      def.qlog( .WARN, 0, @src(), "Failed to optain main camera" );
-      return;
-    };
-
     const offset = shaker.getOffsetAtTime( shake_prog );
 
-    cam.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 2, }};
+    ng.camera.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 2, }};
 
     shake_prog += ( 1.0 / 120.0 );
   }
@@ -387,7 +381,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ) or def.ray.isMouseButtonPressed( def.ray.MouseButton.right ))
   {
     const mouseScreenPos = def.ray.getMousePosition();
-    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreenPos, ng.getCameraCpy().?.toRayCam() );
+    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreenPos, ng.camera.toRayCam() );
 
     const worldCoords = grid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -432,7 +426,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  const grid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  const grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
     return;
@@ -505,15 +499,10 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   }
 
 
-  const cam = ng.getCameraCpy() orelse
-  {
-    def.qlog( .ERROR, 0, @src(), "No main camera initialized" );
-    return;
-  };
-  const screenCenter = def.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, cam.toRayCam() );
+  const screenCenter = def.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, ng.camera.toRayCam() );
 
 
-  var grid = ng.getTilemap( stateInj.GRID_ID ) orelse
+  var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
     return;
@@ -542,7 +531,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   {
     const tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
 
-    const tileCenter = def.ray.getWorldToScreen2D( grid.getAbsTilePos( tile.mapCoords ).toRayVec2(), cam.toRayCam() );
+    const tileCenter = def.ray.getWorldToScreen2D( grid.getAbsTilePos( tile.mapCoords ).toRayVec2(), ng.camera.toRayCam() );
 
     if(      tile.colour.isEq( .blue   )){ def.drawCenteredText( "1", tileCenter.x, tileCenter.y, text_scale, .white ); }
     else if( tile.colour.isEq( .lBlue  )){ def.drawCenteredText( "2", tileCenter.x, tileCenter.y, text_scale, .white ); }
@@ -619,15 +608,9 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   // Make it so screen shake affects what is currently rendered on the UI ( the whole game )
 //if( shake_prog < 0.2 )
 //{
-//  var cam = ng.getCamera() catch
-//  {
-//    def.qlog( .WARN, 0, @src(), "Failed to optain main camera" );
-//    return;
-//  };
-
 //  const offset = shaker.getOffsetAtTime( shake_prog );
 
-//  cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+//  ng.camera.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
 
 //  shake_prog += ( 1.0 / 120.0 );
 //}

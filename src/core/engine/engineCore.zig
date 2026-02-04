@@ -15,8 +15,8 @@ pub const e_ng_state = enum
 {
   OFF,     // The engine is uninitialized
   STARTED, // The engine is initialized, but no window is created yet
-  OPENED,  // The window is openned but game is paused ( input and render only )
-  PLAYING, // The game is ticking and can be played
+  OPENED,  // The window is opened but game is paused ( input and render only )
+  PLAYING, // The game logic is ticking and can be played
 };
 
 pub const EngineTime = struct
@@ -46,14 +46,16 @@ pub const Engine = struct
   state : e_ng_state = .OFF,
   times : EngineTime = .{},
 
-  // Engine Components
-  Camera          : ?Cam2D                     = null,
-  resourceManager : ?def.res_m.ResourceManager = null,
-  bodyManager     : ?def.bdy_m.BodyManager     = null,
-  tilemapManager  : ?def.tlm_m.TilemapManager  = null,
+  // Engine Substructures
+  camera            : Cam2D                     = .{},
 
-  componentManager : ?def.ComponentRegistry    = null,
-  EntityIdRegistry : def.EntityIdRegistry      = .{},
+  resourceManager   : def.res_m.ResourceManager = .{},
+  bodyManager       : def.bdy_m.BodyManager     = .{},
+  tilemapManager    : def.tlm_m.TilemapManager  = .{},
+
+  // ECS Management
+  componentRegistry : def.ComponentRegistry     = .{},
+  entityIdRegistry  : def.EntityIdRegistry      = .{},
 
 
 
@@ -119,44 +121,6 @@ pub const Engine = struct
   pub inline fn getScaledTargetFrameDelta( self : *Engine ) f32 { return self.times.simScale * self.times.targetFrameDelta.toRayDeltaTime(); }
 
 
-  // ================ CAMERA SHORTHAND FUNCTIONS ================
-
-  pub inline fn initCamera( ng : *Engine ) void
-  {
-    if( ng.Camera != null ){ def.qlog( .WARN, 0, @src(), "Camera is already initialized, reinitializing it" ); }
-    ng.Camera = Cam2D.new( .{}, 1.0 );
-  }
-  pub inline fn deinitCamera( ng : *Engine ) void
-  {
-    if( ng.Camera == null ){ def.qlog( .WARN, 0, @src(), "Camera is already deinitialized" ); return; }
-    ng.Camera = null;
-  }
-
-  pub inline fn getCameraCpy(     ng : *Engine ) ?Cam2D { if( ng.Camera )| c |{ return c; } else { return null; }}
-  pub inline fn getCameraViewBox( ng : *Engine ) ?Box2  { if( ng.Camera )| c |{ return c.toViewBox(); } else { return null; }}
-
-  pub inline fn updateCameraView( ng : *Engine ) void { if( ng.Camera )| *c |{ c.updateView(); }}
-  pub inline fn updateCameraPos(  ng : *Engine ) void { if( ng.Camera )| *c |{ c.updatePos();  }}
-
-  pub inline fn setCameraCenter( ng : *Engine, center : Vec2  ) void { if( ng.Camera )| *c |{ c.setCenter( center ); }}
-  pub inline fn setCameraZoom(   ng : *Engine, zoom   : f32   ) void { if( ng.Camera )| *c |{ c.setZoom(   zoom   ); }}
-  pub inline fn setCameraRot(    ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.setRot(    angle  ); }}
-
-  pub inline fn moveCameraBy(  ng : *Engine, offset : Vec2  ) void { if( ng.Camera )| *c |{ c.moveBy( offset ); }}
-  pub inline fn moveCameraByS( ng : *Engine, factor : Vec2  ) void { if( ng.Camera )| *c |{ c.moveByS( factor ); }}
-  pub inline fn zoomCameraBy(  ng : *Engine, factor : f32   ) void { if( ng.Camera )| *c |{ c.zoomBy( factor ); }}
-  pub inline fn rotCameraBy(   ng : *Engine, angle  : Angle ) void { if( ng.Camera )| *c |{ c.rotBy(  angle  ); }}
-
-  pub inline fn clampCameraOnArea(  ng : *Engine, area  : Box2  ) void { if( ng.Camera )| *c |{ c.clampOnArea(  area  ); }}
-  pub inline fn clampCameraInArea(  ng : *Engine, area  : Box2  ) void { if( ng.Camera )| *c |{ c.clampInArea(  area  ); }}
-  pub inline fn clampCameraOnPoint( ng : *Engine, point : Vec2  ) void { if( ng.Camera )| *c |{ c.clampOnPoint( point ); }}
-
-  pub inline fn clampCameraCenterInArea(  ng : *Engine, area : Box2  ) void { if( ng.Camera )| *c |{ c.clampCenterInArea( area ); }}
-
-  pub inline fn isCameraInit( ng : *const Engine ) bool { if( ng.Camera != null ){ return true; } else { return false; }}
-  pub inline fn getCamera(    ng : *Engine ) !*Cam2D    { if( ng.Camera )| *c |{   return c;    } else { return error.NullManager; }}
-
-
   // ================================ ENGINE STATE FUNCTIONS ================================
 
   const ngnState = @import( "engineState.zig" );
@@ -170,156 +134,4 @@ pub const Engine = struct
   const ngnStep = @import( "engineStep.zig" );
 
   pub inline fn loopLogic(  self : *Engine ) void { ngnStep.loopLogic( self ); }
-
-
-  // ================================ MANAGER SHORTHAND FUNCTIONS ================================
-
-  pub inline fn isResourceManagerInit(  ng : *const Engine ) bool { if( ng.resourceManager  )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isBodyManagerInit(      ng : *const Engine ) bool { if( ng.bodyManager      )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isTilemapManagerInit(   ng : *const Engine ) bool { if( ng.tilemapManager   )| *m |{ return m.isInit; } else { return false; }}
-  pub inline fn isComponentManagerInit( ng : *const Engine ) bool { if( ng.componentManager )| *m |{ return m.isInit; } else { return false; }}
-
-
-  pub inline fn getResourceManager(  ng : *Engine ) !*def.res_m.ResourceManager { if( ng.resourceManager  )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getBodyManager(      ng : *Engine ) !*def.bdy_m.BodyManager     { if( ng.bodyManager      )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getTilemapManager(   ng : *Engine ) !*def.tlm_m.TilemapManager  { if( ng.tilemapManager   )| *m |{ return m; } else { return error.NullManager; }}
-  pub inline fn getComponentManager( ng : *Engine ) !*def.cmp.ComponentRegistry { if( ng.componentManager )| *m |{ return m; } else { return error.NullManager; }}
-
-
-
-  // ================ RESOURCE MANAGER ================
-
-  pub inline fn addAudio( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) void
-  {
-    if( self.resourceManager )| *m |{ m.addAudio( name, path ); }
-  }
-  pub inline fn addAudioFromFile( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) !void
-  {
-    if( self.resourceManager )| *m |{ return m.addAudioFromFile( name, path ); } else { return error.NullManager; }
-  }
-  pub inline fn playAudio( self : *Engine, name : [ :0 ]const u8 ) void
-  {
-    if( self.resourceManager )| *m |{ m.playAudio( name ); }
-  }
-
-  pub inline fn addSprite( self : *Engine, name : [ :0 ]const u8, path : [ :0 ]const u8 ) void
-  {
-    if( self.resourceManager )| *m |{ m.addSprite( name, path ); }
-  }
-  pub inline fn addSpriteFromFile( self : *Engine, name : [ :0 ]const u8, frameSize : def.Vec2, frameCount : u32, path : [ :0 ]const u8 ) !void
-  {
-    if( self.resourceManager )| *m |{ return m.addSpriteFromFile( name, frameSize, frameCount, path ); } else { return error.NullManager; }
-  }
-  pub inline fn drawFromSprite( self : *Engine, name : [ :0 ]const u8, index : u32, pos : def.VecA, scale : def.Vec2, col : def.Colour ) void
-  {
-    if( self.resourceManager )| *m |{ m.drawFromSprite( name, index, pos, scale, col ); }
-  }
-
-
-  // ================ BODY MANAGER ================
-
-  pub inline fn getMaxBodyId( ng : *Engine ) u32
-  {
-    if( ng.bodyManager )| *m |{ return m.getMaxId(); } else { return 0; }
-  }
-  pub inline fn getBody( ng : *Engine, id : u32 ) ?*def.Body
-  {
-    if( ng.bodyManager )| *m |{ return m.getBody( id ); } else { return null; }
-  }
-  pub inline fn loadBodyFromParams( ng : *Engine, params : def.Body ) ?*def.Body
-  {
-    if( ng.bodyManager )| *m |{ return m.loadBodyFromParams( params ); } else { return null; }
-  }
-  pub inline fn deleteAllMarkedBodies( ng : *Engine ) void
-  {
-    if( ng.bodyManager )| *m |{ m.deleteAllMarkedBodies(); }
-  }
-
-  pub inline fn tickActiveBodies( ng : *Engine ) void
-  {
-    if( ng.bodyManager )| *m |{ m.tickActiveBodies( ng ); }
-  }
-  pub inline fn renderBodyHitboxes( ng : *Engine ) void
-  {
-    if( ng.bodyManager )| *m |{ m.renderBodyHitboxes(); }
-  }
-  pub inline fn renderActiveBodies( ng : *Engine ) void
-  {
-    if( ng.bodyManager )| *m |{ m.renderActiveBodies( ng ); }
-  }
-
-
-  // ================ TILEMAP MANAGER ================
-
-  pub inline fn getMaxTilemapId( ng : *Engine ) u32
-  {
-    if( ng.tilemapManager )| *m |{ return m.getMaxId(); } else { return 0; }
-  }
-  pub inline fn getTilemap( ng : *Engine, id : u32 ) ?*def.Tilemap
-  {
-    if( ng.tilemapManager )| *m |{ return m.getTilemap( id ); } else { return null; }
-  }
-  pub inline fn loadTilemapFromParams( ng : *Engine, params : def.Tilemap, fillType : def.tlm.e_tile_type ) ?*def.Tilemap
-  {
-    if( ng.tilemapManager )| *m |{ return m.loadTilemapFromParams( params, fillType ); } else { return null; }
-  }
-  pub inline fn deleteAllMarkedTilemaps( ng : *Engine ) void
-  {
-    if( ng.tilemapManager )| *m |{ m.deleteAllMarkedTilemaps(); }
-  }
-
-  pub inline fn tickActiveTilemaps( ng : *Engine ) void
-  {
-    if( ng.tilemapManager )| *m |{ m.tickActiveTilemaps( ng ); }
-  }
-  pub inline fn renderTilemapHitboxes( ng : *Engine ) void
-  {
-    if( ng.tilemapManager )| *m |{ m.renderTilemapHitboxes(); }
-  }
-  pub inline fn renderActiveTilemaps( ng : *Engine ) void
-  {
-    if( ng.tilemapManager )| *m |{ m.renderActiveTilemaps( ng ); }
-  }
-
-
-  // ================ ENTITY-COMPONMENT MANAGER ================
-
-  // Used to registers user-created ComponentStores for later access
-  pub inline fn registerComponentStore( ng : *Engine, name : []const u8, storePtr : *anyopaque ) bool
-  {
-    if( ng.componentManager )| *m |{ return m.register( name, storePtr ); }
-    else
-    {
-      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
-      return false;
-    }
-  }
-  pub inline fn unregisterComponentStore( ng : *Engine, name : []const u8 ) bool
-  {
-    if( ng.componentManager )| *m |{ return m.unregister( name ); }
-    else
-    {
-      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
-      return false;
-    }
-  }
-  pub inline fn getComponentStorePtr( ng : *Engine, name : []const u8 ) ?*anyopaque
-  {
-    if( ng.componentManager )| *m |{ return m.get( name ); }
-    else
-    {
-      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
-      return null;
-    }
-  }
-  pub inline fn hasComponentStorePtr( ng : *Engine, name : []const u8 ) bool
-  {
-    if( ng.componentManager )| *m |{ return m.has( name ); }
-    else
-    {
-      def.qlog( .WARN, 0, @src(), "Dailed to obtain componentManager" );
-      return false;
-    }
-  }
-
 };

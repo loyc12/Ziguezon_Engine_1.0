@@ -36,17 +36,17 @@ pub fn OnOpen( ng : *def.Engine ) void // Init and register ComponentStores here
   shapeStore.init(     def.getAlloc() );
 
 
-  if( !ng.registerComponentStore( "transformStore", &transformStore ))
+  if( !ng.componentRegistry.register( "transformStore", &transformStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register transformStore" );
   }
-  if( !ng.registerComponentStore( "shapeStore", &shapeStore ))
+  if( !ng.componentRegistry.register( "shapeStore", &shapeStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
   }
 
 
-  DISK_ID = ng.EntityIdRegistry.getNewEntity().id;
+  DISK_ID = ng.entityIdRegistry.getNewEntity().id;
 
 
   if( transformStore.add( DISK_ID,

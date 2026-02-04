@@ -40,7 +40,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
       IS_GAME_OVER  = false;
       IS_JUMPING    = false;
 
-      const transformStore : *TransformStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "transformStore" )));
+      const transformStore : *TransformStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transformStore" )));
 
       var diskTransform = transformStore.get( DISK_ID.* ) orelse
       {
@@ -72,7 +72,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 pub fn OnTickWorld( ng : *def.Engine ) void
 {
-  const transformStore : *TransformStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "transformStore" )));
+  const transformStore : *TransformStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transformStore" )));
 
   var diskTransform = transformStore.get( DISK_ID.* ) orelse
   {
@@ -81,7 +81,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
   };
 
 
-  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "shapeStore" )));
+  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
 
   var diskShape = shapeStore.get( DISK_ID.* ) orelse
   {
@@ -153,7 +153,7 @@ pub fn OffTickWorld( ng : *def.Engine ) void
 
 pub fn OnRenderWorld( ng : *def.Engine ) void
 {
-  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.getComponentStorePtr( "shapeStore" )));
+  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
 
   var diskShape = shapeStore.get( DISK_ID.* ) orelse
   {

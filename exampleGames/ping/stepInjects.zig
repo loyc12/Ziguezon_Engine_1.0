@@ -14,13 +14,13 @@ var pendingBallParticles : u32 = 0;
 
 pub fn cpyBodyPosViaId( ng : *Engine , dstId : u32, srcId : u32, ) void
 {
-  const src = ng.getBody( srcId ) orelse
+  const src = ng.bodyManager.getBody( srcId ) orelse
   {
     def.log( .WARN, 0, @src(), "Body with Id {d} not found", .{ srcId });
     return;
   };
 
-  const dst = ng.getBody( dstId ) orelse
+  const dst = ng.bodyManager.getBody( dstId ) orelse
   {
     def.log( .WARN, 0, @src(), "Body with Id {d} not found", .{ dstId });
     return;
@@ -41,7 +41,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
 
     const size = def.G_RNG.getScaledFloat( 2.0, 7.0 );
 
-    _ = ng.loadBodyFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
+    _ = ng.bodyManager.loadBodyFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .pos    = def.G_RNG.getScaledVecA( dPos, pos ),
       .vel    = def.G_RNG.getScaledVecA( dVel, vel ),
@@ -67,7 +67,7 @@ pub fn emitBounceParticles( ng : *Engine, ball : *Body ) void
       .{ .x = 128, .y = 32, .a = Angle.newRad( 2.0 )},
       pendingBallParticles, def.Colour.yellow );
 
-    ng.playAudio( "hit_1" );
+    ng.resourceManager.playAudio( "hit_1" );
     pendingBallParticles = 0;
   }
 }
@@ -119,7 +119,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void
       WINNER = 0;         // Reset winner
 
       // Reset the ball position and velocity
-      var ball = ng.getBody( stateInj.BALL_ID ) orelse
+      var ball = ng.bodyManager.getBody( stateInj.BALL_ID ) orelse
       {
         def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
         return;
@@ -149,21 +149,20 @@ pub fn OnUpdateInputs( ng : *Engine ) void
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Move the camera with the numpad keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.moveCameraBy( Vec2.new(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.moveCameraBy( Vec2.new(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.moveCameraBy( Vec2.new( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.moveCameraBy( Vec2.new(  8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
 
     // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.zoomCameraBy( 11.0 / 10.0 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.zoomCameraBy(  9.0 / 10.0 ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 11.0 / 10.0 ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy(  9.0 / 10.0 ); }
 
     // Reset the camera zoom and position when r is pressed
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.r ))
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
     {
-      ng.setCameraZoom(   1.0 );
-      ng.setCameraCenter( .{} );
-      ng.setCameraRot(    .{} );
+      ng.camera.setZoom( 1.0 );
+      ng.camera.pos = .{};
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -187,7 +186,7 @@ pub fn OnUpdateInputs( ng : *Engine ) void
 
 pub fn OnTickWorld( ng : *Engine ) void
 {
-  var ball = ng.getBody( stateInj.BALL_ID ) orelse
+  var ball = ng.bodyManager.getBody( stateInj.BALL_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
@@ -200,11 +199,12 @@ pub fn OnTickWorld( ng : *Engine ) void
 
   cpyBodyPosViaId( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
 
-  if( ng.getMaxBodyId() == stateInj.BALL_ID ){ return; }
+  if( ng.bodyManager.getMaxId() == stateInj.BALL_ID ){ return; }
 
-  for( stateInj.BALL_ID + 1 .. 1 + ng.getMaxBodyId() )| i |
+  // Looping on pseudio-particles
+  for( stateInj.BALL_ID + 1 .. 1 + ng.bodyManager.getMaxId() )| i |
   {
-    const part = ng.getBody( @intCast( i )) orelse continue;
+    const part = ng.bodyManager.getBody( @intCast( i )) orelse continue;
 
     if( part.canBeDel() ){ continue; } // skip pre-marked particles
 
@@ -236,19 +236,19 @@ pub fn OffTickWorld( ng : *Engine ) void
   const playerBounceFactorY : f32 = 0.80; // Perpendicular bounce factor for the ball when hitting players
   const playerBounceFactorX : f32 = 0.75; // Parallel bounce factor for the ball when hitting players
 
-  var p1 = ng.getBody( stateInj.P1_ID ) orelse
+  var p1 = ng.bodyManager.getBody( stateInj.P1_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Body with Id {d} ( P1 ) not found", .{ stateInj.P1_ID } );
     return;
   };
 
-  var p2 = ng.getBody( stateInj.P2_ID ) orelse
+  var p2 = ng.bodyManager.getBody( stateInj.P2_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Body with Id {d} ( P2 ) not found", .{ stateInj.P2_ID } );
     return;
   };
 
-  var ball = ng.getBody( stateInj.BALL_ID ) orelse
+  var ball = ng.bodyManager.getBody( stateInj.BALL_ID ) orelse
   {
     def.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
     return;
@@ -407,12 +407,6 @@ pub fn OffTickWorld( ng : *Engine ) void
 
 pub fn OnRenderOverlay( ng : *Engine ) void
 {
-  const cam = ng.getCameraCpy() orelse
-  {
-    def.qlog( .ERROR, 0, @src(), "No main camera initialized" );
-    return;
-  };
-
   // Declare the buffers to hold the formatted scores
   var s1_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 1's score
   var s2_buff : [ 4:0 ]u8 = .{ 0, 0, 0, 0 }; // Buffer for player 2's score
@@ -434,8 +428,8 @@ pub fn OnRenderOverlay( ng : *Engine ) void
   s2_buff[ s2_slice.len ] = 0;
 
   // Find the center of each field in screen space
-  const p1_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() *  0.25, .y = 0 }, cam.toRayCam() );
-  const p2_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() * -0.25, .y = 0 }, cam.toRayCam() );
+  const p1_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() *  0.25, .y = 0 }, ng.camera.toRayCam() );
+  const p2_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() * -0.25, .y = 0 }, ng.camera.toRayCam() );
 
   // Draw each player's score in the middle of their respective fields
   def.drawCenteredText( &s1_buff, p1_score_pos.x, p1_score_pos.y, 64, def.Colour.blue );

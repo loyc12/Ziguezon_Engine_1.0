@@ -457,11 +457,7 @@ pub const Tilemap = struct
       return;
     }
 
-    const viewBox = def.G_NG.getCameraViewBox() orelse
-    {
-      def.log( .ERROR, 0, @src(), "Cannot draw tilemap {d} : camera is not initialized", .{ self.id });
-      return;
-    };
+    const viewBox = def.G_NG.camera.toViewBox();
 
     if( !viewBox.isOverlapping( &self.getMapBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
 

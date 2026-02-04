@@ -32,7 +32,7 @@ pub fn OnOpen( ng : *def.Engine ) void
 
 
   // Setting up the grid
-  const tlm = ng.loadTilemapFromParams(
+  const tlm = ng.tilemapManager.loadTilemapFromParams(
   .{
     .mapPos    = .{ .x = 0,          .y = GRID_SCALE  },
     .mapSize   = .{ .x = GRID_WIDTH, .y = GRID_HEIGHT },

@@ -18,7 +18,7 @@ pub fn loopLogic( ng : *Engine ) void
   def.qlog( .INFO, 0, @src(), "& Game loop started\n" );
 
   // NOTE : this is a blocking loop, it will not return until the game is closed
-  // TODO : use a thread to run this loop in the background ?
+  // TODO : multitread if this becomes a bottleneck
 
   while( !def.ray.windowShouldClose() )
   {
@@ -71,12 +71,8 @@ fn updateInputs( ng : *Engine ) void
   {
     if( def.ray.isWindowResized() )
     {
-      if( ng.isCameraInit() )
-      {
-        def.qlog( .TRACE, 0, @src(), "Updating camera dimensions" );
-        ng.updateCameraView();
-      }
-      else { def.qlog( .WARN, 0, @src(), "No main camera initialized, skipping camera update" ); }
+      def.qlog( .TRACE, 0, @src(), "Updating camera dimensions" );
+      ng.camera.updateView();
     }
   }
   //def.tryHook( .OffUpdateInputs, ng );
@@ -99,8 +95,6 @@ inline fn tryTick( ng : *Engine ) bool
     {
       tickTilemaps( ng );
       tickBodies( ng );
-
-      // NOTE : tick other world objects here
     }
     def.tryHook( .OffTickWorld, ng );
 
@@ -114,24 +108,16 @@ fn tickTilemaps( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Tilemap game logic..." );
 
-  if( ng.isTilemapManagerInit() )
-  {
-    ng.tickActiveTilemaps();
-    ng.deleteAllMarkedTilemaps();
-  }
-  else { def.qlog( .WARN, 0, @src(), "Cannot tick tilemaps: Tilemap manager is not initialized" ); }
+  ng.tilemapManager.tickActiveTilemaps( ng );
+  ng.tilemapManager.deleteAllMarkedTilemaps();
 }
 
 fn tickBodies( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Body game logic..." );
 
-  if( ng.isBodyManagerInit() )
-  {
-    ng.tickActiveBodies();
-    ng.deleteAllMarkedBodies();
-  }
-  else { def.qlog( .WARN, 0, @src(), "Cannot tick bodies: Body manager is not initialized" ); }
+  ng.bodyManager.tickActiveBodies( ng );
+  ng.bodyManager.deleteAllMarkedBodies();
 }
 
 
@@ -168,30 +154,19 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
 
   def.tryHook( .OnRenderBckgrnd, ng );
 
-  if( !ng.isCameraInit() )
+  def.ray.beginMode2D( ng.camera.toRayCam() );
   {
-    def.qlog( .WARN, 0, @src(), "Cannot render graphics: Main camera is not initialized" );
-    return;
+    def.tryHook( .OnRenderWorld, ng );
+
+    renderTilemaps( ng );
+    renderBodies(   ng );
+
+    def.tryHook( .OffRenderWorld, ng );
   }
+  def.ray.endMode2D();
 
-  if( ng.getCameraCpy() )| cam |
-  {
-    def.ray.beginMode2D( cam.toRayCam() );
-    {
-      def.tryHook( .OnRenderWorld, ng );
-
-      renderTilemaps( ng );
-      renderBodies( ng );
-
-      def.tryHook( .OffRenderWorld, ng );
-    }
-
-    def.ray.endMode2D();
-
-    drawDebugFpsCount( ng );
-  //drawDebugTpsCount( ng );
-  }
-  else { def.qlog( .WARN, 0, @src(), "No main camera found, skipping world rendering" ); }
+  drawDebugFpsCount( ng );
+//drawDebugTpsCount( ng );
 
   def.tryHook( .OnRenderOverlay, ng );
   {
@@ -204,24 +179,24 @@ fn renderTilemaps( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Tilemap visuals..." );
 
-  if( ng.isTilemapManagerInit() )
+  ng.tilemapManager.renderActiveTilemaps( ng );
+
+  if( def.G_ST.DebugDraw_Tilemap )
   {
-    ng.renderActiveTilemaps();
-    if( def.G_ST.DebugDraw_Tilemap ){ ng.renderTilemapHitboxes(); }
+    ng.tilemapManager.renderTilemapHitboxes();
   }
-  else { def.qlog( .WARN, 0, @src(), "Cannot render tilemaps: Tilemap manager is not initialized" ); }
 }
 
 fn renderBodies( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Body visuals..." );
 
-  if( ng.isBodyManagerInit() )
+  ng.bodyManager.renderActiveBodies( ng );
+
+  if( def.G_ST.DebugDraw_Body )
   {
-    ng.renderActiveBodies();
-    if( def.G_ST.DebugDraw_Body ){ ng.renderBodyHitboxes(); }
+    ng.bodyManager.renderBodyHitboxes();
   }
-  else { def.qlog( .WARN, 0, @src(), "Cannot redner bodies: Body manager is not initialized" ); }
 }
 
 
