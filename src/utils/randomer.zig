@@ -66,13 +66,10 @@ pub const Randomiser = struct
   // Returns a random integer in the range [ min, max ] ( inclusive for both )
   pub fn getClampedInt( self : *Randomiser, min : i32, max : i32 ) i32
   {
+    const range : i32 = @intCast( @abs( max - min ));
+    const val = @mod( self.rng.int( i32 ), range + 1 ); // +1 to include max as a result ( min included by default )
 
-    var tmp : f32 = @floatFromInt( max - min ); // Getting the size of the range between [ min, max ]
-    tmp += 1 - def.EPS;           // Adding ~1 to the range to include maximum value in the rounded down result
-    tmp *= self.rng.float( f32 ); // Getting a random float in the range [ 0, range + ~1 ]
-    tmp += @floatFromInt( min );  // Adding the minimum value to the random float to get the range [ min, max + ~1 ]
-
-    return @as( i32, @intFromFloat( @floor( tmp ))); // Rounding down the value to get an integer in the range [ min, max ]
+    return( val + @min( min, max )); // Allows min to be larger than max
   }
 
   // Returns a random angle in radians in the range [ 0, 2*PI )

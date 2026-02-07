@@ -201,10 +201,11 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.drawCenteredText( "Paused",                      screenCenter.x, ( screenCenter.y * 2 ) - 96, 64, def.Colour.yellow );
-    def.drawCenteredText( "Press P or Enter to resume",  screenCenter.x, ( screenCenter.y * 2 ) - 32, 32, def.Colour.yellow );
-    def.drawCenteredText( "Press V to change view mode", screenCenter.x, screenCenter.y + 60, 20, def.Colour.white );
+    def.drawCenteredText( "Paused",                        screenCenter.x, ( screenCenter.y * 2 ) - 96, 64, def.Colour.yellow );
+    def.drawCenteredText( "Press P or Enter to resume",    screenCenter.x, ( screenCenter.y * 2 ) - 32, 32, def.Colour.yellow );
   }
+
+  def.drawCenteredText( "Press Q to regenerate terrain", screenCenter.x, 32, 24, def.Colour.nWhite );
 
   if( SELECTED_TILE )| tile |
   {
@@ -212,12 +213,12 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
     var noiseValBuff = std.mem.zeroes([ 32:0 ]u8 );
 
-    _ = std.fmt.bufPrint( &noiseValBuff, "Nosie Value : {d}", .{ data.noiseVal }) catch | err |
+    _ = std.fmt.bufPrint( &noiseValBuff, "Noise Value : {d}", .{ data.noiseVal }) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to format noiseVal : {}", .{ err });
       return;
     };
 
-    def.drawCenteredText( &noiseValBuff,  screenCenter.x, 32, 24, def.Colour.nWhite );
+    def.drawCenteredText( &noiseValBuff, screenCenter.x, 96, 24, def.Colour.nWhite );
   }
 }
