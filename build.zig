@@ -175,6 +175,9 @@ pub fn build( b : *std.Build ) void
     .{ "politator",   "exampleGames/politator/engineInterface.zig"   },
     .{ "granulater",  "exampleGames/granulater/engineInterface.zig"  },
     .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
+
+    .{ "orbiter",     "exampleGames/orbiter/engineInterface.zig"     },
+
   };
 
   const optimizations =

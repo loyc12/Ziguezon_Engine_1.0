@@ -25,8 +25,8 @@ pub const EngineSettings = struct
   Startup_Target_TickRate  : u16 = 60,
   Startup_Target_FrameRate : u16 = 120,
 
-  Startup_Window_Width     : u16 = 2048,
-  Startup_Window_Height    : u16 = 1024,
+  Startup_Window_Width     : u16 = 1080,
+  Startup_Window_Height    : u16 = 720,
 
   Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - DefaultTitle",
 

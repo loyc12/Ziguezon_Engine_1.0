@@ -29,16 +29,16 @@ const def = @import( "defs" );
 //pub const Startup_Window_Width     : u16 = 1080;
 //pub const Startup_Window_Height    : u16 = 720;
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Empty Template";
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Orbiter";
 
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.blue;
+//pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.black;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
-//pub const Camera_Max_Zoom          : f32 = 5.0;
-//pub const Camera_Min_Zoom          : f32 = 0.2;
+  pub const Camera_Max_Zoom          : f32 = 10.0;
+  pub const Camera_Min_Zoom          : f32 = 0.10;
 
 
 // ================================ GAME HOOKS ================================
