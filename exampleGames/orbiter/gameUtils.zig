@@ -2,6 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const glb = @import( "gameGlobals.zig" );
+const cmp = @import( "gameComps.zig" );
 
 
 pub fn updateCameraLogic( ng : *def.Engine ) void

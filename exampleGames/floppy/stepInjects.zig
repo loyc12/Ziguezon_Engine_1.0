@@ -109,23 +109,20 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   diskTransform.updatePos( ng.getScaledTargetTickDelta() );
 
-  diskShape.angle = diskTransform.pos.a;
-
-  diskShape.updateHitbox( diskTransform.pos.toVec2() );
-
 
   // ================ CLAMPING THE DISK POSITIONS ================
 
   const hHeight : f32 = def.getHalfScreenHeight();
 
-  if( diskShape.hitbox.getTopY() < -hHeight )
+  const hitbox = diskShape.getAABB( diskTransform.pos );
+
+  if( hitbox.getTopY() < -hHeight )
   {
-    diskShape.hitbox.setTopY( -hHeight );
-    diskTransform.pos.y = diskShape.hitbox.center.y;
+    diskTransform.pos.y = -hHeight + hitbox.scale.y;
     diskTransform.vel.y = 0;
   }
 
-  if( diskShape.hitbox.getBottomY() > hHeight )
+  if( hitbox.getBottomY() > hHeight )
   {
     def.log( .DEBUG, 0, @src(), "Disk {d} has fallen off the screen", .{ DISK_ID.* });
     IS_GAME_OVER = true;
@@ -153,15 +150,23 @@ pub fn OffTickWorld( ng : *def.Engine ) void
 
 pub fn OnRenderWorld( ng : *def.Engine ) void
 {
+  const transformStore : *TransformStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transformStore" )));
+
+  const diskTransform = transformStore.get( DISK_ID.* ) orelse
+  {
+    def.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
+    return;
+  };
+
   const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
 
-  var diskShape = shapeStore.get( DISK_ID.* ) orelse
+  const diskShape = shapeStore.get( DISK_ID.* ) orelse
   {
     def.log( .WARN, 0, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
-  diskShape.render();
+  diskShape.render( diskTransform.pos );
 }
 
 

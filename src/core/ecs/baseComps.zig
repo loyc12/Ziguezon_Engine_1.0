@@ -96,30 +96,25 @@ pub const ShapeComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  baseScale : Vec2,
-  hitbox    : Box2 = .{},
-  angle     : Angle = .{},
-
-  shape  : e_shape_2D = .RECT,
+  scale  : Vec2,
   colour : def.Colour = .nWhite,
+  shape  : e_shape_2D = .RECT,
 
 
-  pub inline fn updateHitbox( self : *ShapeComp, newCenter : Vec2 ) void
+  pub inline fn setscale( self : *HitboxComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
+  pub inline fn getscale( self : *const HitboxComp     ) Vec2 { return self.sprite.scale; }
+
+  pub inline fn getAABB( self : *const ShapeComp, selfPos : VecA ) Box2
   {
-    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( newCenter, self.baseScale, self.angle, self.shape.getSideCount() ); }
-    else {                     self.hitbox = Box2.newRectAABB( newCenter, self.baseScale, self.angle ); }
+    if( self.shape != .RECT ){ return Box2.newPolyAABB( selfPos.toVec2(), self.scale, selfPos.a, self.shape.getSideCount() ); }
+    else {                     return Box2.newRectAABB( selfPos.toVec2(), self.scale, selfPos.a ); }
   }
 
-  pub inline fn getPos( self : *const ShapeComp ) VecA
+  pub fn render( self : *const ShapeComp, selfPos : VecA ) void
   {
-    return VecA.new( self.hitbox.center.x, self.hitbox.center.y, self.angle );
-  }
-
-  pub fn render( self : *const ShapeComp ) void
-  {
-    const p = self.hitbox.center;
-    const s = self.baseScale;
-    const r = self.angle;
+    const p = selfPos.toVec2();
+    const s = self.scale;
+    const r = selfPos.a;
     const c = self.colour;
 
     switch( self.shape )
@@ -143,9 +138,35 @@ pub const ShapeComp = struct
   }
 };
 
+// ================ Hitbox 2D ================
+
+pub const HitboxComp = struct
+{
+  pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
+
+  hitbox : Box2 = .{},
 
 
-// ================ SHAPE 2D ================
+  pub inline fn setPos(   self : *HitboxComp, newPos   : VecA ) void { self.sprite.pos   = newPos;   }
+  pub inline fn setscale( self : *HitboxComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
+
+  pub inline fn getPos(   self : *const HitboxComp ) VecA { return self.sprite.pos;   }
+  pub inline fn getscale( self : *const HitboxComp ) Vec2 { return self.sprite.scale; }
+
+  pub inline fn isOverlaping( self : *const HitboxComp, other : *const HitboxComp ) bool
+  {
+    return self.hitbox.isOverlaping( other.hitbox );
+  }
+
+  pub inline fn getOverlap( self : *const HitboxComp, other : *const HitboxComp ) ?Vec2
+  {
+    return self.hitbox.getOverlap( other.hitbox );
+  }
+};
+
+
+
+// ================ Sprite 2D ================
 
 pub const SpriteComp = struct
 {
@@ -156,7 +177,7 @@ pub const SpriteComp = struct
   frameElapse : u32 = 0.0,  // How long the current frame has been shown
 
 
-  pub fn updateSprite( self : *SpriteComp, frameStep : f32 ) void
+  pub fn updateAnimation( self : *SpriteComp, frameStep : f32 ) void
   {
     self.frameElapse += frameStep;
 
@@ -174,8 +195,7 @@ pub const SpriteComp = struct
     }
   }
 
-  pub inline fn render( self : *const SpriteComp ) void
-  {
-    self.sprite.drawSelf();
-  }
+  pub inline fn setPos(   self : *SpriteComp, newPos   : VecA ) void { self.sprite.pos   = newPos;   }
+  pub inline fn setscale( self : *SpriteComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
+  pub inline fn render(   self : *const SpriteComp            ) void { self.sprite.drawSelf();       }
 };

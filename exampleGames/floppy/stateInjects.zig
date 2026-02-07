@@ -24,7 +24,7 @@ var transformStore : TransformStore = .{};
 var shapeStore     : ShapeStore = .{};
 
 
-pub const diskStartPos = def.VecA.new( -800,   400, .{} );
+pub const diskStartPos = def.VecA.new( -400,   200, .{} );
 pub const diskStartVel = def.VecA.new(    0, -2400, .{} );
 
 
@@ -65,9 +65,9 @@ pub fn OnOpen( ng : *def.Engine ) void // Init and register ComponentStores here
 
   if( shapeStore.add( DISK_ID,
     .{
-      .hitbox    = .{ .center = diskStartPos.toVec2() },
-      .baseScale = .{ .x = 32, .y = 32 },
-      .colour    = .green,
+      .scale  = .{ .x = 32, .y = 32 },
+      .shape  = .RECT,
+      .colour = .green,
     }
   ))
   {
