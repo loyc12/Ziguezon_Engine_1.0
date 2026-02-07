@@ -35,6 +35,7 @@ const def = @import( "defs" );
 // Graphical Values
 
   pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.blue;
+  pub const Graphic_Metrics_Colour   : ?def.Colour = def.Colour.green;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
 //pub const Camera_Max_Zoom          : f32 = 5.0;

@@ -1,6 +1,10 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const glb = @import( "gameGlobals.zig" );
+const utl = @import( "gameUtils.zig" );
+
+
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
 

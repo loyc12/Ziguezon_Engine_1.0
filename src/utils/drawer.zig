@@ -66,6 +66,7 @@ pub fn setDefaultFont( fontPath : ?[:0] const u8 ) bool
 //}
 
 pub inline fn coverScreenWithCol( col : Colour ) void { ray.drawRectangleV( def.zeroRayVec2, def.getScreenSize().toRayVec2(), col.toRayCol() ); }
+pub inline fn clearBackground(    col : Colour ) void { ray.clearBackground( col.toRayCol() ); }
 
 
 // ================ SIMPLE DRAWING FUNCTIONS ================

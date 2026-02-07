@@ -1,6 +1,9 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const glb = @import( "gameGlobals.zig" );
+const utl = @import( "gameUtils.zig" );
+
 // ================================ ENGINE SETTINGS ================================
 // NOTE : All engine settings have a default value - see engineSettingHandler.zig for more info on those
 
@@ -34,7 +37,8 @@ const def = @import( "defs" );
 
 // Graphical Values
 
-//pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.black;
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = glb.backColour;
+  pub const Graphic_Metrics_Colour   : ?def.Colour = glb.textColour;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
   pub const Camera_Max_Zoom          : f32 = 10.0;
