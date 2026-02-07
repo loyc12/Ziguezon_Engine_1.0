@@ -7,16 +7,17 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  orbitee : ?def.EntityId = null,
+//orbitee : ?def.EntityId = null,
   mass    : f32           = 1.0,
 
   pub fn tickOrbit
   (
-    selfOrbit : *OrbitComp,     otherOrbit : *OrbitComp,
-    selfTrans : *def.TransComp, otherTrans : *def.TransComp,
+    selfOrbit : *const OrbitComp, otherOrbit : *const OrbitComp,
+    selfTrans : *def.TransComp,   otherTrans : *const def.TransComp,
     sdt : f32
   ) void
   {
+
     const m1 = selfOrbit.mass;
     const m2 = otherOrbit.mass;
 

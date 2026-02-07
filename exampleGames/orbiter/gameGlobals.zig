@@ -12,7 +12,13 @@ pub const textColour : def.Colour = .lGreen;
 
 
 pub const TransStore  = def.TransComp.getStoreType();
+pub const OrbitStore  = cmp.OrbitComp.getStoreType();
 pub const ShapeStore  = def.ShapeComp.getStoreType();
 pub const SpriteStore = def.SpriteComp.getStoreType();
 
-pub const OrbitStore  = cmp.OrbitComp.getStoreType();
+pub var transStore  : TransStore  = .{};
+pub var shapeStore  : ShapeStore  = .{};
+pub var spriteStore : SpriteStore = .{};
+pub var orbitStore  : OrbitStore  = .{};
+
+pub var entityArray : [3]def.Entity = std.mem.zeroes( [3]def.Entity );
