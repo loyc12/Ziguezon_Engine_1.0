@@ -98,13 +98,6 @@ pub const Box2 = struct
       .scale  = self.scale,
     };
   }
-  pub inline fn rotCenter( self : Box2, a : Angle ) Box2
-  {
-    return Box2{
-      .center = self.center.rot( a ),
-      .scale  = self.scale,
-    };
-  }
 
   // ================ INITIALIZATION METHODS ================
 

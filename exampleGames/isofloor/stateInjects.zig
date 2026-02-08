@@ -61,7 +61,7 @@ pub fn OnOpen( ng : *def.Engine ) void
     .mapSize   = .{ .x = GRID_WIDTH, .y = GRID_HEIGHT  },
     .tileScale = .{ .x = 64,         .y = 32           },
     .tileShape = .DIAM,
-  }, .EMPTY );
+  }, .T1 );
 
   if( tlm == null ){ def.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
 

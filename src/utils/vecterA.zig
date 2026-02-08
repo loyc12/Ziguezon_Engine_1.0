@@ -77,12 +77,12 @@ pub const VecA = struct
 
   // ================ BACIS MATHS ================
 
-  pub inline fn abs( self : *const VecA ) VecA { return VecA{ .x =  @abs( self.x ), .y =  @abs( self.y ), .a = self.a }; }
-  pub inline fn neg( self : *const VecA ) VecA { return VecA{ .x = -@abs( self.x ), .y = -@abs( self.y ), .a = self.a }; }
+  pub inline fn abs( self : *const VecA ) VecA { return VecA{ .x =  @abs( self.x ), .y =  @abs( self.y ), .a =   @abs( self.a )}; }
+  pub inline fn neg( self : *const VecA ) VecA { return VecA{ .x = -@abs( self.x ), .y = -@abs( self.y ), .a =  -@abs( self.a )}; }
 
-  pub inline fn add( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x + other.x, .y = self.y + other.y, .a = self.a }; }
-  pub inline fn sub( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x - other.x, .y = self.y - other.y, .a = self.a }; }
-  pub inline fn mul( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x * other.x, .y = self.y * other.y, .a = self.a }; }
+  pub inline fn add( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x + other.x, .y = self.y + other.y, .a = self.a.add( other.a )}; }
+  pub inline fn sub( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x - other.x, .y = self.y - other.y, .a = self.a.sub( other.a )}; }
+  pub inline fn mul( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x * other.x, .y = self.y * other.y, .a = self.a.mul( other.a )}; }
   pub inline fn div( self : *const VecA, other : VecA ) ?VecA
   {
     if( other.x == 0.0 or other.y == 0.0 )
@@ -90,12 +90,12 @@ pub const VecA = struct
       def.qlog( .ERROR, 0, @src(), "Division by zero in VecA.div()" );
       return null;
     }
-    return VecA{ .x = self.x / other.x, .y = self.y / other.y, .a = self.a };
+    return VecA{ .x = self.x / other.x, .y = self.y / other.y, .a = self.a.div( other.a )};
   }
 
-  pub inline fn addVal( self : *const VecA, val : f32 ) VecA { return VecA{ .x = self.x + val, .y = self.y + val, .a = self.a }; }
-  pub inline fn subVal( self : *const VecA, val : f32 ) VecA { return VecA{ .x = self.x - val, .y = self.y - val, .a = self.a }; }
-  pub inline fn mulVal( self : *const VecA, val : f32 ) VecA { return VecA{ .x = self.x * val, .y = self.y * val, .a = self.a }; }
+  pub inline fn addVal( self : *const VecA, val : f32 ) VecA { return VecA{ .x = self.x + val, .y = self.y + val, .a = self.a.addVal( val )}; }
+  pub inline fn subVal( self : *const VecA, val : f32 ) VecA { return VecA{ .x = self.x - val, .y = self.y - val, .a = self.a.subVal( val )}; }
+  pub inline fn mulVal( self : *const VecA, val : f32 ) VecA { return VecA{ .x = self.x * val, .y = self.y * val, .a = self.a.mulVal( val )}; }
   pub inline fn divVal( self : *const VecA, val : f32 ) ?VecA
   {
     if( val == 0.0 )
@@ -103,7 +103,7 @@ pub const VecA = struct
       def.qlog( .ERROR, 0, @src(), "Division by zero in VecA.divVal()" );
       return null;
     }
-    return VecA{ .x = self.x / val, .y = self.y / val, .a = self.a };
+    return VecA{ .x = self.x / val, .y = self.y / val, .a = self.a.divVal( val )};
   }
 
   pub inline fn getDist(    self : *const VecA, other : VecA ) f32 { return @sqrt( self.getDistSqr( other )); }

@@ -116,7 +116,7 @@ pub const e_tlmp_shape = enum( u8 )
 pub fn getAbsTilePos( tlmp : *const Tilemap, mapCoords : Coords2 ) VecA
 {
   const  tilePos = getRelTilePos( tlmp, mapCoords ).toVecA( .{} );
-  return tilePos.rot( tlmp.mapPos.a ).add( tlmp.mapPos );
+  return tilePos.rot( tlmp.mapPos.a ).add( .new( tlmp.mapPos.x, tlmp.mapPos.y, .{} )); // Prevents adding .a twice
 }
 
 pub fn getRelTilePos( tlmp : *const Tilemap, mapCoords : Coords2 ) Vec2
