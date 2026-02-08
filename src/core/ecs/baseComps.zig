@@ -28,11 +28,11 @@ pub const TransComp = struct
     const scaledHalfAcc = self.acc.mulVal( 0.5 * sdt );
 
     self.vel.x += scaledHalfAcc.x * 0.5;
-    self.pos.x += self.vel.x * sdt;
+    self.pos.x += self.vel.x      * sdt;
     self.vel.x += scaledHalfAcc.x * 0.5;
 
     self.vel.y += scaledHalfAcc.y * 0.5;
-    self.pos.y += self.vel.y * sdt;
+    self.pos.y += self.vel.y      * sdt;
     self.vel.y += scaledHalfAcc.y * 0.5;
 
     self.vel.a = self.vel.a.rot( self.acc.a.mulVal( sdt ));

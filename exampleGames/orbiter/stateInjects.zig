@@ -64,8 +64,8 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     {
       _ = glb.transStore.add(  id,
       .{
-        .pos = .new( @floatFromInt( 256 * id - 1 ), 0, .{} ),
-        .vel = .new( 0, @floatFromInt( 256 * id - 1 ), .{} ),
+        .pos = .new( @floatFromInt( 256 * ( id - 1 )), 32, .{} ),
+        .vel = .new( 0, @floatFromInt( 512 * ( id - 2 )), .{} ),
       });
       _ = glb.orbitStore.add(  id, .{ .mass = 32, .orbiteeId = glb.entityArray[ 0 ].id });
       _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( 32, 32 ), .shape = .ELLI });

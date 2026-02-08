@@ -28,7 +28,7 @@ pub const OrbitComp = struct
     const p1 = selfTrans.pos;
     const p2 = otherTrans.pos;
 
-    const distSqr = p1.getDistSqr( p2 );
+    const distSqr = @max( p1.getDistSqr( p2 ), 100 ); // Clamping prevents degeneration at extremely small distances
 
     const gravForcePart = gravForceFactor * m2 / distSqr; // Partial Gravitatinal force ( avoids dividing by m1 later )
     const gravDir       = p2.sub( p1 ).toAngle();
