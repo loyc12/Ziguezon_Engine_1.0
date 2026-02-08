@@ -34,9 +34,9 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
   }
   if( !ng.componentRegistry.register( "orbitStore", &glb.orbitStore ))
   {
-    def.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
+    def.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
   }
-  if( !ng.componentRegistry.register( "shapeStore", &glb.transStore ))
+  if( !ng.componentRegistry.register( "shapeStore", &glb.shapeStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
   }
@@ -45,22 +45,35 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     def.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
   }
 
-  // Initializing test entities
-  glb.entityArray[ 0 ] = ng.entityIdRegistry.getNewEntity();
-  glb.entityArray[ 1 ] = ng.entityIdRegistry.getNewEntity();
-  glb.entityArray[ 2 ] = ng.entityIdRegistry.getNewEntity();
-
-  // Adding base components to test orbiters
-  for( 0..glb.entityArray.len ) | i |
+  for( 0..glb.entityCount )| idx |
   {
-    _ = glb.transStore.add(  glb.entityArray[i].id, .{ .pos = .{} });
-    _ = glb.orbitStore.add(  glb.entityArray[i].id, .{ .mass = 32 });
-    _ = glb.shapeStore.add(  glb.entityArray[i].id, .{ .colour = .nWhite, .scale = def.Vec2.new( 32, 32 ), .shape = .ELLI });
-  //_ = glb.spriteStore.add( glb.entityArray[i].id, .{} );
+    glb.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
+
+    const id = glb.entityArray[ idx ].id;
+
+    def.log( .INFO, 0, @src(), "Initializing components of entity #{}", .{ id });
+
+    if( id == 1 ) // Here comes the sun, lalalala
+    {
+      _ = glb.transStore.add(  id, .{ .pos = .{} });
+      _ = glb.orbitStore.add(  id, .{ .mass = 256, .isStatic = true });
+      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = .new( 64, 64 ), .shape = .ELLI });
+    //_ = glb.spriteStore.add( id, .{} );
+    }
+    else // Planetoids
+    {
+      _ = glb.transStore.add(  id,
+      .{
+        .pos = .new( @floatFromInt( 256 * id - 1 ), 0, .{} ),
+        .vel = .new( 0, @floatFromInt( 256 * id - 1 ), .{} ),
+      });
+      _ = glb.orbitStore.add(  id, .{ .orbiteeId = glb.entityArray[ 0 ].id, .mass = 32 });
+      _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( 32, 32 ), .shape = .ELLI });
+    //_ = glb.spriteStore.add( id, .{} );
+    }
   }
-
-
 }
+
 pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()
 {
   _ = ng; // Prevent unused variable warning

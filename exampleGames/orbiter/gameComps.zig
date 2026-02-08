@@ -7,8 +7,9 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-//orbitee : ?def.EntityId = null,
-  mass    : f32           = 1.0,
+  orbiteeId : ?def.EntityId = null,
+  mass      : f32           = 1.0,
+  isStatic  : bool          = false,
 
   pub fn tickOrbit
   (
@@ -17,8 +18,9 @@ pub const OrbitComp = struct
     sdt : f32
   ) void
   {
+    if( selfOrbit.isStatic ){ return; }
 
-    const m1 = selfOrbit.mass;
+    //const m1 = selfOrbit.mass;
     const m2 = otherOrbit.mass;
 
     const p1 = selfTrans.pos;
@@ -26,9 +28,9 @@ pub const OrbitComp = struct
 
     const distSqr = p1.getDistSqr( p2 );
 
-    const gravForce = m1 * m2 / distSqr;
-    const gravDir   = p2.sub( p1 ).toAngle();
+    const gravForcePart = 100000000 * m2 / distSqr; // Partial Gravitatinal force ( avoids dividing by m1 later )
+    const gravDir       = p2.sub( p1 ).toAngle();
 
-    selfTrans.acc += def.Vec2.fromAngle( gravDir ).mulVal( sdt * gravForce / m1 );
+    selfTrans.acc = selfTrans.acc.add( def.Vec2.fromAngle( gravDir ).mulVal( sdt * gravForcePart ).toVecA( .{} ));
   }
 };

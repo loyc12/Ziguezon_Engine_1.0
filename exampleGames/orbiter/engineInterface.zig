@@ -29,8 +29,8 @@ const utl = @import( "gameUtils.zig" );
 //pub const Startup_Target_TickRate  : u16 = 60;
 //pub const Startup_Target_FrameRate : u16 = 120;
 
-  pub const Startup_Window_Width     : u16 = 1080;
-  pub const Startup_Window_Height    : u16 = 720;
+//pub const Startup_Window_Width     : u16 = 2048;
+//pub const Startup_Window_Height    : u16 = 1024;
 
   pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Orbiter";
 

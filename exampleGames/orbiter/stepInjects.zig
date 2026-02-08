@@ -34,7 +34,43 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
-  _ = ng; // Prevent unused variable warning
+  const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
+  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
+
+  const sdt = ng.getScaledTargetTickDelta();
+
+  for( 1..glb.entityArray.len )| idx |
+  {
+    const id = glb.entityArray[ idx ].id;
+
+    def.log( .DEBUG, 0, @src(), "ticking orbit of entity #{}", .{ id });
+
+    const orbiter = orbitStore.get( id );
+
+    if( orbiter == null or orbiter.?.orbiteeId == null ){ return; }
+
+    const orbiterTrans = transStore.get( id );
+    const orbitee      = orbitStore.get( orbiter.?.orbiteeId.? );
+    const orbiteeTrans = transStore.get( orbiter.?.orbiteeId.? );
+
+    if( orbitee != null and orbiterTrans != null and orbiteeTrans != null )
+    {
+      orbiter.?.tickOrbit( orbitee.?, orbiterTrans.?, orbiteeTrans.?, sdt );
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{}", .{ id });
+    }
+
+    if( orbiterTrans != null )
+    {
+      orbiterTrans.?.updatePos( sdt );
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to get all required components to update position of entity #{}", .{ id });
+    }
+  }
 }
 
 
@@ -49,9 +85,30 @@ pub fn OnRenderBckgrnd( ng : *def.Engine ) void // Called by engine.renderGraphi
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {
-  // NOTE : All active bodies are rendered after the function is called, so no need to render them here.
+  const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
+  const shapeStore : *glb.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
 
-  _ = ng; // Prevent unused variable warning
+  for( 0..glb.entityArray.len )| idx |
+  {
+    const id = glb.entityArray[ idx ].id;
+
+    def.log( .DEBUG, 0, @src(), "rendering shape of entity #{}", .{ id });
+
+    const trans = transStore.get( id );
+    const shape = shapeStore.get( id );
+
+    if( trans != null and shape != null )
+    {
+      def.log( .DEBUG, 0, @src(), "transComp = {}", .{ trans.? });
+      def.log( .DEBUG, 0, @src(), "shapeComp = {}", .{ shape.? });
+
+      shape.?.render( trans.?.pos );
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to get all required components to render shape of entity #{}", .{ id });
+    }
+  }
 }
 
 pub fn OffRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics()

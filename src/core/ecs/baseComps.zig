@@ -97,8 +97,8 @@ pub const ShapeComp = struct
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
   scale  : Vec2,
-  colour : def.Colour = .nWhite,
   shape  : e_shape_2D = .RECT,
+  colour : def.Colour = .nWhite,
 
 
   pub inline fn setscale( self : *HitboxComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
@@ -114,26 +114,17 @@ pub const ShapeComp = struct
   {
     const p = selfPos.toVec2();
     const s = self.scale;
-    const r = selfPos.a;
+    const a = selfPos.a;
     const c = self.colour;
 
     switch( self.shape )
     {
-      .RECT => { def.drawRect( p, s, r, c ); },
-      .HSTR => { def.drawHstr( p, s, r, c ); },
-      .DSTR => { def.drawDstr( p, s, r, c ); },
-      .ELLI => { def.drawElli( p, s, r, c ); },
+      .RECT => { def.drawRect( p, s, a, c ); },
+      .HSTR => { def.drawHstr( p, s, a, c ); },
+      .DSTR => { def.drawDstr( p, s, a, c ); },
+      .ELLI => { def.drawElli( p, s, a, c ); },
 
-      .RLIN => { def.drawPoly( p, s, r, c,  1 ); },
-      .DLIN => { def.drawPoly( p, s, r, c,  2 ); },
-      .TRIA => { def.drawPoly( p, s, r, c,  3 ); },
-      .DIAM => { def.drawPoly( p, s, r, c,  4 ); },
-      .PENT => { def.drawPoly( p, s, r, c,  5 ); },
-      .HEXA => { def.drawPoly( p, s, r, c,  6 ); },
-      .HEPT => { def.drawPoly( p, s, r, c,  7 ); },
-      .OCTA => { def.drawPoly( p, s, r, c,  8 ); },
-      .DECA => { def.drawPoly( p, s, r, c, 10 ); },
-      .DODE => { def.drawPoly( p, s, r, c, 12 ); },
+      else  => { def.drawPoly( p, s, a, c, self.shape.getSideCount() ); },
     }
   }
 };

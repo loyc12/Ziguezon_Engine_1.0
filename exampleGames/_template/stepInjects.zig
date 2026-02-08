@@ -78,7 +78,7 @@ pub fn OnRenderBckgrnd( ng : *def.Engine ) void // Called by engine.renderGraphi
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {
-  // NOTE : All active bodies are rendered after the function is called, so no need to render them here.
+  // NOTE : All active bodies and tilemaps are rendered after the function is called, so no need to render them here.
 
   _ = ng; // Prevent unused variable warning
 }
