@@ -56,7 +56,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     if( id == 1 ) // Here comes the sun, lalalala
     {
       _ = glb.transStore.add(  id, .{ .pos = .{} });
-      _ = glb.orbitStore.add(  id, .{ .mass = 256, .isStatic = true });
+      _ = glb.orbitStore.add(  id, .{ .mass = 2048, .isStatic = true });
       _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = .new( 64, 64 ), .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
     }
@@ -67,7 +67,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
         .pos = .new( @floatFromInt( 256 * id - 1 ), 0, .{} ),
         .vel = .new( 0, @floatFromInt( 256 * id - 1 ), .{} ),
       });
-      _ = glb.orbitStore.add(  id, .{ .orbiteeId = glb.entityArray[ 0 ].id, .mass = 32 });
+      _ = glb.orbitStore.add(  id, .{ .mass = 32, .orbiteeId = glb.entityArray[ 0 ].id });
       _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( 32, 32 ), .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
     }

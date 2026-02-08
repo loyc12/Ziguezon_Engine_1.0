@@ -7,7 +7,7 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  const gravForceFactor = 1_000_000_000;
+  const gravForceFactor = 10_000_000;
 
   orbiteeId : ?def.EntityId = null,
   mass      : f32           = 1.0,

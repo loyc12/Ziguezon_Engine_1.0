@@ -99,9 +99,6 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
 
     if( trans != null and shape != null )
     {
-      def.log( .DEBUG, 0, @src(), "transComp = {}", .{ trans.? });
-      def.log( .DEBUG, 0, @src(), "shapeComp = {}", .{ shape.? });
-
       shape.?.render( trans.?.pos );
     }
     else
