@@ -7,6 +7,8 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
+  const gravForceFactor = 1_000_000_000;
+
   orbiteeId : ?def.EntityId = null,
   mass      : f32           = 1.0,
   isStatic  : bool          = false,
@@ -28,7 +30,7 @@ pub const OrbitComp = struct
 
     const distSqr = p1.getDistSqr( p2 );
 
-    const gravForcePart = 100000000 * m2 / distSqr; // Partial Gravitatinal force ( avoids dividing by m1 later )
+    const gravForcePart = gravForceFactor * m2 / distSqr; // Partial Gravitatinal force ( avoids dividing by m1 later )
     const gravDir       = p2.sub( p1 ).toAngle();
 
     selfTrans.acc = selfTrans.acc.add( def.Vec2.fromAngle( gravDir ).mulVal( sdt * gravForcePart ).toVecA( .{} ));
