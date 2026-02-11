@@ -168,7 +168,7 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
     {
       def.log( .INFO, 0, @src(), "Deinitializing ComponentStore for type {s}", .{ TypeName });
 
-      if( self.isInit )
+      if( !self.isInit )
       {
         def.log( .WARN, 0, @src(), "ComponentStore for type {s} is unnitialized : returning", .{ TypeName } );
         return;

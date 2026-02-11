@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const cmp = @import( "gameComps.zig" );
+pub const cmp = @import( "gameComps.zig" );
 
 
 // ================================ ENGINE & GAME SETTINGS ================================

@@ -112,7 +112,7 @@ pub fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
       }
       const range = max - min;
 
-      return @mod( val - min, range) + min;
+      return @mod( val - min, range ) + min;
     },
     else => @compileError( "wrap() only supports Int and Float types" ),
   }

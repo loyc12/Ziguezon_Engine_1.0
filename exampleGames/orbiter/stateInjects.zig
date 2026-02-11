@@ -56,18 +56,23 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     if( id == 1 ) // Here comes the sun, lalalala
     {
       _ = glb.transStore.add(  id, .{ .pos = .{} });
-      _ = glb.orbitStore.add(  id, .{ .mass = 2048, .isStatic = true });
       _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = .new( 64, 64 ), .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
     }
     else // Planetoids
     {
+      const orbitComp = glb.cmp.OrbitComp
+      {
+        .orbitedMass = 100_000_000.0,
+        .orientation = @as( f32, @floatFromInt( id - 1 )) * def.PI / 2.0,
+      };
+      const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit
+
       _ = glb.transStore.add(  id,
       .{
-        .pos = .new( @floatFromInt( 256 * ( id - 1 )), 0, .{} ),
-        .vel = .new( 0, @floatFromInt( 512 * ( id - 1 )), .{} ),
+        .pos = .new( startPos.x, startPos.y, .{} ),
       });
-      _ = glb.orbitStore.add(  id, .{ .mass = 32, .orbiteeId = glb.entityArray[ 0 ].id });
+      _ = glb.orbitStore.add(  id, orbitComp );
       _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( 32, 32 ), .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
     }

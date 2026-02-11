@@ -43,33 +43,25 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
   {
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .DEBUG, 0, @src(), "ticking orbit of entity #{}", .{ id });
+    def.log( .TRACE, 0, @src(), "Updating orbit of entity #{}", .{ id });
 
     const orbiter = orbitStore.get( id );
 
-    if( orbiter == null or orbiter.?.orbiteeId == null ){ return; }
+    if( orbiter == null ){ continue; }
 
     const orbiterTrans = transStore.get( id );
-    const orbitee      = orbitStore.get( orbiter.?.orbiteeId.? );
-    const orbiteeTrans = transStore.get( orbiter.?.orbiteeId.? );
+    const orbiteeTrans = transStore.get( glb.entityArray[ 0 ].id ); // Here comes the sun, lalalala
 
-    if( orbitee != null and orbiterTrans != null and orbiteeTrans != null )
+    if( orbiterTrans != null and orbiteeTrans != null )
     {
-      orbiter.?.tickOrbit( orbitee.?, orbiterTrans.?, orbiteeTrans.?, sdt );
+      orbiter.?.updateOrbit( orbiterTrans.?, orbiteeTrans.?, sdt );
     }
     else
     {
       def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{}", .{ id });
     }
 
-    if( orbiterTrans != null )
-    {
-      orbiterTrans.?.updatePos( sdt );
-    }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to update position of entity #{}", .{ id });
-    }
+    // NOTE : No need to update transComps for orbiters
   }
 }
 
@@ -92,7 +84,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
   {
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .DEBUG, 0, @src(), "rendering shape of entity #{}", .{ id });
+    def.log( .TRACE, 0, @src(), "Rendering shape of entity #{}", .{ id });
 
     const trans = transStore.get( id );
     const shape = shapeStore.get( id );
