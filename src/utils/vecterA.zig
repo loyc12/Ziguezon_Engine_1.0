@@ -153,7 +153,7 @@ pub const VecA = struct
   pub inline fn len(    self : *const VecA ) f32 { return @sqrt( self.lenSqr() ); }
   pub inline fn lenSqr( self : *const VecA ) f32 { return ( self.x * self.x ) + ( self.y * self.y ); }
 
-  pub inline fn rotDeg( self : *const VecA, a : Angle ) VecA { return self.rot( def.DtR( a )); }
+  pub inline fn rotDeg( self : *const Vec2, d : f32   ) Vec2 { return self.rot( .{ .r = def.DtR( d )}); }
   pub inline fn rot(    self : *const VecA, a : Angle ) VecA
   {
     if( a.isZero() ){ return .{ .x = self.x, .y = self.y, .a = self.a }; }

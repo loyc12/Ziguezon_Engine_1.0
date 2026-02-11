@@ -93,6 +93,10 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
     if( orbiter != null and orbiteeTrans != null )
     {
       orbiter.?.renderPath( orbiteeTrans.?.pos.toVec2() );
+
+      def.log( .TRACE, 0, @src(), "Rendering LPs of entity #{}", .{ id });
+
+      orbiter.?.renderLPs( orbiteeTrans.?.pos.toVec2(), 1, 1000 );
     }
     else
     {

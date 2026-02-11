@@ -54,7 +54,7 @@ Sunrider-like              ( TRPG )    Lost Endeavour
 
 TO REVIEW
  > move body shapes to Utils ?
- > split sprite management from other ressources, since depends on an open window ?
+ > split sprite management from other resources, since depends on an open window ?
 
 UTILS ADDITIONS
  > re-add a way to log to files ( one per level + a global one ? )
@@ -115,7 +115,7 @@ Various component systems with an associated manager :
  > particles             ( TBA ) - to handle render-only, non critical objects
  > event timers          ( WIP ) - to handle delays and durations
  > render layers         ( TBA ) - to handle render ordering
- > ressources system     ( WIP ) - to handle sound, musics, textures, etc
+ > resources system      ( WIP ) - to handle sound, musics, textures, etc
  > UI system             ( TBA ) - to handle user facing interfaces
  > animation system      ( TBA ) - to handle texture swaping
  > save and load system  ( TBA ) - to handle file interactions

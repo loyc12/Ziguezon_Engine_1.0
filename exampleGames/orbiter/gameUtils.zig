@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const glb = @import( "gameGlobals.zig" );
-const cmp = @import( "gameComps.zig" );
+const orb = @import( "comp/orbitComp.zig" );
 
 
 

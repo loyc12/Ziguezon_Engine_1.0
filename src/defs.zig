@@ -68,9 +68,9 @@ pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 
 // ================ MANAGERS ================
 
-pub const res_m = @import( "core/system/resourceManager.zig" );
-pub const bdy_m = @import( "core/system/bodyManager.zig" );
-pub const tlm_m = @import( "core/system/tilemapManager.zig" );
+pub const res_m = @import( "core/resource/resourceManager.zig" );
+pub const bdy_m = @import( "core/body/bodyManager.zig" );
+pub const tlm_m = @import( "core/tilemap/tilemapManager.zig" );
 
 
 // ================ BODY ================

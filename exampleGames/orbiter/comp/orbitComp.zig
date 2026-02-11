@@ -142,23 +142,65 @@ pub const OrbitComp = struct
   }
 
 
-  pub fn renderPath( self : *OrbitComp, orbiteePos : Vec2 ) void
+  pub fn renderPath( self : *const OrbitComp, orbiteePos : Vec2 ) void
   {
-    // split the orbit into N points, an draw a line between each
-
     var p1 : Vec2 = self.getRelPosAtAngle( 0 );
-    var p2 : Vec2 = .{};
+    var p2 : Vec2 = p1;
 
-    const lineWidth = 1.0 / def.G_NG.camera.getZoom();
+    const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
 
     for( 0..N )| i |
     {
-      const angle = @as( f32, @floatFromInt( i + 1 )) * def.TAU / N;
+      const angle = def.TAU * @as( f32, @floatFromInt( i + 1 )) / @as( f32, @floatFromInt( N ));
 
       p2 = p1;
       p1 = self.getRelPosAtAngle( angle );
 
-      def.drawLine( p1.add( orbiteePos ), p2.add( orbiteePos ), .green, lineWidth );
+      def.drawLine( orbiteePos.add( p1 ), orbiteePos.add( p2 ), .green, zoomedWidth );
     }
   }
+
+  pub fn renderLPs( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32 ) void
+  {
+    const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
+
+    for( 1..6 )| i |
+    {
+      const pos = self.getLagrangePos( orbiteePos, orbiterMass, orbiteeMass, @intCast( i ));
+
+      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
+    }
+  }
+
+
+  // Find Lagrange points positions relative to current angularPos
+  // Useful for extraplanetary infrastructure placement
+  pub fn getLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32, L : u4 ) Vec2
+  {
+    // All LPs are relative to the current position of the orbiter to the orbitee
+    var relPos = self.getRelPos();
+
+    const massRatio  = orbiterMass / ( orbiteeMass + orbiterMass );
+    const hillFactor = std.math.cbrt( massRatio / 3.0 );
+
+    // TODO : make sure L4 and L5 are really meant to simply be "equilateral triangles" in elliptical orbits
+
+    switch( L )
+    {
+      1 => { relPos = relPos.mulVal( 1.0 - hillFactor ); }, // Between the orbitee and orbiter
+      2 => { relPos = relPos.mulVal( 1.0 + hillFactor ); }, // Behind  the orbiter
+      3 => { relPos = relPos.flp(); },                      // Behind  the orbitee
+      4 => { relPos = relPos.rotDeg( -60 ); },              // 60° ahead,  equidistant to both
+      5 => { relPos = relPos.rotDeg(  60 ); },              // 60° behind, equidistant to both
+
+      else =>
+      {
+        def.qlog( .ERROR, 0, @src(), "Trying to access innexistant Lagrange's position" );
+        return .{};
+      },
+    }
+
+    return orbiteePos.add( relPos );
+  }
 };
+

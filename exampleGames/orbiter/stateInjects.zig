@@ -70,7 +70,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
       const minMax = 400.0;
       const maxMax = 600.0;
 
-      const orbitComp = glb.cmp.OrbitComp
+      const orbitComp = glb.orb.OrbitComp
       {
         .orbitedMass = 100_000_000.0,
         .minRadius   = def.lerp( minMin, maxMin, factor ),

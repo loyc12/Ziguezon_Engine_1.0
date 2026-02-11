@@ -5,6 +5,8 @@ const Body = def.bdy.Body;
 const Vec2 = def.Vec2;
 const VecA = def.VecA;
 
+// NOTE : Bodies are a legacy feature. Use component instead
+
 pub const BodyManager = struct
 {
   maxId      : u32  = 0,
