@@ -96,7 +96,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
 
       def.log( .TRACE, 0, @src(), "Rendering LPs of entity #{}", .{ id });
 
-      orbiter.?.renderLPs( orbiteeTrans.?.pos.toVec2(), 1, 1000 );
+      orbiter.?.renderLPs( orbiteeTrans.?.pos.toVec2(), 100_000.0, ); // TODO : USE PROPER MASS VARIABLE
     }
     else
     {

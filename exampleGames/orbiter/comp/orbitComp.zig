@@ -159,22 +159,22 @@ pub const OrbitComp = struct
     }
   }
 
-  pub fn renderLPs( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32 ) void
+  pub fn renderLPs( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32 ) void
   {
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
 
     for( 1..6 )| i |
     {
-      const pos = self.getLagrangePos( orbiteePos, orbiterMass, orbiteeMass, @intCast( i ));
+      const pos = self.getLagrangePos( orbiteePos, orbiterMass, @intCast( i ));
 
       def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
     }
   }
 
 
-  pub fn getLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32, L : u4 ) Vec2
+  pub fn getLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, L : u4 ) Vec2
   {
-    const massRatio  = orbiterMass / ( orbiteeMass + orbiterMass );
+    const massRatio  = orbiterMass / ( self.orbitedMass + orbiterMass );
 
     // Radial vector from orbitee to orbiter
     const rel = self.getRelPos();
@@ -199,7 +199,7 @@ pub const OrbitComp = struct
       },
     }
 
-    return orbiteePos.add(lagPos);
+    return orbiteePos.add( lagPos );
   }
 
   inline fn getHillFactor( self : *const OrbitComp, massRatio : f32 ) f32
