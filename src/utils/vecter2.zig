@@ -123,7 +123,7 @@ pub const Vec2 = struct
 
   // ================ VECTOR MATHS ================
 
-  pub inline fn normToUnit( self : *const Vec2 ) ?Vec2 { return self. normVec2Len( 1.0 ); }
+  pub inline fn normToUnit( self : *const Vec2 ) ?Vec2 { return self.normToLen( 1.0 ); }
 
   // Normalizes a vector to a new length, returns null if the vector is zero'd
   pub fn normToLen( self : *const Vec2, newLen : f32 ) ?Vec2
@@ -141,7 +141,7 @@ pub const Vec2 = struct
       return null;
     }
 
-    if( oldLenSqr == newLen * newLen ){ return self; }
+    if( oldLenSqr == newLen * newLen ){ return self.*; }
     const factor  =  newLen / @sqrt( oldLenSqr );
 
     return self.mulVal( factor );

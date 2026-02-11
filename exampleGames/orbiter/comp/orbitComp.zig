@@ -168,14 +168,88 @@ pub const OrbitComp = struct
     {
       const pos = self.getLagrangePos( orbiteePos, orbiterMass, orbiteeMass, @intCast( i ));
 
-      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
+      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
     }
   }
 
 
+
+  pub fn getLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32, L : u4 ) Vec2
+  {
+    const massRatio  = orbiterMass / ( orbiteeMass + orbiterMass );
+
+    // Radial vector from orbitee to orbiter
+    const rel = self.getRelPos();
+
+    var lagPos : Vec2 = .{};
+
+    switch( L )
+    {
+      // ======== Collinear points ========
+      1 => { lagPos = rel.mulVal( 1.0 - self.getHillFactor( massRatio )); }, // Between the orbitee and orbiter
+      2 => { lagPos = rel.mulVal( 1.0 + self.getHillFactor( massRatio )); }, // Behind  the orbiter
+      3 => { lagPos = rel.mulVal(       self.getL3Factor(   massRatio )); }, // Behind  the orbitee
+
+      // ======== Triangular points with elliptic correction ========
+      4 => { lagPos = self.getTrojanLagPos(  1.0 ); }, // ~60° +/- 25° ahead of orbiter
+      5 => { lagPos = self.getTrojanLagPos( -1.0 ); }, // ~60° +/- 25° behind of orbiter
+
+      else =>
+      {
+        def.qlog( .ERROR, 0, @src(), "Trying to access innexistant Lagrange's position" );
+        return .{};
+      },
+    }
+
+    return orbiteePos.add(lagPos);
+  }
+
+  inline fn getHillFactor( self : *const OrbitComp, massRatio : f32 ) f32
+  {
+    _ = self;
+    return std.math.cbrt( massRatio / 3.0 ) ;
+  }
+
+  inline fn getL3Factor( self : *const OrbitComp, massRatio : f32 ) f32
+  {
+    // Approx distance ~ r * ( 1 + ( 5μ / 12 ))
+    _ = self;
+    return -( 1.0 + ( 5.0 * massRatio / 12.0 ));
+  }
+
+  inline fn getTrojanLagPos( self: *const OrbitComp, sign : f32 ) Vec2
+  {
+    const r = self.getCurrentRadius();
+    const t = self.angularPos; // Thetha
+    const e = self.getEccentricity();
+
+    // First-order libration correction
+    const dt = ( 2.0 / 3.0 ) * e * @sin( t );
+    const dr = e * @cos( t );
+
+    const lagAngle  = t + ( sign * def.PI / 3.0 ) + dt;
+    const lagRadius = r * ( 1.0 + dr );
+
+    const x = lagRadius * @cos( lagAngle );
+    const y = lagRadius * @sin( lagAngle );
+
+    return Vec2.new( x, y ).rot(.{ .r = self.orientation });
+  }
+
+
+
+
+
+
+
+
+
+
+
+
   // Find Lagrange points positions relative to current angularPos
   // Useful for extraplanetary infrastructure placement
-  pub fn getLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32, L : u4 ) Vec2
+  pub fn oldGetLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32, L : u4 ) Vec2
   {
     // All LPs are relative to the current position of the orbiter to the orbitee
     var relPos = self.getRelPos();
@@ -190,8 +264,9 @@ pub const OrbitComp = struct
       1 => { relPos = relPos.mulVal( 1.0 - hillFactor ); }, // Between the orbitee and orbiter
       2 => { relPos = relPos.mulVal( 1.0 + hillFactor ); }, // Behind  the orbiter
       3 => { relPos = relPos.flp(); },                      // Behind  the orbitee
-      4 => { relPos = relPos.rotDeg( -60 ); },              // 60° ahead,  equidistant to both
-      5 => { relPos = relPos.rotDeg(  60 ); },              // 60° behind, equidistant to both
+
+      4 => { relPos = self.oldGetTrojanRelPos( def.DtR(  60 )); }, // ~60° ahead,  equidistant to both
+      5 => { relPos = self.oldGetTrojanRelPos( def.DtR( -60 )); }, // ~60° behind, equidistant to both
 
       else =>
       {
@@ -201,6 +276,11 @@ pub const OrbitComp = struct
     }
 
     return orbiteePos.add( relPos );
+  }
+
+  pub fn oldGetTrojanRelPos( self: *const OrbitComp, angularPosOffset : f32 ) Vec2
+  {
+    return self.getRelPosAtAngle( self.angularPos + angularPosOffset );
   }
 };
 
