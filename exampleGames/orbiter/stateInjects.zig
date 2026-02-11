@@ -67,8 +67,8 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
       const minMin = 200.0;
       const maxMin = 300.0;
 
-      const minMax = 400.0;
-      const maxMax = 600.0;
+      const minMax = 600.0;
+      const maxMax = 900.0;
 
       const orbitComp = glb.orb.OrbitComp
       {

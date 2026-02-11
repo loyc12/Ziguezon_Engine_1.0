@@ -41,12 +41,12 @@ pub const OrbitComp = struct
   }
   pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : f32 ) f32
   {
-    const ecc = self.getEccentricity();
-    const eccSqr = ecc * ecc;
+    const e = self.getEccentricity();
+    const eSqr = e * e;
 
     // Orbital radius formula: r = a( 1 - e² ) / ( 1 + e·cos(θ) )
-    const numer = self.getSemiMajor() * ( 1.0 - ( eccSqr ));
-    const denom = 1.0 + ( ecc * @cos( angle ));
+    const numer = self.getSemiMajor() * ( 1.0 - ( eSqr ));
+    const denom = 1.0 + ( e * @cos( angle ));
 
     return numer / denom;
   }
@@ -141,7 +141,6 @@ pub const OrbitComp = struct
     selfTrans.acc = .{}; // Acceleration is to be ignored for orbiting objetcs, as they have predefined paths anyways
   }
 
-
   pub fn renderPath( self : *const OrbitComp, orbiteePos : Vec2 ) void
   {
     var p1 : Vec2 = self.getRelPosAtAngle( 0 );
@@ -171,7 +170,6 @@ pub const OrbitComp = struct
       def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
     }
   }
-
 
 
   pub fn getLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32, L : u4 ) Vec2
@@ -219,68 +217,14 @@ pub const OrbitComp = struct
 
   inline fn getTrojanLagPos( self: *const OrbitComp, sign : f32 ) Vec2
   {
-    const r = self.getCurrentRadius();
-    const t = self.angularPos; // Thetha
     const e = self.getEccentricity();
+    const t = self.angularPos;
 
     // First-order libration correction
     const dt = ( 2.0 / 3.0 ) * e * @sin( t );
-    const dr = e * @cos( t );
+    const lagAngle = t + sign * ( def.PI / 3.0 ) + dt;
 
-    const lagAngle  = t + ( sign * def.PI / 3.0 ) + dt;
-    const lagRadius = r * ( 1.0 + dr );
-
-    const x = lagRadius * @cos( lagAngle );
-    const y = lagRadius * @sin( lagAngle );
-
-    return Vec2.new( x, y ).rot(.{ .r = self.orientation });
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  // Find Lagrange points positions relative to current angularPos
-  // Useful for extraplanetary infrastructure placement
-  pub fn oldGetLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, orbiteeMass : f32, L : u4 ) Vec2
-  {
-    // All LPs are relative to the current position of the orbiter to the orbitee
-    var relPos = self.getRelPos();
-
-    const massRatio  = orbiterMass / ( orbiteeMass + orbiterMass );
-    const hillFactor = std.math.cbrt( massRatio / 3.0 );
-
-    // TODO : make sure L4 and L5 are really meant to simply be "equilateral triangles" in elliptical orbits
-
-    switch( L )
-    {
-      1 => { relPos = relPos.mulVal( 1.0 - hillFactor ); }, // Between the orbitee and orbiter
-      2 => { relPos = relPos.mulVal( 1.0 + hillFactor ); }, // Behind  the orbiter
-      3 => { relPos = relPos.flp(); },                      // Behind  the orbitee
-
-      4 => { relPos = self.oldGetTrojanRelPos( def.DtR(  60 )); }, // ~60° ahead,  equidistant to both
-      5 => { relPos = self.oldGetTrojanRelPos( def.DtR( -60 )); }, // ~60° behind, equidistant to both
-
-      else =>
-      {
-        def.qlog( .ERROR, 0, @src(), "Trying to access innexistant Lagrange's position" );
-        return .{};
-      },
-    }
-
-    return orbiteePos.add( relPos );
-  }
-
-  pub fn oldGetTrojanRelPos( self: *const OrbitComp, angularPosOffset : f32 ) Vec2
-  {
-    return self.getRelPosAtAngle( self.angularPos + angularPosOffset );
+    return self.getRelPosAtAngle( lagAngle );
   }
 };
 
