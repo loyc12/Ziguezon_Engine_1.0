@@ -20,6 +20,6 @@ pub var shapeStore  : ShapeStore  = .{};
 pub var spriteStore : SpriteStore = .{};
 pub var orbitStore  : OrbitStore  = .{};
 
-pub const entityCount : usize = 2;
+pub const entityCount : usize = 4;
 
 pub var entityArray : [ entityCount ]def.Entity = std.mem.zeroes([ entityCount ]def.Entity );

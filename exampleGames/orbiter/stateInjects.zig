@@ -61,13 +61,13 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     }
     else // Planetoids
     {
-      const place : f32 = @floatFromInt( id - 1 );
+      const place : f32 = @floatFromInt( id - 2 );
       const factor = place / ( glb.entityCount - 1 );
 
       const minMin = 200.0;
       const maxMin = 300.0;
 
-      const minMax = 600.0;
+      const minMax = 300.0;
       const maxMax = 900.0;
 
       const orbitComp = glb.orb.OrbitComp
