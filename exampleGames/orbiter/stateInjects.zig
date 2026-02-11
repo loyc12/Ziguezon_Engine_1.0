@@ -61,10 +61,21 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     }
     else // Planetoids
     {
+      const place : f32 = @floatFromInt( id - 1 );
+      const factor = place / ( glb.entityCount - 1 );
+
+      const minMin = 200.0;
+      const maxMin = 300.0;
+
+      const minMax = 400.0;
+      const maxMax = 600.0;
+
       const orbitComp = glb.cmp.OrbitComp
       {
         .orbitedMass = 100_000_000.0,
-        .orientation = @as( f32, @floatFromInt( id - 1 )) * def.PI / 2.0,
+        .minRadius   = def.lerp( minMin, maxMin, factor ),
+        .maxRadius   = def.lerp( minMax, maxMax, factor ),
+        .orientation = def.TAU * factor,
       };
       const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit
 
@@ -73,7 +84,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
         .pos = .new( startPos.x, startPos.y, .{} ),
       });
       _ = glb.orbitStore.add(  id, orbitComp );
-      _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( 32, 32 ), .shape = .ELLI });
+      _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( 16, 16 ), .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
     }
   }

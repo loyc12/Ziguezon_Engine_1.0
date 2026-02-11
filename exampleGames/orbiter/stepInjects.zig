@@ -50,7 +50,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
     if( orbiter == null ){ continue; }
 
     const orbiterTrans = transStore.get( id );
-    const orbiteeTrans = transStore.get( glb.entityArray[ 0 ].id ); // Here comes the sun, lalalala
+    const orbiteeTrans = transStore.get( glb.entityArray[ 0 ].id );
 
     if( orbiterTrans != null and orbiteeTrans != null )
     {
@@ -79,19 +79,38 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
 {
   const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
   const shapeStore : *glb.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
+  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
 
+  for( 0..glb.entityArray.len )| idx |
+  {
+    const id = glb.entityArray[ idx ].id;
+
+    def.log( .TRACE, 0, @src(), "Rendering path of entity #{}", .{ id });
+
+    const orbiter      = orbitStore.get( id );
+    const orbiteeTrans = transStore.get( glb.entityArray[ 0 ].id );
+
+    if( orbiter != null and orbiteeTrans != null )
+    {
+      orbiter.?.renderPath( orbiteeTrans.?.pos.toVec2() );
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of entity #{}", .{ id });
+    }
+  }
   for( 0..glb.entityArray.len )| idx |
   {
     const id = glb.entityArray[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering shape of entity #{}", .{ id });
 
-    const trans = transStore.get( id );
-    const shape = shapeStore.get( id );
+    const orbiterTrans = transStore.get( id );
+    const orbiterShape = shapeStore.get( id );
 
-    if( trans != null and shape != null )
+    if( orbiterTrans != null and orbiterShape != null )
     {
-      shape.?.render( trans.?.pos );
+      orbiterShape.?.render( orbiterTrans.?.pos );
     }
     else
     {

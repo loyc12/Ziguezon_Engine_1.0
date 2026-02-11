@@ -9,6 +9,8 @@ pub const OrbitComp = struct
 
   const G = 1; // Gravitational constant ( tweakable )
 
+  const N = 256; // number of segments used to render orbital path
+
   // Orbitee's mass ( ought to be near-constant )
   orbitedMass : f32,
 
@@ -25,26 +27,31 @@ pub const OrbitComp = struct
   angularVel  : f32 = 0.0,
 
 
-  pub inline fn getSemiMajor(     self : *const OrbitComp ) f32
+  pub inline fn getSemiMajor( self : *const OrbitComp ) f32
   {
     return ( self.maxRadius + self.minRadius ) / 2.0;
   }
-  pub inline fn getEccentricity(  self : *const OrbitComp ) f32
+  pub inline fn getEccentricity( self : *const OrbitComp ) f32
   {
     return ( self.maxRadius - self.minRadius ) / ( self.maxRadius + self.minRadius );
   }
 
   pub inline fn getCurrentRadius( self : *const OrbitComp ) f32
   {
+    return self.getRadiusAtAngle( self.angularPos );
+  }
+  pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : f32 ) f32
+  {
     const ecc = self.getEccentricity();
     const eccSqr = ecc * ecc;
 
     // Orbital radius formula: r = a( 1 - e² ) / ( 1 + e·cos(θ) )
     const numer = self.getSemiMajor() * ( 1.0 - ( eccSqr ));
-    const denom = 1.0 + ( ecc * @cos( self.angularPos ));
+    const denom = 1.0 + ( ecc * @cos( angle ));
 
     return numer / denom;
   }
+
 
   // Orbital period depends on semi-major axis and central mass ( Kepler's 3rd Law )
   // T² ∝ a³/M  →  ω = √(GM/a³)
@@ -88,11 +95,15 @@ pub const OrbitComp = struct
   }
   pub fn getRelPos( self : *const OrbitComp ) Vec2
   {
-    const radius = self.getCurrentRadius();
+    return self.getRelPosAtAngle( self.angularPos );
+  }
+  pub fn getRelPosAtAngle( self : *const OrbitComp, angle : f32 ) Vec2
+  {
+    const radius = self.getRadiusAtAngle( angle );
 
-    // Position in orbit space (0° = along +X)
-    const x = radius * @cos( self.angularPos );
-    const y = radius * @sin( self.angularPos );
+    // Position in orbit space ( 0° => along +X )
+    const x = radius * @cos( angle );
+    const y = radius * @sin( angle );
 
     // Return the position after rotating it appropriately
     return Vec2.new( x, y ).rot( .{ .r = self.orientation });
@@ -129,7 +140,26 @@ pub const OrbitComp = struct
     selfTrans.pos = self.getAbsPos( otherTrans.pos.toVec2() ).toVecA( selfTrans.pos.a );
     selfTrans.vel = self.getAbsVel( otherTrans.vel.toVec2() ).toVecA( selfTrans.vel.a );
     selfTrans.acc = .{}; // Acceleration is to be ignored for orbiting objetcs, as they have predefined paths anyways
+  }
 
-    def.log( .DEBUG, 0, @src(), "new abs pos = {}:{}", .{ selfTrans.pos.x, selfTrans.pos.y });
+
+  pub fn renderPath( self : *OrbitComp, orbiteePos : Vec2 ) void
+  {
+    // split the orbit into N points, an draw a line between each
+
+    var p1 : Vec2 = self.getRelPosAtAngle( 0 );
+    var p2 : Vec2 = .{};
+
+    const lineWidth = 1.0 / def.G_NG.camera.getZoom();
+
+    for( 0..N )| i |
+    {
+      const angle = @as( f32, @floatFromInt( i + 1 )) * def.TAU / N;
+
+      p2 = p1;
+      p1 = self.getRelPosAtAngle( angle );
+
+      def.drawLine( p1.add( orbiteePos ), p2.add( orbiteePos ), .green, lineWidth );
+    }
   }
 };
