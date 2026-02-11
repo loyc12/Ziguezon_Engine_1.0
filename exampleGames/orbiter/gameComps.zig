@@ -7,8 +7,7 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  const G = 1; // Gravitational constant ( tweakable )
-
+  const G = 1;   // Gravitational constant ( tweakable )
   const N = 256; // number of segments used to render orbital path
 
   // Orbitee's mass ( ought to be near-constant )
@@ -55,7 +54,7 @@ pub const OrbitComp = struct
 
   // Orbital period depends on semi-major axis and central mass ( Kepler's 3rd Law )
   // T² ∝ a³/M  →  ω = √(GM/a³)
-  inline fn getMeanAngularVel( self : *const OrbitComp ) f32
+  pub inline fn getMeanAngularVel( self : *const OrbitComp ) f32
   {
     const semiMajor = self.getSemiMajor();
 
@@ -75,7 +74,7 @@ pub const OrbitComp = struct
 
   // True angular velocity varies with angular position ( Kepler's 2nd Law )
   // ω_true = ω_mean * ( 1 + e·cos(θ) )² / ( 1 - e² )^( 3/2 )
-  pub fn getAngularVel( self : *const OrbitComp ) f32
+  pub inline fn getAngularVel( self : *const OrbitComp ) f32
   {
     const meanAngVel = self.getMeanAngularVel();
 
@@ -93,11 +92,11 @@ pub const OrbitComp = struct
   {
     return orbitedPos.add( self.getRelPos() );
   }
-  pub fn getRelPos( self : *const OrbitComp ) Vec2
+  pub inline fn getRelPos( self : *const OrbitComp ) Vec2
   {
     return self.getRelPosAtAngle( self.angularPos );
   }
-  pub fn getRelPosAtAngle( self : *const OrbitComp, angle : f32 ) Vec2
+  pub inline fn getRelPosAtAngle( self : *const OrbitComp, angle : f32 ) Vec2
   {
     const radius = self.getRadiusAtAngle( angle );
 
@@ -115,7 +114,7 @@ pub const OrbitComp = struct
   {
     return orbitedVel.add( self.getRelVel() );
   }
-  pub fn getRelVel( self : *const OrbitComp ) Vec2
+  pub inline fn getRelVel( self : *const OrbitComp ) Vec2
   {
     const speed = self.angularVel * self.getCurrentRadius();
 

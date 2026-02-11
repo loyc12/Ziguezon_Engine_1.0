@@ -142,11 +142,11 @@ pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, co
   ray.drawLineEx( p4.toRayVec2(), p1.toRayVec2(), width, col.toRayCol() );
 }
 
-pub inline fn drawBasicPoly( pos : Vec2, radius : f32, a : Angle, col : Colour, sides : u8 ) void
+pub inline fn drawBasicPoly( pos : Vec2, radius : f32, a : Angle, col : Colour, sides : u16 ) void
 {
   ray.drawPoly( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), col.toRayCol() );
 }
-pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, a : Angle, col : Colour, width : f32, sides : u8  ) void // TODO : Add line thickness
+pub inline fn drawBasicPolyLines( pos : Vec2, radius : f32, a : Angle, col : Colour, width : f32, sides : u16  ) void // TODO : Add line thickness
 {
   ray.drawPolyLinesEx( pos.toRayVec2(), @intCast( sides ), radius, def.RtD( a ), width, col.toRayCol() );
 }
@@ -171,14 +171,8 @@ pub inline fn drawRectanglePlus(  pos : Vec2, radii : Vec2, a : Angle, col : Col
   );
 }
 
-// Draws an ellipse centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawEllipsePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
-{
-  drawPolygonPlus( pos, radii, a, col, ELLIPSE_SIDE_COUNT ); // Pretending ellipses are polygons
-}
-
 // Draws a polygon centered at a given position with specified rotation (rad), colour and facet count, and scaled in x/y by radii
-pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u8 ) void
+pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16 ) void
 {
   if( sides < 1 )
   {

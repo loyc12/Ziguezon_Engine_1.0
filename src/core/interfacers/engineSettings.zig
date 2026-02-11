@@ -36,8 +36,10 @@ pub const EngineSettings = struct
   Graphic_Metrics_Colour   : ?def.Colour = def.Colour.yellow,
   Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf",
 
-  Camera_Max_Zoom          : f32 = 5.0,
-  Camera_Min_Zoom          : f32 = 0.2,
+  Graphic_Ellipse_Facets   : u16 = 64,
+
+  Camera_Max_Zoom          : f32 = 10.0,
+  Camera_Min_Zoom          : f32 = 0.1,
 
 
   // ================================ ENGINE SETTINGS FUNCTIONS ================================
@@ -74,6 +76,7 @@ pub const EngineSettings = struct
     if( @hasDecl( module, "Graphic_Bckgrd_Colour"    )){ self.Graphic_Bckgrd_Colour    = @field( module, "Graphic_Bckgrd_Colour"    ); hasFoundSettings = true; }
     if( @hasDecl( module, "Graphic_Metrics_Colour"   )){ self.Graphic_Metrics_Colour   = @field( module, "Graphic_Metrics_Colour"   ); hasFoundSettings = true; }
     if( @hasDecl( module, "Graphic_Default_Font"     )){ self.Graphic_Default_Font     = @field( module, "Graphic_Default_Font"     ); hasFoundSettings = true; }
+    if( @hasDecl( module, "Graphic_Ellipse_Facets"   )){ self.Graphic_Ellipse_Facets   = @field( module, "Graphic_Ellipse_Facets"   ); hasFoundSettings = true; }
 
     if( @hasDecl( module, "Camera_Max_Zoom"          )){ self.Camera_Max_Zoom          = @field( module, "Camera_Max_Zoom"          ); hasFoundSettings = true; }
     if( @hasDecl( module, "Camera_Min_Zoom"          )){ self.Camera_Min_Zoom          = @field( module, "Camera_Min_Zoom"          ); hasFoundSettings = true; }

@@ -240,7 +240,6 @@ pub const drawPent                 = drw_u.drawPentagonPlus;
 pub const drawHexa                 = drw_u.drawHexagonPlus;
 
 pub const drawRect                 = drw_u.drawRectanglePlus;
-pub const drawElli                 = drw_u.drawEllipsePlus;
 pub const drawPoly                 = drw_u.drawPolygonPlus;
 
 pub const drawHstr                 = drw_u.drawHexStarPlus;

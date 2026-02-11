@@ -81,7 +81,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
   const shapeStore : *glb.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
   const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
 
-  for( 0..glb.entityArray.len )| idx |
+  for( 1..glb.entityArray.len )| idx |
   {
     const id = glb.entityArray[ idx ].id;
 

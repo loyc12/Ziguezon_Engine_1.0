@@ -41,8 +41,6 @@ pub const TransComp = struct
 
 // ================ SHAPE 2D ================
 
-pub const ELLIPSE_SIDE_COUNT = 24;
-
 pub const e_shape_2D = enum( u8 ) // TODO : move to utils
 {
   RECT, // Square / Rectangle
@@ -61,14 +59,14 @@ pub const e_shape_2D = enum( u8 ) // TODO : move to utils
   DECA, // Decagon
   DODE, // Dodecagon
 
-  pub fn getSideCount( self : e_shape_2D ) u8
+  pub inline fn getSideCount( self : e_shape_2D ) u16
   {
     return switch( self )
     {
       .RECT => 4, // NOTE : do not render as Polygon, as it will show a diamond instead of a rectangle
       .HSTR => 6,
       .DSTR => 8,
-      .ELLI => ELLIPSE_SIDE_COUNT,
+      .ELLI => def.G_ST.Graphic_Ellipse_Facets,
 
       .RLIN => 1,
       .DLIN => 2,
@@ -115,8 +113,6 @@ pub const ShapeComp = struct
       .RECT => { def.drawRect( p, s, a, c ); },
       .HSTR => { def.drawHstr( p, s, a, c ); },
       .DSTR => { def.drawDstr( p, s, a, c ); },
-      .ELLI => { def.drawElli( p, s, a, c ); },
-
       else  => { def.drawPoly( p, s, a, c, self.shape.getSideCount() ); },
     }
   }

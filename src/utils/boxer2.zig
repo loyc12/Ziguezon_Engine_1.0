@@ -123,7 +123,7 @@ pub const Box2 = struct
     };
   }
 
-  pub fn newPolyAABB( pos : Vec2, radii : Vec2, a : Angle, sides : u8 ) Box2
+  pub fn newPolyAABB( pos : Vec2, radii : Vec2, a : Angle, sides : u16 ) Box2
   {
     if( sides < 1 )
     {

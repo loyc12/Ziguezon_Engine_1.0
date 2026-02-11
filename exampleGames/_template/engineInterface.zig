@@ -37,6 +37,7 @@ const def = @import( "defs" );
   pub const Graphic_Bckgrd_Colour    : ?def.Colour = def.Colour.blue;
   pub const Graphic_Metrics_Colour   : ?def.Colour = def.Colour.green;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
+//pub const Graphic_Ellipse_Facets   : u16 = 64,
 
 //pub const Camera_Max_Zoom          : f32 = 5.0;
 //pub const Camera_Min_Zoom          : f32 = 0.2;

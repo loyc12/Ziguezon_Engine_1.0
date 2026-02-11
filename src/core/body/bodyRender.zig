@@ -45,23 +45,14 @@ pub fn renderBody( e1 : *const Body ) void
 
   const p = e1.getCenter();
   const s = e1.scale;
-  const r = e1.getRot();
+  const a = e1.getRot();
   const c = e1.colour;
 
   switch( e1.shape )
   {
-    .RECT => { def.drawRect( p, s, r, c ); },
-    .HSTR => { def.drawHstr( p, s, r, c ); },
-    .DSTR => { def.drawDstr( p, s, r, c ); },
-    .ELLI => { def.drawElli( p, s, r, c ); },
-
-    .RLIN => { def.drawPoly( p, s, r, c,  1 ); },
-    .DLIN => { def.drawPoly( p, s, r, c,  2 ); },
-    .TRIA => { def.drawPoly( p, s, r, c,  3 ); },
-    .DIAM => { def.drawPoly( p, s, r, c,  4 ); },
-    .PENT => { def.drawPoly( p, s, r, c,  5 ); },
-    .HEXA => { def.drawPoly( p, s, r, c,  6 ); },
-    .OCTA => { def.drawPoly( p, s, r, c,  8 ); },
-    .DODE => { def.drawPoly( p, s, r, c, 12 ); },
+    .RECT => { def.drawRect( p, s, a, c ); },
+    .HSTR => { def.drawHstr( p, s, a, c ); },
+    .DSTR => { def.drawDstr( p, s, a, c ); },
+    else  => { def.drawPoly( p, s, a, c, e1.shape.getSideCount() ); },
   }
 }

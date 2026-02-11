@@ -9,47 +9,49 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 
 
-pub const e_bdy_shape = enum( u8 ) // TODO : move to utils
-{
+//pub const e_bdy_shape = enum( u8 ) // TODO : move to utils
+//{
+//
+//  RECT, // Square / Rectangle
+//
+//  HSTR, // Triangle Star ( two overlaping triangles, pointing along the X axis )
+//  DSTR, // Diamond Star  ( two overlaping diamong,   pointing along the X axis )
+//
+//  RLIN, // Radius Line ( from center to forward, scaled )
+//  DLIN, // Diametre Line ( from backard to forward, scaled )
+//
+//  TRIA, // Triangle ( equilateral, pointing towards +X ( right ))
+//  DIAM, // Square / Diamond ( rhombus )
+//  PENT, // Pentagon  ( regular )
+//  HEXA, // Hexagon   ( regular )
+//  OCTA, // Octagon   ( regular )
+//  DODE, // Dodecagon ( regular )
+//  ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
+//
+//  pub fn getSideCount( self : e_bdy_shape ) u16
+//  {
+//    return switch( self )
+//    {
+//      .RECT => 4, // NOTE : do not render as Polygon, as it will show a diamond instead of a rectangle
+//
+//      .HSTR => 6,
+//      .DSTR => 8,
+//
+//      .RLIN => 1,
+//      .DLIN => 2,
+//
+//      .TRIA => 3,
+//      .DIAM => 4,
+//      .PENT => 5,
+//      .HEXA => 6,
+//      .OCTA => 8,
+//      .DODE => 12,
+//      .ELLI => 24,
+//    };
+//  }
+//};
 
-  RECT, // Square / Rectangle
-
-  HSTR, // Triangle Star ( two overlaping triangles, pointing along the X axis )
-  DSTR, // Diamond Star  ( two overlaping diamong,   pointing along the X axis )
-
-  RLIN, // Radius Line ( from center to forward, scaled )
-  DLIN, // Diametre Line ( from backard to forward, scaled )
-
-  TRIA, // Triangle ( equilateral, pointing towards +X ( right ))
-  DIAM, // Square / Diamond ( rhombus )
-  PENT, // Pentagon  ( regular )
-  HEXA, // Hexagon   ( regular )
-  OCTA, // Octagon   ( regular )
-  DODE, // Dodecagon ( regular )
-  ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
-
-  pub fn getSideCount( self : e_bdy_shape ) u8
-  {
-    return switch( self )
-    {
-      .RECT => 4, // NOTE : do not render as Polygon, as it will show a diamond instead of a rectangle
-
-      .HSTR => 6,
-      .DSTR => 8,
-
-      .RLIN => 1,
-      .DLIN => 2,
-
-      .TRIA => 3,
-      .DIAM => 4,
-      .PENT => 5,
-      .HEXA => 6,
-      .OCTA => 8,
-      .DODE => 12,
-      .ELLI => 24,
-    };
-  }
-};
+pub const e_bdy_shape = def.cmp2.e_shape_2D;
 
 pub const e_bdy_flags = enum( u8 )
 {
