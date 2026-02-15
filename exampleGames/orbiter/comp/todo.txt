@@ -1,0 +1,36 @@
+==== EconComp Integration ====
+
+HIGH PRIORITY ( Required for basic functionality ) :
+
+1. Add production tick system :
+   - Calculate net resources per tick (prod - cons) for all InfInstances
+   - Apply resource constraints (can't consume more than available)
+   - Handle POWER as priority resource (affects other production)
+
+2. Add population management :
+   - Calculate population cap from HOUSING count
+   - Track population consumption (FOOD per capita)
+   - Starving population mechanism
+
+3. Implement area management :
+   - Track used area vs unused area
+   - Prevent building when area exhausted
+
+4. Implement assembly queue data structure in EconComp :
+   - Consume PART resources to build queued infrastructure
+   - Validate location compatibility via InfType.canBeBuilt()
+
+
+MEDIUM PRIORITY :
+
+1. Add location initialization for EconComp (set GROUND location initially)
+2. Implement resource transport between EconLoc zones
+3. Add efficiency modifiers (sunlight for SOLAR_PLANT / AGRONOMIC, etc)
+4. Create update function for PlanetComp that ticks all EconComp locations
+
+
+LOW PRIORITY :
+
+1. Add storage capacity limits (commented out WAREHOUSE / BATTERY)
+2. Implement power grid distribution system
+3. Add tax / revenue mechanics for COMMERCE
