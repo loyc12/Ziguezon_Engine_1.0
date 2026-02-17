@@ -3,6 +3,24 @@ const def = @import( "defs" );
 
 const inf = @import( "infrastructure.zig" );
 const res = @import( "resource.zig" );
+const slv = @import("econSolver.zig" );
+
+
+pub const resTypeCount = res.resTypeCount;
+pub const infTypeCount = inf.infTypeCount;
+
+pub const ResType = res.ResType;
+pub const InfType = inf.InfType;
+
+pub const ResInstance = res.ResInstance;
+pub const InfInstance = inf.InfInstance;
+
+
+//pub const BuildOrder = struct
+//{
+//  infType  : InfType,
+//  infCount : u64 = 0,
+//};
 
 
 pub const econLocCount = @typeInfo( EconLoc ).@"enum".fields.len;
@@ -10,23 +28,15 @@ pub const econLocCount = @typeInfo( EconLoc ).@"enum".fields.len;
 pub const EconLoc = enum( u8 )
 {
   pub inline fn toIdx( self : EconLoc ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : u8 ) EconLoc { return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn fromIdx( i : usize ) EconLoc { return @enumFromInt( @as( u8, @intCast( i ))); }
 
-  GROUND, // should not garantee breathable atmosphere
+  GROUND, // Should not garantee breathable atmosphere
   ORBIT,
   L1,    // Lagrange Points
   L2,
   L3,
   L4,
   L5,
-  COMET, // For microbodies only
-};
-
-
-pub const BuildOrder = struct
-{
-  infType  : inf.InfType,
-  infCount : u32 = 0,
 };
 
 
@@ -34,36 +44,35 @@ pub const EconComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  location : EconLoc,
+  location      : EconLoc,
+  hasAtmosphere : bool = false,
 
-  population : u32 = 0,
-  efficiency : f32 = 1.0,
+  population : u64 = 0,
+  sunshine   : f64 = 1.0,
 
-  unusedArea : u32 = 0,
-  urbanArea  : u32 = 0,
-  arableArea : u32 = 0,
+  maxAvailArea : u64 = 0,
 
 //assemblyQueue
 
-  resArray : [ res.resTypeCount ]u32 = std.mem.zeroes([ res.resTypeCount ]u32 ),
-  infArray : [ inf.infTypeCount ]u32 = std.mem.zeroes([ inf.infTypeCount ]u32 ),
+  resArray : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  infArray : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
 
 
   // ================================ RESSOURCES ================================
 
-  pub inline fn getResCount( self : *const EconComp, resType : .resType ) u32
+  pub inline fn getResCount( self : *const EconComp, resType : ResType ) u64
   {
     return self.resArray[ resType.toIdx() ];
   }
-  pub inline fn setResCount( self : *EconComp, resType : .resType, value : u32 ) void
+  pub inline fn setResCount( self : *EconComp, resType : ResType, value : u64 ) void
   {
     self.resArray[ resType.toIdx() ] = value;
   }
-  pub inline fn addResCount( self : *EconComp, resType : .resType, value : u32 ) void
+  pub inline fn addResCount( self : *EconComp, resType : ResType, value : u64 ) void
   {
     self.resArray[ resType.toIdx() ] += value;
   }
-  pub inline fn subResCount( self : *EconComp, resType : .resType, value : u32 ) void
+  pub inline fn subResCount( self : *EconComp, resType : ResType, value : u64 ) void
   {
     const count = @min( value, self.resArray[ resType.toIdx() ]);
 
@@ -78,19 +87,19 @@ pub const EconComp = struct
 
   // ================================ INFRASTRUCTURE ================================
 
-  pub inline fn getInfCount( self : *const EconComp, infType : .infType ) u32
+  pub inline fn getInfCount( self : *const EconComp, infType : InfType ) u64
   {
     return self.infArray[ infType.toIdx() ];
   }
-  pub inline fn setInfCount( self : *EconComp, infType : .infType, value : u32 ) void
+  pub inline fn setInfCount( self : *EconComp, infType : InfType, value : u64 ) void
   {
     self.infArray[ infType.toIdx() ] = value;
   }
-  pub inline fn addInfCount( self : *EconComp, infType : .infType, value : u32 ) void
+  pub inline fn addInfCount( self : *EconComp, infType : InfType, value : u64 ) void
   {
     self.infArray[ infType.toIdx() ] += value;
   }
-  pub inline fn subInfCount( self : *EconComp, infType : .infType, value : u32 ) void
+  pub inline fn subInfCount( self : *EconComp, infType : InfType, value : u64 ) void
   {
     const count = @min( value, self.infArray[ infType.toIdx() ]);
 
@@ -103,21 +112,21 @@ pub const EconComp = struct
   }
 
 
-  pub fn canBuildInf( self : *const EconComp, infType : inf.InfType, count : u32 ) bool
+  pub fn canBuildInf( self : *const EconComp, infType : InfType, count : u64 ) bool
   {
-    if( inf.InfType.canBeBuilt( infType, self.location ))
+    if( !InfType.canBeBuiltAt( infType, self.location, self.hasAtmosphere ))
     {
       def.log( .INFO, 0, @src(), "You are not allowed to build infrastructure of type {} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
       return false;
     }
 
-    const  areaAvailable  = self.unusedArea;
-    const  areaNeeded     = infType.getArea() * count;
+    const  availArea  = self.getAvailArea();
+    const  neededArea = infType.getArea() * count;
 
-    if( areaAvailable < areaNeeded )
+    if( availArea < neededArea )
     {
-      def.log( .INFO, 0, @src(), "Not enough space to build infrastructure of type {} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), areaNeeded });
-      return true;
+      def.log( .INFO, 0, @src(), "Not enough space to build infrastructure of type {} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
+      return false;
     }
     return true;
   }
@@ -125,65 +134,75 @@ pub const EconComp = struct
 
   // ================================ POPULATION ================================
 
-  const POP_PER_HOUSE = inf.InfType.HOUSING.getPop();
-  const POP_PER_FOOD  = POP_PER_HOUSE; // How many pop can 1 unit of food sustain
+  const FOOD_PER_POP   : f64 = 0.1; // How much food does a pop consume
+  const WORK_PER_POP   : f64 = 1.0; // How much work does a pop generate
+  const POP_PER_HOUSE  : u64 = 10;  // How many pop does a house support
 
-  const WEEKLY_POP_GROWTH = 1.00022; // x ~PI each century
+  const WEEKLY_POP_GROWTH = 1.0002113; // x3 each century
 
-  pub fn getPopCap( self : *const EconComp ) u32
+  fn getPopCap( self : *const EconComp ) u64
   {
     return self.getInfCount( .HOUSING ) * POP_PER_HOUSE;
   }
 
-  pub fn getPopFoodCons( self : *const EconComp ) u32
+  fn getPopFoodCons( self : *const EconComp ) u64
   {
-    const pop : f32 = @floatFromInt( self.population );
+    const pop : f64 = @floatFromInt( self.population );
 
-    return @intFromFloat( @ceil( pop / POP_PER_FOOD ));
+    return @intFromFloat( @ceil( pop * FOOD_PER_POP ));
   }
 
-  pub fn updatePop( self : *EconComp ) void
+  fn getPopWorkProd( self : *const EconComp ) u64
   {
-    const popCap        = self.getPopCap();
+    const pop : f64 = @floatFromInt( self.population );
+
+    return @intFromFloat( @floor( pop * WORK_PER_POP ));
+  }
+
+  fn updatePop( self : *EconComp ) void
+  {
     const foodAvailable = self.getResCount( .FOOD );
     const foodRequired  = self.getPopFoodCons();
 
-    if( foodAvailable < foodRequired )
+    if( foodAvailable < foodRequired ) // Starvation
     {
-      // Starvation : lose population from food shortage
-
-      const foodDeficit = foodRequired - foodAvailable;
-      const popStarve   = @divTrunc( foodDeficit, POP_PER_FOOD * 12 );
-
-      self.population = self.population -| popStarve;
-
       self.setResCount( .FOOD, 0 );
+
+      const foodDeficit : f64 = @floatFromInt( foodRequired - foodAvailable );
+      const popStarve   : f64 = foodDeficit / FOOD_PER_POP;
+
+      self.population = self.population -| @as( u64, @intFromFloat( @ceil( popStarve / 12 ))); // losing 1/12 of starving pop at each update
     }
-    else
+    else // Normal growth
     {
       self.subResCount( .FOOD, foodRequired );
 
+      const popCap = self.getPopCap();
+
       if( self.population < popCap )
       {
-        const pop : f32 = @floatFromInt( self.population );
+        const pop : f64 = @floatFromInt( self.population );
 
         self.population = @intFromFloat( @ceil( pop * WEEKLY_POP_GROWTH ));
 
         if( self.population > popCap ){ self.population = popCap; }
       }
     }
+
+    // Updating availalbe WORK amount for this cycle
+    self.resArray[ ResType.WORK.toIdx() ] = self.getPopWorkProd();
   }
 
 
   // ================================ AREA ================================
 
-  pub fn getUsedArea( self : *const EconComp ) u32
+  pub fn getUsedArea( self : *const EconComp ) u64
   {
-    var used : u32 = 0;
+    var used : u64 = 0;
 
-    inline for( 0..inf.infTypeCount )| i |
+    inline for( 0..infTypeCount )| i |
     {
-      const infType = inf.InfType.fromIdx( i );
+      const infType = InfType.fromIdx( i );
 
       used += self.getInfCount( infType ) * infType.getArea();
     }
@@ -191,129 +210,45 @@ pub const EconComp = struct
     return used;
   }
 
-  pub fn getTotalArea( self : *const EconComp ) u32
+  pub fn getTotalArea( self : *const EconComp ) u64
   {
-    return self.unusedArea + self.getUsedArea();
+    if( self.location == .GROUND and self.hasAtmosphere ) // If this is a planet with atmosphere
+    {
+      return self.maxAvailArea;
+    }
+    else // Else, area is grown via "area-extension" infra
+    {
+    //const infType = InfType.TBA.toIdx(); // TODO : implemnet area-extension infra
+
+    //avail = self.getInfCount( infType ) * infType.getArea();
+
+      return  0;
+    }
+  }
+
+  pub fn getAvailArea( self : *const EconComp ) u64
+  {
+    const used  = self.getUsedArea();
+    const total = self.getTotalArea();
+
+    if( used <= total )
+    {
+      return total - used;
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Negative available area in location of type {}", .{ @tagName( self.location )});
+      return 0;
+    }
   }
 
 
-  // ================================ CONSUMPTION & PRODUCTION ================================
+  // ================================ UPDATING ================================
 
-  pub fn updateResources( self : *EconComp ) void
+  pub fn tickEcon( self : *EconComp ) void
   {
-    var infTypeEfficiency : [ inf.infTypeCount ]f32                     = std.mem.zeroes([ inf.infTypeCount ]f32 );
-    var infTypeResProd    : [ inf.infTypeCount ][ res.resTypeCount ]u32 = std.mem.zeroes([ inf.infTypeCount ][ res.resTypeCount ]u32 );
-    var infTypeResCons    : [ inf.infTypeCount ][ res.resTypeCount ]u32 = std.mem.zeroes([ inf.infTypeCount ][ res.resTypeCount ]u32 );
-
-    var totalPowerProd : u32 = 0;
-    var totalPowerCons : u32 = 0;
-
-    // ================ PART 1: Calculate maximum resource deltas ================
-
-    inline for( 0..inf.infTypeCount )| i |
-    {
-      const infType = inf.InfType.fromIdx( i );
-      const count   = self.getInfCount( infType );
-
-      if( count == 0 ) continue;
-
-      const instance = inf.InfInstance.initByType( infType );
-
-      inline for( 0..res.resTypeCount )| j |
-      {
-        const resType = res.ResType.fromIdx( j );
-
-        infTypeResProd[ i ][ j ] = count * instance.getProdPerInf( resType );
-        infTypeResCons[ i ][ j ] = count * instance.getConsPerInf( resType );
-
-        if( resType == .POWER )
-        {
-          totalPowerProd += infTypeResProd[ i ][ j ];
-          totalPowerCons += infTypeResCons[ i ][ j ];
-        }
-      }
-
-      infTypeEfficiency[ i ] = 1.0;
-    }
-
-    // ================ PART 2: Update base efficiency ( power shortage ) ================
-
-    self.addResCount( .POWER, totalPowerProd );
-
-    const powerAvailable : f32 = @floatFromInt( self.getResCount( .POWER ));
-    const powerRequired  : f32 = @floatFromInt( totalPowerCons );
-
-    self.efficiency = if( powerRequired > 0 ) @min( 1.0, powerAvailable / powerRequired ) else 1.0;
-
-    if( powerAvailable < powerRequired ){ self.setResCount( .POWER, 0 ); }
-    else                                { self.subResCount( .POWER, totalPowerCons ); }
-
-    // ================ PART 3: Update each infType's efficiency ( resource constraints ) ================
-
-    inline for( 0..inf.infTypeCount )| i |
-    {
-      const infType = inf.InfType.fromIdx( i );
-      const count   = self.getInfCount( infType );
-
-      if( count == 0 ) continue;
-
-      var resEfficiency : f32 = 1.0;
-
-      inline for( 0..res.resTypeCount )| j |
-      {
-        const resType = res.ResType.fromIdx( j );
-
-        // Skip POWER and FOOD ( consumed regardless of efficiency )
-        if( resType == .POWER or resType == .FOOD ) continue;
-
-        const resCons = infTypeResCons[ i ][ j ];
-
-        if( resCons > 0 )
-        {
-          const resAvailable : f32 = @floatFromInt( self.getResCount( resType ));
-          const resRequired  : f32 = @floatFromInt( resCons );
-
-          const resEff  = @min( 1.0, resAvailable / resRequired );
-          resEfficiency = @min( resEfficiency, resEff );
-        }
-      }
-
-      infTypeEfficiency[ i ] = @min( self.efficiency, resEfficiency );
-    }
-
-    // TODO : lower efficiency based on pop shortage
-
-    // ================ PART 4: Update resource counts based on individual efficiencies ================
-
-    inline for( 0..inf.infTypeCount )| i |
-    {
-      const infType = inf.InfType.fromIdx( i );
-      const count   = self.getInfCount( infType );
-
-      if( count == 0 ) continue;
-
-      const efficiency = infTypeEfficiency[ i ];
-
-      inline for( 0..res.resTypeCount )| j |
-      {
-        const resType = res.ResType.fromIdx( j );
-
-        const resProd : f32 = @floatFromInt( infTypeResProd[ i ][ j ] );
-        const resCons : f32 = @floatFromInt( infTypeResCons[ i ][ j ] );
-
-        // POWER and FOOD are fully consumed/produced regardless of efficiency
-        if( resType == .POWER or resType == .FOOD )
-        {
-          continue; // Already handled elsewhere
-        }
-
-        // Apply efficiency multiplier to other resources
-        const prodApplied : u32 = @intFromFloat( @floor( resProd * efficiency ));
-        const consApplied : u32 = @intFromFloat( @ceil(  resCons * efficiency ));
-
-        self.addResCount( resType, prodApplied );
-        self.subResCount( resType, consApplied );
-      }
-    }
+    self.updatePop();
+    var solver: slv.EconSolver = .{};
+    solver.solve( self );
   }
 };

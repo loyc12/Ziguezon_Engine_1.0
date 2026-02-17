@@ -2,35 +2,45 @@
 
 HIGH PRIORITY ( Required for basic functionality ) :
 
-1. Add production tick system :
-   - Calculate net resources per tick (prod - cons) for all InfInstances
-   - Apply resource constraints (can't consume more than available)
-   - Handle POWER as priority resource (affects other production)
+1. Implement resource storage caps
+  - Add per-resource storage capacity ( WAREHOUSE, ENERGY_BANKS )
+  - Clamp after solver delta application
+  - Add overflow decay or loss mechanics
 
-2. Add population management :
-   - Calculate population cap from HOUSING count
-   - Track population consumption (FOOD per capita)
-   - Starving population mechanism
+2. Define inter-Econ transfer abstraction
+  - Allow teleporting resources and infra from one econ to another ( for now )
+  - Needed to boostarp econs where none exist prior
 
-3. Implement area management :
-   - Track used area vs unused area
-   - Prevent building when area exhausted
+3. Implement assembly queue data structure in EconComp :
+  - PART consumed over time
+  - partial progress accumulation
+  - InfType.canBeBuiltAt validation
+  - optional build rate ( WORK limited ? )
 
-4. Implement assembly queue data structure in EconComp :
-   - Consume PART resources to build queued infrastructure
-   - Validate location compatibility via InfType.canBeBuilt()
+4. Infrastructure maintenance resource sinks
+  - Per-inf maintenance costs
+  - Soft shutdown when unpaid (activity ratio scaling)
+  - Hard decay when unpaid long-term (optional)
+
+5. Artificial area infrastructure for orbit
+  - HAB_MODULE / SPIN_HAB / CYLINDER / HABITAT / etc
+  - Area increases via infra
+  - Tie to pressurization rules
 
 
 MEDIUM PRIORITY :
 
 1. Add location initialization for EconComp (set GROUND location initially)
-2. Implement resource transport between EconLoc zones
-3. Add efficiency modifiers (sunlight for SOLAR_PLANT / AGRONOMIC, etc)
+2. Implement true resource transport between econs
+3. Implement efficiency modifiers (sunlight for SOLAR_PLANT / AGRONOMIC, etc)
 4. Create update function for PlanetComp that ticks all EconComp locations
 
 
 LOW PRIORITY :
 
 1. Add storage capacity limits (commented out WAREHOUSE / BATTERY)
-2. Implement power grid distribution system
-3. Add tax / revenue mechanics for COMMERCE
+2. Add fractional carry buffers for res production ( avoid rounding losses )
+3. Implement local res distribution system
+4. Avoid giving pop priority access to food (?)
+5. Add tax / revenue mechanics for COMMERCE and auto-trade
+6. Allow work to be produced (ex : AGI infra via COMPUTE_CENTERS )
