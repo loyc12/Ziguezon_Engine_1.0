@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 const inf = @import( "infrastructure.zig" );
 const res = @import( "resource.zig" );
-const ecn = @import( "econComp.zig" );
+const ecn = @import( "economy.zig" );
 
 
 pub const resTypeCount = res.resTypeCount;

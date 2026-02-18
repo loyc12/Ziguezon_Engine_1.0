@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 const inf = @import( "infrastructure.zig" );
 const res = @import( "resource.zig" );
-const slv = @import("econSolver.zig" );
+const slv = @import( "econSolver.zig" );
 
 
 pub const resTypeCount = res.resTypeCount;
@@ -33,7 +33,7 @@ pub const EconLoc = enum( u8 )
 };
 
 
-pub const EconComp = struct
+pub const Economy = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
@@ -54,19 +54,19 @@ pub const EconComp = struct
 
   // ================================ RESSOURCES ================================
 
-  pub inline fn getResCount( self : *const EconComp, resType : ResType ) u64
+  pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
   {
     return self.resArray[ resType.toIdx() ];
   }
-  pub inline fn setResCount( self : *EconComp, resType : ResType, value : u64 ) void
+  pub inline fn setResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
     self.resArray[ resType.toIdx() ] = value;
   }
-  pub inline fn addResCount( self : *EconComp, resType : ResType, value : u64 ) void
+  pub inline fn addResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
     self.resArray[ resType.toIdx() ] += value;
   }
-  pub inline fn subResCount( self : *EconComp, resType : ResType, value : u64 ) void
+  pub inline fn subResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
     const count = @min( value, self.resArray[ resType.toIdx() ]);
 
@@ -74,26 +74,26 @@ pub const EconComp = struct
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "Tried to remove {d} res of type {s} from econComp, but only had {d} left", .{ value, @tagName( resType ), count });
+      def.log( .WARN, 0, @src(), "Tried to remove {d} res of type {s} from economy, but only had {d} left", .{ value, @tagName( resType ), count });
     }
   }
 
 
   // ================================ INFRASTRUCTURE ================================
 
-  pub inline fn getInfCount( self : *const EconComp, infType : InfType ) u64
+  pub inline fn getInfCount( self : *const Economy, infType : InfType ) u64
   {
     return self.infArray[ infType.toIdx() ];
   }
-  pub inline fn setInfCount( self : *EconComp, infType : InfType, value : u64 ) void
+  pub inline fn setInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
     self.infArray[ infType.toIdx() ] = value;
   }
-  pub inline fn addInfCount( self : *EconComp, infType : InfType, value : u64 ) void
+  pub inline fn addInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
     self.infArray[ infType.toIdx() ] += value;
   }
-  pub inline fn subInfCount( self : *EconComp, infType : InfType, value : u64 ) void
+  pub inline fn subInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
     const count = @min( value, self.infArray[ infType.toIdx() ]);
 
@@ -101,12 +101,12 @@ pub const EconComp = struct
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "Tried to remove {d} inf of type {s} from econComp, but only had {d} left", .{ value, @tagName( infType ), count });
+      def.log( .WARN, 0, @src(), "Tried to remove {d} inf of type {s} from economy, but only had {d} left", .{ value, @tagName( infType ), count });
     }
   }
 
 
-  pub fn canBuildInf( self : *const EconComp, infType : InfType, count : u64 ) bool
+  pub fn canBuildInf( self : *const Economy, infType : InfType, count : u64 ) bool
   {
     if( !InfType.canBeBuiltAt( infType, self.location, self.hasAtmosphere ))
     {
@@ -134,26 +134,26 @@ pub const EconComp = struct
 
   const WEEKLY_POP_GROWTH = 1.0002113; // x3 each century
 
-  fn getPopCap( self : *const EconComp ) u64
+  fn getPopCap( self : *const Economy ) u64
   {
     return self.getInfCount( .HOUSING ) * POP_PER_HOUSE;
   }
 
-  fn getPopFoodCons( self : *const EconComp ) u64
+  fn getPopFoodCons( self : *const Economy ) u64
   {
     const pop : f32 = @floatFromInt( self.population );
 
     return @intFromFloat( @ceil( pop * FOOD_PER_POP ));
   }
 
-  fn getPopWorkProd( self : *const EconComp ) u64
+  fn getPopWorkProd( self : *const Economy ) u64
   {
     const pop : f32 = @floatFromInt( self.population );
 
     return @intFromFloat( @floor( pop * WORK_PER_POP ));
   }
 
-  fn updatePop( self : *EconComp ) void
+  fn updatePop( self : *Economy ) void
   {
     const foodAvailable = self.getResCount( .FOOD );
     const foodRequired  = self.getPopFoodCons();
@@ -190,7 +190,7 @@ pub const EconComp = struct
 
   // ================================ AREA ================================
 
-  pub fn getUsedArea( self : *const EconComp ) u64
+  pub fn getUsedArea( self : *const Economy ) u64
   {
     var used : u64 = 0;
 
@@ -204,7 +204,7 @@ pub const EconComp = struct
     return used;
   }
 
-  pub fn getTotalArea( self : *const EconComp ) u64
+  pub fn getTotalArea( self : *const Economy ) u64
   {
     if( self.location == .GROUND and self.hasAtmosphere ) // If this is a planet with atmosphere
     {
@@ -220,7 +220,7 @@ pub const EconComp = struct
     }
   }
 
-  pub fn getAvailArea( self : *const EconComp ) u64
+  pub fn getAvailArea( self : *const Economy ) u64
   {
     const used  = self.getUsedArea();
     const total = self.getTotalArea();
@@ -239,7 +239,7 @@ pub const EconComp = struct
 
   // ================================ UPDATING ================================
 
-  pub fn tickEcon( self : *EconComp ) void
+  pub fn tickEcon( self : *Economy ) void
   {
     self.updatePop();
 

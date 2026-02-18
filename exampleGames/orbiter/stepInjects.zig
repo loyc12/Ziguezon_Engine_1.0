@@ -36,6 +36,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
 {
   const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
   const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
+//const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
   const sdt = ng.getScaledTargetTickDelta();
 
@@ -50,11 +51,11 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
     if( orbiter == null ){ continue; }
 
     const orbiterTrans = transStore.get( id );
-    const orbiteeTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
+    const orbitedTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
 
-    if( orbiterTrans != null and orbiteeTrans != null )
+    if( orbiterTrans != null and orbitedTrans != null )
     {
-      orbiter.?.updateOrbit( orbiterTrans.?, orbiteeTrans.?, sdt );
+      orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
     }
     else
     {
@@ -79,30 +80,37 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
 {
   const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
   const shapeStore : *glb.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
-  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
 
+  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
+  const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+
+
+  // Rendering bodies' orbits
   for( 1..glb.entityArray.len )| idx |
   {
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .TRACE, 0, @src(), "Rendering path of entity #{}", .{ id });
+    def.log( .TRACE, 0, @src(), "Rendering path of entity #{} at idx #{}", .{ id, idx });
 
     const orbiter      = orbitStore.get( id );
-    const orbiteeTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
+    const orbiterBody  = bodyStore.get(  id );
+    const orbitedTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
 
-    if( orbiter != null and orbiteeTrans != null )
+    if( orbiter != null and orbitedTrans != null and orbiterBody != null )
     {
-      orbiter.?.renderPath( orbiteeTrans.?.pos.toVec2() );
+      orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
 
       def.log( .TRACE, 0, @src(), "Rendering LPs of entity #{}", .{ id });
 
-      orbiter.?.renderLPs( orbiteeTrans.?.pos.toVec2(), 100_000.0, 5 ); // TODO : USE PROPER MASS VARIABLE
+      orbiter.?.renderLPs( orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
     }
     else
     {
       def.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of entity #{}", .{ id });
     }
   }
+
+  // Rendering bodies
   for( 0..glb.entityArray.len )| idx |
   {
     const id = glb.entityArray[ idx ].id;

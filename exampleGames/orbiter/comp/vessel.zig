@@ -18,7 +18,7 @@ pub const VesType = enum( u8 )
 
   pub inline fn getMass( self : VesType ) f32
   {
-    return comptime switch( self )
+   return switch( self )
     {
       .PROBE    => 1.0,
       .SHUTTLE  => 5.0,
@@ -29,7 +29,7 @@ pub const VesType = enum( u8 )
 
   pub inline fn getPartCost( self : VesType ) u64 // Assembly cost in parts
   {
-    return comptime switch( self )
+   return switch( self )
     {
       .PROBE    => 1,
       .SHUTTLE  => 5,

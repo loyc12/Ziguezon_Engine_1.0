@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 const res = @import( "resource.zig" );
 
-const EconLoc  = @import( "econComp.zig" ).EconLoc;
+const EconLoc  = @import( "economy.zig" ).EconLoc;
 const PowerSrc = @import( "powerSrc.zig" ).PowerSrc;
 
 
@@ -45,7 +45,7 @@ pub const InfType = enum( u8 )
 
   pub inline fn getMass( self : InfType ) f32
   {
-    return comptime switch( self )
+   return switch( self )
     {
       .HOUSING     => 2.0,
 
@@ -64,7 +64,7 @@ pub const InfType = enum( u8 )
 
   pub inline fn getArea( self : InfType ) f32
   {
-    return comptime switch( self )
+   return switch( self )
     {
       .HOUSING     => 1.0,
 
@@ -83,7 +83,7 @@ pub const InfType = enum( u8 )
 
   pub inline fn getPartCost( self : InfType ) u64 // Assembly cost in parts
   {
-    return comptime switch( self )
+   return switch( self )
     {
       .HOUSING     => 1,
 

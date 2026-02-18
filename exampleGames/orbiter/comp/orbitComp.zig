@@ -10,8 +10,9 @@ pub const OrbitComp = struct
   const G = 1;   // Gravitational constant ( tweakable )
   const N = 256; // number of segments used to render orbital path
 
-  // Orbitee's mass ( ought to be near-constant )
-  orbitedMass : f32,
+  // Orbit's masses ( ought to be near-constant )
+  orbitedMass : f32 = 100.0, // mass of whatever self orbits
+  orbiterMass : f32 = 100.0, // mass of self
 
   // Min/Max radius approach
   minRadius : f32 = 200.0, // Periapsis (closest)
@@ -64,7 +65,7 @@ pub const OrbitComp = struct
 
     const semiMajor3 = semiMajor * semiMajor * semiMajor;
 
-    const meanAngVel = @sqrt( G * self.orbitedMass / semiMajor3 );
+    const meanAngVel = @sqrt( G * ( self.orbitedMass + self.orbiterMass ) / semiMajor3 );
 
     return switch( self.retrograde ) // negative angularVel == retrograde orbits
     {
@@ -152,7 +153,10 @@ pub const OrbitComp = struct
     // TODO : output desired pos and vel instead, so that it can be further modified afterhand
   }
 
-  pub fn renderPath( self : *const OrbitComp, orbiteePos : Vec2 ) void
+
+  // ================================ RENDERING ================================
+
+  pub fn renderPath( self : *const OrbitComp, orbitedPos : Vec2 ) void
   {
     var p1 : Vec2 = self.getRelPosAtAngle( 0 );
     var p2 : Vec2 = p1;
@@ -166,16 +170,25 @@ pub const OrbitComp = struct
       p2 = p1;
       p1 = self.getRelPosAtAngle( angle );
 
-      def.drawLine( orbiteePos.add( p1 ), orbiteePos.add( p2 ), .green, zoomedWidth );
+      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, zoomedWidth );
     }
-
-    const absPos    = self.getAbsPos( orbiteePos );
-    const scaledVel = self.getRelVel().mulVal( 0.25 );
-
-    def.drawLine( absPos, absPos.add( scaledVel ), .orange, zoomedWidth );
   }
 
-  pub fn renderLPs( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, maxLP : usize ) void
+//pub fn renderDebug( self : *const OrbitComp, orbitedPos : Vec2, selfRadius : f32, moonDensity : f32 ) void
+//{
+//  const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
+//  const absPos      = self.getAbsPos( orbitedPos );
+//  const scaledVel   = self.getRelVel().mulVal( 1.0 );
+//
+//  def.drawLine( absPos, absPos.add( scaledVel ), .orange, zoomedWidth );
+//
+//  const minRad = self.getHillRadius();
+//  const maxRad = self.getRocheLimit( selfRadius, moonDensity, 1.0 );
+//
+//  // ...
+//}
+
+  pub fn renderLPs( self : *const OrbitComp, orbitedPos : Vec2, maxLP : usize ) void
   {
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
 
@@ -188,18 +201,41 @@ pub const OrbitComp = struct
 
     for( 1..LPcount )| i |
     {
-      const pos = self.getRelLPpos( orbiteePos, orbiterMass, @intCast( i ));
+      const pos = self.getRelLPpos( orbitedPos, @intCast( i ));
 
       def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
     }
   }
 
 
-  pub fn getRelLPpos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, L : u4 ) Vec2
-  {
-    const massRatio = orbiterMass / ( self.orbitedMass + orbiterMass );
+  // ================================ LAGRANGE & HILL MATHS ================================
 
-    // Radial vector from orbitee to orbiter
+  inline fn getHillFactor( self : *const OrbitComp ) f32 { return std.math.cbrt( self.orbiterMass / ( 3.0 * self.orbitedMass )); }
+
+  inline fn getL3Factor( self : *const OrbitComp ) f32
+  {
+    // Approx distance ~ r * ( 1 + ( 5μ / 12 ))
+    const mu = self.orbiterMass / ( self.orbitedMass + self.orbiterMass );
+
+    return -( 1.0 + ( 5.0 * mu / 12.0 ));
+  }
+
+  // TODO : make sure this works properly
+  inline fn getTrojanLagPos( self: *const OrbitComp, sign : f32 ) Vec2
+  {
+    const e = self.getEccentricity();
+    const t = self.angularPos;
+
+    // First-order libration correction
+    const dt = ( 2.0 / 3.0 ) * e * @sin( t );
+    const lagAngle = t + sign * ( def.PI / 3.0 ) + dt;
+
+    return self.getRelPosAtAngle( lagAngle );
+  }
+
+  pub fn getRelLPpos( self : *const OrbitComp, orbitedPos : Vec2, L : u4 ) Vec2
+  {
+    // Radial vector from orbited to orbiter
     const rel = self.getRelPos();
 
     var lagPos : Vec2 = .{};
@@ -207,9 +243,9 @@ pub const OrbitComp = struct
     switch( L )
     {
       // ======== Collinear points ========
-      1 => { lagPos = rel.mulVal( 1.0 - self.getHillFactor( massRatio )); }, // Between the orbitee and orbiter
-      2 => { lagPos = rel.mulVal( 1.0 + self.getHillFactor( massRatio )); }, // Behind  the orbiter
-      3 => { lagPos = rel.mulVal(       self.getL3Factor(   massRatio )); }, // Behind  the orbitee
+      1 => { lagPos = rel.mulVal( 1.0 - self.getHillFactor()); }, // Between the orbited and orbiter
+      2 => { lagPos = rel.mulVal( 1.0 + self.getHillFactor()); }, // Behind  the orbiter
+      3 => { lagPos = rel.mulVal(       self.getL3Factor());   }, // Behind  the orbited
 
       // ======== Triangular points with elliptic correction ========
       4 => { lagPos = self.getTrojanLagPos(  1.0 ); }, // ~60° +/- 25° ahead of orbiter
@@ -222,32 +258,27 @@ pub const OrbitComp = struct
       },
     }
 
-    return orbiteePos.add( lagPos );
+    return orbitedPos.add( lagPos );
   }
 
-  inline fn getHillFactor( self : *const OrbitComp, massRatio : f32 ) f32
+
+  pub inline fn getHillRadius( self : *const OrbitComp ) f32 { return self.getSemiMajor() * self.getHillFactor(); }
+
+  // NOTE : moonRigidity  : 1.0 = fluid, 0.0 = rigid
+  // NOTE : selfRadius    = radius of the body the moon orbits ( aka self )
+  // NOTE : density ratio = selfDensity / moonDensity
+  pub inline fn getRocheLimit( self: *const OrbitComp, selfRadius : f32, moonDensity : f32, moonRigidity : f32 ) f32
   {
-    _ = self;
-    return std.math.cbrt( massRatio / 3.0 ) ;
+    const volume = ( 4.0 / 3.0 ) * def.PI * ( selfRadius * selfRadius * selfRadius );
+    const densityRatio = ( self.orbiterMass / volume ) / moonDensity;
+
+    const FLUID: f32 = 2.44;
+    const RIGID: f32 = 1.26;
+
+    return selfRadius * def.lerp( RIGID, FLUID, moonRigidity ) * std.math.cbrt( densityRatio );
   }
 
-  inline fn getL3Factor( self : *const OrbitComp, massRatio : f32 ) f32
-  {
-    // Approx distance ~ r * ( 1 + ( 5μ / 12 ))
-    _ = self;
-    return -( 1.0 + ( 5.0 * massRatio / 12.0 ));
-  }
-
-  inline fn getTrojanLagPos( self: *const OrbitComp, sign : f32 ) Vec2
-  {
-    const e = self.getEccentricity();
-    const t = self.angularPos;
-
-    // First-order libration correction
-    const dt = ( 2.0 / 3.0 ) * e * @sin( t );
-    const lagAngle = t + sign * ( def.PI / 3.0 ) + dt;
-
-    return self.getRelPosAtAngle( lagAngle );
-  }
+  pub inline fn getMaxMoonOrbitRadius( self : *const OrbitComp ) f32 { return 0.5 * self.getHillRadius(); }
+  pub inline fn getMinMoonOrbitRadius( self : *const OrbitComp ) f32 { return 1.1 * self.getRocheLimit(); }
 };
 

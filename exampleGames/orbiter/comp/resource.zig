@@ -22,7 +22,7 @@ pub const ResType = enum( u8 )
 
   pub inline fn getMass( self : ResType ) f32
   {
-    return comptime switch( self )
+   return switch( self )
     {
       .WORK  => 0.0,
 
@@ -38,7 +38,7 @@ pub const ResType = enum( u8 )
 
   pub inline fn canBeAccumulated( self : ResType ) bool // If this resource can be stored for more than one cycle
   {
-    return comptime switch( self )
+   return switch( self )
     {
       .WORK  => false,
     //.FOOD  => false,

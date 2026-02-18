@@ -5,6 +5,12 @@ const glb = @import( "gameGlobals.zig" );
 const utl = @import( "gameUtils.zig" );
 
 
+const STAR_MASS   = 100_000_000.0;
+const PLANET_MASS =   1_000_000.0;
+const MOON_MASS   =      10_000.0;
+const COMET_MASS  =         100.0;
+
+
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
 
@@ -23,18 +29,16 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
   const alloc = def.getAlloc();
 
   glb.transStore.init(  alloc );
-  glb.orbitStore.init(  alloc );
   glb.shapeStore.init(  alloc );
   glb.spriteStore.init( alloc );
 
-  // Registering base componentStores
+  glb.orbitStore.init(  alloc );
+  glb.bodyStore.init(   alloc );
+
+  // Registering componentStores
   if( !ng.componentRegistry.register( "transStore", &glb.transStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
-  }
-  if( !ng.componentRegistry.register( "orbitStore", &glb.orbitStore ))
-  {
-    def.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
   }
   if( !ng.componentRegistry.register( "shapeStore", &glb.shapeStore ))
   {
@@ -45,48 +49,110 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     def.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
   }
 
+  if( !ng.componentRegistry.register( "orbitStore", &glb.orbitStore ))
+  {
+    def.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
+  }
+  if( !ng.componentRegistry.register( "bodyStore", &glb.bodyStore ))
+  {
+    def.qlog( .ERROR, 0, @src(), "Failed to register bodyStore" );
+  }
+
+  // Setting up relevant components
   for( 0..glb.entityCount )| idx |
   {
     glb.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
 
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .INFO, 0, @src(), "Initializing components of entity #{}", .{ id });
+    def.log( .INFO, 0, @src(), "Initializing components of entity #{} at idx #{}", .{ id, idx });
+
+
+    var shapeScale : def.Vec2 = .new( 256, 256 );
 
     if( id == 1 ) // Here comes the sun, lalalala
     {
       _ = glb.transStore.add(  id, .{ .pos = .{} });
-      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = .new( 64, 64 ), .shape = .ELLI });
+      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = shapeScale, .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
+
+      continue;
     }
-    else // Planetoids
+
+    const place : f32 = @floatFromInt( id - 2 );
+    const factor = place / ( glb.entityCount - 1 );
+
+    var orbitComp : glb.orb.OrbitComp =
+    .{
+      .orientation = def.TAU * factor,
+      .retrograde  = ( 0 == id % 2 ),
+    };
+
+    var bodyComp : glb.bdy.BodyComp = .{ .bodyType = .PLANET };
+
+    switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
-      const place : f32 = @floatFromInt( id - 2 );
-      const factor = place / ( glb.entityCount - 1 );
-
-      const minMin = 7000.0;
-      const maxMin = 8000.0;
-
-      const minMax = 200.0;
-      const maxMax = 2000.0;
-
-      const orbitComp = glb.orb.OrbitComp
+      2 =>
       {
-        .orbitedMass = 100_000_000.0,
-        .minRadius   = maxMin - def.lerp( minMin, maxMin, factor ),
-        .maxRadius   = maxMax - def.lerp( minMax, maxMax, factor ),
-        .orientation = def.TAU * factor,
-      };
-      const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit
+        orbitComp.orbitedMass = STAR_MASS;
+        orbitComp.orbiterMass = PLANET_MASS;
+        orbitComp.minRadius   = 2500 - 50;
+        orbitComp.maxRadius   = 2500 + 50;
 
-      _ = glb.transStore.add(  id,
-      .{
-        .pos = .new( startPos.x, startPos.y, .{} ),
-      });
-      _ = glb.orbitStore.add(  id, orbitComp );
-      _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( 16, 16 ), .shape = .ELLI });
-    //_ = glb.spriteStore.add( id, .{} );
+        bodyComp.bodyType     = .PLANET;
+        bodyComp.mass         = PLANET_MASS;
+
+        shapeScale            = .new( 64, 64 );
+      },
+
+      3 =>
+      {
+        orbitComp.orbitedMass = PLANET_MASS;
+        orbitComp.orbiterMass = MOON_MASS;
+        orbitComp.minRadius   = 500 - 50;
+        orbitComp.maxRadius   = 500 + 50;
+
+        bodyComp.bodyType     = .MOON;
+        bodyComp.mass         = MOON_MASS;
+
+        shapeScale            = .new( 16, 16 );
+      },
+
+      4 =>
+      {
+        orbitComp.orbitedMass = MOON_MASS;
+        orbitComp.orbiterMass = COMET_MASS;
+        orbitComp.minRadius   = 100 - 50;
+        orbitComp.maxRadius   = 100 + 50;
+
+        bodyComp.bodyType     = .COMET;
+        bodyComp.mass         = COMET_MASS;
+
+        shapeScale            = .new( 4, 4 );
+      },
+
+      else =>
+      {
+        orbitComp.orbitedMass = COMET_MASS;
+        orbitComp.orbiterMass = COMET_MASS;
+        orbitComp.minRadius   = 100 - 50;
+        orbitComp.maxRadius   = 100 + 50;
+
+        bodyComp.bodyType     = .COMET;
+        bodyComp.mass         = COMET_MASS;
+
+        shapeScale            = .new( 4, 4 );
+      },
     }
+
+    const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit
+
+    _ = glb.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
+    _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = shapeScale, .shape = .ELLI });
+  //_ = glb.spriteStore.add( id, .{} );
+
+    _ = glb.orbitStore.add(  id, orbitComp );
+    _ = glb.bodyStore.add(   id, bodyComp  );
   }
 }
 
@@ -96,8 +162,10 @@ pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()
 
   glb.transStore.deinit();
   glb.shapeStore.deinit();
-  glb.orbitStore.deinit();
   glb.spriteStore.deinit();
+
+  glb.orbitStore.deinit();
+  glb.bodyStore.deinit();
 }
 
 
