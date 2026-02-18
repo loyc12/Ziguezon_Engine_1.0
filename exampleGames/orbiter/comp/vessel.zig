@@ -16,14 +16,14 @@ pub const VesType = enum( u8 )
   STARSHIP, // Freighter
   STATION,
 
-  pub inline fn getMass( self : VesType ) u64
+  pub inline fn getMass( self : VesType ) f32
   {
     return comptime switch( self )
     {
-      .PROBE    => 1,
-      .SHUTTLE  => 5,
-      .STARSHIP => 25,
-      .STATION  => 100,
+      .PROBE    => 1.0,
+      .SHUTTLE  => 5.0,
+      .STARSHIP => 25.0,
+      .STATION  => 100.0,
     };
   }
 

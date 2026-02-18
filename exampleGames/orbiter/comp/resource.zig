@@ -20,29 +20,29 @@ pub const ResType = enum( u8 )
   INGOT,
   PART,
 
-  pub inline fn getMass( self : ResType ) u64
+  pub inline fn getMass( self : ResType ) f32
   {
     return comptime switch( self )
     {
-      .WORK  => 0,
+      .WORK  => 0.0,
 
-      .FOOD  => 1,
-      .POWER => 0,
-      .WATER => 2,
+      .FOOD  => 1.0,
+      .POWER => 0.0,
+      .WATER => 2.0,
 
-      .ORE   => 3,
-      .INGOT => 3,
-      .PART  => 3,
+      .ORE   => 3.0,
+      .INGOT => 3.0,
+      .PART  => 3.0,
     };
   }
 
-  pub inline fn canBeAccumulated( self : ResType) bool // If this resource can be stored for more than one cycle
+  pub inline fn canBeAccumulated( self : ResType ) bool // If this resource can be stored for more than one cycle
   {
     return comptime switch( self )
     {
       .WORK  => false,
-      .FOOD  => false,
-      .POWER => false,
+    //.FOOD  => false,
+    //.POWER => false,
 
       else   => true,
     };

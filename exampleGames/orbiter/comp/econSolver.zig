@@ -18,7 +18,7 @@ pub const InfInstance = inf.InfInstance;
 
 pub const EconSolver = struct
 {
-  maxEfficiency : f64 = 1.0, // Global consumption-production throttle / multiplier
+  maxEfficiency : f32 = 1.0, // Global consumption-production throttle / multiplier
 
   // TODO : remove redundant zeroing if this becomes a performance bottleneck
 
@@ -107,7 +107,7 @@ pub const EconSolver = struct
     }
   }
 
-  fn computeInfActivityRatios( self : *EconSolver, sunshine : f64 ) void
+  fn computeInfActivityRatios( self : *EconSolver, sunshine : f32 ) void
   {
     inline for( 0..infTypeCount )| i |
     {

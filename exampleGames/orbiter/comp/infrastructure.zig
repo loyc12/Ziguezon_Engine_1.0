@@ -43,41 +43,41 @@ pub const InfType = enum( u8 )
 //DATA_CENTER,
 //TBA      // Increase area of pressurized locations
 
-  pub inline fn getMass( self : InfType ) u64
+  pub inline fn getMass( self : InfType ) f32
   {
     return comptime switch( self )
     {
-      .HOUSING     => 2,
+      .HOUSING     => 2.0,
 
-      .AGRONOMIC   => 1,
-      .HYDROPONIC  => 5,
-      .SOLAR_PLANT => 2,
-      .WATER_PLANT => 2,
+      .AGRONOMIC   => 1.0,
+      .HYDROPONIC  => 5.0,
+      .SOLAR_PLANT => 2.0,
+      .WATER_PLANT => 2.0,
 
-      .PROBE_MINE  => 1,
-      .GROUD_MINE  => 15,
-      .REFINERY    => 10,
-      .FACTORY     => 5,
-      .ASSEMBLY    => 2,
+      .PROBE_MINE  => 2.0,
+      .GROUD_MINE  => 15.0,
+      .REFINERY    => 10.0,
+      .FACTORY     => 5.0,
+      .ASSEMBLY    => 3.0,
     };
   }
 
-  pub inline fn getArea( self : InfType ) u64
+  pub inline fn getArea( self : InfType ) f32
   {
     return comptime switch( self )
     {
-      .HOUSING     => 1,
+      .HOUSING     => 1.0,
 
-      .AGRONOMIC   => 20,
-      .HYDROPONIC  => 5,
-      .SOLAR_PLANT => 15,
-      .WATER_PLANT => 2,
+      .AGRONOMIC   => 25.0,
+      .HYDROPONIC  => 5.0,
+      .SOLAR_PLANT => 15.0,
+      .WATER_PLANT => 3.0,
 
-      .PROBE_MINE  => 1,
-      .GROUD_MINE  => 10,
-      .REFINERY    => 5,
-      .FACTORY     => 5,
-      .ASSEMBLY    => 10,
+      .PROBE_MINE  => 1.0,
+      .GROUD_MINE  => 10.0,
+      .REFINERY    => 5.0,
+      .FACTORY     => 5.0,
+      .ASSEMBLY    => 5.0,
     };
   }
 

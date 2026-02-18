@@ -64,17 +64,17 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
       const place : f32 = @floatFromInt( id - 2 );
       const factor = place / ( glb.entityCount - 1 );
 
-      const minMin = 200.0;
-      const maxMin = 300.0;
+      const minMin = 7000.0;
+      const maxMin = 8000.0;
 
-      const minMax = 300.0;
-      const maxMax = 900.0;
+      const minMax = 200.0;
+      const maxMax = 2000.0;
 
       const orbitComp = glb.orb.OrbitComp
       {
         .orbitedMass = 100_000_000.0,
-        .minRadius   = def.lerp( minMin, maxMin, factor ),
-        .maxRadius   = def.lerp( minMax, maxMax, factor ),
+        .minRadius   = maxMin - def.lerp( minMin, maxMin, factor ),
+        .maxRadius   = maxMax - def.lerp( minMax, maxMax, factor ),
         .orientation = def.TAU * factor,
       };
       const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit

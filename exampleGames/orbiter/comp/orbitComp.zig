@@ -32,7 +32,8 @@ pub const OrbitComp = struct
   }
   pub inline fn getEccentricity( self : *const OrbitComp ) f32
   {
-    return ( self.maxRadius - self.minRadius ) / ( self.maxRadius + self.minRadius );
+    // Clamping avoids some high eccentricity math issues
+    return def.clmp(( self.maxRadius - self.minRadius ) / ( self.maxRadius + self.minRadius ), 0.0, 0.999 );
   }
 
   pub inline fn getCurrentRadius( self : *const OrbitComp ) f32
@@ -54,18 +55,18 @@ pub const OrbitComp = struct
 
   // Orbital period depends on semi-major axis and central mass ( Kepler's 3rd Law )
   // T² ∝ a³/M  →  ω = √(GM/a³)
-  pub inline fn getMeanAngularVel( self : *const OrbitComp ) f32
+  pub inline fn getMeanAngularVel( self : *const OrbitComp ) f32 // AKA mean motion
   {
     const semiMajor = self.getSemiMajor();
 
     // Prevent division by zero / very small values
     if( semiMajor < 1.0 ){ return 0.0; }
 
-    const semiMajorCub = semiMajor * semiMajor * semiMajor;
+    const semiMajor3 = semiMajor * semiMajor * semiMajor;
 
-    const meanAngVel = @sqrt( G * self.orbitedMass / semiMajorCub );
+    const meanAngVel = @sqrt( G * self.orbitedMass / semiMajor3 );
 
-    return switch( self.retrograde )
+    return switch( self.retrograde ) // negative angularVel == retrograde orbits
     {
       false =>  meanAngVel,
       true  => -meanAngVel,
@@ -78,7 +79,7 @@ pub const OrbitComp = struct
   {
     const meanAngVel = self.getMeanAngularVel();
 
-    const ecc = self.getEccentricity();
+    const ecc    = self.getEccentricity();
     const eccSqr = ecc * ecc;
 
     const numerRoot = 1.0 + ( ecc * @cos( self.angularPos ));
@@ -116,13 +117,21 @@ pub const OrbitComp = struct
   }
   pub inline fn getRelVel( self : *const OrbitComp ) Vec2
   {
-    const speed = self.angularVel * self.getCurrentRadius();
+    const ecc = self.getEccentricity();
 
-    // Velocity direction is perpendicular to radius ( tangent to orbit )
-    const velAngle = self.angularPos + ( def.PI / 2.0 );
-    const velVect  = Vec2.fromAngle( .{ .r = velAngle }).mulVal( speed );
+    // Radial velocity component
+    // v_r = ( a * e * sin( θ ) * meanMotion ) / sqrt( 1 - e^2 )
+    const velRad = self.getSemiMajor() * ecc * @sin( self.angularPos ) * self.getMeanAngularVel() / @sqrt( 1.0 - ecc * ecc );
 
-    return velVect.rot( .{ .r = self.orientation });
+    // Tangential velocity component
+    const velTan = self.angularVel * self.getCurrentRadius();
+
+    // Convert to Cartesian vectors
+    const vecRad = Vec2.fromAngle(.{ .r = self.angularPos }).mulVal( velRad );
+    const vecTan = Vec2.fromAngle(.{ .r = self.angularPos + def.PI / 2.0 }).mulVal( velTan );
+
+    // Rotate by orbit orientation
+    return vecRad.add( vecTan ).rot(.{ .r = self.orientation });
   }
 
 
@@ -134,11 +143,13 @@ pub const OrbitComp = struct
     self.angularPos = def.wrap( self.angularPos, 0.0, def.TAU );
 
     // NOTE : Be careful about update ordering, as angular vel is cached for reuse in getAbsVel()
-    self.angularVel = self.getAngularVel();
+    self.angularVel = self.getAngularVel(); // negative angularVel == retrograde orbits
 
     selfTrans.pos = self.getAbsPos( otherTrans.pos.toVec2() ).toVecA( selfTrans.pos.a );
     selfTrans.vel = self.getAbsVel( otherTrans.vel.toVec2() ).toVecA( selfTrans.vel.a );
     selfTrans.acc = .{}; // Acceleration is to be ignored for orbiting objetcs, as they have predefined paths anyways
+
+    // TODO : output desired pos and vel instead, so that it can be further modified afterhand
   }
 
   pub fn renderPath( self : *const OrbitComp, orbiteePos : Vec2 ) void
@@ -157,24 +168,36 @@ pub const OrbitComp = struct
 
       def.drawLine( orbiteePos.add( p1 ), orbiteePos.add( p2 ), .green, zoomedWidth );
     }
+
+    const absPos    = self.getAbsPos( orbiteePos );
+    const scaledVel = self.getRelVel().mulVal( 0.25 );
+
+    def.drawLine( absPos, absPos.add( scaledVel ), .orange, zoomedWidth );
   }
 
-  pub fn renderLPs( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32 ) void
+  pub fn renderLPs( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, maxLP : usize ) void
   {
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
 
-    for( 1..6 )| i |
+    const LPcount = @min( 5, maxLP ) + 1;
+
+    if( LPcount != maxLP + 1 )
     {
-      const pos = self.getLagrangePos( orbiteePos, orbiterMass, @intCast( i ));
+      def.qlog( .WARN, 0, @src(), "Trying to render inexistant LP : ignoring" );
+    }
+
+    for( 1..LPcount )| i |
+    {
+      const pos = self.getRelLPpos( orbiteePos, orbiterMass, @intCast( i ));
 
       def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
     }
   }
 
 
-  pub fn getLagrangePos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, L : u4 ) Vec2
+  pub fn getRelLPpos( self : *const OrbitComp, orbiteePos : Vec2, orbiterMass : f32, L : u4 ) Vec2
   {
-    const massRatio  = orbiterMass / ( self.orbitedMass + orbiterMass );
+    const massRatio = orbiterMass / ( self.orbitedMass + orbiterMass );
 
     // Radial vector from orbitee to orbiter
     const rel = self.getRelPos();
@@ -194,7 +217,7 @@ pub const OrbitComp = struct
 
       else =>
       {
-        def.qlog( .ERROR, 0, @src(), "Trying to access innexistant Lagrange's position" );
+        def.qlog( .ERROR, 0, @src(), "Trying to access inexistant LP's position : returning 0:0" );
         return .{};
       },
     }

@@ -50,7 +50,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
     if( orbiter == null ){ continue; }
 
     const orbiterTrans = transStore.get( id );
-    const orbiteeTrans = transStore.get( glb.entityArray[ 0 ].id );
+    const orbiteeTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
 
     if( orbiterTrans != null and orbiteeTrans != null )
     {
@@ -88,7 +88,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
     def.log( .TRACE, 0, @src(), "Rendering path of entity #{}", .{ id });
 
     const orbiter      = orbitStore.get( id );
-    const orbiteeTrans = transStore.get( glb.entityArray[ 0 ].id );
+    const orbiteeTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
 
     if( orbiter != null and orbiteeTrans != null )
     {
@@ -96,7 +96,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
 
       def.log( .TRACE, 0, @src(), "Rendering LPs of entity #{}", .{ id });
 
-      orbiter.?.renderLPs( orbiteeTrans.?.pos.toVec2(), 100_000.0, ); // TODO : USE PROPER MASS VARIABLE
+      orbiter.?.renderLPs( orbiteeTrans.?.pos.toVec2(), 100_000.0, 5 ); // TODO : USE PROPER MASS VARIABLE
     }
     else
     {
