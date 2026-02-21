@@ -85,22 +85,24 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
   const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
 
-  // Rendering bodies' orbits
+  // Rendering bodies' orbits and debug info
   for( 1..glb.entityArray.len )| idx |
   {
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .TRACE, 0, @src(), "Rendering path of entity #{} at idx #{}", .{ id, idx });
+    def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{} at idx #{}", .{ id, idx });
 
     const orbiter      = orbitStore.get( id );
     const orbiterBody  = bodyStore.get(  id );
+
+    const orbiterTrans = transStore.get( id );
     const orbitedTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
 
     if( orbiter != null and orbitedTrans != null and orbiterBody != null )
     {
-      orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
+      orbiter.?.renderDebug( orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
 
-      def.log( .TRACE, 0, @src(), "Rendering LPs of entity #{}", .{ id });
+      orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
 
       orbiter.?.renderLPs( orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
     }

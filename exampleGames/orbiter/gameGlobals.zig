@@ -3,6 +3,7 @@ const def = @import( "defs" );
 
 pub const orb = @import( "comp/orbitComp.zig" );
 pub const bdy = @import( "comp/bodyComp.zig"  );
+pub const str = @import( "comp/starComp.zig"  );
 
 
 // ================================ ENGINE & GAME SETTINGS ================================
@@ -30,3 +31,5 @@ pub var bodyStore   : BodyStore   = .{};
 pub const entityCount : usize = 4;
 
 pub var entityArray : [ entityCount ]def.Entity = std.mem.zeroes([ entityCount ]def.Entity );
+
+pub var starCompInst : str.StarComp = .{};

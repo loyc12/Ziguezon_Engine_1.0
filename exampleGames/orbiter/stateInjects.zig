@@ -10,6 +10,11 @@ const PLANET_MASS =   1_000_000.0;
 const MOON_MASS   =      10_000.0;
 const COMET_MASS  =         100.0;
 
+const STAR_RADIUS   = 256.0;
+const PLANET_RADIUS =  64.0;
+const MOON_RADIUS   =  16.0;
+const COMET_RADIUS  =   4.0;
+
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
@@ -68,7 +73,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
     def.log( .INFO, 0, @src(), "Initializing components of entity #{} at idx #{}", .{ id, idx });
 
 
-    var shapeScale : def.Vec2 = .new( 256, 256 );
+    var shapeScale : def.Vec2 = .new( STAR_RADIUS, STAR_RADIUS );
 
     if( id == 1 ) // Here comes the sun, lalalala
     {
@@ -76,19 +81,26 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
       _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = shapeScale, .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
 
+      glb.starCompInst.radius = STAR_RADIUS;
+      glb.starCompInst.mass   = STAR_MASS;
+      glb.starCompInst.shine  = 1.0;         // TODO : adjust to proper shunshine amount
+
       continue;
     }
+
+    // Non-sun component instanciation
 
     const place : f32 = @floatFromInt( id - 2 );
     const factor = place / ( glb.entityCount - 1 );
 
-    var orbitComp : glb.orb.OrbitComp =
+    var orbitComp : glb.orb.OrbitComp = // Rotating orbital ellipses for fun
     .{
       .orientation = def.TAU * factor,
       .retrograde  = ( 0 == id % 2 ),
     };
 
     var bodyComp : glb.bdy.BodyComp = .{ .bodyType = .PLANET };
+
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
@@ -100,48 +112,52 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
         orbitComp.maxRadius   = 2500 + 50;
 
         bodyComp.bodyType     = .PLANET;
+        bodyComp.radius       = PLANET_RADIUS;
         bodyComp.mass         = PLANET_MASS;
 
-        shapeScale            = .new( 64, 64 );
+        shapeScale = .new( PLANET_RADIUS, PLANET_RADIUS);
       },
 
       3 =>
       {
         orbitComp.orbitedMass = PLANET_MASS;
         orbitComp.orbiterMass = MOON_MASS;
-        orbitComp.minRadius   = 500 - 50;
-        orbitComp.maxRadius   = 500 + 50;
+        orbitComp.minRadius   = 300 - 20;
+        orbitComp.maxRadius   = 300 + 20;
 
         bodyComp.bodyType     = .MOON;
+        bodyComp.radius       = MOON_RADIUS;
         bodyComp.mass         = MOON_MASS;
 
-        shapeScale            = .new( 16, 16 );
+        shapeScale = .new( MOON_RADIUS, MOON_RADIUS );
       },
 
       4 =>
       {
         orbitComp.orbitedMass = MOON_MASS;
         orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 100 - 50;
-        orbitComp.maxRadius   = 100 + 50;
+        orbitComp.minRadius   = 40 - 1;
+        orbitComp.maxRadius   = 40 + 1;
 
         bodyComp.bodyType     = .COMET;
+        bodyComp.radius       = COMET_RADIUS;
         bodyComp.mass         = COMET_MASS;
 
-        shapeScale            = .new( 4, 4 );
+        shapeScale = .new( COMET_RADIUS, COMET_RADIUS );
       },
 
       else =>
       {
         orbitComp.orbitedMass = COMET_MASS;
         orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 100 - 50;
-        orbitComp.maxRadius   = 100 + 50;
+        orbitComp.minRadius   = 20 - 2;
+        orbitComp.maxRadius   = 20 + 2;
 
         bodyComp.bodyType     = .COMET;
+        bodyComp.radius       = COMET_RADIUS;
         bodyComp.mass         = COMET_MASS;
 
-        shapeScale            = .new( 4, 4 );
+        shapeScale = .new( COMET_RADIUS, COMET_RADIUS );
       },
     }
 

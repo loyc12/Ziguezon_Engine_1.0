@@ -89,6 +89,22 @@ pub const OrbitComp = struct
     return meanAngVel * ( numerRoot * numerRoot ) / denom;
   }
 
+
+  pub inline fn getPeriapsisRelPos( self : *const OrbitComp ) Vec2
+  {
+    return self.getRelPosAtAngle( 0 );
+  }
+  pub inline fn getApoapsisRelPos( self : *const OrbitComp  ) Vec2
+  {
+    return self.getRelPosAtAngle( def.PI );
+  }
+
+  // Orbital ellipse's orientation
+  pub inline fn getApsidesVec( self : *const OrbitComp ) Vec2
+  {
+    return self.getRelPosAtAngle( def.PI ).sub( self.getRelPosAtAngle( 0 ));
+  }
+
   // Calculates the orbiter's position
   pub inline fn getAbsPos( self : *const OrbitComp, orbitedPos : Vec2 ) Vec2
   {
@@ -156,6 +172,37 @@ pub const OrbitComp = struct
 
   // ================================ RENDERING ================================
 
+  pub fn renderDebug( self : *const OrbitComp, selfPos : Vec2, selfRadius : f32, moonDensity : f32 ) void
+  {
+    const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
+    const scaledVel   = self.getRelVel().mulVal( 1.0 );
+
+    def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, zoomedWidth ); // Velocity Vector
+
+    const minRad = self.getHillRadius();
+    const maxRad = self.getRocheLimit( selfRadius, moonDensity, 4.0 );
+
+    var vecMin1 : Vec2 = .new( minRad, 0 );
+    var vecMax1 : Vec2 = .new( maxRad, 0 );
+
+    var vecMin2 : Vec2 = vecMin1;
+    var vecMax2 : Vec2 = vecMax1;
+
+    const a = def.TAU / @as( f32, @floatFromInt( N ));
+
+    for( 0..N )| _ | // Moon friendly region ( Disk )
+    {
+      vecMin2 = vecMin1;
+      vecMax2 = vecMax1;
+
+      vecMin1 = vecMin1.rot( .{ .r = a });
+      vecMax1 = vecMax1.rot( .{ .r = a });
+
+      def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
+      def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
+    }
+  }
+
   pub fn renderPath( self : *const OrbitComp, orbitedPos : Vec2 ) void
   {
     var p1 : Vec2 = self.getRelPosAtAngle( 0 );
@@ -165,28 +212,17 @@ pub const OrbitComp = struct
 
     for( 0..N )| i |
     {
-      const angle = def.TAU * @as( f32, @floatFromInt( i + 1 )) / @as( f32, @floatFromInt( N ));
+      const a = def.TAU * @as( f32, @floatFromInt( i + 1 )) / @as( f32, @floatFromInt( N ));
 
       p2 = p1;
-      p1 = self.getRelPosAtAngle( angle );
+      p1 = self.getRelPosAtAngle( a );
 
       def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, zoomedWidth );
     }
-  }
 
-//pub fn renderDebug( self : *const OrbitComp, orbitedPos : Vec2, selfRadius : f32, moonDensity : f32 ) void
-//{
-//  const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
-//  const absPos      = self.getAbsPos( orbitedPos );
-//  const scaledVel   = self.getRelVel().mulVal( 1.0 );
-//
-//  def.drawLine( absPos, absPos.add( scaledVel ), .orange, zoomedWidth );
-//
-//  const minRad = self.getHillRadius();
-//  const maxRad = self.getRocheLimit( selfRadius, moonDensity, 1.0 );
-//
-//  // ...
-//}
+    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos()), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()),  Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
+  }
 
   pub fn renderLPs( self : *const OrbitComp, orbitedPos : Vec2, maxLP : usize ) void
   {
@@ -265,8 +301,8 @@ pub const OrbitComp = struct
   pub inline fn getHillRadius( self : *const OrbitComp ) f32 { return self.getSemiMajor() * self.getHillFactor(); }
 
   // NOTE : moonRigidity  : 1.0 = fluid, 0.0 = rigid
-  // NOTE : selfRadius    = radius of the body the moon orbits ( aka self )
-  // NOTE : density ratio = selfDensity / moonDensity
+  // NOTE : selfRadius    = planet radius
+  // NOTE : density ratio = planetDensity / moonDensity
   pub inline fn getRocheLimit( self: *const OrbitComp, selfRadius : f32, moonDensity : f32, moonRigidity : f32 ) f32
   {
     const volume = ( 4.0 / 3.0 ) * def.PI * ( selfRadius * selfRadius * selfRadius );
