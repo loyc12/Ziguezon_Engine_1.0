@@ -23,7 +23,7 @@ pub const BodyType = enum( u8 )
 
   pub inline fn getLPCount( self : BodyType ) usize
   {
-   return switch( self )
+    return switch( self )
     {
       .PLANET => 5,
       .MOON   => 2,
@@ -39,10 +39,10 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   bodyType : BodyType,
 
-  radius : f32 = 8.0, // TODO : Figure out irl unit equivalency // NOTE : for gasseous worlds : radius at 1 atm
-  mass   : f32 = 1.0, // TODO : Figure out irl unit equivalency
-//temp   : f32 = 0.0, // TODO : Figure out irl unit equivalency
-//tilt   : f32 = 0.0, // Radians
+  radius : f32 =   10.0, // TODO : Figure out irl unit equivalency // NOTE : for gasseous worlds : radius at 1 atm
+  mass   : f32 = 1000.0, // TODO : Figure out irl unit equivalency
+//temp   : f32 =    0.0, // TODO : Figure out irl unit equivalency
+//tilt   : f32 =    0.0, // Radians
 
   econArray : [ ecn.econLocCount ]ecn.Economy = std.mem.zeroes([ ecn.econLocCount ]ecn.Economy ),
 

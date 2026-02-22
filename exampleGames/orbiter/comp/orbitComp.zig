@@ -180,7 +180,7 @@ pub const OrbitComp = struct
     def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, zoomedWidth ); // Velocity Vector
 
     const minRad = self.getHillRadius();
-    const maxRad = self.getRocheLimit( selfRadius, moonDensity, 4.0 );
+    const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
 
     var vecMin1 : Vec2 = .new( minRad, 0 );
     var vecMax1 : Vec2 = .new( maxRad, 0 );
