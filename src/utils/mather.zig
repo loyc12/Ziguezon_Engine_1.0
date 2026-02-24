@@ -20,6 +20,7 @@ pub const HR3 = R3 / 2.0;
 pub const IR3 = 1.0 / R3;
 
 pub const lerp  = std.math.lerp;
+pub const pow   = std.math.pow;
 
 pub fn sign( val : anytype ) @TypeOf( val )
 {

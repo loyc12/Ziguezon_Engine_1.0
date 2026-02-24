@@ -8,8 +8,25 @@ const PI = def.PI;
 
 
 // NOTE : All scaling via "s" param assumes the shape is sitting upright on its base ( line or face )
-//        This means Y is height, and X & Z are widths
+//        This means Y is hfor eight, and X & Z are for widths ( X, Y, Z are scalling factors, not radius )
 //        For 3D pyrams / prisms, Z is used as the Y for baseShape scaling
+
+
+// Ramanujan ellipse perimeter correction factor ( dimensionless )
+pub inline fn getRamanujanFactor( a : f32, b : f32 ) f32
+{
+  const sum =   a + b;
+  const dif =   a - b;
+
+  if ( sum < def.EPS ) return 1.0;
+  if ( dif < def.EPS ) return 1.0;
+
+  // Ellipticity parameter
+  const h = ( dif * dif ) / ( sum * sum );
+
+  // Ramanujan correction factor
+  return 1.0 + ( 3.0 * h ) / ( 10.0 + @sqrt( 4.0 - ( 3.0 * h )));
+}
 
 
 // ================================ 2D GEOMETRIES ================================
@@ -56,27 +73,23 @@ pub const Geom2D = enum( u8 )
   // Sum of all edges
   pub inline fn getPerim( self : Geom2D, s : Vec2 ) f32
   {
+    const rX = 0.5 * s.X;
+    const rY = 0.5 * s.Y;
+
     switch( self )
     {
-      .RECT => return ( s.X + s.Y ) * 2,
+      .RECT => return 2.0 * ( s.X + s.Y ),
       .ELLI =>
       {
-        if( @abs( s.X - s.Y ) < def.EPS ) // Circle circumference from radius
+        const regP = PI * ( rX + rY );
+
+        if( @abs( rX - rY ) < def.EPS ) // Circle circumference from radius
         {
-          return 2.0 * PI * s.X;
+          return regP;
         }
-        else // Ramanujan's 2nd ellipse perimeter approximation ( Relative error <≈ 0.0003% )
+        else // Ramanujan's 2nd ellipse perimeter approximation ( Relative error <= 0.0003% )
         {
-          const sum = s.X + s.Y;
-          const dif = s.X - s.Y;
-
-          // Ellipticity parameter
-          const h = ( dif * dif ) / ( sum * sum );
-
-          // Ramanujan correction factor
-          const C = 1.0 + ( 3.0 * h ) / ( 10.0 + @sqrt( 4.0 - 3.0 * h ));
-
-          return C * PI * sum;
+          return regP * getRamanujanFactor( rX, rY );
         }
       },
 
@@ -84,29 +97,17 @@ pub const Geom2D = enum( u8 )
       {
         const N : f32 = @floatFromInt( self.getEdgeCount() );
 
-        if( @abs( s.X - s.Y ) < def.EPS ) // Regular polygon perimeter from circumradius ( trigonometric form )
+        // Mean radius ellipse perimeter
+        const rM   = ( rX + rY ) * 0.5;
+        const regP = ( 2.0 * N ) * rM * @sin( PI / N );
+
+        if( @abs( rX - rY ) < def.EPS ) // Regular polygon perimeter from circumradius ( trigonometric form )
         {
-          return ( 2.0 * N ) * s.X * @sin( PI / N );
+          return regP;
         }
-        else // Chebyshev ellipse correction heuristic for affine regular polygon perimeter ( Relative error <≈ 1% for exentricity of 10 )
+        else // Affine regular polygon perimeter approximation via Ramanujan factor
         {
-          const sum = s.X + s.Y;
-          const dif = s.X - s.Y;
-
-          // Geometric mean radius
-          const mR = @sqrt( s.X * s.Y );
-
-          // Ellipticity parameter
-          const h1 = ( dif * dif ) / ( sum * sum );
-
-          // Chebyshev correction factor
-          const h2 = h1 * h1;
-          const h3 = h1 * h2;
-          const h4 = h1 * h3;
-
-          const C = 1.0 + ( 0.25 * h1 ) - ( 0.0625 * h2 ) - ( 0.015625 * h3 ) + ( 0.00390625 * h4 );
-
-          return C * ( 2.0 * N ) * mR * @sin( PI / N );
+          return regP * getRamanujanFactor( rX, rY );
         }
       },
     }
@@ -114,23 +115,18 @@ pub const Geom2D = enum( u8 )
 
   pub inline fn getArea( self : Geom2D, s : Vec2 ) f32
   {
+    const rX = 0.5 * s.X;
+    const rY = 0.5 * s.Y;
+
     switch( self )
     {
       .RECT => return s.X * s.Y,
-      .ELLI => return PI * s.X * s.Y,
-      else  =>
+      .ELLI => return PI * ( rX * rY ),
+      else  => // Exact formula for regular and affine polygon's area
       {
         const N : f32 = @floatFromInt( self.getEdgeCount() );
 
-        if( @abs( s.X - s.Y ) < def.EPS ) // Regular polygon area from circumradius ( trigonometric form )
-        {
-          return N * s.X * s.X * @sin( PI / N ) * @cos( PI / N );
-        }
-        else // Affine-stretched polygon area ( exact )
-        {
-          const sin2piN = @sin( 2 * PI / N );
-          return 0.5 * N * s.X * s.Y * sin2piN;
-        }
+        return ( N / 2.0 ) * ( rX * rY ) * @sin( 2 * PI / N );
       },
     }
   }
@@ -148,7 +144,7 @@ const Geom3D = enum( u8 )
   ICOSA, // Icosahedron  ( 20 triangles)
 
   SPHER, // Spheroid
-  TORUS, // Donut
+//TORUS, // Donut ( needs a second radius to work )
 
   CONE,  // Cone     ( regular or skewed )
   CYLIN, // Cylinder ( regular or skewed )
@@ -169,7 +165,7 @@ const Geom3D = enum( u8 )
       .ICOSA => return 12,
 
       .SPHER => return 0,
-      .TORUS => return 0,
+//    .TORUS => return 0,
       .CONE  => return 1,
       .CYLIN => return 0,
 
@@ -196,7 +192,7 @@ const Geom3D = enum( u8 )
       .ICOSA => return 30,
 
       .SPHER => return 0,
-      .TORUS => return 0,
+//    .TORUS => return 0,
       .CONE  => return 1,
       .CYLIN => return 2,
 
@@ -223,7 +219,7 @@ const Geom3D = enum( u8 )
       .ICOSA => return 20,
 
       .SPHER => return 1,
-      .TORUS => return 1,
+//    .TORUS => return 1,
       .CONE  => return 2,
       .CYLIN => return 3,
 
@@ -239,37 +235,41 @@ const Geom3D = enum( u8 )
     return 0;
   }
 
-  // Sum of all edges
+  // Sum of all boundary edges
   pub inline fn getPerim( self : Geom3D, s : Vec3, baseShape : ?Geom2D ) f32
   {
+    const r = s.mulVal( 0.5 );
+
     switch( self )
     {
       .TETRA => return ,
-      .CUBE  => return 4.0 * ( s.X + s.Y + s.Z ),
+      .CUBE  => return 2.0 * ( s.X + s.Y + s.Z ),
       .OCTA  => return ,
       .DODE  => return ,
       .ICOSA => return ,
 
       .SPHER => return 0,
-      .TORUS => return 0,
+//    .TORUS => return 0,
       .CONE  => return Geom2D.ELLI.getPerim( .new( s.X, s.Z )),
       .CYLIN => return Geom2D.ELLI.getPerim( .new( s.X, s.Z )) * 2.0,
 
       else => if( baseShape != null )
       {
+        const N : f32 = @floatFromInt( baseShape.?.getEdgeCount() );
+        const bP      = baseShape.?.getPerim( .new( s.X, s.Z ));
+
         if( self == .PYRAM )
         {
-          const bP = baseShape.?.getPerim( .new( s.X, s.Z )); // TODO : Compensate for slanting
-          const bV = baseShape.?.getEdgeCount() * s.Y;
+          const sH = @sqrt(( s.Y * s.Y ) + ( r.X * r.Z ));
+          const sP = N * sH;
 
-          return (( 2.0 * bP ) + ( s.Y * bV )) * 0.5;
+          return bP + sP;
         }
         if( self == .PRISM )
         {
-          const bP = baseShape.?.getPerim( .new( s.X, s.Z ));
-          const bV = baseShape.?.getEdgeCount() * s.Y;
+          const sP = N * s.Y;
 
-          return ( 2.0 * bP ) + ( s.Y * bV );
+          return bP + bP + sP;
         }
       }
     }
@@ -282,34 +282,65 @@ const Geom3D = enum( u8 )
   // Sum of all faces
   pub inline fn getArea( self : Geom3D, s : Vec3, baseShape : ?Geom2D ) f32
   {
+    const r = s.mulVal( 0.5 );
+
     switch( self )
     {
-      .TETRA => return ,
-      .CUBE  => return 2.0 * (( s.X * s.Y ) + ( s.X * s.Z ) + ( s.Y * s.Z )),
-      .OCTA  => return ,
-      .DODE  => return ,
-      .ICOSA => return ,
+      .TETRA => { return 0.0; }, // TODO : implement me
+      .CUBE  => { return 2.0 * (( s.X * s.Y ) + ( s.X * s.Z ) + ( s.Y * s.Z )); },
+      .OCTA  => { return 0.0; }, // TODO : implement me
+      .DODE  => { return 0.0; }, // TODO : implement me
+      .ICOSA => { return 0.0; }, // TODO : implement me
 
-      .SPHER => return 4.0 * PI * s.X * s.Y * s.Z, // TODO : find better aprox / test for spheroid
-      .TORUS => return ,
-      .CONE  => return ,
-      .CYLIN => return ,
+      .SPHER =>// TODO : Knud Thomsen ellipsoid surface area approximation ( Relative error <= 1.178% )
+      {
+        const p = 1.6075;
+
+        const a = def.pow( r.X, p );
+        const b = def.pow( r.Y, p );
+        const c = def.pow( r.Z, p );
+
+        return ( 4.0 * PI ) * def.pow((( a * b ) + ( a * c ) + ( b * c )) / 3.0, 1.0 / p ) ;
+      },
+
+      .CONE  =>
+      {
+        const sH = @sqrt(( s.Y * s.Y ) + ( r.X * r.Z ));
+        const sA = Geom2D.ELLI.getPerim( .new( s.X, s.Z )) * sH;
+        const bA = Geom2D.ELLI.getArea(  .new( s.X, s.Z ));
+
+        return  bA + sA;
+      },
+
+      .CYLIN =>
+      {
+        const sA = Geom2D.ELLI.getPerim( .new( s.X, s.Z )) * s.Y;
+        const bA = Geom2D.ELLI.getArea(  .new( s.X, s.Z ));
+
+        return bA + bA + sA;
+      },
 
       else => if( baseShape != null )
       {
+        const bA = baseShape.?.getArea( .new( s.X, s.Z ));
+
         if( self == .PYRAM )
         {
-          const bP = baseShape.?.getPerim( .new( s.X, s.Z ));
-          const bA = baseShape.?.getArea(  .new( s.X, s.Z ));
+          const N : f32 = @floatFromInt( baseShape.?.getEdgeCount() );
+          const bP      = baseShape.?.getPerim( .new( s.X, s.Z ));
 
-          return (( 2.0 * bA ) + ( s.Y * bP )) * 0.5; // TODO : Compensate for slanting
+          // Exact lateral slant height via stacked pytagorean
+          const sW = bP / N;
+          const sH = @sqrt(( s.Y * s.Y ) + ( r.X * r.Z ) - (( sW * 0.5 ) * ( sW * 0.5 )));
+          const sA = baseShape.?.getPerim( .new( s.X, s.Z )) * sH / 2.0;
+
+          return bA + sA;
         }
         if( self == .PRISM )
         {
-          const bP = baseShape.?.getPerim( .new( s.X, s.Z ));
-          const bA = baseShape.?.getArea(  .new( s.X, s.Z ));
+          const sA = baseShape.?.getPerim( .new( s.X, s.Z )) * s.Y;
 
-          return ( 2.0 * bA ) + ( s.Y * bP );
+          return bA + bA + sA;
         }
       }
     }
@@ -321,23 +352,32 @@ const Geom3D = enum( u8 )
 
   pub inline fn getVolume( self : Geom3D, s : Vec3, baseShape : ?Geom2D ) f32
   {
+    const r = s.mulVal( 0.5 );
+
     switch( self )
     {
-      .TETRA => return ,
-      .CUBE  => return s.X * s.Y * s.Z,
-      .OCTA  => return ,
-      .DODE  => return ,
-      .ICOSA => return ,
+      .TETRA => { return 0.0; }, // TODO : implement me
+      .CUBE  => { return s.X * s.Y * s.Z; },
+      .OCTA  => { return 0.0; }, // TODO : implement me
+      .DODE  => { return 0.0; }, // TODO : implement me
+      .ICOSA => { return 0.0; }, // TODO : implement me
 
-      .SHPER => return ( 4.0 / 3.0 ) * PI * s.X * s.Y * s.Z,
-      .TORUS => return ,
-      .CONE  => return ,
-      .CYLIN => return ,
+      .SHPER => return ( 4.0 / 3.0 ) * PI * r.X * r.Y * r.Z,
+
+      .CONE, .CYLIN =>
+      {
+        const bA = Geom2D.ELLI.getArea( .new( s.X, s.Z ));
+
+        if( self == .CONE  ){ return s.Y * bA / 3.0; }
+        if( self == .CYLIN ){ return s.Y * bA;       }
+      },
 
       else => if( baseShape != null )
       {
-        if( self == .PYRAM ){ return s.Y * baseShape.?.getArea( .new( s.X, s.Z )) / 3.0; }
-        if( self == .PRISM ){ return s.Y * baseShape.?.getArea( .new( s.X, s.Z ));       }
+        const bA = baseShape.?.getArea( .new( s.X, s.Z ));
+
+        if( self == .PYRAM ){ return s.Y * bA / 3.0; }
+        if( self == .PRISM ){ return s.Y * bA;       }
       }
     }
 

@@ -301,6 +301,8 @@ pub const sign   = mth_u.sign;
 pub const pow2   = mth_u.pow2;
 
 pub const lerp   = mth_u.lerp;
+pub const pow    = mth_u.pow;
+
 pub const med3   = mth_u.med3;
 pub const clmp   = mth_u.clmp;
 pub const wrap   = mth_u.wrap;
