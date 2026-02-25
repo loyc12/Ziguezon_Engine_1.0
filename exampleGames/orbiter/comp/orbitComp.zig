@@ -2,8 +2,10 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const glb = @import( "../gameGlobals.zig" );
+const ecn = @import( "economy.zig" );
 
 const Vec2 = def.Vec2;
+
 
 pub const OrbitComp = struct
 {
@@ -107,6 +109,17 @@ pub const OrbitComp = struct
     return self.getRelPosAtAngle( def.PI ).sub( self.getRelPosAtAngle( 0 ));
   }
 
+  // Calculates the position of a given economy
+  pub inline fn getEconAbsPos( self : *const OrbitComp, orbitedPos : Vec2, econLoc : ecn.EconLoc ) Vec2
+  {
+    switch( econLoc )
+    {
+      .GROUND, .ORBIT => return self.getAbsPos(   orbitedPos ),
+      else            => return self.getAbsLpPos( orbitedPos, econLoc.toLagrange() ),
+    }
+  }
+
+
   // Calculates the orbiter's position
   pub inline fn getAbsPos( self : *const OrbitComp, orbitedPos : Vec2 ) Vec2
   {
@@ -177,9 +190,9 @@ pub const OrbitComp = struct
   pub fn renderDebug( self : *const OrbitComp, selfPos : Vec2, selfRadius : f32, moonDensity : f32 ) void
   {
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
-    const scaledVel   = self.getRelVel().mulVal( 1.0 );
+    const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 ).?;
 
-    def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, zoomedWidth ); // Velocity Vector
+    def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, zoomedWidth * 2.0 ); // Velocity Vector
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
@@ -222,8 +235,8 @@ pub const OrbitComp = struct
       def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, zoomedWidth );
     }
 
-    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos()), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
-    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()),  Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos()), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()),  Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
   }
 
   pub fn renderLPs( self : *const OrbitComp, orbitedPos : Vec2, maxLP : usize ) void
@@ -239,9 +252,9 @@ pub const OrbitComp = struct
 
     for( 1..LPcount )| i |
     {
-      const pos = self.getRelLPpos( orbitedPos, @intCast( i ));
+      const pos = self.getAbsLpPos( orbitedPos, @intCast( i ));
 
-      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
+      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
     }
   }
 
@@ -271,7 +284,12 @@ pub const OrbitComp = struct
     return self.getRelPosAtAngle( lagAngle );
   }
 
-  pub fn getRelLPpos( self : *const OrbitComp, orbitedPos : Vec2, L : u4 ) Vec2
+  pub inline fn getAbsLpPos( self : *const OrbitComp, orbitedPos : Vec2, L : u4 ) Vec2
+  {
+    return orbitedPos.add( self.getRelLpPos( L ));
+  }
+
+  pub fn getRelLpPos( self : *const OrbitComp, L : u4 ) Vec2
   {
     // Radial vector from orbited to orbiter
     const rel = self.getRelPos();
@@ -296,7 +314,7 @@ pub const OrbitComp = struct
       },
     }
 
-    return orbitedPos.add( lagPos );
+    return lagPos;
   }
 
 

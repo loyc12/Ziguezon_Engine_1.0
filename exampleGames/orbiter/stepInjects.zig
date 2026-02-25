@@ -46,10 +46,15 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
 
   const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
   const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
-//const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+  const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
 
   utl.tickOrbiters( transStore, orbitStore, sdt );
+
+
+  const starPos : def.Vec2 = transStore.get( 1 ).?.pos.toVec2();
+
+  utl.tickGlobalEconomy( transStore, orbitStore, bodyStore, starPos );
 }
 
 

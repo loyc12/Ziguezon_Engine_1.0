@@ -1,6 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const glb = @import( "../gameGlobals.zig" );
+const orb = @import( "orbitComp.zig" );
 const ecn = @import( "economy.zig" );
 
 
@@ -97,21 +99,28 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   // ================================ ECONOMIES ================================
 
-  pub fn tickEcons( self : *BodyComp ) void
+  pub fn tickEcons( self : *BodyComp, selfOrbit : *const orb.OrbitComp, orbitedPos : def.Vec2, starPos : def.Vec2 ) void
   {
     for( 0..self.bodyType.getEconLocCount() )| i |
     {
       const econ : *ecn.Economy = &self.econArray[ i ];
 
-      if( econ.isActive ) // TODO : activate loc when player build infra there
+      if( econ.isActive ) // TODO : Activate locs when player build infra there
       {
-        econ.sunshine = self.getCurrentSunshine();
-        econ.tickEcon();
+        const econPos    = selfOrbit.getEconAbsPos( orbitedPos, econ.location );
+        const distSquare = econPos.getDistSqr( starPos );
+        var   shine      = glb.starCompInst.getSunshineAt( distSquare );
+
+        if( econ.location == .GROUND ){ shine *= 0.5; } // Losing efficiency from nightime
+
+        def.log( .INFO, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} at pos {d:.2}:{d:.2}", .{ @tagName( econ.location ), shine, econPos.x, econPos.y });
+
+        econ.tickEcon( shine );
       }
     }
   }
 
-  pub fn initEcon( self : *const BodyComp, econLoc : ecn.EconLoc ) void
+  pub fn initEcon( self : *BodyComp, econLoc : ecn.EconLoc ) void
   {
     const econ : *ecn.Economy = &self.econArray[ econLoc.toIdx() ];
 
@@ -120,11 +129,11 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
     if( econLoc == .GROUND )
     {
-      econ.maxAvailArea = self.getSurfaceArea(); // TODO : add useableLand modifier ( ex : what proportion is solid ground )
+      econ.maxAvailArea = @intFromFloat( @floor( self.getSurfaceArea())); // TODO : add useableLand modifier ( ex : what proportion is solid ground )
     }
   }
 
-  pub fn getEcon( self : *const BodyComp, econLoc : ecn.EconLoc ) *ecn.Economy
+  pub fn getEcon( self : *BodyComp, econLoc : ecn.EconLoc ) *ecn.Economy
   {
     return &self.econArray[ econLoc.toIdx() ];
   }

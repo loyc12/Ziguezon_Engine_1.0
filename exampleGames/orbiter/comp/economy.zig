@@ -30,6 +30,19 @@ pub const EconLoc = enum( u8 )
   L3,
   L4,
   L5,
+
+  pub inline fn toLagrange( self : EconLoc ) u4
+  {
+    return switch( self )
+    {
+      .L1  => 1,
+      .L2  => 2,
+      .L3  => 3,
+      .L4  => 4,
+      .L5  => 5,
+      else => 0,
+    };
+  }
 };
 
 
@@ -239,12 +252,12 @@ pub const Economy = struct
 
   // ================================ UPDATING ================================
 
-  pub fn tickEcon( self : *Economy ) void
+  pub fn tickEcon( self : *Economy, sunshine : f32 ) void
   {
     self.updatePop();
 
-    var solver: slv.EconSolver = .{};
+    self.sunshine = sunshine;
 
-    solver.solve( self );
+    slv.resolveEcon( self );
   }
 };

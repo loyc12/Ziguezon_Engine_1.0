@@ -3,6 +3,7 @@ const def = @import( "defs" );
 
 const glb = @import( "gameGlobals.zig" );
 const orb = @import( "comp/orbitComp.zig" );
+const ecn = @import( "comp/economy.zig" );
 
 
 // ================================ STATE INJECT ================================
@@ -24,8 +25,6 @@ pub fn initDebugSystem( ng : *def.Engine ) void
     def.log( .INFO, 0, @src(), "Initializing components of entity #{} at idx #{}", .{ id, idx });
 
 
-
-
     if( id == 1 ) // Here comes the sun, lalalala
     {
 
@@ -33,6 +32,7 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       glb.starCompInst.mass   = STAR_MASS;
 
       glb.starCompInst.setRadiusViaDensity( 0.1 );
+      glb.starCompInst.setShineAtDist( 1.0, 2500 ); // making sure sunshine strenght is 1 around main planet
 
       const r = glb.starCompInst.radius;
 
@@ -42,6 +42,7 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
       continue;
     }
+
 
     // Non-sun component instanciation
 
@@ -67,6 +68,14 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
         bodyComp.bodyType     = .PLANET;
         bodyComp.mass         = PLANET_MASS;
+
+        bodyComp.initEcon( .GROUND );
+        bodyComp.initEcon( .ORBIT  );
+        bodyComp.initEcon( .L1     );
+        bodyComp.initEcon( .L2     );
+        bodyComp.initEcon( .L3     );
+        bodyComp.initEcon( .L4     );
+        bodyComp.initEcon( .L5     );
       },
 
       3 =>
@@ -78,6 +87,12 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
         bodyComp.bodyType     = .MOON;
         bodyComp.mass         = MOON_MASS;
+
+        bodyComp.initEcon( .GROUND );
+        bodyComp.initEcon( .ORBIT  );
+        bodyComp.initEcon( .L1     );
+        bodyComp.initEcon( .L2     );
+        bodyComp.initEcon( .L3     );
       },
 
       4 =>
@@ -89,6 +104,8 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
         bodyComp.bodyType     = .COMET;
         bodyComp.mass         = COMET_MASS;
+        bodyComp.initEcon( .GROUND );
+        bodyComp.initEcon( .ORBIT  );
       },
 
       else =>
@@ -146,10 +163,7 @@ pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore,
 {
   for( 1..glb.entityArray.len )| idx |
   {
-    const id = glb.entityArray[ idx ].id;
-
-    def.log( .TRACE, 0, @src(), "Updating orbit of entity #{}", .{ id });
-
+    const id      = glb.entityArray[ idx ].id;
     const orbiter = orbitStore.get( id );
 
     if( orbiter == null ){ continue; }
@@ -159,14 +173,37 @@ pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore,
 
     if( orbiterTrans != null and orbitedTrans != null )
     {
+      def.log( .TRACE, 0, @src(), "Updating orbit of entity #{d}", .{ id });
       orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
     }
     else
     {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{}", .{ id });
+      def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
     }
 
     // NOTE : No need to update transComps for orbiters
+  }
+}
+
+pub fn tickGlobalEconomy( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore, bodyStore : *glb.BodyStore, starPos : def.Vec2 ) void
+{
+  inline for( 1..glb.entityArray.len )| idx |
+  {
+    const id    = glb.entityArray[ idx ].id;
+    const body  = bodyStore.get(  id );
+    const orbit = orbitStore.get( id );
+    const trans = transStore.get( glb.entityArray[ idx - 1 ].id ); // Orbited position
+
+    if( trans != null and orbit != null and body != null )
+    {
+      def.log( .DEBUG, 0, @src(), "Updating economies of entity #{d}", .{ id });
+
+      body.?.tickEcons( orbit.?, trans.?.pos.toVec2(), starPos );
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to get all required components to tick economy of entity #{d}", .{ id });
+    }
   }
 }
 
@@ -177,7 +214,7 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   {
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{} at idx #{}", .{ id, idx });
+    def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
 
     const orbiter      = orbitStore.get( id );
     const orbiterBody  = bodyStore.get(  id );
@@ -195,7 +232,7 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     }
     else
     {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of entity #{}", .{ id });
+      def.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of entity #{d}", .{ id });
     }
   }
 
@@ -215,7 +252,7 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     }
     else
     {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to render shape of entity #{}", .{ id });
+      def.log( .WARN, 0, @src(), "Failed to get all required components to render shape of entity #{d}", .{ id });
     }
   }
 }
@@ -228,7 +265,7 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
 
   var lineCount : f32 = 1.0;
 
-  def.drawTextRightFmt( "{d} :          id", .{ id }, posX, lineCount * 32.0, 24, col ); lineCount += 1.5;
+  def.drawTextRightFmt( "== Entity #{d} ==", .{ id }, posX, lineCount * 32.0, 24, col ); lineCount += 1.5;
 
   if( id == 0 or id > glb.entityCount ){ return; }
 
@@ -260,17 +297,17 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   {
     const star = glb.starCompInst;
 
-    def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass         }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius       }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} : density",  .{ star.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine        }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
-  else if( body != null )
+  else if( body != null ) // PLANETS AND CO.
   {
-    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass         }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;

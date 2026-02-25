@@ -182,53 +182,58 @@ pub const InfInstance = struct
     {
       .HOUSING => // No resource production. Increases population cap instead
       {
-        instance.addConsPerInf( .POWER, 1 );
-        instance.addConsPerInf( .WATER, 1 );
+        instance.addResConsPerInf( .POWER, 1 );
+        instance.addResConsPerInf( .WATER, 1 );
       },
-      .AGRONOMIC => // Requires sunlight
+      .AGRONOMIC =>
       {
         instance.powerSrc = .SOLAR;
-        instance.addConsPerInf( .WATER, 10 );
-        instance.addProdPerInf( .FOOD,  10 );
+        instance.addResConsPerInf( .WATER, 10 );
+        instance.addResProdPerInf( .FOOD,  10 );
       },
       .HYDROPONIC =>
       {
-        instance.addConsPerInf( .POWER, 5 );
-        instance.addConsPerInf( .WATER, 5 );
-        instance.addProdPerInf( .FOOD,  10 );
+        instance.addResConsPerInf( .POWER, 5 );
+        instance.addResConsPerInf( .WATER, 5 );
+        instance.addResProdPerInf( .FOOD,  10 );
       },
-      .SOLAR_PLANT => // No resource consumption. Requires sunlight
+      .SOLAR_PLANT => // No resource consumption.
       {
         instance.powerSrc = .SOLAR;
-        instance.addProdPerInf( .POWER, 20 );
+        instance.addResProdPerInf( .POWER, 20 );
       },
-      .PROBE_MINE => // No resource consumption. Requires sunlight
+      .WATER_PLANT =>
+      {
+        instance.addResConsPerInf( .POWER, 2  );
+        instance.addResProdPerInf( .WATER, 10 );
+      },
+      .PROBE_MINE => // No resource consumption.
       {
         instance.powerSrc = .SOLAR;
-        instance.addProdPerInf( .ORE, 1 );
+        instance.addResProdPerInf( .ORE, 1 );
       },
       .GROUD_MINE =>
       {
-        instance.addConsPerInf( .POWER, 5 );
-        instance.addConsPerInf( .WATER, 1 );
-        instance.addProdPerInf( .ORE,   1 );
+        instance.addResConsPerInf( .POWER, 5 );
+        instance.addResConsPerInf( .WATER, 1 );
+        instance.addResProdPerInf( .ORE,   1 );
       },
       .REFINERY =>
       {
-        instance.addConsPerInf( .POWER, 5 );
-        instance.addConsPerInf( .ORE,   1 );
-        instance.addProdPerInf( .INGOT, 1 );
+        instance.addResConsPerInf( .POWER, 5 );
+        instance.addResConsPerInf( .ORE,   1 );
+        instance.addResProdPerInf( .INGOT, 1 );
       },
       .FACTORY =>
       {
-        instance.addConsPerInf( .POWER, 3 );
-        instance.addConsPerInf( .INGOT, 1 );
-        instance.addProdPerInf( .PART,  1 );
+        instance.addResConsPerInf( .POWER, 3 );
+        instance.addResConsPerInf( .INGOT, 1 );
+        instance.addResProdPerInf( .PART,  1 );
       },
       .ASSEMBLY => // No resource production. Increments build queue instead
       {
-        instance.addConsPerInf( .POWER, 2 );
-        instance.addProdPerInf( .PART,  1 );
+        instance.addResConsPerInf( .POWER, 2 );
+        instance.addResProdPerInf( .PART,  1 );
       },
     }
 
@@ -246,11 +251,11 @@ pub const InfInstance = struct
   {
     self.resConsPerInf[ resType.toIdx() ] = value;
   }
-  pub inline fn addResConsPerInf( self : *InfInstance, resType : res.resType, value : u64 ) void
+  pub inline fn addResConsPerInf( self : *InfInstance, resType : res.ResType, value : u64 ) void
   {
     self.resConsPerInf[ resType.toIdx() ] += value;
   }
-  pub inline fn subResConsPerInf( self : *InfInstance, resType : res.resType, value : u64 ) void
+  pub inline fn subResConsPerInf( self : *InfInstance, resType : res.ResType, value : u64 ) void
   {
     const count = @min( value, self.resConsPerInf[ resType.toIdx() ]);
 
@@ -273,11 +278,11 @@ pub const InfInstance = struct
   {
     self.resProdPerInf[ resType.toIdx() ] = value;
   }
-  pub inline fn addResProdPerInf( self : *InfInstance, resType : res.resType, value : u64 ) void
+  pub inline fn addResProdPerInf( self : *InfInstance, resType : res.ResType, value : u64 ) void
   {
     self.resProdPerInf[ resType.toIdx() ] += value;
   }
-  pub inline fn subResProdPerInf( self : *InfInstance, resType : res.resType, value : u64 ) void
+  pub inline fn subResProdPerInf( self : *InfInstance, resType : res.ResType, value : u64 ) void
   {
     const count = @min( value, self.resProdPerInf[ resType.toIdx() ]);
 

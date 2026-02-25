@@ -61,14 +61,21 @@ pub const StarComp = struct
 
 
 
-  pub fn getSunshineAt( self : *const StarComp, dist : f32 ) f32
+  pub inline fn setShineAtDist( self : *StarComp, shine : f32, dist : f32 ) void
   {
-    if( dist < self.radius )
+    const d2 = dist * dist;
+
+    self.shine = shine * d2;
+  }
+
+  pub fn getSunshineAt( self : *const StarComp, distSquare : f32 ) f32
+  {
+    if( distSquare < self.radius * self.radius )
     {
-      def.qlog( .ERROR, 0, @src(), "Trying to get sunshine inside star radius : returning 0.0" );
+      def.log( .ERROR, 0, @src(), "Trying to get sunshine inside star radius : {d} < {d} : returning 0.0", .{ @sqrt( distSquare ), self.radius });
       return 0;
     }
 
-    return self.shine / ( dist * dist );
+    return self.shine / distSquare;
   }
 };
