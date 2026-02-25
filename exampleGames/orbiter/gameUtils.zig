@@ -259,7 +259,7 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   if( orbit != null )
   {
     def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :     maxR", .{ orbit.?.maxRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
@@ -267,8 +267,8 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   if( body != null )
   {
     def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius", .{ body.?.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} : density", .{ body.?.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
@@ -278,8 +278,8 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     const star = glb.starCompInst;
 
     def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius", .{ star.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} : density", .{ star.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} : density",  .{ star.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
