@@ -12,6 +12,7 @@ pub const backColour : def.Colour = .dIndigo;
 pub const foreColour : def.Colour = .dCrimson;
 pub const textColour : def.Colour = .lGreen;
 
+
 pub const TransStore  = def.TransComp.getStoreType();
 pub const ShapeStore  = def.ShapeComp.getStoreType();
 pub const SpriteStore = def.SpriteComp.getStoreType();
@@ -28,8 +29,13 @@ pub var orbitStore  : OrbitStore  = .{};
 pub var bodyStore   : BodyStore   = .{};
 
 
-pub const entityCount : usize = 4;
+pub var starCompInst : str.StarComp = .{};
 
+
+pub const gravityStrenght : f32   = 1.0; // Higher == faster orbiting
+pub const entityCount     : usize = 4;
+
+
+pub var targetId    : def.EntityId = 0;
 pub var entityArray : [ entityCount ]def.Entity = std.mem.zeroes([ entityCount ]def.Entity );
 
-pub var starCompInst : str.StarComp = .{};

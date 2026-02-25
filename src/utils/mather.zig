@@ -19,8 +19,13 @@ pub const R3  = @sqrt( 3.0 );
 pub const HR3 = R3 / 2.0;
 pub const IR3 = 1.0 / R3;
 
+
 pub const lerp  = std.math.lerp;
 pub const pow   = std.math.pow;
+
+pub const sqrt  = std.math.sqrt;
+pub const cbrt  = std.math.cbrt;
+
 
 pub fn sign( val : anytype ) @TypeOf( val )
 {
@@ -161,7 +166,7 @@ pub fn getPolyArea( circumradius : f32, sideCount : u8 ) f32
   const n = @as( f32, @floatFromInt( sideCount ));
 
   const facetAngle = DtR( 360.0 / n );
-  return ( 0.5 * n * circumradius * circumradius * std.math.sin( facetAngle ));
+  return ( 0.5 * n * circumradius * circumradius * @sin( facetAngle ));
 }
 
 pub fn getPolyCircumRad( area : f32, sideCount : u8 ) f32
@@ -175,11 +180,11 @@ pub fn getPolyCircumRad( area : f32, sideCount : u8 ) f32
   if( sideCount == 255 )
   {
     def.qlog( .DEBUG, 0, @src(), "getPolyCircumradius() called with sides = 255 ( treating as circle )" );
-    return std.math.sqrt( area / PI );
+    return @sqrt( area / PI );
   }
 
   const n = @as( f32, @floatFromInt( sideCount ));
 
   const facetAngle = DtR( 360.0 / n );
-  return std.math.sqrt( 2.0 * area / n * std.math.sin( facetAngle ));
+  return @sqrt( 2.0 * area / n * @sin( facetAngle ));
 }

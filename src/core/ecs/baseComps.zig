@@ -41,7 +41,7 @@ pub const TransComp = struct
 
 // ================ SHAPE 2D ================
 
-pub const e_shape_2D = enum( u8 ) // TODO : move to utils
+pub const e_shape_2D = enum( u8 ) // TODO : replace with Geom2D
 {
   RECT, // Square / Rectangle
   HSTR, // Triangle Star    ( two overlaping triangles, pointing along the X axis )
@@ -83,13 +83,15 @@ pub const e_shape_2D = enum( u8 ) // TODO : move to utils
 };
 
 
-pub const ShapeComp = struct
+pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
   scale  : Vec2,
   shape  : e_shape_2D = .RECT,
   colour : def.Colour = .nWhite,
+
+//minScale : Vec2 = .{},
 
 
   pub inline fn setscale( self : *HitboxComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }

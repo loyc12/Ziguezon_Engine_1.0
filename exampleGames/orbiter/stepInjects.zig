@@ -30,6 +30,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ glb.targetId = glb.targetId +| 1; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ glb.targetId = glb.targetId -| 1; }
+
+
+
   utl.updateCameraLogic( &ng.camera );
 }
 
@@ -83,5 +88,11 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
     def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 64 )); // grays out the screen
   }
 
-  def.drawTextRightFmt( "{d:.2} : test", .{ 0.42069 }, def.getScreenWidth() - 16.0, 32.0, 24, def.G_ST.Graphic_Metrics_Colour.? );
+  const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
+  const shapeStore : *glb.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
+
+  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
+  const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+
+  utl.drawTargetInfo( transStore, shapeStore, orbitStore, bodyStore );
 }

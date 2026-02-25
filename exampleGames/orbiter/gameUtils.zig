@@ -9,15 +9,10 @@ const orb = @import( "comp/orbitComp.zig" );
 
 pub fn initDebugSystem( ng : *def.Engine ) void
 {
-  const STAR_MASS   = 100_000_000.0;
-  const PLANET_MASS =   1_000_000.0;
-  const MOON_MASS   =      10_000.0;
-  const COMET_MASS  =         100.0;
-
-  const STAR_RADIUS   = 256.0;
-  const PLANET_RADIUS =  64.0;
-  const MOON_RADIUS   =  16.0;
-  const COMET_RADIUS  =   4.0;
+  const STAR_MASS   = 10_000_000.0;
+  const PLANET_MASS =    310_000.0;
+  const MOON_MASS   =      1_000.0;
+  const COMET_MASS  =         31.0;
 
   // Setting up relevant components
   for( 0..glb.entityCount )| idx |
@@ -29,17 +24,21 @@ pub fn initDebugSystem( ng : *def.Engine ) void
     def.log( .INFO, 0, @src(), "Initializing components of entity #{} at idx #{}", .{ id, idx });
 
 
-    var shapeScale : def.Vec2 = .new( STAR_RADIUS, STAR_RADIUS );
+
 
     if( id == 1 ) // Here comes the sun, lalalala
     {
-      _ = glb.transStore.add(  id, .{ .pos = .{} });
-      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = shapeScale, .shape = .ELLI });
-    //_ = glb.spriteStore.add( id, .{} );
 
-      glb.starCompInst.radius = STAR_RADIUS;
-      glb.starCompInst.mass   = STAR_MASS;
       glb.starCompInst.shine  = 1.0;         // TODO : adjust to proper shunshine amount
+      glb.starCompInst.mass   = STAR_MASS;
+
+      glb.starCompInst.setRadiusViaDensity( 0.1 );
+
+      const r = glb.starCompInst.radius;
+
+      _ = glb.transStore.add(  id, .{ .pos = .{} });
+      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = .new( r, r ), .shape = .ELLI });
+    //_ = glb.spriteStore.add( id, .{} );
 
       continue;
     }
@@ -55,8 +54,7 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       .retrograde  = ( 0 == id % 2 ),
     };
 
-    var bodyComp : glb.bdy.BodyComp = .{ .bodyType = .PLANET };
-
+    var bodyComp   : glb.bdy.BodyComp = .{ .bodyType = .PLANET };
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
@@ -68,10 +66,7 @@ pub fn initDebugSystem( ng : *def.Engine ) void
         orbitComp.maxRadius   = 2500 + 50;
 
         bodyComp.bodyType     = .PLANET;
-        bodyComp.radius       = PLANET_RADIUS;
         bodyComp.mass         = PLANET_MASS;
-
-        shapeScale = .new( PLANET_RADIUS, PLANET_RADIUS);
       },
 
       3 =>
@@ -82,45 +77,38 @@ pub fn initDebugSystem( ng : *def.Engine ) void
         orbitComp.maxRadius   = 300 + 20;
 
         bodyComp.bodyType     = .MOON;
-        bodyComp.radius       = MOON_RADIUS;
         bodyComp.mass         = MOON_MASS;
-
-        shapeScale = .new( MOON_RADIUS, MOON_RADIUS );
       },
 
       4 =>
       {
         orbitComp.orbitedMass = MOON_MASS;
         orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 40 - 1;
-        orbitComp.maxRadius   = 40 + 1;
+        orbitComp.minRadius   = 20 - 2;
+        orbitComp.maxRadius   = 20 + 2;
 
         bodyComp.bodyType     = .COMET;
-        bodyComp.radius       = COMET_RADIUS;
         bodyComp.mass         = COMET_MASS;
-
-        shapeScale = .new( COMET_RADIUS, COMET_RADIUS );
       },
 
       else =>
       {
         orbitComp.orbitedMass = COMET_MASS;
         orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 20 - 2;
-        orbitComp.maxRadius   = 20 + 2;
+        orbitComp.minRadius   = 10 - 3;
+        orbitComp.maxRadius   = 10 + 3;
 
         bodyComp.bodyType     = .COMET;
-        bodyComp.radius       = COMET_RADIUS;
         bodyComp.mass         = COMET_MASS;
-
-        shapeScale = .new( COMET_RADIUS, COMET_RADIUS );
       },
     }
+    bodyComp.setRadiusViaDensity( 1.0 );
+
 
     const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit
 
     _ = glb.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
-    _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = shapeScale, .shape = .ELLI });
+    _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( bodyComp.radius, bodyComp.radius ), .shape = .ELLI });
   //_ = glb.spriteStore.add( id, .{} );
 
     _ = glb.orbitStore.add(  id, orbitComp );
@@ -182,7 +170,7 @@ pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore,
   }
 }
 
-pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStore, orbitStore : *glb.OrbitStore, bodyStore : *glb.BodyStore ) void // Called by engine.renderGraphics()
+pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStore, orbitStore : *glb.OrbitStore, bodyStore : *glb.BodyStore ) void
 {
   // Rendering bodies' orbits and debug info
   for( 1..glb.entityArray.len )| idx |
@@ -229,5 +217,71 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     {
       def.log( .WARN, 0, @src(), "Failed to get all required components to render shape of entity #{}", .{ id });
     }
+  }
+}
+
+pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStore, orbitStore : *glb.OrbitStore, bodyStore : *glb.BodyStore ) void
+{
+  const col   = def.G_ST.Graphic_Metrics_Colour.?;
+  const posX  = def.getScreenWidth() - 16.0;
+  const id    = glb.targetId;
+
+  var lineCount : f32 = 1.0;
+
+  def.drawTextRightFmt( "{d} :          id", .{ id }, posX, lineCount * 32.0, 24, col ); lineCount += 1.5;
+
+  if( id == 0 or id > glb.entityCount ){ return; }
+
+
+  const trans = transStore.get( id );
+  const shape = shapeStore.get( id );
+
+  const orbit = if( id != 1 ) orbitStore.get( id ) else null;
+  const body  = if( id != 1 ) bodyStore.get(  id ) else null;
+
+
+  if( trans != null )
+  {
+    def.drawTextRightFmt( "{d:.3} :     posX", .{ trans.?.pos.x }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     posY", .{ trans.?.pos.y }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+
+    lineCount += 0.5;
+  }
+
+  if( shape != null )
+  {
+    def.drawTextRightFmt( "{d:.3} :  scaleX", .{ shape.?.scale.x }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  scaleY", .{ shape.?.scale.y }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+
+    lineCount += 0.5;
+  }
+
+  if( orbit != null )
+  {
+    def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     maxR", .{ orbit.?.maxRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+
+    lineCount += 0.5;
+  }
+
+  if( body != null )
+  {
+    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius", .{ body.?.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} : density", .{ body.?.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+
+    lineCount += 0.5;
+  }
+
+  if( glb.targetId == 1 ) // SUN
+  {
+    const star = glb.starCompInst;
+
+    def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius", .{ star.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} : density", .{ star.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+
+    lineCount += 0.5;
   }
 }

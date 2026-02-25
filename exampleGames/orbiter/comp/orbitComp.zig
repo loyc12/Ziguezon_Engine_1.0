@@ -1,14 +1,16 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const glb = @import( "../gameGlobals.zig" );
+
 const Vec2 = def.Vec2;
 
 pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  const G = 1;   // Gravitational constant ( tweakable )
-  const N = 256; // number of segments used to render orbital path
+  const G : f32 = glb.gravityStrenght;
+  const N : u32 = 256; // number of segments used to render orbital path
 
   // Orbit's masses ( ought to be near-constant )
   orbitedMass : f32 = 100.0, // mass of whatever self orbits
@@ -246,7 +248,7 @@ pub const OrbitComp = struct
 
   // ================================ LAGRANGE & HILL MATHS ================================
 
-  inline fn getHillFactor( self : *const OrbitComp ) f32 { return std.math.cbrt( self.orbiterMass / ( 3.0 * self.orbitedMass )); }
+  inline fn getHillFactor( self : *const OrbitComp ) f32 { return def.cbrt( self.orbiterMass / ( 3.0 * self.orbitedMass )); }
 
   inline fn getL3Factor( self : *const OrbitComp ) f32
   {
@@ -311,7 +313,7 @@ pub const OrbitComp = struct
     const FLUID: f32 = 2.44;
     const RIGID: f32 = 1.26;
 
-    return selfRadius * def.lerp( RIGID, FLUID, moonRigidity ) * std.math.cbrt( densityRatio );
+    return selfRadius * def.lerp( RIGID, FLUID, moonRigidity ) * def.cbrt( densityRatio );
   }
 
   pub inline fn getMaxMoonOrbitRadius( self : *const OrbitComp ) f32 { return 0.5 * self.getHillRadius(); }

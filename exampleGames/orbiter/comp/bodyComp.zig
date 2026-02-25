@@ -47,25 +47,51 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   econArray : [ ecn.econLocCount ]ecn.Economy = std.mem.zeroes([ ecn.econLocCount ]ecn.Economy ),
 
 
+  // Sphere surface area : 4πr^2
   pub inline fn getSurfaceArea( self : *const BodyComp ) f32
   {
     const r2 = self.radius * self.radius;
 
-    // Sphere surface area : 4πr²
     return 4.0 * def.PI * r2;
   }
 
+  // Sphere volume : ( 4/3 )πr^3
   pub inline fn getVolume( self : *const BodyComp ) f32
   {
     const r3 = self.radius * self.radius * self.radius;
 
-    // Sphere volume : ( 4/3 )πr³
-    return ( 4.0 / 3.0 ) * def.PI * r3;
+    return ( 4.0 * def.PI * r3 ) / 3.0 ;
   }
 
   pub inline fn getDensity( self : *const BodyComp ) f32
   {
     return self.mass / self.getVolume();
+  }
+
+
+  pub inline fn setRadiusViaArea( self : *BodyComp, area : f32 ) void
+  {
+    const r2 = area / ( 4.0 * def.PI );
+
+    self.radius = def.sqrt( r2 );
+  }
+  pub inline fn setRadiusViaVolume( self : *BodyComp, volume : f32 ) void
+  {
+    const r3 = volume * 3.0 / ( 4.0 * def.PI );
+
+    self.radius = def.cbrt( r3 );
+  }
+
+  pub inline fn setMassViaDensity( self : *BodyComp, density : f32 ) void
+  {
+    self.mass = density * self.getVolume();
+  }
+
+  pub inline fn setRadiusViaDensity( self : *BodyComp, density : f32 ) void
+  {
+    const v = self.mass / density;
+
+    self.setRadiusViaVolume( v );
   }
 
 
