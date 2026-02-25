@@ -256,23 +256,6 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     lineCount += 0.5;
   }
 
-  if( orbit != null )
-  {
-    def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-
-    lineCount += 0.5;
-  }
-
-  if( body != null )
-  {
-    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-
-    lineCount += 0.5;
-  }
-
   if( glb.targetId == 1 ) // SUN
   {
     const star = glb.starCompInst;
@@ -281,6 +264,22 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} : density",  .{ star.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+
+    lineCount += 0.5;
+  }
+  else if( body != null )
+  {
+    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+
+    lineCount += 0.5;
+  }
+
+  if( orbit != null )
+  {
+    def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
