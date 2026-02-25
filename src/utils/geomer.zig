@@ -13,10 +13,10 @@ const PI = def.PI;
 
 
 // Ramanujan ellipse perimeter correction factor ( dimensionless )
-pub inline fn getRamanujanFactor( a : f32, b : f32 ) f32
+inline fn getRamanujanFactor( a : f32, b : f32 ) f32
 {
-  const sum =   a + b;
-  const dif =   a - b;
+  const sum = a + b;
+  const dif = a - b;
 
   if ( sum < def.EPS ) return 1.0;
   if ( dif < def.EPS ) return 1.0;

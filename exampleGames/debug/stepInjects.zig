@@ -248,9 +248,9 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       hy += offset.y   * 128;
       hr += offset.a.r * 128;
 
-      def.drawCenteredText( "|", x , hx, 12, .red );
-      def.drawCenteredText( "|", x , hy, 12, .green );
-      def.drawCenteredText( "|", x , hr, 12, .blue );
+      def.drawTextCenter( "|", x , hx, 12, .red );
+      def.drawTextCenter( "|", x , hy, 12, .green );
+      def.drawTextCenter( "|", x , hr, 12, .blue );
     }
   }
 }

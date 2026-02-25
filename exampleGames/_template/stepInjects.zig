@@ -94,7 +94,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
 {
   if( DRAW_TEST ) // Example of a flag toggled feature
   {
-    def.drawCenteredText( "TEST", def.getHalfScreenWidth(), def.getHalfScreenHeight(), 256, def.Colour.red );
+    def.drawTextCenter( "TEST", def.getHalfScreenWidth(), def.getHalfScreenHeight(), 256, def.Colour.red );
   }
 
   if( ng.isPaused() )

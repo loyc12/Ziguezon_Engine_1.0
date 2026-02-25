@@ -154,6 +154,7 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
 
   def.tryHook( .OnRenderBckgrnd, ng );
 
+
   def.ray.beginMode2D( ng.camera.toRayCam() );
   {
     def.tryHook( .OnRenderWorld, ng );
@@ -165,12 +166,11 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   }
   def.ray.endMode2D();
 
-  drawDebugFpsCount( ng );
-//drawDebugTpsCount( ng );
 
   def.tryHook( .OnRenderOverlay, ng );
   {
-    // TODO : Render the UI elements here
+    drawDebugFpsCount( ng );
+    //drawDebugTpsCount( ng );
   }
   //def.tryHook( .OffRenderOverlay, ng );
 }
@@ -215,7 +215,7 @@ fn drawDebugFpsCount( ng : *Engine ) void
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
 
-    def.drawTextFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16, 16, 24, def.G_ST.Graphic_Metrics_Colour.? );
+    def.drawTextLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16.0, 32.0, 24, def.G_ST.Graphic_Metrics_Colour.? );
   }
 }
 

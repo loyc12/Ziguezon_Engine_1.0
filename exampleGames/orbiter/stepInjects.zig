@@ -27,43 +27,24 @@ pub fn OnLoopCycle( ng : *def.Engine ) void // Called by engine.loopLogic() ( ev
 // NOTE : This is where you should capture inputs to update global flags
 pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
-  utl.updateCameraLogic( ng );
+    // Toggle pause if the P key is pressed
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
+
+  utl.updateCameraLogic( &ng.camera );
 }
 
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
+  const sdt = ng.getScaledTargetTickDelta();
+
   const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
   const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
 //const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-  const sdt = ng.getScaledTargetTickDelta();
 
-  for( 1..glb.entityArray.len )| idx |
-  {
-    const id = glb.entityArray[ idx ].id;
-
-    def.log( .TRACE, 0, @src(), "Updating orbit of entity #{}", .{ id });
-
-    const orbiter = orbitStore.get( id );
-
-    if( orbiter == null ){ continue; }
-
-    const orbiterTrans = transStore.get( id );
-    const orbitedTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
-
-    if( orbiterTrans != null and orbitedTrans != null )
-    {
-      orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
-    }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{}", .{ id });
-    }
-
-    // NOTE : No need to update transComps for orbiters
-  }
+  utl.tickOrbiters( transStore, orbitStore, sdt );
 }
 
 
@@ -85,52 +66,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
   const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
 
-  // Rendering bodies' orbits and debug info
-  for( 1..glb.entityArray.len )| idx |
-  {
-    const id = glb.entityArray[ idx ].id;
-
-    def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{} at idx #{}", .{ id, idx });
-
-    const orbiter      = orbitStore.get( id );
-    const orbiterBody  = bodyStore.get(  id );
-
-    const orbiterTrans = transStore.get( id );
-    const orbitedTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
-
-    if( orbiter != null and orbitedTrans != null and orbiterBody != null )
-    {
-      orbiter.?.renderDebug( orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
-
-      orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
-
-      orbiter.?.renderLPs( orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
-    }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of entity #{}", .{ id });
-    }
-  }
-
-  // Rendering bodies
-  for( 0..glb.entityArray.len )| idx |
-  {
-    const id = glb.entityArray[ idx ].id;
-
-    def.log( .TRACE, 0, @src(), "Rendering shape of entity #{}", .{ id });
-
-    const orbiterTrans = transStore.get( id );
-    const orbiterShape = shapeStore.get( id );
-
-    if( orbiterTrans != null and orbiterShape != null )
-    {
-      orbiterShape.?.render( orbiterTrans.?.pos );
-    }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to render shape of entity #{}", .{ id });
-    }
-  }
+  utl.renderOrbiters( transStore, shapeStore, orbitStore, bodyStore );
 }
 
 pub fn OffRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics()
@@ -144,6 +80,8 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
 {
   if( ng.isPaused() )
   {
-    def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 128 )); // grays out the screen
+    def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 64 )); // grays out the screen
   }
+
+  def.drawTextRightFmt( "{d:.2} : test", .{ 0.42069 }, def.getScreenWidth() - 16.0, 32.0, 24, def.G_ST.Graphic_Metrics_Colour.? );
 }

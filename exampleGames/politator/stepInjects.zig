@@ -453,9 +453,9 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.drawCenteredText( "Paused",                      screenCenter.x, ( screenCenter.y * 2 ) - 96, 64, def.Colour.yellow );
-    def.drawCenteredText( "Press P or Enter to resume",  screenCenter.x, ( screenCenter.y * 2 ) - 32, 32, def.Colour.yellow );
-    def.drawCenteredText( "Press V to change view mode", screenCenter.x, screenCenter.y + 60, 20, def.Colour.white );
+    def.drawTextCenter( "Paused",                      screenCenter.x, ( screenCenter.y * 2 ) - 96, 64, def.Colour.yellow );
+    def.drawTextCenter( "Press P or Enter to resume",  screenCenter.x, ( screenCenter.y * 2 ) - 32, 32, def.Colour.yellow );
+    def.drawTextCenter( "Press V to change view mode", screenCenter.x, screenCenter.y + 60, 20, def.Colour.white );
   }
 
   if( SELECTED_TILE )| tile |
@@ -515,14 +515,14 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       return;
     };
 
-    def.drawCenteredText( &popBuff,  screenCenter.x * 0.5, 32, 24, def.Colour.nWhite );
-    def.drawCenteredText( &dPopBuff, screenCenter.x * 0.5, 64, 24, def.Colour.nWhite );
-    def.drawCenteredText( &migBuff,  screenCenter.x * 0.5, 96, 24, def.Colour.nWhite );
+    def.drawTextCenter( &popBuff,  screenCenter.x * 0.5, 32, 24, def.Colour.nWhite );
+    def.drawTextCenter( &dPopBuff, screenCenter.x * 0.5, 64, 24, def.Colour.nWhite );
+    def.drawTextCenter( &migBuff,  screenCenter.x * 0.5, 96, 24, def.Colour.nWhite );
 
-    def.drawCenteredText( &resBuff,  screenCenter.x * 1.0, 32, 24, def.Colour.nWhite );
-    def.drawCenteredText( &dResBuff, screenCenter.x * 1.0, 64, 24, def.Colour.nWhite );
+    def.drawTextCenter( &resBuff,  screenCenter.x * 1.0, 32, 24, def.Colour.nWhite );
+    def.drawTextCenter( &dResBuff, screenCenter.x * 1.0, 64, 24, def.Colour.nWhite );
 
-    def.drawCenteredText( &infBuff,  screenCenter.x * 1.5, 32, 24, def.Colour.nWhite );
-    def.drawCenteredText( &dInfBuff, screenCenter.x * 1.5, 64, 24, def.Colour.nWhite );
+    def.drawTextCenter( &infBuff,  screenCenter.x * 1.5, 32, 24, def.Colour.nWhite );
+    def.drawTextCenter( &dInfBuff, screenCenter.x * 1.5, 64, 24, def.Colour.nWhite );
   }
 }

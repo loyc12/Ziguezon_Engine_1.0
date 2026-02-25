@@ -187,7 +187,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   const halfScreenSize = def.getHalfScreenSize();
 
-  def.drawCenteredText( &s_buff, halfScreenSize.x * 1.6, halfScreenSize.y, 128, def.Colour.yellow );
+  def.drawTextCenter( &s_buff, halfScreenSize.x * 1.6, halfScreenSize.y, 128, def.Colour.yellow );
 
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
@@ -200,15 +200,15 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   {
     const game_over_msg = "Final score : ";
 
-    def.drawCenteredText( game_over_msg ++ &s_buff, halfScreenSize.x, halfScreenSize.y - 192, 128, def.Colour.red );
-    def.drawCenteredText( "Press Enter to restart", halfScreenSize.x, halfScreenSize.y,       64,  def.Colour.yellow );
-    def.drawCenteredText( "Press Escape to exit",   halfScreenSize.x, halfScreenSize.y + 128, 64,  def.Colour.yellow );
+    def.drawTextCenter( game_over_msg ++ &s_buff, halfScreenSize.x, halfScreenSize.y - 192, 128, def.Colour.red );
+    def.drawTextCenter( "Press Enter to restart", halfScreenSize.x, halfScreenSize.y,       64,  def.Colour.yellow );
+    def.drawTextCenter( "Press Escape to exit",   halfScreenSize.x, halfScreenSize.y + 128, 64,  def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawCenteredText( "Press Enter to resume",   halfScreenSize.x, halfScreenSize.y - 256, 64, def.Colour.yellow );
-    def.drawCenteredText( "Press Escape to exit",    halfScreenSize.x, halfScreenSize.y - 128, 64, def.Colour.yellow );
-    def.drawCenteredText( "Press W, Up or Space to", halfScreenSize.x, halfScreenSize.y + 128, 64, def.Colour.yellow );
-    def.drawCenteredText( "jump during the game",    halfScreenSize.x, halfScreenSize.y + 256, 64, def.Colour.yellow );
+    def.drawTextCenter( "Press Enter to resume",   halfScreenSize.x, halfScreenSize.y - 256, 64, def.Colour.yellow );
+    def.drawTextCenter( "Press Escape to exit",    halfScreenSize.x, halfScreenSize.y - 128, 64, def.Colour.yellow );
+    def.drawTextCenter( "Press W, Up or Space to", halfScreenSize.x, halfScreenSize.y + 128, 64, def.Colour.yellow );
+    def.drawTextCenter( "jump during the game",    halfScreenSize.x, halfScreenSize.y + 256, 64, def.Colour.yellow );
   }
 }

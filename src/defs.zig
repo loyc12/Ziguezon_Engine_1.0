@@ -234,24 +234,43 @@ pub const drawBasicQuadLines       = drw_u.drawQuadLines;
 pub const drawBasicPoly            = drw_u.drawPoly;
 pub const drawBasicPolyLines       = drw_u.drawPolyLines;
 
-pub const drawTria                 = drw_u.drawTrianglePlus;
-pub const drawDiam                 = drw_u.drawDiamondPlus;
-pub const drawPent                 = drw_u.drawPentagonPlus;
-pub const drawHexa                 = drw_u.drawHexagonPlus;
 
-pub const drawRect                 = drw_u.drawRectanglePlus;
-pub const drawPoly                 = drw_u.drawPolygonPlus;
+pub const drawTria = drw_u.drawTrianglePlus;
+pub const drawDiam = drw_u.drawDiamondPlus;
+pub const drawPent = drw_u.drawPentagonPlus;
+pub const drawHexa = drw_u.drawHexagonPlus;
 
-pub const drawHstr                 = drw_u.drawHexStarPlus;
-pub const drawDstr                 = drw_u.drawOctStarPlus;
+pub const drawRect = drw_u.drawRectanglePlus;
+pub const drawPoly = drw_u.drawPolygonPlus;
 
-pub const drawText                 = drw_u.drawText;
-pub const drawTextFmt              = drw_u.drawTextFmt;
-pub const drawCenteredText         = drw_u.drawCenteredText;
-pub const drawCenteredTextFmt      = drw_u.drawCenteredTextFmt;
+pub const drawHstr = drw_u.drawHexStarPlus;
+pub const drawDstr = drw_u.drawOctStarPlus;
 
-pub const drawTexture              = drw_u.drawTexture;
-pub const drawTextureCentered      = drw_u.drawTextureCentered;
+
+pub const drawText          = drw_u.drawText;
+pub const drawTextFmt       = drw_u.drawTextFmt;
+
+pub const drawTextOffset    = drw_u.drawTextOffset;
+pub const drawTextOffsetFmt = drw_u.drawTextOffsetFmt;
+
+pub const drawTextCenter    = drw_u.drawTextCenter;
+pub const drawTextCenterFmt = drw_u.drawTextCenterFmt;
+
+pub const drawTextRight     = drw_u.drawTextRight;
+pub const drawTextRightFmt  = drw_u.drawTextRightFmt;
+
+pub const drawTextBottom    = drw_u.drawTextBottom;
+pub const drawTextBottomFmt = drw_u.drawTextBottomFmt;
+
+pub const drawTextLeft      = drw_u.drawTextLeft;
+pub const drawTextLeftFmt   = drw_u.drawTextLeftFmt;
+
+pub const drawTextTop       = drw_u.drawTextTop;
+pub const drawTextTopFmt    = drw_u.drawTextTopFmt;
+
+
+pub const drawTexture         = drw_u.drawTexture;
+pub const drawTextureCentered = drw_u.drawTextureCentered;
 
 
 // ================ FLAGGER SHORTHANDS ================
@@ -262,6 +281,13 @@ pub const BitField8  = flg_u.BitField8;
 pub const BitField16 = flg_u.BitField16;
 pub const BitField32 = flg_u.BitField32;
 pub const BitField64 = flg_u.BitField64;
+
+
+// ================ GEOMER SHORTHANDS ================
+
+pub const geo_u = @import( "utils/geomer.zig" );
+
+pub const Geom2D = geo_u.Geom2D;
 
 
 // ================ LOGGER SHORTHANDS ================

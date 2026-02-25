@@ -240,31 +240,83 @@ pub inline fn drawText( text : [:0] const u8, posX : f32, posY : f32, fontSize :
 pub inline fn drawTextFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
 {
   var   buf : [ 1024 ]u8 = undefined;
-  const text = std.fmt.bufPrintZ( &buf, fmt, args ) catch @panic( "drawCenteredTextFmt : Formatted text too long" );
+  const text = std.fmt.bufPrintZ( &buf, fmt, args ) catch @panic( "drawTextCenterFmt : Formatted text too long" );
 
   drawText( text, posX, posY, fontSize, col );
 }
 
-pub inline fn drawCenteredText( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+// Non-upper-left alignement
+pub inline fn drawTextOffset( text : [:0]u8, posX : f32, posY : f32, factors : Vec2, fontSize : f32, col : Colour ) void
 {
   const textDims       = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
-  const textHalfWidth  = textDims.x / 2.0;
-  const textHalfHeight = textDims.y / 2.0;
+  const textHalfWidth  = textDims.x * factors.x;
+  const textHalfHeight = textDims.y * factors.y;
 
   drawText( text, posX - textHalfWidth, posY - textHalfHeight, fontSize, col );
 }
 
-pub inline fn drawCenteredTextFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+pub inline fn drawTextOffsetFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, factors : Vec2, fontSize : f32, col : Colour ) void
 {
   var   buf : [ 1024 ]u8 = undefined;
-  const text = std.fmt.bufPrintZ( &buf, fmt, args ) catch @panic( "drawCenteredTextFmt : Formatted text too long" );
+  const text = std.fmt.bufPrintZ( &buf, fmt, args ) catch @panic( "drawTextCenterFmt : Formatted text too long" );
 
   const textDims       = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
-  const textHalfWidth  = textDims.x / 2.0;
-  const textHalfHeight = textDims.y / 2.0;
+  const textHalfWidth  = textDims.x * factors.x;
+  const textHalfHeight = textDims.y * factors.y;
 
   drawText( text, posX - textHalfWidth, posY - textHalfHeight, fontSize, col );
 }
+
+// Center aligned
+pub inline fn drawTextCenter( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffset( text, posX, posY, .new( 0.5, 0.5 ), fontSize, col );
+}
+pub inline fn drawTextCenterFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffsetFmt( fmt, args, posX, posY, .new( 0.5, 0.5 ), fontSize, col );
+}
+
+// Center-right aligned
+pub inline fn drawTextRight( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffset( text, posX, posY, .new( 1.0, 0.5 ), fontSize, col );
+}
+pub inline fn drawTextRightFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffsetFmt( fmt, args, posX, posY, .new( 1.0, 0.5 ), fontSize, col );
+}
+
+// Bottom-center aligned
+pub inline fn drawTextBottom( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffset( text, posX, posY, .new( 0.5, 1.0 ), fontSize, col );
+}
+pub inline fn drawTextBottomFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffsetFmt( fmt, args, posX, posY, .new( 0.5, 1.0 ), fontSize, col );
+}
+
+// Center-right aligned
+pub inline fn drawTextLeft( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffset( text, posX, posY, .new( 0.0, 0.5 ), fontSize, col );
+}
+pub inline fn drawTextLeftFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffsetFmt( fmt, args, posX, posY, .new( 0.0, 0.5 ), fontSize, col );
+}
+
+// Bottom-center aligned
+pub inline fn drawTextTop( text : [:0] const u8, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffset( text, posX, posY, .new( 0.5, 0.0 ), fontSize, col );
+}
+pub inline fn drawTextTopFmt( comptime fmt : [:0] const u8, args : anytype, posX : f32, posY : f32, fontSize : f32, col : Colour ) void
+{
+  drawTextOffsetFmt( fmt, args, posX, posY, .new( 0.5, 0.0 ), fontSize, col );
+}
+
 
 
 // ================ TEXTURE DRAWING FUNCTIONS ================
@@ -274,7 +326,7 @@ pub inline fn drawTexture( image : ray.Texture2D, posX : f32, posY : f32, a : An
   ray.drawTextureEx( image, ray.Vector2{ .x = posX, .y = posY }, a, scale.x, col.toRayCol() );
 }
 
-pub inline fn drawCenteredTexture( image : ray.Texture2D, posX : f32, posY : f32, a : Angle, scale : Vec2, col : Colour ) void
+pub inline fn drawTextCenterure( image : ray.Texture2D, posX : f32, posY : f32, a : Angle, scale : Vec2, col : Colour ) void
 {
   const halfWidth  = @as( f32, @floatFromInt( image.width  )) * scale.x / 2.0;
   const halfHeight = @as( f32, @floatFromInt( image.height )) * scale.y / 2.0;
