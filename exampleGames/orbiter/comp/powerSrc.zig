@@ -11,7 +11,7 @@ pub const PowerSrc = enum( u8 )
   pub inline fn fromIdx( i : usize ) PowerSrc { return @enumFromInt( @as( u8, @intCast( i ))); }
 
   GRID,
-  SOLAR,
+  SOLAR,   // Efficiency divided by two on GROUND due to being solar powered
 //NUCLEAR,
 //BEAM,
 };

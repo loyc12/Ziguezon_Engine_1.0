@@ -13,8 +13,8 @@ pub const ResType = enum( u8 )
   WORK, // Each pop generate 1 work per cycle
 
   FOOD,
-  POWER,
   WATER,
+  POWER,
 
   ORE,
   INGOT,
@@ -27,8 +27,8 @@ pub const ResType = enum( u8 )
       .WORK  => 0.0,
 
       .FOOD  => 1.0,
+      .WATER => 1.0,
       .POWER => 0.0,
-      .WATER => 2.0,
 
       .ORE   => 3.0,
       .INGOT => 3.0,
@@ -36,17 +36,15 @@ pub const ResType = enum( u8 )
     };
   }
 
-  pub inline fn canBeAccumulated( self : ResType ) bool // If this resource can be stored for more than one cycle
-  {
-   return switch( self )
-    {
-      .WORK  => false,
-    //.FOOD  => false,
-    //.POWER => false,
-
-      else   => true,
-    };
-  }
+//pub inline fn canBeAccumulated( self : ResType ) bool // If this resource can be stored for more than one cycle
+//{
+// return switch( self )
+//  {
+//    .WORK  => false,
+//
+//    else   => true,
+//  };
+//}
 
 };
 

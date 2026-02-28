@@ -154,21 +154,22 @@ const EconSolver = struct
       {
         const resType = ResType.fromIdx( r );
 
-        // WORK supply is set to be proportional to current population during Economy's updatePop step, so no need to update it here
-        if( resType != .WORK )
-        {
-          const prodF : f32 = @floatFromInt( self.infResProd[ i ][ r ]);
-          const consF : f32 = @floatFromInt( self.infResCons[ i ][ r ]);
+        const prodF : f32 = @floatFromInt( self.infResProd[ i ][ r ]);
+        const consF : f32 = @floatFromInt( self.infResCons[ i ][ r ]);
 
-          // NOTE : if resources magically disapearing becomes an issue, look here
-          const prodApplied : i64 = @intFromFloat( @floor( prodF * ratio ));
-          const consApplied : i64 = @intFromFloat( @ceil(  consF * ratio ));
+        // NOTE : If resources magically disapearing in rounding becomes an issue, look here
 
-          econ.resDelta[ r ] += @intCast( prodApplied - consApplied );
+        const prodApplied : u64 = @intFromFloat( @floor( prodF * ratio ));
+        const consApplied : u64 = @intFromFloat( @ceil(  consF * ratio ));
 
-          econ.addResCount( resType, @intCast( prodApplied ));
-          econ.subResCount( resType, @intCast( consApplied ));
-        }
+        econ.resProd[ r ] += prodApplied;
+        econ.resCons[ r ] += consApplied;
+
+        // TODO : Make sure this doesn't leave resources at 0 despite them being produced
+        //        As population needs to have water and food available to survive
+
+        econ.addResCount( resType, prodApplied );
+        econ.subResCount( resType, consApplied );
       }}
     }
   }

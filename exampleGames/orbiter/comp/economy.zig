@@ -72,9 +72,12 @@ pub const Economy = struct
   resBank  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
   infBank  : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
 
-  popDelta : i32 = 0,
-  resDelta : [ resTypeCount ]i32 = std.mem.zeroes([ resTypeCount ]i32 ),
-  infDelta : [ infTypeCount ]i32 = std.mem.zeroes([ infTypeCount ]i32 ),
+  popDelta : i64 = 0,
+
+  resProd  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resCons  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+  infDelta : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
 
   popResAccess : f32 = 0.0,
   resAccess    : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
@@ -91,10 +94,11 @@ pub const Economy = struct
     {
       const resType  = ResType.fromIdx( r );
       const resCount = self.resBank[    r ];
-      const resDelta = self.resDelta[   r ];
+      const resProd  = self.resProd[    r ];
+      const resCons  = self.resCons[    r ];
       const resRatio = self.resAccess[  r ];
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t[ {d} ]\t( {d:.3} )", .{ @tagName( resType ), resCount, resDelta, resRatio });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t[ +{d}\t/ -{d}\t] ( {d:.3} )", .{ @tagName( resType ), resCount, resProd, resCons, resRatio });
     }
   }
 
@@ -134,9 +138,7 @@ pub const Economy = struct
   {
     inline for( 0..resTypeCount )| r |
     {
-      const factor : u64 = @intCast( resTypeCount - r );
-
-      self.resBank[ r ] = value * factor;
+      self.resBank[ r ] = value;
     }
   }
 
@@ -192,12 +194,19 @@ pub const Economy = struct
 
   pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
   {
-    inline for( 0..infTypeCount )| i |
-    {
-      const factor : u64 = @intCast( infTypeCount - i );
+    self.infBank[ InfType.HOUSING.toIdx()     ] = value * 100;
 
-      self.infBank[ i ] = value * factor;
-    }
+    self.infBank[ InfType.AGRONOMIC.toIdx()   ] = value * 35;
+    self.infBank[ InfType.HYDROPONIC.toIdx()  ] = value * 35;
+
+    self.infBank[ InfType.WATER_PLANT.toIdx() ] = value * 50;
+    self.infBank[ InfType.SOLAR_PLANT.toIdx() ] = value * 50;
+
+    self.infBank[ InfType.PROBE_MINE.toIdx()  ] = value * 0;
+    self.infBank[ InfType.GROUND_MINE.toIdx() ] = value * 80;
+    self.infBank[ InfType.REFINERY.toIdx()    ] = value * 40;
+    self.infBank[ InfType.FACTORY.toIdx()     ] = value * 20;
+    self.infBank[ InfType.ASSEMBLY.toIdx()    ] = value * 10;
   }
 
 
@@ -294,7 +303,8 @@ pub const Economy = struct
 
     inline for( 0..resTypeCount )| r |
     {
-      self.resDelta[ r ] = 0;
+      self.resProd[ r ] = 0;
+      self.resCons[ r ] = 0;
     }
     inline for( 0..infTypeCount )| i |
     {
