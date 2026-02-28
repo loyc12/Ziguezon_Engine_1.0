@@ -3,7 +3,10 @@ const def = @import( "defs" );
 
 const inf = @import( "infrastructure.zig" );
 const res = @import( "resource.zig" );
-const slv = @import( "econSolver.zig" );
+
+const ecnSlvr = @import( "econSolver.zig" );
+const popSlvr = @import( "popSolver.zig" );
+
 
 
 pub const resTypeCount = res.resTypeCount;
@@ -46,6 +49,11 @@ pub const EconLoc = enum( u8 )
 };
 
 
+
+const RES_CAP : u64 = 99_999; // TODO : change for warehouse system via infra
+
+
+
 pub const Economy = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
@@ -54,36 +62,67 @@ pub const Economy = struct
   isActive      : bool = false,
   hasAtmosphere : bool = false,
 
-  population : u64 = 0,
   sunshine   : f32 = 1.0,
 
   maxAvailArea : u64 = 0,
 
 //assemblyQueue
 
-  resArray : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  infArray : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
+  popCount : u64 = 0,
+  resBank  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  infBank  : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
+
+  popDelta : i32 = 0,
+  resDelta : [ resTypeCount ]i32 = std.mem.zeroes([ resTypeCount ]i32 ),
+  infDelta : [ infTypeCount ]i32 = std.mem.zeroes([ infTypeCount ]i32 ),
+
+  popResAccess : f32 = 0.0,
+  resAccess    : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
+  infActivity  : [ infTypeCount ]f32 = std.mem.zeroes([ infTypeCount ]f32 ),
 
 
   // ================================ RESSOURCES ================================
 
+  pub inline fn logResCounts(  self : *const Economy ) void
+  {
+    def.qlog( .INFO, 0, @src(), "Logging resource counts and access ratios :" );
+
+    inline for( 0..resTypeCount )| r |
+    {
+      const resType  = ResType.fromIdx( r );
+      const resCount = self.resBank[    r ];
+      const resDelta = self.resDelta[   r ];
+      const resRatio = self.resAccess[  r ];
+
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t[ {d} ]\t( {d:.3} )", .{ @tagName( resType ), resCount, resDelta, resRatio });
+    }
+  }
+
   pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
   {
-    return self.resArray[ resType.toIdx() ];
+    return self.resBank[ resType.toIdx() ];
   }
   pub inline fn setResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
-    self.resArray[ resType.toIdx() ] = value;
+    const tmp = value;
+
+    if( tmp > RES_CAP ){ tmp = RES_CAP; }
+
+    self.resBank[ resType.toIdx() ] = tmp;
   }
   pub inline fn addResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
-    self.resArray[ resType.toIdx() ] += value;
+    var tmp = self.resBank[ resType.toIdx() ] + value;
+
+    if( tmp > RES_CAP ){ tmp = RES_CAP; }
+
+    self.resBank[ resType.toIdx() ] = tmp;
   }
   pub inline fn subResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
-    const count = @min( value, self.resArray[ resType.toIdx() ]);
+    const count = @min( value, self.resBank[ resType.toIdx() ]);
 
-    self.resArray[ resType.toIdx() ] -= count;
+    self.resBank[ resType.toIdx() ] -= count;
 
     if( value != count )
     {
@@ -91,30 +130,73 @@ pub const Economy = struct
     }
   }
 
+  pub inline fn debugSetResCounts(  self : *Economy, value : u64 ) void
+  {
+    inline for( 0..resTypeCount )| r |
+    {
+      const factor : u64 = @intCast( resTypeCount - r );
+
+      self.resBank[ r ] = value * factor;
+    }
+  }
+
 
   // ================================ INFRASTRUCTURE ================================
 
+  pub inline fn logInfCounts(  self : *const Economy ) void
+  {
+    def.qlog( .INFO, 0, @src(), "Logging infrastructure counts and activity ratios :" );
+
+    inline for( 0..infTypeCount )| i |
+    {
+      const infType  = InfType.fromIdx(  i );
+      const infCount = self.infBank[     i ];
+      const infDelta = self.infDelta[    i ];
+      const infRatio = self.infActivity[ i ];
+
+      def.log( .CONT, 0, @src(), "{s}\t: {d}\t[ {d} ]\t( {d:.3} )", .{ @tagName( infType ), infCount, infDelta, infRatio });
+    }
+  }
+
   pub inline fn getInfCount( self : *const Economy, infType : InfType ) u64
   {
-    return self.infArray[ infType.toIdx() ];
+    return self.infBank[ infType.toIdx() ];
   }
   pub inline fn setInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
-    self.infArray[ infType.toIdx() ] = value;
+    const tmp = value;
+
+ //if( tmp > RES_CAP ){ tmp = RES_CAP; }
+
+    self.infBank[ infType.toIdx() ] = tmp;
   }
   pub inline fn addInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
-    self.infArray[ infType.toIdx() ] += value;
+    const tmp = self.infBank[ infType.toIdx() ] + value;
+
+ //if( tmp > RES_CAP ){ tmp = RES_CAP; }
+
+    self.infBank[ infType.toIdx() ] = tmp;
   }
   pub inline fn subInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
-    const count = @min( value, self.infArray[ infType.toIdx() ]);
+    const count = @min( value, self.infBank[ infType.toIdx() ]);
 
-    self.infArray[ infType.toIdx() ] -= count;
+    self.infBank[ infType.toIdx() ] -= count;
 
     if( value != count )
     {
       def.log( .WARN, 0, @src(), "Tried to remove {d} inf of type {s} from economy, but only had {d} left", .{ value, @tagName( infType ), count });
+    }
+  }
+
+  pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
+  {
+    inline for( 0..infTypeCount )| i |
+    {
+      const factor : u64 = @intCast( infTypeCount - i );
+
+      self.infBank[ i ] = value * factor;
     }
   }
 
@@ -141,83 +223,36 @@ pub const Economy = struct
 
   // ================================ POPULATION ================================
 
-  const FOOD_PER_POP   : f32 = 0.1; // How much food does a pop consume
-  const WORK_PER_POP   : f32 = 1.0; // How much work does a pop generate
-  const POP_PER_HOUSE  : u64 = 10;  // How many pop does a house support
-
-  const WEEKLY_POP_GROWTH = 1.0002113; // x3 each century
-
-  fn getPopCap( self : *const Economy ) u64
+  pub fn logPopCount( self : *const Economy ) void
   {
-    return self.getInfCount( .HOUSING ) * POP_PER_HOUSE;
+    def.log( .INFO, 0, @src(), "Population\t: {d} / {d}\t[ {d} ]\t( {d:.3} )", .{ self.popCount, self.getPopCap(), self.popDelta, self.popResAccess });
   }
 
-  fn getPopFoodCons( self : *const Economy ) u64
+  pub fn getPopCap( self : *const Economy ) u64
   {
-    const pop : f32 = @floatFromInt( self.population );
-
-    return @intFromFloat( @ceil( pop * FOOD_PER_POP ));
+    return self.getInfCount( .HOUSING ) * InfType.POP_PER_HOUSE;
   }
 
-  fn getPopWorkProd( self : *const Economy ) u64
-  {
-    const pop : f32 = @floatFromInt( self.population );
-
-    return @intFromFloat( @floor( pop * WORK_PER_POP ));
-  }
-
-  fn updatePop( self : *Economy ) void
-  {
-    const foodAvailable = self.getResCount( .FOOD );
-    const foodRequired  = self.getPopFoodCons();
-
-    if( foodAvailable < foodRequired ) // Starvation
-    {
-      self.setResCount( .FOOD, 0 );
-
-      const foodDeficit : f32 = @floatFromInt( foodRequired - foodAvailable );
-      const popStarve   : f32 = foodDeficit / FOOD_PER_POP;
-
-      self.population = self.population -| @as( u64, @intFromFloat( @ceil( popStarve / 12 ))); // losing 1/12 of starving pop at each update
-    }
-    else // Normal growth
-    {
-      self.subResCount( .FOOD, foodRequired );
-
-      const popCap = self.getPopCap();
-
-      if( self.population < popCap )
-      {
-        const pop : f32 = @floatFromInt( self.population );
-
-        self.population = @intFromFloat( @ceil( pop * WEEKLY_POP_GROWTH ));
-
-        if( self.population > popCap ){ self.population = popCap; }
-      }
-    }
-
-    // Updating availalbe WORK amount for this cycle
-    self.resArray[ ResType.WORK.toIdx() ] = self.getPopWorkProd();
-  }
 
 
   // ================================ AREA ================================
 
-  pub fn getUsedArea( self : *const Economy ) u64
+  pub fn getUsedArea( self : *const Economy ) f32
   {
-    var used : u64 = 0;
+    var used : f32 = 0;
 
     inline for( 0..infTypeCount )| i |
     {
       const infType = InfType.fromIdx( i );
+      const infCount : f32 = @floatFromInt( self.getInfCount( infType ));
 
-      used += self.getInfCount( infType ) * infType.getArea(); // TODO : rework for f32 area
+      used += infCount * infType.getArea();
     }
 
     return used;
   }
 
-  pub fn getTotalArea( self : *const Economy ) u64
+  pub fn getTotalArea( self : *const Economy ) f32
   {
     if( self.location == .GROUND and self.hasAtmosphere ) // If this is a planet with atmosphere
     {
@@ -225,15 +260,16 @@ pub const Economy = struct
     }
     else // Else, area is grown via "area-extension" infra
     {
-    //const infType = InfType.TBA.toIdx(); // TODO : implemnet area-extension infra
+    //const infType = InfType.TBA.toIdx();                                // TODO : implement area-extension infra
+    //const infCount : f32 = @floatFromInt( self.getInfCount( infType ));
 
-    //avail = self.getInfCount( infType ) * infType.getArea(); // TODO : rework for f32 area
 
-      return  0;
+    //return infCount * infType.getArea();
+      return 0.0;
     }
   }
 
-  pub fn getAvailArea( self : *const Economy ) u64
+  pub fn getAvailArea( self : *const Economy ) f32
   {
     const used  = self.getUsedArea();
     const total = self.getTotalArea();
@@ -245,19 +281,38 @@ pub const Economy = struct
     else
     {
       def.log( .WARN, 0, @src(), "Negative available area in location of type {}", .{ @tagName( self.location )});
-      return 0;
+      return 0.0;
     }
   }
 
 
   // ================================ UPDATING ================================
 
+  fn resetDeltas( self : *Economy ) void
+  {
+    self.popDelta = 0;
+
+    inline for( 0..resTypeCount )| r |
+    {
+      self.resDelta[ r ] = 0;
+    }
+    inline for( 0..infTypeCount )| i |
+    {
+      self.infDelta[ i ] = 0;
+    }
+  }
+
   pub fn tickEcon( self : *Economy, sunshine : f32 ) void
   {
-    self.updatePop();
-
     self.sunshine = sunshine;
+    self.resetDeltas();
 
-    slv.resolveEcon( self );
+    popSlvr.resolvePop(  self ); // Updates pop WORK, FOOD and WATER consequently
+    ecnSlvr.resolveEcon( self ); // Updates all non WORK
+
+    // NOTE : DEBUG
+    self.logPopCount();
+    self.logResCounts();
+    self.logInfCounts();
   }
 };

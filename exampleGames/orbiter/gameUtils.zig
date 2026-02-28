@@ -6,6 +6,7 @@ const orb = @import( "comp/orbitComp.zig" );
 const ecn = @import( "comp/economy.zig" );
 
 
+
 // ================================ STATE INJECT ================================
 
 pub fn initDebugSystem( ng : *def.Engine ) void
@@ -66,16 +67,18 @@ pub fn initDebugSystem( ng : *def.Engine ) void
         orbitComp.minRadius   = 2500 - 50;
         orbitComp.maxRadius   = 2500 + 50;
 
-        bodyComp.bodyType     = .PLANET;
-        bodyComp.mass         = PLANET_MASS;
+        bodyComp.bodyType = .PLANET;
+        bodyComp.mass     = PLANET_MASS;
 
         bodyComp.initEcon( .GROUND );
-        bodyComp.initEcon( .ORBIT  );
-        bodyComp.initEcon( .L1     );
-        bodyComp.initEcon( .L2     );
-        bodyComp.initEcon( .L3     );
-        bodyComp.initEcon( .L4     );
-        bodyComp.initEcon( .L5     );
+      //bodyComp.initEcon( .ORBIT  );
+      //bodyComp.initEcon( .L1     );
+      //bodyComp.initEcon( .L2     );
+      //bodyComp.initEcon( .L3     );
+      //bodyComp.initEcon( .L4     );
+      //bodyComp.initEcon( .L5     );
+
+        bodyComp.debugSetEconVals( 1 );
       },
 
       3 =>
@@ -85,14 +88,14 @@ pub fn initDebugSystem( ng : *def.Engine ) void
         orbitComp.minRadius   = 300 - 20;
         orbitComp.maxRadius   = 300 + 20;
 
-        bodyComp.bodyType     = .MOON;
-        bodyComp.mass         = MOON_MASS;
+        bodyComp.bodyType = .MOON;
+        bodyComp.mass     = MOON_MASS;
 
-        bodyComp.initEcon( .GROUND );
-        bodyComp.initEcon( .ORBIT  );
-        bodyComp.initEcon( .L1     );
-        bodyComp.initEcon( .L2     );
-        bodyComp.initEcon( .L3     );
+      //bodyComp.initEcon( .GROUND );
+      //bodyComp.initEcon( .ORBIT  );
+      //bodyComp.initEcon( .L1     );
+      //bodyComp.initEcon( .L2     );
+      //bodyComp.initEcon( .L3     );
       },
 
       4 =>
@@ -102,10 +105,11 @@ pub fn initDebugSystem( ng : *def.Engine ) void
         orbitComp.minRadius   = 20 - 2;
         orbitComp.maxRadius   = 20 + 2;
 
-        bodyComp.bodyType     = .COMET;
-        bodyComp.mass         = COMET_MASS;
-        bodyComp.initEcon( .GROUND );
-        bodyComp.initEcon( .ORBIT  );
+        bodyComp.bodyType  = .COMET;
+        bodyComp.mass      = COMET_MASS;
+
+      //bodyComp.initEcon( .GROUND );
+      //bodyComp.initEcon( .ORBIT  );
       },
 
       else =>
@@ -115,8 +119,8 @@ pub fn initDebugSystem( ng : *def.Engine ) void
         orbitComp.minRadius   = 10 - 3;
         orbitComp.maxRadius   = 10 + 3;
 
-        bodyComp.bodyType     = .COMET;
-        bodyComp.mass         = COMET_MASS;
+        bodyComp.bodyType = .COMET;
+        bodyComp.mass     = COMET_MASS;
       },
     }
     bodyComp.setRadiusViaDensity( 1.0 );
@@ -196,7 +200,7 @@ pub fn tickGlobalEconomy( transStore : *glb.TransStore, orbitStore : *glb.OrbitS
 
     if( trans != null and orbit != null and body != null )
     {
-      def.log( .DEBUG, 0, @src(), "Updating economies of entity #{d}", .{ id });
+      def.log( .TRACE, 0, @src(), "Updating economies of entity #{d}", .{ id });
 
       body.?.tickEcons( orbit.?, trans.?.pos.toVec2(), starPos );
     }

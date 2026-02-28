@@ -99,6 +99,19 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   // ================================ ECONOMIES ================================
 
+  pub fn initEcon( self : *BodyComp, econLoc : ecn.EconLoc ) void
+  {
+    const econ : *ecn.Economy = &self.econArray[ econLoc.toIdx() ];
+
+    econ.location = econLoc;
+    econ.isActive = true;
+
+    if( econLoc == .GROUND )
+    {
+      econ.maxAvailArea = @intFromFloat( @floor( self.getSurfaceArea())); // TODO : add useableLand modifier ( ex : what proportion is solid ground )
+    }
+  }
+
   pub fn tickEcons( self : *BodyComp, selfOrbit : *const orb.OrbitComp, orbitedPos : def.Vec2, starPos : def.Vec2 ) void
   {
     for( 0..self.bodyType.getEconLocCount() )| i |
@@ -120,21 +133,38 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     }
   }
 
-  pub fn initEcon( self : *BodyComp, econLoc : ecn.EconLoc ) void
-  {
-    const econ : *ecn.Economy = &self.econArray[ econLoc.toIdx() ];
-
-    econ.location = econLoc;
-    econ.isActive = true;
-
-    if( econLoc == .GROUND )
-    {
-      econ.maxAvailArea = @intFromFloat( @floor( self.getSurfaceArea())); // TODO : add useableLand modifier ( ex : what proportion is solid ground )
-    }
-  }
-
   pub fn getEcon( self : *BodyComp, econLoc : ecn.EconLoc ) *ecn.Economy
   {
     return &self.econArray[ econLoc.toIdx() ];
+  }
+
+  pub fn logEcons( self : *const BodyComp ) void
+  {
+    for( 0..self.bodyType.getEconLocCount() )| i |
+    {
+      const econ : *const ecn.Economy = &self.econArray[ i ];
+
+      if( econ.isActive ) // TODO : Activate locs when player build infra there
+      {
+        econ.logPopCount();
+        econ.logResCounts();
+        econ.logInfCounts();
+      }
+    }
+  }
+
+  pub fn debugSetEconVals( self : *BodyComp, value : u64 ) void
+  {
+    for( 0..self.bodyType.getEconLocCount() )| i |
+    {
+      var econ : *ecn.Economy = &self.econArray[ i ];
+
+      if( econ.isActive ) // TODO : Activate locs when player build infra there
+      {
+        econ.popCount = value * 1000;
+        econ.debugSetResCounts( value * 1000 );
+        econ.debugSetInfCounts( value );
+      }
+    }
   }
 };

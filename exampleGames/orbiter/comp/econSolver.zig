@@ -6,14 +6,14 @@ const res = @import( "resource.zig" );
 const ecn = @import( "economy.zig" );
 
 
-pub const resTypeCount = res.resTypeCount;
-pub const infTypeCount = inf.infTypeCount;
+const resTypeCount = res.resTypeCount;
+const infTypeCount = inf.infTypeCount;
 
-pub const ResType = res.ResType;
-pub const InfType = inf.InfType;
+const ResType = res.ResType;
+const InfType = inf.InfType;
 
-pub const ResInstance = res.ResInstance;
-pub const InfInstance = inf.InfInstance;
+const ResInstance = res.ResInstance;
+const InfInstance = inf.InfInstance;
 
 
 pub inline fn resolveEcon( econ : *ecn.Economy ) void
@@ -21,13 +21,13 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
   var solver : EconSolver = .{};
 
   solver.initFromEcon( econ );
-  solver.computeResAccessRatios();
-  solver.computeInfActivityRatios( econ.sunshine );
+  solver.computeResAccessRatios( econ );
+  solver.computeInfActivityRatios( econ );
   solver.applyDeltas( econ );
 }
 
 
-pub const EconSolver = struct
+const EconSolver = struct
 {
   maxEfficiency : f32 = 1.0, // Global consumption-production throttle / multiplier
 
@@ -57,12 +57,12 @@ pub const EconSolver = struct
 
     inline for ( 0..resTypeCount )| r |
     {
-      self.resAvail[ r ] = econ.resArray[ r ]; // TODO : do not forget to update WORK when updating pop in Economy
+      self.resAvail[ r ] = econ.resBank[ r ]; // TODO : do not forget to update WORK when updating pop in Economy
     }
 
     inline for( 0..infTypeCount )| i |
     {
-      self.infAvail[ i ] = econ.infArray[ i ];
+      self.infAvail[ i ] = econ.infBank[ i ];
 
       if( self.infAvail[ i ] == 0 ) // If none of this infra is present, zero out the relevant arrays
       {
@@ -75,7 +75,7 @@ pub const EconSolver = struct
       else // Else, fill said arrays with the maximum possible cons and prod
       {
         const infType = InfType.fromIdx( i );
-        const inst = InfInstance.initByType( infType ); // TODO : use a static comptime table if this is a performance bottleneck
+        const inst    = InfInstance.initByType( infType ); // TODO : use a static comptime table if this is a performance bottleneck
 
         inline for ( 0..resTypeCount )| r |
         {
@@ -91,13 +91,13 @@ pub const EconSolver = struct
     }
   }
 
-  fn computeResAccessRatios( self : *EconSolver ) void
+  fn computeResAccessRatios( self : *EconSolver, econ : *ecn.Economy ) void
   {
     inline for( 0..resTypeCount )| r |
     {
       if( self.totResCons[ r ] == 0 )
       {
-        self.resAccessRatios[ r ] = self.maxEfficiency;
+        self.resAccessRatios[ r ] = 1.0;
       }
       else
       {
@@ -106,10 +106,11 @@ pub const EconSolver = struct
 
         self.resAccessRatios[ r ] = @min( self.maxEfficiency, availF / consF );
       }
+      econ.resAccess[ r ] = self.resAccessRatios[ r ];
     }
   }
 
-  fn computeInfActivityRatios( self : *EconSolver, sunshine : f32 ) void
+  fn computeInfActivityRatios( self : *EconSolver, econ : *ecn.Economy ) void
   {
     inline for( 0..infTypeCount )| i |
     {
@@ -119,7 +120,7 @@ pub const EconSolver = struct
       }
       else
       {
-        var ratio : f32 = @floatCast( self.maxEfficiency );
+        var ratio : f32 = self.maxEfficiency;
 
         // Solar modifier
         const infType = InfType.fromIdx( i );
@@ -127,20 +128,19 @@ pub const EconSolver = struct
 
         if( inst.powerSrc == .SOLAR )
         {
-          ratio *= @floatCast( sunshine );
+          ratio *= econ.sunshine;
         }
 
         // Resource modifiers
-        inline for( 0..resTypeCount )| r |
+        inline for( 0..resTypeCount )| r |{ if( self.infResCons[ i ][ r ] != 0 )
         {
-          if( self.infResCons[ i ][ r ] != 0 )
-          {
-            ratio = @min( ratio, self.resAccessRatios[ r ]);
-          }
-        }
+          ratio = @min( ratio, self.resAccessRatios[ r ]);
+        }}
 
         self.infActivityRatios[ i ] = ratio;
       }
+
+      econ.infActivity[ i ] = self.infActivityRatios[ i ];
     }
   }
 
@@ -152,20 +152,22 @@ pub const EconSolver = struct
 
       if( ratio != 0.0 ){ inline for( 0..resTypeCount )| r |
       {
-        const prodF : f32 = @floatFromInt( self.infResProd[ i ][ r ]);
-        const consF : f32 = @floatFromInt( self.infResCons[ i ][ r ]);
-
-        // NOTE : if resources magically disapearing becomes an issue, look here
-        const prodApplied : u64 = @intFromFloat( @floor( prodF * ratio ));
-        const consApplied : u64 = @intFromFloat( @ceil(  consF * ratio ));
-
         const resType = ResType.fromIdx( r );
 
         // WORK supply is set to be proportional to current population during Economy's updatePop step, so no need to update it here
         if( resType != .WORK )
         {
-          econ.addResCount( resType, prodApplied );
-          econ.subResCount( resType, consApplied );
+          const prodF : f32 = @floatFromInt( self.infResProd[ i ][ r ]);
+          const consF : f32 = @floatFromInt( self.infResCons[ i ][ r ]);
+
+          // NOTE : if resources magically disapearing becomes an issue, look here
+          const prodApplied : i64 = @intFromFloat( @floor( prodF * ratio ));
+          const consApplied : i64 = @intFromFloat( @ceil(  consF * ratio ));
+
+          econ.resDelta[ r ] += @intCast( prodApplied - consApplied );
+
+          econ.addResCount( resType, @intCast( prodApplied ));
+          econ.subResCount( resType, @intCast( consApplied ));
         }
       }}
     }

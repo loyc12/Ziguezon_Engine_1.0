@@ -26,7 +26,7 @@ pub const InfType = enum( u8 )
 //POWER_PLANT,  // Generate energy ( fission / fusion )
 
   PROBE_MINE,   // Extracts raw materials ( autonomous but restricted to asteroids )
-  GROUD_MINE,   // Extracts raw materials
+  GROUND_MINE,   // Extracts raw materials
   REFINERY,     // Refines  raw materials
   FACTORY,      // Create parts from refined materials
   ASSEMBLY,     // Assembles parts into infrastructure & vehicles
@@ -51,11 +51,11 @@ pub const InfType = enum( u8 )
 
       .AGRONOMIC   => 1.0,
       .HYDROPONIC  => 5.0,
-      .SOLAR_PLANT => 2.0,
       .WATER_PLANT => 2.0,
+      .SOLAR_PLANT => 2.0,
 
       .PROBE_MINE  => 2.0,
-      .GROUD_MINE  => 15.0,
+      .GROUND_MINE  => 15.0,
       .REFINERY    => 10.0,
       .FACTORY     => 5.0,
       .ASSEMBLY    => 3.0,
@@ -70,11 +70,11 @@ pub const InfType = enum( u8 )
 
       .AGRONOMIC   => 25.0,
       .HYDROPONIC  => 5.0,
-      .SOLAR_PLANT => 15.0,
       .WATER_PLANT => 3.0,
+      .SOLAR_PLANT => 15.0,
 
       .PROBE_MINE  => 1.0,
-      .GROUD_MINE  => 10.0,
+      .GROUND_MINE => 10.0,
       .REFINERY    => 5.0,
       .FACTORY     => 5.0,
       .ASSEMBLY    => 5.0,
@@ -89,32 +89,13 @@ pub const InfType = enum( u8 )
 
       .AGRONOMIC   => 1,
       .HYDROPONIC  => 2,
-      .SOLAR_PLANT => 3,
       .WATER_PLANT => 2,
+      .SOLAR_PLANT => 3,
 
       .PROBE_MINE  => 1,
-      .GROUD_MINE  => 2,
+      .GROUND_MINE  => 2,
       .REFINERY    => 3,
       .FACTORY     => 4,
-      .ASSEMBLY    => 5,
-    };
-  }
-
-  pub inline fn getJobCount( self : InfType ) u64
-  {
-    return switch( self )
-    {
-      .HOUSING     => 10,
-
-      .AGRONOMIC   => 4,
-      .HYDROPONIC  => 5,
-      .SOLAR_PLANT => 2,
-      .WATER_PLANT => 3,
-
-      .PROBE_MINE  => 0,
-      .GROUD_MINE  => 20,
-      .REFINERY    => 15,
-      .FACTORY     => 10,
       .ASSEMBLY    => 5,
     };
   }
@@ -129,10 +110,10 @@ pub const InfType = enum( u8 )
 
         .AGRONOMIC   => hasAtmosphere,
         .HYDROPONIC  => true,
-        .SOLAR_PLANT => true,
         .WATER_PLANT => true,
+        .SOLAR_PLANT => true,
 
-        .GROUD_MINE  => true,
+        .GROUND_MINE => true,
         .REFINERY    => true,
         .FACTORY     => true,
         .ASSEMBLY    => true,
@@ -157,6 +138,12 @@ pub const InfType = enum( u8 )
       };
     }
   }
+
+  pub const POP_PER_HOUSE   : u64 = 20;
+  pub const WORK_PER_HOUSE  : u64 = 20;
+  pub const FOOD_PER_HOUSE  : u64 = 20;
+  pub const WATER_PER_HOUSE : u64 = 5;
+  pub const POWER_PER_HOUSE : u64 = 1;
 };
 
 
@@ -180,60 +167,79 @@ pub const InfInstance = struct
 
     switch ( infType )
     {
-      .HOUSING => // No resource production. Increases population cap instead
+      .HOUSING => // Food and water are priority updates, directly in economy methods
       {
-        instance.addResConsPerInf( .POWER, 1 );
-        instance.addResConsPerInf( .WATER, 1 );
+        // Can house 10 pop
+      //instance.addResConsPerInf( .FOOD,  InfType.FOOD_PER_HOUSE  );
+      //instance.addResConsPerInf( .WATER, InfType.WATER_PER_HOUSE );
+        instance.addResConsPerInf( .POWER, InfType.POWER_PER_HOUSE );
+
+        instance.addResProdPerInf( .WORK,  InfType.WORK_PER_HOUSE );
       },
       .AGRONOMIC =>
       {
-        instance.powerSrc = .SOLAR;
-        instance.addResConsPerInf( .WATER, 10 );
-        instance.addResProdPerInf( .FOOD,  10 );
+        instance.powerSrc = .SOLAR;            // Delta roughly divided by two on GROUND due to being solar powered
+        instance.addResConsPerInf( .WORK,  3 );
+        instance.addResConsPerInf( .WATER, 5 );
+
+        instance.addResProdPerInf( .FOOD,  20 );
       },
       .HYDROPONIC =>
       {
-        instance.addResConsPerInf( .POWER, 5 );
-        instance.addResConsPerInf( .WATER, 5 );
-        instance.addResProdPerInf( .FOOD,  10 );
-      },
-      .SOLAR_PLANT => // No resource consumption.
-      {
-        instance.powerSrc = .SOLAR;
-        instance.addResProdPerInf( .POWER, 20 );
+        instance.addResConsPerInf( .WORK,  5  );
+        instance.addResConsPerInf( .POWER, 3  );
+        instance.addResConsPerInf( .WATER, 5  );
+
+        instance.addResProdPerInf( .FOOD,  15 );
       },
       .WATER_PLANT =>
       {
+        instance.addResConsPerInf( .WORK,  3 );
+
         instance.addResConsPerInf( .POWER, 2  );
-        instance.addResProdPerInf( .WATER, 10 );
+        instance.addResProdPerInf( .WATER, 20 );
+      },
+      .SOLAR_PLANT =>
+      {
+        instance.powerSrc = .SOLAR;            // Delta roughly divided by two on GROUND due to being solar powered
+        instance.addResConsPerInf( .WORK,  2 );
+
+        instance.addResProdPerInf( .POWER, 30 );
       },
       .PROBE_MINE => // No resource consumption.
       {
-        instance.powerSrc = .SOLAR;
-        instance.addResProdPerInf( .ORE, 1 );
+        instance.powerSrc = .SOLAR;            // Delta roughly divided by two on GROUND due to being solar powered
+        instance.addResProdPerInf( .ORE, 2 );
       },
-      .GROUD_MINE =>
+      .GROUND_MINE =>
       {
-        instance.addResConsPerInf( .POWER, 5 );
-        instance.addResConsPerInf( .WATER, 1 );
-        instance.addResProdPerInf( .ORE,   1 );
+        instance.addResConsPerInf( .WORK,  10 );
+        instance.addResConsPerInf( .POWER, 5  );
+        instance.addResConsPerInf( .WATER, 1  );
+
+        instance.addResProdPerInf( .ORE,   3  );
       },
       .REFINERY =>
       {
+        instance.addResConsPerInf( .WORK,  8 );
         instance.addResConsPerInf( .POWER, 5 );
-        instance.addResConsPerInf( .ORE,   1 );
-        instance.addResProdPerInf( .INGOT, 1 );
+        instance.addResConsPerInf( .ORE,   4 );
+
+        instance.addResProdPerInf( .INGOT, 3 );
       },
       .FACTORY =>
       {
-        instance.addResConsPerInf( .POWER, 3 );
-        instance.addResConsPerInf( .INGOT, 1 );
-        instance.addResProdPerInf( .PART,  1 );
-      },
-      .ASSEMBLY => // No resource production. Increments build queue instead
-      {
+        instance.addResConsPerInf( .WORK,  6 );
         instance.addResConsPerInf( .POWER, 2 );
-        instance.addResProdPerInf( .PART,  1 );
+        instance.addResConsPerInf( .INGOT, 4 );
+        instance.addResConsPerInf( .WATER, 1  );
+
+        instance.addResProdPerInf( .PART,  3 );
+      },
+      .ASSEMBLY => // No resource production. TODO : Increments build queue construction
+      {
+        instance.addResConsPerInf( .WORK,  4 );
+        instance.addResConsPerInf( .POWER, 2 );
       },
     }
 
