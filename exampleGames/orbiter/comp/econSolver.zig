@@ -136,24 +136,33 @@ const EconSolver = struct
 
   fn applyResDecay( self : *EconSolver ) void
   {
+    def.qlog( .DEBUG, 0, @src(), "Logging resource decay :" );
+
     inline for( 0..resTypeCount )| r |
     {
       if( self.econ.resBank[ r ] != 0 )
       {
-        const resType = ResType.fromIdx( r );
+        const resType   = ResType.fromIdx( r );
+        const decayRate = resType.getDecayRate();
 
-        const amount_f32 : f32 = @floatFromInt( self.econ.resBank[ r ]);
-        const amount_u64 : u64 = @intFromFloat( @floor( amount_f32 * resType.getDecayRate() ));
+        const decay_f32 : f32 = @floatFromInt( self.econ.resBank[ r ]);
+        const decay_u64 : u64 = @intFromFloat( @floor( decay_f32 * decayRate ));
 
-        self.econ.resBank[     r ] -= amount_u64;
-        self.econ.prevResCons[ r ] += amount_u64;
+        self.econ.resBank[ r ] -= decay_u64;
+
+        if( decayRate < 1.0 ) // Fudge to prevent WORK from always being fully used
+        {
+          self.econ.prevResCons[ r ] += decay_u64;
+        }
+
+        def.log( .CONT, 0, @src(), "{s}  \t: -{d}", .{ @tagName( ResType.fromIdx( r )), decay_u64 });
       }
     }
   }
 
   fn calcPopNeeds( self : *EconSolver ) void
   {
-  //def.log( .DEBUG, 0, @src(), "Logging population deltas ({d:.0}) :", .{ self.prevPopCount });
+  //def.log( .DEBUG, 0, @src(), "Logging population prod. and cons. ({d:.0}) :", .{ self.prevPopCount });
 
     inline for( 0..resTypeCount )| r |
     {
@@ -188,7 +197,7 @@ const EconSolver = struct
       const indType = IndType.fromIdx( i );
       const inst    = IndInstance.initByType( indType ); // TODO : use a static comptime table if this is a performance bottleneck
 
-    //def.log( .DEBUG, 0, @src(), "Logging for {s} ({d}):", .{ @tagName( indType ), self.econ.indBank[ i ]});
+    //def.log( .DEBUG, 0, @src(), "Logging bank amounts for {s} ({d}):", .{ @tagName( indType ), self.econ.indBank[ i ]});
 
       inline for ( 0..resTypeCount )| r |
       {
@@ -221,7 +230,7 @@ const EconSolver = struct
     }}
 
     // NOTE : DEBUG
-    def.qlog( .DEBUG, 0, @src(), "Logging industrial deltas :" );
+    def.qlog( .DEBUG, 0, @src(), "Logging industrial resource prod. and cons. :" );
 
     inline for ( 0..resTypeCount )| r |
     {
@@ -293,7 +302,7 @@ const EconSolver = struct
     const rawWorkProd   : f32 = @floatFromInt( self.maxPopProd[ workIdx ]);
     const weeklyPopWork : u64 = @intFromFloat( @floor( popWorkRate * rawWorkProd ));
 
-    def.log( .CONT, 0, @src(), "# WORK rate\t: {d:.8} [ {d:.0} ]", .{ popWorkRate, weeklyPopWork });
+    def.log( .CONT, 0, @src(), "# WORK rate\t: {d:.4}", .{ popWorkRate });
 
 
     self.finalPopProd[ workIdx ] = weeklyPopWork;
@@ -340,7 +349,7 @@ const EconSolver = struct
 
   fn calcIndActivity( self : *EconSolver ) void
   {
-    def.qlog( .DEBUG, 0, @src(), "Logging industrial activity :" );
+  //def.qlog( .DEBUG, 0, @src(), "Logging industrial activity :" );
 
     inline for( 0..indTypeCount )| i |
     {
@@ -371,7 +380,7 @@ const EconSolver = struct
 
   fn applyPopDelta( self : *EconSolver ) void
   {
-    // NOTE : Iterated over pop-consumed res only
+    // NOTE : Iterates over pop-consumed res only
 
     // FOOD access
     const foodIdx  = ResType.FOOD.toIdx();
@@ -418,7 +427,7 @@ const EconSolver = struct
       self.nextPopCount *= 1.0 - ( WEEKLY_FREEZE_RATE * ( 1.0 - powerAccess ));
     }
 
-    def.log( .DEBUG, 0, @src(), "Pop access : F = {d:.3} - W = {d:.3} - P = {d:.3}", .{ foodAccess, waterAccess, powerAccess });
+  //def.log( .DEBUG, 0, @src(), "Pop access : F = {d:.3} - W = {d:.3} - P = {d:.3}", .{ foodAccess, waterAccess, powerAccess });
 
 
     self.nextPopCount = @floor( self.nextPopCount ); // Rounding down deaths
@@ -447,7 +456,7 @@ const EconSolver = struct
 
   fn applyResDelta( self : *EconSolver ) void
   {
-    def.qlog( .DEBUG, 0, @src(), "Logging final resource deltas :" );
+    def.qlog( .DEBUG, 0, @src(), "Logging general resource prod. and cons. :" );
 
     inline for( 0..resTypeCount )| r |
     {

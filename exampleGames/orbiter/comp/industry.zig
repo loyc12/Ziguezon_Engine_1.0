@@ -201,7 +201,7 @@ pub const IndInstance = struct
       {
         instance.addResConsPerInd( .WORK,  3  );
         instance.addResConsPerInd( .POWER, 4  );
-        instance.addResConsPerInd( .PART,  4  );
+        instance.addResConsPerInd( .PART,  2  );
       },
     }
 

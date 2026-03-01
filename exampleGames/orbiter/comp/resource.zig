@@ -54,10 +54,13 @@ pub const ResType = enum( u8 )
 
   pub inline fn getPerPopDelta( self : ResType ) f32
   {
+    // NOTE : Changes might require modifications to EconSolver.applyWorkWeek(), .calcWorkAccess(), or .applyPopDelta()
+
     return switch( self )
     {
-      .WORK  =>  1.00, // Needs to stay positive ( hardcoded in prod EconSolver.calcWorkAccess() )
+      .WORK  =>  1.00, // Needs to stay positive ( EconSolver.calcWorkAccess() )
 
+      //
       .FOOD  => -0.30,
       .WATER => -0.20,
       .POWER => -0.10,

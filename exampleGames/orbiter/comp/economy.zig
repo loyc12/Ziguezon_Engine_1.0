@@ -21,7 +21,7 @@ const IndInstance = ind.IndInstance;
 const InfInstance = inf.InfInstance;
 
 
-const MIN_RES_CAP = 99999;
+const MIN_RES_CAP = 9999;
 
 
 
@@ -293,17 +293,18 @@ pub const Economy = struct
 
   pub inline fn debugSetIndCounts(  self : *Economy, value : u64 ) void
   {
-    self.indBank[ IndType.AGRONOMIC.toIdx()   ] = value * 35;
-    self.indBank[ IndType.HYDROPONIC.toIdx()  ] = value * 35;
+    self.indBank[ IndType.AGRONOMIC.toIdx()   ] = value * 25;
+    self.indBank[ IndType.HYDROPONIC.toIdx()  ] = value * 25;
 
     self.indBank[ IndType.WATER_PLANT.toIdx() ] = value * 50;
-    self.indBank[ IndType.SOLAR_PLANT.toIdx() ] = value * 65;
+    self.indBank[ IndType.SOLAR_PLANT.toIdx() ] = value * 100;
+    // TODO : add nuclear plant ( using ORE and WATER ? )
 
     self.indBank[ IndType.PROBE_MINE.toIdx()  ] = value * 0;
-    self.indBank[ IndType.GROUND_MINE.toIdx() ] = value * 80;
-    self.indBank[ IndType.REFINERY.toIdx()    ] = value * 40;
-    self.indBank[ IndType.FACTORY.toIdx()     ] = value * 20;
-    self.indBank[ IndType.ASSEMBLY.toIdx()    ] = value * 10;
+    self.indBank[ IndType.GROUND_MINE.toIdx() ] = value * 200;
+    self.indBank[ IndType.REFINERY.toIdx()    ] = value * 100;
+    self.indBank[ IndType.FACTORY.toIdx()     ] = value * 50;
+    self.indBank[ IndType.ASSEMBLY.toIdx()    ] = value * 25;
   }
 
 
@@ -331,7 +332,7 @@ pub const Economy = struct
 
   pub fn logPopCount( self : *const Economy ) void
   {
-    def.log( .INFO, 0, @src(), "Population\t: {d} / {d}\t[ {d} ]\t( {d:.3} )", .{ self.popCount, self.getPopCap(), self.popDelta, self.popAccess });
+    def.log( .INFO, 0, @src(), "Population\t: {d}\t/ {d}\t[ {d} ]\t( {d:.3} )", .{ self.popCount, self.getPopCap(), self.popDelta, self.popAccess });
   }
 
   pub fn getPopCap( self : *const Economy ) u64
@@ -426,7 +427,7 @@ pub const Economy = struct
     // NOTE : DEBUG
     self.logPopCount();
     self.logResCounts();
-    self.logInfCounts();
-    self.logIndCounts();
+  //self.logInfCounts();
+  //self.logIndCounts();
   }
 };
