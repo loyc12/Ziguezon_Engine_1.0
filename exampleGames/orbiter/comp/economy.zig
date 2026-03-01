@@ -21,7 +21,7 @@ const IndInstance = ind.IndInstance;
 const InfInstance = inf.InfInstance;
 
 
-const MIN_RES_CAP = 1000;
+const MIN_RES_CAP = 99999;
 
 
 
@@ -84,9 +84,9 @@ pub const Economy = struct
   infBank     : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
   infDelta    : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
 
-  indBank     : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ),
-  indDelta    : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ),
-  indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ),
+  indBank     : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ), // OK
+  indDelta    : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ), // OK
+  indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ), // OK
 
 
   // ================================ RESSOURCES ================================
@@ -234,8 +234,8 @@ pub const Economy = struct
       return true; // TODO : check against self.maxAvailableArea
     }
 
-    const  availArea  = self.getAvailArea();
-    const  neededArea = infType.getArea() * count;
+    const  availArea  = self.getUnusedArea();
+    const  neededArea = infType.getAreaCost() * count;
 
     if( availArea < neededArea )
     {
@@ -311,8 +311,8 @@ pub const Economy = struct
       return false;
     }
 
-    const  availArea  = self.getAvailArea();
-    const  neededArea = indType.getArea() * count; // TODO : rework for f32 area
+    const  availArea  = self.getUnusedArea();
+    const  neededArea = indType.getAreaCost() * count;
 
     if( availArea < neededArea )
     {
