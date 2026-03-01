@@ -40,10 +40,10 @@ pub const ResType = enum( u8 )
   {
     return switch( self )
     {
-      .WORK  => 0.00,
+      .WORK  => 1.00,
 
-      .FOOD  => 0.05,
-      .WATER => 0.01,
+      .FOOD  => 0.03,
+      .WATER => 0.02,
       .POWER => 0.01,
 
       .ORE   => 0.01,
@@ -56,7 +56,7 @@ pub const ResType = enum( u8 )
   {
     return switch( self )
     {
-      .WORK  =>  1.00,
+      .WORK  =>  1.00, // Needs to stay positive ( hardcoded in prod EconSolver.calcWorkAccess() )
 
       .FOOD  => -0.30,
       .WATER => -0.20,

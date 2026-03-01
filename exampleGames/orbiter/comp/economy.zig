@@ -69,23 +69,20 @@ pub const Economy = struct
 
 //assemblyQueue
 
-  popCount     : u64 = 0,
-  popDelta     : i64 = 0,
-  popResAccess : f32 = 0.0,
+  popCount  : u64 = 0,   // OK
+  popDelta  : i64 = 0,   // OK
+  popAccess : f32 = 0.0, // OK
 
 
-  resCap    : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  resBank   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+  prevResCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+  resCap      : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+  resBank     : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
 
-  resProd   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  resCons   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resAccess   : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
 
-  resAccess : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
-
-
-  infBank  : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
-  infDelta : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
-
+  infBank     : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
+  infDelta    : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
 
   indBank     : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ),
   indDelta    : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ),
@@ -123,17 +120,17 @@ pub const Economy = struct
 
     inline for( 0..resTypeCount )| r |
     {
-      const resType  = ResType.fromIdx( r );
+      const resType     = ResType.fromIdx( r );
 
-      const resCount = self.resBank[ r ];
-      const resCap   = self.resCap[  r ];
+      const resCount    = self.resBank[ r ];
+      const resCap      = self.resCap[  r ];
 
-      const resProd  = self.resProd[ r ];
-      const resCons  = self.resCons[ r ];
+      const prevResProd = self.prevResProd[ r ];
+      const prevResCons = self.prevResCons[ r ];
 
-      const resAccess = self.resAccess[ r ];
+      const resAccess   = self.resAccess[ r ];
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t[ +{d}\t/ -{d}\t] ( {d:.3} )", .{ @tagName( resType ), resCount, resCap, resProd, resCons, resAccess });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t[ +{d}\t/ -{d}\t] ( {d:.3} )", .{ @tagName( resType ), resCount, resCap, prevResProd, prevResCons, resAccess });
     }
   }
   pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
@@ -330,7 +327,7 @@ pub const Economy = struct
 
   pub fn logPopCount( self : *const Economy ) void
   {
-    def.log( .INFO, 0, @src(), "Population\t: {d} / {d}\t[ {d} ]\t( {d:.3} )", .{ self.popCount, self.getPopCap(), self.popDelta, self.popResAccess });
+    def.log( .INFO, 0, @src(), "Population\t: {d} / {d}\t[ {d} ]\t( {d:.3} )", .{ self.popCount, self.getPopCap(), self.popDelta, self.popAccess });
   }
 
   pub fn getPopCap( self : *const Economy ) u64
@@ -402,8 +399,8 @@ pub const Economy = struct
 
     inline for( 0..resTypeCount )| r |
     {
-      self.resProd[ r ] = 0;
-      self.resCons[ r ] = 0;
+      self.prevResProd[ r ] = 0;
+      self.prevResCons[ r ] = 0;
     }
     inline for( 0..infTypeCount )| i |
     {

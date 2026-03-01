@@ -22,14 +22,14 @@ const IndInstance = ind.IndInstance;
 
 
 // Pop growth factor ( x4 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
-const WEEKLY_POP_GROWTH  : f32 = 1.000266631;
+const WEEKLY_POP_GROWTH  : f32 = 0.000266631;
 
 // Pop decay factors
-const WEEKLY_PARCH_RATE  : f32 = 0.25;
-const WEEKLY_STARVE_RATE : f32 = 0.10;
-const WEEKLY_FREEZE_RATE : f32 = 0.05;
+const WEEKLY_PARCH_RATE  : f32 = 0.15;
+const WEEKLY_STARVE_RATE : f32 = 0.05;
+const WEEKLY_FREEZE_RATE : f32 = 0.01;
 
-const MIN_WORK_RATE      : f32 = 0.25;
+const MIN_WORK_RATE      : f32 = 0.20;
 
 
 pub inline fn resolveEcon( econ : *ecn.Economy ) void
@@ -44,54 +44,79 @@ const EconSolver = struct
 {
   econ : *ecn.Economy,
 
-  prevPopCount : f32 = 0.0,
-  nextPopCount : f32 = 0.0,
+  prevPopCount  : f32 = 0.0,
+  nextPopCount  : f32 = 0.0,
 
-  availableWork : f32 = 0.0,
+  // Global consumption-production throttles / multipliers
+  maxGenAccess  : f32 = 1.0,
+  maxPopAccess  : f32 = 1.0,
+  maxIndAccess  : f32 = 1.0,
+  maxIndActivity: f32 = 1.0,
 
-  // Global consumption-production throttle / multiplier
-  maxPopAccess   : f32 = 1.0,
-  maxResAccess   : f32 = 1.0,
-  maxIndActivity : f32 = 1.0,
+  sunshineModifier : f32 = 1.0,
+
 
   // NOTE : Remove redundant zeroing if this becomes a performance bottleneck
 
-  popResCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  popResProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  maxPopCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  maxPopProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  indResCons : [ indTypeCount ][ resTypeCount ]u64 = std.mem.zeroes([ indTypeCount ][ resTypeCount ]u64 ),
-  indResProd : [ indTypeCount ][ resTypeCount ]u64 = std.mem.zeroes([ indTypeCount ][ resTypeCount ]u64 ),
+  maxIndCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  maxIndProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  popResAccess : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Population resource access ratios
-  indResAccess : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Industrial resource access ratios ( aggregated )
-  indActivity  : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ), // Industrial activity ratios
+  maxGenCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  maxGenProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  totResCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // Final resources consumption
-  totResProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // Final resources production
+
+//genPopResCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+//genPopResProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+//genIndResCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+//genIndResProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+  popAccess   : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Population resource access ratios
+  indAccess   : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Industrial resource access ratios ( aggregated )
+  genAccess   : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Aggregated resource access ratios
+
+  indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ), // Industrial activity ratios
+
+  perIndCons  : [ indTypeCount ][ resTypeCount ]u64 = std.mem.zeroes([ indTypeCount ][ resTypeCount ]u64 ),
+  perIndProd  : [ indTypeCount ][ resTypeCount ]u64 = std.mem.zeroes([ indTypeCount ][ resTypeCount ]u64 ),
+
+
+  finalPopCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  finalPopProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+  finalIndCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  finalIndProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+  finalGenCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  finalGenProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
 
   pub fn resolve( self : *EconSolver ) void
   {
-    self.initBaseState();
-    self.applyResDecay();
+    self.initBaseState();   // TODO : move the zeroing or arrays to here
+    self.applyResDecay();   // Decays stored resources from previous weeks
 
-    self.calcPopNeeds();    // Also increment available work
-    self.calcIndNeeds();    // Also computes max potential prod
+    self.calcPopNeeds();    // Computes population potential prod and cons
+    self.calcIndNeeds();    // Computes industrial potential prod and cons
 
-    self.calcResAccess();   // Decide how res are allocated   TODO : add access-tweaking policies
+    self.calcResAccess();   // Computes non-WORK resource access     TODO : add access-tweaking policies / modifiers
+    self.applyWorkWeek();   // Precomputes current WORK production to inform industrial WORK access
+    self.calcWorkAccess();  // Computes WORK access
 
-    self.calcIndActivity(); // The final efficiency of each industry type
+    self.calcIndActivity(); // Computes the final activity rate of each industry
 
-    self.applyResDelta();   // Update res based on access
-    self.applyPopDelta();   // Update pop based on access
+    self.applyResDelta();   // Update resources based on access
+    self.applyPopDelta();   // Update population based on access
   }
 
 
   fn initBaseState( self : *EconSolver ) void
   {
-    self.prevPopCount  = @floatFromInt( self.econ.popCount );
-    self.nextPopCount  = self.prevPopCount;
-    self.availableWork = self.prevPopCount * res.ResType.WORK.getPerPopDelta();
+    self.prevPopCount = @floatFromInt( self.econ.popCount );
+    self.nextPopCount = self.prevPopCount;
   }
 
   fn applyResDecay( self : *EconSolver ) void
@@ -116,19 +141,19 @@ const EconSolver = struct
       const resType = ResType.fromIdx( r );
       const delta   = self.prevPopCount * resType.getPerPopDelta();
 
-      if( delta > def.EPS )
+      if( delta > def.EPS ) // If res produced
       {
         const maxProd : u64 = @intFromFloat( @floor( delta ));
 
-        self.popResProd[ r ]  = maxProd;
-        self.totResProd[ r ] += maxProd;
+        self.maxPopProd[ r ]  = maxProd;
+        self.maxGenProd[ r ] += maxProd;
       }
-      else if( delta < -def.EPS )
+      else if( delta < -def.EPS ) // If res consumed
       {
         const maxCons : u64 = @intFromFloat( @floor( -delta ));
 
-        self.popResCons[ r ]  = maxCons;
-        self.totResCons[ r ] += maxCons;
+        self.maxPopCons[ r ]  = maxCons;
+        self.maxGenCons[ r ] += maxCons;
       }
     }
   }
@@ -149,11 +174,13 @@ const EconSolver = struct
           const maxProd = self.econ.indBank[ i ] * inst.getResProdPerInd( resType );
           const maxCons = self.econ.indBank[ i ] * inst.getResConsPerInd( resType );
 
-          self.indResProd[ i ][ r ] = maxProd;
-          self.indResCons[ i ][ r ] = maxCons;
+          self.perIndProd[ i ][ r ] = maxProd;
+          self.maxIndProd[ r ]     += maxProd;
+          self.maxGenProd[ r ]     += maxProd;
 
-          self.totResProd[ r ] += maxProd;
-          self.totResCons[ r ] += maxCons;
+          self.perIndCons[ i ][ r ] = maxCons;
+          self.maxIndCons[ r ]     += maxCons;
+          self.maxGenCons[ r ]     += maxCons;
         }
       }
     }
@@ -161,27 +188,82 @@ const EconSolver = struct
 
   fn calcResAccess( self : *EconSolver ) void
   {
-    // NOTE : very iffy bypass but needed for now
-    self.econ.addResCount( .WORK, @intFromFloat( @floor( self.availableWork )));
-
-    inline for( 0..resTypeCount )| r |
+    // Skips WORK res, as it is calc later
+    inline for( 0..resTypeCount )| r |{ if( ResType.fromIdx( r ) != .WORK )
     {
       const available : f32 = @floatFromInt( self.econ.resBank[ r ]);
-      const required  : f32 = @floatFromInt( self.totResCons[   r ]);
+      const required  : f32 = @floatFromInt( self.maxGenCons[ r ]);
+
 
       if( @abs( required ) < def.EPS )
       {
-        self.popResAccess[ r ] = 1.0;
-        self.indResAccess[ r ] = 1.0;
+        self.popAccess[ r ] = self.maxPopAccess;
+        self.indAccess[ r ] = self.maxIndAccess;
+        self.genAccess[ r ] = self.maxGenAccess;
       }
-      else // TODO : Tweak population vs industry access ratio here if need be
+      else
       {
-        const access = @min( self.maxResAccess, available / required );
+        const maxAccess = available / required;
 
-        self.econ.resAccess[ r ] = access;
-        self.popResAccess[ r ]   = access;
-        self.indResAccess[ r ]   = access;
+        // TODO : Tweak population vs industry access ratio here if need be
+
+        // If res is needed by EITHER pop or ind ( not both ), have mark the other as fully supplied
+        if( self.maxPopCons[ r ] > 0 ){ self.popAccess[ r ] = @min( self.maxPopAccess, maxAccess ); }
+        else                          { self.popAccess[ r ] =       self.maxPopAccess;              }
+
+        if( self.maxIndCons[ r ] > 0 ){ self.indAccess[ r ] = @min( self.maxIndAccess, maxAccess ); }
+        else                          { self.indAccess[ r ] =       self.maxIndAccess;              }
+
+        self.genAccess[ r ] = @min( self.maxGenAccess, maxAccess ); // Global res access
       }
+    }}
+  }
+
+  fn applyWorkWeek( self : *EconSolver ) void
+  {
+    const workIdx    = ResType.WORK.toIdx();
+
+    var minPopAccess = self.maxPopAccess;
+
+    inline for( 0..resTypeCount )| r |{ if( ResType.fromIdx( r ) != .WORK )
+    {
+      minPopAccess = @min( minPopAccess, self.popAccess[ r ]);
+    }}
+
+    const popWorkRate = @max( minPopAccess, MIN_WORK_RATE ); // Clamping pop work rates to a minimum to prevent total supply chain collapse
+
+    const rawWorkProd   : f32 = @floatFromInt( self.maxPopProd[ workIdx ]);
+    const weeklyPopWork : u64 = @intFromFloat( @floor( popWorkRate * rawWorkProd ));
+
+
+    // TODO : If some industries produce work, produce it here
+
+
+    self.finalPopProd[ workIdx ] = weeklyPopWork;
+    self.finalGenProd[ workIdx ] = weeklyPopWork;
+  }
+
+  fn calcWorkAccess( self : *EconSolver ) void // Like calcResAccess(), but only for work, since we need other res to calculate work prod
+  {
+    const workIdx  = ResType.WORK.toIdx();
+
+    const available : f32 = @floatFromInt( self.finalPopProd[ workIdx ]);
+    const required  : f32 = @floatFromInt( self.maxGenCons[   workIdx ]);
+
+
+    self.popAccess[ workIdx ] = self.maxPopAccess; // POP will never need work, so access is maxed
+
+    if( @abs( required ) < def.EPS ) // If WORK is somehow not needed, mark it as fully supplied
+    {
+      self.indAccess[ workIdx ] = self.maxIndAccess;
+      self.genAccess[ workIdx ] = self.maxGenAccess;
+    }
+    else
+    {
+      const maxAccess = available / required;
+
+      self.indAccess[ workIdx ] = @min( self.maxIndAccess, maxAccess );
+      self.genAccess[ workIdx ] = @min( self.maxGenAccess, maxAccess );
     }
   }
 
@@ -191,9 +273,9 @@ const EconSolver = struct
     {
       var activity : f32 = self.maxIndActivity;
 
-      if( self.econ.indBank[ i ] == 0 )
+      if( self.econ.indBank[ i ] == 0 ) // Skips absent industries
       {
-        activity  = 0.0;
+        activity = 0.0;
       }
       else
       {
@@ -201,108 +283,126 @@ const EconSolver = struct
         const inst    = IndInstance.initByType( indType );
 
         // Solar modifier
-        if( inst.powerSrc == .SOLAR )
+        if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
         {
-          activity  = @min( activity , self.econ.sunshine );
+          activity = @min( activity, self.econ.sunshine * self.sunshineModifier );
         }
 
         // Resource modifiers
-        inline for( 0..resTypeCount )| r |{ if( self.indResCons[ i ][ r ] != 0 )
+        inline for( 0..resTypeCount )| r |
         {
-          activity  = @min( activity , self.indResAccess[ r ]);
-        }}
+          if( self.perIndCons[ i ][ r ] != 0 ) // Non consumed resources do not affect industrial activity
+          {
+            activity = @min( activity, self.indAccess[ r ]);
+          }
+        }
       }
-
-      self.indActivity[ i ]      = activity ;
-      self.econ.indActivity[ i ] = activity ;
+      self.indActivity[ i ] = activity ;
     }
   }
 
   fn applyResDelta( self : *EconSolver ) void
   {
-    // Clearing to fill with ratio-affected values instead
-    self.totResProd = std.mem.zeroes([ resTypeCount ]u64 );
-    self.totResCons = std.mem.zeroes([ resTypeCount ]u64 );
-
     inline for( 0..resTypeCount )| r |
     {
-      const popRatio = self.popResAccess[ r ];
+      // Iterating over population
+      const popResAccess = self.popAccess[ r ];
 
-      if( popRatio > def.EPS )
+      if( popResAccess > def.EPS )
       {
-        const rawPopProd : f32 = @floatFromInt( self.popResProd[ r ]);
-        const rawPopCons : f32 = @floatFromInt( self.popResCons[ r ]);
+        // Production ( WORK )
+        const rawPopProd   : f32 = @floatFromInt( self.maxPopProd[ r ]);
+        const finalPopProd : u64 = @intFromFloat( @floor( rawPopProd * popResAccess ));
 
-        self.popResProd[ r ] = @intFromFloat( @floor( rawPopProd * popRatio ));
-        self.popResCons[ r ] = @intFromFloat( @floor( rawPopCons * popRatio ));
+        self.finalPopProd[ r ]  = finalPopProd;
+        self.finalGenProd[ r ] += finalPopProd;
 
-        self.totResProd[ r ] += self.popResProd[ r ];
-        self.totResCons[ r ] += self.popResCons[ r ];
+        // Consumption ( FOOD, WATER, POWER )
+        const rawPopCons   : f32 = @floatFromInt( self.maxPopCons[ r ]);
+        const finalPopCons : u64 = @intFromFloat( @floor( rawPopCons * popResAccess ));
+
+        self.finalPopCons[ r ]  = finalPopCons;
+        self.finalGenCons[ r ] += finalPopCons;
       }
 
+      // Iterating over industry
       inline for( 0..indTypeCount )| i |
       {
-        const indRatio = self.indActivity[ i ];
+        const indActivity = self.indActivity[ i ];
 
-        if( indRatio > def.EPS )
+        if( indActivity > def.EPS )
         {
-          const rawIndProd : f32 = @floatFromInt( self.indResProd[ i ][ r ]);
-          const rawIndCons : f32 = @floatFromInt( self.indResCons[ i ][ r ]);
+          // Production
+          const rawIndProd   : f32 = @floatFromInt( self.perIndProd[ i ][ r ]);
+          const finalIndProd : u64 = @intFromFloat( @floor( rawIndProd * indActivity ));
 
-          self.indResProd[ i ][ r ] = @intFromFloat( @floor( rawIndProd * indRatio ));
-          self.indResCons[ i ][ r ] = @intFromFloat( @floor( rawIndCons * indRatio ));
+          self.finalIndProd[ r ] += finalIndProd;
+          self.finalGenProd[ r ] += finalIndProd;
 
-          self.totResProd[ r ] += self.indResProd[ i ][ r ];
-          self.totResCons[ r ] += self.indResCons[ i ][ r ];
+          // Consumption
+          const rawIndCons   : f32 = @floatFromInt( self.perIndCons[ i ][ r ]);
+          const finalIndCons : u64 = @intFromFloat( @floor( rawIndCons * indActivity ));
+
+          self.finalIndCons[ r ] += finalIndCons;
+          self.finalGenCons[ r ] += finalIndCons;
         }
       }
 
+      // Updating economy
+      const econ = self.econ;
+
+      econ.prevResProd[ r ] = self.finalGenProd[ r ];
+      econ.prevResCons[ r ] = self.finalGenCons[ r ];
+
       const resType = ResType.fromIdx( r );
 
-      self.econ.addResCount( resType, self.totResProd[ r ]);
-      self.econ.subResCount( resType, self.totResCons[ r ]);
-
-      self.econ.resProd[ r ] += self.totResProd[ r ];
-      self.econ.resCons[ r ] += self.totResCons[ r ];
+      self.econ.addResCount( resType, self.finalGenProd[ r ]);
+      self.econ.subResCount( resType, self.finalGenCons[ r ]);
     }
   }
 
 
   fn applyPopDelta( self : *EconSolver ) void
   {
-    var foodAccess  : f32 = self.maxPopAccess;
-    var waterAccess : f32 = self.maxPopAccess;
-    var powerAccess : f32 = self.maxPopAccess;
+    // NOTE : Iterated over pop-consumed res only
 
+    // FOOD access
     const foodIdx  = ResType.FOOD.toIdx();
-    const waterIdx = ResType.WATER.toIdx();
-    const powerIdx = ResType.POWER.toIdx();
+    var foodAccess = self.maxPopAccess;
 
-    if( self.popResCons[ foodIdx ] > 0 )
+    if( self.finalPopCons[ foodIdx ] > 0 )
     {
-      foodAccess = @min( foodAccess, self.popResAccess[ foodIdx ]);
+      foodAccess = @min( foodAccess, self.popAccess[ foodIdx ]);
     }
-    if( self.popResCons[ waterIdx ] > 0 )
-    {
-      waterAccess = @min( waterAccess, self.popResAccess[ waterIdx ]);
-    }
-    if( self.popResCons[ powerIdx ] > 0 )
-    {
-      powerAccess = @min( powerAccess, self.popResAccess[ powerIdx ]);
-    }
-
-
     if( foodAccess < 1.0 )
     {
       def.qlog( .WARN, 0, @src(), "Population is experiencing food shortages !" );
 
       self.nextPopCount *= 1.0 - ( WEEKLY_STARVE_RATE * ( 1.0 - foodAccess ));
     }
+
+    // WATER access
+    const waterIdx  = ResType.WATER.toIdx();
+    var waterAccess = self.maxPopAccess;
+
+    if( self.finalPopCons[ waterIdx ] > 0 )
+    {
+      waterAccess = @min( waterAccess, self.popAccess[ waterIdx ]);
+    }
     if( waterAccess < 1.0 )
     {
       def.qlog( .WARN, 0, @src(), "Population is experiencing water shortages !" );
 
       self.nextPopCount *= 1.0 - ( WEEKLY_PARCH_RATE * ( 1.0 - waterAccess ));
+    }
+
+    // POWER access
+    const powerIdx  = ResType.POWER.toIdx();
+    var powerAccess = self.maxPopAccess;
+
+    if( self.finalPopCons[ powerIdx ] > 0 )
+    {
+      powerAccess = @min( powerAccess, self.popAccess[ powerIdx ]);
     }
     if( powerAccess < 1.0 )
     {
@@ -311,17 +411,32 @@ const EconSolver = struct
       self.nextPopCount *= 1.0 - ( WEEKLY_FREEZE_RATE * ( 1.0 - powerAccess ));
     }
 
+    def.log( .DEBUG, 0, @src(), "Pop access : F = {d:.3} - W = {d:.3} - P = {d:.3}", .{ foodAccess, waterAccess, powerAccess });
+
+
+    self.nextPopCount = @floor( self.nextPopCount ); // Rounding down deaths
+
+    // Applying growth to non-shorted population ( POWER is ignored )
     if( foodAccess > 1.0 - def.EPS and waterAccess > 1.0 - def.EPS)
     {
-      self.nextPopCount *= WEEKLY_POP_GROWTH;
+      const suppliedPopRatio = @min( powerAccess, waterAccess );
+
+      self.nextPopCount += suppliedPopRatio * WEEKLY_POP_GROWTH * self.nextPopCount;
+      self.nextPopCount  = @ceil( self.nextPopCount );
     }
 
-    const popCap           : f32 = @floatFromInt( self.econ.getPopCap() );
-    const prevPopCount_i64 : i64 = @intFromFloat( @ceil(           self.prevPopCount               ));
-    const nextPopCount_i64 : i64 = @intFromFloat( @ceil( def.clmp( self.nextPopCount, 0.0, popCap )));
+    const popCap : f32 = @floatFromInt( self.econ.getPopCap() );
 
-    self.econ.popCount     = @intCast( nextPopCount_i64 );
-    self.econ.popDelta     = nextPopCount_i64 - prevPopCount_i64;
-    self.econ.popResAccess = @min( foodAccess, waterAccess, powerAccess );
+    const prevPopCount_i64 : i64 = @intFromFloat(           self.prevPopCount               );
+    const nextPopCount_i64 : i64 = @intFromFloat( def.clmp( self.nextPopCount, 0.0, popCap ));
+
+    // Updating economy
+    const econ = self.econ;
+
+    econ.popCount  = @intCast( nextPopCount_i64 );
+    econ.popDelta  = nextPopCount_i64 - prevPopCount_i64;
+    econ.popAccess = @min( foodAccess, waterAccess, powerAccess );
+
+  //econ.popCount = 1000; // NOTE : DEBUG
   }
 };
