@@ -74,8 +74,12 @@ pub const Economy = struct
   popAccess : f32 = 0.0, // OK
 
 
-  prevResProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
-  prevResCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+  prevResProd  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+  prevResCons  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+
+//prevResReq   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // TODO : use me
+//prevResDecay : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // TODO : use me
+
   resCap      : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
   resBank     : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
 

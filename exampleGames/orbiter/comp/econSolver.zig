@@ -91,7 +91,7 @@ const EconSolver = struct
   pub fn resolve( self : *EconSolver ) void
   {
     self.initBaseState();   // TODO : move the zeroing or arrays to here
-  //self.applyResDecay();   // Decays stored resources from previous weeks    TODO : reactivate me
+    self.applyResDecay();   // Decays stored resources from previous weeks    TODO : reactivate me
 
     self.calcPopNeeds();    // Computes population potential prod and cons
     self.calcIndNeeds();    // Computes industrial potential prod and cons
@@ -111,6 +111,27 @@ const EconSolver = struct
   {
     self.prevPopCount = @floatFromInt( self.econ.popCount );
     self.nextPopCount = self.prevPopCount;
+
+    var econ = self.econ;
+
+    // Zeroing out the previous metrics
+    inline for( 0..resTypeCount )| r |
+    {
+      econ.prevResProd[ r ] = 0;
+      econ.prevResCons[ r ] = 0;
+
+      econ.resAccess[ r ] = 0;
+    }
+    inline for( 0..infTypeCount )| i |
+    {
+      econ.infDelta[ i ] = 0;
+    }
+    inline for( 0..indTypeCount )| i |
+    {
+      econ.indDelta[ i ] = 0;
+
+      econ.indActivity[ i ] = 0.0;
+    }
   }
 
   fn applyResDecay( self : *EconSolver ) void
@@ -122,8 +143,10 @@ const EconSolver = struct
         const resType = ResType.fromIdx( r );
 
         const amount_f32 : f32 = @floatFromInt( self.econ.resBank[ r ]);
+        const amount_u64 : u64 = @intFromFloat( @floor( amount_f32 * resType.getDecayRate() ));
 
-        self.econ.resBank[ r ] -= @intFromFloat( @floor( amount_f32 * resType.getDecayRate() ));
+        self.econ.resBank[     r ] -= amount_u64;
+        self.econ.prevResCons[ r ] += amount_u64;
       }
     }
   }
@@ -283,7 +306,7 @@ const EconSolver = struct
 
     const workIdx = ResType.WORK.toIdx();
 
-    const available : f32 = @floatFromInt( self.finalPopProd[ workIdx ] + self.econ.resBank[ workIdx ]); // TODO : remove resBank use when debug over
+    const available : f32 = @floatFromInt( self.finalPopProd[ workIdx ]); // + self.econ.resBank[ workIdx ]);
     const required  : f32 = @floatFromInt( self.maxGenCons[   workIdx ]);
 
     def.log( .CONT, 0, @src(), "WORK  \t: {d}\t-{d}", .{ available, required });
@@ -329,18 +352,8 @@ const EconSolver = struct
       }
       else
       {
-        const indType = IndType.fromIdx( i );
-        const inst    = IndInstance.initByType( indType );
+        // NOTE : Sunshine ratio effect moved to maxResProd phase, to avoid planning for impossible supplies
 
-        // Solar modifier
-        if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
-        {
-          const factor = self.econ.sunshine * self.sunshineModifier;
-
-          activity = @min( activity, factor );
-        }
-
-        // Resource modifiers
         inline for( 0..resTypeCount )| r |
         {
           if( self.perIndCons[ i ][ r ] != 0 ) // Non consumed resources do not affect industrial activity
@@ -350,11 +363,6 @@ const EconSolver = struct
         }
       }
       self.indActivity[ i ] = activity ;
-
-      if( activity < 0.9 )
-      {
-        def.log( .CONT, 0, @src(), "@ Low {s} activity\t: {d:.6}", .{ @tagName( IndType.fromIdx( i )), activity });
-      }
 
       // Updating economy metrics
       self.econ.indActivity[ i ] = activity;
@@ -496,8 +504,8 @@ const EconSolver = struct
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d}\t( +{d}\t-{d} )", .{ @tagName( ResType.fromIdx( r )), econ.resBank[ r ], self.finalGenProd[ r ], self.finalGenCons[ r ] });
 
-      econ.prevResProd[ r ] = self.finalGenProd[ r ];
-      econ.prevResCons[ r ] = self.finalGenCons[ r ];
+      econ.prevResProd[ r ] += self.finalGenProd[ r ];
+      econ.prevResCons[ r ] += self.finalGenCons[ r ];
 
       econ.addResCount( resType, self.finalGenProd[ r ]);
       econ.subResCount( resType, self.finalGenCons[ r ]);

@@ -40,7 +40,7 @@ pub const ResType = enum( u8 )
   {
     return switch( self )
     {
-      .WORK  => 0.00, // NOTE : DO NOT CONFUSE WITH getPerPopDelta() VALUE
+      .WORK  => 1.00, // NOTE : DO NOT CONFUSE WITH getPerPopDelta() VALUE
                       //        Imagine wasting time on that bug... couldn't be me frfrf
       .FOOD  => 0.03,
       .WATER => 0.02,
