@@ -162,7 +162,7 @@ pub const Economy = struct
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "Tried to remove {d} res of type {s} from economy, but only had {d} left", .{ value, @tagName( resType ), count });
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} res of type {s} from economy, but only had {d} left", .{ value, @tagName( resType ), count });
     }
   }
 
@@ -212,7 +212,7 @@ pub const Economy = struct
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "Tried to remove {d} inf of type {s} from economy, but only had {d} left", .{ value, @tagName( infType ), count });
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} inf of type {s} from economy, but only had {d} left", .{ value, @tagName( infType ), count });
     }
   }
 
@@ -229,7 +229,7 @@ pub const Economy = struct
   {
     if( !InfType.canBeBuiltAt( infType, self.location, self.hasAtmosphere ))
     {
-      def.log( .INFO, 0, @src(), "You are not allowed to build infrastructure of type {} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
+      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
       return false;
     }
 
@@ -243,7 +243,7 @@ pub const Economy = struct
 
     if( availArea < neededArea )
     {
-      def.log( .INFO, 0, @src(), "Not enough space to build infrastructure of type {} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
+      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
       return false;
     }
     return true;
@@ -287,7 +287,7 @@ pub const Economy = struct
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indType ), count });
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indType ), count });
     }
   }
 
@@ -421,6 +421,7 @@ pub const Economy = struct
   {
     self.sunshine = sunshine;
     self.resetDeltas();
+  //self.updateResCaps(); // TODO : add me
 
     ecnSlvr.resolveEcon( self );
 
