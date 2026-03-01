@@ -7,7 +7,7 @@ pub const resTypeCount = @typeInfo( ResType ).@"enum".fields.len;
 pub const ResType = enum( u8 )
 {
   pub inline fn toIdx( self : ResType ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) ResType { return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn fromIdx( i : usize ) ResType  { return @enumFromInt( @as( u8, @intCast( i ))); }
 
 //CASH,
   WORK, // Each pop generate 1 work per cycle
@@ -22,7 +22,7 @@ pub const ResType = enum( u8 )
 
   pub inline fn getMass( self : ResType ) f32
   {
-   return switch( self )
+    return switch( self )
     {
       .WORK  => 0.0,
 
@@ -36,19 +36,38 @@ pub const ResType = enum( u8 )
     };
   }
 
-//pub inline fn canBeAccumulated( self : ResType ) bool // If this resource can be stored for more than one cycle
-//{
-// return switch( self )
-//  {
-//    .WORK  => false,
-//
-//    else   => true,
-//  };
-//}
+  pub inline fn getDecayRate( self : ResType ) f32
+  {
+    return switch( self )
+    {
+      .WORK  => 0.00,
 
+      .FOOD  => 0.05,
+      .WATER => 0.01,
+      .POWER => 0.01,
+
+      .ORE   => 0.01,
+      .INGOT => 0.02,
+      .PART  => 0.03,
+    };
+  }
+
+  pub inline fn getPerPopDelta( self : ResType ) f32
+  {
+    return switch( self )
+    {
+      .WORK  =>  1.00,
+
+      .FOOD  => -0.30,
+      .WATER => -0.20,
+      .POWER => -0.10,
+
+      .ORE   => -0.00,
+      .INGOT => -0.00,
+      .PART  => -0.00,
+    };
+  }
 };
-
-//pub const Cash = f64;
 
 pub const ResInstance = struct
 {

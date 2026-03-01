@@ -99,17 +99,20 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   // ================================ ECONOMIES ================================
 
-  pub fn initEcon( self : *BodyComp, econLoc : ecn.EconLoc ) void
+  pub fn initEcon( self : *BodyComp, loc : ecn.EconLoc ) void
   {
-    const econ : *ecn.Economy = &self.econArray[ econLoc.toIdx() ];
+    var econ : ecn.Economy = undefined;
 
-    econ.location = econLoc;
-    econ.isActive = true;
-
-    if( econLoc == .GROUND )
+    if( loc == .GROUND ) // TODO : add useableLand modifier ( ex : what proportion is solid ground )
     {
-      econ.maxAvailArea = @intFromFloat( @floor( self.getSurfaceArea())); // TODO : add useableLand modifier ( ex : what proportion is solid ground )
+      econ = ecn.Economy.newEcon( loc, @intFromFloat( @floor( self.getSurfaceArea() )), true ); // TODO : Stop giving all GROUND an atmosphere
     }
+    else
+    {
+      econ = ecn.Economy.newEcon( loc, std.math.maxInt( u64 ), true );
+    }
+
+    self.econArray[ loc.toIdx() ] = econ;
   }
 
   pub fn tickEcons( self : *BodyComp, selfOrbit : *const orb.OrbitComp, orbitedPos : def.Vec2, starPos : def.Vec2 ) void
@@ -164,6 +167,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
         econ.popCount = value * 100;
         econ.debugSetResCounts( value * 100 );
         econ.debugSetInfCounts( value );
+        econ.debugSetIndCounts( value );
       }
     }
   }

@@ -2,21 +2,27 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const inf = @import( "infrastructure.zig" );
+const ind = @import( "industry.zig" );
 const res = @import( "resource.zig" );
 
 const ecnSlvr = @import( "econSolver.zig" );
-const popSlvr = @import( "popSolver.zig" );
 
 
+const resTypeCount = res.resTypeCount;
+const infTypeCount = inf.infTypeCount;
+const indTypeCount = ind.indTypeCount;
 
-pub const resTypeCount = res.resTypeCount;
-pub const infTypeCount = inf.infTypeCount;
+const ResType = res.ResType;
+const IndType = ind.IndType;
+const InfType = inf.InfType;
 
-pub const ResType = res.ResType;
-pub const InfType = inf.InfType;
+const ResInstance = res.ResInstance;
+const IndInstance = ind.IndInstance;
+const InfInstance = inf.InfInstance;
 
-pub const ResInstance = res.ResInstance;
-pub const InfInstance = inf.InfInstance;
+
+const MIN_RES_CAP = 1000;
+
 
 
 pub const econLocCount = @typeInfo( EconLoc ).@"enum".fields.len;
@@ -49,40 +55,67 @@ pub const EconLoc = enum( u8 )
 };
 
 
-
-const RES_CAP : u64 = 99_999; // TODO : change for warehouse system via infra
-
-
-
 pub const Economy = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  location      : EconLoc,
-  isActive      : bool = false,
-  hasAtmosphere : bool = false,
-  sunshine      : f32 = 1.0,
-  maxAvailArea  : u64 = 0,
+  location     : EconLoc,
+  maxAvailArea : u64 = 0,
+
+  hasAtmo  : bool = false,
+  isActive : bool = false,
+
+  sunshine : f32  = 0.0,
 
 //assemblyQueue
 
-  popCount : u64 = 0,
-  resBank  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  popCount     : u64 = 0,
+  popDelta     : i64 = 0,
+  popResAccess : f32 = 0.0,
+
+
+  resCap    : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resBank   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+  resProd   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resCons   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+  resAccess : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
+
+
   infBank  : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
-
-  popDelta : i64 = 0,
-
-  resProd  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  resCons  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-
   infDelta : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
 
-  popResAccess : f32 = 0.0,
-  resAccess    : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
-  infActivity  : [ infTypeCount ]f32 = std.mem.zeroes([ infTypeCount ]f32 ),
+
+  indBank     : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ),
+  indDelta    : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ),
+  indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ),
 
 
   // ================================ RESSOURCES ================================
+
+  pub inline fn newEcon( loc : EconLoc, area : u64, atmo : bool ) Economy
+  {
+    var econ : Economy = .{ .location = loc, .maxAvailArea = area, .hasAtmo = atmo, .isActive = true };
+
+    inline for( 0..resTypeCount )| r |
+    {
+      econ.resCap[ r ] = MIN_RES_CAP;
+    }
+
+    return econ;
+  }
+
+  pub inline fn getResCap( self : *const Economy, resType : ResType ) u64
+  {
+    return self.resCap[ resType.toIdx() ];
+  }
+  pub inline fn setResCap( self : *Economy, resType : ResType, value : u64 ) void
+  {
+    self.resCap[ resType.toIdx() ] = value;
+  }
+  // TODO : add updateResCap(), which updates it based on infra
+
 
   pub inline fn logResCounts(  self : *const Economy ) void
   {
@@ -91,34 +124,34 @@ pub const Economy = struct
     inline for( 0..resTypeCount )| r |
     {
       const resType  = ResType.fromIdx( r );
-      const resCount = self.resBank[    r ];
-      const resProd  = self.resProd[    r ];
-      const resCons  = self.resCons[    r ];
-      const resRatio = self.resAccess[  r ];
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t[ +{d}\t/ -{d}\t] ( {d:.3} )", .{ @tagName( resType ), resCount, resProd, resCons, resRatio });
+      const resCount = self.resBank[ r ];
+      const resCap   = self.resCap[  r ];
+
+      const resProd  = self.resProd[ r ];
+      const resCons  = self.resCons[ r ];
+
+      const resAccess = self.resAccess[ r ];
+
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t[ +{d}\t/ -{d}\t] ( {d:.3} )", .{ @tagName( resType ), resCount, resCap, resProd, resCons, resAccess });
     }
   }
-
   pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
   {
     return self.resBank[ resType.toIdx() ];
   }
   pub inline fn setResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
-    const tmp = value;
+    const cap = self.getResCap( resType );
 
-    if( tmp > RES_CAP ){ tmp = RES_CAP; }
-
-    self.resBank[ resType.toIdx() ] = tmp;
+    self.resBank[ resType.toIdx() ] = @min( value, cap );
   }
   pub inline fn addResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
-    var tmp = self.resBank[ resType.toIdx() ] + value;
+    const cap = self.getResCap( resType );
+    const new = self.resBank[ resType.toIdx() ] + value;
 
-    if( tmp > RES_CAP ){ tmp = RES_CAP; }
-
-    self.resBank[ resType.toIdx() ] = tmp;
+    self.resBank[ resType.toIdx() ] = @min( new, cap );
   }
   pub inline fn subResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
@@ -145,16 +178,16 @@ pub const Economy = struct
 
   pub inline fn logInfCounts(  self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging infrastructure counts and activity ratios :" );
+    def.qlog( .INFO, 0, @src(), "Logging infrastructure counts and bonuses :" );
 
     inline for( 0..infTypeCount )| i |
     {
       const infType  = InfType.fromIdx(  i );
       const infCount = self.infBank[     i ];
       const infDelta = self.infDelta[    i ];
-      const infRatio = self.infActivity[ i ];
+      const infBonus = infCount * infType.getCapacity();
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d}\t[ {d} ]\t( {d:.3} )", .{ @tagName( infType ), infCount, infDelta, infRatio });
+      def.log( .CONT, 0, @src(), "{s}\t: {d}\t[ {d} ]\t( {d} )", .{ @tagName( infType ), infCount, infDelta, infBonus });
     }
   }
 
@@ -164,19 +197,11 @@ pub const Economy = struct
   }
   pub inline fn setInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
-    const tmp = value;
-
- //if( tmp > RES_CAP ){ tmp = RES_CAP; }
-
-    self.infBank[ infType.toIdx() ] = tmp;
+    self.infBank[ infType.toIdx() ] = value;
   }
   pub inline fn addInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
-    const tmp = self.infBank[ infType.toIdx() ] + value;
-
- //if( tmp > RES_CAP ){ tmp = RES_CAP; }
-
-    self.infBank[ infType.toIdx() ] = tmp;
+    self.infBank[ infType.toIdx() ] += value;
   }
   pub inline fn subInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
@@ -192,19 +217,10 @@ pub const Economy = struct
 
   pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
   {
-    self.infBank[ InfType.HOUSING.toIdx()     ] = value * 100;
-
-    self.infBank[ InfType.AGRONOMIC.toIdx()   ] = value * 35;
-    self.infBank[ InfType.HYDROPONIC.toIdx()  ] = value * 35;
-
-    self.infBank[ InfType.WATER_PLANT.toIdx() ] = value * 50;
-    self.infBank[ InfType.SOLAR_PLANT.toIdx() ] = value * 65;
-
-    self.infBank[ InfType.PROBE_MINE.toIdx()  ] = value * 0;
-    self.infBank[ InfType.GROUND_MINE.toIdx() ] = value * 80;
-    self.infBank[ InfType.REFINERY.toIdx()    ] = value * 40;
-    self.infBank[ InfType.FACTORY.toIdx()     ] = value * 20;
-    self.infBank[ InfType.ASSEMBLY.toIdx()    ] = value * 10;
+    self.infBank[ InfType.HOUSING.toIdx() ] = value * 100;
+    self.infBank[ InfType.HABITAT.toIdx() ] = value * 0;
+    self.infBank[ InfType.STORAGE.toIdx() ] = value * 100;
+    self.infBank[ InfType.BATTERY.toIdx() ] = value * 100;
   }
 
 
@@ -216,12 +232,94 @@ pub const Economy = struct
       return false;
     }
 
+    if( infType == .HABITAT )
+    {
+      return true; // TODO : check against self.maxAvailableArea
+    }
+
     const  availArea  = self.getAvailArea();
-    const  neededArea = infType.getArea() * count; // TODO : rework for f32 area
+    const  neededArea = infType.getArea() * count;
 
     if( availArea < neededArea )
     {
       def.log( .INFO, 0, @src(), "Not enough space to build infrastructure of type {} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
+      return false;
+    }
+    return true;
+  }
+
+
+  // ================================ INDUSTRY ================================
+
+  pub inline fn logIndCounts(  self : *const Economy ) void
+  {
+    def.qlog( .INFO, 0, @src(), "Logging industry counts and activity ratios :" );
+
+    inline for( 0..indTypeCount )| i |
+    {
+      const indType  = IndType.fromIdx(  i );
+      const indCount = self.indBank[     i ];
+      const indDelta = self.indDelta[    i ];
+      const indRatio = self.indActivity[ i ];
+
+      def.log( .CONT, 0, @src(), "{s}\t: {d}\t[ {d} ]\t( {d:.3} )", .{ @tagName( indType ), indCount, indDelta, indRatio });
+    }
+  }
+
+  pub inline fn getIndCount( self : *const Economy, indType : IndType ) u64
+  {
+    return self.indBank[ indType.toIdx() ];
+  }
+  pub inline fn setIndCount( self : *Economy, indType : IndType, value : u64 ) void
+  {
+    self.indBank[ indType.toIdx() ] = value;
+  }
+  pub inline fn addIndCount( self : *Economy, indType : IndType, value : u64 ) void
+  {
+    self.indBank[ indType.toIdx() ] += value;
+  }
+  pub inline fn subIndCount( self : *Economy, indType : IndType, value : u64 ) void
+  {
+    const count = @min( value, self.indBank[ indType.toIdx() ]);
+
+    self.indBank[ indType.toIdx() ] -= count;
+
+    if( value != count )
+    {
+      def.log( .WARN, 0, @src(), "Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indType ), count });
+    }
+  }
+
+  pub inline fn debugSetIndCounts(  self : *Economy, value : u64 ) void
+  {
+    self.indBank[ IndType.AGRONOMIC.toIdx()   ] = value * 35;
+    self.indBank[ IndType.HYDROPONIC.toIdx()  ] = value * 35;
+
+    self.indBank[ IndType.WATER_PLANT.toIdx() ] = value * 50;
+    self.indBank[ IndType.SOLAR_PLANT.toIdx() ] = value * 65;
+
+    self.indBank[ IndType.PROBE_MINE.toIdx()  ] = value * 0;
+    self.indBank[ IndType.GROUND_MINE.toIdx() ] = value * 80;
+    self.indBank[ IndType.REFINERY.toIdx()    ] = value * 40;
+    self.indBank[ IndType.FACTORY.toIdx()     ] = value * 20;
+    self.indBank[ IndType.ASSEMBLY.toIdx()    ] = value * 10;
+  }
+
+
+  pub fn canBuildInd( self : *const Economy, indType : IndType, count : u64 ) bool
+  {
+    if( !IndType.canBeBuiltAt( indType, self.location, self.hasAtmosphere ))
+    {
+      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {} in location of type {}", .{ @tagName( indType ), @tagName( self.location ) });
+      return false;
+    }
+
+    const  availArea  = self.getAvailArea();
+    const  neededArea = indType.getArea() * count; // TODO : rework for f32 area
+
+    if( availArea < neededArea )
+    {
+      def.log( .INFO, 0, @src(), "Not enough space to build industry of type {} in location of type {}. Needed : {d}", .{ @tagName( indType ), @tagName( self.location ), neededArea });
       return false;
     }
     return true;
@@ -237,7 +335,7 @@ pub const Economy = struct
 
   pub fn getPopCap( self : *const Economy ) u64
   {
-    return self.getInfCount( .HOUSING ) * InfType.POP_PER_HOUSE;
+    return self.getInfCount( .HOUSING ) * InfType.HOUSING.getCapacity();
   }
 
 
@@ -251,35 +349,25 @@ pub const Economy = struct
     inline for( 0..infTypeCount )| i |
     {
       const infType = InfType.fromIdx( i );
-      const infCount : f32 = @floatFromInt( self.getInfCount( infType ));
+      const tmp = self.getIndCount( .infType ) * infType.getCapacity();
 
-      used += infCount * infType.getArea();
+      used += @floatFromInt( tmp );
+    }
+    inline for( 0..indTypeCount )| i |
+    {
+      const indType = IndType.fromIdx( i );
+      const tmp = self.getIndCount( .indType ) * indType.getCapacity();
+
+      used += @floatFromInt( tmp );
     }
 
     return used;
   }
 
-  pub fn getTotalArea( self : *const Economy ) f32
-  {
-    if( self.location == .GROUND and self.hasAtmosphere ) // If this is a planet with atmosphere
-    {
-      return self.maxAvailArea;
-    }
-    else // Else, area is grown via "area-extension" infra
-    {
-    //const infType = InfType.TBA.toIdx();                                // TODO : implement area-extension infra
-    //const infCount : f32 = @floatFromInt( self.getInfCount( infType ));
-
-
-    //return infCount * infType.getArea();
-      return 0.0;
-    }
-  }
-
-  pub fn getAvailArea( self : *const Economy ) f32
+  pub fn getUnusedArea( self : *const Economy ) f32
   {
     const used  = self.getUsedArea();
-    const total = self.getTotalArea();
+    const total = self.getAreaCapacity();
 
     if( used <= total )
     {
@@ -289,6 +377,19 @@ pub const Economy = struct
     {
       def.log( .WARN, 0, @src(), "Negative available area in location of type {}", .{ @tagName( self.location )});
       return 0.0;
+    }
+  }
+
+  pub fn getAreaCapacity( self : *const Economy ) f32
+  {
+    if( self.location == .GROUND and self.hasAtmosphere ) // If this is a planet with atmosphere
+    {
+      return self.maxAvailArea;
+    }
+    else // Else, area is grown via habitat infrastructure
+    {
+      const total = self.getInfCount( .HABITAT ) * InfType.HABITAT.getCapacity();
+      return @floatFromInt( total );
     }
   }
 
@@ -308,6 +409,10 @@ pub const Economy = struct
     {
       self.infDelta[ i ] = 0;
     }
+    inline for( 0..indTypeCount )| i |
+    {
+      self.indDelta[ i ] = 0;
+    }
   }
 
   pub fn tickEcon( self : *Economy, sunshine : f32 ) void
@@ -315,12 +420,12 @@ pub const Economy = struct
     self.sunshine = sunshine;
     self.resetDeltas();
 
-    popSlvr.resolvePop(  self ); // Updates pop WORK, FOOD and WATER consequently
-    ecnSlvr.resolveEcon( self ); // Updates all non WORK
+    ecnSlvr.resolveEcon( self );
 
     // NOTE : DEBUG
     self.logPopCount();
     self.logResCounts();
     self.logInfCounts();
+    self.logIndCounts();
   }
 };
