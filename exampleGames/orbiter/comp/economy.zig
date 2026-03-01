@@ -61,10 +61,8 @@ pub const Economy = struct
   location      : EconLoc,
   isActive      : bool = false,
   hasAtmosphere : bool = false,
-
-  sunshine   : f32 = 1.0,
-
-  maxAvailArea : u64 = 0,
+  sunshine      : f32 = 1.0,
+  maxAvailArea  : u64 = 0,
 
 //assemblyQueue
 
@@ -200,7 +198,7 @@ pub const Economy = struct
     self.infBank[ InfType.HYDROPONIC.toIdx()  ] = value * 35;
 
     self.infBank[ InfType.WATER_PLANT.toIdx() ] = value * 50;
-    self.infBank[ InfType.SOLAR_PLANT.toIdx() ] = value * 50;
+    self.infBank[ InfType.SOLAR_PLANT.toIdx() ] = value * 65;
 
     self.infBank[ InfType.PROBE_MINE.toIdx()  ] = value * 0;
     self.infBank[ InfType.GROUND_MINE.toIdx() ] = value * 80;

@@ -97,7 +97,7 @@ const EconSolver = struct
     {
       if( self.totResCons[ r ] == 0 )
       {
-        self.resAccessRatios[ r ] = 1.0;
+        self.resAccessRatios[ r ] = self.maxEfficiency;
       }
       else
       {
@@ -128,7 +128,7 @@ const EconSolver = struct
 
         if( inst.powerSrc == .SOLAR )
         {
-          ratio *= econ.sunshine;
+          ratio = @min( econ.sunshine, self.maxEfficiency );
         }
 
         // Resource modifiers
@@ -166,7 +166,7 @@ const EconSolver = struct
         econ.resCons[ r ] += consApplied;
 
         // TODO : Make sure this doesn't leave resources at 0 despite them being produced
-        //        As population needs to have water and food available to survive
+        //        as population needs to have water and food available to survive
 
         econ.addResCount( resType, prodApplied );
         econ.subResCount( resType, consApplied );

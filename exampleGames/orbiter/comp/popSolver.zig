@@ -33,7 +33,7 @@ pub inline fn getPopWaterCons( pop : f32 ) f32 { return pop * WATER_PER_POP; }
 pub inline fn getPopPowerCons( pop : f32 ) f32 { return pop * POWER_PER_POP; }
 
 
-const WEEKLY_POP_GROWTH  : f32 = 1.010266631; // x4 each century // TODO : cahnge min growth of less than 1.0 to chance of growth
+const WEEKLY_POP_GROWTH  : f32 = 1.000266631; // x4 each century // TODO : cahnge min growth of less than 1.0 to chance of growth
 const WEEKLY_PARCH_RATE  : f32 = 0.25;
 const WEEKLY_STARVE_RATE : f32 = 0.10;
 const WEEKLY_FREEZE_RATE : f32 = 0.05;
@@ -132,9 +132,9 @@ const PopSolver = struct
 
     // Updating non-work resource
 
-    const foodCons  : u64 = @intFromFloat( @ceil( @min( foodRequired,  foodAvailable )));
-    const waterCons : u64 = @intFromFloat( @ceil( @min( waterRequired, foodAvailable )));
-    const powerCons : u64 = @intFromFloat( @ceil( @min( powerRequired, foodAvailable )));
+    const foodCons  : u64 = @intFromFloat( @ceil( @min( foodRequired,   foodAvailable )));
+    const waterCons : u64 = @intFromFloat( @ceil( @min( waterRequired, waterAvailable )));
+    const powerCons : u64 = @intFromFloat( @ceil( @min( powerRequired, powerAvailable )));
 
     econ.subResCount( .FOOD,  foodCons  );
     econ.subResCount( .WATER, waterCons );

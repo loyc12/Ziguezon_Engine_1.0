@@ -62,7 +62,7 @@ pub const InfType = enum( u8 )
     };
   }
 
-  pub inline fn getArea( self : InfType ) f32
+  pub inline fn getAreaCost( self : InfType ) f32
   {
    return switch( self )
     {
