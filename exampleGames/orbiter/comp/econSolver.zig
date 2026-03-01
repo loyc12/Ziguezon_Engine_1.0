@@ -50,6 +50,7 @@ const EconSolver = struct
   availableWork : f32 = 0.0,
 
   // Global consumption-production throttle / multiplier
+  maxPopAccess   : f32 = 1.0,
   maxResAccess   : f32 = 1.0,
   maxIndActivity : f32 = 1.0,
 
@@ -74,7 +75,7 @@ const EconSolver = struct
     self.initBaseState();
     self.applyResDecay();
 
-    self.calcPopNeeds();    // Also computes max potential work
+    self.calcPopNeeds();    // Also increment available work
     self.calcIndNeeds();    // Also computes max potential prod
 
     self.calcResAccess();   // Decide how res are allocated   TODO : add access-tweaking policies
@@ -160,6 +161,9 @@ const EconSolver = struct
 
   fn calcResAccess( self : *EconSolver ) void
   {
+    // NOTE : very iffy bypass but needed for now
+    self.econ.addResCount( .WORK, @intFromFloat( @floor( self.availableWork )));
+
     inline for( 0..resTypeCount )| r |
     {
       const available : f32 = @floatFromInt( self.econ.resBank[ r ]);
@@ -174,8 +178,9 @@ const EconSolver = struct
       {
         const access = @min( self.maxResAccess, available / required );
 
-        self.popResAccess[ r ] = access;
-        self.indResAccess[ r ] = access;
+        self.econ.resAccess[ r ] = access;
+        self.popResAccess[ r ]   = access;
+        self.indResAccess[ r ]   = access;
       }
     }
   }
@@ -254,15 +259,8 @@ const EconSolver = struct
 
       const resType = ResType.fromIdx( r );
 
-      if( resType == .WORK )
-      {
-        self.econ.resBank[ r ] = self.totResProd[ r ];
-      }
-      else
-      {
-        self.econ.addResCount( resType, self.totResProd[ r ]);
-        self.econ.subResCount( resType, self.totResCons[ r ]);
-      }
+      self.econ.addResCount( resType, self.totResProd[ r ]);
+      self.econ.subResCount( resType, self.totResCons[ r ]);
 
       self.econ.resProd[ r ] += self.totResProd[ r ];
       self.econ.resCons[ r ] += self.totResCons[ r ];
@@ -272,9 +270,9 @@ const EconSolver = struct
 
   fn applyPopDelta( self : *EconSolver ) void
   {
-    var foodAccess  : f32 = 1.0;
-    var waterAccess : f32 = 1.0;
-    var powerAccess : f32 = 1.0;
+    var foodAccess  : f32 = self.maxPopAccess;
+    var waterAccess : f32 = self.maxPopAccess;
+    var powerAccess : f32 = self.maxPopAccess;
 
     const foodIdx  = ResType.FOOD.toIdx();
     const waterIdx = ResType.WATER.toIdx();
@@ -296,19 +294,19 @@ const EconSolver = struct
 
     if( foodAccess < 1.0 )
     {
-      def.qlog( .INFO, 0, @src(), "Population is experiencing food shortages !" );
+      def.qlog( .WARN, 0, @src(), "Population is experiencing food shortages !" );
 
       self.nextPopCount *= 1.0 - ( WEEKLY_STARVE_RATE * ( 1.0 - foodAccess ));
     }
     if( waterAccess < 1.0 )
     {
-      def.qlog( .INFO, 0, @src(), "Population is experiencing water shortages !" );
+      def.qlog( .WARN, 0, @src(), "Population is experiencing water shortages !" );
 
       self.nextPopCount *= 1.0 - ( WEEKLY_PARCH_RATE * ( 1.0 - waterAccess ));
     }
     if( powerAccess < 1.0 )
     {
-      def.qlog( .INFO, 0, @src(), "Population is experiencing power shortages !" );
+      def.qlog( .WARN, 0, @src(), "Population is experiencing power shortages !" );
 
       self.nextPopCount *= 1.0 - ( WEEKLY_FREEZE_RATE * ( 1.0 - powerAccess ));
     }
