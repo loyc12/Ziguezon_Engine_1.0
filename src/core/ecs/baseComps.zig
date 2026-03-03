@@ -147,7 +147,6 @@ pub const HitboxComp = struct
 };
 
 
-
 // ================ Sprite 2D ================
 
 pub const SpriteComp = struct

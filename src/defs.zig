@@ -6,6 +6,7 @@ pub const rng_u  = @import( "utils/randomer.zig" );
 
 pub var G_RNG : rng_u.Randomiser = .{};
 
+
 // ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
 
 pub fn getAlloc() std.mem.Allocator { return std.heap.page_allocator; }
@@ -32,6 +33,7 @@ pub fn deinitAllUtils() void
 
   G_RNG = undefined;
 }
+
 
 
 // ================================ INTERFACER HANDLERS ================================
@@ -71,6 +73,7 @@ pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 pub const res_m = @import( "core/resource/resourceManager.zig" );
 pub const bdy_m = @import( "core/body/bodyManager.zig" );
 pub const tlm_m = @import( "core/tilemap/tilemapManager.zig" );
+pub const vnt_m = @import( "core/event/eventManager.zig" );
 
 
 // ================ BODY ================
@@ -123,6 +126,22 @@ pub const cmp2 = @import( "core/ecs/baseComps.zig" );
 pub const TransComp  = cmp2.TransComp;
 pub const ShapeComp  = cmp2.ShapeComp;
 pub const SpriteComp = cmp2.SpriteComp;
+
+
+// ================ EVENT ================
+
+pub const vnt        = @import( "core/event/event.zig" );
+
+pub const Event      = vnt.Event;
+
+pub const EventType  = vnt.EventType;
+pub const EventPhase = vnt.EventPhase;
+pub const EventData  = vnt.EventData;
+pub const EventFunc  = vnt.EventFunc;
+
+pub const EventListener      = vnt.EventListener;
+pub const EventListenerArray = vnt.EventListenerArray;
+pub const EventQueue         = vnt.EventQueue;
 
 
 

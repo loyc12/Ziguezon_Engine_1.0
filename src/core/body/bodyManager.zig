@@ -307,7 +307,7 @@ pub const BodyManager = struct
   {
     def.qlog( .TRACE, 0, @src(), "Ticking active Bodies" );
 
-    const sdt = ng.getScaledTargetTickDelta();
+    const sdt = ng.times.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
 
     if( def.G_ST.AutoApply_Body_Movement ){ for( self.bodyList.items )| *e |
     {
@@ -325,7 +325,7 @@ pub const BodyManager = struct
   {
     def.qlog( .TRACE, 0, @src(), "Coliding active Bodies" );
 
-    const sdt = ng.getScaledTargetTickDelta();
+    const sdt = ng.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
     _ = sdt;
 
     if( def.G_ST.AutoApply_Body_Collision ){ for( self.bodyList.items, 0 .. )| *e1, index |{ if( e1.isActive() )

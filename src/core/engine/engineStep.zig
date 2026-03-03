@@ -22,7 +22,7 @@ pub fn loopLogic( ng : *Engine ) void
 
   while( !def.ray.windowShouldClose() )
   {
-    ng.simTimeUpdate();
+    ng.times.simTimeUpdate( ng.isPlaying() );
 
   //def.log_u.logLoopTime( ng.times.simDelta );
     def.tryHook( .OnLoopCycle, ng );
@@ -49,7 +49,7 @@ pub fn loopLogic( ng : *Engine ) void
 inline fn tryUpdate( ng : *Engine ) bool
 {
 
-  if( ng.shouldRenderSim() ) // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
+  if( ng.times.shouldRender() ) // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
   {                          // TODO : see if we can split them ( if that is even useful to begin with )
   //const tmpTime = def.getNow();
 
@@ -83,13 +83,13 @@ fn updateInputs( ng : *Engine ) void
 
 inline fn tryTick( ng : *Engine ) bool
 {
-  if( ng.shouldTickSim() )
+  if( ng.times.shouldTick() )
   {
     if( !ng.isPlaying() ){ return false; }
 
   //const tmpTime = def.getNow();
 
-    ng.times.tickOffset.value -= ng.times.targetTickDelta.value; // TODO : ensure this doesn't create a giant backlog of tick events during lag
+    ng.times.consumeTick(); // TODO : ensure this doesn't create a giant backlog of tick events during lag
 
     def.tryHook( .OnTickWorld, ng );
     {
@@ -125,13 +125,13 @@ fn tickBodies( ng : *Engine ) void
 
 inline fn tryRender( ng : *Engine ) bool
 {
-  if( ng.shouldRenderSim() )
+  if( ng.times.shouldRender() )
   {
     if( !ng.isOpened() ){ return false; }
 
   //const tmpTime = def.getNow();
 
-    ng.times.frameOffset.value -= ng.times.targetFrameDelta.value; // TODO : ensure this doesn't create a giant backlog of frame events during lag
+    ng.times.consumeFrame(); // TODO : ensure this doesn't create a giant backlog of frame events during lag
     renderGraphics( ng );
 
   //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "& Render delta time" );
@@ -202,15 +202,12 @@ fn renderBodies( ng : *Engine ) void
 
 // ======== DEBUG INFO ========
 
-// TODO : Implement ng.times.frameEpoch and frameDelta
 
 fn drawDebugFpsCount( ng : *Engine ) void
 {
-  _ = ng;
-
   if( def.G_ST.DebugDraw_FPS and def.G_ST.Graphic_Metrics_Colour != null )
   {
-    const frameTime = def.TimeVal.fromRayDeltaTime( def.ray.getFrameTime() ); // ng.times.frameDelta );
+    const frameTime = ng.times.frameDelta;
 
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
@@ -219,19 +216,16 @@ fn drawDebugFpsCount( ng : *Engine ) void
   }
 }
 
-// TODO : Implement ng.times.tickEpoch and tickDelta
 
-//fn drawDebugTpsCount( ng : *Engine ) void
-//{
-//  _ = ng;
-//
-//  if( def.G_ST.DebugDraw_FPS )
-//  {
-//    const frameTime = def.TimeVal.fromRayDeltaTime( ng.times.tickDelta );
-//
-//    const sec : u64 = @intCast( frameTime.toSec() );
-//    const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
-//
-//    def.drawTextFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 48, 16, 32, def.Colour.Graphic_Metrics_Colour );
-//  }
-//}
+fn drawDebugTpsCount( ng : *Engine ) void
+{
+  if( def.G_ST.DebugDraw_FPS )
+  {
+    const tickTime = ng.times.tickDelta;
+
+    const sec : u64 = @intCast( tickTime.toSec() );
+    const mic : u64 = @intCast( @rem( tickTime.toUs(), def.TimeVal.usPerSec() ));
+
+    def.drawTextFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, 48, 16, 32, def.Colour.Graphic_Metrics_Colour );
+  }
+}

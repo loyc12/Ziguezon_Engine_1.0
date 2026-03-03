@@ -314,7 +314,7 @@ pub const TilemapManager = struct
 
   pub fn tickActiveTilemaps( self : *TilemapManager, ng : *def.Engine ) void
   {
-    const sdt = ng.getScaledTargetTickDelta();
+    const sdt = ng.times.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
 
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {
