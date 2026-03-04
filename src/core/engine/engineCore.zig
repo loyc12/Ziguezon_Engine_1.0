@@ -36,8 +36,8 @@ pub const Engine = struct
   eventManager      : def.vnt_m.EventManager    = .{},
 
   // ECS Management
-  componentRegistry : def.ComponentRegistry     = .{},
-  entityIdRegistry  : def.EntityIdRegistry      = .{},
+  componentRegistry : def.ComponentRegistry = .{},
+  entityIdRegistry  : def.EntityIdRegistry  = .{},
 
 
 

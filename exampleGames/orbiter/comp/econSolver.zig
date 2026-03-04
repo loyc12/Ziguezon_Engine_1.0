@@ -21,13 +21,15 @@ const InfInstance = inf.InfInstance;
 const IndInstance = ind.IndInstance;
 
 
-// Pop growth factor ( x4 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
-const WEEKLY_POP_GROWTH  : f32 = 0.000266631;
+// Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
+const WEEKLY_POP_GROWTH     : f32 = 0.0003;
 
 // Pop decay factors
-const WEEKLY_PARCH_RATE  : f32 = 0.15;
+const WEEKLY_PARCH_RATE  : f32 = 0.10;
 const WEEKLY_STARVE_RATE : f32 = 0.05;
-const WEEKLY_FREEZE_RATE : f32 = 0.01;
+const WEEKLY_FREEZE_RATE : f32 = 0.02;
+
+const POP_SHORTAGE_EXPONENT : f32 = 2.0; // Smooth out death rates from pop res shortages
 
 const MIN_WORK_RATE      : f32 = 0.20;
 
@@ -112,31 +114,12 @@ const EconSolver = struct
     self.prevPopCount = @floatFromInt( self.econ.popCount );
     self.nextPopCount = self.prevPopCount;
 
-    var econ = self.econ;
-
-    // Zeroing out the previous metrics
-    inline for( 0..resTypeCount )| r |
-    {
-      econ.prevResProd[ r ] = 0;
-      econ.prevResCons[ r ] = 0;
-
-      econ.resAccess[ r ] = 0;
-    }
-    inline for( 0..infTypeCount )| i |
-    {
-      econ.infDelta[ i ] = 0;
-    }
-    inline for( 0..indTypeCount )| i |
-    {
-      econ.indDelta[ i ] = 0;
-
-      econ.indActivity[ i ] = 0.0;
-    }
+    self.econ.resetDebugMetrics();
   }
 
   fn applyResDecay( self : *EconSolver ) void
   {
-    def.qlog( .DEBUG, 0, @src(), "Logging resource decay :" );
+  //def.qlog( .DEBUG, 0, @src(), "Logging resource decay :" );
 
     inline for( 0..resTypeCount )| r |
     {
@@ -148,14 +131,15 @@ const EconSolver = struct
         const decay_f32 : f32 = @floatFromInt( self.econ.resBank[ r ]);
         const decay_u64 : u64 = @intFromFloat( @floor( decay_f32 * decayRate ));
 
-        self.econ.resBank[ r ] -= decay_u64;
+        self.econ.resBank[ r ]     -= decay_u64;
+        self.econ.prevResDecay[ r ] = decay_u64;
 
-        if( decayRate < 1.0 ) // Fudge to prevent WORK from always being fully used
+        if( decayRate < 1.0 ) // Fudge to prevent WORK from always being shown as fully used
         {
           self.econ.prevResCons[ r ] += decay_u64;
         }
 
-        def.log( .CONT, 0, @src(), "{s}  \t: -{d}", .{ @tagName( ResType.fromIdx( r )), decay_u64 });
+      //def.log( .CONT, 0, @src(), "{s}  \t: -{d}", .{ @tagName( ResType.fromIdx( r )), decay_u64 });
       }
     }
   }
@@ -192,19 +176,19 @@ const EconSolver = struct
 
   fn calcIndNeeds( self : *EconSolver ) void
   {
-    inline for( 0..indTypeCount )| i |{ if( self.econ.indBank[ i ] != 0 ) // Skips absent industries
+    inline for( 0..indTypeCount )| d |{ if( self.econ.indBank[ d ] != 0 ) // Skips absent industries
     {
-      const indType = IndType.fromIdx( i );
+      const indType = IndType.fromIdx( d );
       const inst    = IndInstance.initByType( indType ); // TODO : use a static comptime table if this is a performance bottleneck
 
-    //def.log( .DEBUG, 0, @src(), "Logging bank amounts for {s} ({d}):", .{ @tagName( indType ), self.econ.indBank[ i ]});
+    //def.log( .DEBUG, 0, @src(), "Logging bank amounts for {s} ({d}):", .{ @tagName( indType ), self.econ.indBank[ d ]});
 
       inline for ( 0..resTypeCount )| r |
       {
         const resType = ResType.fromIdx( r );
 
-        var maxProd = self.econ.indBank[ i ] * inst.getResProdPerInd( resType );
-        var maxCons = self.econ.indBank[ i ] * inst.getResConsPerInd( resType );
+        var maxProd = self.econ.indBank[ d ] * inst.getResProdPerInd( resType );
+        var maxCons = self.econ.indBank[ d ] * inst.getResConsPerInd( resType );
 
         if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
         {
@@ -217,11 +201,11 @@ const EconSolver = struct
           maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
         }
 
-        self.perIndProd[ i ][ r ] = maxProd;
+        self.perIndProd[ d ][ r ] = maxProd;
         self.maxIndProd[ r ]     += maxProd;
         self.maxGenProd[ r ]     += maxProd;
 
-        self.perIndCons[ i ][ r ] = maxCons;
+        self.perIndCons[ d ][ r ] = maxCons;
         self.maxIndCons[ r ]     += maxCons;
         self.maxGenCons[ r ]     += maxCons;
 
@@ -229,16 +213,16 @@ const EconSolver = struct
       }
     }}
 
-    // NOTE : DEBUG
-    def.qlog( .DEBUG, 0, @src(), "Logging industrial resource prod. and cons. :" );
 
-    inline for ( 0..resTypeCount )| r |
-    {
-      const maxProd = self.maxIndProd[ r ];
-      const maxCons = self.maxIndCons[ r ];
+  //def.qlog( .DEBUG, 0, @src(), "Logging industrial resource prod. and cons. :" );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: +{d}\t-{d}", .{ @tagName( ResType.fromIdx( r ) ), maxProd, maxCons  });
-    }
+  //inline for ( 0..resTypeCount )| r | // NOTE : DEBUG INFO
+  //{
+  //  const maxProd = self.maxIndProd[ r ];
+  //  const maxCons = self.maxIndCons[ r ];
+
+  //  def.log( .CONT, 0, @src(), "{s}  \t: +{d}\t-{d}", .{ @tagName( ResType.fromIdx( r ) ), maxProd, maxCons  });
+  //}
   }
 
   fn calcResAccess( self : *EconSolver ) void // TODO : Tweak population vs industry access ratio here if need be
@@ -351,11 +335,11 @@ const EconSolver = struct
   {
   //def.qlog( .DEBUG, 0, @src(), "Logging industrial activity :" );
 
-    inline for( 0..indTypeCount )| i |
+    inline for( 0..indTypeCount )| d |
     {
       var activity : f32 = self.maxIndActivity;
 
-      if( self.econ.indBank[ i ] == 0 ) // Skips absent industries
+      if( self.econ.indBank[ d ] == 0 ) // Skips absent industries
       {
         activity = 0.0;
       }
@@ -365,98 +349,22 @@ const EconSolver = struct
 
         inline for( 0..resTypeCount )| r |
         {
-          if( self.perIndCons[ i ][ r ] != 0 ) // Non consumed resources do not affect industrial activity
+          if( self.perIndCons[ d ][ r ] != 0 ) // Non consumed resources do not affect industrial activity
           {
             activity = @min( activity, self.indAccess[ r ]);
           }
         }
       }
-      self.indActivity[ i ] = activity ;
+      self.indActivity[ d ] = activity ;
 
       // Updating economy metrics
-      self.econ.indActivity[ i ] = activity;
+      self.econ.indActivity[ d ] = activity;
     }
-  }
-
-  fn applyPopDelta( self : *EconSolver ) void
-  {
-    // NOTE : Iterates over pop-consumed res only
-
-    // FOOD access
-    const foodIdx  = ResType.FOOD.toIdx();
-    var foodAccess = self.maxPopAccess;
-
-    if( self.finalPopCons[ foodIdx ] > 0 )
-    {
-      foodAccess = @min( foodAccess, self.popAccess[ foodIdx ]);
-    }
-    if( foodAccess < 1.0 )
-    {
-      def.qlog( .WARN, 0, @src(), "Population is experiencing food shortages !" );
-
-      self.nextPopCount *= 1.0 - ( WEEKLY_STARVE_RATE * ( 1.0 - foodAccess ));
-    }
-
-    // WATER access
-    const waterIdx  = ResType.WATER.toIdx();
-    var waterAccess = self.maxPopAccess;
-
-    if( self.finalPopCons[ waterIdx ] > 0 )
-    {
-      waterAccess = @min( waterAccess, self.popAccess[ waterIdx ]);
-    }
-    if( waterAccess < 1.0 )
-    {
-      def.qlog( .WARN, 0, @src(), "Population is experiencing water shortages !" );
-
-      self.nextPopCount *= 1.0 - ( WEEKLY_PARCH_RATE * ( 1.0 - waterAccess ));
-    }
-
-    // POWER access
-    const powerIdx  = ResType.POWER.toIdx();
-    var powerAccess = self.maxPopAccess;
-
-    if( self.finalPopCons[ powerIdx ] > 0 )
-    {
-      powerAccess = @min( powerAccess, self.popAccess[ powerIdx ]);
-    }
-    if( powerAccess < 1.0 )
-    {
-      def.qlog( .WARN, 0, @src(), "Population is experiencing power shortages !" );
-
-      self.nextPopCount *= 1.0 - ( WEEKLY_FREEZE_RATE * ( 1.0 - powerAccess ));
-    }
-
-  //def.log( .DEBUG, 0, @src(), "Pop access : F = {d:.3} - W = {d:.3} - P = {d:.3}", .{ foodAccess, waterAccess, powerAccess });
-
-
-    self.nextPopCount = @floor( self.nextPopCount ); // Rounding down deaths
-
-    // Applying growth to non-shorted population ( POWER is ignored )
-    if( foodAccess > 1.0 - def.EPS and waterAccess > 1.0 - def.EPS)
-    {
-      const suppliedPopRatio = @min( foodAccess, waterAccess );
-
-      self.nextPopCount += suppliedPopRatio * WEEKLY_POP_GROWTH * self.nextPopCount;
-      self.nextPopCount  = @ceil( self.nextPopCount ); // Rounding up births
-    }
-
-    const popCap : f32 = @floatFromInt( self.econ.getPopCap() );
-
-    const prevPopCount_i64 : i64 = @intFromFloat(           self.prevPopCount               );
-    const nextPopCount_i64 : i64 = @intFromFloat( def.clmp( self.nextPopCount, 0.0, popCap ));
-
-    // Updating economy
-    const econ = self.econ;
-
-    econ.popCount  = @intCast( nextPopCount_i64 );
-    econ.popDelta  = nextPopCount_i64 - prevPopCount_i64;
-    econ.popAccess = @min( foodAccess, waterAccess, powerAccess );
   }
 
   fn applyResDelta( self : *EconSolver ) void
   {
-    def.qlog( .DEBUG, 0, @src(), "Logging general resource prod. and cons. :" );
+  //def.qlog( .DEBUG, 0, @src(), "Logging general resource prod. and cons. :" );
 
     inline for( 0..resTypeCount )| r |
     {
@@ -483,16 +391,16 @@ const EconSolver = struct
       }
 
       // Iterating over industry
-      inline for( 0..indTypeCount )| i |
+      inline for( 0..indTypeCount )| d |
       {
-        const indActivity = self.indActivity[ i ];
+        const indActivity = self.indActivity[ d ];
 
         if( indActivity > def.EPS )
         {
           // Production
           if( resType != .WORK ) // Skipping WORK ( see applyWorkWeek() )
           {
-            const rawIndProd   : f32 = @floatFromInt( self.perIndProd[ i ][ r ]);
+            const rawIndProd   : f32 = @floatFromInt( self.perIndProd[ d ][ r ]);
             const finalIndProd : u64 = @intFromFloat( @floor( rawIndProd * indActivity ));
 
             self.finalIndProd[ r ] += finalIndProd;
@@ -500,7 +408,7 @@ const EconSolver = struct
           }
 
           // Consumption
-          const rawIndCons   : f32 = @floatFromInt( self.perIndCons[ i ][ r ]);
+          const rawIndCons   : f32 = @floatFromInt( self.perIndCons[ d ][ r ]);
           const finalIndCons : u64 = @intFromFloat( @floor( rawIndCons * indActivity ));
 
           self.finalIndCons[ r ] += finalIndCons;
@@ -508,16 +416,90 @@ const EconSolver = struct
         }
       }
 
+    //def.log( .CONT, 0, @src(), "{s}  \t: {d}\t( +{d}\t-{d} )", .{ @tagName( ResType.fromIdx( r )), econ.resBank[ r ], self.finalGenProd[ r ], self.finalGenCons[ r ] });
+
       // Updating economy metrics and storage
       const econ = self.econ;
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t( +{d}\t-{d} )", .{ @tagName( ResType.fromIdx( r )), econ.resBank[ r ], self.finalGenProd[ r ], self.finalGenCons[ r ] });
+      econ.prevResReq[ r ] = self.maxGenCons[ r ];
 
-      econ.prevResProd[ r ] += self.finalGenProd[ r ];
-      econ.prevResCons[ r ] += self.finalGenCons[ r ];
+      econ.prevResProd[ r ] = self.finalGenProd[ r ];
+      econ.prevResCons[ r ] = self.finalGenCons[ r ];
 
       econ.addResCount( resType, self.finalGenProd[ r ]);
       econ.subResCount( resType, self.finalGenCons[ r ]);
     }
+  }
+
+
+  fn applyPopDelta( self : *EconSolver ) void
+  {
+    // NOTE : Iterates over pop-consumed res only
+
+    var deaths : f32 = 0.0;
+    var births : f32 = 0.0;
+
+    // FOOD access
+    const foodIdx  = ResType.FOOD.toIdx();
+    var foodAccess = self.maxPopAccess;
+
+    foodAccess = @min( foodAccess, self.popAccess[ foodIdx ]);
+
+    if( foodAccess < 1.0 )
+    {
+      def.qlog( .WARN, 0, @src(), "Population is experiencing food shortages !" );
+
+      deaths += self.prevPopCount * def.pow( f32, 1.0 - foodAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_STARVE_RATE;
+    }
+
+    // WATER access
+    const waterIdx  = ResType.WATER.toIdx();
+    var waterAccess = self.maxPopAccess;
+
+    waterAccess = @min( waterAccess, self.popAccess[ waterIdx ]);
+
+    if( waterAccess < 1.0 )
+    {
+      def.qlog( .WARN, 0, @src(), "Population is experiencing water shortages !" );
+
+      deaths += self.prevPopCount * def.pow( f32, 1.0 - waterAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_PARCH_RATE;
+    }
+
+    // POWER access
+    const powerIdx  = ResType.POWER.toIdx();
+    var powerAccess = self.maxPopAccess;
+
+    powerAccess = @min( powerAccess, self.popAccess[ powerIdx ]);
+
+    if( powerAccess < 1.0 )
+    {
+      def.qlog( .WARN, 0, @src(), "Population is experiencing power shortages !" );
+
+      deaths += self.prevPopCount * def.pow( f32, 1.0 - powerAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_FREEZE_RATE;
+    }
+
+
+    const suppliedRatio = def.pow( f32, @max( @min( foodAccess, waterAccess ), 1.0 ), 1.0 / POP_SHORTAGE_EXPONENT );
+
+    births = self.prevPopCount * suppliedRatio * WEEKLY_POP_GROWTH;
+
+
+    def.log( .INFO, 0, @src(), "Pop access : F = {d:.4} - W = {d:.4} - P = {d:.4}", .{ foodAccess, waterAccess, powerAccess });
+    def.log( .CONT, 0, @src(), "Deaths     : {d:.8}", .{ deaths });
+    def.log( .CONT, 0, @src(), "Births     : {d:.8}", .{ births });
+    def.log( .CONT, 0, @src(), "Supplied   : {d:.8}", .{ suppliedRatio });
+
+
+    // Updating economy
+    const econ = self.econ;
+
+    const popCap : f32 = @floatFromInt( self.econ.getPopCap() );
+
+    const prevPopCount_i64 : i64 = @intFromFloat( self.prevPopCount );
+    const nextPopCount_i64 : i64 = @intFromFloat( def.clmp( self.prevPopCount - @floor( deaths ) + @ceil( births ), 0.0, popCap ));
+
+    econ.popCount  = @intCast( nextPopCount_i64 );
+    econ.popDelta  = nextPopCount_i64 - prevPopCount_i64;
+    econ.popAccess = @min( foodAccess, waterAccess, powerAccess );
   }
 };

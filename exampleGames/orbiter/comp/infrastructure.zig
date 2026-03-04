@@ -17,7 +17,7 @@ pub const InfType = enum( u8 )
   HOUSING,      // Increases population cap
   HABITAT,      // Increase area of pressurized locations
   STORAGE,      // Grants cargo storage capacity
-  BATTERY,      // Grants energy storage capacity
+//BATTERY,      // Grants energy storage capacity
 
 //AMENITIES,    // Services population needs
 //EDUCATION,    // Generate research ( efficiency multiplier )
@@ -33,6 +33,7 @@ pub const InfType = enum( u8 )
 
 //DATA_CENTER,  // ???
 
+
   pub inline fn getMass( self : InfType ) f32
   {
     return switch( self )
@@ -41,7 +42,7 @@ pub const InfType = enum( u8 )
       .HABITAT => 3.0,
 
       .STORAGE => 5.0,
-      .BATTERY => 2.0,
+    //.BATTERY => 2.0,
     };
   }
 
@@ -53,7 +54,7 @@ pub const InfType = enum( u8 )
       .HABITAT => -8.0,
 
       .STORAGE =>  4.0,
-      .BATTERY =>  2.0,
+    //.BATTERY =>  2.0,
     };
   }
 
@@ -65,7 +66,7 @@ pub const InfType = enum( u8 )
       .HABITAT => 3,
 
       .STORAGE => 2,
-      .BATTERY => 4,
+    //.BATTERY => 4,
     };
   }
 
@@ -74,24 +75,24 @@ pub const InfType = enum( u8 )
     return switch( self )
     {
       .HOUSING => 16, // Pop
-      .HABITAT => 16, // Square units
+      .HABITAT => 16, // Area
 
       .STORAGE => 16, // Resources
-      .BATTERY => 16, // POWER resource
+    //.BATTERY => 16, // POWER resource
     };
   }
 
-  pub inline fn canBeBuiltAt( self : InfType, loc : EconLoc, hasAtmosphere : bool ) bool
+  pub inline fn canBeBuiltIn( self : InfType, loc : EconLoc, hasAtmo : bool ) bool
   {
     if( loc == .GROUND )
     {
       return switch( self )
       {
         .HOUSING => true,
-        .HABITAT => !hasAtmosphere,
+        .HABITAT => !hasAtmo,
 
         .STORAGE => true,
-        .BATTERY => true,
+      //.BATTERY => true,
 
         else     => false,
       };
@@ -104,7 +105,7 @@ pub const InfType = enum( u8 )
         .HABITAT => true,
 
         .STORAGE => true,
-        .BATTERY => true,
+      //.BATTERY => true,
 
         else     => false,
       };

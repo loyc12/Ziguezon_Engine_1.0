@@ -16,6 +16,7 @@ pub const VesType = enum( u8 )
   STARSHIP, // Freighter
   STATION,
 
+
   pub inline fn getMass( self : VesType ) f32
   {
    return switch( self )
@@ -32,20 +33,31 @@ pub const VesType = enum( u8 )
    return switch( self )
     {
       .PROBE    => 1,
-      .SHUTTLE  => 5,
-      .STARSHIP => 25,
-      .STATION  => 100,
+      .SHUTTLE  => 8,
+      .STARSHIP => 64,
+      .STATION  => 512,
     };
   }
 
-  pub inline fn getJobCount( self : VesType ) u64
+  pub inline fn getCapacity( self : VesType ) u64
+  {
+    return switch( self )
+    {
+      .PROBE    => 5,
+      .SHUTTLE  => 25,
+      .STARSHIP => 125,
+      .STATION  => 625,
+    };
+  }
+
+  pub inline fn getCrewCount( self : VesType ) u64
   {
     return switch( self )
     {
       .PROBE    => 0,
       .SHUTTLE  => 2,
       .STARSHIP => 20,
-      .STATION  => 100,
+      .STATION  => 200,
     };
   }
 
@@ -53,11 +65,11 @@ pub const VesType = enum( u8 )
 
 //pub const Cash = f32;
 
-pub const VehInstance = struct
+pub const VesInstance = struct
 {
   vesType    : VesType,
   powerSrc   : PowerSrc,
 //baseCost   : Cash = 1.0, // For market simulation
 
-  vehCount   : u64  = 0,
+  vesCount   : u64  = 0,
 };

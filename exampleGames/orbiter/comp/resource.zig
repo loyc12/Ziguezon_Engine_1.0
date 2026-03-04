@@ -1,6 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const inf = @import( "infrastructure.zig" );
+
 
 pub const resTypeCount = @typeInfo( ResType ).@"enum".fields.len;
 
@@ -9,16 +11,18 @@ pub const ResType = enum( u8 )
   pub inline fn toIdx( self : ResType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) ResType  { return @enumFromInt( @as( u8, @intCast( i ))); }
 
-//CASH,
-  WORK, // Each pop generate 1 work per cycle
+  WORK, // Each pop generate N work per cycle
+//FLOP, // Computation
 
   FOOD,
   WATER,
   POWER,
+//CASH,
 
   ORE,
   INGOT,
   PART,
+
 
   pub inline fn getMass( self : ResType ) f32
   {
@@ -70,12 +74,19 @@ pub const ResType = enum( u8 )
       .PART  => -0.00,
     };
   }
+
+  pub inline fn getInfStore( self : ResType ) inf.InfType
+  {
+    _ = self;
+
+    return inf.InfType.STORAGE; // TODO : update once multiple storage types exist
+  }
 };
 
 pub const ResInstance = struct
 {
-  resType    : ResType,
-  resCount   : u64  = 0,
+  resType  : ResType,
+//baseCost : Cash = 1.0, // For market simulation
 
-//baseCost   : Cash = 1.0, // For market simulation
+  resCount : u64 = 0,
 };

@@ -78,13 +78,13 @@ pub const IndType = enum( u8 )
     };
   }
 
-  pub inline fn canBeBuiltAt( self : IndType, loc : EconLoc, hasAtmosphere : bool ) bool
+  pub inline fn canBeBuiltIn( self : IndType, loc : EconLoc, hasAtmo : bool ) bool
   {
     if( loc == .GROUND )
     {
       return switch( self )
       {
-        .AGRONOMIC   => hasAtmosphere,
+        .AGRONOMIC   => hasAtmo,
         .HYDROPONIC  => true,
         .WATER_PLANT => true,
         .SOLAR_PLANT => true,
@@ -122,6 +122,7 @@ pub const IndInstance = struct
 {
   indType  : IndType,
   powerSrc : PowerSrc,
+//baseCost : Cash = 1.0, // For market simulation
 
   indCount : u64 = 0,
 
@@ -204,7 +205,6 @@ pub const IndInstance = struct
         instance.addResConsPerInd( .PART,  2  );
       },
     }
-
     return instance;
   }
 
