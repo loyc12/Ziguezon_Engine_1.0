@@ -49,28 +49,27 @@ pub const Economy = struct
 
 //assemblyQueue
 
-  popCount  : u64 = 0,   // OK
-  popDelta  : i64 = 0,   // OK
-  popAccess : f32 = 0.0, // OK
+  popCount  : u64 = 0,
+  popDelta  : i64 = 0,
+  popAccess : f32 = 0.0,
 
+  resCap       : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resBank      : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resDelta     : [ resTypeCount ]i64 = std.mem.zeroes([ resTypeCount ]i64 ),
+  resAccess    : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
 
-  prevResProd  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
-  prevResCons  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+  prevResCons  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResProd  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  prevResReq   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // TODO : use me
-  prevResDecay : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // TODO : use me
+  prevResDecay : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResReq   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  resCap      : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
-  resBank     : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ), // OK
+  infBank      : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
+  infDelta     : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
 
-  resAccess   : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
-
-  infBank     : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
-  infDelta    : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
-
-  indBank     : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ), // OK
-  indDelta    : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ), // OK
-  indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ), // OK
+  indBank      : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ),
+  indDelta     : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ),
+  indActivity  : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ),
 
 
   pub inline fn newEcon( loc : EconLoc, area : u64, atmo : bool ) Economy
@@ -113,7 +112,9 @@ pub const Economy = struct
   pub inline fn logResCounts(  self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "Logging resource counts and access ratios :" );
-    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t/ Cap\t[ Prod\t/ Cons\t| Decay\t| Demand ] ( Access )" );
+    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t/ Cap\t[ Delta\t: Prod\t. Cons\t. Decay\t| Demand ] ( Access )" );
+  //def.log( .CONT, 0, @src(), "{s}      \t: {d} \t/ {d}\t[ {d}  \t: +{d}\t/ -{d}\t| {d}  \t| {d}   \t] ( {d:.3} )",.{ @tagName( resType ), resCount, resCap, resDelta, resProd, resCons, resDecay, resReq, resAccess });
+
 
     inline for( 0..resTypeCount )| r |
     {
@@ -122,14 +123,15 @@ pub const Economy = struct
       const resCount = self.resBank[ r ];
       const resCap   = self.resCap[  r ];
 
-      const prevResProd  = self.prevResProd[  r ];
-      const prevResCons  = self.prevResCons[  r ];
-      const prevResReq   = self.prevResReq[   r ];
-      const prevResDecay = self.prevResDecay[ r ];
+      const resDelta = self.resDelta[  r ];
+      const resProd  = self.prevResProd[  r ];
+      const resCons  = self.prevResCons[  r ];
+      const resDecay = self.prevResDecay[ r ];
+      const resReq   = self.prevResReq[   r ];
 
       const resAccess    = self.resAccess[ r ];
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t[ +{d}\t/ -{d}\t| {d}\t| {d}\t ] ( {d:.3} )", .{ @tagName( resType ), resCount, resCap, prevResProd, prevResCons, prevResDecay, prevResReq, resAccess });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t[ {d}\t: +{d}\t. -{d}\t. -{d}\t| {d}\t ] ( {d:.3} )",.{ @tagName( resType ), resCount, resCap, resDelta, resProd, resCons, resDecay, resReq, resAccess });
     }
   }
   pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
@@ -411,6 +413,104 @@ pub const Economy = struct
   }
 
 
+  // ================================ ECONOMY ================================
+
+  pub inline fn getMaxTotResCons( self : *const Economy, resType : ResType ) u64
+  {
+    var maxCons : u64 = 0;
+
+    maxCons += self.getMaxPopResCons( resType );
+    maxCons += self.getMaxIndResCons( resType );
+
+    return maxCons;
+  }
+
+  pub inline fn getMaxPopResCons( self : *const Economy, resType : ResType ) u64
+  {
+    var maxCons : u64 = 0;
+
+    const popResDelta = self.popCount * resType.getPerPopDelta();
+
+    if( popResDelta < -def.EPS ) // If res consumed by pop
+    {
+      maxCons += @intFromFloat( @floor( -popResDelta ));
+    }
+
+    return maxCons;
+  }
+
+  pub inline fn getMaxIndResCons( self : *const Economy, resType : ResType ) u64
+  {
+    var maxCons : u64 = 0;
+
+    inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
+    {
+      const indType = IndType.fromIdx( d );
+      const inst    = IndInstance.initByType( indType );
+
+      maxCons += self.indBank[ d ] * inst.getResProdPerInd( resType );
+
+      if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
+      {
+        const factor = @min( self.sunshine, 1.0 );
+
+        const maxCons_f32 : f32 = @floatFromInt( maxCons );
+        maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
+      }
+    }}
+
+    return maxCons;
+  }
+
+
+  pub inline fn getMaxTotResProd( self : *const Economy, resType : ResType ) u64
+  {
+    var maxProd : u64 = 0;
+
+    maxProd += self.getMaxPopResProd( resType );
+    maxProd += self.getMaxIndResProd( resType );
+
+    return maxProd;
+  }
+
+  pub inline fn getMaxPopResProd( self : *const Economy, resType : ResType ) u64
+  {
+    var maxProd : u64 = 0;
+
+    const popResDelta = self.popCount * resType.getPerPopDelta();
+
+    if( popResDelta > def.EPS ) // If res produced by pop
+    {
+      maxProd += @intFromFloat( @floor( popResDelta ));
+    }
+
+    return maxProd;
+  }
+
+  pub inline fn getMaxIndResProd( self : *const Economy, resType : ResType ) u64
+  {
+    var maxProd : u64 = 0;
+
+    inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
+    {
+      const indType = IndType.fromIdx( d );
+      const inst    = IndInstance.initByType( indType );
+
+      maxProd += self.indBank[ d ] * inst.getResProdPerInd( resType );
+
+      if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
+      {
+        const factor = @min( self.sunshine, 1.0 );
+
+        const maxProd_f32 : f32 = @floatFromInt( maxProd );
+        maxProd = @intFromFloat( @floor( maxProd_f32 * factor ));
+      }
+    }}
+
+    return maxProd;
+  }
+
+
   // ================================ UPDATING ================================
 
   pub fn resetDebugMetrics( self : *Economy ) void // Zeroing out the previous metrics
@@ -419,10 +519,14 @@ pub const Economy = struct
 
     inline for( 0..resTypeCount )| r |
     {
+      self.resDelta[  r ] = 0;
+      self.resAccess[ r ] = 0;
+
       self.prevResProd[ r ] = 0;
       self.prevResCons[ r ] = 0;
 
-      self.resAccess[ r ] = 0;
+      self.prevResDecay[ r ] = 0;
+      self.prevResReq[   r ] = 0;
     }
     inline for( 0..infTypeCount )| f |
     {
@@ -431,7 +535,6 @@ pub const Economy = struct
     inline for( 0..indTypeCount )| d |
     {
       self.indDelta[ d ] = 0;
-
       self.indActivity[ d ] = 0.0;
     }
   }
@@ -445,6 +548,7 @@ pub const Economy = struct
   //_ = self.tryBuild( .{ .inf = .HOUSING });
 
     ecnSlvr.resolveEcon( self );
+  //bldSlvr.resolveBuild( self );
 
     // NOTE : DEBUG
     self.logPopCount();

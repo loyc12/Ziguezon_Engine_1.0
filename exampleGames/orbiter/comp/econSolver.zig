@@ -22,7 +22,7 @@ const IndInstance = ind.IndInstance;
 
 
 // Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
-const WEEKLY_POP_GROWTH     : f32 = 0.0003;
+const WEEKLY_POP_GROWTH : f32 = 0.0003;
 
 // Pop decay factors
 const WEEKLY_PARCH_RATE  : f32 = 0.10;
@@ -31,7 +31,7 @@ const WEEKLY_FREEZE_RATE : f32 = 0.02;
 
 const POP_SHORTAGE_EXPONENT : f32 = 2.0; // Smooth out death rates from pop res shortages
 
-const MIN_WORK_RATE      : f32 = 0.20;
+const MIN_WORK_RATE : f32 = 0.20;
 
 
 pub inline fn resolveEcon( econ : *ecn.Economy ) void
@@ -55,7 +55,8 @@ const EconSolver = struct
   maxIndAccess  : f32 = 1.0,
   maxIndActivity: f32 = 1.0,
 
-  sunshineModifier : f32 = 1.0,
+  sunshineModifier  : f32 = 1.0,
+  maxSunshineAccess : f32 = 1.0,
 
 
   // NOTE : Remove redundant zeroing if this becomes a performance bottleneck
@@ -192,7 +193,7 @@ const EconSolver = struct
 
         if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
         {
-          const factor = self.econ.sunshine * self.sunshineModifier;
+          const factor = @min( self.econ.sunshine * self.sunshineModifier, self.maxSunshineAccess );
 
           const maxProd_f32 : f32 = @floatFromInt( maxProd );
           const maxCons_f32 : f32 = @floatFromInt( maxCons );
@@ -376,11 +377,11 @@ const EconSolver = struct
       if( popResAccess > def.EPS and resType != .WORK ) // Skipping WORK ( see applyWorkWeek() )
       {
         // Production ( nothing for now )
-      //const rawPopProd   : f32 = @floatFromInt( self.maxPopProd[ r ]);
-      //const finalPopProd : u64 = @intFromFloat( @floor( rawPopProd * popResAccess ));
+        const rawPopProd   : f32 = @floatFromInt( self.maxPopProd[ r ]);
+        const finalPopProd : u64 = @intFromFloat( @floor( rawPopProd * popResAccess ));
 
-      //self.finalPopProd[ r ]  = finalPopProd;
-      //self.finalGenProd[ r ] += finalPopProd;
+        self.finalPopProd[ r ]  = finalPopProd;
+        self.finalGenProd[ r ] += finalPopProd;
 
         // Consumption ( FOOD, WATER, POWER )
         const rawPopCons   : f32 = @floatFromInt( self.maxPopCons[ r ]);
@@ -428,6 +429,9 @@ const EconSolver = struct
 
       econ.addResCount( resType, self.finalGenProd[ r ]);
       econ.subResCount( resType, self.finalGenCons[ r ]);
+
+      econ.resDelta[ r ] += @intCast( self.finalGenProd[ r ]);
+      econ.resDelta[ r ] -= @intCast( self.finalGenCons[ r ]);
     }
   }
 
