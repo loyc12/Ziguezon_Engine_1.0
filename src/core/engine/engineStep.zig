@@ -89,7 +89,7 @@ inline fn tryTick( ng : *Engine ) bool
 
   //const tmpTime = def.getNow();
 
-    ng.times.consumeTick(); // TODO : ensure this doesn't create a giant backlog of tick events during lag
+    ng.times.consumeTick();
 
     def.tryHook( .OnTickWorld, ng );
     {
@@ -98,7 +98,7 @@ inline fn tryTick( ng : *Engine ) bool
     }
     def.tryHook( .OffTickWorld, ng );
 
-  //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick delta time" );
+  //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick timelag" );
     return true;
   }
   return false;
@@ -131,11 +131,10 @@ inline fn tryRender( ng : *Engine ) bool
 
   //const tmpTime = def.getNow();
 
-    ng.times.consumeFrame(); // TODO : ensure this doesn't create a giant backlog of frame events during lag
+    ng.times.consumeFrame();
     renderGraphics( ng );
 
-  //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "& Render delta time" );
-  //def.log_u.logFrameTime( @src());
+  //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "& Render timelag" );
 
     return true;
   }
