@@ -111,6 +111,14 @@ pub const TimeVal = struct
   pub inline fn msPerSec()  i128 { return 1_000; }
   pub inline fn usPerSec()  i128 { return 1_000_000; }
 
+  pub inline fn scaleByFloat( self : *const TimeVal, scale : f64 ) TimeVal
+  {
+    const unscaledFloat : f64 = @floatFromInt( self.value );
+    const scaledFloat   : f64 = scale * unscaledFloat;
+
+    return .{ .value = @intFromFloat( @floor( scaledFloat ))};
+  }
+
 
 
   // ======== TYPE CONVERSION ========

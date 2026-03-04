@@ -49,7 +49,6 @@ pub const Engine = struct
   pub inline fn isPlaying( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.PLAYING )); }
 
 
-
   pub fn simTimeUpdate( self : *Engine ) void
   {
     self.times.updateSimTime( self.isPlaying() );

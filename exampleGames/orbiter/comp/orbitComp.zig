@@ -190,7 +190,7 @@ pub const OrbitComp = struct
   pub fn renderDebug( self : *const OrbitComp, selfPos : Vec2, selfRadius : f32, moonDensity : f32 ) void
   {
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
-    const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 ).?;
+    const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 );
 
     def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, zoomedWidth * 2.0 ); // Velocity Vector
 

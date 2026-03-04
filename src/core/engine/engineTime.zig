@@ -5,24 +5,22 @@ const TimeVal = def.TimeVal;
 
 pub const EngineTime = struct
 {
-  simScale   : f32     = 1.0, // Used to speed up or slow down the game without changing the tickrate
-  simEpoch   : TimeVal = .{}, // Time since def.GLOBAL_EPOCH
-  simDelta   : TimeVal = .{}, // How far appart the last two simTime updates were
-  simCount   : u128    = 0,   // Number of simTime updates
+  simEpoch : TimeVal = .{}, // Time since last simTime update occured
+  simDelta : TimeVal = .{}, // How far appart the last two simTime updates were
+  simScale : f32     = 1.0, // Used to speed up or slow down the game globally ( ticks AND frames )
+  simCount : u128    = 0,   // Number of simTime updates since launch
 
-  tickEpoch  : TimeVal = .{}, // simTime at which the last tick occured
-  tickDelta  : TimeVal = .{}, // How far appart the last two tick updates were
-  tickCount  : u128    = 0,   // Number of tick updates
+  targetTickDelta : TimeVal = .{}, // How far appart should each tick update be
+  lastTickDelta   : TimeVal = .{}, // How far appart the last two tick updates were
+  tickOffset      : TimeVal = .{}, // Time since the last tick update occured
+  tickEpoch       : TimeVal = .{}, // simTime at which the last tick occured
+  tickCount       : u128    = 0,   // Number of tick updates since launch
 
-  frameEpoch : TimeVal = .{}, // simeTime at which the last frame occured
-  frameDelta : TimeVal = .{}, // How far appart the last two frame updates were
-  frameCount : u128    = 0,   // Number of frame updates
-
-  targetTickDelta  : TimeVal = undefined,
-  tickOffset       : TimeVal = .{}, // Time since the last tick occured
-
-  targetFrameDelta : TimeVal = undefined,
-  frameOffset      : TimeVal = .{}, // Time since last frame update
+  targetFrameDelta : TimeVal = .{}, // How far appart should each frame update be
+  lastFrameDelta   : TimeVal = .{}, // How far appart the last two frame updates were
+  frameOffset      : TimeVal = .{}, // Time since last frame update occured
+  frameEpoch       : TimeVal = .{}, // simTime at which the last frame update occured
+  frameCount       : u128    = 0,   // Number of frame updates since launch
 
   isInit : bool = false,
 
@@ -35,7 +33,6 @@ pub const EngineTime = struct
     self.targetTickDelta  = .fromRayDeltaTime( 1.0 / spt );
     self.targetFrameDelta = .fromRayDeltaTime( 1.0 / spf );
 
-  //self.simEpoch = def.GLOBAL_EPOCH.timeSince();
     self.simEpoch = .newNow();
 
     self.simTimeUpdate( def.G_NG.isPlaying() );
@@ -48,18 +45,12 @@ pub const EngineTime = struct
 
   pub inline fn shouldTick( self: *const EngineTime ) bool
   {
-    const offset_f64   : f128 = @floatFromInt( self.tickOffset.value );
-    const scaledOffset : i128 = @intFromFloat( @floor( self.simScale * offset_f64 ));
-
-    return scaledOffset >= self.targetTickDelta.value;
+    return self.getTickOffsetTime().value >= self.getTargetTickDeltaTime().value;
   }
 
   pub inline fn shouldRender( self: *const EngineTime ) bool
   {
-    const offset_f64   : f128 = @floatFromInt( self.frameOffset.value );
-    const scaledOffset : i128 = @intFromFloat( @floor( self.simScale * offset_f64 ));
-
-    return scaledOffset >= self.targetFrameDelta.value;
+    return self.getFrameOffsetTime().value >= self.getTargetFrameDeltaTime().value;
   }
 
 
@@ -79,11 +70,12 @@ pub const EngineTime = struct
 
     if( self.simEpoch.isSet() )
     {
-      self.simDelta = now.timeDiff( self.simEpoch );
+      self.simDelta = now.timeDiff( self.simEpoch ).scaleByFloat( self.simScale );
     }
     else
     {
-      def.qlog( .WARN, 0, @src(), "# EngineTime.simEpoch is not set");
+      self.simDelta = .{};
+      def.qlog( .WARN, 0, @src(), "# EngineTime.simEpoch was not set");
     }
     self.simEpoch  = now;
     self.simCount += 1;
@@ -103,7 +95,7 @@ pub const EngineTime = struct
 
     if( self.tickEpoch.isSet() )
     {
-      self.tickDelta = now.timeDiff( self.tickEpoch );
+      self.lastTickDelta = now.timeDiff( self.tickEpoch );
     }
     else
     {
@@ -121,7 +113,7 @@ pub const EngineTime = struct
 
     if( self.frameEpoch.isSet() )
     {
-      self.frameDelta = now.timeDiff( self.frameEpoch );
+      self.lastFrameDelta = now.timeDiff( self.frameEpoch );
     }
     else
     {
@@ -151,7 +143,7 @@ pub const EngineTime = struct
   {
     def.log( .TRACE, 0, @src(), "Setting tick rate to to {}", .{ newTickRate });
 
-    self.targetTickDelta  = TimeVal.fromTimeRate( @floatFromInt( newTickRate ));
+    self.targetTickDelta = TimeVal.fromTimeRate( @floatFromInt( newTickRate ));
   }
 
   pub inline fn setTargetFrameRate( self: *EngineTime, newFrameRate : u16 ) void
@@ -164,21 +156,31 @@ pub const EngineTime = struct
 
   // ================ GETTER METHODS ================
 
-  pub inline fn getScaledTickDeltaFloat( self : *const EngineTime ) f32
-  {
-    return self.simScale * self.tickDelta.toRayDeltaTime();
-  }
-  pub inline fn getScaledFrameDeltaFloat( self : *const EngineTime ) f32
-  {
-    return self.simScale * self.frameDelta.toRayDeltaTime();
-  }
+  pub inline fn getTickOffsetTime(       self : *const EngineTime ) TimeVal { return self.tickOffset;       }
+  pub inline fn getFrameOffsetTime(      self : *const EngineTime ) TimeVal { return self.frameOffset;      }
+  pub inline fn getLastTickDeltaTime(    self : *const EngineTime ) TimeVal { return self.lastTickDelta;    }
+  pub inline fn getLastFrameDeltaTime(   self : *const EngineTime ) TimeVal { return self.lastFrameDelta;   }
+  pub inline fn getTargetTickDeltaTime(  self : *const EngineTime ) TimeVal { return self.targetTickDelta;  }
+  pub inline fn getTargetFrameDeltaTime( self : *const EngineTime ) TimeVal { return self.targetFrameDelta; }
 
-  pub inline fn getScaledTargetTickDeltaFloat( self : *const EngineTime ) f32
-  {
-    return self.simScale * self.targetTickDelta.toRayDeltaTime();
-  }
-  pub inline fn getScaledTargetFrameDeltaFloat( self : *const EngineTime ) f32
-  {
-    return self.simScale * self.targetFrameDelta.toRayDeltaTime();
-  }
+  pub inline fn getTickOffsetFloat(       self : *const EngineTime ) f32 { return self.tickOffset.toRayDeltaTime();       }
+  pub inline fn getFrameOffsetFloat(      self : *const EngineTime ) f32 { return self.frameOffset.toRayDeltaTime();      }
+  pub inline fn getLastTickDeltaFloat(    self : *const EngineTime ) f32 { return self.lastTickDelta.toRayDeltaTime();    }
+  pub inline fn getLastFrameDeltaFloat(   self : *const EngineTime ) f32 { return self.lastFrameDelta.toRayDeltaTime();   }
+  pub inline fn getTargetTickDeltaFloat(  self : *const EngineTime ) f32 { return self.targetTickDelta.toRayDeltaTime();  }
+  pub inline fn getTargetFrameDeltaFloat( self : *const EngineTime ) f32 { return self.targetFrameDelta.toRayDeltaTime(); }
+
+  pub inline fn getScaledTickOffsetTime(       self : *const EngineTime ) TimeVal { return self.tickOffset.scaleByFloat(       self.simScale ); }
+  pub inline fn getScaledFrameOffsetTime(      self : *const EngineTime ) TimeVal { return self.frameOffset.scaleByFloat(      self.simScale ); }
+  pub inline fn getScaledLastTickDeltaTime(    self : *const EngineTime ) TimeVal { return self.lastTickDelta.scaleByFloat(    self.simScale ); }
+  pub inline fn getScaledLastFrameDeltaTime(   self : *const EngineTime ) TimeVal { return self.lastFrameDelta.scaleByFloat(   self.simScale ); }
+  pub inline fn getScaledTargetTickDeltaTime(  self : *const EngineTime ) TimeVal { return self.targetTickDelta.scaleByFloat(  self.simScale ); }
+  pub inline fn getScaledTargetFrameDeltaTime( self : *const EngineTime ) TimeVal { return self.targetFrameDelta.scaleByFloat( self.simScale ); }
+
+  pub inline fn getScaledTickOffsetFloat(       self : *const EngineTime ) f32 { return self.simScale * self.tickOffset.toRayDeltaTime();       }
+  pub inline fn getScaledFrameOffsetFloat(      self : *const EngineTime ) f32 { return self.simScale * self.frameOffset.toRayDeltaTime();      }
+  pub inline fn getScaledLastTickDeltaFloat(    self : *const EngineTime ) f32 { return self.simScale * self.lastTickDelta.toRayDeltaTime();    }
+  pub inline fn getScaledLastFrameDeltaFloat(   self : *const EngineTime ) f32 { return self.simScale * self.lastFrameDelta.toRayDeltaTime();   }
+  pub inline fn getScaledTargetTickDeltaFloat(  self : *const EngineTime ) f32 { return self.simScale * self.targetTickDelta.toRayDeltaTime();  }
+  pub inline fn getScaledTargetFrameDeltaFloat( self : *const EngineTime ) f32 { return self.simScale * self.targetFrameDelta.toRayDeltaTime(); }
 };

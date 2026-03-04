@@ -170,7 +170,7 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   def.tryHook( .OnRenderOverlay, ng );
   {
     drawDebugFpsCount( ng );
-    //drawDebugTpsCount( ng );
+    drawDebugTpsCount( ng );
   }
   //def.tryHook( .OffRenderOverlay, ng );
 }
@@ -207,12 +207,12 @@ fn drawDebugFpsCount( ng : *Engine ) void
 {
   if( def.G_ST.DebugDraw_FPS and def.G_ST.Graphic_Metrics_Colour != null )
   {
-    const frameTime = ng.times.frameDelta;
+    const frameTime = ng.times.lastFrameDelta;
 
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
 
-    def.drawTextLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16.0, 32.0, 24, def.G_ST.Graphic_Metrics_Colour.? );
+    def.drawTextLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16.0, 24.0, 16, def.G_ST.Graphic_Metrics_Colour.? );
   }
 }
 
@@ -221,11 +221,11 @@ fn drawDebugTpsCount( ng : *Engine ) void
 {
   if( def.G_ST.DebugDraw_FPS )
   {
-    const tickTime = ng.times.tickDelta;
+    const tickTime = ng.times.lastTickDelta;
 
     const sec : u64 = @intCast( tickTime.toSec() );
     const mic : u64 = @intCast( @rem( tickTime.toUs(), def.TimeVal.usPerSec() ));
 
-    def.drawTextFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, 48, 16, 32, def.Colour.Graphic_Metrics_Colour );
+    def.drawTextLeftFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, 16.0, 56.0, 16, def.G_ST.Graphic_Metrics_Colour.? );
   }
 }
