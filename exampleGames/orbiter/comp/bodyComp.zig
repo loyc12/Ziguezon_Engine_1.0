@@ -106,11 +106,11 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
     if( loc == .GROUND ) // TODO : add useableLand modifier ( ex : what proportion is solid ground )
     {
-      econ = ecn.Economy.newEcon( loc, @intFromFloat( @floor( self.getSurfaceArea() )), true ); // TODO : Stop giving all GROUND an atmosphere
+      econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), true ); // TODO : Stop giving all GROUND an atmosphere
     }
     else
     {
-      econ = ecn.Economy.newEcon( loc, std.math.maxInt( u64 ), true );
+      econ = ecn.Economy.newEcon( loc, 1_000_000_000.0, true );
     }
 
     self.econArray[ loc.toIdx() ] = econ;

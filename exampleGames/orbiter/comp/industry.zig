@@ -32,15 +32,15 @@ pub const IndType = enum( u8 )
     return switch( self )
     {
       .AGRONOMIC   => 1.0,
-      .HYDROPONIC  => 5.0,
-      .WATER_PLANT => 2.0,
+      .HYDROPONIC  => 3.0,
+      .WATER_PLANT => 5.0,
       .SOLAR_PLANT => 2.0,
 
-      .PROBE_MINE  => 2.0,
+      .PROBE_MINE  => 3.0,
       .GROUND_MINE => 15.0,
       .REFINERY    => 10.0,
       .FACTORY     => 5.0,
-      .ASSEMBLY    => 3.0,
+      .ASSEMBLY    => 4.0,
     };
   }
 
@@ -198,11 +198,10 @@ pub const IndInstance = struct
 
         instance.addResProdPerInd( .PART,  1  );
       },
-      .ASSEMBLY => // No resource production. TODO : Increments build queue construction
+      .ASSEMBLY => // No resource production. Allos building constructs instead
       {
         instance.addResConsPerInd( .WORK,  3  );
         instance.addResConsPerInd( .POWER, 4  );
-        instance.addResConsPerInd( .PART,  2  );
       },
     }
     return instance;

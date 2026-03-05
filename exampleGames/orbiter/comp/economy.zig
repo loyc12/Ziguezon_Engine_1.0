@@ -8,8 +8,11 @@ const ind = @import( "industry.zig" );
 const cst = @import( "construct.zig" );
 
 const ecnSlvr = @import( "econSolver.zig" );
-const ecnLoc  = @import( "econLoc.zig" );
+const ecnBldr = @import( "econBuilder.zig" );
 
+const BuildQueue = ecnBldr.BuildQueue;
+
+const ecnLoc  = @import( "econLoc.zig" );
 
 pub const econLocCount = ecnLoc.econLocCount;
 pub const EconLoc      = ecnLoc.EconLoc;
@@ -40,14 +43,14 @@ pub const Economy = struct
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
   location     : EconLoc,
-  maxAvailArea : u64 = 0,
+  maxAvailArea : f32 = 0,
 
   hasAtmo  : bool = false,
   isActive : bool = false,
 
   sunshine : f32  = 0.0,
 
-//assemblyQueue
+  buildQueue : ?BuildQueue = null,
 
   popCount  : u64 = 0,
   popDelta  : i64 = 0,
@@ -72,7 +75,7 @@ pub const Economy = struct
   indActivity  : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ),
 
 
-  pub inline fn newEcon( loc : EconLoc, area : u64, atmo : bool ) Economy
+  pub inline fn newEcon( loc : EconLoc, area : f32, atmo : bool ) Economy
   {
     var econ : Economy = .{ .location = loc, .maxAvailArea = area, .hasAtmo = atmo, .isActive = true };
 
@@ -80,6 +83,8 @@ pub const Economy = struct
     {
       econ.resCap[ r ] = MIN_RES_CAP;
     }
+
+    econ.buildQueue = BuildQueue.init();
 
     return econ;
   }
@@ -226,7 +231,7 @@ pub const Economy = struct
   {
     if( !InfType.canBeBuiltAt( infType, self.location, self.hasAtmosphere ))
     {
-      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
+      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
       return false;
     }
 
@@ -240,7 +245,7 @@ pub const Economy = struct
 
     if( availArea < neededArea )
     {
-      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
+      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
       return false;
     }
     return true;
@@ -301,7 +306,6 @@ pub const Economy = struct
     self.indBank[ IndType.GROUND_MINE.toIdx() ] = value * 200;
     self.indBank[ IndType.REFINERY.toIdx()    ] = value * 100;
     self.indBank[ IndType.FACTORY.toIdx()     ] = value * 50;
-  //self.indBank[ IndType.ASSEMBLY.toIdx()    ] = value * 25;
   }
 
 
@@ -309,7 +313,7 @@ pub const Economy = struct
   {
     if( !IndType.canBeBuiltAt( indType, self.location, self.hasAtmosphere ))
     {
-      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {} in location of type {}", .{ @tagName( indType ), @tagName( self.location ) });
+      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {}", .{ @tagName( indType ), @tagName( self.location ) });
       return false;
     }
 
@@ -318,7 +322,7 @@ pub const Economy = struct
 
     if( availArea < neededArea )
     {
-      def.log( .INFO, 0, @src(), "Not enough space to build industry of type {} in location of type {}. Needed : {d}", .{ @tagName( indType ), @tagName( self.location ), neededArea });
+      def.log( .INFO, 0, @src(), "Not enough space to build industry of type {s} in location of type {}. Needed : {d}", .{ @tagName( indType ), @tagName( self.location ), neededArea });
       return false;
     }
     return true;
@@ -347,17 +351,21 @@ pub const Economy = struct
 
     inline for( 0..infTypeCount )| f |
     {
-      const infType = InfType.fromIdx( f );
-      const tmp = self.getIndCount( .infType ) * infType.getCapacity();
+      const infType  = InfType.fromIdx( f );
 
-      used += @floatFromInt( tmp );
+      var area : f32 = @floatFromInt( self.getInfCount( infType ));
+          area      *= infType.getAreaCost();
+
+      used += area;
     }
     inline for( 0..indTypeCount )| d |
     {
       const indType = IndType.fromIdx( d );
-      const tmp = self.getIndCount( .indType ) * indType.getCapacity();
 
-      used += @floatFromInt( tmp );
+      var area : f32 = @floatFromInt( self.getIndCount( indType ));
+          area      *= indType.getAreaCost();
+
+      used += area;
     }
 
     return used;
@@ -374,14 +382,14 @@ pub const Economy = struct
     }
     else
     {
-      def.log( .WARN, 0, @src(), "Negative available area in location of type {}", .{ @tagName( self.location )});
+      def.log( .WARN, 0, @src(), "Negative available area in location of type {s}", .{ @tagName( self.location )});
       return 0.0;
     }
   }
 
   pub fn getAreaCapacity( self : *const Economy ) f32
   {
-    if( self.location == .GROUND and self.hasAtmosphere ) // If this is a planet with atmosphere
+    if( self.location == .GROUND and self.hasAtmo ) // If this is a planet with atmosphere
     {
       return self.maxAvailArea;
     }
@@ -390,26 +398,6 @@ pub const Economy = struct
       const total = self.getInfCount( .HABITAT ) * InfType.HABITAT.getCapacity();
       return @floatFromInt( total );
     }
-  }
-
-
-  // ================================ CONSTRUCTION ================================
-
-  pub fn tryBuild( self : *Economy, c : Construct ) bool
-  {
-    const partIdx = ResType.PART.toIdx();
-
-    if( self.resBank[ partIdx ] < c.getPartCost() ){ return false; }
-
-    self.resBank[ partIdx ] -= c.getPartCost();
-
-    switch( c )
-    {
-    //.ves => | vesType | self.vesBank[ vesType.toIdx() ] += 1,
-      .inf => | infType | self.infBank[ infType.toIdx() ] += 1,
-      .ind => | indType | self.indBank[ indType.toIdx() ] += 1,
-    }
-    return true;
   }
 
 
@@ -511,6 +499,56 @@ pub const Economy = struct
   }
 
 
+  // ================================ CONSTRUCTION ================================
+
+  pub inline fn tryBuild( self : *Economy, c : Construct, amount : u64 ) u64
+  {
+
+    if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
+    {
+      def.qlog( .WARN, 0, @src(), "Invalid location conditions : aborting" );
+      return 0;
+    }
+
+    const partIdx    = ResType.PART.toIdx();
+    const availParts = self.resBank[ partIdx ];
+    var   maxAmount  = amount;
+
+    if( availParts < c.getPartCost())
+    {
+      def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
+      return 0;
+    }
+    if( availParts < amount * c.getPartCost() )
+    {
+      def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting" );
+
+      maxAmount = @divFloor( availParts, c.getPartCost() );
+    }
+
+    const availArea = self.getUnusedArea();
+    const amout_f32 : f32 = @floatFromInt( amount );
+
+    if( availArea < amout_f32 * c.getAreaCost())
+    {
+      def.qlog( .WARN, 0, @src(), "Not enough area : adjusting" );
+
+      maxAmount = @intFromFloat( @divFloor( availArea, c.getAreaCost()));
+    }
+
+    self.resBank[ partIdx ] -= maxAmount * c.getPartCost();
+
+    switch( c )
+    {
+    //.ves => | vesType | self.vesBank[ vesType.toIdx() ] += maxAmount,
+      .inf => | infType | self.infBank[ infType.toIdx() ] += maxAmount,
+      .ind => | indType | self.indBank[ indType.toIdx() ] += maxAmount,
+    }
+
+    return maxAmount;
+  }
+
+
   // ================================ UPDATING ================================
 
   pub fn resetDebugMetrics( self : *Economy ) void // Zeroing out the previous metrics
@@ -539,18 +577,32 @@ pub const Economy = struct
     }
   }
 
+  pub fn tickBuildQueue( self : *Economy ) void
+  {
+    if( self.buildQueue != null )
+    {
+      self.buildQueue.?.update( self );
+    }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot tick build queue : uninitialized" );
+    }
+  }
+
   pub fn tickEcon( self : *Economy, sunshine : f32 ) void
   {
     self.sunshine = sunshine;
     self.updateResCaps();
 
-  //_ = self.tryBuild( .{ .inf = .STORAGE });
-  //_ = self.tryBuild( .{ .inf = .HOUSING });
 
     ecnSlvr.resolveEcon( self );
-  //bldSlvr.resolveBuild( self );
+    self.tickBuildQueue();
+
 
     // NOTE : DEBUG
+    _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING }, 2 );
+    _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE }, 15 );
+
     self.logPopCount();
     self.logResCounts();
   //self.logInfCounts();

@@ -94,7 +94,7 @@ pub const InfType = enum( u8 )
         .STORAGE => true,
       //.BATTERY => true,
 
-        else     => false,
+      //else     => false,
       };
     }
     else // .ORBIT or .L1-5
@@ -107,7 +107,7 @@ pub const InfType = enum( u8 )
         .STORAGE => true,
       //.BATTERY => true,
 
-        else     => false,
+      //else     => false,
       };
     }
   }

@@ -54,8 +54,8 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     return switch( c )
     {
     //.ves =>             0.0,
-      .inf => | infType | infType.getPartCost(),
-      .ind => | indType | indType.getPartCost(),
+      .inf => | infType | infType.getAreaCost(),
+      .ind => | indType | indType.getAreaCost(),
     };
   }
 
@@ -84,8 +84,8 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     return switch( c )
     {
     //.ves =>             true,
-      .inf => | infType | infType.canBeBuildIn( loc, hasAtmo ),
-      .ind => | indType | indType.canBeBuildIn( loc, hasAtmo ),
+      .inf => | infType | infType.canBeBuiltIn( loc, hasAtmo ),
+      .ind => | indType | indType.canBeBuiltIn( loc, hasAtmo ),
     };
   }
 };
