@@ -3,6 +3,9 @@ const def = @import( "defs" );
 
 const TimeVal = def.TimeVal;
 
+const TICK_LAG_LIMIT  = 4;
+const FRAME_LAG_LIMIT = 2;
+
 pub const EngineTime = struct
 {
   simEpoch : TimeVal = .{}, // Time since last simTime update occured
@@ -98,7 +101,7 @@ pub const EngineTime = struct
 
   pub fn consumeTick( self: *EngineTime ) void
   {
-    const tickLagLimit : i128 = 5 * self.targetTickDelta.value;
+    const tickLagLimit : i128 = TICK_LAG_LIMIT * self.targetTickDelta.value;
     const now : def.TimeVal   = .newNow();
 
     self.tickOffset.value -= self.targetTickDelta.value;
@@ -127,7 +130,7 @@ pub const EngineTime = struct
 
   pub fn consumeFrame( self: *EngineTime ) void
   {
-    const frameLagLimit : i128 = 5 * self.targetFrameDelta.value;
+    const frameLagLimit : i128 = FRAME_LAG_LIMIT * self.targetFrameDelta.value;
     const now : def.TimeVal    = .newNow();
 
     self.frameOffset.value -= self.targetFrameDelta.value;

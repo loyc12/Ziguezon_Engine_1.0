@@ -91,7 +91,7 @@ pub const BuildQueue = struct
   pub fn addEntry( self : *BuildQueue, c : Construct, count : u64 ) bool
   {
     // If construct same as last in list, increment amount to be built
-    if( self.entryCount > 0 and @TypeOf( c ) == @TypeOf( self.entries[ self.entryCount - 1 ].construct ))
+    if( self.entryCount > 0 and std.meta.eql( c, self.entries[ self.entryCount - 1 ].construct ))
     {
       self.entries[ self.entryCount - 1 ].buildCount += count;
       return true;
@@ -134,6 +134,15 @@ pub const BuildQueue = struct
     }
   }
 
+  pub inline fn getEntryCount( self : *BuildQueue ) u32
+  {
+    for( self.entries, 0.. )| e, idx |
+    {
+      if( e.buildCount == 0 ){ return @intCast( idx ); }
+    }
+    return self.entries.len;
+  }
+
 
   pub fn update( self : *BuildQueue, econ : *ecn.Economy ) void
   {
@@ -144,6 +153,7 @@ pub const BuildQueue = struct
       return;
     }
 
+    const partIdx     = ResType.PART.toIdx();
     const assemblyIdx = IndType.ASSEMBLY.toIdx();
 
     var availParts_f32  = ASSEMBLY_EFFICIENCY;
@@ -174,7 +184,7 @@ pub const BuildQueue = struct
       // Encountered a building restriction
       if( unitsToBuild != unitsBuilt )
       {
-        self.leftoverParts += availParts;
+        self.leftoverParts = @min( self.leftoverParts + availParts, econ.resCap[ partIdx ]);
         break;
       }
 

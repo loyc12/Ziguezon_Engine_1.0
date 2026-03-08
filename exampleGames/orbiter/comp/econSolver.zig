@@ -55,8 +55,9 @@ const EconSolver = struct
   maxIndAccess  : f32 = 1.0,
   maxIndActivity: f32 = 1.0,
 
-  sunshineModifier  : f32 = 1.0,
-  maxSunshineAccess : f32 = 1.0,
+  sunshineModifier : f32 = 1.0,
+  natureModifier   : f32 = 1.0,
+
 
 
   // NOTE : Remove redundant zeroing if this becomes a performance bottleneck
@@ -69,6 +70,8 @@ const EconSolver = struct
 
   maxGenCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
   maxGenProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+
+  natureProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
 
   popAccess  : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Population resource access ratios
@@ -98,6 +101,7 @@ const EconSolver = struct
 
     self.calcPopNeeds();    // Computes population potential prod and cons
     self.calcIndNeeds();    // Computes industrial potential prod and cons
+    self.calcAbundance();   // Computes nature's bounty
 
     self.calcResAccess();   // Computes non-WORK resource access     TODO : add access-tweaking policies / modifiers
     self.applyWorkWeek();   // Precomputes current WORK production to inform industrial WORK access
@@ -115,7 +119,7 @@ const EconSolver = struct
     self.prevPopCount = @floatFromInt( self.econ.popCount );
     self.nextPopCount = self.prevPopCount;
 
-    self.econ.resetDebugMetrics();
+    self.econ.resetCountMetrics();
   }
 
   fn applyResDecay( self : *EconSolver ) void
@@ -193,13 +197,11 @@ const EconSolver = struct
 
         if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
         {
-          const factor = @min( self.econ.sunshine * self.sunshineModifier, self.maxSunshineAccess );
-
           const maxProd_f32 : f32 = @floatFromInt( maxProd );
           const maxCons_f32 : f32 = @floatFromInt( maxCons );
 
-          maxProd = @intFromFloat( @floor( maxProd_f32 * factor ));
-          maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
+          maxProd = @intFromFloat( @floor( maxProd_f32 * self.econ.sunAccess ));
+          maxCons = @intFromFloat( @floor( maxCons_f32 * self.econ.sunAccess ));
         }
 
         self.perIndProd[ d ][ r ] = maxProd;
@@ -226,6 +228,23 @@ const EconSolver = struct
   //}
   }
 
+
+  fn calcAbundance( self : *EconSolver ) void
+  {
+    const ecoFactor = self.econ.getEcologyFactor();
+
+    def.log( .DEBUG, 0, @src(), "Logging natural resource abundance ( {d} ) :", .{ ecoFactor });
+
+    inline for( 0..resTypeCount )| r |
+    {
+      const resType    = ResType.fromIdx( r );
+      const amount_f32 = ecoFactor * ecoFactor * resType.getNaturalAbundance();
+
+      self.natureProd[ r ] += @intFromFloat( @floor( amount_f32 ));
+      def.log( .CONT, 0, @src(), "{s}  \t: +{d}", .{ @tagName( ResType.fromIdx( r ) ), self.natureProd[ r ] });
+    }
+  }
+
   fn calcResAccess( self : *EconSolver ) void // TODO : Tweak population vs industry access ratio here if need be
   {
     // Skips WORK res, as it is calc later
@@ -233,7 +252,7 @@ const EconSolver = struct
 
     inline for( 0..resTypeCount )| r |{ if( ResType.fromIdx( r ) != .WORK ) // Skipping WORK ( see calcWorkAccess() )
     {
-      const available : f32 = @floatFromInt( self.econ.resBank[ r ]);
+      const available : f32 = @floatFromInt( self.econ.resBank[ r ] + self.natureProd[ r ]);
       const required  : f32 = @floatFromInt( self.maxGenCons[   r ]);
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d}\t-{d}", .{ @tagName( ResType.fromIdx( r )), available, required });
@@ -369,6 +388,9 @@ const EconSolver = struct
 
     inline for( 0..resTypeCount )| r |
     {
+      // Adding nature's bounty
+      self.finalGenProd[ r ] += self.natureProd[ r ];
+
       // Iterating over population
       const popResAccess = self.popAccess[ r ];
 
@@ -482,13 +504,11 @@ const EconSolver = struct
       deaths += self.prevPopCount * def.pow( f32, 1.0 - powerAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_FREEZE_RATE;
     }
 
-
     const suppliedRatio = def.pow( f32, @max( @min( foodAccess, waterAccess ), 1.0 ), 1.0 / POP_SHORTAGE_EXPONENT );
 
     births = self.prevPopCount * suppliedRatio * WEEKLY_POP_GROWTH;
 
-
-    def.log( .INFO, 0, @src(), "Pop access : F = {d:.4} - W = {d:.4} - P = {d:.4}", .{ foodAccess, waterAccess, powerAccess });
+    def.log( .INFO, 0, @src(), "Pop access : F {d:.4}\tW {d:.4}\tP {d:.4}", .{ foodAccess, waterAccess, powerAccess });
     def.log( .CONT, 0, @src(), "Deaths     : {d:.8}", .{ deaths });
     def.log( .CONT, 0, @src(), "Births     : {d:.8}", .{ births });
     def.log( .CONT, 0, @src(), "Supplied   : {d:.8}", .{ suppliedRatio });

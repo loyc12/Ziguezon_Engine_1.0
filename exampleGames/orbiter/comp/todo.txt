@@ -6,32 +6,24 @@ HIGH PRIORITY ( Required for basic functionality ) :
   - Allow teleporting resources and infra from one econ to another ( for now )
   - Needed to boostarp econs where none exist prior
 
-2. Implement assembly queue data structure in Economy :
-  - PART consumed over time
-  - partial progress accumulation
-  - InfType.canBeBuiltAt validation
-  - optional build rate ( WORK limited ? )
-
-3. Infrastructure maintenance resource sinks
+2. Infrastructure maintenance resource sinks
   - Per-inf maintenance costs
   - Soft shutdown when unpaid (activity ratio scaling)
   - Hard decay when unpaid long-term (optional)
 
-4. Artificial area infrastructure for orbit
-  - HAB_MODULE / SPIN_HAB / CYLINDER / HABITAT / etc
-  - Area increases via infra
-  - Tie to pressurization rules
+3. Add collapse revert mechanism
+  - smart industry/infrastructure decay
+  - ecology-based natural abundance ( rework existing ecoFactor if need be )
 
 
 MEDIUM PRIORITY :
 
 1. Implement true resource transport between econs
-2. Implement more efficiency modifiers ( like sunlight does )
+2. Implement more efficiency modifiers ( like sunAccess )
 
 
 LOW PRIORITY :
 
-1. Add storage capacity limits (commented out WAREHOUSE / BATTERY)
-2. Add fractional carry buffers for res production ( avoid rounding losses )
-3. Implement local res distribution system ( POWER_GRID, etc )
-4. Add tax / revenue mechanics for COMMERCE and auto-trade
+1. Add fractional carry buffers for res production ( avoid rounding losses )
+2. Implement local res distribution system ( POWER_GRID, etc )
+3. Add tax / revenue mechanics for COMMERCE and auto-trade

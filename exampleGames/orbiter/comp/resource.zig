@@ -64,7 +64,6 @@ pub const ResType = enum( u8 )
     {
       .WORK  =>  1.00, // Needs to stay positive ( EconSolver.calcWorkAccess() )
 
-      //
       .FOOD  => -0.30,
       .WATER => -0.20,
       .POWER => -0.10,
@@ -72,6 +71,24 @@ pub const ResType = enum( u8 )
       .ORE   => -0.00,
       .INGOT => -0.00,
       .PART  => -0.00,
+    };
+  }
+
+  pub inline fn getNaturalAbundance( self : ResType ) f32
+  {
+    // NOTE : Changes might require modifications to EconSolver.applyWorkWeek(), .calcWorkAccess(), or .applyPopDelta()
+
+    return switch( self )
+    {
+      .WORK  => 0.00,
+
+      .FOOD  => 100.0,
+      .WATER => 100.0,
+      .POWER => 20.0,
+
+      .ORE   => 0.0,
+      .INGOT => 0.0,
+      .PART  => 0.0,
     };
   }
 

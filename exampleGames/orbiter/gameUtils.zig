@@ -11,10 +11,10 @@ const ecn = @import( "comp/economy.zig" );
 
 pub fn initDebugSystem( ng : *def.Engine ) void
 {
-  const STAR_MASS   = 10_000_000.0;
-  const PLANET_MASS =    310_000.0;
-  const MOON_MASS   =      1_000.0;
-  const COMET_MASS  =         31.0;
+  const STAR_MASS   = 10_000_000_000.0;
+  const PLANET_MASS =    310_000_000.0;
+  const MOON_MASS   =      1_000_000.0;
+  const COMET_MASS  =         31_000.0;
 
   // Setting up relevant components
   for( 0..glb.entityCount )| idx |
@@ -33,7 +33,7 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       glb.starCompInst.mass   = STAR_MASS;
 
       glb.starCompInst.setRadiusViaDensity( 0.1 );
-      glb.starCompInst.setShineAtDist( 1.0, 2500 ); // making sure sunshine strenght is 1 around main planet
+      glb.starCompInst.setShineAtDist( 1.0, 25000 ); // making sure sunshine strenght is 1 around main planet
 
       const r = glb.starCompInst.radius;
 
@@ -64,8 +64,8 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       {
         orbitComp.orbitedMass = STAR_MASS;
         orbitComp.orbiterMass = PLANET_MASS;
-        orbitComp.minRadius   = 2500 - 50;
-        orbitComp.maxRadius   = 2500 + 50;
+        orbitComp.minRadius   = 25000 - 500;
+        orbitComp.maxRadius   = 25000 + 500;
 
         bodyComp.bodyType = .PLANET;
         bodyComp.mass     = PLANET_MASS;
@@ -78,15 +78,15 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       //bodyComp.initEcon( .L4     );
       //bodyComp.initEcon( .L5     );
 
-        bodyComp.debugSetEconVals( 1 );
+        bodyComp.debugSetEconVals( 1 ); // NOTE : DEBUG
       },
 
       3 =>
       {
         orbitComp.orbitedMass = PLANET_MASS;
         orbitComp.orbiterMass = MOON_MASS;
-        orbitComp.minRadius   = 300 - 20;
-        orbitComp.maxRadius   = 300 + 20;
+        orbitComp.minRadius   = 3000 - 200;
+        orbitComp.maxRadius   = 3000 + 200;
 
         bodyComp.bodyType = .MOON;
         bodyComp.mass     = MOON_MASS;
@@ -102,8 +102,8 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       {
         orbitComp.orbitedMass = MOON_MASS;
         orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 20 - 2;
-        orbitComp.maxRadius   = 20 + 2;
+        orbitComp.minRadius   = 200 - 20;
+        orbitComp.maxRadius   = 200 + 20;
 
         bodyComp.bodyType  = .COMET;
         bodyComp.mass      = COMET_MASS;
@@ -116,8 +116,8 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       {
         orbitComp.orbitedMass = COMET_MASS;
         orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 10 - 3;
-        orbitComp.maxRadius   = 10 + 3;
+        orbitComp.minRadius   = 100 - 30;
+        orbitComp.maxRadius   = 100 + 30;
 
         bodyComp.bodyType = .COMET;
         bodyComp.mass     = COMET_MASS;

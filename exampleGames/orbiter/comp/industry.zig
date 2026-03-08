@@ -78,6 +78,23 @@ pub const IndType = enum( u8 )
     };
   }
 
+  pub inline fn getPollution( self : IndType ) f32
+  {
+    return switch( self )
+    {
+      .AGRONOMIC   => 1.0,
+      .HYDROPONIC  => 0.0,
+      .WATER_PLANT => 0.5,
+      .SOLAR_PLANT => 0.0,
+
+      .PROBE_MINE  => 1.0,
+      .GROUND_MINE => 8.0,
+      .REFINERY    => 8.0,
+      .FACTORY     => 4.0,
+      .ASSEMBLY    => 2.0,
+    };
+  }
+
   pub inline fn canBeBuiltIn( self : IndType, loc : EconLoc, hasAtmo : bool ) bool
   {
     if( loc == .GROUND )
@@ -157,7 +174,7 @@ pub const IndInstance = struct
       },
       .WATER_PLANT =>
       {
-        instance.addResConsPerInd( .WORK,  3  );
+        instance.addResConsPerInd( .WORK,  2  );
 
         instance.addResConsPerInd( .POWER, 4  );
         instance.addResProdPerInd( .WATER, 16 );
@@ -165,7 +182,7 @@ pub const IndInstance = struct
       .SOLAR_PLANT =>
       {
         instance.powerSrc = .SOLAR;
-        instance.addResConsPerInd( .WORK,  2  );
+        instance.addResConsPerInd( .WORK,  1  );
 
         instance.addResProdPerInd( .POWER, 32 );
       },

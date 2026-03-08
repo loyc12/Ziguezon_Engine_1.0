@@ -53,17 +53,21 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   // Sphere surface area : 4πr^2
   pub inline fn getSurfaceArea( self : *const BodyComp ) f32
   {
-    const r2 = self.radius * self.radius;
+    const r2  = self.radius * self.radius;
+    const tmp = 4.0 * def.PI * r2;
 
-    return 4.0 * def.PI * r2;
+    def.log( .INFO, 0, @src(), "Returning area of {d}", .{ tmp });
+    return tmp;
   }
 
   // Sphere volume : ( 4/3 )πr^3
   pub inline fn getVolume( self : *const BodyComp ) f32
   {
-    const r3 = self.radius * self.radius * self.radius;
+    const r3  = self.radius * self.radius * self.radius;
+    const tmp = ( 4.0 * def.PI * r3 ) / 3.0;
 
-    return ( 4.0 * def.PI * r3 ) / 3.0 ;
+    def.log( .INFO, 0, @src(), "Returning volume of {d}", .{ tmp });
+    return tmp;
   }
 
   pub inline fn getDensity( self : *const BodyComp ) f32
@@ -104,6 +108,8 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   {
     var econ : ecn.Economy = undefined;
 
+    self.setRadiusViaDensity( 1.0 ); // NOTE : Forces radius to be correct
+
     if( loc == .GROUND ) // TODO : add useableLand modifier ( ex : what proportion is solid ground )
     {
       econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), true ); // TODO : Stop giving all GROUND an atmosphere
@@ -124,11 +130,9 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
       if( econ.isActive ) // TODO : Activate locs when player build infra there
       {
-        const econPos    = selfOrbit.getEconAbsPos( orbitedPos, econ.location );
-        const distSquare = econPos.getDistSqr( starPos );
-        var   shine      = glb.starCompInst.getSunshineAt( distSquare );
-
-        if( econ.location == .GROUND ){ shine *= 0.5; } // Losing efficiency from nightime
+        const econPos = selfOrbit.getEconAbsPos( orbitedPos, econ.location );
+        const distSqr = econPos.getDistSqr( starPos );
+        const shine   = glb.starCompInst.getSunshineAt( distSqr );
 
         def.log( .INFO, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} at pos {d:.2}:{d:.2}", .{ @tagName( econ.location ), shine, econPos.x, econPos.y });
 

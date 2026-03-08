@@ -35,26 +35,36 @@ pub const IndInstance = ind.IndInstance;
 pub const Construct = cst.Construct;
 
 
-pub const MIN_RES_CAP = 9999;
+const POLLUTION_PER_POP     = 1.0;
+const MIN_RES_CAP           = 100;
+const MAX_SUN_ACCESS_CAP    = 1.0;
+const SUN_SHORTAGE_EXPONENT = 2.0;
 
 
 pub const Economy = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  location     : EconLoc,
-  maxAvailArea : f32 = 0,
+  location  : EconLoc,
+  isActive  : bool = false,
 
-  hasAtmo  : bool = false,
-  isActive : bool = false,
+  hasAtmo   : bool,
+  sunshine  : f32 = 0.0,
+  sunAccess : f32 = 1.0,
+  landCover : f32 = 0.7,
 
-  sunshine : f32  = 0.0,
+  areaCap   : f32,
+  areaMax   : f32 = 0.0,
+  areaUsed  : f32 = 0.0,
+  areaAvail : f32 = 0.0,
 
   buildQueue : ?BuildQueue = null,
 
   popCount  : u64 = 0,
   popDelta  : i64 = 0,
   popAccess : f32 = 0.0,
+
+  // TOOD : Consolidate some of these into a 2D array with enum for row ?
 
   resCap       : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
   resBank      : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
@@ -77,7 +87,7 @@ pub const Economy = struct
 
   pub inline fn newEcon( loc : EconLoc, area : f32, atmo : bool ) Economy
   {
-    var econ : Economy = .{ .location = loc, .maxAvailArea = area, .hasAtmo = atmo, .isActive = true };
+    var econ : Economy = .{ .location = loc, .areaCap = area, .hasAtmo = atmo, .isActive = true };
 
     inline for( 0..resTypeCount )| r |
     {
@@ -134,7 +144,7 @@ pub const Economy = struct
       const resDecay = self.prevResDecay[ r ];
       const resReq   = self.prevResReq[   r ];
 
-      const resAccess    = self.resAccess[ r ];
+      const resAccess = self.resAccess[ r ];
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t[ {d}\t: +{d}\t. -{d}\t. -{d}\t| {d}\t ] ( {d:.3} )",.{ @tagName( resType ), resCount, resCap, resDelta, resProd, resCons, resDecay, resReq, resAccess });
     }
@@ -240,10 +250,9 @@ pub const Economy = struct
       return true; // TODO : check against self.maxAvailableArea
     }
 
-    const  availArea  = self.getUnusedArea();
     const  neededArea = infType.getAreaCost() * count;
 
-    if( availArea < neededArea )
+    if( self.areaAvail < neededArea )
     {
       def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
       return false;
@@ -306,6 +315,7 @@ pub const Economy = struct
     self.indBank[ IndType.GROUND_MINE.toIdx() ] = value * 200;
     self.indBank[ IndType.REFINERY.toIdx()    ] = value * 100;
     self.indBank[ IndType.FACTORY.toIdx()     ] = value * 50;
+    self.indBank[ IndType.ASSEMBLY.toIdx()    ] = value * 25;
   }
 
 
@@ -317,10 +327,9 @@ pub const Economy = struct
       return false;
     }
 
-    const  availArea  = self.getUnusedArea();
     const  neededArea = indType.getAreaCost() * count;
 
-    if( availArea < neededArea )
+    if( self.areaAvail < neededArea )
     {
       def.log( .INFO, 0, @src(), "Not enough space to build industry of type {s} in location of type {}. Needed : {d}", .{ @tagName( indType ), @tagName( self.location ), neededArea });
       return false;
@@ -342,22 +351,136 @@ pub const Economy = struct
   }
 
 
+  // ================================ SUNSHINE ================================
+
+  pub inline fn updateSunshine( self : *Economy, sunshine : f32 ) void
+  {
+    self.sunshine = sunshine;
+
+    var tmp : f32 = 0;
+
+    switch( self.location )
+    {
+      .GROUND =>
+      {
+        const developedArea = self.areaUsed;
+        const surfaceArea   = self.areaCap;
+
+        const overgroundRatio = surfaceArea / developedArea;
+
+        if( developedArea < surfaceArea ) // If the planet is not fully developed
+        {
+          tmp = 0.5 * sunshine;
+        }
+        else
+        {
+          const sunlessRatio = def.pow( f32, 1.0 - overgroundRatio, SUN_SHORTAGE_EXPONENT );
+          tmp = 0.5 * sunshine * ( 1.0 - sunlessRatio );
+
+        }
+      },
+
+      .ORBIT => tmp = sunshine * 0.95,
+      else   => tmp = sunshine,
+    }
+
+    self.sunAccess = def.clmp( tmp, 0.001, MAX_SUN_ACCESS_CAP );
+  }
+
+
+  pub fn getEcologyFactor( self : *const Economy ) f32
+  {
+    if( self.location != .GROUND or !self.hasAtmo ){ return 0.0; }
+
+    const groundArea    : f32 = self.areaCap * self.landCover;
+    const developedArea : f32 = self.areaUsed;
+
+    // Development ratio : 0 = untouched, 1 = industrialized
+    const developmentRatio = def.clmp( developedArea / groundArea, 0.001, 1.0 );
+
+    // Calculate total pollution
+    var averageActivity : f32 = 0.0;
+    var pollutionAmount : f32 = @floatFromInt( self.popCount );
+        pollutionAmount      *= POLLUTION_PER_POP;
+
+
+    for( 0..indTypeCount )| d |
+    {
+      const activity = self.indActivity[ d ];
+
+      var tmp : f32 = IndType.fromIdx( d ).getPollution();
+          tmp      *= @floatFromInt( self.indBank[ d ]);
+          tmp      *= activity;
+
+      pollutionAmount += tmp;
+      averageActivity += activity;
+    }
+
+    averageActivity /= indTypeCount;
+
+    for( 0..infTypeCount )| f |
+    {
+      var tmp : f32 = InfType.fromIdx( f ).getPollution();
+          tmp      *= @floatFromInt( self.infBank[ f ]);
+          tmp      *= averageActivity;
+
+      pollutionAmount += tmp;
+    }
+
+    pollutionAmount *= 100.0;
+
+    // Pollution ratio : 0 = pristine, 1 = polluted
+    const pollutionRatio = def.clmp( pollutionAmount / @max( groundArea, 1.0 ), 0.001, 1.0 );
+
+    // Ecology Ratio : 0 = desolate, 1 = wilderness
+    const ecologyRatio = ( 1.0 - developmentRatio ) * ( 1.0 - pollutionRatio );
+
+  //def.qlog( .INFO, 0, @src(), "Loggin ecology :" );
+  //def.log(  .CONT, 0, @src(), "Pollution  amount\t: {d}",    .{ pollutionAmount  });
+  //def.log(  .CONT, 0, @src(), "Pollution   ratio\t: {d:.6}", .{ pollutionRatio   });
+  //def.log(  .CONT, 0, @src(), "Development ratio\t: {d:.6}", .{ developmentRatio });
+  //def.log(  .CONT, 0, @src(), "Ecology    factor\t: {d:.6}", .{ ecoFactor        });
+
+    return def.clmp( ecologyRatio, 0.001, 1.0 ); // TODO : make sure this ratio makes sense
+  }
+
 
   // ================================ AREA ================================
 
-  pub fn getUsedArea( self : *const Economy ) f32
+  pub inline fn getHabitatArea( self : *const Economy ) f32
   {
-    var used : f32 = 0;
+    return @floatFromInt( self.getInfCount( .HABITAT ) * InfType.HABITAT.getCapacity() );
+  }
 
-    inline for( 0..infTypeCount )| f |
+  pub fn updateAreas( self : *Economy ) void
+  {
+    // Updating maximum
+
+    const habitatArea = self.getHabitatArea();
+
+    if( self.location == .GROUND and self.hasAtmo )
+    {
+      const groundArea  = self.areaCap * self.landCover;
+      self.areaMax = habitatArea + groundArea;
+    }
+    else
+    {
+      self.areaMax = habitatArea; // Underground / man-made structures only
+    }
+
+    // Updating usage
+
+    self.areaUsed = 0.0;
+
+    inline for( 0..infTypeCount )| f |{ if( f != InfType.HABITAT.toIdx() )
     {
       const infType  = InfType.fromIdx( f );
 
       var area : f32 = @floatFromInt( self.getInfCount( infType ));
           area      *= infType.getAreaCost();
 
-      used += area;
-    }
+      self.areaUsed += area;
+    }}
     inline for( 0..indTypeCount )| d |
     {
       const indType = IndType.fromIdx( d );
@@ -365,40 +488,23 @@ pub const Economy = struct
       var area : f32 = @floatFromInt( self.getIndCount( indType ));
           area      *= indType.getAreaCost();
 
-      used += area;
+      self.areaUsed += area;
     }
 
-    return used;
-  }
 
-  pub fn getUnusedArea( self : *const Economy ) f32
-  {
-    const used  = self.getUsedArea();
-    const total = self.getAreaCapacity();
+    // Updating availability
 
-    if( used <= total )
+    if( self.areaMax > self.areaUsed )
     {
-      return total - used;
+      self.areaAvail = self.areaMax - self.areaUsed;
     }
     else
     {
-      def.log( .WARN, 0, @src(), "Negative available area in location of type {s}", .{ @tagName( self.location )});
-      return 0.0;
+      def.log( .WARN, 0, @src(), "Negative available area in location of type {s} : using {d} / {d}", .{ @tagName( self.location ), self.areaUsed, self.areaMax });
+      self.areaAvail = 0.0;
     }
   }
 
-  pub fn getAreaCapacity( self : *const Economy ) f32
-  {
-    if( self.location == .GROUND and self.hasAtmo ) // If this is a planet with atmosphere
-    {
-      return self.maxAvailArea;
-    }
-    else // Else, area is grown via habitat infrastructure
-    {
-      const total = self.getInfCount( .HABITAT ) * InfType.HABITAT.getCapacity();
-      return @floatFromInt( total );
-    }
-  }
 
 
   // ================================ ECONOMY ================================
@@ -440,7 +546,7 @@ pub const Economy = struct
 
       if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
       {
-        const factor = @min( self.sunshine, 1.0 );
+        const factor = self.sunAccess;
 
         const maxCons_f32 : f32 = @floatFromInt( maxCons );
         maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
@@ -488,7 +594,7 @@ pub const Economy = struct
 
       if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
       {
-        const factor = @min( self.sunshine, 1.0 );
+        const factor = @min( self.getSunshineAccess(), 1.0 );
 
         const maxProd_f32 : f32 = @floatFromInt( maxProd );
         maxProd = @intFromFloat( @floor( maxProd_f32 * factor ));
@@ -526,23 +632,33 @@ pub const Economy = struct
       maxAmount = @divFloor( availParts, c.getPartCost() );
     }
 
-    const availArea = self.getUnusedArea();
     const amout_f32 : f32 = @floatFromInt( amount );
 
-    if( availArea < amout_f32 * c.getAreaCost())
+    if( self.areaAvail < amout_f32 * c.getAreaCost())
     {
       def.qlog( .WARN, 0, @src(), "Not enough area : adjusting" );
 
-      maxAmount = @intFromFloat( @divFloor( availArea, c.getAreaCost()));
+      maxAmount = @intFromFloat( @divFloor( self.areaAvail, c.getAreaCost()));
     }
 
-    self.resBank[ partIdx ] -= maxAmount * c.getPartCost();
+    const totalCost = maxAmount * c.getPartCost();
+
+    self.resBank[  partIdx ] -= totalCost;
+    self.resDelta[ partIdx ] -= @intCast( totalCost );
 
     switch( c )
     {
     //.ves => | vesType | self.vesBank[ vesType.toIdx() ] += maxAmount,
-      .inf => | infType | self.infBank[ infType.toIdx() ] += maxAmount,
-      .ind => | indType | self.indBank[ indType.toIdx() ] += maxAmount,
+      .inf => | infType |
+      {
+        self.infBank[  infType.toIdx() ] += maxAmount;
+        self.infDelta[ infType.toIdx() ] += @intCast( maxAmount );
+      },
+      .ind => | indType |
+      {
+        self.indBank[  indType.toIdx() ] += maxAmount;
+        self.indDelta[ indType.toIdx() ] += @intCast( maxAmount );
+      },
     }
 
     return maxAmount;
@@ -551,7 +667,17 @@ pub const Economy = struct
 
   // ================================ UPDATING ================================
 
-  pub fn resetDebugMetrics( self : *Economy ) void // Zeroing out the previous metrics
+  pub fn logMetrics( self : *Economy ) void
+  {
+
+    def.qlog( .INFO, 0, @src(), "Logging other metrics :" );
+    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",      .{ self.sunAccess });
+    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",      .{ self.getEcologyFactor() });
+    def.log(  .CONT, 0, @src(), "Development  : {d} / {d}",   .{ self.areaUsed, self.areaMax });
+    def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} )", .{ self.buildQueue.?.getEntryCount(), self.buildQueue.?.leftoverParts });
+  }
+
+  pub fn resetCountMetrics( self : *Economy ) void // Zeroing out the previous metrics
   {
     self.popDelta = 0;
 
@@ -589,23 +715,40 @@ pub const Economy = struct
     }
   }
 
-  pub fn tickEcon( self : *Economy, sunshine : f32 ) void
+  pub fn tickEcon( self : *Economy, newSunshine : f32 ) void
   {
-    self.sunshine = sunshine;
     self.updateResCaps();
-
+    self.updateAreas();
+    self.updateSunshine( newSunshine );
 
     ecnSlvr.resolveEcon( self );
     self.tickBuildQueue();
 
-
-    // NOTE : DEBUG
-    _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING }, 2 );
-    _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE }, 15 );
-
+    // NOTE : DEBUG SECTION
     self.logPopCount();
     self.logResCounts();
-  //self.logInfCounts();
-  //self.logIndCounts();
+    self.logInfCounts();
+    self.logIndCounts();
+    self.logMetrics();
+
+
+    if( self.buildQueue.?.getEntryCount() < 32 )
+    {
+      _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING     }, 8 );
+      _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT     }, 8 );
+      _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE     }, 8 );
+
+      _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 1 );
+      _ = self.buildQueue.?.addEntry( .{ .ind = .HYDROPONIC  }, 1 );
+      _ = self.buildQueue.?.addEntry( .{ .ind = .WATER_PLANT }, 2 );
+      _ = self.buildQueue.?.addEntry( .{ .ind = .SOLAR_PLANT }, 4 );
+
+      _ = self.buildQueue.?.addEntry( .{ .ind = .GROUND_MINE }, 8 );
+      _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY    }, 4 );
+      _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY     }, 2 );
+      _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY    }, 1 );
+
+    }
+
   }
 };

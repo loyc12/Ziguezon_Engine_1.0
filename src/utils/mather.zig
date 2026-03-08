@@ -115,7 +115,7 @@ pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 // Equivalent to successives calls to min() and max()
 pub fn clmp( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
 {
-  return @min( @max( val, min ), max );
+  return std.math.clamp( val, min, max );
   //switch( @typeInfo( @TypeOf( val )))
   //{
   //  .float, .comptime_float, .int, .comptime_int => return if( val < min ) min else if( val > max ) max else val,

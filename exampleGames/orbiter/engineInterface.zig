@@ -21,7 +21,7 @@ const utl = @import( "gameUtils.zig" );
 //pub const AutoApply_Body_Movement  : bool = true;
 //pub const AutoApply_Body_Collision : bool = true;
 
-//pub const AutoApply_State_Playing  : bool = true;
+  pub const AutoApply_State_Playing  : bool = false;
 
 
 // Window Startup Values
@@ -44,7 +44,7 @@ const utl = @import( "gameUtils.zig" );
   pub const Graphic_Ellipse_Facets   : u16 = 128;
 
   pub const Camera_Max_Zoom          : f32 = 10.0;
-  pub const Camera_Min_Zoom          : f32 = 0.10;
+  pub const Camera_Min_Zoom          : f32 = 0.01;
 
 
 // ================================ GAME HOOKS ================================

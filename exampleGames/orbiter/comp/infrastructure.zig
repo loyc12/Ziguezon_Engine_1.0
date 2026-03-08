@@ -82,14 +82,28 @@ pub const InfType = enum( u8 )
     };
   }
 
+  pub inline fn getPollution( self : InfType ) f32
+  {
+    return switch( self )
+    {
+      .HOUSING =>  0.1,
+      .HABITAT =>  0.1,
+
+      .STORAGE =>  0.1,
+    //.BATTERY =>  0.1,
+    };
+  }
+
   pub inline fn canBeBuiltIn( self : InfType, loc : EconLoc, hasAtmo : bool ) bool
   {
+    _ = hasAtmo;
+
     if( loc == .GROUND )
     {
       return switch( self )
       {
         .HOUSING => true,
-        .HABITAT => !hasAtmo,
+        .HABITAT => true,
 
         .STORAGE => true,
       //.BATTERY => true,
