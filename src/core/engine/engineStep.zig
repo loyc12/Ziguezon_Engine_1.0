@@ -62,7 +62,7 @@ inline fn tryUpdate( ng : *Engine ) bool
   return false;
 }
 
-fn updateInputs( ng : *Engine ) void
+inline fn updateInputs( ng : *Engine ) void
 {
 
   def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
@@ -88,30 +88,44 @@ inline fn tryTick( ng : *Engine ) bool
     if( !ng.isPlaying() ){ return false; }
 
   //const tmpTime = def.getNow();
-
     ng.times.consumeTick();
-
-    def.tryHook( .OnTickWorld, ng );
-    {
-      tickTilemaps( ng );
-      tickBodies( ng );
-    }
-    def.tryHook( .OffTickWorld, ng );
-
+    tickAll( ng );
   //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick timelag" );
+
     return true;
   }
   return false;
 }
 
-fn tickTilemaps( ng : *Engine ) void
+pub inline fn forceTick( ng : *Engine ) void
+{
+  ng.times.tickOffset.value += ng.times.targetTickDelta.value;
+
+  ng.times.consumeTick();
+  tickAll( ng );
+}
+
+
+inline fn tickAll( ng : *Engine ) void
+{
+  def.qlog( .TRACE, 0, @src(), "Ticking..." );
+
+  def.tryHook( .OnTickWorld, ng );
+  {
+    tickTilemaps( ng );
+    tickBodies( ng );
+  }
+  def.tryHook( .OffTickWorld, ng );
+}
+
+inline fn tickTilemaps( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Tilemap game logic..." );
 
   ng.tilemapManager.tickActiveTilemaps( ng );
   ng.tilemapManager.deleteAllMarkedTilemaps();
 }
-
+inline
 fn tickBodies( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Body game logic..." );
@@ -119,7 +133,6 @@ fn tickBodies( ng : *Engine ) void
   ng.bodyManager.tickActiveBodies( ng );
   ng.bodyManager.deleteAllMarkedBodies();
 }
-
 
 // ======== RENDERING ========
 
@@ -130,10 +143,8 @@ inline fn tryRender( ng : *Engine ) bool
     if( !ng.isOpened() ){ return false; }
 
   //const tmpTime = def.getNow();
-
     ng.times.consumeFrame();
-    renderGraphics( ng );
-
+    renderAll( ng );
   //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "& Render timelag" );
 
     return true;
@@ -141,9 +152,17 @@ inline fn tryRender( ng : *Engine ) bool
   return false;
 }
 
-fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
+pub inline fn forceRender( ng : *Engine ) void
 {
-  def.qlog( .TRACE, 0, @src(), "Rendering visuals..." );
+  ng.times.frameOffset.value += ng.times.targetFrameDelta.value;
+
+  ng.times.consumeFrame();
+  renderAll( ng );
+}
+
+inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instead
+{
+  def.qlog( .TRACE, 0, @src(), "Rendering..." );
 
   def.ray.beginDrawing();
   defer def.ray.endDrawing();
@@ -174,7 +193,7 @@ fn renderGraphics( ng : *Engine ) void    // TODO : use render textures instead
   //def.tryHook( .OffRenderOverlay, ng );
 }
 
-fn renderTilemaps( ng : *Engine ) void
+inline fn renderTilemaps( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Tilemap visuals..." );
 
@@ -186,7 +205,7 @@ fn renderTilemaps( ng : *Engine ) void
   }
 }
 
-fn renderBodies( ng : *Engine ) void
+inline fn renderBodies( ng : *Engine ) void
 {
   def.qlog( .TRACE, 0, @src(), "Updating Body visuals..." );
 
@@ -199,10 +218,11 @@ fn renderBodies( ng : *Engine ) void
 }
 
 
+
 // ======== DEBUG INFO ========
 
 
-fn drawDebugFpsCount( ng : *Engine ) void
+inline fn drawDebugFpsCount( ng : *Engine ) void
 {
   if( def.G_ST.DebugDraw_FPS and def.G_ST.Graphic_Metrics_Colour != null )
   {
@@ -216,7 +236,7 @@ fn drawDebugFpsCount( ng : *Engine ) void
 }
 
 
-fn drawDebugTpsCount( ng : *Engine ) void
+inline fn drawDebugTpsCount( ng : *Engine ) void
 {
   if( def.G_ST.DebugDraw_FPS )
   {

@@ -342,6 +342,7 @@ pub const R3     = mth_u.R3;
 pub const HR3    = mth_u.HR3;
 pub const IR3    = mth_u.IR3;
 
+pub const inv1   = mth_u.inv1;
 pub const sign   = mth_u.sign;
 pub const pow2   = mth_u.pow2;
 

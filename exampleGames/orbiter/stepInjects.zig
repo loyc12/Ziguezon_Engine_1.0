@@ -29,6 +29,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 {
     // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
+  if( ng.isPaused() and def.ray.isKeyPressed( def.ray.KeyboardKey.o )){ ng.forceTick(); }
 
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ glb.targetId = glb.targetId +| 1; }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ glb.targetId = glb.targetId -| 1; }

@@ -27,13 +27,22 @@ pub const EngineTime = struct
 
   pub inline fn init( self : *EngineTime ) void
   {
-    const spt : f32 = @floatFromInt( def.G_ST.Startup_Target_TickRate );
-    const spf : f32 = @floatFromInt( def.G_ST.Startup_Target_FrameRate );
+  //const spt : f32 = @floatFromInt( def.G_ST.Startup_Target_TickRate );
+  //const spf : f32 = @floatFromInt( def.G_ST.Startup_Target_FrameRate );
 
-    self.targetTickDelta  = .fromRayDeltaTime( 1.0 / spt );
-    self.targetFrameDelta = .fromRayDeltaTime( 1.0 / spf );
+    const now : TimeVal = .newNow();
+    const tps : TimeVal = .fromRayDeltaTime( @floatCast( def.inv1( def.G_ST.Startup_Target_TickRate  ))); // == 1.0 / spt
+    const fps : TimeVal = .fromRayDeltaTime( @floatCast( def.inv1( def.G_ST.Startup_Target_FrameRate ))); // == 1.0 / spf
 
-    self.simEpoch = .newNow();
+    self.simEpoch = now;
+
+    self.targetTickDelta = tps;
+    self.lastTickDelta   = tps;
+    self.tickEpoch       = now;
+
+    self.targetFrameDelta = fps;
+    self.lastFrameDelta   = fps;
+    self.frameEpoch       = now;
 
     self.simTimeUpdate( def.G_NG.isPlaying() );
 
@@ -94,9 +103,13 @@ pub const EngineTime = struct
 
     self.tickOffset.value -= self.targetTickDelta.value;
 
-    if( self.tickOffset.value > tickLagLimit ) // Clamping lag to N ticks or less
+    if( self.tickOffset.value < 0 )
     {
-      self.tickOffset.value = tickLagLimit;
+      self.tickOffset.value = 0;
+    }
+    else if( self.tickOffset.value > tickLagLimit )
+    {
+      self.tickOffset.value = tickLagLimit; // Clamping lag to N ticks or less
     }
 
     if( self.tickEpoch.isSet() )
@@ -107,6 +120,7 @@ pub const EngineTime = struct
     {
       def.qlog( .WARN, 0, @src(), "# EngineTime.tickEpoch is not set");
     }
+
     self.tickEpoch  = now;
     self.tickCount += 1;
   }
@@ -118,7 +132,11 @@ pub const EngineTime = struct
 
     self.frameOffset.value -= self.targetFrameDelta.value;
 
-    if( self.frameOffset.value > frameLagLimit ) // Clamping lag to N frames or less
+    if( self.frameOffset.value < 0 )
+    {
+      self.frameOffset.value = 0;
+    }
+    else if( self.frameOffset.value > frameLagLimit ) // Clamping lag to N frames or less
     {
       self.frameOffset.value = frameLagLimit;
     }
@@ -131,6 +149,7 @@ pub const EngineTime = struct
     {
       def.qlog( .WARN, 0, @src(), "# EngineTime.frameEpoch is not set");
     }
+
     self.frameEpoch  = now;
     self.frameCount += 1;
   }

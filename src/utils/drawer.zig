@@ -246,7 +246,7 @@ pub inline fn drawTextFmt( comptime fmt : [:0] const u8, args : anytype, posX : 
 }
 
 // Non-upper-left alignement
-pub inline fn drawTextOffset( text : [:0]u8, posX : f32, posY : f32, factors : Vec2, fontSize : f32, col : Colour ) void
+pub inline fn drawTextOffset( text : [:0] const u8, posX : f32, posY : f32, factors : Vec2, fontSize : f32, col : Colour ) void
 {
   const textDims       = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
   const textHalfWidth  = textDims.x * factors.x;

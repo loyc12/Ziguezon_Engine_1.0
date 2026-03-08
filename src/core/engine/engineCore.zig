@@ -49,10 +49,15 @@ pub const Engine = struct
   pub inline fn isPlaying( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.PLAYING )); }
 
 
-  pub fn simTimeUpdate( self : *Engine ) void
+  pub inline fn simTimeUpdate( self : *Engine ) void
   {
     self.times.updateSimTime( self.isPlaying() );
   }
+
+  pub inline fn getTargetFrameSDT( self : *Engine ) f32 { return( self.times.getScaledTargetFrameDeltaFloat() ); }
+  pub inline fn getRealFrameSDT(   self : *Engine ) f32 { return( self.times.getScaledLastFrameDeltaFloat()   ); }
+  pub inline fn getTargetTickSDT(  self : *Engine ) f32 { return( self.times.getScaledTargetTickDeltaFloat()  ); }
+  pub inline fn getRealTickSDT(    self : *Engine ) f32 { return( self.times.getScaledLastTickDeltaFloat()    ); }
 
 
   // ================================ ENGINE STATE FUNCTIONS ================================
@@ -67,5 +72,7 @@ pub const Engine = struct
 
   const ngnStep = @import( "engineStep.zig" );
 
-  pub inline fn loopLogic(  self : *Engine ) void { ngnStep.loopLogic( self ); }
+  pub inline fn loopLogic(  self : *Engine ) void { ngnStep.loopLogic(   self ); }
+  pub inline fn forceTick(  self : *Engine ) void { ngnStep.forceTick(   self ); }
+  pub inline fn forceFrame( self : *Engine ) void { ngnStep.forceRender( self ); }
 };

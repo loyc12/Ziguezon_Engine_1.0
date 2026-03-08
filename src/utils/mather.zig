@@ -47,6 +47,25 @@ pub fn sign( val : anytype ) @TypeOf( val )
   }
 }
 
+pub fn inv1( val : anytype ) f64
+{
+  switch( @typeInfo( @TypeOf( val )))
+  {
+    .float, .comptime_float =>
+    {
+      std.debug.assert( val != 0.0 ); // inv1().float cannot divide by 0.0
+      return @floatCast( 1.0 / val );
+    },
+    .int, .comptime_int =>
+    {
+      std.debug.assert( val != 0 ); // inv1().int cannot divide by 0
+      const tmp : f64 = @floatFromInt( val );
+      return( 1.0 / tmp );
+    },
+    else => @compileError( "inv1() only supports Int and Float types" ),
+  }
+}
+
 pub fn pow2( val : anytype ) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val )))
@@ -60,7 +79,7 @@ pub fn pow2( val : anytype ) @TypeOf( val )
       var ret : @TypeOf( val ) = 1;
       var i   : @TypeOf( val ) = 0;
 
-      if( val <= 0 ){ return 0; } // NOTE : does not work with negative integer exponents
+      if( val <= 0 ){ @compileError( "pow2().int cannot take negative exponents" ); } // NOTE : does not work with negative integer exponents
 
       while( i < val ){ ret *= 2; i += 1; }
 
@@ -84,9 +103,9 @@ pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
       }
       else
       {
-        if(      a < c ){ return a; } // b <  a <  c
+        if(      a < c ){ return a; } // b <= a <  c
         else if( b < c ){ return c; } // b <  c <= a
-        else            { return b; } // c <= b <  a
+        else            { return b; } // c <= b <= a
       }
     },
     else => @compileError( "med3() only supports Int and Float types" ),
@@ -148,6 +167,9 @@ pub fn renorm( val : anytype, srcMin : @TypeOf( val ), srcMax : @TypeOf( val ), 
     else => @compileError( "renorm() only supports Float types" ),
   }
 }
+
+
+// TODO : Use these in geom2D
 
 pub fn getPolyArea( circumradius : f32, sideCount : u8 ) f32
 {
