@@ -71,8 +71,6 @@ const EconSolver = struct
   maxGenCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
   maxGenProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  natureProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-
 
   popAccess  : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Population resource access ratios
   indAccess  : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Industrial resource access ratios ( aggregated )
@@ -97,11 +95,11 @@ const EconSolver = struct
   pub fn resolve( self : *EconSolver ) void
   {
     self.initBaseState();   // TODO : move the zeroing or arrays to here
-    self.applyResDecay();   // Decays stored resources from previous weeks    TODO : reactivate me
+    self.applyResDecay();   // Decays stored resources from previous weeks
+    self.applyResGrowth();  // Grow wild resources based on ecology factor
 
     self.calcPopNeeds();    // Computes population potential prod and cons
     self.calcIndNeeds();    // Computes industrial potential prod and cons
-    self.calcAbundance();   // Computes nature's bounty
 
     self.calcResAccess();   // Computes non-WORK resource access     TODO : add access-tweaking policies / modifiers
     self.applyWorkWeek();   // Precomputes current WORK production to inform industrial WORK access
@@ -124,7 +122,7 @@ const EconSolver = struct
 
   fn applyResDecay( self : *EconSolver ) void
   {
-  //def.qlog( .DEBUG, 0, @src(), "Logging resource decay :" );
+  //def.qlog( .DEBUG, 0, @src(), "Logging natural resource decay :" );
 
     inline for( 0..resTypeCount )| r |
     {
@@ -139,13 +137,32 @@ const EconSolver = struct
         self.econ.resBank[ r ]     -= decay_u64;
         self.econ.prevResDecay[ r ] = decay_u64;
 
-        if( decayRate < 1.0 ) // Fudge to prevent WORK from always being shown as fully used
-        {
-          self.econ.prevResCons[ r ] += decay_u64;
-        }
-
       //def.log( .CONT, 0, @src(), "{s}  \t: -{d}", .{ @tagName( ResType.fromIdx( r )), decay_u64 });
       }
+    }
+  }
+
+  fn applyResGrowth( self : *EconSolver ) void
+  {
+    const ecoFactor = self.econ.getEcologyFactor();
+
+  //def.qlog( .DEBUG, 0, @src(), "Logging natural resource growth :" );
+
+    inline for( 0..resTypeCount )| r |
+    {
+      const resType  = ResType.fromIdx( r );
+      const growRate = resType.getGrowthRate();
+
+      if( growRate >= def.EPS ) // Most res do not grow. Skipping those
+      {
+        const grow_u64 : u64 = @intFromFloat( ecoFactor * ecoFactor * growRate );
+
+        self.econ.resBank[ r ]      += grow_u64;
+        self.econ.prevResGrowth[ r ] = grow_u64;
+
+      //def.log( .CONT, 0, @src(), "{s}  \t: +{d}", .{ @tagName( ResType.fromIdx( r ) ), grow_u64 });
+      }
+
     }
   }
 
@@ -228,23 +245,6 @@ const EconSolver = struct
   //}
   }
 
-
-  fn calcAbundance( self : *EconSolver ) void
-  {
-    const ecoFactor = self.econ.getEcologyFactor();
-
-    def.log( .DEBUG, 0, @src(), "Logging natural resource abundance ( {d} ) :", .{ ecoFactor });
-
-    inline for( 0..resTypeCount )| r |
-    {
-      const resType    = ResType.fromIdx( r );
-      const amount_f32 = ecoFactor * ecoFactor * resType.getNaturalAbundance();
-
-      self.natureProd[ r ] += @intFromFloat( @floor( amount_f32 ));
-      def.log( .CONT, 0, @src(), "{s}  \t: +{d}", .{ @tagName( ResType.fromIdx( r ) ), self.natureProd[ r ] });
-    }
-  }
-
   fn calcResAccess( self : *EconSolver ) void // TODO : Tweak population vs industry access ratio here if need be
   {
     // Skips WORK res, as it is calc later
@@ -252,7 +252,7 @@ const EconSolver = struct
 
     inline for( 0..resTypeCount )| r |{ if( ResType.fromIdx( r ) != .WORK ) // Skipping WORK ( see calcWorkAccess() )
     {
-      const available : f32 = @floatFromInt( self.econ.resBank[ r ] + self.natureProd[ r ]);
+      const available : f32 = @floatFromInt( self.econ.resBank[ r ]);
       const required  : f32 = @floatFromInt( self.maxGenCons[   r ]);
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d}\t-{d}", .{ @tagName( ResType.fromIdx( r )), available, required });
@@ -388,9 +388,6 @@ const EconSolver = struct
 
     inline for( 0..resTypeCount )| r |
     {
-      // Adding nature's bounty
-      self.finalGenProd[ r ] += self.natureProd[ r ];
-
       // Iterating over population
       const popResAccess = self.popAccess[ r ];
 

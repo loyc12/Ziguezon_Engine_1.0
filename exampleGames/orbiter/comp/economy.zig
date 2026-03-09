@@ -66,23 +66,24 @@ pub const Economy = struct
 
   // TOOD : Consolidate some of these into a 2D array with enum for row ?
 
-  resCap       : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  resBank      : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  resDelta     : [ resTypeCount ]i64 = std.mem.zeroes([ resTypeCount ]i64 ),
-  resAccess    : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
+  resCap    : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resBank   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  resDelta  : [ resTypeCount ]i64 = std.mem.zeroes([ resTypeCount ]i64 ),
+  resAccess : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ),
 
-  prevResCons  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  prevResProd  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResCons   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResProd   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  prevResDecay : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  prevResReq   : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResDecay  : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResGrowth : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  prevResReq    : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
 
-  infBank      : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
-  infDelta     : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
+  infBank     : [ infTypeCount ]u64 = std.mem.zeroes([ infTypeCount ]u64 ),
+  infDelta    : [ infTypeCount ]i64 = std.mem.zeroes([ infTypeCount ]i64 ),
 
-  indBank      : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ),
-  indDelta     : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ),
-  indActivity  : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ),
+  indBank     : [ indTypeCount ]u64 = std.mem.zeroes([ indTypeCount ]u64 ),
+  indDelta    : [ indTypeCount ]i64 = std.mem.zeroes([ indTypeCount ]i64 ),
+  indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ),
 
 
   pub inline fn newEcon( loc : EconLoc, area : f32, atmo : bool ) Economy
@@ -106,7 +107,7 @@ pub const Economy = struct
   {
     inline for( 0..resTypeCount )| r |
     {
-      const resType = ResType.fromIdx( r );
+      const resType      = ResType.fromIdx( r );
       const infStoreType = resType.getInfStore();
 
       self.resCap[ r ] = MIN_RES_CAP + ( self.infBank[ infStoreType.toIdx() ] * infStoreType.getCapacity() );
@@ -121,32 +122,34 @@ pub const Economy = struct
   {
     self.resCap[ resType.toIdx() ] = value;
   }
-  // TODO : add updateResCap(), which updates it based on infra
 
 
   pub inline fn logResCounts(  self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging resource counts and access ratios :" );
-    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t/ Cap\t[ Delta\t: Prod\t. Cons\t. Decay\t| Demand ] ( Access )" );
-  //def.log( .CONT, 0, @src(), "{s}      \t: {d} \t/ {d}\t[ {d}  \t: +{d}\t/ -{d}\t| {d}  \t| {d}   \t] ( {d:.3} )",.{ @tagName( resType ), resCount, resCap, resDelta, resProd, resCons, resDecay, resReq, resAccess });
-
+    def.qlog( .INFO, 0, @src(), "Logging resources :" );
+    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t/ Cap\t ( Access )\t[ Delta\t| Prod\tCons\t| Grow\tDecay\t| Demand ]" );
+    def.qlog( .CONT, 0, @src(), "====================================================================================================" );
 
     inline for( 0..resTypeCount )| r |
     {
-      const resType = ResType.fromIdx( r );
+      const resType   = ResType.fromIdx( r );
 
-      const resCount = self.resBank[ r ];
-      const resCap   = self.resCap[  r ];
+      const resCount  = self.resBank[ r ];
+      const resCap    = self.resCap[  r ];
 
-      const resDelta = self.resDelta[  r ];
-      const resProd  = self.prevResProd[  r ];
-      const resCons  = self.prevResCons[  r ];
-      const resDecay = self.prevResDecay[ r ];
-      const resReq   = self.prevResReq[   r ];
+      const resDelta  = self.resDelta[ r ];
+
+      const resProd   = self.prevResProd[ r ];
+      const resCons   = self.prevResCons[ r ];
+
+      const resGrowth = self.prevResGrowth[ r ];
+      const resDecay  = self.prevResDecay[  r ];
+
+      const resReq    = self.prevResReq[ r ];
 
       const resAccess = self.resAccess[ r ];
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t[ {d}\t: +{d}\t. -{d}\t. -{d}\t| {d}\t ] ( {d:.3} )",.{ @tagName( resType ), resCount, resCap, resDelta, resProd, resCons, resDecay, resReq, resAccess });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| +{d}\t-{d}\t| {d}\t ]",.{ @tagName( resType ), resCount, resCap, resAccess, resDelta, resProd, resCons, resGrowth, resDecay, resReq,  });
     }
   }
   pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
@@ -191,7 +194,7 @@ pub const Economy = struct
 
   pub inline fn logInfCounts(  self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging infrastructure counts and bonuses :" );
+    def.qlog( .INFO, 0, @src(), "Logging infrastructure :" );
 
     inline for( 0..infTypeCount )| f |
     {
@@ -200,7 +203,7 @@ pub const Economy = struct
       const infDelta = self.infDelta[    f ];
       const infBonus = infCount * infType.getCapacity();
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d}\t[ {d} ]\t( {d} )", .{ @tagName( infType ), infCount, infDelta, infBonus });
+      def.log( .CONT, 0, @src(), "{s}\t: {d}\t +{d}\t) [ {d} ]", .{ @tagName( infType ), infCount, infBonus, infDelta });
     }
   }
 
@@ -265,7 +268,7 @@ pub const Economy = struct
 
   pub inline fn logIndCounts(  self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging industry counts and activity ratios :" );
+    def.qlog( .INFO, 0, @src(), "Logging industry :" );
 
     inline for( 0..indTypeCount )| d |
     {
@@ -274,7 +277,7 @@ pub const Economy = struct
       const indDelta = self.indDelta[    d ];
       const indRatio = self.indActivity[ d ];
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d}\t[ {d} ]\t( {d:.3} )", .{ @tagName( indType ), indCount, indDelta, indRatio });
+      def.log( .CONT, 0, @src(), "{s}\t: {d}\t( {d:.4} )\t[ {d} ]", .{ @tagName( indType ), indCount, indRatio, indDelta });
     }
   }
 
@@ -396,7 +399,7 @@ pub const Economy = struct
     const developedArea : f32 = self.areaUsed;
 
     // Development ratio : 0 = untouched, 1 = industrialized
-    const developmentRatio = def.clmp( developedArea / groundArea, 0.001, 1.0 );
+    const developmentRatio = def.clmp( developedArea / groundArea, 0.0, 1.0 );
 
     // Calculate total pollution
     var averageActivity : f32 = 0.0;
@@ -430,7 +433,7 @@ pub const Economy = struct
     pollutionAmount *= 100.0;
 
     // Pollution ratio : 0 = pristine, 1 = polluted
-    const pollutionRatio = def.clmp( pollutionAmount / @max( groundArea, 1.0 ), 0.001, 1.0 );
+    const pollutionRatio = def.clmp( pollutionAmount / @max( groundArea, 1.0 ), 0.0, 1.0 );
 
     // Ecology Ratio : 0 = desolate, 1 = wilderness
     const ecologyRatio = ( 1.0 - developmentRatio ) * ( 1.0 - pollutionRatio );
@@ -441,7 +444,7 @@ pub const Economy = struct
   //def.log(  .CONT, 0, @src(), "Development ratio\t: {d:.6}", .{ developmentRatio });
   //def.log(  .CONT, 0, @src(), "Ecology    factor\t: {d:.6}", .{ ecoFactor        });
 
-    return def.clmp( ecologyRatio, 0.001, 1.0 ); // TODO : make sure this ratio makes sense
+    return def.clmp( ecologyRatio, 0.000001, 1.0 );
   }
 
 
@@ -632,13 +635,22 @@ pub const Economy = struct
       maxAmount = @divFloor( availParts, c.getPartCost() );
     }
 
-    const amout_f32 : f32 = @floatFromInt( amount );
-
-    if( self.areaAvail < amout_f32 * c.getAreaCost())
+    if( !std.meta.eql( c, .{ .inf = .HABITAT })) // HABITATS can always be built
     {
-      def.qlog( .WARN, 0, @src(), "Not enough area : adjusting" );
+      const amout_f32 : f32 = @floatFromInt( amount );
 
-      maxAmount = @intFromFloat( @divFloor( self.areaAvail, c.getAreaCost()));
+      if( self.areaAvail < c.getAreaCost() )
+      {
+        def.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
+        return 0;
+      }
+
+      if( self.areaAvail < amout_f32 * c.getAreaCost())
+      {
+        def.qlog( .WARN, 0, @src(), "Not enough area : adjusting" );
+
+        maxAmount = @intFromFloat( @divFloor( self.areaAvail, c.getAreaCost()));
+      }
     }
 
     const totalCost = maxAmount * c.getPartCost();
@@ -671,10 +683,10 @@ pub const Economy = struct
   {
 
     def.qlog( .INFO, 0, @src(), "Logging other metrics :" );
-    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",      .{ self.sunAccess });
-    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",      .{ self.getEcologyFactor() });
-    def.log(  .CONT, 0, @src(), "Development  : {d} / {d}",   .{ self.areaUsed, self.areaMax });
-    def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} )", .{ self.buildQueue.?.getEntryCount(), self.buildQueue.?.leftoverParts });
+    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
+    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcologyFactor() });
+    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaUsed, self.areaMax });
+    def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
   }
 
   pub fn resetCountMetrics( self : *Economy ) void // Zeroing out the previous metrics
@@ -690,7 +702,10 @@ pub const Economy = struct
       self.prevResCons[ r ] = 0;
 
       self.prevResDecay[ r ] = 0;
-      self.prevResReq[   r ] = 0;
+      self.prevResGrowth[ r ] = 0;
+
+
+      self.prevResReq[ r ] = 0;
     }
     inline for( 0..infTypeCount )| f |
     {
@@ -698,7 +713,7 @@ pub const Economy = struct
     }
     inline for( 0..indTypeCount )| d |
     {
-      self.indDelta[ d ] = 0;
+      self.indDelta[    d ] = 0;
       self.indActivity[ d ] = 0.0;
     }
   }
@@ -734,9 +749,9 @@ pub const Economy = struct
 
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
-      _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING     }, 8 );
-      _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT     }, 8 );
-      _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE     }, 8 );
+      _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING     }, 1 );
+      _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT     }, 4 );
+      _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE     }, 4 );
 
       _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 1 );
       _ = self.buildQueue.?.addEntry( .{ .ind = .HYDROPONIC  }, 1 );

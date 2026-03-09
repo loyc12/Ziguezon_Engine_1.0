@@ -31,11 +31,11 @@ pub const ResType = enum( u8 )
       .WORK  => 0.0,
 
       .FOOD  => 1.0,
-      .WATER => 1.0,
+      .WATER => 2.0,
       .POWER => 0.0,
 
-      .ORE   => 3.0,
-      .INGOT => 3.0,
+      .ORE   => 5.0,
+      .INGOT => 4.0,
       .PART  => 3.0,
     };
   }
@@ -46,13 +46,27 @@ pub const ResType = enum( u8 )
     {
       .WORK  => 1.00, // NOTE : DO NOT CONFUSE WITH getPerPopDelta() VALUE
                       //        Imagine wasting time on that bug... couldn't be me frfrf
-      .FOOD  => 0.03,
+      .FOOD  => 0.05,
       .WATER => 0.02,
       .POWER => 0.01,
 
       .ORE   => 0.01,
       .INGOT => 0.02,
-      .PART  => 0.03,
+      .PART  => 0.05,
+    };
+  }
+
+  pub inline fn getGrowthRate( self : ResType ) f32
+  {
+    // NOTE : Changes might require modifications to EconSolver.applyWorkWeek(), .calcWorkAccess(), or .applyPopDelta()
+
+    return switch( self )
+    {
+      .FOOD  => 150.0,
+      .WATER => 200.0,
+      .POWER => 100.0,
+
+      else   => 0.0,
     };
   }
 
@@ -64,31 +78,11 @@ pub const ResType = enum( u8 )
     {
       .WORK  =>  1.00, // Needs to stay positive ( EconSolver.calcWorkAccess() )
 
-      .FOOD  => -0.30,
+      .FOOD  => -0.40,
       .WATER => -0.20,
       .POWER => -0.10,
 
-      .ORE   => -0.00,
-      .INGOT => -0.00,
-      .PART  => -0.00,
-    };
-  }
-
-  pub inline fn getNaturalAbundance( self : ResType ) f32
-  {
-    // NOTE : Changes might require modifications to EconSolver.applyWorkWeek(), .calcWorkAccess(), or .applyPopDelta()
-
-    return switch( self )
-    {
-      .WORK  => 0.00,
-
-      .FOOD  => 100.0,
-      .WATER => 100.0,
-      .POWER => 20.0,
-
-      .ORE   => 0.0,
-      .INGOT => 0.0,
-      .PART  => 0.0,
+      else   => -0.0,
     };
   }
 

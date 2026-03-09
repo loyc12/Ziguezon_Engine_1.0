@@ -35,6 +35,21 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ glb.targetId = glb.targetId -| 1; }
 
 
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.left_shift ))
+  {
+    const bodyStore : *glb.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+
+    var mainEcon = bodyStore.get( 2 ).?.getEcon( .GROUND );
+
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.zero  )){ mainEcon.popCount += 1000; }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.two   )){ mainEcon.addResCount( .fromIdx( 1 ), 10000 ); }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.three )){ mainEcon.addResCount( .fromIdx( 2 ), 10000 ); }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.four  )){ mainEcon.addResCount( .fromIdx( 3 ), 10000 ); }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.five  )){ mainEcon.addResCount( .fromIdx( 4 ), 10000 ); }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.six   )){ mainEcon.addResCount( .fromIdx( 5 ), 10000 ); }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.seven )){ mainEcon.addResCount( .fromIdx( 6 ), 10000 ); }
+  }
 
   utl.updateCameraLogic( &ng.camera );
 }

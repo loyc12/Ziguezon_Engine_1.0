@@ -69,12 +69,11 @@ pub const BuildQueue = struct
 {
   entries       : [ BUILD_QUEUE_CAPACITY ]BuildEntry = undefined,
   entryCount    : u64 = 0,
-  leftoverParts : u64 = 0,
 
 
   pub fn init() BuildQueue
   {
-    var queue : BuildQueue = .{ .entryCount = 0, .leftoverParts = 0 };
+    var queue : BuildQueue = .{ .entryCount = 0 };
 
     for( 0..BUILD_QUEUE_CAPACITY )| i |
     {
@@ -146,64 +145,47 @@ pub const BuildQueue = struct
 
   pub fn update( self : *BuildQueue, econ : *ecn.Economy ) void
   {
-    if( self.entryCount == 0 )
+    if( self.entryCount > 0 )
     {
-      econ.addResCount( .PART, self.leftoverParts );
-      self.leftoverParts = 0;
-      return;
-    }
+      const assemblyIdx = IndType.ASSEMBLY.toIdx();
 
-    const partIdx     = ResType.PART.toIdx();
-    const assemblyIdx = IndType.ASSEMBLY.toIdx();
+      var entriesClosed : u64 = 0;
 
-    var availParts_f32  = ASSEMBLY_EFFICIENCY;
-        availParts_f32 *= econ.indActivity[ assemblyIdx ];
-        availParts_f32 *= @floatFromInt( econ.indBank[ assemblyIdx ]);
+      var availParts_f32  = econ.indActivity[ assemblyIdx ];
+          availParts_f32 *= @floatFromInt( econ.indBank[ assemblyIdx ]);
+          availParts_f32 *= ASSEMBLY_EFFICIENCY;
 
-    var availParts : u64 = @intFromFloat( @floor( availParts_f32 ));
-        availParts      += self.leftoverParts;
+      var availParts : u64 = @intFromFloat( @floor( availParts_f32 ));
 
-    var entriesClosed : u64 = 0;
-
-    for( 0..self.entryCount )| idx |
-    {
-      var entry : *BuildEntry = &self.entries[ idx ];
-      var unitsBuilt : u64 = 0;
-
-      const unitPartCost = entry.construct.getPartCost();
-      const unitsToBuild = entry.calcBuildableAmount( availParts );
-
-      if( unitsToBuild > 0 )
+      for( 0..self.entryCount )| idx |
       {
-        unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild );
+        var entry = &self.entries[ idx ];
+        var unitsBuilt : u64 = 0;
 
-        entry.buildCount -= unitsBuilt;
-        availParts       -= unitsBuilt * unitPartCost;
-      }
+        const unitPartCost = entry.construct.getPartCost();
+        const unitsToBuild = entry.calcBuildableAmount( availParts );
 
-      // Encountered a building restriction
-      if( unitsToBuild != unitsBuilt )
-      {
-        self.leftoverParts = @min( self.leftoverParts + availParts, econ.resCap[ partIdx ]);
-        break;
-      }
+        if( unitsToBuild > 0 )
+        {
+          unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild );
 
-      // Closed the current building order ( all unit built )
-      if( entry.isEntryClosed() )
-      {
+          entry.buildCount -= unitsBuilt;
+          availParts       -= unitsBuilt * unitPartCost;
+
+          // Failed to close the entry : likely cannot build anything more
+          if( !entry.isEntryClosed() ){ break; }
+        }
+
         entriesClosed += 1;
-        continue;
+
+        //if( unitsToBuild > unitsBuilt ) break; // Encountered a building restriction ( cannot build any more )
+        //if( availParts < unitPartCost ) break; // Used all available parts ( cannot build any more )
+
       }
 
-      // Used all availalbe parts
-      if( availParts < unitPartCost )
-      {
-        self.leftoverParts += availParts;
-        break;
-      }
-
-      break;
+      self.removeEntryAmount( entriesClosed );
+      econ.addResCount( .PART, availParts );
     }
-    self.removeEntryAmount( entriesClosed );
+    return;
   }
 };
