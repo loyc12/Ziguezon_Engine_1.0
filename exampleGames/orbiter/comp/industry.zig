@@ -159,16 +159,16 @@ pub const IndInstance = struct
       .AGRONOMIC =>
       {
         instance.powerSrc = .SOLAR;
-        instance.addResConsPerInd( .WORK,  3 ) ;
-        instance.addResConsPerInd( .WATER, 5  );
+        instance.addResConsPerInd( .WORK,  2  );
+        instance.addResConsPerInd( .WATER, 6  );
 
         instance.addResProdPerInd( .FOOD,  16 );
       },
       .HYDROPONIC =>
       {
         instance.addResConsPerInd( .WORK,  4  );
-        instance.addResConsPerInd( .POWER, 3  );
-        instance.addResConsPerInd( .WATER, 5  );
+        instance.addResConsPerInd( .POWER, 4  );
+        instance.addResConsPerInd( .WATER, 4  );
 
         instance.addResProdPerInd( .FOOD,  16 );
       },
@@ -215,10 +215,10 @@ pub const IndInstance = struct
 
         instance.addResProdPerInd( .PART,  1  );
       },
-      .ASSEMBLY => // No resource production. Allos building constructs instead
+      .ASSEMBLY => // No resource production. Allows building constructs instead
       {
-        instance.addResConsPerInd( .WORK,  3  );
-        instance.addResConsPerInd( .POWER, 4  );
+        instance.addResConsPerInd( .WORK,  2  );
+        instance.addResConsPerInd( .POWER, 2  );
       },
     }
     return instance;
