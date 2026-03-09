@@ -13,7 +13,6 @@ HIGH PRIORITY ( Required for basic functionality ) :
 
 3. Add collapse revert mechanism
   - smart industry/infrastructure decay
-  - ecology-based natural abundance ( rework existing ecoFactor if need be )
 
 
 MEDIUM PRIORITY :
@@ -27,3 +26,4 @@ LOW PRIORITY :
 1. Add fractional carry buffers for res production ( avoid rounding losses )
 2. Implement local res distribution system ( POWER_GRID, etc )
 3. Add tax / revenue mechanics for COMMERCE and auto-trade
+4. Building management automation ( add and del )

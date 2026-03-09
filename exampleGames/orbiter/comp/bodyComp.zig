@@ -42,7 +42,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   bodyType : BodyType,
 
-  radius : f32 =   10.0, // TODO : Figure out irl unit equivalency // NOTE : for gasseous worlds : radius at 1 atm
+  radius : f32 =   10.0, // TODO : Figure out irl unit equivalency // NOTE : for gaseous worlds : radius at 1 atm
   mass   : f32 = 1000.0, // TODO : Figure out irl unit equivalency
 //temp   : f32 =    0.0, // TODO : Figure out irl unit equivalency
 //tilt   : f32 =    0.0, // Radians
