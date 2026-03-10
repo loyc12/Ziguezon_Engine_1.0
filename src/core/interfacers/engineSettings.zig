@@ -38,8 +38,10 @@ pub const EngineSettings = struct
 
   Graphic_Ellipse_Facets   : u16 = 64,
 
-  Camera_Max_Zoom          : f32 = 10.0,
-  Camera_Min_Zoom          : f32 = 0.1,
+  Camera_Zoom_Max          : f32 = 10.0,
+  Camera_Zoom_Min          : f32 = 0.1,
+  Camera_Zoom_Init         : f32 = 1.0,
+
 
 
   // ================================ ENGINE SETTINGS FUNCTIONS ================================
@@ -78,9 +80,9 @@ pub const EngineSettings = struct
     if( @hasDecl( module, "Graphic_Default_Font"     )){ self.Graphic_Default_Font     = @field( module, "Graphic_Default_Font"     ); hasFoundSettings = true; }
     if( @hasDecl( module, "Graphic_Ellipse_Facets"   )){ self.Graphic_Ellipse_Facets   = @field( module, "Graphic_Ellipse_Facets"   ); hasFoundSettings = true; }
 
-    if( @hasDecl( module, "Camera_Max_Zoom"          )){ self.Camera_Max_Zoom          = @field( module, "Camera_Max_Zoom"          ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Camera_Min_Zoom"          )){ self.Camera_Min_Zoom          = @field( module, "Camera_Min_Zoom"          ); hasFoundSettings = true; }
-
+    if( @hasDecl( module, "Camera_Zoom_Max"          )){ self.Camera_Zoom_Max          = @field( module, "Camera_Zoom_Max"          ); hasFoundSettings = true; }
+    if( @hasDecl( module, "Camera_Zoom_Min"          )){ self.Camera_Zoom_Min          = @field( module, "Camera_Zoom_Min"          ); hasFoundSettings = true; }
+    if( @hasDecl( module, "Camera_Zoom_Init"         )){ self.Camera_Zoom_Init         = @field( module, "Camera_Zoom_Init"         ); hasFoundSettings = true; }
 
 
     // Logging the outcome

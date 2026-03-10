@@ -260,9 +260,9 @@ pub inline fn drawTextOffsetFmt( comptime fmt : [:0] const u8, args : anytype, p
   var   buf : [ 1024 ]u8 = undefined;
   const text = std.fmt.bufPrintZ( &buf, fmt, args ) catch @panic( "drawTextCenterFmt : Formatted text too long" );
 
-  const textDims       = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
-  const textHalfWidth  = textDims.x * factors.x;
-  const textHalfHeight = textDims.y * factors.y;
+  const textDims             = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
+  const textHalfWidth  : f32 = @floatCast( textDims.x * factors.x );
+  const textHalfHeight : f32 = @floatCast( textDims.y * factors.y );
 
   drawText( text, posX - textHalfWidth, posY - textHalfHeight, fontSize, col );
 }

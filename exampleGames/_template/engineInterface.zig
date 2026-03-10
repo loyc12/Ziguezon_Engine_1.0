@@ -39,8 +39,10 @@ const def = @import( "defs" );
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 //pub const Graphic_Ellipse_Facets   : u16 = 64,
 
-//pub const Camera_Max_Zoom          : f32 = 5.0;
-//pub const Camera_Min_Zoom          : f32 = 0.2;
+//pub const Camera_Zoom_Max          : f32 = 5.0;
+//pub const Camera_Zoom_Min          : f32 = 0.2;
+//pub const Camera_Zoom_Init         : f32 = 1.0;
+
 
 
 // ================================ GAME HOOKS ================================

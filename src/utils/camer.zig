@@ -120,8 +120,8 @@ pub const Cam2D = struct
   {
     self.zoom = z;
 
-    const maxZoom = def.G_ST.Camera_Max_Zoom;
-    const minZoom = def.G_ST.Camera_Min_Zoom;
+    const maxZoom = def.G_ST.Camera_Zoom_Max;
+    const minZoom = def.G_ST.Camera_Zoom_Min;
 
     if( self.zoom < minZoom ) { self.zoom = minZoom; }
     if( self.zoom > maxZoom ) { self.zoom = maxZoom; }

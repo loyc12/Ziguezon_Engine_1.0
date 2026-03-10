@@ -16,17 +16,17 @@ const Coords3 = def.Coords3;
 
 pub const Vec3 = struct
 {
-  x : f32 = 0,
-  y : f32 = 0,
-  z : f32 = 0,
+  x : f64 = 0,
+  y : f64 = 0,
+  z : f64 = 0,
 
 
   // ================ GENERATION ================
 
-  pub inline fn new( x : f32, y : f32, z : f32 ) Vec3 { return Vec3{ .x = x, .y = y, .z = z }; }
+  pub inline fn new( x : f64, y : f64, z : f64 ) Vec3 { return Vec3{ .x = x, .y = y, .z = z }; }
 
-  //pub inline fn fromAngleDeg( a : Angle, b : f32 ) Vec3 { return fromAngle( def.DtR( a )); }
-  //pub inline fn fromAngle(    a : Angle, b : f32 ) Vec3
+  //pub inline fn fromAngleDeg( a : Angle, b : f64 ) Vec3 { return fromAngle( def.DtR( a )); }
+  //pub inline fn fromAngle(    a : Angle, b : f64 ) Vec3
   //{
   //  return Vec3{
   //    .x = @cos( a ),
@@ -34,8 +34,8 @@ pub const Vec3 = struct
   //  };
   //}
 
-  //pub inline fn fromAngleDegScaled( a : Angle, b : f32, scale : Vec3 ) Vec3 { return fromAngleScaled( def.DtR( a ), scale ); }
-  //pub inline fn fromAngleScaled(    a : Angle, b : f32, scale : Vec3 ) Vec3
+  //pub inline fn fromAngleDegScaled( a : Angle, b : f64, scale : Vec3 ) Vec3 { return fromAngleScaled( def.DtR( a ), scale ); }
+  //pub inline fn fromAngleScaled(    a : Angle, b : f64, scale : Vec3 ) Vec3
   //{
   //  return Vec3{
   //    .x = @cos( a ) * scale.x,
@@ -85,10 +85,10 @@ pub const Vec3 = struct
     return Vec3{ .x = self.x / other.x, .y = self.y / other.y, .z = self.z / other.z };
   }
 
-  pub inline fn addVal( self : *const Vec3, val : f32 ) Vec3 { return Vec3{ .x = self.x + val, .y = self.y + val, .z = self.z + val }; }
-  pub inline fn subVal( self : *const Vec3, val : f32 ) Vec3 { return Vec3{ .x = self.x - val, .y = self.y - val, .z = self.z - val }; }
-  pub inline fn mulVal( self : *const Vec3, val : f32 ) Vec3 { return Vec3{ .x = self.x * val, .y = self.y * val, .z = self.z * val }; }
-  pub inline fn divVal( self : *const Vec3, val : f32 ) ?Vec3
+  pub inline fn addVal( self : *const Vec3, val : f64 ) Vec3 { return Vec3{ .x = self.x + val, .y = self.y + val, .z = self.z + val }; }
+  pub inline fn subVal( self : *const Vec3, val : f64 ) Vec3 { return Vec3{ .x = self.x - val, .y = self.y - val, .z = self.z - val }; }
+  pub inline fn mulVal( self : *const Vec3, val : f64 ) Vec3 { return Vec3{ .x = self.x * val, .y = self.y * val, .z = self.z * val }; }
+  pub inline fn divVal( self : *const Vec3, val : f64 ) ?Vec3
   {
     if( val == 0.0 )
     {
@@ -98,8 +98,8 @@ pub const Vec3 = struct
     return Vec3{ .x = self.x / val, .y = self.y / val, .z = self.z / val };
   }
 
-  pub inline fn getDist(    self : *const Vec3, other : Vec3 ) f32 { return @sqrt( self.getDistSqr( other )); }
-  pub inline fn getDistSqr( self : *const Vec3, other : Vec3 ) f32
+  pub inline fn getDist(    self : *const Vec3, other : Vec3 ) f64 { return @sqrt( self.getDistSqr( other )); }
+  pub inline fn getDistSqr( self : *const Vec3, other : Vec3 ) f64
   {
     const dx = self.x - other.x;
     const dy = self.y - other.y;
@@ -107,15 +107,15 @@ pub const Vec3 = struct
     return ( dx * dx ) + ( dy * dy ) + ( dz * dz );
   }
 
-  pub inline fn getDistM( self : *const Vec3, other : Vec3 ) f32 { return self.getDistX( other ) + self.getDistY( other ) + self.getDistZ( other ); }
-  pub inline fn getDistX( self : *const Vec3, other : Vec3 ) f32 { return @abs( self.x - other.x ); }
-  pub inline fn getDistY( self : *const Vec3, other : Vec3 ) f32 { return @abs( self.y - other.y ); }
-  pub inline fn getDistZ( self : *const Vec3, other : Vec3 ) f32 { return @abs( self.z - other.z ); }
+  pub inline fn getDistM( self : *const Vec3, other : Vec3 ) f64 { return self.getDistX( other ) + self.getDistY( other ) + self.getDistZ( other ); }
+  pub inline fn getDistX( self : *const Vec3, other : Vec3 ) f64 { return @abs( self.x - other.x ); }
+  pub inline fn getDistY( self : *const Vec3, other : Vec3 ) f64 { return @abs( self.y - other.y ); }
+  pub inline fn getDistZ( self : *const Vec3, other : Vec3 ) f64 { return @abs( self.z - other.z ); }
 
-  pub inline fn getMaxLinDist( self : *const Vec3, other : Vec3 ) f32 { return @max(     self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
-  pub inline fn getMedLinDist( self : *const Vec3, other : Vec3 ) f32 { return def.med3( self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
-  pub inline fn getMinLinDist( self : *const Vec3, other : Vec3 ) f32 { return @min(     self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
-  pub inline fn getAvgLinDist( self : *const Vec3, other : Vec3 ) f32 { return ( self.getDistX( other ) + self.getDistY( other ) + self.getDistZ( other )) / 3.0; }
+  pub inline fn getMaxLinDist( self : *const Vec3, other : Vec3 ) f64 { return @max(     self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
+  pub inline fn getMedLinDist( self : *const Vec3, other : Vec3 ) f64 { return def.med3( self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
+  pub inline fn getMinLinDist( self : *const Vec3, other : Vec3 ) f64 { return @min(     self.getDistX( other ), self.getDistY( other ), self.getDistZ( other )); }
+  pub inline fn getAvgLinDist( self : *const Vec3, other : Vec3 ) f64 { return ( self.getDistX( other ) + self.getDistY( other ) + self.getDistZ( other )) / 3.0; }
 
 
   // ================ VECTOR MATHS ================
@@ -123,7 +123,7 @@ pub const Vec3 = struct
   pub inline fn normToUnit( self : *const Vec3 ) Vec3 { return self. normToLen( 1.0 ); }
 
   // Normalizes a vector to a new length, returns null if the vector is zero'd
-  pub fn normToLen( self : *const Vec3, newLen : f32 ) Vec3
+  pub fn normToLen( self : *const Vec3, newLen : f64 ) Vec3
   {
     if( newLen == 0.0 )
     {
@@ -144,8 +144,8 @@ pub const Vec3 = struct
     return self.mulVal( factor );
   }
 
-  pub inline fn len(    self : *const Vec3 ) f32 { return @sqrt( self.lenSqr() ); }
-  pub inline fn lenSqr( self : *const Vec3 ) f32 { return ( self.x * self.x ) + ( self.y * self.y ) + ( self.z * self.z ); }
+  pub inline fn len(    self : *const Vec3 ) f64 { return @sqrt( self.lenSqr() ); }
+  pub inline fn lenSqr( self : *const Vec3 ) f64 { return ( self.x * self.x ) + ( self.y * self.y ) + ( self.z * self.z ); }
 
   //pub inline fn rotDeg( self : *const Vec3, a : Angle ) Vec3 { return self.rot( def.DtR( a )); }
   //pub inline fn rot(    self : *const Vec3, a : Angle ) Vec3
@@ -160,8 +160,8 @@ pub const Vec3 = struct
   //  };
   //}
 
-  //pub inline fn angleDeg( self : *const Vec3 ) f32 { return def.RtD( self.angle() ); }
-  //pub inline fn angle(    self : *const Vec3 ) f32
+  //pub inline fn angleDeg( self : *const Vec3 ) f64 { return def.RtD( self.angle() ); }
+  //pub inline fn angle(    self : *const Vec3 ) f64
   //{
   //  if( self.x == 0.0 and self.y == 0.0 )
   //  {

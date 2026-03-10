@@ -39,7 +39,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   {
     const bodyStore : *glb.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-    var mainEcon = bodyStore.get( 2 ).?.getEcon( .GROUND );
+    var mainEcon = bodyStore.get( glb.homeworldId ).?.getEcon( .GROUND );
 
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.zero  )){ mainEcon.popCount += 1000; }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
@@ -58,19 +58,16 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
-  const sdt = ng.times.getScaledTargetTickDeltaFloat();
-
   const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
   const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
   const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
+  utl.tickOrbiters( transStore, orbitStore, 1.0 ); // Each update will represent exactly one wekk of in-game time
 
-  utl.tickOrbiters( transStore, orbitStore, sdt );
 
+  const starPos : def.Vec2 = transStore.get( glb.starId ).?.pos.toVec2();
 
-  const starPos : def.Vec2 = transStore.get( 1 ).?.pos.toVec2();
-
-  utl.tickGlobalEconomy( transStore, orbitStore, bodyStore, starPos );
+  utl.tickGlobalEconomy( transStore, bodyStore, starPos );
 }
 
 

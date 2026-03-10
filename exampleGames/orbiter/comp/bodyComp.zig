@@ -16,7 +16,7 @@ pub const BodyType = enum( u8 )
 
   PLANET, // Has L1-5
   MOON,   // Has L1-2 only
-  COMET,  // Has no LPs    // NOTE : Also includes asteroids
+  COMET,  // Has no LPs    // NOTE : Also includes asteroids, captured or otherwise
 
 
   pub inline fn getEconLocCount( self : BodyType ) usize
@@ -40,18 +40,20 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  bodyType : BodyType,
+  bodyType : BodyType, // TODO : auto-assign type based on mass ( and orbital radius ? )
 
-  radius : f32 =   10.0, // TODO : Figure out irl unit equivalency // NOTE : for gaseous worlds : radius at 1 atm
-  mass   : f32 = 1000.0, // TODO : Figure out irl unit equivalency
-//temp   : f32 =    0.0, // TODO : Figure out irl unit equivalency
-//tilt   : f32 =    0.0, // Radians
+  // NOTE : defaults to earth values
+
+  mass   : f64 = 5_972_000_000_000.0, // Gigatons   ( Gt )
+  radius : f64 =             6_371.0, // kilometers ( km ) // NOTE : for gaseous worlds : radius at 1 atm
+//temp   : f32 =               390.0, // Kelvins    ( Dk )
+//tilt   : f32 =                 0.0, // Radians
 
   econArray : [ ecn.econLocCount ]ecn.Economy = std.mem.zeroes([ ecn.econLocCount ]ecn.Economy ),
 
 
   // Sphere surface area : 4πr^2
-  pub inline fn getSurfaceArea( self : *const BodyComp ) f32
+  pub inline fn getSurfaceArea( self : *const BodyComp ) f64
   {
     const r2  = self.radius * self.radius;
     const tmp = 4.0 * def.PI * r2;
@@ -61,7 +63,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   }
 
   // Sphere volume : ( 4/3 )πr^3
-  pub inline fn getVolume( self : *const BodyComp ) f32
+  pub inline fn getVolume( self : *const BodyComp ) f64
   {
     const r3  = self.radius * self.radius * self.radius;
     const tmp = ( 4.0 * def.PI * r3 ) / 3.0;
@@ -70,31 +72,31 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     return tmp;
   }
 
-  pub inline fn getDensity( self : *const BodyComp ) f32
+  pub inline fn getDensity( self : *const BodyComp ) f64
   {
     return self.mass / self.getVolume();
   }
 
 
-  pub inline fn setRadiusViaArea( self : *BodyComp, area : f32 ) void
+  pub inline fn setRadiusViaArea( self : *BodyComp, area : f64 ) void
   {
     const r2 = area / ( 4.0 * def.PI );
 
     self.radius = def.sqrt( r2 );
   }
-  pub inline fn setRadiusViaVolume( self : *BodyComp, volume : f32 ) void
+  pub inline fn setRadiusViaVolume( self : *BodyComp, volume : f64 ) void
   {
     const r3 = volume * 3.0 / ( 4.0 * def.PI );
 
     self.radius = def.cbrt( r3 );
   }
 
-  pub inline fn setMassViaDensity( self : *BodyComp, density : f32 ) void
+  pub inline fn setMassViaDensity( self : *BodyComp, density : f64 ) void
   {
     self.mass = density * self.getVolume();
   }
 
-  pub inline fn setRadiusViaDensity( self : *BodyComp, density : f32 ) void
+  pub inline fn setRadiusViaDensity( self : *BodyComp, density : f64 ) void
   {
     const v = self.mass / density;
 
@@ -104,11 +106,10 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   // ================================ ECONOMIES ================================
 
+  // NOTE : Radius needs to be properly set BEFORE calling this function
   pub fn initEcon( self : *BodyComp, loc : ecn.EconLoc ) void
   {
     var econ : ecn.Economy = undefined;
-
-    self.setRadiusViaDensity( 1.0 ); // NOTE : Forces radius to be correct
 
     if( loc == .GROUND ) // TODO : add useableLand modifier ( ex : what proportion is solid ground )
     {
@@ -122,7 +123,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     self.econArray[ loc.toIdx() ] = econ;
   }
 
-  pub fn tickEcons( self : *BodyComp, selfOrbit : *const orb.OrbitComp, orbitedPos : def.Vec2, starPos : def.Vec2 ) void
+  pub fn tickEcons( self : *BodyComp, orbiterPos : def.Vec2, starPos : def.Vec2 ) void
   {
     for( 0..self.bodyType.getEconLocCount() )| i |
     {
@@ -130,11 +131,10 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
       if( econ.isActive ) // TODO : Activate locs when player build infra there
       {
-        const econPos = selfOrbit.getEconAbsPos( orbitedPos, econ.location );
-        const distSqr = econPos.getDistSqr( starPos );
+        const distSqr = orbiterPos.getDistSqr( starPos );
         const shine   = glb.starCompInst.getSunshineAt( distSqr );
 
-        def.log( .INFO, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} at pos {d:.2}:{d:.2}", .{ @tagName( econ.location ), shine, econPos.x, econPos.y });
+        def.log( .INFO, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} at pos {d:.2}:{d:.2}", .{ @tagName( econ.location ), shine, orbiterPos.x, orbiterPos.y });
 
         econ.tickEcon( shine );
       }

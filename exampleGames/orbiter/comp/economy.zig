@@ -49,14 +49,14 @@ pub const Economy = struct
   isActive  : bool = false,
 
   hasAtmo   : bool,
-  sunshine  : f32 = 0.0,
+  sunshine  : f64 = 0.0,
   sunAccess : f32 = 1.0,
-  landCover : f32 = 0.7,
 
-  areaCap   : f32,
-  areaMax   : f32 = 0.0,
-  areaUsed  : f32 = 0.0,
-  areaAvail : f32 = 0.0,
+  areaCap   : f64,
+  areaMax   : f64 = 0.0,
+  areaUsed  : f64 = 0.0,
+  areaAvail : f64 = 0.0,
+  landCover : f64 = 0.7,
 
   buildQueue : ?BuildQueue = null,
 
@@ -86,7 +86,7 @@ pub const Economy = struct
   indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ),
 
 
-  pub inline fn newEcon( loc : EconLoc, area : f32, atmo : bool ) Economy
+  pub inline fn newEcon( loc : EconLoc, area : f64, atmo : bool ) Economy
   {
     var econ : Economy = .{ .location = loc, .areaCap = area, .hasAtmo = atmo, .isActive = true };
 
@@ -356,11 +356,11 @@ pub const Economy = struct
 
   // ================================ SUNSHINE ================================
 
-  pub inline fn updateSunshine( self : *Economy, sunshine : f32 ) void
+  pub inline fn updateSunshine( self : *Economy, sunshine : f64 ) void
   {
     self.sunshine = sunshine;
 
-    var tmp : f32 = 0;
+    var tmp : f64 = 0;
 
     switch( self.location )
     {
@@ -377,7 +377,7 @@ pub const Economy = struct
         }
         else
         {
-          const sunlessRatio = def.pow( f32, 1.0 - overgroundRatio, SUN_SHORTAGE_EXPONENT );
+          const sunlessRatio = def.pow( f64, 1.0 - overgroundRatio, SUN_SHORTAGE_EXPONENT );
           tmp = 0.5 * sunshine * ( 1.0 - sunlessRatio );
 
         }
@@ -387,7 +387,7 @@ pub const Economy = struct
       else   => tmp = sunshine,
     }
 
-    self.sunAccess = def.clmp( tmp, 0.001, MAX_SUN_ACCESS_CAP );
+    self.sunAccess = @floatCast( def.clmp( tmp, 0.001, MAX_SUN_ACCESS_CAP ));
   }
 
 
@@ -395,15 +395,9 @@ pub const Economy = struct
   {
     if( self.location != .GROUND or !self.hasAtmo ){ return 0.0; }
 
-    const groundArea    : f32 = self.areaCap * self.landCover;
-    const developedArea : f32 = self.areaUsed;
-
-    // Development ratio : 0 = untouched, 1 = industrialized
-    const developmentRatio = def.clmp( developedArea / groundArea, 0.0, 1.0 );
-
     // Calculate total pollution
-    var averageActivity : f32 = 0.0;
-    var pollutionAmount : f32 = @floatFromInt( self.popCount );
+    var averageActivity : f64 = 0.0;
+    var pollutionAmount : f64 = @floatFromInt( self.popCount );
         pollutionAmount      *= POLLUTION_PER_POP;
 
 
@@ -411,7 +405,7 @@ pub const Economy = struct
     {
       const activity = self.indActivity[ d ];
 
-      var tmp : f32 = IndType.fromIdx( d ).getPollution();
+      var tmp : f64 = IndType.fromIdx( d ).getPollution();
           tmp      *= @floatFromInt( self.indBank[ d ]);
           tmp      *= activity;
 
@@ -423,7 +417,7 @@ pub const Economy = struct
 
     for( 0..infTypeCount )| f |
     {
-      var tmp : f32 = InfType.fromIdx( f ).getPollution();
+      var tmp : f64 = InfType.fromIdx( f ).getPollution();
           tmp      *= @floatFromInt( self.infBank[ f ]);
           tmp      *= averageActivity;
 
@@ -432,8 +426,14 @@ pub const Economy = struct
 
     pollutionAmount *= 100.0;
 
+    const groundArea    : f64 = self.areaCap * self.landCover;
+    const developedArea : f64 = self.areaUsed;
+
     // Pollution ratio : 0 = pristine, 1 = polluted
-    const pollutionRatio = def.clmp( pollutionAmount / @max( groundArea, 1.0 ), 0.0, 1.0 );
+    const pollutionRatio : f32 = @floatCast( def.clmp( pollutionAmount / @max( groundArea, 1.0 ), 0.0, 1.0 ));
+
+    // Development ratio : 0 = untouched, 1 = industrialized
+    const developmentRatio : f32 = @floatCast( def.clmp( developedArea / groundArea, 0.0, 1.0 ));
 
     // Ecology Ratio : 0 = desolate, 1 = wilderness
     const ecologyRatio = ( 1.0 - developmentRatio ) * ( 1.0 - pollutionRatio );
@@ -450,7 +450,7 @@ pub const Economy = struct
 
   // ================================ AREA ================================
 
-  pub inline fn getHabitatArea( self : *const Economy ) f32
+  pub inline fn getHabitatArea( self : *const Economy ) f64
   {
     return @floatFromInt( self.getInfCount( .HABITAT ) * InfType.HABITAT.getCapacity() );
   }
@@ -479,7 +479,7 @@ pub const Economy = struct
     {
       const infType  = InfType.fromIdx( f );
 
-      var area : f32 = @floatFromInt( self.getInfCount( infType ));
+      var area : f64 = @floatFromInt( self.getInfCount( infType ));
           area      *= infType.getAreaCost();
 
       self.areaUsed += area;
@@ -488,7 +488,7 @@ pub const Economy = struct
     {
       const indType = IndType.fromIdx( d );
 
-      var area : f32 = @floatFromInt( self.getIndCount( indType ));
+      var area : f64 = @floatFromInt( self.getIndCount( indType ));
           area      *= indType.getAreaCost();
 
       self.areaUsed += area;
@@ -551,7 +551,7 @@ pub const Economy = struct
       {
         const factor = self.sunAccess;
 
-        const maxCons_f32 : f32 = @floatFromInt( maxCons );
+        const maxCons_f32 : f64 = @floatFromInt( maxCons );
         maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
       }
     }}
@@ -599,7 +599,7 @@ pub const Economy = struct
       {
         const factor = @min( self.getSunshineAccess(), 1.0 );
 
-        const maxProd_f32 : f32 = @floatFromInt( maxProd );
+        const maxProd_f32 : f64 = @floatFromInt( maxProd );
         maxProd = @intFromFloat( @floor( maxProd_f32 * factor ));
       }
     }}
@@ -637,7 +637,7 @@ pub const Economy = struct
 
     if( !std.meta.eql( c, .{ .inf = .HABITAT })) // HABITATS can always be built
     {
-      const amout_f32 : f32 = @floatFromInt( amount );
+      const amout_f32 : f64 = @floatFromInt( amount );
 
       if( self.areaAvail < c.getAreaCost() )
       {
@@ -730,7 +730,7 @@ pub const Economy = struct
     }
   }
 
-  pub fn tickEcon( self : *Economy, newSunshine : f32 ) void
+  pub fn tickEcon( self : *Economy, newSunshine : f64 ) void
   {
     self.updateResCaps();
     self.updateAreas();

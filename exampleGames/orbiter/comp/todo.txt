@@ -1,3 +1,11 @@
+==== Engine Update ====
+
+1. Finish f32 -> f64 conversion for relevant values ( pos )
+2. Autoconvert f64 pos to screen relative f32 pos when rendering
+3. Zoom towards mouse, not center of screen ( add bool setting )
+4. ? Allow for user definable precision for Pos (f/u) via engineSettings ( lots of work )
+
+
 ==== Economy Integration ====
 
 HIGH PRIORITY ( Required for basic functionality ) :

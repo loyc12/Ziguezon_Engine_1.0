@@ -11,16 +11,18 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  const G : f32 = glb.gravityStrenght;
+  const G : f64 = glb.G_FACTOR;
   const N : u32 = 256; // number of segments used to render orbital path
 
+  orbitedID   : def.EntityId = 1, // 1 is the sun by default
+
   // Orbit's masses ( ought to be near-constant )
-  orbitedMass : f32 = 100.0, // mass of whatever self orbits
-  orbiterMass : f32 = 100.0, // mass of self
+  orbitedMass : f64 = 100.0, // mass of whatever self orbits
+  orbiterMass : f64 = 100.0, // mass of self
 
   // Min/Max radius approach
-  minRadius : f32 = 200.0, // Periapsis (closest)
-  maxRadius : f32 = 600.0, // Apoapsis (farthest)
+  minRadius : f64 = 200.0, // Periapsis (closest)
+  maxRadius : f64 = 600.0, // Apoapsis (farthest)
 
   // Eccentricity and Procession direction
   orientation : f32  = 0.0,   // Periapsis angle ( 0 to 2π, 0 => +X )
@@ -31,21 +33,21 @@ pub const OrbitComp = struct
   angularVel  : f32 = 0.0,
 
 
-  pub inline fn getSemiMajor( self : *const OrbitComp ) f32
+  pub inline fn getSemiMajor( self : *const OrbitComp ) f64
   {
     return ( self.maxRadius + self.minRadius ) / 2.0;
   }
-  pub inline fn getEccentricity( self : *const OrbitComp ) f32
+  pub inline fn getEccentricity( self : *const OrbitComp ) f64
   {
     // Clamping avoids some high eccentricity math issues
     return def.clmp(( self.maxRadius - self.minRadius ) / ( self.maxRadius + self.minRadius ), 0.0, 0.999 );
   }
 
-  pub inline fn getCurrentRadius( self : *const OrbitComp ) f32
+  pub inline fn getCurrentRadius( self : *const OrbitComp ) f64
   {
     return self.getRadiusAtAngle( self.angularPos );
   }
-  pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : f32 ) f32
+  pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : f32 ) f64
   {
     const e = self.getEccentricity();
     const eSqr = e * e;
@@ -73,8 +75,8 @@ pub const OrbitComp = struct
 
     return switch( self.retrograde ) // negative angularVel == retrograde orbits
     {
-      false =>  meanAngVel,
-      true  => -meanAngVel,
+      false => @floatCast(  meanAngVel ),
+      true  => @floatCast( -meanAngVel ),
     };
   }
 
@@ -90,7 +92,9 @@ pub const OrbitComp = struct
     const numerRoot = 1.0 + ( ecc * @cos( self.angularPos ));
     const denom     = ( 1.0 - eccSqr ) * @sqrt( 1.0 - eccSqr );
 
-    return meanAngVel * ( numerRoot * numerRoot ) / denom;
+    const ratio : f32 = @floatCast(( numerRoot * numerRoot ) / denom );
+
+    return meanAngVel * ratio;
   }
 
 
@@ -187,7 +191,7 @@ pub const OrbitComp = struct
 
   // ================================ RENDERING ================================
 
-  pub fn renderDebug( self : *const OrbitComp, selfPos : Vec2, selfRadius : f32, moonDensity : f32 ) void
+  pub fn renderDebug( self : *const OrbitComp, selfPos : Vec2, selfRadius : f64, moonDensity : f64 ) void
   {
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
     const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 );
@@ -261,9 +265,9 @@ pub const OrbitComp = struct
 
   // ================================ LAGRANGE & HILL MATHS ================================
 
-  inline fn getHillFactor( self : *const OrbitComp ) f32 { return def.cbrt( self.orbiterMass / ( 3.0 * self.orbitedMass )); }
+  inline fn getHillFactor( self : *const OrbitComp ) f64 { return @floatCast( def.cbrt( self.orbiterMass / ( 3.0 * self.orbitedMass ))); }
 
-  inline fn getL3Factor( self : *const OrbitComp ) f32
+  inline fn getL3Factor( self : *const OrbitComp ) f64
   {
     // Approx distance ~ r * ( 1 + ( 5μ / 12 ))
     const mu = self.orbiterMass / ( self.orbitedMass + self.orbiterMass );
@@ -272,14 +276,14 @@ pub const OrbitComp = struct
   }
 
   // TODO : make sure this works properly
-  inline fn getTrojanLagPos( self: *const OrbitComp, sign : f32 ) Vec2
+  inline fn getTrojanLagPos( self: *const OrbitComp, sign : f64 ) Vec2
   {
     const e = self.getEccentricity();
     const t = self.angularPos;
 
     // First-order libration correction
-    const dt = ( 2.0 / 3.0 ) * e * @sin( t );
-    const lagAngle = t + sign * ( def.PI / 3.0 ) + dt;
+    const dt = ( 2.0 / 3.0 ) * e * @as( f64, @floatCast( @sin( t )));
+    const lagAngle : f32 = @floatCast( t + ( sign * def.PI / 3.0 ) + dt );
 
     return self.getRelPosAtAngle( lagAngle );
   }
@@ -318,12 +322,12 @@ pub const OrbitComp = struct
   }
 
 
-  pub inline fn getHillRadius( self : *const OrbitComp ) f32 { return self.getSemiMajor() * self.getHillFactor(); }
+  pub inline fn getHillRadius( self : *const OrbitComp ) f64 { return self.getSemiMajor() * self.getHillFactor(); }
 
   // NOTE : moonRigidity  : 1.0 = fluid, 0.0 = rigid
   // NOTE : selfRadius    = planet radius
   // NOTE : density ratio = planetDensity / moonDensity
-  pub inline fn getRocheLimit( self: *const OrbitComp, selfRadius : f32, moonDensity : f32, moonRigidity : f32 ) f32
+  pub inline fn getRocheLimit( self: *const OrbitComp, selfRadius : f64, moonDensity : f64, moonRigidity : f32 ) f64
   {
     const volume = ( 4.0 / 3.0 ) * def.PI * ( selfRadius * selfRadius * selfRadius );
     const densityRatio = ( self.orbiterMass / volume ) / moonDensity;
@@ -331,10 +335,12 @@ pub const OrbitComp = struct
     const FLUID: f32 = 2.44;
     const RIGID: f32 = 1.26;
 
-    return selfRadius * def.lerp( RIGID, FLUID, moonRigidity ) * def.cbrt( densityRatio );
+    const rigidity : f64 = @floatCast( def.lerp( RIGID, FLUID, moonRigidity ));
+
+    return selfRadius * rigidity * def.cbrt( densityRatio );
   }
 
-  pub inline fn getMaxMoonOrbitRadius( self : *const OrbitComp ) f32 { return 0.5 * self.getHillRadius(); }
-  pub inline fn getMinMoonOrbitRadius( self : *const OrbitComp ) f32 { return 1.1 * self.getRocheLimit(); }
+  pub inline fn getMaxMoonOrbitRadius( self : *const OrbitComp ) f64 { return 0.5 * self.getHillRadius(); }
+  pub inline fn getMinMoonOrbitRadius( self : *const OrbitComp ) f64 { return 1.1 * self.getRocheLimit(); }
 };
 

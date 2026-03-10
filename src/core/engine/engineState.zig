@@ -72,6 +72,8 @@ pub fn start( ng : *Engine ) void
 
   // Initialize relevant raylib components
   {
+    ng.camera.zoom = def.G_ST.Camera_Zoom_Init;
+
     if( !def.ray.isAudioDeviceReady() )
     {
       def.qlog( .INFO, 0, @src(), "# Initializing audio device..." );

@@ -11,13 +11,8 @@ const ecn = @import( "comp/economy.zig" );
 
 pub fn initDebugSystem( ng : *def.Engine ) void
 {
-  const STAR_MASS   = 10_000_000_000.0;
-  const PLANET_MASS =    310_000_000.0;
-  const MOON_MASS   =      1_000_000.0;
-  const COMET_MASS  =         31_000.0;
-
   // Setting up relevant components
-  for( 0..glb.entityCount )| idx |
+  for( 0..glb.ENTITY_COUNT )| idx |
   {
     glb.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
 
@@ -28,12 +23,12 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
     if( id == 1 ) // Here comes the sun, lalalala
     {
+    //glb.starId = 1;
 
-      glb.starCompInst.shine  = 1.0;         // TODO : adjust to proper shunshine amount
-      glb.starCompInst.mass   = STAR_MASS;
+      glb.starCompInst.mass   = glb.SOL_MASS;
+      glb.starCompInst.radius = glb.SOL_RADIUS;
 
-      glb.starCompInst.setRadiusViaDensity( 0.1 );
-      glb.starCompInst.setShineAtDist( 1.0, 25000 ); // making sure sunshine strenght is 1 around main planet
+      glb.starCompInst.setShineAtDist( 1.0, 0.5 * ( glb.TERRA_ORBIT_MIN + glb.TERRA_ORBIT_MAX ));
 
       const r = glb.starCompInst.radius;
 
@@ -47,83 +42,133 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
     // Non-sun component instanciation
 
-    const place : f32 = @floatFromInt( id - 2 );
-    const factor = place / ( glb.entityCount - 1 );
-
-    var orbitComp : glb.orb.OrbitComp = // Rotating orbital ellipses for fun
-    .{
-      .orientation = def.TAU * factor,
-      .retrograde  = ( 0 == id % 2 ),
-    };
+    var orbitComp : glb.orb.OrbitComp = .{};
 
     var bodyComp   : glb.bdy.BodyComp = .{ .bodyType = .PLANET };
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
-      2 =>
+      2 => // MERCURY
       {
-        orbitComp.orbitedMass = STAR_MASS;
-        orbitComp.orbiterMass = PLANET_MASS;
-        orbitComp.minRadius   = 25000 - 500;
-        orbitComp.maxRadius   = 25000 + 500;
+        orbitComp.orientation = def.DtR( 77.46 );
 
-        bodyComp.bodyType = .PLANET;
-        bodyComp.mass     = PLANET_MASS;
+        orbitComp.orbitedMass = glb.SOL_MASS;
+        orbitComp.orbiterMass = glb.MERCURY_MASS;
+
+        orbitComp.minRadius   = glb.MERCURY_ORBIT_MIN;
+        orbitComp.maxRadius   = glb.MERCURY_ORBIT_MAX;
+
+        bodyComp.mass         = glb.MERCURY_MASS;
+        bodyComp.radius       = glb.MERCURY_RADIUS;
+
+        bodyComp.bodyType     = .PLANET;
+      },
+      3 => // VENUS
+      {
+        orbitComp.orientation = def.DtR( 131.53 );
+
+        orbitComp.orbitedMass = glb.SOL_MASS;
+        orbitComp.orbiterMass = glb.VENUS_MASS;
+
+        orbitComp.minRadius   = glb.VENUS_ORBIT_MIN;
+        orbitComp.maxRadius   = glb.VENUS_ORBIT_MAX;
+
+        bodyComp.mass         = glb.VENUS_MASS;
+        bodyComp.radius       = glb.VENUS_RADIUS;
+
+        bodyComp.bodyType     = .PLANET;
+      },
+
+
+      4 => // EARTH
+      {
+      //glb.homeworldId = 4;
+
+        orbitComp.orientation = def.DtR( 102.95 );
+
+
+        orbitComp.orbitedMass = glb.SOL_MASS;
+        orbitComp.orbiterMass = glb.TERRA_MASS;
+
+        orbitComp.minRadius   = glb.TERRA_ORBIT_MIN;
+        orbitComp.maxRadius   = glb.TERRA_ORBIT_MAX;
+
+        bodyComp.mass         = glb.TERRA_MASS;
+        bodyComp.radius       = glb.TERRA_RADIUS;
+
+        bodyComp.bodyType     = .PLANET;
 
         bodyComp.initEcon( .GROUND );
-      //bodyComp.initEcon( .ORBIT  );
-      //bodyComp.initEcon( .L1     );
-      //bodyComp.initEcon( .L2     );
-      //bodyComp.initEcon( .L3     );
-      //bodyComp.initEcon( .L4     );
-      //bodyComp.initEcon( .L5     );
 
-        bodyComp.debugSetEconVals( 1 ); // NOTE : DEBUG
+        // NOTE : DEBUG
+        bodyComp.debugSetEconVals( 1 );
+      },
+      5 => // MOON
+      {
+        orbitComp.orbitedID   = 4;
+        orbitComp.orbitedMass = glb.TERRA_MASS;
+        orbitComp.orbiterMass = glb.LUNA_MASS;
+
+        orbitComp.minRadius   = glb.LUNA_ORBIT_MIN;
+        orbitComp.maxRadius   = glb.LUNA_ORBIT_MAX;
+
+        bodyComp.mass         = glb.LUNA_MASS;
+        bodyComp.radius       = glb.LUNA_RADIUS;
+
+        bodyComp.bodyType     = .MOON;
       },
 
-      3 =>
+
+      6 => // MARS
       {
-        orbitComp.orbitedMass = PLANET_MASS;
-        orbitComp.orbiterMass = MOON_MASS;
-        orbitComp.minRadius   = 3000 - 200;
-        orbitComp.maxRadius   = 3000 + 200;
+        orbitComp.orientation = def.DtR( 336.04 );
 
-        bodyComp.bodyType = .MOON;
-        bodyComp.mass     = MOON_MASS;
+        orbitComp.orbitedMass = glb.SOL_MASS;
+        orbitComp.orbiterMass = glb.MARS_MASS;
 
-      //bodyComp.initEcon( .GROUND );
-      //bodyComp.initEcon( .ORBIT  );
-      //bodyComp.initEcon( .L1     );
-      //bodyComp.initEcon( .L2     );
-      //bodyComp.initEcon( .L3     );
+        orbitComp.minRadius   = glb.MARS_ORBIT_MIN;
+        orbitComp.maxRadius   = glb.MARS_ORBIT_MAX;
+
+        bodyComp.mass         = glb.MARS_MASS;
+        bodyComp.radius       = glb.MARS_RADIUS;
+
+        bodyComp.bodyType     = .PLANET;
+      },
+      7 => // PHOBOS
+      {
+        orbitComp.orbitedID   = 6;
+        orbitComp.orbitedMass = glb.MARS_MASS;
+        orbitComp.orbiterMass = glb.PHOBOS_MASS;
+
+        orbitComp.minRadius   = glb.PHOBOS_ORBIT_MIN;
+        orbitComp.maxRadius   = glb.PHOBOS_ORBIT_MAX;
+
+        bodyComp.mass         = glb.PHOBOS_MASS;
+        bodyComp.radius       = glb.PHOBOS_RADIUS;
+
+        bodyComp.bodyType     = .COMET;
+      },
+      8 => // DEIMOS
+      {
+        orbitComp.orbitedID   = 6;
+        orbitComp.orbitedMass = glb.MARS_MASS;
+        orbitComp.orbiterMass = glb.DEIMOS_MASS;
+
+        orbitComp.minRadius   = glb.DEIMOS_ORBIT_MIN;
+        orbitComp.maxRadius   = glb.DEIMOS_ORBIT_MAX;
+
+        bodyComp.mass         = glb.DEIMOS_MASS;
+        bodyComp.radius       = glb.DEIMOS_RADIUS;
+
+        bodyComp.bodyType     = .COMET;
       },
 
-      4 =>
+      else => // Wil ignore all subsequent Ids ( should be none )
       {
-        orbitComp.orbitedMass = MOON_MASS;
-        orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 200 - 20;
-        orbitComp.maxRadius   = 200 + 20;
-
-        bodyComp.bodyType  = .COMET;
-        bodyComp.mass      = COMET_MASS;
-
-      //bodyComp.initEcon( .GROUND );
-      //bodyComp.initEcon( .ORBIT  );
-      },
-
-      else =>
-      {
-        orbitComp.orbitedMass = COMET_MASS;
-        orbitComp.orbiterMass = COMET_MASS;
-        orbitComp.minRadius   = 100 - 30;
-        orbitComp.maxRadius   = 100 + 30;
-
-        bodyComp.bodyType = .COMET;
-        bodyComp.mass     = COMET_MASS;
+        def.log( .INFO, 0, @src(), "Id #{d} is invalid: will not initialize related comps", .{ id });
+        continue;
       },
     }
-    bodyComp.setRadiusViaDensity( 1.0 );
 
 
     const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit
@@ -145,14 +190,14 @@ pub fn updateCameraLogic( cam : *def.Cam2D ) void
 {
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ cam.moveByS( def.Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ cam.moveByS( def.Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0.0, -glb.scrollSpeed )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ cam.moveByS( def.Vec2.new(  0.0,  glb.scrollSpeed )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ cam.moveByS( def.Vec2.new( -glb.scrollSpeed,  0.0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  glb.scrollSpeed,  0.0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.1 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 0.9 ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * glb.zoomSpeed ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / glb.zoomSpeed ); }
 
   // Reset the camera zoom and position when r is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
@@ -173,7 +218,7 @@ pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore,
     if( orbiter == null ){ continue; }
 
     const orbiterTrans = transStore.get( id );
-    const orbitedTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
+    const orbitedTrans = transStore.get( orbiter.?.orbitedID );
 
     if( orbiterTrans != null and orbitedTrans != null )
     {
@@ -184,25 +229,22 @@ pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore,
     {
       def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
     }
-
-    // NOTE : No need to update transComps for orbiters
   }
 }
 
-pub fn tickGlobalEconomy( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore, bodyStore : *glb.BodyStore, starPos : def.Vec2 ) void
+pub fn tickGlobalEconomy( transStore : *glb.TransStore, bodyStore : *glb.BodyStore, starPos : def.Vec2 ) void
 {
   inline for( 1..glb.entityArray.len )| idx |
   {
     const id    = glb.entityArray[ idx ].id;
+    const trans = transStore.get( id );
     const body  = bodyStore.get(  id );
-    const orbit = orbitStore.get( id );
-    const trans = transStore.get( glb.entityArray[ idx - 1 ].id ); // Orbited position
 
-    if( trans != null and orbit != null and body != null )
+    if( trans != null and body != null )
     {
       def.log( .TRACE, 0, @src(), "Updating economies of entity #{d}", .{ id });
 
-      body.?.tickEcons( orbit.?, trans.?.pos.toVec2(), starPos );
+      body.?.tickEcons( trans.?.pos.toVec2(), starPos );
     }
     else
     {
@@ -220,13 +262,16 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
 
     def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
 
-    const orbiter      = orbitStore.get( id );
+    const orbiter = orbitStore.get( id );
+
+    if( orbiter == null ){ continue; }
+
     const orbiterBody  = bodyStore.get(  id );
-
     const orbiterTrans = transStore.get( id );
-    const orbitedTrans = transStore.get( glb.entityArray[ idx - 1 ].id );
 
-    if( orbiter != null and orbitedTrans != null and orbiterBody != null )
+    const orbitedTrans = transStore.get( orbiter.?.orbitedID );
+
+    if( orbiterTrans != null and orbitedTrans != null and orbiterBody != null )
     {
       orbiter.?.renderDebug( orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
 
@@ -245,14 +290,14 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   {
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .TRACE, 0, @src(), "Rendering shape of entity #{}", .{ id });
+    def.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
 
-    const orbiterTrans = transStore.get( id );
-    const orbiterShape = shapeStore.get( id );
+    const trans = transStore.get( id );
+    const shape = shapeStore.get( id );
 
-    if( orbiterTrans != null and orbiterShape != null )
+    if( trans != null and shape != null )
     {
-      orbiterShape.?.render( orbiterTrans.?.pos );
+      shape.?.render( trans.?.pos );
     }
     else
     {
@@ -267,18 +312,18 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   const posX  = def.getScreenWidth() - 16.0;
   const id    = glb.targetId;
 
-  var lineCount : f32 = 1.0;
-
-  def.drawTextRightFmt( "== Entity #{d} ==", .{ id }, posX, lineCount * 32.0, 24, col ); lineCount += 1.5;
-
-  if( id == 0 or id > glb.entityCount ){ return; }
-
+  if( id == 0 or id > glb.ENTITY_COUNT ){ return; }
 
   const trans = transStore.get( id );
   const shape = shapeStore.get( id );
 
-  const orbit = if( id != 1 ) orbitStore.get( id ) else null;
-  const body  = if( id != 1 ) bodyStore.get(  id ) else null;
+  const orbit = if( id != glb.starId ) orbitStore.get( id ) else null;
+  const body  = if( id != glb.starId ) bodyStore.get(  id ) else null;
+
+
+  var lineCount : f32 = 1.0;
+
+  def.drawTextRightFmt( "== Entity #{d} ==", .{ id }, posX, lineCount * 32.0, 24, col ); lineCount += 1.5;
 
 
   if( trans != null )
@@ -297,7 +342,7 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     lineCount += 0.5;
   }
 
-  if( glb.targetId == 1 ) // SUN
+  if( glb.targetId == glb.starId ) // SUN
   {
     const star = glb.starCompInst;
 
