@@ -16,7 +16,7 @@ var DEFAULT_FONT   : Font = undefined;
 var SPACING_FACTOR : f64  = 0.0;
 
 
-// ================================ SCREEN DRAWING ================================
+// ================================ SCREEN RENDERING ================================
 
 // Used in world render to cancel-out camera position
 inline fn toRay( pos : Vec2 ) def.RayVec2

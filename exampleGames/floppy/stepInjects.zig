@@ -7,9 +7,9 @@ const stateInj = @import( "stateInjects.zig" );
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-const GRAVITY    : f32 = 8000.0;   // Base gravity of the disk
-const JUMP_FORCE : f32 = 160000.0; // Instant force applied when the disk jumps
-const MAX_VEL_Y  : f32 = 2400.0;   // Maximum vertical velocity of the disk
+const GRAVITY    : f32 = 6000.0;  // Base gravity of the disk
+const JUMP_FORCE : f32 = 80000.0; // Instant force applied when the disk jumps
+const MAX_VEL_Y  : f32 = 2000.0;  // Maximum vertical velocity of the disk
 
 //var SCROLL_SPEED : f32 = 100.0; // Base speed of the pillars
 var SCORE        : u8  = 0;     // Score of the player

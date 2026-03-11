@@ -11,7 +11,9 @@ const RayRect = def.RayRect;
 pub const BASE_LINE_WIDTH : f64 = 2.0; // TODO : Move to engine settings
 
 
-// ================================ WORLD DRAWING ================================
+// TODO : call screen rendering functions with wts offset instead, to avoid code duplication
+
+// ================================ WORLD RENDERING ================================
 
 // Used in world render to cancel-out camera position
 inline fn wtsRay( worldPos : Vec2 ) def.RayVec2

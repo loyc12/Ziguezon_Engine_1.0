@@ -24,8 +24,8 @@ var transformStore : TransformStore = .{};
 var shapeStore     : ShapeStore = .{};
 
 
-pub const diskStartPos = def.VecA.new( -800,   400, .{} );
-pub const diskStartVel = def.VecA.new(    0, -2400, .{} );
+pub const diskStartPos = def.VecA.new( -800,    0, .{} );
+pub const diskStartVel = def.VecA.new(    0, -4000, .{} );
 
 
 // ================================ STATE INJECTION FUNCTIONS ================================
