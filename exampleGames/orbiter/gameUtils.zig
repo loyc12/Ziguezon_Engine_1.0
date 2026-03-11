@@ -25,10 +25,13 @@ pub fn initDebugSystem( ng : *def.Engine ) void
     {
     //glb.starId = 1;
 
-      glb.starCompInst.mass   = glb.SOL_MASS;
-      glb.starCompInst.radius = glb.SOL_RADIUS;
+      glb.starCompInst.mass   = glb.STLR_DATA.get( .SOL, .MASS );
+      glb.starCompInst.radius = glb.STLR_DATA.get( .SOL, .RADIUS );
 
-      glb.starCompInst.setShineAtDist( 1.0, 0.5 * ( glb.TERRA_ORBIT_MIN + glb.TERRA_ORBIT_MAX ));
+      const terraMin = glb.STLR_DATA.get( .TERRA, .PERIAP );
+      const terraMax = glb.STLR_DATA.get( .TERRA, .APOAP  );
+
+      glb.starCompInst.setShineAtDist( 1.0, 0.5 * ( terraMin + terraMax ));
 
       const r = glb.starCompInst.radius;
 
@@ -43,38 +46,40 @@ pub fn initDebugSystem( ng : *def.Engine ) void
     // Non-sun component instanciation
 
     var orbitComp : glb.orb.OrbitComp = .{};
-
-    var bodyComp   : glb.bdy.BodyComp = .{ .bodyType = .PLANET };
+    var bodyComp  : glb.bdy.BodyComp  = .{};
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
       2 => // MERCURY
       {
-        orbitComp.orientation = def.DtR( 77.46 );
 
-        orbitComp.orbitedMass = glb.SOL_MASS;
-        orbitComp.orbiterMass = glb.MERCURY_MASS;
+        orbitComp.orbitedMass = glb.STLR_DATA.get( .SOL,     .MASS );
+        orbitComp.orbiterMass = glb.STLR_DATA.get( .MERCURY, .MASS );
 
-        orbitComp.minRadius   = glb.MERCURY_ORBIT_MIN;
-        orbitComp.maxRadius   = glb.MERCURY_ORBIT_MAX;
+        orbitComp.minRadius   = glb.STLR_DATA.get( .MERCURY, .PERIAP );
+        orbitComp.maxRadius   = glb.STLR_DATA.get( .MERCURY, .APOAP  );
 
-        bodyComp.mass         = glb.MERCURY_MASS;
-        bodyComp.radius       = glb.MERCURY_RADIUS;
+        orbitComp.orientation = @floatCast( glb.STLR_DATA.get( .MERCURY, .LONG ));
+
+
+        bodyComp.mass         = glb.STLR_DATA.get( .MERCURY, .MASS   );
+        bodyComp.radius       = glb.STLR_DATA.get( .MERCURY, .RADIUS );
 
         bodyComp.bodyType     = .PLANET;
       },
       3 => // VENUS
       {
-        orbitComp.orientation = def.DtR( 131.53 );
+        orbitComp.orbitedMass = glb.STLR_DATA.get( .SOL,   .MASS );
+        orbitComp.orbiterMass = glb.STLR_DATA.get( .VENUS, .MASS );
 
-        orbitComp.orbitedMass = glb.SOL_MASS;
-        orbitComp.orbiterMass = glb.VENUS_MASS;
+        orbitComp.minRadius   = glb.STLR_DATA.get( .VENUS, .PERIAP );
+        orbitComp.maxRadius   = glb.STLR_DATA.get( .VENUS, .APOAP  );
 
-        orbitComp.minRadius   = glb.VENUS_ORBIT_MIN;
-        orbitComp.maxRadius   = glb.VENUS_ORBIT_MAX;
+        orbitComp.orientation = @floatCast( glb.STLR_DATA.get( .VENUS, .LONG ));
 
-        bodyComp.mass         = glb.VENUS_MASS;
-        bodyComp.radius       = glb.VENUS_RADIUS;
+
+        bodyComp.mass         = glb.STLR_DATA.get( .VENUS, .MASS   );
+        bodyComp.radius       = glb.STLR_DATA.get( .VENUS, .RADIUS );
 
         bodyComp.bodyType     = .PLANET;
       },
@@ -84,17 +89,17 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       {
       //glb.homeworldId = 4;
 
-        orbitComp.orientation = def.DtR( 102.95 );
+        orbitComp.orbitedMass = glb.STLR_DATA.get( .SOL,   .MASS );
+        orbitComp.orbiterMass = glb.STLR_DATA.get( .TERRA, .MASS );
+
+        orbitComp.minRadius   = glb.STLR_DATA.get( .TERRA, .PERIAP );
+        orbitComp.maxRadius   = glb.STLR_DATA.get( .TERRA, .APOAP  );
+
+        orbitComp.orientation = @floatCast( glb.STLR_DATA.get( .TERRA, .LONG ));
 
 
-        orbitComp.orbitedMass = glb.SOL_MASS;
-        orbitComp.orbiterMass = glb.TERRA_MASS;
-
-        orbitComp.minRadius   = glb.TERRA_ORBIT_MIN;
-        orbitComp.maxRadius   = glb.TERRA_ORBIT_MAX;
-
-        bodyComp.mass         = glb.TERRA_MASS;
-        bodyComp.radius       = glb.TERRA_RADIUS;
+        bodyComp.mass         = glb.STLR_DATA.get( .TERRA, .MASS   );
+        bodyComp.radius       = glb.STLR_DATA.get( .TERRA, .RADIUS );
 
         bodyComp.bodyType     = .PLANET;
 
@@ -105,15 +110,19 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       },
       5 => // MOON
       {
-        orbitComp.orbitedID   = 4;
-        orbitComp.orbitedMass = glb.TERRA_MASS;
-        orbitComp.orbiterMass = glb.LUNA_MASS;
+        orbitComp.orbitedID   = 4; // Terra
 
-        orbitComp.minRadius   = glb.LUNA_ORBIT_MIN;
-        orbitComp.maxRadius   = glb.LUNA_ORBIT_MAX;
+        orbitComp.orbitedMass = glb.STLR_DATA.get( .SOL,  .MASS );
+        orbitComp.orbiterMass = glb.STLR_DATA.get( .LUNA, .MASS );
 
-        bodyComp.mass         = glb.LUNA_MASS;
-        bodyComp.radius       = glb.LUNA_RADIUS;
+        orbitComp.minRadius   = glb.STLR_DATA.get( .LUNA, .PERIAP );
+        orbitComp.maxRadius   = glb.STLR_DATA.get( .LUNA, .APOAP  );
+
+        orbitComp.orientation = @floatCast( glb.STLR_DATA.get( .LUNA, .LONG ));
+
+
+        bodyComp.mass         = glb.STLR_DATA.get( .LUNA, .MASS   );
+        bodyComp.radius       = glb.STLR_DATA.get( .LUNA, .RADIUS );
 
         bodyComp.bodyType     = .MOON;
       },
@@ -121,44 +130,53 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
       6 => // MARS
       {
-        orbitComp.orientation = def.DtR( 336.04 );
+        orbitComp.orbitedMass = glb.STLR_DATA.get( .SOL,  .MASS );
+        orbitComp.orbiterMass = glb.STLR_DATA.get( .MARS, .MASS );
 
-        orbitComp.orbitedMass = glb.SOL_MASS;
-        orbitComp.orbiterMass = glb.MARS_MASS;
+        orbitComp.minRadius   = glb.STLR_DATA.get( .MARS, .PERIAP );
+        orbitComp.maxRadius   = glb.STLR_DATA.get( .MARS, .APOAP  );
 
-        orbitComp.minRadius   = glb.MARS_ORBIT_MIN;
-        orbitComp.maxRadius   = glb.MARS_ORBIT_MAX;
+        orbitComp.orientation = @floatCast( glb.STLR_DATA.get( .MARS, .LONG ));
 
-        bodyComp.mass         = glb.MARS_MASS;
-        bodyComp.radius       = glb.MARS_RADIUS;
+
+        bodyComp.mass         = glb.STLR_DATA.get( .MARS, .MASS   );
+        bodyComp.radius       = glb.STLR_DATA.get( .MARS, .RADIUS );
 
         bodyComp.bodyType     = .PLANET;
       },
       7 => // PHOBOS
       {
-        orbitComp.orbitedID   = 6;
-        orbitComp.orbitedMass = glb.MARS_MASS;
-        orbitComp.orbiterMass = glb.PHOBOS_MASS;
+        orbitComp.orbitedID   = 6; // Mars
 
-        orbitComp.minRadius   = glb.PHOBOS_ORBIT_MIN;
-        orbitComp.maxRadius   = glb.PHOBOS_ORBIT_MAX;
+        orbitComp.orbitedMass = glb.STLR_DATA.get( .MARS,   .MASS );
+        orbitComp.orbiterMass = glb.STLR_DATA.get( .PHOBOS, .MASS );
 
-        bodyComp.mass         = glb.PHOBOS_MASS;
-        bodyComp.radius       = glb.PHOBOS_RADIUS;
+        orbitComp.minRadius   = glb.STLR_DATA.get( .PHOBOS, .PERIAP );
+        orbitComp.maxRadius   = glb.STLR_DATA.get( .PHOBOS, .APOAP  );
+
+        orbitComp.orientation = @floatCast( glb.STLR_DATA.get( .PHOBOS, .LONG ));
+
+
+        bodyComp.mass         = glb.STLR_DATA.get( .PHOBOS, .MASS   );
+        bodyComp.radius       = glb.STLR_DATA.get( .PHOBOS, .RADIUS );
 
         bodyComp.bodyType     = .COMET;
       },
       8 => // DEIMOS
       {
-        orbitComp.orbitedID   = 6;
-        orbitComp.orbitedMass = glb.MARS_MASS;
-        orbitComp.orbiterMass = glb.DEIMOS_MASS;
+        orbitComp.orbitedID   = 6; // Mars
 
-        orbitComp.minRadius   = glb.DEIMOS_ORBIT_MIN;
-        orbitComp.maxRadius   = glb.DEIMOS_ORBIT_MAX;
+        orbitComp.orbitedMass = glb.STLR_DATA.get( .MARS,   .MASS );
+        orbitComp.orbiterMass = glb.STLR_DATA.get( .DEIMOS, .MASS );
 
-        bodyComp.mass         = glb.DEIMOS_MASS;
-        bodyComp.radius       = glb.DEIMOS_RADIUS;
+        orbitComp.minRadius   = glb.STLR_DATA.get( .DEIMOS, .PERIAP );
+        orbitComp.maxRadius   = glb.STLR_DATA.get( .DEIMOS, .APOAP  );
+
+        orbitComp.orientation = @floatCast( glb.STLR_DATA.get( .DEIMOS, .LONG ));
+
+
+        bodyComp.mass         = glb.STLR_DATA.get( .DEIMOS, .MASS   );
+        bodyComp.radius       = glb.STLR_DATA.get( .DEIMOS, .RADIUS );
 
         bodyComp.bodyType     = .COMET;
       },
@@ -273,11 +291,15 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
 
     if( orbiterTrans != null and orbitedTrans != null and orbiterBody != null )
     {
-      orbiter.?.renderDebug( orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
 
       orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
 
-      orbiter.?.renderLPs( orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
+      if( glb.targetId == id )
+      {
+        orbiter.?.renderDebug( orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
+        orbiter.?.renderLPs(   orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
+      }
+
     }
     else
     {

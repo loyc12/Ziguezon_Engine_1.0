@@ -7,6 +7,9 @@ pub const rng_u  = @import( "utils/randomer.zig" );
 pub var G_RNG : rng_u.Randomiser = .{};
 
 
+// TODO : split engineDefs from utilDefs, have the former include the later
+
+
 // ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
 
 pub fn getAlloc() std.mem.Allocator { return std.heap.page_allocator; }
@@ -212,6 +215,7 @@ pub const col_u   = @import( "utils/colourer.zig" );
 
 pub const Colour  = col_u.Colour;
 
+
 // ================ COORDS SHORTHANDS ================
 
 pub const cor2_u  = @import( "utils/coorder2.zig" );
@@ -224,6 +228,17 @@ pub const cor3_u  = @import( "utils/coorder3.zig" );
 
 pub const e_dir_3 = cor3_u.e_dir_3;
 pub const Coords3 = cor3_u.Coords3;
+
+
+// ================ COORDS SHORTHANDS ================
+
+pub const d1d_u  = @import( "utils/data1D.zig" );
+pub const d2d_u  = @import( "utils/data2D.zig" );
+pub const d3d_u  = @import( "utils/data3D.zig" );
+
+pub const newDataArray  = d1d_u.newDataArray;
+pub const newDataGrid   = d2d_u.newDataGrid;
+pub const newDataMatrix = d3d_u.newDataMatrix;
 
 
 // ================ DRAWER SHORTHANDS ================

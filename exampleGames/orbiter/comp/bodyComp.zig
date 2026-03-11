@@ -40,7 +40,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  bodyType : BodyType, // TODO : auto-assign type based on mass ( and orbital radius ? )
+  bodyType : BodyType = .PLANET, // TODO : auto-assign type based on mass instead ? ( and orbital radius ? )
 
   // NOTE : defaults to earth values
 
@@ -58,7 +58,6 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     const r2  = self.radius * self.radius;
     const tmp = 4.0 * def.PI * r2;
 
-    def.log( .INFO, 0, @src(), "Returning area of {d}", .{ tmp });
     return tmp;
   }
 
@@ -68,7 +67,6 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     const r3  = self.radius * self.radius * self.radius;
     const tmp = ( 4.0 * def.PI * r3 ) / 3.0;
 
-    def.log( .INFO, 0, @src(), "Returning volume of {d}", .{ tmp });
     return tmp;
   }
 

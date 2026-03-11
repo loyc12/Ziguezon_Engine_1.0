@@ -11,6 +11,8 @@ const utl = @import( "gameUtils.zig" );
 pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()    // NOTE : This is where you should initialize your resources
 {
   _ = ng; // Prevent unused variable warning
+
+  glb.loadAllData();
 }
 pub fn OnStop( ng : *def.Engine ) void // Called by engine.stop()
 {
