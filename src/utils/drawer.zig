@@ -179,7 +179,9 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
     def.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with 0 sides" );
     return;
   }
-  const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
+
+  const N : f32 = @floatFromInt( sides );
+  const sideStepAngle = Angle.newRad( def.TAU / N );
   const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
 
   if( sides < 3 ) // NOTE : only for radius or diametre lines
@@ -189,13 +191,15 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
     if( sides == 1 ){ drawLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
     else { drawLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
   }
-  else if( radii.x != radii.y ) // NOTE : slower, but accounts for non isoscalar polygons
+  else if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
   {
     var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
 
     for( 2..sides )| i |
     {
-      const rP2 = Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a );
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
+
       drawBasicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
       rP1 = rP2;
     }
@@ -206,27 +210,70 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
 
     for( 2..sides )| i |
     {
-      _ = i;
-      const rP2 = rP1.rot( sideStepAngle );
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      const rP2 = rP0.rot( angle );
+
       drawBasicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
       rP1 = rP2;
     }
   }
 }
 
-
-// Draws a 6-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawHexStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
+pub fn drawStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16 ) void
 {
-  drawPolygonPlus( pos, radii, a,                        col, 3 );
-  drawPolygonPlus( pos, radii, a.rotRad( def.PI / 3.0 ), col, 3 );
-}
+  if( sides < 5 )
+  {
+    def.qlog( .ERROR, 0, @src(), "Cannot draw a star with fewer than 5 vertices" );
+    return;
+  }
 
-// Draws an 8-pointed star centered at a given position with specified rotation (rad) and colour, and scaled in x/y by radii
-pub inline fn drawOctStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
-{
-  drawPolygonPlus( pos, radii, a,                        col, 4 );
-  drawPolygonPlus( pos, radii, a.rotRad( def.PI / 4.0 ), col, 4 );
+  if( skipFactor == 1 )
+  {
+    def.qlog( .WARN, 0, @src(), "Not a star : drawing a polygon instead" );
+    drawPolygonPlus( pos, radii, a, col, sides );
+    return;
+  }
+
+  const N : f32 = @floatFromInt( sides );
+  const sideStepAngle : Angle = Angle.newRad( def.TAU / N );
+
+  // Precompute all vertex positions
+  var verts : [ 32 ]Vec2 = undefined; // 32 is enough for all defined star shapes FOR NOW
+
+  if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
+  {
+    for( 0..sides )| i |
+    {
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      verts[ i ]  = Vec2.fromAngleScaled( angle, radii ).rot( a );
+    }
+  }
+  else // NOTE : slightly faster, but requires isoscalar polygons
+  {
+    for( 0..sides )| i |
+    {
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      verts[ i ]  = Vec2.new( radii.x, 0.0 ).rot( a.add( angle ));
+    }
+  }
+
+  // Connect vertices by skipFactor step, drawing lines between them
+  // NOTE : We need to traverse enough steps to close all sub-paths
+
+  const gcdenom = def.gcd( @as( u32, sides ), @as( u32, skipFactor )); // TODO : Implement me
+  const pathLen = @divFloor( sides, gcdenom ); // Number of vertices per sub-path
+
+  for( 0..gcdenom )| startIdx |
+  {
+    var idx1 : usize = startIdx;
+
+    for( 0..pathLen )| _ |
+    {
+      const idx2 = ( idx1 + skipFactor ) % sides;
+      drawBasicTria( pos, pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col );
+      idx1 = idx2;
+    }
+  }
 }
 
 
@@ -248,9 +295,9 @@ pub inline fn drawTextFmt( comptime fmt : [:0] const u8, args : anytype, posX : 
 // Non-upper-left alignement
 pub inline fn drawTextOffset( text : [:0] const u8, posX : f32, posY : f32, factors : Vec2, fontSize : f32, col : Colour ) void
 {
-  const textDims       = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
-  const textHalfWidth  = textDims.x * factors.x;
-  const textHalfHeight = textDims.y * factors.y;
+  const textDims             = ray.measureTextEx( DEFAULT_FONT, text, fontSize, fontSize * SPACING_FACTOR );
+  const textHalfWidth  : f32 = @floatCast( textDims.x * factors.x );
+  const textHalfHeight : f32 = @floatCast( textDims.y * factors.y );
 
   drawText( text, posX - textHalfWidth, posY - textHalfHeight, fontSize, col );
 }

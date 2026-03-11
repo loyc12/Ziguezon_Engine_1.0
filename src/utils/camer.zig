@@ -97,8 +97,6 @@ pub const Cam2D = struct
   }
   pub inline fn toViewBox( self : *const Cam2D ) Box2
   {
-    if( !self.pos.a.isZero() ){ def.qlog( .WARN, 0, @src(), "Camera is rotated, viewbox will be inaccurate" ); }
-
     var tmp : Cam2D = self.*;
     tmp.updateView();
 

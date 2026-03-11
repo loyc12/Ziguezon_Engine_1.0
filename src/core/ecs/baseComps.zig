@@ -41,54 +41,13 @@ pub const TransComp = struct
 
 // ================ SHAPE 2D ================
 
-pub const e_shape_2D = enum( u8 ) // TODO : replace with Geom2D
-{
-  RECT, // Square / Rectangle
-  HSTR, // Triangle Star    ( two overlaping triangles, pointing along the X axis )
-  DSTR, // Diamond Star     ( two overlaping diamond )
-  ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
-
-  RLIN, // Radius Line      ( from center to forward )
-  DLIN, // Diametre Line    ( from backard to forward )
-  TRIA, // Triangle         ( equilateral, pointing towards +X ( right ))
-  DIAM, // Square / Diamond ( rhombus )
-  PENT, // Pentagon
-  HEXA, // Hexagon
-  HEPT, // Heptagon
-  OCTA, // Octagon
-  DECA, // Decagon
-  DODE, // Dodecagon
-
-  pub inline fn getSideCount( self : e_shape_2D ) u16
-  {
-    return switch( self )
-    {
-      .RECT => 4, // NOTE : do not render as Polygon, as it will show a diamond instead of a rectangle
-      .HSTR => 6,
-      .DSTR => 8,
-      .ELLI => def.G_ST.Graphic_Ellipse_Facets,
-
-      .RLIN => 1,
-      .DLIN => 2,
-      .TRIA => 3,
-      .DIAM => 4,
-      .PENT => 5,
-      .HEXA => 6,
-      .OCTA => 8,
-      .HEPT => 7,
-      .DECA => 10,
-      .DODE => 12,
-    };
-  }
-};
-
 
 pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
   scale  : Vec2,
-  shape  : e_shape_2D = .RECT,
+  shape  : def.Geom2D = .RECT,
   colour : def.Colour = .nWhite,
 
 //minScale : Vec2 = .{},
@@ -99,7 +58,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 
   pub inline fn getAABB( self : *const ShapeComp, selfPos : VecA ) Box2
   {
-    if( self.shape != .RECT ){ return Box2.newPolyAABB( selfPos.toVec2(), self.scale, selfPos.a, self.shape.getSideCount() ); }
+    if( self.shape != .RECT ){ return Box2.newPolyAABB( selfPos.toVec2(), self.scale, selfPos.a, self.shape.getEdgeCount() ); }
     else {                     return Box2.newRectAABB( selfPos.toVec2(), self.scale, selfPos.a ); }
   }
 
@@ -110,13 +69,18 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
     const a = selfPos.a;
     const c = self.colour;
 
-    switch( self.shape )
-    {
-      .RECT => { def.drawRect( p, s, a, c ); },
-      .HSTR => { def.drawHstr( p, s, a, c ); },
-      .DSTR => { def.drawDstr( p, s, a, c ); },
-      else  => { def.drawPoly( p, s, a, c, self.shape.getSideCount() ); },
-    }
+  if( self.shape == .RECT )
+  {
+    def.drawRect( p, s, a, c );
+  }
+  else if( self.shape.isStar() )
+  {
+    def.drawStar( p, s, a, c, self.shape.getEdgeCount(), self.shape.getSkipFactor() );
+  }
+  else // Lines can be handled by drawPoly()
+  {
+    def.drawPoly( p, s, a, c, self.shape.getEdgeCount() );
+  }
   }
 };
 

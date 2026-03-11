@@ -128,7 +128,7 @@ pub const Spritemap = struct
 
       if( self.layoutWidth * self.layoutHeight > frameCount ){ self.layoutHeight += 1; }
 
-      var layoutPixelHeight : f32 = @floatFromInt( self.layoutHeight );
+      var layoutPixelHeight : f64 = @floatFromInt( self.layoutHeight );
           layoutPixelHeight      *= self.frameSize.y;
 
       if( layoutPixelHeight > atlasSize.y )
@@ -148,8 +148,8 @@ pub const Spritemap = struct
   {
     const i : u32 = @mod( index, self.frameCount );
 
-    const w : f32 = self.frameSize.x;
-    const h : f32 = self.frameSize.y;
+    const w : f32 = @floatCast( self.frameSize.x );
+    const h : f32 = @floatCast( self.frameSize.y );
 
     const x : f32 = @floatFromInt( @mod(      i, self.layoutWidth  ));
     const y : f32 = @floatFromInt( @divFloor( i, self.layoutHeight ));
@@ -170,10 +170,10 @@ pub const Spritemap = struct
     const src : Rectangle = self.getSpriteRect( index );
     const dst : Rectangle =
     .{
-      .x      = pos.x,
-      .y      = pos.y,
-      .width  = self.frameSize.x * scale.x,
-      .height = self.frameSize.y * scale.y,
+      .x      = @floatCast( pos.x ),
+      .y      = @floatCast( pos.y ),
+      .width  = @floatCast( self.frameSize.x * scale.x ),
+      .height = @floatCast( self.frameSize.y * scale.y ),
     };
 
     self.atlas.?.drawPro( src, dst, self.frameSize.mul( scale ).mulVal( 0.5 ).toRayVec2(), pos.a.toDeg(), col.toRayCol() );

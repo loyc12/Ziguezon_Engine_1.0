@@ -5,7 +5,7 @@ const def = @import( "defs" );
 
 // Engine Debug Flags
 
-//pub const DebugDraw_Body  = true;
+//pub const DebugDraw_Body    = true;
 //pub const DebugDraw_Tilemap = true;
 //pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
@@ -17,9 +17,15 @@ const def = @import( "defs" );
   pub const AutoApply_Body_Collision = false;
 
 
-// Engine Global Startup Values
+// Window Startup Values
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Labyrinther";
+  pub const Startup_Target_TickRate  : u16 = 1;
+  pub const Startup_Target_FrameRate : u16 = 120;
+
+//pub const Startup_Window_Width     : u16 = 2048;
+//pub const Startup_Window_Height    : u16 = 1024;
+
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Orbiter";
 
 
 // ================================ GAME HOOKS ================================

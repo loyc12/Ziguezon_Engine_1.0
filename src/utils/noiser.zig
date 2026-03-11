@@ -15,12 +15,10 @@ pub const gradients : [ GRAD_COUNT ]Vec2 = blk:
 {
   var table : [ GRAD_COUNT ]Vec2 = undefined;
 
-  const tau = def.TAU;
-
   var i : usize = 0;
   while( i < GRAD_COUNT ) : ( i += 1 )
   {
-    const angle = tau * (( @as( f32, i ) + 0.5 ) / @as( f32, GRAD_COUNT ));
+    const angle = def.TAU * (( @as( f32, i ) + 0.5 ) / @as( f32, GRAD_COUNT ));
     table[ i ] =
     .{
       .x = @cos( angle ),
@@ -50,19 +48,13 @@ fn hash2( seed : u64, coords : Coords2 ) u64
   return ( h ^ ( h >> 31 ));
 }
 
-//inline fn toFloat( val : u64 ) f32
-//{
-//  const denom: f32 = @floatFromInt( std.math.maxInt( u64 ));
-//  return @as( f32, @floatFromInt( val )) / denom;
-//}
-
 fn gradDotProd( seed : u64, coords : Coords2, cellPos : Vec2 ) f32
 {
   const h = hash2( seed, coords );
 
   const g = gradients[ @as( usize, @intCast( h & ( GRAD_COUNT - 1 )))];
 
-  return( g.x * cellPos.x + g.y * cellPos.y );
+  return( @floatCast(( g.x * cellPos.x ) + ( g.y * cellPos.y )));
 }
 
 
@@ -95,8 +87,8 @@ pub const Noise2D = struct
 
     const cellPos = pos.sub( coords.toVec2() );
 
-    const u = quinticFade( cellPos.x );
-    const v = quinticFade( cellPos.y );
+    const u = quinticFade( @floatCast( cellPos.x ));
+    const v = quinticFade( @floatCast( cellPos.y ));
 
   // NOTE : Debug implementation to test quinticFade() & hash2() only ( no gradient interpolation )
   //const n00 = toFloat( hash2( self.seed, pos.toCoords2().add( .{ .x = 0, .y = 0 })));

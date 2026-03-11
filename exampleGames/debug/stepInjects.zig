@@ -41,10 +41,10 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Play a shake animation the camera when H is held
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.j )){ s_time   = 0.0; }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.i )){ sprite_i = @mod( sprite_i + 1, 256 ); }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.o )){ sprite_i = @mod( sprite_i - 1, 256 ); }
-  if( def.ray.isKeyDown(    def.ray.KeyboardKey.h ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ s_time   = 0.0; }
+  if( def.ray.isKeyDown(    def.ray.KeyboardKey.q ))
   {
     const offset = shaker.getOffsetAtTime( s_time );
 
@@ -240,17 +240,17 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       const offset  = shaker.getOffsetAtProg( x / width );
 
 
-      var hx : f32 = height * 0.25;
-      var hy : f32 = height * 0.50;
-      var hr : f32 = height * 0.75;
+      var hx : f64 = height * 0.25;
+      var hy : f64 = height * 0.50;
+      var hr : f64 = height * 0.75;
 
       hx += offset.x   * 128;
       hy += offset.y   * 128;
       hr += offset.a.r * 128;
 
-      def.drawTextCenter( "|", x , hx, 12, .red );
-      def.drawTextCenter( "|", x , hy, 12, .green );
-      def.drawTextCenter( "|", x , hr, 12, .blue );
+      def.drawTextCenter( "|", @floatCast( x ) , @floatCast( hx ), 12.0, .red );
+      def.drawTextCenter( "|", @floatCast( x ) , @floatCast( hy ), 12.0, .green );
+      def.drawTextCenter( "|", @floatCast( x ) , @floatCast( hr ), 12.0, .blue );
     }
   }
 }

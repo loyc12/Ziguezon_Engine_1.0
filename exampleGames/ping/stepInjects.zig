@@ -47,7 +47,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
       .vel    = def.G_RNG.getScaledVecA( dVel, vel ),
       .scale  = Vec2.new( size, size ),
 
-      .shape  = def.G_RNG.getVal( def.bdy.e_bdy_shape ),
+      .shape  = def.G_RNG.getVal( def.Geom2D ),
       .colour = colour,
     });
   }

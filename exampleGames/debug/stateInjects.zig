@@ -35,7 +35,7 @@ pub fn OnOpen( ng : *def.Engine ) void
 
   if( ng.bodyManager.loadBodyFromParams(
   .{
-    .shape  = .HSTR,
+    .shape  = .STR7,
     .scale  = .{ .x = 64, .y = 64 },
     .colour = def.Colour.white,
     .pos    = .{ .x = 512, .y = 0 },

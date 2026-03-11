@@ -38,9 +38,13 @@ pub const EngineSettings = struct
 
   Graphic_Ellipse_Facets   : u16 = 64,
 
+//Graphic_World_Scale      : f32 = 1.0, // How much to scale the world positioning by when rendering, to avoid floating points precision issues
+
   Camera_Zoom_Max          : f32 = 10.0,
   Camera_Zoom_Min          : f32 = 0.1,
   Camera_Zoom_Init         : f32 = 1.0,
+
+
 
 
 

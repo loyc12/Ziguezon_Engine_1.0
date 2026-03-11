@@ -239,8 +239,8 @@ pub const OrbitComp = struct
       def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, zoomedWidth );
     }
 
-    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos()), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
-    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()),  Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
   }
 
   pub fn renderLPs( self : *const OrbitComp, orbitedPos : Vec2, maxLP : usize ) void

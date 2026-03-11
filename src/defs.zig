@@ -85,7 +85,6 @@ pub const bdy         = @import( "core/body/bodyCore.zig" );
 pub const Body        = bdy.Body;
 
 pub const e_bdy_flags = bdy.e_bdy_flags;
-pub const e_bdy_shape = bdy.e_bdy_shape;
 
 
 // ================ TILEMAP ================
@@ -276,9 +275,7 @@ pub const drawHexa = drw_u.drawHexagonPlus;
 
 pub const drawRect = drw_u.drawRectanglePlus;
 pub const drawPoly = drw_u.drawPolygonPlus;
-
-pub const drawHstr = drw_u.drawHexStarPlus;
-pub const drawDstr = drw_u.drawOctStarPlus;
+pub const drawStar = drw_u.drawStarPlus;
 
 
 pub const drawText          = drw_u.drawText;
@@ -357,6 +354,7 @@ pub const R3     = mth_u.R3;
 pub const HR3    = mth_u.HR3;
 pub const IR3    = mth_u.IR3;
 
+
 pub const inv1   = mth_u.inv1;
 pub const sign   = mth_u.sign;
 pub const pow2   = mth_u.pow2;
@@ -366,6 +364,8 @@ pub const pow    = mth_u.pow;
 
 pub const sqrt   = mth_u.sqrt;
 pub const cbrt   = mth_u.cbrt;
+
+pub const gcd    = mth_u.gcd;
 
 pub const med3   = mth_u.med3;
 pub const clmp   = mth_u.clmp;

@@ -9,50 +9,6 @@ const Vec2   = def.Vec2;
 const VecA   = def.VecA;
 
 
-//pub const e_bdy_shape = enum( u8 ) // TODO : move to utils
-//{
-//
-//  RECT, // Square / Rectangle
-//
-//  HSTR, // Triangle Star ( two overlaping triangles, pointing along the X axis )
-//  DSTR, // Diamond Star  ( two overlaping diamong,   pointing along the X axis )
-//
-//  RLIN, // Radius Line ( from center to forward, scaled )
-//  DLIN, // Diametre Line ( from backard to forward, scaled )
-//
-//  TRIA, // Triangle ( equilateral, pointing towards +X ( right ))
-//  DIAM, // Square / Diamond ( rhombus )
-//  PENT, // Pentagon  ( regular )
-//  HEXA, // Hexagon   ( regular )
-//  OCTA, // Octagon   ( regular )
-//  DODE, // Dodecagon ( regular )
-//  ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
-//
-//  pub fn getSideCount( self : e_bdy_shape ) u16
-//  {
-//    return switch( self )
-//    {
-//      .RECT => 4, // NOTE : do not render as Polygon, as it will show a diamond instead of a rectangle
-//
-//      .HSTR => 6,
-//      .DSTR => 8,
-//
-//      .RLIN => 1,
-//      .DLIN => 2,
-//
-//      .TRIA => 3,
-//      .DIAM => 4,
-//      .PENT => 5,
-//      .HEXA => 6,
-//      .OCTA => 8,
-//      .DODE => 12,
-//      .ELLI => 24,
-//    };
-//  }
-//};
-
-pub const e_bdy_shape = def.cmp2.e_shape_2D;
-
 pub const e_bdy_flags = enum( u8 )
 {
   DELETE  = 0b10000000, // Body is marked for deletion ( will be cleaned up at the end of the frame )
@@ -86,8 +42,8 @@ pub const Body = struct
   hitbox : Box2 = .{}, // current hitbox position and scale ( after rotation ). will be changed on update ( or when clamping )
 
   // ======== RENDERING DATA ======== ( DEBUG )
-  colour : def.Colour  = .nWhite,
-  shape  : e_bdy_shape = .RECT,
+  colour : def.Colour = .nWhite,
+  shape  : def.Geom2D = .RECT,
 
   // ======== CUSTOM BEHAVIOUR ========
   script : def.Scripter = .{},
@@ -116,7 +72,7 @@ pub const Body = struct
 
   pub fn createBodyFromParams( params : Body ) ?Body
   {
-    if( params.canBeDel() ){ def.qlog( .WARN, 0, @src(), "Params should not be a deleted body"); }
+    if( params.canBeDel() ){ def.qlog( .WARN, 0, @src(), "Params should not be a deleted body" ); }
 
     const tmp = Body{
       .flags  = params.flags.filterField( e_bdy_flags.TO_CPY ),
@@ -129,6 +85,9 @@ pub const Body = struct
       .shape  = params.shape,
     };
 
+    def.log( .INFO, 0, @src(), "Created body with shape : {s}", .{ @tagName( params.shape )});
+
+
     // NOTE : init stuff here if we ever need to
 
     return tmp;
@@ -139,7 +98,7 @@ pub const Body = struct
     _ = filePath;
     // TODO : implement me
 
-    def.qlog( .ERROR, 0, @src(), "Body loading from file is not yet implemented");
+    def.qlog( .ERROR, 0, @src(), "Body loading from file is not yet implemented" );
     return null;
   }
 
@@ -169,7 +128,7 @@ pub const Body = struct
   }
   inline fn updateHitbox( self : *Body ) void
   {
-    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getSideCount() ); }
+    if( self.shape != .RECT ){ self.hitbox = Box2.newPolyAABB( self.pos.toVec2(), self.scale, self.pos.a, self.shape.getEdgeCount() ); }
     else {                     self.hitbox = Box2.newRectAABB( self.pos.toVec2(), self.scale, self.pos.a                            ); }
   }
 
@@ -198,48 +157,48 @@ pub const Body = struct
 
   // ======== POS CLAMPER ( VIA HITBOX ) ========
 
-  pub inline fn clampOnLeftX(   self : *Body, thresholdX : f32 ) void { self.hitbox.clampOnLeftX(   thresholdX ); self.updatePosFromHitbox(); }
-  pub inline fn clampOnRightX(  self : *Body, thresholdX : f32 ) void { self.hitbox.clampOnRightX(  thresholdX ); self.updatePosFromHitbox(); }
-  pub inline fn clampOnTopY(    self : *Body, thresholdY : f32 ) void { self.hitbox.clampOnTopY(    thresholdY ); self.updatePosFromHitbox(); }
-  pub inline fn clampOnBottomY( self : *Body, thresholdY : f32 ) void { self.hitbox.clampOnBottomY( thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnLeftX(   self : *Body, thresholdX : f64 ) void { self.hitbox.clampOnLeftX(   thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnRightX(  self : *Body, thresholdX : f64 ) void { self.hitbox.clampOnRightX(  thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnTopY(    self : *Body, thresholdY : f64 ) void { self.hitbox.clampOnTopY(    thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnBottomY( self : *Body, thresholdY : f64 ) void { self.hitbox.clampOnBottomY( thresholdY ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampOnX(     self : *Body, xVal : f32  ) void { self.hitbox.clampOnX(  xVal ); self.updatePosFromHitbox(); }
-  pub inline fn clampOnY(     self : *Body, yVal : f32  ) void { self.hitbox.clampOnY(  yVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnX(     self : *Body, xVal : f64  ) void { self.hitbox.clampOnX(  xVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnY(     self : *Body, yVal : f64  ) void { self.hitbox.clampOnY(  yVal ); self.updatePosFromHitbox(); }
   pub inline fn clampOnPoint( self : *Body, p    : Vec2 ) void { self.hitbox.clampOnPoint( p ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampOnXRange( self : *Body, xMin : f32,  xMax : f32  ) void { self.hitbox.clampOnXRange( xMin, xMax ); self.updatePosFromHitbox(); }
-  pub inline fn clampOnYRange( self : *Body, yMin : f32,  yMax : f32  ) void { self.hitbox.clampOnYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnXRange( self : *Body, xMin : f64,  xMax : f64  ) void { self.hitbox.clampOnXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampOnYRange( self : *Body, yMin : f64,  yMax : f64  ) void { self.hitbox.clampOnYRange( yMin, yMax ); self.updatePosFromHitbox(); }
   pub inline fn clampOnArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampOnArea(   pMin, pMax ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampNotInXRange( self : *Body, xMin : f32,  xMax : f32  ) void { self.hitbox.clampNotInXRange( xMin, xMax ); self.updatePosFromHitbox(); }
-  pub inline fn clampNotInYRange( self : *Body, yMin : f32,  yMax : f32  ) void { self.hitbox.clampNotInYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotInXRange( self : *Body, xMin : f64,  xMax : f64  ) void { self.hitbox.clampNotInXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotInYRange( self : *Body, yMin : f64,  yMax : f64  ) void { self.hitbox.clampNotInYRange( yMin, yMax ); self.updatePosFromHitbox(); }
   pub inline fn clampNotInArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampNotInArea(   pMin, pMax ); self.updatePosFromHitbox(); }
 
 
-  pub inline fn clampInLeftX(   self : *Body, thresholdX : f32 ) void { self.hitbox.clampInLeftX(   thresholdX ); self.updatePosFromHitbox(); }
-  pub inline fn clampInRightX(  self : *Body, thresholdX : f32 ) void { self.hitbox.clampInRightX(  thresholdX ); self.updatePosFromHitbox(); }
-  pub inline fn clampInTopY(    self : *Body, thresholdY : f32 ) void { self.hitbox.clampInTopY(    thresholdY ); self.updatePosFromHitbox(); }
-  pub inline fn clampInBottomY( self : *Body, thresholdY : f32 ) void { self.hitbox.clampInBottomY( thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampInLeftX(   self : *Body, thresholdX : f64 ) void { self.hitbox.clampInLeftX(   thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampInRightX(  self : *Body, thresholdX : f64 ) void { self.hitbox.clampInRightX(  thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampInTopY(    self : *Body, thresholdY : f64 ) void { self.hitbox.clampInTopY(    thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampInBottomY( self : *Body, thresholdY : f64 ) void { self.hitbox.clampInBottomY( thresholdY ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampNotOnX(     self : *Body, xVal : f32  ) void { self.hitbox.clampNotOnX(  xVal ); self.updatePosFromHitbox(); }
-  pub inline fn clampNotOnY(     self : *Body, yVal : f32  ) void { self.hitbox.clampNotOnY(  yVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnX(     self : *Body, xVal : f64  ) void { self.hitbox.clampNotOnX(  xVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnY(     self : *Body, yVal : f64  ) void { self.hitbox.clampNotOnY(  yVal ); self.updatePosFromHitbox(); }
   pub inline fn clampNotOnPoint( self : *Body, p    : Vec2 ) void { self.hitbox.clampNotOnPoint( p ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampInXRange( self : *Body, xMin : f32,  xMax : f32  ) void { self.hitbox.clampInXRange( xMin, xMax ); self.updatePosFromHitbox(); }
-  pub inline fn clampInYRange( self : *Body, yMin : f32,  yMax : f32  ) void { self.hitbox.clampInYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampInXRange( self : *Body, xMin : f64,  xMax : f64  ) void { self.hitbox.clampInXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampInYRange( self : *Body, yMin : f64,  yMax : f64  ) void { self.hitbox.clampInYRange( yMin, yMax ); self.updatePosFromHitbox(); }
   pub inline fn clampInArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampInArea(   pMin, pMax ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampNotOnXRange( self : *Body, xMin : f32,  xMax : f32  ) void { self.hitbox.clampNotOnXRange( xMin, xMax ); self.updatePosFromHitbox(); }
-  pub inline fn clampNotOnYRange( self : *Body, yMin : f32,  yMax : f32  ) void { self.hitbox.clampNotOnYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnXRange( self : *Body, xMin : f64,  xMax : f64  ) void { self.hitbox.clampNotOnXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnYRange( self : *Body, yMin : f64,  yMax : f64  ) void { self.hitbox.clampNotOnYRange( yMin, yMax ); self.updatePosFromHitbox(); }
   pub inline fn clampNotOnArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampNotOnArea(   pMin, pMax ); self.updatePosFromHitbox(); }
 
 
   // ======== HITBOX ACCESSORS & MUTATORS ========
 
-  pub inline fn getLeftX(   self : *const Body ) f32 { return self.hitbox.getLeftX();   }
-  pub inline fn getRightX(  self : *const Body ) f32 { return self.hitbox.getRightX();  }
-  pub inline fn getTopY(    self : *const Body ) f32 { return self.hitbox.getTopY();    }
-  pub inline fn getBottomY( self : *const Body ) f32 { return self.hitbox.getBottomY(); }
+  pub inline fn getLeftX(   self : *const Body ) f64 { return self.hitbox.getLeftX();   }
+  pub inline fn getRightX(  self : *const Body ) f64 { return self.hitbox.getRightX();  }
+  pub inline fn getTopY(    self : *const Body ) f64 { return self.hitbox.getTopY();    }
+  pub inline fn getBottomY( self : *const Body ) f64 { return self.hitbox.getBottomY(); }
 
   pub inline fn getTopLeft(     self : *const Body ) Vec2 { return self.hitbox.getTopLeft();     }
   pub inline fn getTopRight(    self : *const Body ) Vec2 { return self.hitbox.getTopRight();    }
@@ -247,10 +206,10 @@ pub const Body = struct
   pub inline fn getBottomRight( self : *const Body ) Vec2 { return self.hitbox.getBottomRight(); }
 
 
-  pub inline fn setLeftX(   self : *Body, leftX   : f32 ) void { self.hitbox.center.x = def.getCenterXFromLeftX(   leftX,   self.hitbox.scale ); }
-  pub inline fn setRightX(  self : *Body, rightX  : f32 ) void { self.hitbox.center.x = def.getCenterXFromRightX(  rightX,  self.hitbox.scale ); }
-  pub inline fn setTopY(    self : *Body, topY    : f32 ) void { self.hitbox.center.y = def.getCenterYFromTopY(    topY,    self.hitbox.scale ); }
-  pub inline fn setBottomY( self : *Body, bottomY : f32 ) void { self.hitbox.center.y = def.getCenterYFromBottomY( bottomY, self.hitbox.scale ); }
+  pub inline fn setLeftX(   self : *Body, leftX   : f64 ) void { self.hitbox.center.x = def.getCenterXFromLeftX(   leftX,   self.hitbox.scale ); }
+  pub inline fn setRightX(  self : *Body, rightX  : f64 ) void { self.hitbox.center.x = def.getCenterXFromRightX(  rightX,  self.hitbox.scale ); }
+  pub inline fn setTopY(    self : *Body, topY    : f64 ) void { self.hitbox.center.y = def.getCenterYFromTopY(    topY,    self.hitbox.scale ); }
+  pub inline fn setBottomY( self : *Body, bottomY : f64 ) void { self.hitbox.center.y = def.getCenterYFromBottomY( bottomY, self.hitbox.scale ); }
 
   pub inline fn setTopLeft(     self : *Body, topLeftPos     : Vec2 ) void { self.hitbox.center = def.getCenterFromTopLeft(     topLeftPos,     self.hitbox.scale ); }
   pub inline fn setTopRight(    self : *Body, topRightPos    : Vec2 ) void { self.hitbox.center = def.getCenterFromTopRight(    topRightPos,    self.hitbox.scale ); }
@@ -260,42 +219,42 @@ pub const Body = struct
 
   // ======== HITBOX CHECKERS ========
 
-  pub inline fn goesLeftOf(  self : *const Body, thresholdX : f32 ) bool { return self.hitbox.goesLeftOf(  thresholdX ); }
-  pub inline fn goesRightOf( self : *const Body, thresholdX : f32 ) bool { return self.hitbox.goesRightOf( thresholdX ); }
-  pub inline fn goesAbove(   self : *const Body, thresholdY : f32 ) bool { return self.hitbox.goesAbove(   thresholdY ); }
-  pub inline fn goesBelow(   self : *const Body, thresholdY : f32 ) bool { return self.hitbox.goesBelow(   thresholdY ); }
+  pub inline fn goesLeftOf(  self : *const Body, thresholdX : f64 ) bool { return self.hitbox.goesLeftOf(  thresholdX ); }
+  pub inline fn goesRightOf( self : *const Body, thresholdX : f64 ) bool { return self.hitbox.goesRightOf( thresholdX ); }
+  pub inline fn goesAbove(   self : *const Body, thresholdY : f64 ) bool { return self.hitbox.goesAbove(   thresholdY ); }
+  pub inline fn goesBelow(   self : *const Body, thresholdY : f64 ) bool { return self.hitbox.goesBelow(   thresholdY ); }
 
-  pub inline fn isOnX(      self : *const Body, xVal  : f32  ) bool { return self.hitbox.isOnX( xVal ); }
-  pub inline fn isOnY(      self : *const Body, yVal  : f32  ) bool { return self.hitbox.isOnY( yVal ); }
+  pub inline fn isOnX(      self : *const Body, xVal  : f64  ) bool { return self.hitbox.isOnX( xVal ); }
+  pub inline fn isOnY(      self : *const Body, yVal  : f64  ) bool { return self.hitbox.isOnY( yVal ); }
   pub inline fn isOnPoint(  self : *const Body, p : Vec2 ) bool { return self.hitbox.isOnPoint( p ); }
 
-  pub inline fn isOnXRange( self : *const Body, xMin : f32,  xMax : f32  ) bool { return self.hitbox.isOnXRange( xMin, xMax ); }
-  pub inline fn isOnYRange( self : *const Body, yMin : f32,  yMax : f32  ) bool { return self.hitbox.isOnYRange( yMin, yMax ); }
+  pub inline fn isOnXRange( self : *const Body, xMin : f64,  xMax : f64  ) bool { return self.hitbox.isOnXRange( xMin, xMax ); }
+  pub inline fn isOnYRange( self : *const Body, yMin : f64,  yMax : f64  ) bool { return self.hitbox.isOnYRange( yMin, yMax ); }
   pub inline fn isOnArea(   self : *const Body, pMin : Vec2, pMax : Vec2 ) bool { return self.hitbox.isOnArea(   pMin, pMax ); }
 
 
-  pub inline fn isLeftOf(   self : *const Body, thresholdX : f32 ) bool { return self.hitbox.isLeftOf(  thresholdX ); }
-  pub inline fn isRightOf(  self : *const Body, thresholdX : f32 ) bool { return self.hitbox.isRightOf( thresholdX ); }
-  pub inline fn isAbove(    self : *const Body, thresholdY : f32 ) bool { return self.hitbox.isAbove(   thresholdY ); }
-  pub inline fn isBelow(    self : *const Body, thresholdY : f32 ) bool { return self.hitbox.isBelow(   thresholdY ); }
+  pub inline fn isLeftOf(   self : *const Body, thresholdX : f64 ) bool { return self.hitbox.isLeftOf(  thresholdX ); }
+  pub inline fn isRightOf(  self : *const Body, thresholdX : f64 ) bool { return self.hitbox.isRightOf( thresholdX ); }
+  pub inline fn isAbove(    self : *const Body, thresholdY : f64 ) bool { return self.hitbox.isAbove(   thresholdY ); }
+  pub inline fn isBelow(    self : *const Body, thresholdY : f64 ) bool { return self.hitbox.isBelow(   thresholdY ); }
 
-  pub inline fn isInXRange( self : *const Body, xMin : f32,  xMax : f32  ) bool { return self.hitbox.isInXRange( xMin, xMax ); }
-  pub inline fn isInYRange( self : *const Body, yMin : f32,  yMax : f32  ) bool { return self.hitbox.isInYRange( yMin, yMax ); }
+  pub inline fn isInXRange( self : *const Body, xMin : f64,  xMax : f64  ) bool { return self.hitbox.isInXRange( xMin, xMax ); }
+  pub inline fn isInYRange( self : *const Body, yMin : f64,  yMax : f64  ) bool { return self.hitbox.isInYRange( yMin, yMax ); }
   pub inline fn isInArea(   self : *const Body, pMin : Vec2, pMax : Vec2 ) bool { return self.hitbox.isInArea(   pMin, pMax ); }
 
 
   // ======== HITBOX DISTANCE FUNCTIONS ========
 
-  pub inline fn getDist(    self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getDist(    other.hitbox.center ); }
-  pub inline fn getDistSqr( self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getDistSqr( other.hitbox.center ); }
+  pub inline fn getDist(    self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getDist(    other.hitbox.center ); }
+  pub inline fn getDistSqr( self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getDistSqr( other.hitbox.center ); }
 
-  pub inline fn getDistM( self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getDistM( other.hitbox.center ); }
-  pub inline fn getDistX( self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getDistX( other.hitbox.center ); }
-  pub inline fn getDistY( self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getDistY( other.hitbox.center ); }
+  pub inline fn getDistM( self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getDistM( other.hitbox.center ); }
+  pub inline fn getDistX( self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getDistX( other.hitbox.center ); }
+  pub inline fn getDistY( self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getDistY( other.hitbox.center ); }
 
-  pub inline fn getMaxLinDist( self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getMaxLinDist( other.hitbox.center ); }
-  pub inline fn getMinLinDist( self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getMinLinDist( other.hitbox.center ); }
-  pub inline fn getAvgLinDist( self : *const Body, other : *const Body ) f32 { return self.hitbox.center.getAvgLinDist( other.hitbox.center ); }
+  pub inline fn getMaxLinDist( self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getMaxLinDist( other.hitbox.center ); }
+  pub inline fn getMinLinDist( self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getMinLinDist( other.hitbox.center ); }
+  pub inline fn getAvgLinDist( self : *const Body, other : *const Body ) f64 { return self.hitbox.center.getAvgLinDist( other.hitbox.center ); }
 
 
   // ================ HITBOX COLLISION FUNCTIONS ================

@@ -36,37 +36,111 @@ pub const Geom2D = enum( u8 )
   // NOTE : for polygons, "s" param scales the circumradius in X and Y
   ///       Aka : Affine-stretched regular polygon ( ellipse-affine model )
 
+  // Special shapes
+
+  RLIN, // Radius line
+  DLIN, // Diameter line
   RECT, // Square / Rectangle
+
+  // Affine polygons
 
   TRIA, // Triangle
   DIAM, // Diamond / Rhombus
   PENT, // Pentagon
-  HEXA, // Hexagon
   HEPT, // Heptagon
+  HEXA, // Hexagon
   OCTA, // Octagon
   DECA, // Decagon
   DODE, // Dodecagon
 
   ELLI, // Circle / Ellipse ( aproximated via a high facet count polygon )
 
+  // Star shapes
+
+  STR5,
+  STR6, // previously HSTR
+  STR7,
+  STR8, // previously DSTR
+  STR9,
+  STR10,
+  STR12,
+
+  pub inline fn getSkipFactor( self : Geom2D ) u16
+  {
+    return switch( self )
+    {
+      .STR5  => 2, // {5/2} pentagram
+      .STR6  => 2, // {6/2} hexagram
+      .STR7  => 2, // {7/2} heptagram
+      .STR8  => 3, // {8/3} octagram
+      .STR9  => 3, // {9/3}
+      .STR10 => 4, // {10/3}
+      .STR12 => 5, // {12/4}
+      else   => 1, // Regular polygons
+    };
+  }
+
+  pub inline fn isLine( self : Geom2D ) bool
+  {
+    return switch( self )
+    {
+      .RLIN, .DLIN => true,
+      else => false,
+    };
+  }
+  pub inline fn isPoly( self : Geom2D ) bool
+  {
+    return switch( self )
+    {
+      .TRIA, .DIAM, .PENT, .HEPT, .HEXA, .OCTA, .DECA, .DODE, .ELLI => true,
+      else => false,
+    };
+  }
+  pub inline fn isStar( self : Geom2D ) bool
+  {
+    return switch( self )
+    {
+      .STR5, .STR6, .STR7, .STR8, .STR9, .STR10, .STR12 => true,
+      else => false,
+    };
+  }
+
 
   // V = E
 
-  pub inline fn getVertCount( self : Geom2D ) u16 { return self.getEdgeCount(); }
+  pub inline fn getVertCount( self : Geom2D ) u16
+  {
+    if( self == .RLIN or self == .DLIN ){ return 2; }
+    else { return self.getEdgeCount(); }
+  }
   pub inline fn getEdgeCount( self : Geom2D ) u16 // Aka "N"
   {
     return switch( self )
     {
+      // Special shapes
+      .RLIN => 1,
+      .DLIN => 1,
       .RECT => 4,
+
+      // Affine polygons
       .TRIA => 3,
       .DIAM => 4,
       .PENT => 5,
       .HEXA => 6,
-      .OCTA => 8,
       .HEPT => 7,
+      .OCTA => 8,
       .DECA => 10,
       .DODE => 12,
       .ELLI => def.G_ST.Graphic_Ellipse_Facets, // 64 by default
+
+      // Star shapes
+      .STR5  => 5,
+      .STR6  => 6,
+      .STR7  => 7,
+      .STR8  => 8,
+      .STR9  => 9,
+      .STR10 => 10,
+      .STR12 => 12,
     };
   }
 
@@ -78,7 +152,10 @@ pub const Geom2D = enum( u8 )
 
     switch( self )
     {
+      .RLIN => return 0.5 * ( rX  + rY  ),
+      .DLIN => return 0.5 * ( s.X + s.Y ),
       .RECT => return 2.0 * ( s.X + s.Y ),
+
       .ELLI =>
       {
         const regP = PI * ( rX + rY );
@@ -95,11 +172,13 @@ pub const Geom2D = enum( u8 )
 
       else =>
       {
-        const N : f32 = @floatFromInt( self.getEdgeCount() );
+        const N : f32 = @floatFromInt( self.getEdgeCount()  );
+        const k : f32 = @floatFromInt( self.getSkipFactor() );
 
         // Mean radius ellipse perimeter
         const rM   = ( rX + rY ) * 0.5;
-        const regP = ( 2.0 * N ) * rM * @sin( PI / N );
+        const regP = ( 2.0 * N ) * rM * @sin( k * PI / N );
+      //const regP = ( 2.0 * N ) * rM * @sin( PI / N );
 
         if( @abs( rX - rY ) < def.EPS ) // Regular polygon perimeter from circumradius ( trigonometric form )
         {
@@ -120,14 +199,39 @@ pub const Geom2D = enum( u8 )
 
     switch( self )
     {
-      .RECT => return s.X * s.Y,
-      .ELLI => return PI * ( rX * rY ),
-      else  => // Exact formula for regular and affine polygon's area
+      .RLIN, .DLIN => return 0.0,
+      .RECT        => return s.X * s.Y,
+      .ELLI        => return PI * ( rX * rY ),
+      else => // Exact formula for regular and affine polygon's area
       {
-        const N : f32 = @floatFromInt( self.getEdgeCount() );
+        const N : f32 = @floatFromInt( self.getEdgeCount()  );
+        const k : f32 = @floatFromInt( self.getSkipFactor() );
 
-        return ( N / 2.0 ) * ( rX * rY ) * @sin( 2 * PI / N );
+        return ( N / 2.0 ) * ( rX * rY ) * @sin( 2.0 * k * PI / N );
+      //return ( N / 2.0 ) * ( rX * rY ) * @sin( 2.0 * PI / N );
       },
+    }
+  }
+
+  pub inline fn isValidBaseShape( self : ?Geom2D ) bool
+  {
+    if( self == null ){ return false; }
+
+    switch( self.? )
+    {
+      .RLIN, .DLIN, =>
+      {
+        def.log( .WARN, 0, @src(), "Lines are not valid base shapes for 3D geometries" );
+        return false;
+      },
+
+      .STR5, .STR6, .STR7, .STR8, .STR9, .STR10, .STR12 =>
+      {
+          def.log( .WARN, 0, @src(), "Stars are not valid base shapes for 3D geometries" );
+          return false;
+      },
+
+      else => { return true; }
     }
   }
 };
@@ -196,7 +300,7 @@ const Geom3D = enum( u8 )
       .CONE  => return 1,
       .CYLIN => return 2,
 
-      else => if( baseShape != null )
+      else => if( Geom2D.isValidBaseShape( baseShape ))
       {
         if( self == .PYRAM ){ return baseShape.?.getEdgeCount() * 2; } // 2N
         if( self == .PRISM ){ return baseShape.?.getEdgeCount() * 3; } // 3N
@@ -223,7 +327,7 @@ const Geom3D = enum( u8 )
       .CONE  => return 2,
       .CYLIN => return 3,
 
-      else => if( baseShape != null )
+      else => if( Geom2D.isValidBaseShape( baseShape ))
       {
         if( self == .PYRAM ){ return baseShape.?.getEdgeCount() + 1; } // N + 1
         if( self == .PRISM ){ return baseShape.?.getEdgeCount() + 2; } // N + 2
@@ -253,7 +357,7 @@ const Geom3D = enum( u8 )
       .CONE  => return Geom2D.ELLI.getPerim( .new( s.X, s.Z )),
       .CYLIN => return Geom2D.ELLI.getPerim( .new( s.X, s.Z )) * 2.0,
 
-      else => if( baseShape != null )
+      else => if( Geom2D.isValidBaseShape( baseShape ))
       {
         const N : f32 = @floatFromInt( baseShape.?.getEdgeCount() );
         const bP      = baseShape.?.getPerim( .new( s.X, s.Z ));
@@ -320,7 +424,7 @@ const Geom3D = enum( u8 )
         return bA + bA + sA;
       },
 
-      else => if( baseShape != null )
+      else => if( Geom2D.isValidBaseShape( baseShape ))
       {
         const bA = baseShape.?.getArea( .new( s.X, s.Z ));
 
@@ -372,7 +476,7 @@ const Geom3D = enum( u8 )
         if( self == .CYLIN ){ return s.Y * bA;       }
       },
 
-      else => if( baseShape != null )
+      else => if( Geom2D.isValidBaseShape( baseShape ))
       {
         const bA = baseShape.?.getArea( .new( s.X, s.Z ));
 

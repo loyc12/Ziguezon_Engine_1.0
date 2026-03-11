@@ -26,6 +26,8 @@ pub const pow   = std.math.pow;
 pub const sqrt  = std.math.sqrt;
 pub const cbrt  = std.math.cbrt;
 
+pub const gcd   = std.math.gcd;
+
 
 pub fn sign( val : anytype ) @TypeOf( val )
 {
