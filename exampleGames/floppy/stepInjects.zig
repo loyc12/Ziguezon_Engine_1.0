@@ -112,7 +112,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void
 
   // ================ CLAMPING THE DISK POSITIONS ================
 
-  const hHeight : f32 = def.getHalfScreenHeight();
+  const hHeight : f64 = def.getHalfScreenHeight();
 
   const hitbox = diskShape.getAABB( diskTransform.pos );
 
@@ -187,7 +187,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   const halfScreenSize = def.getHalfScreenSize();
 
-  def.drawTextCenter( &s_buff, @floatCast( halfScreenSize.x * 1.6 ), @floatCast( halfScreenSize.y ), 128, def.Colour.yellow );
+  def.drawTextCenter( &s_buff, .new( halfScreenSize.x * 1.6, halfScreenSize.y ), 128, def.Colour.yellow );
 
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
@@ -200,15 +200,15 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   {
     const game_over_msg = "Final score : ";
 
-    def.drawTextCenter( game_over_msg ++ &s_buff, @floatCast( halfScreenSize.x ), @floatCast( halfScreenSize.y - 192 ), 128, def.Colour.red );
-    def.drawTextCenter( "Press Enter to restart", @floatCast( halfScreenSize.x ), @floatCast( halfScreenSize.y       ),  64,  def.Colour.yellow );
-    def.drawTextCenter( "Press Escape to exit",   @floatCast( halfScreenSize.x ), @floatCast( halfScreenSize.y + 128 ), 64,  def.Colour.yellow );
+    def.drawTextCenter( game_over_msg ++ &s_buff, .new( halfScreenSize.x, halfScreenSize.y - 192 ), 128, def.Colour.red );
+    def.drawTextCenter( "Press Enter to restart", .new( halfScreenSize.x, halfScreenSize.y       ),  64, def.Colour.yellow );
+    def.drawTextCenter( "Press Escape to exit",   .new( halfScreenSize.x, halfScreenSize.y + 128 ),  64, def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawTextCenter( "Press Enter to resume",   @floatCast( halfScreenSize.x ), @floatCast( halfScreenSize.y - 256 ), 64, def.Colour.yellow );
-    def.drawTextCenter( "Press Escape to exit",    @floatCast( halfScreenSize.x ), @floatCast( halfScreenSize.y - 128 ), 64, def.Colour.yellow );
-    def.drawTextCenter( "Press W, Up or Space to", @floatCast( halfScreenSize.x ), @floatCast( halfScreenSize.y + 128 ), 64, def.Colour.yellow );
-    def.drawTextCenter( "jump during the game",    @floatCast( halfScreenSize.x ), @floatCast( halfScreenSize.y + 256 ), 64, def.Colour.yellow );
+    def.drawTextCenter( "Press Enter to resume",   .new( halfScreenSize.x, halfScreenSize.y - 256 ), 64, def.Colour.yellow );
+    def.drawTextCenter( "Press Escape to exit",    .new( halfScreenSize.x, halfScreenSize.y - 128 ), 64, def.Colour.yellow );
+    def.drawTextCenter( "Press W, Up or Space to", .new( halfScreenSize.x, halfScreenSize.y + 128 ), 64, def.Colour.yellow );
+    def.drawTextCenter( "jump during the game",    .new( halfScreenSize.x, halfScreenSize.y + 256 ), 64, def.Colour.yellow );
   }
 }

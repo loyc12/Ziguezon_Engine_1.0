@@ -6,8 +6,8 @@ const VecA   = def.VecA;
 const Angle  = def.Angle;
 const Colour = def.Colour;
 
-const Texture   = def.ray.Texture2D;
-const Rectangle = def.ray.Rectangle;
+const Texture   = def.Texture;
+const RayRect = def.RayRect;
 
 
 // ================================ SPRITE STRUCT ================================
@@ -144,7 +144,7 @@ pub const Spritemap = struct
     def.qlog( .DEBUG, 0, @src(), "$ spritemap initialized !" );
   }
 
-  fn getSpriteRect( self : *const Spritemap, index : u32 ) Rectangle
+  fn getSpriteRect( self : *const Spritemap, index : u32 ) RayRect
   {
     const i : u32 = @mod( index, self.frameCount );
 
@@ -167,8 +167,8 @@ pub const Spritemap = struct
       return;
     }
 
-    const src : Rectangle = self.getSpriteRect( index );
-    const dst : Rectangle =
+    const src : RayRect = self.getSpriteRect( index );
+    const dst : RayRect =
     .{
       .x      = @floatCast( pos.x ),
       .y      = @floatCast( pos.y ),

@@ -206,23 +206,38 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
 pub fn updateCameraLogic( cam : *def.Cam2D ) void
 {
-
-  // Move the camera with the WASD or arrow keys
+  // Moves the camera with the WASD or arrow keys
   if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0.0, -glb.scrollSpeed )); }
   if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ cam.moveByS( def.Vec2.new(  0.0,  glb.scrollSpeed )); }
   if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ cam.moveByS( def.Vec2.new( -glb.scrollSpeed,  0.0 )); }
   if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  glb.scrollSpeed,  0.0 )); }
 
-  // Zoom in and out with the mouse wheel
+  // Zooms in and out with the mouse wheel
   if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * glb.zoomSpeed ); }
   if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / glb.zoomSpeed ); }
 
-  // Reset the camera zoom and position when r is pressed
+  // Resets the camera zoom and position
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
   {
-    cam.setZoom(   1.0 );
+    cam.setZoom( 1.0 );
     cam.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reset" );
+  }
+
+  // Centers the camera on current valid target
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.t ))
+  {
+    const targetTrans = glb.transStore.get( glb.targetId );
+
+    if( targetTrans )| trans |
+    {
+      cam.pos = trans.pos;
+      def.qlog( .INFO, 0, @src(), "View centered on target" );
+    }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Target does not exist : cannot center view" );
+    }
   }
 }
 
@@ -345,21 +360,21 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
 
   var lineCount : f32 = 1.0;
 
-  def.drawTextRightFmt( "== Entity #{d} ==", .{ id }, posX, lineCount * 32.0, 24, col ); lineCount += 1.5;
+  def.drawTextRightFmt( "== Entity #{d} ==", .{ id }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.5;
 
 
   if( trans != null )
   {
-    def.drawTextRightFmt( "{d:.3} :     posX", .{ trans.?.pos.x }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :     posY", .{ trans.?.pos.y }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     posX", .{ trans.?.pos.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     posY", .{ trans.?.pos.y }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
 
   if( shape != null )
   {
-    def.drawTextRightFmt( "{d:.3} :  scaleX", .{ shape.?.scale.x }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  scaleY", .{ shape.?.scale.y }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  scaleX", .{ shape.?.scale.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  scaleY", .{ shape.?.scale.y },. new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
@@ -368,26 +383,26 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   {
     const star = glb.starCompInst;
 
-    def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass         }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius       }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} : density",  .{ star.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine        }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass         }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} : density",  .{ star.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine        }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
   else if( body != null ) // PLANETS AND CO.
   {
-    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass         }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass         }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
 
   if( orbit != null )
   {
-    def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, posX, lineCount * 32.0, 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.drawTextRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }

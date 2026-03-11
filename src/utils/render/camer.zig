@@ -1,24 +1,25 @@
 const std  = @import( "std" );
 const def  = @import( "defs" );
 
-const Box2   = def.Box2;
-const Vec2   = def.Vec2;
-const VecA   = def.VecA;
-const Angle  = def.Angle;
+const Box2    = def.Box2;
+const Vec2    = def.Vec2;
+const VecA    = def.VecA;
+const Angle   = def.Angle;
 
-pub const RayCam = def.ray.Camera2D;
+const RayVec2 = def.RayVec2;
+const RayCam  = def.RayCam;
 
 // ================================ HELPER FUNCTIONS ================================
 
-pub inline fn getScreenWidth()  f32 { return @floatFromInt( def.ray.getScreenWidth()  ); }
-pub inline fn getScreenHeight() f32 { return @floatFromInt( def.ray.getScreenHeight() ); }
+pub inline fn getScreenWidth()  f64 { return @floatFromInt( def.ray.getScreenWidth()  ); }
+pub inline fn getScreenHeight() f64 { return @floatFromInt( def.ray.getScreenHeight() ); }
 pub inline fn getScreenSize()  Vec2
 {
   return Vec2{ .x = getScreenWidth(), .y = getScreenHeight(), };
 }
 
-pub inline fn getHalfScreenWidth()  f32 { return getScreenWidth()  * 0.5; }
-pub inline fn getHalfScreenHeight() f32 { return getScreenHeight() * 0.5; }
+pub inline fn getHalfScreenWidth()  f64 { return getScreenWidth()  * 0.5; }
+pub inline fn getHalfScreenHeight() f64 { return getScreenHeight() * 0.5; }
 pub inline fn getHalfScreenSize()  Vec2
 {
   return Vec2{ .x = getHalfScreenWidth(), .y = getHalfScreenHeight(), };
@@ -30,8 +31,8 @@ pub inline fn getMouseWorldPos()  Vec2
   return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ng.Cam2D );
 }
 
-inline fn getViewFromZoom( zoom : f32  ) Vec2 { return getHalfScreenSize().mulVal( 1.0 / zoom ); }
-inline fn getZoomFromView( view : Vec2 ) f32  { return getHalfScreenWidth() / ( view.x ); }
+inline fn getViewFromZoom( zoom : f64  ) Vec2 { return getHalfScreenSize().mulVal( 1.0 / zoom ); }
+inline fn getZoomFromView( view : Vec2 ) f64  { return getHalfScreenWidth() / ( view.x ); }
 
 
 // ================================ CAMERA STRUCT ================================
@@ -39,7 +40,7 @@ inline fn getZoomFromView( view : Vec2 ) f32  { return getHalfScreenWidth() / ( 
 pub const Cam2D = struct
 {
   pos   : VecA = .{}, // center of the camera + rotation
-  zoom  : f32  = 1.0,
+  zoom  : f64  = 1.0,
   view  : Vec2 = .{},
 
   track : ?*def.Body = null, // body to track ( if any )
@@ -47,7 +48,7 @@ pub const Cam2D = struct
 
   // ================ GENERATION ================
 
-  pub inline fn new( pos : def.VecA, zoom : f32 ) Cam2D
+  pub inline fn new( pos : def.VecA, zoom : f64 ) Cam2D
   {
     var tmp = Cam2D{ .pos = pos, .zoom = zoom, .view = .{} };
 
@@ -58,33 +59,55 @@ pub const Cam2D = struct
 
   // ================ CONVERSION ================
 
-  pub inline fn fromRayCam( rc : RayCam ) Cam2D
+  // Used by drawer.zig / wtsRay : raylib camera handles zoom and offset
+  // Precision fix only : subtract cam pos in f64 BEFORE cast
+  // This is to cancel-out the fact the camera target is clamped at 0:0, to avoid float-point issues
+  pub inline fn worldToRender( self : *const Cam2D, worldPos : Vec2 ) Vec2
   {
-    var tmp = Cam2D{
-      .pos  = VecA{ .x = rc.target.x, .y = rc.target.y, .a = Angle{ .r = rc.rotation }},
-      .zoom = rc.zoom,
-      .view = .{},
-    };
-
-    tmp.updateView();
-    return tmp;
+      return worldPos.sub( self.pos.toVec2() );
   }
+  pub inline fn renderToWorld( self : *const Cam2D, screenPos : Vec2 ) Vec2
+  {
+    return screenPos.add( self.pos.toVec2() );
+  }
+
+  // Used when you need a true screen-space coordinate ( UI overlay, hit detection, etc )
+  // Matches what raylib's getWorldToScreen2D() and getScreenToWorld2D()
+  pub inline fn worldToScreen( self : *const Cam2D, worldPos : Vec2 ) Vec2
+  {
+    return worldPos.sub( self.pos.toVec2() ).mulVal( self.zoom ).add( getHalfScreenSize() );
+  }
+  pub inline fn screenToWorld( self : *const Cam2D, screenPos : Vec2 ) Vec2
+  {
+    return screenPos.sub( getHalfScreenSize() ).mulVal( 1.0 / self.zoom ).add( self.pos.toVec2() );
+  }
+
+// NOTE : Validate .pos conversion before using
+//pub inline fn fromRayCam( rc : RayCam ) Cam2D
+//{
+//  var tmp = Cam2D{
+//    .pos  = VecA{ .x = rc.target.x, .y = rc.target.y, .a = Angle{ .r = rc.rotation }},
+//    .zoom = rc.zoom,
+//    .view = .{},
+//  };
+//
+//  tmp.updateView();
+//  return tmp;
+//}
   pub inline fn toRayCam( self : *const Cam2D ) RayCam
   {
     var tmp : Cam2D = self.*;
     tmp.updateView();
 
-    //def.log( .DEBUG, 0, @src(), "Converting from Cam2D ( pos: {d}:{d}, rot: {d}, zoom: {d}, view: {d}:{d} )", .{ tmp.pos.x, tmp.pos.y, tmp.pos.a.r, tmp.zoom, tmp.view.x, tmp.view.y });
-
     const res = RayCam{
-      .target   = tmp.pos.toRayVec2(),
+    //.target   = tmp.pos.toRayVec2(),
+      .target   = .{ .x = 0.0, .y = 0.0 }, // Always zero - we handle world offset manually during worldRender step
       .offset   = getHalfScreenSize().toRayVec2(),
       .rotation = tmp.pos.a.r,
-      .zoom     = tmp.zoom,
+      .zoom     = @floatCast( tmp.zoom ),
     };
 
-    //def.log( .DEBUG, 0, @src(), "Converted to RayCam ( target: {d}:{d}, offset: {d}:{d}, rot: {d}, zoom: {d} )", .{ res.target.x, res.target.y, res.offset.x, res.offset.y, res.rotation, res.zoom });
-    return res;
+return res;
   }
 
   pub inline fn fromViewBox( vb : Box2 ) Cam2D
@@ -110,11 +133,11 @@ pub const Cam2D = struct
 
   pub inline fn getCenter( self : *const Cam2D ) Vec2  { return self.pos.toVec2(); }
   pub inline fn getRot(    self : *const Cam2D ) Angle { return self.pos.a; }
-  pub inline fn getZoom(   self : *const Cam2D ) f32   { return self.zoom; }
+  pub inline fn getZoom(   self : *const Cam2D ) f64   { return self.zoom; }
 
   pub inline fn setCenter( self : *Cam2D, p : Vec2  ) void { self.pos.x = p.x; self.pos.y = p.y; }
   pub inline fn setRot(    self : *Cam2D, a : Angle ) void { self.pos.a = a; }
-  pub inline fn setZoom(   self : *Cam2D, z : f32   ) void
+  pub inline fn setZoom(   self : *Cam2D, z : f64   ) void
   {
     self.zoom = z;
 
@@ -154,7 +177,7 @@ pub const Cam2D = struct
   }
 
   pub inline fn rotBy(  self : *Cam2D, a      : Angle ) void { self.pos.a.rot( a ); }
-  pub inline fn zoomBy( self : *Cam2D, factor : f32   ) void { self.setZoom( self.zoom * factor ); }
+  pub inline fn zoomBy( self : *Cam2D, factor : f64   ) void { self.setZoom( self.zoom * factor ); }
 
   pub fn clampOnArea( self : *Cam2D, area : Box2 ) void
   {

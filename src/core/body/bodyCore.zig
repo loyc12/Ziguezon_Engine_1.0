@@ -43,7 +43,7 @@ pub const Body = struct
 
   // ======== RENDERING DATA ======== ( DEBUG )
   colour : def.Colour = .nWhite,
-  shape  : def.Geom2D = .RECT,
+  shape  : def.Shape2D = .RECT,
 
   // ======== CUSTOM BEHAVIOUR ========
   script : def.Scripter = .{},

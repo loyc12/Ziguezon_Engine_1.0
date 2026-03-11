@@ -224,20 +224,23 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   if( SHOW_SHAKE_GRAPHS )
   {
 
-    def.drawLine( .{ .x = 0, .y = height * 0.25 }, .{ .x = width, .y = height * 0.25 }, .nBlack, 4 );
-    def.drawLine( .{ .x = 0, .y = height * 0.50 }, .{ .x = width, .y = height * 0.50 }, .nBlack, 4 );
-    def.drawLine( .{ .x = 0, .y = height * 0.75 }, .{ .x = width, .y = height * 0.75 }, .nBlack, 4 );
+    def.drawScreenLine( .{ .x = 0, .y = height * 0.125 }, .{ .x = width, .y = height * 0.125 }, .nBlack, 4 );
+    def.drawScreenLine( .{ .x = 0, .y = height * 0.375 }, .{ .x = width, .y = height * 0.375 }, .nBlack, 4 );
+    def.drawScreenLine( .{ .x = 0, .y = height * 0.625 }, .{ .x = width, .y = height * 0.625 }, .nBlack, 4 );
+    def.drawScreenLine( .{ .x = 0, .y = height * 0.875 }, .{ .x = width, .y = height * 0.875 }, .nBlack, 4 );
 
     const l1 = width *           shaker.beg_lenght / shaker.getTotalLenght();
     const l2 = width * ( 1.0 - ( shaker.end_lenght / shaker.getTotalLenght() ));
 
-    def.drawLine( .{ .x = l1, .y = 0 }, .{ .x = l1, .y = height }, .nBlack, 4 );
-    def.drawLine( .{ .x = l2, .y = 0 }, .{ .x = l2, .y = height }, .nBlack, 4 );
+    // Vertical phase divider lines
+    def.drawScreenLine( .{ .x = l1, .y = 0 }, .{ .x = l1, .y = height }, .nBlack, 4 );
+    def.drawScreenLine( .{ .x = l2, .y = 0 }, .{ .x = l2, .y = height }, .nBlack, 4 );
 
+    // Shake graph
     for( 0 .. @intFromFloat( width ))| pos |
     {
-      const x : f32 = @floatFromInt( pos );
-      const offset  = shaker.getOffsetAtProg( x / width );
+      const x : f64 = @floatFromInt( pos );
+      const offset  = shaker.getOffsetAtProg( @floatCast( x / width ));
 
 
       var hx : f64 = height * 0.25;
@@ -248,9 +251,9 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       hy += offset.y   * 128;
       hr += offset.a.r * 128;
 
-      def.drawTextCenter( "|", @floatCast( x ) , @floatCast( hx ), 12.0, .red );
-      def.drawTextCenter( "|", @floatCast( x ) , @floatCast( hy ), 12.0, .green );
-      def.drawTextCenter( "|", @floatCast( x ) , @floatCast( hr ), 12.0, .blue );
+      def.drawTextCenter( "|", .new( x, hx ), 12.0, .red );
+      def.drawTextCenter( "|", .new( x, hy ), 12.0, .green );
+      def.drawTextCenter( "|", .new( x, hr ), 12.0, .blue );
     }
   }
 }

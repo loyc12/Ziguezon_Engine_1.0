@@ -47,7 +47,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
       .vel    = def.G_RNG.getScaledVecA( dVel, vel ),
       .scale  = Vec2.new( size, size ),
 
-      .shape  = def.G_RNG.getVal( def.Geom2D ),
+      .shape  = def.G_RNG.getVal( def.Shape2D ),
       .colour = colour,
     });
   }
@@ -75,25 +75,25 @@ pub fn emitBounceParticles( ng : *Engine, ball : *Body ) void
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-var   P1_MV_FAC : f32 = 0.0; // Player 1 movement direction
-var   P2_MV_FAC : f32 = 0.0; // Player 2 movement direction
+var   P1_MV_FAC : f64 = 0.0; // Player 1 movement direction
+var   P2_MV_FAC : f64 = 0.0; // Player 2 movement direction
 
-const MV_FAC_STEP : f32 = 0.4;  // Movement factor step ( size of increment / decrement )
-const MV_FAC_CAP  : f32 = 16.0; // Movement factor cap, to prevent excessive speed
+const MV_FAC_STEP : f64 = 0.4;  // Movement factor step ( size of increment / decrement )
+const MV_FAC_CAP  : f64 = 16.0; // Movement factor cap, to prevent excessive speed
 
-const B_BASE_VEL : f32 = 500.0; // Base velocity of the ball when it is launched
-const B_GRAVITY  : f32 = 600.0; // Base gravitational acceleration of the ball
+const B_BASE_VEL : f64 = 500.0; // Base velocity of the ball when it is launched
+const B_GRAVITY  : f64 = 600.0; // Base gravitational acceleration of the ball
 
 const WIN_SCORE : u8 = 5; // Score needed to win the game
 var   WINNER    : u8 = 0; // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet
 
 var   SCORES    : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 
-const B_MIN_BOUNCE_SPEED_X : f32 = 128.0; // Minimum parallel speed of the ball when bouncing off players
-const B_MIN_BOUNCE_SPEED_Y : f32 = 256.0; // Minimum perpendicular speed of the ball when bouncing off players
+const B_MIN_BOUNCE_SPEED_X : f64 = 128.0; // Minimum parallel speed of the ball when bouncing off players
+const B_MIN_BOUNCE_SPEED_Y : f64 = 256.0; // Minimum perpendicular speed of the ball when bouncing off players
 
-const B_KIN_TRANS_FACTOR_X : f32 = 0.25; // How much of the player's velocity is given to the ball on bounce ( horizontal )
-const B_KIN_TRANS_FACTOR_Y : f32 = 0.25; // How much of the player's velocity is given to the ball on bounce ( vertical )
+const B_KIN_TRANS_FACTOR_X : f64 = 0.25; // How much of the player's velocity is given to the ball on bounce ( horizontal )
+const B_KIN_TRANS_FACTOR_Y : f64 = 0.25; // How much of the player's velocity is given to the ball on bounce ( vertical )
 
 pub fn ensureBallMinSpeeds( ball : *Body ) void
 {
@@ -153,10 +153,6 @@ pub fn OnUpdateInputs( ng : *Engine ) void
     if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
     if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
     if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
-
-    // Zoom in and out with the mouse wheel
-    if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 11.0 / 10.0 ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy(  9.0 / 10.0 ); }
 
     // Reset the camera zoom and position when r is pressed
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
@@ -224,17 +220,17 @@ pub fn OffTickWorld( ng : *Engine ) void
 {
   // ================ VARIABLES AND CONSTANTS ================
 
-  const hWidth  : f32 = def.getScreenWidth()  / 2.0;
-  const hHeight : f32 = def.getScreenHeight() / 2.0;
+  const hWidth  : f64 = def.getScreenWidth()  / 2.0;
+  const hHeight : f64 = def.getScreenHeight() / 2.0;
 
-  const barHalfWidth        : f32 = 8.0;  // Half the width of the separator bar
-  const playerSpeedFactor   : f32 = 64.0; // Base speed of the players
+  const barHalfWidth        : f64 = 8.0;  // Half the width of the separator bar
+  const playerSpeedFactor   : f64 = 64.0; // Base speed of the players
 
-  const wallBounceFactorX   : f32 = 0.85; // Perpendicular bounce factor for the ball when hitting walls
-  const wallBounceFactorY   : f32 = 0.90; // Parallel bounce factor for the ball when hitting walls
+  const wallBounceFactorX   : f64 = 0.85; // Perpendicular bounce factor for the ball when hitting walls
+  const wallBounceFactorY   : f64 = 0.90; // Parallel bounce factor for the ball when hitting walls
 
-  const playerBounceFactorY : f32 = 0.80; // Perpendicular bounce factor for the ball when hitting players
-  const playerBounceFactorX : f32 = 0.75; // Parallel bounce factor for the ball when hitting players
+  const playerBounceFactorY : f64 = 0.80; // Perpendicular bounce factor for the ball when hitting players
+  const playerBounceFactorX : f64 = 0.75; // Parallel bounce factor for the ball when hitting players
 
   var p1 = ng.bodyManager.getBody( stateInj.P1_ID ) orelse
   {
@@ -427,35 +423,38 @@ pub fn OnRenderOverlay( ng : *Engine ) void
   s1_buff[ s1_slice.len ] = 0;
   s2_buff[ s2_slice.len ] = 0;
 
-  // Find the center of each field in screen space
-  const p1_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() *  0.25, .y = 0 }, ng.camera.toRayCam() );
-  const p2_score_pos = def.ray.getWorldToScreen2D( .{ .x = def.getScreenWidth() * -0.25, .y = 0 }, ng.camera.toRayCam() );
+  const screenCenter = def.getHalfScreenSize();
 
   // Draw each player's score in the middle of their respective fields
-  def.drawTextCenter( &s1_buff, p1_score_pos.x, p1_score_pos.y, 64, def.Colour.blue );
-  def.drawTextCenter( &s2_buff, p2_score_pos.x, p2_score_pos.y, 64, def.Colour.red );
+  def.drawTextCenter( &s1_buff, .new( screenCenter.x + 512, screenCenter.y ), 64, def.Colour.blue );
+  def.drawTextCenter( &s2_buff, .new( screenCenter.x - 512, screenCenter.y ), 64, def.Colour.red );
 
-  if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
+  if( ng.state == .OPENED )
   {
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
 
-    def.drawTextCenter( "Hold A or D to accelerate", ( def.getScreenWidth() * 0.5 ) - 512, 128, 32, def.Colour.yellow );
-    def.drawTextCenter( "Press S or Space to break", ( def.getScreenWidth() * 0.5 ) - 512, 192, 32, def.Colour.yellow );
+    if( ng.state == .OPENED and WINNER == 0 ) // NOTE : Gray out the game when it is paused
+    {
 
-    def.drawTextCenter( "Hold Left or Right to accelerate", ( def.getScreenWidth() * 0.5 ) + 512, 128, 32, def.Colour.yellow );
-    def.drawTextCenter( "Press Down or KP enter to break",  ( def.getScreenWidth() * 0.5 ) + 512, 192, 32, def.Colour.yellow );
+      def.drawTextCenter( "Hold A or D to accelerate", .new( screenCenter.x * 0.5, screenCenter.y + 128 ), 32, def.Colour.yellow );
+      def.drawTextCenter( "Press S or Space to break", .new( screenCenter.x * 0.5, screenCenter.y + 192 ), 32, def.Colour.yellow );
+
+      def.drawTextCenter( "Hold Left or Right to accelerate", .new( screenCenter.x * 1.5, screenCenter.y + 128 ), 32, def.Colour.yellow );
+      def.drawTextCenter( "Press Down or KP enter to break",  .new( screenCenter.x * 1.5, screenCenter.y + 192 ), 32, def.Colour.yellow );
+    }
+
   }
 
   if( WINNER != 0 ) // If there is a winner, display the winner message ( not grayed out )
   {
 
     const winner_msg = if( WINNER == 1 ) "Player 1 wins!" else "Player 2 wins!";
-    def.drawTextCenter( winner_msg,               def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 192, 128, def.Colour.green );
-    def.drawTextCenter( "Press Enter to restart", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ),       64,  def.Colour.yellow );
-    def.drawTextCenter( "Press Escape to exit",   def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) + 128, 64,  def.Colour.yellow );
+    def.drawTextCenter( winner_msg,               .new( screenCenter.x, screenCenter.y - 192 ), 128, def.Colour.green );
+    def.drawTextCenter( "Press Enter to restart", .new( screenCenter.x, screenCenter.y       ),  64, def.Colour.yellow );
+    def.drawTextCenter( "Press Escape to exit",   .new( screenCenter.x, screenCenter.y + 128 ),  64, def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawTextCenter( "Press Enter to resume", def.getScreenWidth() * 0.5, ( def.getScreenHeight() * 0.5 ) - 128, 128, def.Colour.yellow );
+    def.drawTextCenter( "Press Enter to resume", .new( screenCenter.x, screenCenter.y - 128 ), 128, def.Colour.yellow );
   }
 }

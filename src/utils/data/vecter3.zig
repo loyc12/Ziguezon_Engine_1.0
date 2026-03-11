@@ -45,7 +45,7 @@ pub const Vec3 = struct
 
   // ================ CONVERSIONS ================
 
-  pub inline fn toRayVec3( self : *const Vec3 ) RayVec3 { return RayVec3{ .x = self.x, .y = self.y, .z = self.z }; }
+  pub inline fn toRayVec3( self : *const Vec3 ) RayVec3 { return RayVec3{ .x = @floatCast( self.x ), .y = @floatCast( self.y ), .z = @floatCast( self.z )}; }
   pub inline fn toCoords3( self : *const Vec3 ) Coords3
   {
     return Coords3{

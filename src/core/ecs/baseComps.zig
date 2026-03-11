@@ -47,7 +47,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
   scale  : Vec2,
-  shape  : def.Geom2D = .RECT,
+  shape  : def.Shape2D = .RECT,
   colour : def.Colour = .nWhite,
 
 //minScale : Vec2 = .{},

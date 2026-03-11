@@ -168,7 +168,7 @@ inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instea
   defer def.ray.endDrawing();
 
   // NOTE : set Graphic_Bckgrd_Colour to null in settings to skip this step
-  if( def.G_ST.Graphic_Bckgrd_Colour != null ){ def.drw_u.clearBackground( def.G_ST.Graphic_Bckgrd_Colour.? ); }
+  if( def.G_ST.Graphic_Bckgrd_Colour != null ){ def.clearBackground( def.G_ST.Graphic_Bckgrd_Colour.? ); }
 
   def.tryHook( .OnRenderBckgrnd, ng );
 
@@ -231,7 +231,7 @@ inline fn drawDebugFpsCount( ng : *Engine ) void
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
 
-    def.drawTextLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, 16.0, 24.0, 16, def.G_ST.Graphic_Metrics_Colour.? );
+    def.drawTextLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 24.0 ), 16, def.G_ST.Graphic_Metrics_Colour.? );
   }
 }
 
@@ -245,6 +245,6 @@ inline fn drawDebugTpsCount( ng : *Engine ) void
     const sec : u64 = @intCast( tickTime.toSec() );
     const mic : u64 = @intCast( @rem( tickTime.toUs(), def.TimeVal.usPerSec() ));
 
-    def.drawTextLeftFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, 16.0, 56.0, 16, def.G_ST.Graphic_Metrics_Colour.? );
+    def.drawTextLeftFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 56.0 ), 16, def.G_ST.Graphic_Metrics_Colour.? );
   }
 }

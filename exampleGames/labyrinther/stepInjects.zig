@@ -169,8 +169,8 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     const screenCenter = def.getHalfScreenSize();
 
     def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
-    def.drawTextCenter( "Paused",                      @floatCast( screenCenter.x ), @floatCast( screenCenter.y - 20.0 ), 40.0, def.Colour.white );
-    def.drawTextCenter( "Press P or Enter to resume",  @floatCast( screenCenter.x ), @floatCast( screenCenter.y + 20.0 ), 20.0, def.Colour.white );
-    def.drawTextCenter( "Press V to change view mode", @floatCast( screenCenter.x ), @floatCast( screenCenter.y + 60.0 ), 20.0, def.Colour.white );
+    def.drawTextCenter( "Paused",                      .new( screenCenter.x, screenCenter.y - 20.0 ), 40.0, def.Colour.white );
+    def.drawTextCenter( "Press P or Enter to resume",  .new( screenCenter.x, screenCenter.y + 20.0 ), 20.0, def.Colour.white );
+    def.drawTextCenter( "Press V to change view mode", .new( screenCenter.x, screenCenter.y + 60.0 ), 20.0, def.Colour.white );
   }
 }

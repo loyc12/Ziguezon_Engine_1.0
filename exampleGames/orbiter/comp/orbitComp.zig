@@ -196,7 +196,7 @@ pub const OrbitComp = struct
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
     const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 );
 
-    def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, zoomedWidth * 2.0 ); // Velocity Vector
+    def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
@@ -217,8 +217,8 @@ pub const OrbitComp = struct
       vecMin1 = vecMin1.rot( .{ .r = a });
       vecMax1 = vecMax1.rot( .{ .r = a });
 
-      def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
-      def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
+      def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    @floatCast( zoomedWidth ));
+      def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, @floatCast( zoomedWidth ));
     }
   }
 
@@ -236,7 +236,7 @@ pub const OrbitComp = struct
       p2 = p1;
       p1 = self.getRelPosAtAngle( a );
 
-      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, zoomedWidth );
+      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, @floatCast( zoomedWidth * 2.0 ));
     }
 
     def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );

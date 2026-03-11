@@ -43,7 +43,7 @@ const utl = @import( "gameUtils.zig" );
 
   pub const Graphic_Ellipse_Facets   : u16 = 128;
 
-  pub const Camera_Zoom_Max          : f32 = 0.100000;
+  pub const Camera_Zoom_Max          : f32 = 1.000000;
   pub const Camera_Zoom_Min          : f32 = 0.000001;
   pub const Camera_Zoom_Init         : f32 = 0.000010;
 

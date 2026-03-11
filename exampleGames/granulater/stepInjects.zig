@@ -201,10 +201,10 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.drawTextCenter( "Paused",                      @floatCast( screenCenter.x ), @floatCast(( screenCenter.y * 2.0 ) - 96.0 ), 64.0, def.Colour.yellow );
-    def.drawTextCenter( "Press P or Enter to resume",  @floatCast( screenCenter.x ), @floatCast(( screenCenter.y * 2.0 ) - 32.0 ), 32.0, def.Colour.yellow );
+    def.drawTextCenter( "Paused",                      .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 96.0 ), 64.0, def.Colour.yellow );
+    def.drawTextCenter( "Press P or Enter to resume",  .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 32.0 ), 32.0, def.Colour.yellow );
   }
-  def.drawTextCenter( "Press Q to regenerate terrain", @floatCast( screenCenter.x ), @floatCast( 32.0 ), 24.0, def.Colour.nWhite );
+  def.drawTextCenter( "Press Q to regenerate terrain", .new( screenCenter.x, 32.0 ), 24.0, def.Colour.nWhite );
 
   if( SELECTED_TILE )| tile |
   {
@@ -218,6 +218,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       return;
     };
 
-    def.drawTextCenter( &noiseValBuff, @floatCast( screenCenter.x ), @floatCast( 96.0 ), 24.0, def.Colour.nWhite );
+    def.drawTextCenter( &noiseValBuff, .new( screenCenter.x, 96.0 ), 24.0, def.Colour.nWhite );
   }
 }
