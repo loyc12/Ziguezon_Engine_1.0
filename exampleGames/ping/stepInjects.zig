@@ -82,7 +82,7 @@ const MV_FAC_STEP : f64 = 0.4;  // Movement factor step ( size of increment / de
 const MV_FAC_CAP  : f64 = 16.0; // Movement factor cap, to prevent excessive speed
 
 const B_BASE_VEL : f64 = 500.0; // Base velocity of the ball when it is launched
-const B_GRAVITY  : f64 = 600.0; // Base gravitational acceleration of the ball
+const B_GRAVITY  : f64 = 800.0; // Base gravitational acceleration of the ball
 
 const WIN_SCORE : u8 = 5; // Score needed to win the game
 var   WINNER    : u8 = 0; // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet

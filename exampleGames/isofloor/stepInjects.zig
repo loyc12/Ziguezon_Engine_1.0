@@ -75,9 +75,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   // Keep the camera looking over the map area
   ng.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
 
-
-  const mouseScreenPos = def.ray.getMousePosition();
-  const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreenPos, ng.camera.toRayCam() );
+  const mouseWorldPos = def.getMouseWorldPos();
 
   const worldCoords = worldGrid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -254,8 +252,8 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   const screenCenter = def.getHalfScreenSize();
 
-  ng.resourceManager.drawFromSprite( "cubes_1", LOGO_1_ID, .{ .x = screenCenter.x - 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
-  ng.resourceManager.drawFromSprite( "cubes_1", LOGO_2_ID, .{ .x = screenCenter.x + 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
+  ng.resourceManager.drawScreenFromSprite( "cubes_1", LOGO_1_ID, .{ .x = screenCenter.x - 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
+  ng.resourceManager.drawScreenFromSprite( "cubes_1", LOGO_2_ID, .{ .x = screenCenter.x + 64, .y = 64 }, .{ .x = 4, .y = 4 }, .white );
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {

@@ -26,6 +26,11 @@ pub const Vec2 = struct
 
   pub inline fn new( x : f64, y : f64 ) Vec2 { return Vec2{ .x = x, .y = y }; }
 
+  pub inline fn fromRayVec2( rv : RayVec2 ) Vec2
+  {
+    return Vec2{ .x = @floatCast( rv.x ), .y = @floatCast( rv.y ) };
+  }
+
   pub inline fn fromAngleDeg( a : Angle ) Vec2 { return fromAngle( def.DtR( a )); }
   pub inline fn fromAngle(    a : Angle ) Vec2
   {

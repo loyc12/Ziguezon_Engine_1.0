@@ -40,7 +40,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
-  // Play a shake animation the camera when H is held
+  // Play a shake animation the camera when Q is held
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.i )){ sprite_i = @mod( sprite_i + 1, 256 ); }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.o )){ sprite_i = @mod( sprite_i - 1, 256 ); }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ s_time   = 0.0; }
@@ -48,7 +48,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   {
     const offset = shaker.getOffsetAtTime( s_time );
 
-    ng.camera.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+    ng.camera.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 0.2, }};
     s_time += ( 1.0 / 120.0 );
 
     def.log( .INFO, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
@@ -98,10 +98,10 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   // If left clicked, check if a tile was clicked on the example tilemap
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
   {
-    const mouseScreemPos = def.ray.getMousePosition();
-    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.camera.toRayCam() );
+    const mouseScreenPos = def.getMouseScreenPos();
+    const mouseWorldPos  = def.getMouseWorldPos();
 
-    def.log( .INFO, 0, @src(), "Mouse clicked at screen pos {d}:{d}, world pos {d}:{d}", .{ mouseScreemPos.x, mouseScreemPos.y, mouseWorldPos.x, mouseWorldPos.y });
+    def.log( .INFO, 0, @src(), "Mouse clicked at screen pos {d}:{d}, world pos {d}:{d}", .{ mouseScreenPos.x, mouseScreenPos.y, mouseWorldPos.x, mouseWorldPos.y });
 
     const worldCoords = exampleTilemap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -218,7 +218,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( SHOW_SPRITE_ANIM )
   {
-    ng.resourceManager.drawFromSprite( "cubes_1", @intCast( sprite_i ), .{ .x = width / 2, .y = height / 2, .a = .{ .r = sprite_r }}, .{ .x = 4.0, .y = 4.0 }, .white );
+    ng.resourceManager.drawScreenFromSprite( "cubes_1", @intCast( sprite_i ), .{ .x = width / 2, .y = height / 2, .a = .{ .r = sprite_r }}, .{ .x = 4.0, .y = 4.0 }, .white );
   }
 
   if( SHOW_SHAKE_GRAPHS )
@@ -241,7 +241,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
     {
       const x : f64 = @floatFromInt( pos );
       const offset  = shaker.getOffsetAtProg( @floatCast( x / width ));
-
 
       var hx : f64 = height * 0.25;
       var hy : f64 = height * 0.50;

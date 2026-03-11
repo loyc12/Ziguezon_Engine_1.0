@@ -16,7 +16,7 @@ pub const BASE_LINE_WIDTH : f64 = 2.0; // TODO : Move to engine settings
 // ================================ WORLD RENDERING ================================
 
 // Used in world render to cancel-out camera position
-inline fn wtsRay( worldPos : Vec2 ) def.RayVec2
+inline fn wtrRay( worldPos : Vec2 ) def.RayVec2
 {
   return def.G_NG.camera.worldToRender( worldPos ).toRayVec2();
 }
@@ -26,22 +26,22 @@ inline fn wtsRay( worldPos : Vec2 ) def.RayVec2
 
 pub inline fn drawPixel( pos : Vec2, col : Colour ) void
 {
-  ray.drawPixelV( wtsRay( pos ), col.toRayCol() );
+  ray.drawPixelV( wtrRay( pos ), col.toRayCol() );
 }
 pub inline fn drawMacroPixel( pos : Vec2, size : f64, col : Colour ) void
 {
-  ray.drawRectangleV( wtsRay( pos ), @floatCast( size ), col.toRayCol() );
+  ray.drawRectangleV( wtrRay( pos ), @floatCast( size ), col.toRayCol() );
 }
 
 pub inline fn drawLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f64 ) void
 {
-  ray.drawLineEx( wtsRay( p1 ), wtsRay( p2 ), @floatCast( width ), col.toRayCol() );
+  ray.drawLineEx( wtrRay( p1 ), wtrRay( p2 ), @floatCast( width ), col.toRayCol() );
 }
 // pub fn drawDotedLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f64, spacinf : f64 ) void
 
 pub inline fn drawCircle( pos : Vec2, radius : f64, col : Colour ) void
 {
-  ray.drawCircleV( wtsRay( pos ), @floatCast( radius), col.toRayCol() );
+  ray.drawCircleV( wtrRay( pos ), @floatCast( radius), col.toRayCol() );
 }
 pub inline fn drawCircleLines( pos : Vec2, radius : f64, col : Colour ) void // TODO : Add line thickness
 {
@@ -50,16 +50,16 @@ pub inline fn drawCircleLines( pos : Vec2, radius : f64, col : Colour ) void // 
 
 pub inline fn drawSimpleEllipse( pos : Vec2, radii : Vec2, col : Colour ) void
 {
-  ray.drawEllipseV( wtsRay( pos ), @floatCast( radii.x ), @floatCast( radii.y ), col.toRayCol() );
+  ray.drawEllipseV( wtrRay( pos ), @floatCast( radii.x ), @floatCast( radii.y ), col.toRayCol() );
 }
 pub inline fn drawSimpleEllipseLines( pos : Vec2, radii : Vec2, col : Colour ) void // TODO : Add line thickness
 {
-  ray.drawEllipseLinesV( wtsRay( pos ), @floatCast( radii.x ), @floatCast( radii.y ), col.toRayCol() );
+  ray.drawEllipseLinesV( wtrRay( pos ), @floatCast( radii.x ), @floatCast( radii.y ), col.toRayCol() );
 }
 
 pub inline fn drawSimpleRectangle( pos : Vec2, size : Vec2, col : Colour ) void
 {
-  ray.drawRectangleV( wtsRay( pos ), size.toRayVec2(), col.toRayCol() );
+  ray.drawRectangleV( wtrRay( pos ), size.toRayVec2(), col.toRayCol() );
 }
 pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, width : f64  ) void
 {
@@ -83,35 +83,35 @@ pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, w
 
 pub inline fn drawBasicTria( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour ) void
 {
-  ray.drawTriangle( wtsRay( p1 ), wtsRay( p2 ), wtsRay( p3 ), col.toRayCol() );
+  ray.drawTriangle( wtrRay( p1 ), wtrRay( p2 ), wtrRay( p3 ), col.toRayCol() );
 }
 pub inline fn drawBasicTriaLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f32 ) void
 {
-  ray.drawLineEx( wtsRay( p1 ), wtsRay( p2 ), width, col.toRayCol() );
-  ray.drawLineEx( wtsRay( p2 ), wtsRay( p3 ), width, col.toRayCol() );
-  ray.drawLineEx( wtsRay( p3 ), wtsRay( p1 ), width, col.toRayCol() );
+  ray.drawLineEx( wtrRay( p1 ), wtrRay( p2 ), width, col.toRayCol() );
+  ray.drawLineEx( wtrRay( p2 ), wtrRay( p3 ), width, col.toRayCol() );
+  ray.drawLineEx( wtrRay( p3 ), wtrRay( p1 ), width, col.toRayCol() );
 }
 
 pub inline fn drawBasicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour ) void
 {
-  ray.drawTriangle( wtsRay( p1 ), wtsRay( p2 ), wtsRay( p3 ), col.toRayCol() );
-  ray.drawTriangle( wtsRay( p3 ), wtsRay( p4 ), wtsRay( p1 ), col.toRayCol() );
+  ray.drawTriangle( wtrRay( p1 ), wtrRay( p2 ), wtrRay( p3 ), col.toRayCol() );
+  ray.drawTriangle( wtrRay( p3 ), wtrRay( p4 ), wtrRay( p1 ), col.toRayCol() );
 }
 pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f32  ) void
 {
-  ray.drawLineEx( wtsRay( p1 ), wtsRay( p2 ), width, col.toRayCol() );
-  ray.drawLineEx( wtsRay( p2 ), wtsRay( p3 ), width, col.toRayCol() );
-  ray.drawLineEx( wtsRay( p3 ), wtsRay( p4 ), width, col.toRayCol() );
-  ray.drawLineEx( wtsRay( p4 ), wtsRay( p1 ), width, col.toRayCol() );
+  ray.drawLineEx( wtrRay( p1 ), wtrRay( p2 ), width, col.toRayCol() );
+  ray.drawLineEx( wtrRay( p2 ), wtrRay( p3 ), width, col.toRayCol() );
+  ray.drawLineEx( wtrRay( p3 ), wtrRay( p4 ), width, col.toRayCol() );
+  ray.drawLineEx( wtrRay( p4 ), wtrRay( p1 ), width, col.toRayCol() );
 }
 
 pub inline fn drawBasicPoly( pos : Vec2, radius : f64, a : Angle, col : Colour, sides : u16 ) void
 {
-  ray.drawPoly( wtsRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), col.toRayCol() );
+  ray.drawPoly( wtrRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), col.toRayCol() );
 }
 pub inline fn drawBasicPolyLines( pos : Vec2, radius : f64, a : Angle, col : Colour, width : f64, sides : u16  ) void // TODO : Add line thickness
 {
-  ray.drawPolyLinesEx( wtsRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), @floatCast( width ), col.toRayCol() );
+  ray.drawPolyLinesEx( wtrRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), @floatCast( width ), col.toRayCol() );
 }
 
 
@@ -243,7 +243,7 @@ pub fn drawStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : 
 
 pub inline fn drawTexture( image : ray.Texture2D, pos : Vec2, a : Angle, scale : Vec2, col : Colour ) void
 {
-  ray.drawTextureEx( image, wtsRay( pos ), a, scale.x, col.toRayCol() );
+  ray.drawTextureEx( image, wtrRay( pos ), a, scale.x, col.toRayCol() );
 }
 
 pub inline fn drawTextCenterure( image : ray.Texture2D, pos : Vec2, a : Angle, scale : Vec2, col : Colour ) void

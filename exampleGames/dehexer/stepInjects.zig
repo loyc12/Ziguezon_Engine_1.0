@@ -353,7 +353,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   {
     const offset = shaker.getOffsetAtTime( shake_prog );
 
-    ng.camera.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 2, }};
+    ng.camera.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 0.1, }};
 
     shake_prog += ( 1.0 / 120.0 );
   }
@@ -380,8 +380,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ) or def.ray.isMouseButtonPressed( def.ray.MouseButton.right ))
   {
-    const mouseScreenPos = def.ray.getMousePosition();
-    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreenPos, ng.camera.toRayCam() );
+    const mouseWorldPos = def.getMouseWorldPos();
 
     const worldCoords = grid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 

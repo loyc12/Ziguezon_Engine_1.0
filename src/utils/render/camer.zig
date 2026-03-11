@@ -25,10 +25,10 @@ pub inline fn getHalfScreenSize()  Vec2
   return Vec2{ .x = getHalfScreenWidth(), .y = getHalfScreenHeight(), };
 }
 
-pub inline fn getMouseScreenPos() Vec2 { return def.ray.getMousePosition(); }
+pub inline fn getMouseScreenPos() Vec2 { return .fromRayVec2( def.ray.getMousePosition() ); }
 pub inline fn getMouseWorldPos()  Vec2
 {
-  return def.ray.getScreenToWorld2D( getMouseScreenPos(), def.ng.Cam2D );
+  return def.G_NG.camera.screenToWorld( getMouseScreenPos() );
 }
 
 inline fn getViewFromZoom( zoom : f64  ) Vec2 { return getHalfScreenSize().mulVal( 1.0 / zoom ); }
@@ -64,29 +64,37 @@ pub const Cam2D = struct
   // This is to cancel-out the fact the camera target is clamped at 0:0, to avoid float-point issues
   pub inline fn worldToRender( self : *const Cam2D, worldPos : Vec2 ) Vec2
   {
-      return worldPos.sub( self.pos.toVec2() );
+    return worldPos.sub( self.pos.toVec2() );
   }
-  pub inline fn renderToWorld( self : *const Cam2D, screenPos : Vec2 ) Vec2
-  {
-    return screenPos.add( self.pos.toVec2() );
-  }
+//pub inline fn renderToWorld( self : *const Cam2D, screenPos : Vec2 ) Vec2
+//{
+//  return screenPos.add( self.pos.toVec2() );
+//}
 
   // Used when you need a true screen-space coordinate ( UI overlay, hit detection, etc )
   // Matches what raylib's getWorldToScreen2D() and getScreenToWorld2D()
   pub inline fn worldToScreen( self : *const Cam2D, worldPos : Vec2 ) Vec2
   {
-    return worldPos.sub( self.pos.toVec2() ).mulVal( self.zoom ).add( getHalfScreenSize() );
+    return worldPos
+      .sub( self.pos.toVec2()   )  // make  camera-relative
+      .rot( self.pos.a          )  // apply zoom
+      .mulVal( self.zoom        )  // apply rotation around camera center
+      .add( getHalfScreenSize() ); // apply screen offset
   }
   pub inline fn screenToWorld( self : *const Cam2D, screenPos : Vec2 ) Vec2
   {
-    return screenPos.sub( getHalfScreenSize() ).mulVal( 1.0 / self.zoom ).add( self.pos.toVec2() );
+    return screenPos
+      .sub( getHalfScreenSize() )  // undo screen offset
+      .rot( self.pos.a.neg()    )  // undo rotation around camera center
+      .mulVal( 1.0 / self.zoom  )  // undo zoom
+      .add( self.pos.toVec2()   ); // restore world position
   }
 
 // NOTE : Validate .pos conversion before using
 //pub inline fn fromRayCam( rc : RayCam ) Cam2D
 //{
 //  var tmp = Cam2D{
-//    .pos  = VecA{ .x = rc.target.x, .y = rc.target.y, .a = Angle{ .r = rc.rotation }},
+//    .pos  = VecA{ .x = rc.target.x, .y = rc.target.y, .a = .newDeg( rc.rotation )},
 //    .zoom = rc.zoom,
 //    .view = .{},
 //  };
@@ -103,7 +111,7 @@ pub const Cam2D = struct
     //.target   = tmp.pos.toRayVec2(),
       .target   = .{ .x = 0.0, .y = 0.0 }, // Always zero - we handle world offset manually during worldRender step
       .offset   = getHalfScreenSize().toRayVec2(),
-      .rotation = tmp.pos.a.r,
+      .rotation = tmp.pos.a.toDeg(),
       .zoom     = @floatCast( tmp.zoom ),
     };
 

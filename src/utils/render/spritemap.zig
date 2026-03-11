@@ -6,7 +6,7 @@ const VecA   = def.VecA;
 const Angle  = def.Angle;
 const Colour = def.Colour;
 
-const Texture   = def.Texture;
+const Texture = def.Texture;
 const RayRect = def.RayRect;
 
 
@@ -158,6 +158,31 @@ pub const Spritemap = struct
   }
 
   pub fn drawSprite( self : *const Spritemap, index : u32, pos : VecA, scale : Vec2, col : def.Colour ) void
+  {
+    def.log( .TRACE, 0, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
+
+    const screenPos = def.G_NG.camera.worldToRender( pos.toVec2() );
+
+
+    if( self.atlas == null )
+    {
+      def.qlog( .ERROR, 0, @src(), "Trying to draw from uninitialized spritemap" );
+      return;
+    }
+
+    const src : RayRect = self.getSpriteRect( index );
+    const dst : RayRect =
+    .{
+      .x      = @floatCast( screenPos.x ),
+      .y      = @floatCast( screenPos.y ),
+      .width  = @floatCast( self.frameSize.x * scale.x ),
+      .height = @floatCast( self.frameSize.y * scale.y ),
+    };
+
+    self.atlas.?.drawPro( src, dst, self.frameSize.mul( scale ).mulVal( 0.5 ).toRayVec2(), pos.a.toDeg(), col.toRayCol() );
+  }
+
+  pub fn drawScreenSprite( self : *const Spritemap, index : u32, pos : VecA, scale : Vec2, col : def.Colour ) void
   {
     def.log( .TRACE, 0, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
 

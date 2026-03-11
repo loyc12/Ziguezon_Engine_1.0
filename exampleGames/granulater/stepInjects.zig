@@ -61,8 +61,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
   {
-    const mouseScreemPos = def.ray.getMousePosition();
-    const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.camera.toRayCam() );
+    const mouseWorldPos = def.getMouseWorldPos();
 
     const worldCoords = worldGrid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -197,7 +196,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   const screenCenter = def.getHalfScreenSize();
 
-  def.drw_u.drawRectanglePlus( .{ .x = screenCenter.x, .y = 0 }, .{ .x = screenCenter.x, .y = 128 }, .{}, .{ .r = 0, .g = 0, .b = 0, .a = 64 });
+  def.drwS_u.drawRectanglePlus( .{ .x = screenCenter.x, .y = 0 }, .{ .x = screenCenter.x, .y = 128 }, .{}, .{ .r = 0, .g = 0, .b = 0, .a = 64 });
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {

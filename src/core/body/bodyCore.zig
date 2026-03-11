@@ -85,7 +85,7 @@ pub const Body = struct
       .shape  = params.shape,
     };
 
-    def.log( .INFO, 0, @src(), "Created body with shape : {s}", .{ @tagName( params.shape )});
+  //def.log( .INFO, 0, @src(), "Created body with shape : {s}", .{ @tagName( params.shape )});
 
 
     // NOTE : init stuff here if we ever need to

@@ -81,20 +81,14 @@ pub const Noise2D = struct
   {
     const coords : Coords2 =
     .{
-      .x = @intFromFloat( @floor( pos.x )),
-      .y = @intFromFloat( @floor( pos.y )),
+      .x = @intFromFloat( @floor( pos.x + @sqrt( 0.5 ))),
+      .y = @intFromFloat( @floor( pos.y + @sqrt( 0.5 ))),
     };
 
-    const cellPos = pos.sub( coords.toVec2() );
+    const cellPos = pos.addVal( @sqrt( 0.5 ) ).sub( coords.toVec2() );
 
     const u = quinticFade( @floatCast( cellPos.x ));
     const v = quinticFade( @floatCast( cellPos.y ));
-
-  // NOTE : Debug implementation to test quinticFade() & hash2() only ( no gradient interpolation )
-  //const n00 = toFloat( hash2( self.seed, pos.toCoords2().add( .{ .x = 0, .y = 0 })));
-  //const n10 = toFloat( hash2( self.seed, pos.toCoords2().add( .{ .x = 1, .y = 0 })));
-  //const n01 = toFloat( hash2( self.seed, pos.toCoords2().add( .{ .x = 0, .y = 1 })));
-  //const n11 = toFloat( hash2( self.seed, pos.toCoords2().add( .{ .x = 1, .y = 1 })));
 
     const n00 = gradDotProd( self.seed, coords.add( .{ .x = 0, .y = 0 }), cellPos.sub( .{ .x = 0, .y = 0 }) );
     const n10 = gradDotProd( self.seed, coords.add( .{ .x = 1, .y = 0 }), cellPos.sub( .{ .x = 1, .y = 0 }) );

@@ -77,8 +77,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.e )){ mazeMap.mapPos.a = mazeMap.mapPos.a.addDeg( 1 ); }
 
 
-  const mouseScreemPos = def.ray.getMousePosition();
-  const mouseWorldPos  = def.ray.getScreenToWorld2D( mouseScreemPos, ng.camera.toRayCam() );
+  const mouseWorldPos = def.getMouseWorldPos();
 
   const worldCoords = mazeMap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 

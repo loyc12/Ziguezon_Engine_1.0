@@ -472,9 +472,9 @@ pub const Tilemap = struct
     }
   }
 
-  pub fn findHitTileCoords( self : *const Tilemap, p : Vec2 ) ?Coords2
+  pub fn findHitTileCoords( self : *const Tilemap, worldPos : Vec2 ) ?Coords2
   {
-    def.log( .TRACE, 0, @src(), "Finding hit tile at p {d}:{d} for Tilemap {d}", .{ p.x, p.y, self.id });
+    def.log( .TRACE, 0, @src(), "Finding hit tile at p {d}:{d} for Tilemap {d}", .{ worldPos.x, worldPos.y, self.id });
 
     if( !self.isInit() )
     {
@@ -482,9 +482,9 @@ pub const Tilemap = struct
       return null;
     }
 
-    return tlmpShape.getCoordsFromAbsPos( self, p ) orelse
+    return tlmpShape.getCoordsFromAbsPos( self, worldPos ) orelse
     {
-      def.log( .TRACE, 0, @src(), "Failed to get tile coordinates in tilemap {d} at {d}:{d} : return null", .{ self.id, p.x, p.y });
+      def.log( .TRACE, 0, @src(), "Failed to get tile coordinates in tilemap {d} at {d}:{d} : return null", .{ self.id, worldPos.x, worldPos.y });
       return null;
     };
   }

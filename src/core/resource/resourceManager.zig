@@ -182,4 +182,16 @@ pub const ResourceManager = struct
     spritemap.drawSprite( index, pos, scale, col );
   }
 
+  pub fn drawScreenFromSprite( self : *ResourceManager, name : [ :0 ]const u8, index : u32, pos : def.VecA, scale : def.Vec2, col : def.Colour ) void
+  {
+    const spritemap = self.getSprite( name ) orelse
+    {
+      def.log( .ERROR, 0, @src(), "Sprite '{s}' not found", .{ name });
+      return;
+    };
+
+    def.log( .TRACE, 0, @src(), "Drawing from sprite '{s}'", .{ name });
+    spritemap.drawScreenSprite( index, pos, scale, col );
+  }
+
 };
