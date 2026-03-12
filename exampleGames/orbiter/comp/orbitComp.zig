@@ -191,7 +191,7 @@ pub const OrbitComp = struct
 
   // ================================ RENDERING ================================
 
-  pub fn renderDebug( self : *const OrbitComp, selfPos : Vec2, selfRadius : f64, moonDensity : f64 ) void
+  pub fn renderDebug( self : *const OrbitComp, orbitedPos : Vec2, selfPos : Vec2, selfRadius : f64, moonDensity : f64 ) void
   {
     const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
     const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 );
@@ -220,6 +220,9 @@ pub const OrbitComp = struct
       def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    @floatCast( zoomedWidth ));
       def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, @floatCast( zoomedWidth ));
     }
+
+    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
   }
 
   pub fn renderPath( self : *const OrbitComp, orbitedPos : Vec2 ) void
@@ -238,9 +241,6 @@ pub const OrbitComp = struct
 
       def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, @floatCast( zoomedWidth * 2.0 ));
     }
-
-    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
-    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
   }
 
   pub fn renderLPs( self : *const OrbitComp, orbitedPos : Vec2, maxLP : usize ) void

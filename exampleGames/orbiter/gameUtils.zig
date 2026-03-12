@@ -85,9 +85,10 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       },
 
 
+
       4 => // EARTH
       {
-      //glb.homeworldId = 4;
+      //glb.homeworldId = 5;
 
         orbitComp.orbitedMass = glb.STLR_DATA.get( .SOL,   .MASS );
         orbitComp.orbiterMass = glb.STLR_DATA.get( .TERRA, .MASS );
@@ -127,7 +128,6 @@ pub fn initDebugSystem( ng : *def.Engine ) void
         bodyComp.bodyType     = .MOON;
       },
 
-
       6 => // MARS
       {
         orbitComp.orbitedMass = glb.STLR_DATA.get( .SOL,  .MASS );
@@ -158,6 +158,7 @@ pub fn initDebugSystem( ng : *def.Engine ) void
 
 
         bodyComp.mass         = glb.STLR_DATA.get( .PHOBOS, .MASS   );
+
         bodyComp.radius       = glb.STLR_DATA.get( .PHOBOS, .RADIUS );
 
         bodyComp.bodyType     = .COMET;
@@ -311,7 +312,7 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
 
       if( glb.targetId == id )
       {
-        orbiter.?.renderDebug( orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
+        orbiter.?.renderDebug( orbitedTrans.?.pos.toVec2(), orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
         orbiter.?.renderLPs(   orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
       }
 

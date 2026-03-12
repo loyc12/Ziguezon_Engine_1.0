@@ -26,13 +26,13 @@ pub const StellarBodyEnum = enum
   MERCURY,
 
   VENUS,
-//  ZOOZVE,      // QUASI-SATELLITE
+    ZOOZVE,      // QUASI-SATELLITE
 
   TERRA,
     LUNA,
 //  CRUITHNE,    // CO-ORBITAL OBJECT
 
-//EROS,
+  EROS,
 
   MARS,
     PHOBOS,
@@ -128,6 +128,7 @@ pub fn loadStellarData() void
   stellarData.set( .SOL,      .APOAP,                  0 );
   stellarData.set( .SOL,      .LONG,                   0 );
 
+
   stellarData.set( .MERCURY,  .MASS,     330_103_000_000 );
   stellarData.set( .MERCURY,  .RADIUS,         2_439.400 );
   stellarData.set( .MERCURY,  .PERIAP,        46_000_000 );
@@ -141,18 +142,31 @@ pub fn loadStellarData() void
   stellarData.set( .VENUS,    .APOAP,        108_940_000 );
   stellarData.set( .VENUS,    .LONG,             131.530 );
 
+  //stellarData.set( .ZOOZVE, .MASS,               0.024 ); // Estimated
+  //stellarData.set( .ZOOZVE, .RADIUS,             0.236 );
+  //stellarData.set( .ZOOZVE, .PERIAP,        63_848_371 );
+  //stellarData.set( .ZOOZVE, .APOAP,        152_679_586 );
+  //stellarData.set( .ZOOZVE, .LONG,              227.03 );
+
 
   stellarData.set( .TERRA,    .MASS,   5_972_170_000_000 );
   stellarData.set( .TERRA,    .RADIUS,         6_371.008 );
   stellarData.set( .TERRA,    .PERIAP,       147_098_450 );
   stellarData.set( .TERRA,    .APOAP,        152_097_597 );
-  stellarData.set( .TERRA,    .LONG,             102.950 );
+  stellarData.set( .TERRA,    .LONG,             102.947 );
 
     stellarData.set( .LUNA,   .MASS,      73_460_000_000 );
     stellarData.set( .LUNA,   .RADIUS,         1_737.400 );
     stellarData.set( .LUNA,   .PERIAP,           362_600 );
     stellarData.set( .LUNA,   .APOAP,            405_400 );
     stellarData.set( .LUNA,   .LONG,             218.030 );
+
+
+  stellarData.set( .EROS,     .MASS,               6_687 );
+  stellarData.set( .EROS,     .RADIUS,            16.840 );
+  stellarData.set( .EROS,     .PERIAP,       169_554_226 );
+  stellarData.set( .EROS,     .APOAP,        266_658_204 );
+  stellarData.set( .EROS,     .LONG,             123.140 );
 
 
   stellarData.set( .MARS,     .MASS,     641_691_000_000 );
@@ -171,5 +185,5 @@ pub fn loadStellarData() void
     stellarData.set( .DEIMOS, .RADIUS,             6.270 );
     stellarData.set( .DEIMOS, .PERIAP,        23_455.500 );
     stellarData.set( .DEIMOS, .APOAP,         23_470.900 );
-    stellarData.set( .DEIMOS, .LONG,               0.000 );
+    stellarData.set( .DEIMOS, .LONG,                   0 );
 }

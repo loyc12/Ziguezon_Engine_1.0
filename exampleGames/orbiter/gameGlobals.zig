@@ -36,10 +36,10 @@ pub var bodyStore    : BodyStore    = .{};
 pub var starCompInst : str.StarComp = .{};
 
 
-pub const ENTITY_COUNT : usize = 8;
+pub const ENTITY_COUNT : usize = 8; // @typeInfo( stlr_d.StellarBodyEnum ).@"enum".fields.len;
 
-pub var   starId       : def.EntityId = 1;
-pub var   homeworldId  : def.EntityId = 4;
+pub var   starId       : def.EntityId = 1; // SUN
+pub var   homeworldId  : def.EntityId = 4; // EARTH
 
 pub var   targetId     : def.EntityId = 0;
 pub var   entityArray  : [ ENTITY_COUNT ]def.Entity = std.mem.zeroes([ ENTITY_COUNT ]def.Entity );
@@ -50,11 +50,12 @@ pub var   entityArray  : [ ENTITY_COUNT ]def.Entity = std.mem.zeroes([ ENTITY_CO
 
 // Mass     : Gigaton   ( Gt ) = 1e12 kg ( 1_000_000_000_000 )
 // Distance : Kilometer ( km ) = 1_000 m
-// Time     : Week      ( wk ) = 604_800 s
+// Time     : Day       ( Dy ) = 86_400 s
 // Density  : Gt/km³           = g/cm³
 
 
-pub const G_FACTOR : f64 = 24_410; // km³/Gt¹wk²
+pub const G_FACTOR : f64 = 498.163; // km³/Gt¹wk²
+                                    // km³/Gt¹Dy²
 
 
 

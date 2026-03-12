@@ -47,6 +47,7 @@ pub const Economy = struct
 
   location  : EconLoc,
   isActive  : bool = false,
+  itrCount  : u64  = 0,
 
   hasAtmo   : bool,
   sunshine  : f64 = 0.0,
@@ -681,12 +682,11 @@ pub const Economy = struct
 
   pub fn logMetrics( self : *Economy ) void
   {
-
-    def.qlog( .INFO, 0, @src(), "Logging other metrics :" );
-    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
-    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcologyFactor() });
-    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaUsed, self.areaMax });
-    def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
+    def.log( .INFO, 0, @src(), "Logging other metrics for day {d}:", .{ self.itrCount });
+    def.log( .CONT, 0, @src(), "Sun access   : {d:.6}",              .{ self.sunAccess });
+    def.log( .CONT, 0, @src(), "Eco factor   : {d:.6}",              .{ self.getEcologyFactor() });
+    def.log( .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}",     .{ self.areaUsed, self.areaMax });
+    def.log( .CONT, 0, @src(), "Build queue  : {d}",                 .{ self.buildQueue.?.getEntryCount() });
   }
 
   pub fn resetCountMetrics( self : *Economy ) void // Zeroing out the previous metrics
@@ -732,6 +732,8 @@ pub const Economy = struct
 
   pub fn tickEcon( self : *Economy, newSunshine : f64 ) void
   {
+    self.itrCount += 1;
+
     self.updateResCaps();
     self.updateAreas();
     self.updateSunshine( newSunshine );
