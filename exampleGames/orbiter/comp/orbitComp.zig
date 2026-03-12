@@ -22,15 +22,48 @@ pub const OrbitComp = struct
 
   // Min/Max radius approach
   minRadius : f64 = 200.0, // Periapsis (closest)
-  maxRadius : f64 = 600.0, // Apoapsis (farthest)
+  maxRadius : f64 = 600.0, // Apoapsis  (farthest)
 
   // Eccentricity and Procession direction
   orientation : f32  = 0.0,   // Periapsis angle ( 0 to 2π, 0 => +X )
   retrograde  : bool = false, // If the orbit is counter-clockwise visually ( clockwise mathematically )
 
   // Current position
-  angularPos  : f32 = 0.0, // Current position along orbit ( 0 to 2π, 0 => +X )
-  angularVel  : f32 = 0.0,
+  angularPos : f32 = 0.0, // Current position along orbit ( 0 to 2π, 0 => +X )
+  angularVel : f32 = 0.0,
+
+  // Other metrics
+  period : f32 = 0.0, // how many days to complete a full orbit around its path
+
+  pub fn initFromParams(
+    orbitedMass : f64,  orbiterMass : f64,
+    minRadius   : f64,  maxRadius   : f64,
+    orientation : f64,  periodOvrd  : ?f32, // If null, period is calculated from masses and orbit shape
+  ) OrbitComp
+  {
+    var self = OrbitComp
+    {
+      .orbitedMass = orbitedMass,
+      .orbiterMass = orbiterMass,
+      .minRadius   = minRadius,
+      .maxRadius   = maxRadius,
+      .orientation = @floatCast( orientation ),
+      .period      = 0.0,
+    };
+
+    if( periodOvrd )| p |
+    {
+      self.period = p; // Use provided period
+    }
+    else
+    {
+      self.setPeriodFromMass();
+    }
+
+    self.angularVel = self.getAngularVel();
+
+    return self;
+  }
 
 
   pub inline fn getSemiMajor( self : *const OrbitComp ) f64
@@ -41,6 +74,22 @@ pub const OrbitComp = struct
   {
     // Clamping avoids some high eccentricity math issues
     return def.clmp(( self.maxRadius - self.minRadius ) / ( self.maxRadius + self.minRadius ), 0.0, 0.999 );
+  }
+
+  pub inline fn setPeriodFromMass( self : *OrbitComp ) void
+  {
+    const semiMajor = self.getSemiMajor();
+
+    if( semiMajor < 1.0 )
+    {
+      def.qlog( .WARN, 0, @src(), "Unable to calculate period : semi major axis too small" );
+      return;
+    }
+
+    const semiMajor3 = semiMajor * semiMajor * semiMajor;
+    const totalMass  = self.orbitedMass + self.orbiterMass;
+
+    self.period = @floatCast( def.TAU * @sqrt( semiMajor3 / ( G * totalMass )));
   }
 
   pub inline fn getCurrentRadius( self : *const OrbitComp ) f64
@@ -64,14 +113,11 @@ pub const OrbitComp = struct
   // T² ∝ a³/M  →  ω = √(GM/a³)
   pub inline fn getMeanAngularVel( self : *const OrbitComp ) f32 // AKA mean motion
   {
-    const semiMajor = self.getSemiMajor();
-
     // Prevent division by zero / very small values
-    if( semiMajor < 1.0 ){ return 0.0; }
+    if( self.period < 1.0 ){ return 0.0; }
 
-    const semiMajor3 = semiMajor * semiMajor * semiMajor;
-
-    const meanAngVel = @sqrt( G * ( self.orbitedMass + self.orbiterMass ) / semiMajor3 );
+    // ω = 2π / T
+    const meanAngVel = def.TAU / self.period;
 
     return switch( self.retrograde ) // negative angularVel == retrograde orbits
     {

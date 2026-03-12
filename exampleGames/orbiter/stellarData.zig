@@ -123,10 +123,10 @@ pub const StellarBodyEnum = enum
 pub fn loadStellarData() void
 {
   stellarData.set( .SOL,      .MASS,   1_988_475_000_000_000_000 );
-  stellarData.set( .SOL,      .RADIUS,           695_700 );
-  stellarData.set( .SOL,      .PERIAP,                 0 );
-  stellarData.set( .SOL,      .APOAP,                  0 );
-  stellarData.set( .SOL,      .LONG,                   0 );
+  stellarData.set( .SOL,      .RADIUS,                   695_700 );
+  stellarData.set( .SOL,      .PERIAP,                         0 );
+  stellarData.set( .SOL,      .APOAP,                          0 );
+  stellarData.set( .SOL,      .LONG,                           0 );
 
 
   stellarData.set( .MERCURY,  .MASS,     330_103_000_000 );
