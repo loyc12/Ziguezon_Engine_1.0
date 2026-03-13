@@ -55,7 +55,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
   }
 
   // Setting up components
-  utl.initDebugSystem( ng );
+  utl.initStellarSystem( ng );
 }
 
 pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()

@@ -3,13 +3,37 @@ const def = @import( "defs" );
 
 const glb = @import( "gameGlobals.zig" );
 const orb = @import( "comp/orbitComp.zig" );
+const bdy = @import( "comp/bodyComp.zig" );
 const ecn = @import( "comp/economy.zig" );
 
 
 
 // ================================ STATE INJECT ================================
 
-pub fn initDebugSystem( ng : *def.Engine ) void
+inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : glb.stlr_d.StellarBodyEnum, orbitedId : def.EntityId ) void
+{
+  const orbiterMass = glb.STLR_DATA.get( bodyName, .MASS );
+  var   orbitedMass = glb.STLR_DATA.get( .SOL,     .MASS );
+
+  if( orbitedId != glb.starId ){ if( glb.bodyStore.get( orbitedId ))| b |
+  {
+    orbitedMass = b.mass;
+  }}
+
+  orbitComp.* = .initFromParams(
+    orbitedMass,       orbiterMass,
+    glb.STLR_DATA.get( bodyName, .PERIAP ),
+    glb.STLR_DATA.get( bodyName, .APOAP  ),
+    glb.STLR_DATA.get( bodyName, .LONG   ),
+    null,
+  );
+  orbitComp.orbitedID = orbitedId;
+
+  bodyComp.mass   = orbiterMass;
+  bodyComp.radius = glb.STLR_DATA.get( bodyName, .RADIUS );
+}
+
+pub fn initStellarSystem( ng : *def.Engine ) void
 {
   // Setting up relevant components
   for( 0..glb.ENTITY_COUNT )| idx |
@@ -52,55 +76,20 @@ pub fn initDebugSystem( ng : *def.Engine ) void
     {
       2 => // MERCURY
       {
-        orbitComp = .initFromParams(
-          glb.STLR_DATA.get( .SOL,     .MASS   ),
-          glb.STLR_DATA.get( .MERCURY, .MASS   ),
-          glb.STLR_DATA.get( .MERCURY, .PERIAP ),
-          glb.STLR_DATA.get( .MERCURY, .APOAP  ),
-          glb.STLR_DATA.get( .MERCURY, .LONG   ),
-          null,
-        );
-
-        bodyComp.mass   = glb.STLR_DATA.get( .MERCURY, .MASS   );
-        bodyComp.radius = glb.STLR_DATA.get( .MERCURY, .RADIUS );
-
+        initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 );
         bodyComp.bodyType = .PLANET;
       },
       3 => // VENUS
       {
-        orbitComp = .initFromParams(
-          glb.STLR_DATA.get( .SOL,   .MASS   ),
-          glb.STLR_DATA.get( .VENUS, .MASS   ),
-          glb.STLR_DATA.get( .VENUS, .PERIAP ),
-          glb.STLR_DATA.get( .VENUS, .APOAP  ),
-          glb.STLR_DATA.get( .VENUS, .LONG   ),
-          null,
-        );
-
-        bodyComp.mass   = glb.STLR_DATA.get( .VENUS, .MASS   );
-        bodyComp.radius = glb.STLR_DATA.get( .VENUS, .RADIUS );
-
+        initStellarBody( &orbitComp, &bodyComp, .VENUS, 1 );
         bodyComp.bodyType = .PLANET;
       },
 
 
-
       4 => // EARTH
       {
-        orbitComp = .initFromParams(
-          glb.STLR_DATA.get( .SOL,     .MASS   ),
-          glb.STLR_DATA.get( .TERRA, .MASS   ),
-          glb.STLR_DATA.get( .TERRA, .PERIAP ),
-          glb.STLR_DATA.get( .TERRA, .APOAP  ),
-          glb.STLR_DATA.get( .TERRA, .LONG   ),
-          null,
-        );
-
-        bodyComp.mass   = glb.STLR_DATA.get( .TERRA, .MASS   );
-        bodyComp.radius = glb.STLR_DATA.get( .TERRA, .RADIUS );
-
+        initStellarBody( &orbitComp, &bodyComp, .TERRA, 1 );
         bodyComp.bodyType = .PLANET;
-
         bodyComp.initEcon( .GROUND );
 
         // NOTE : DEBUG
@@ -108,74 +97,27 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       },
       5 => // MOON
       {
-        orbitComp = .initFromParams(
-          glb.STLR_DATA.get( .TERRA, .MASS   ),
-          glb.STLR_DATA.get( .LUNA,  .MASS   ),
-          glb.STLR_DATA.get( .LUNA,  .PERIAP ),
-          glb.STLR_DATA.get( .LUNA,  .APOAP  ),
-          glb.STLR_DATA.get( .LUNA,  .LONG   ),
-          null,
-        );
-
-        orbitComp.orbitedID  = 4; // Terra
-
-        bodyComp.mass   = glb.STLR_DATA.get( .LUNA, .MASS   );
-        bodyComp.radius = glb.STLR_DATA.get( .LUNA, .RADIUS );
-
+        initStellarBody( &orbitComp, &bodyComp, .LUNA, 4 );
         bodyComp.bodyType = .MOON;
       },
 
+
       6 => // MARS
       {
-        orbitComp = .initFromParams(
-          glb.STLR_DATA.get( .SOL,  .MASS   ),
-          glb.STLR_DATA.get( .MARS, .MASS   ),
-          glb.STLR_DATA.get( .MARS, .PERIAP ),
-          glb.STLR_DATA.get( .MARS, .APOAP  ),
-          glb.STLR_DATA.get( .MARS, .LONG   ),
-          null,
-        );
-
-        bodyComp.mass   = glb.STLR_DATA.get( .MARS, .MASS   );
-        bodyComp.radius = glb.STLR_DATA.get( .MARS, .RADIUS );
-
+        initStellarBody( &orbitComp, &bodyComp, .MARS, 1 );
         bodyComp.bodyType = .PLANET;
       },
       7 => // PHOBOS
       {
-        orbitComp = .initFromParams(
-          glb.STLR_DATA.get( .MARS,   .MASS   ),
-          glb.STLR_DATA.get( .PHOBOS, .MASS   ),
-          glb.STLR_DATA.get( .PHOBOS, .PERIAP ),
-          glb.STLR_DATA.get( .PHOBOS, .APOAP  ),
-          glb.STLR_DATA.get( .PHOBOS, .LONG   ),
-          null,
-        );
-        orbitComp.orbitedID = 6; // Mars
-
-        bodyComp.mass   = glb.STLR_DATA.get( .PHOBOS, .MASS   );
-        bodyComp.radius = glb.STLR_DATA.get( .PHOBOS, .RADIUS );
-
+        initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 );
         bodyComp.bodyType = .COMET;
       },
       8 => // DEIMOS
       {
-        orbitComp = .initFromParams(
-          glb.STLR_DATA.get( .MARS,   .MASS   ),
-          glb.STLR_DATA.get( .DEIMOS, .MASS   ),
-          glb.STLR_DATA.get( .DEIMOS, .PERIAP ),
-          glb.STLR_DATA.get( .DEIMOS, .APOAP  ),
-          glb.STLR_DATA.get( .DEIMOS, .LONG   ),
-          null,
-        );
-
-        orbitComp.orbitedID = 6; // Mars
-
-        bodyComp.mass   = glb.STLR_DATA.get( .DEIMOS, .MASS   );
-        bodyComp.radius = glb.STLR_DATA.get( .DEIMOS, .RADIUS );
-
+        initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 );
         bodyComp.bodyType = .COMET;
       },
+
 
       else => // Wil ignore all subsequent Ids ( should be none )
       {
@@ -184,8 +126,12 @@ pub fn initDebugSystem( ng : *def.Engine ) void
       },
     }
 
+    var startPos = orbitComp.getRelPos(); // Get initial position from orbit
 
-    const startPos = orbitComp.getAbsPos( .{} ); // Get initial position from orbit
+    if( orbitComp.orbitedID != glb.starId ){ if( glb.transStore.get( orbitComp.orbitedID ))| trans |
+    {
+      startPos = startPos.add( trans.pos.toVec2() );
+    }}
 
     _ = glb.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
     _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( bodyComp.radius, bodyComp.radius ), .shape = .ELLI });

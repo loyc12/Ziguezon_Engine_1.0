@@ -61,7 +61,7 @@ pub const G_FACTOR : f64 = 498.163; // km³/Gt¹wk²
 
 //  ================ DATA LOADING ================
 
-    const stlr_d = @import( "stellarData.zig" );
+pub const stlr_d = @import( "stellarData.zig" );
 pub const STLR_DATA = &stlr_d.stellarData;
 
 pub fn loadAllData() void
