@@ -37,6 +37,16 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
   bodyComp.radius = glb.STLR_DATA.get( bodyName, .RADIUS );
 }
 
+inline fn getBodyMinSize( bodyType : bdy.BodyType ) def.Vec2
+{
+  return switch( bodyType )
+  {
+    .PLANET => .new( 4, 4 ),
+    .MOON   => .new( 3, 3 ),
+    .COMET  => .new( 2, 2 ),
+  };
+}
+
 pub fn initStellarSystem( ng : *def.Engine ) void
 {
   // Setting up relevant components
@@ -63,8 +73,8 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
       const r = glb.starCompInst.radius;
 
-      _ = glb.transStore.add(  id, .{ .pos = .{} });
-      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .scale = .new( r, r ), .shape = .ELLI });
+      _ = glb.transStore.add(  id, .{ .pos    = .{} });
+      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .minSize = .new( 6, 6 ), .scale = .new( r, r ), .shape = .ELLI });
     //_ = glb.spriteStore.add( id, .{} );
 
       continue;
@@ -142,7 +152,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
     }}
 
     _ = glb.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
-    _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .scale = .new( bodyComp.radius, bodyComp.radius ), .shape = .ELLI });
+    _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .minSize = getBodyMinSize( bodyComp.bodyType ), .scale = .new( bodyComp.radius, bodyComp.radius ), .shape = .ELLI });
   //_ = glb.spriteStore.add( id, .{} );
 
     _ = glb.orbitStore.add(  id, orbitComp );

@@ -46,15 +46,30 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  scale  : Vec2,
-  shape  : def.Shape2D = .RECT,
-  colour : def.Colour = .nWhite,
+  scale   : Vec2,
+  minSize : Vec2        = .{}, // Minimum screen-space size, inactive if 0
+  shape   : def.Shape2D = .RECT,
+  colour  : def.Colour  = .nWhite,
 
 //minScale : Vec2 = .{},
 
 
   pub inline fn setscale( self : *HitboxComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
   pub inline fn getscale( self : *const HitboxComp     ) Vec2 { return self.sprite.scale; }
+
+  // Returns the effective render scale, clamping to minSize in screen space if set
+  inline fn getRenderScale( self : *const ShapeComp ) Vec2
+  {
+    const zoom = def.G_NG.camera.getZoom(); // fetch current zoom factor
+
+    var renderScale = self.scale.mulVal( zoom );
+
+    if( self.minSize.x > 0.0 ) { renderScale.x = @max( renderScale.x, self.minSize.x ); }
+    if( self.minSize.y > 0.0 ) { renderScale.y = @max( renderScale.y, self.minSize.y ); }
+
+    // Convert back to world-space scale for the draw calls
+    return renderScale.mulVal( 1.0 / zoom );
+  }
 
   pub inline fn getAABB( self : *const ShapeComp, selfPos : VecA ) Box2
   {
@@ -65,7 +80,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
   pub fn render( self : *const ShapeComp, selfPos : VecA ) void
   {
     const p = selfPos.toVec2();
-    const s = self.scale;
+    const s = self.getRenderScale();
     const a = selfPos.a;
     const c = self.colour;
 
