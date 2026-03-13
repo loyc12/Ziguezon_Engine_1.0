@@ -9,6 +9,8 @@ const Angle   = def.Angle;
 const RayVec2 = def.RayVec2;
 const RayCam  = def.RayCam;
 
+
+
 // ================================ HELPER FUNCTIONS ================================
 
 pub inline fn getScreenWidth()  f64 { return @floatFromInt( def.ray.getScreenWidth()  ); }
@@ -28,7 +30,7 @@ pub inline fn getHalfScreenSize()  Vec2
 pub inline fn getMouseScreenPos() Vec2 { return .fromRayVec2( def.ray.getMousePosition() ); }
 pub inline fn getMouseWorldPos()  Vec2
 {
-  return def.G_NG.camera.screenToWorld( getMouseScreenPos() );
+  return def.G_CAM.screenToWorld( getMouseScreenPos() );
 }
 
 inline fn getViewFromZoom( zoom : f64  ) Vec2 { return getHalfScreenSize().mulVal( 1.0 / zoom ); }

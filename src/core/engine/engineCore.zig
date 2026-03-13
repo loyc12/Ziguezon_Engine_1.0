@@ -1,7 +1,6 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Cam2D = def.Cam2D;
 const Box2  = def.Box2;
 const Vec2  = def.Vec2;
 const VecA  = def.VecA;
@@ -27,9 +26,7 @@ pub const Engine = struct
   state : e_ng_state         = .OFF,
   times : ngnTime.EngineTime = .{},
 
-  // Engine Substructures
-  camera : Cam2D = .{},
-
+  // Engine Managers
   resourceManager   : def.res_m.ResourceManager = .{},
   bodyManager       : def.bdy_m.BodyManager     = .{},
   tilemapManager    : def.tlm_m.TilemapManager  = .{},
@@ -58,6 +55,8 @@ pub const Engine = struct
   pub inline fn getRealFrameSDT(   self : *Engine ) f32 { return( self.times.getScaledLastFrameDeltaFloat()   ); }
   pub inline fn getTargetTickSDT(  self : *Engine ) f32 { return( self.times.getScaledTargetTickDeltaFloat()  ); }
   pub inline fn getRealTickSDT(    self : *Engine ) f32 { return( self.times.getScaledLastTickDeltaFloat()    ); }
+
+  pub inline fn getCamera( self : *Engine ) *def.Cam2D { _ = self; return def.G_CAM; } // Shortcut
 
 
   // ================================ ENGINE STATE FUNCTIONS ================================

@@ -3,7 +3,8 @@ pub const ray = @import( "raylib" );
 
 
 pub var G_RNG : rng_u.Randomiser = .{};
-
+pub var G_NG  : Engine = .{}; // Global game engine instance
+pub var G_CAM : Cam2D  = .{}; // Global camera2D instance
 
 // TODO : split engineDefs from utilDefs, have the former include the later
 
@@ -66,7 +67,6 @@ pub inline fn tryHook( tag : ghk_h.e_hook_tag, cntx : HookCntx ) void { G_HK.try
 
 pub const ng            = @import( "core/engine/engineCore.zig" );
 pub const Engine        = ng.Engine;
-pub var   G_NG : Engine = .{}; // NOTE : Global game engine instance
 
 
 // ================ MANAGERS ================

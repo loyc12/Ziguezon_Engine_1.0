@@ -149,16 +149,16 @@ pub fn OnUpdateInputs( ng : *Engine ) void
     if( def.ray.isKeyDown( def.ray.KeyboardKey.down  ) or def.ray.isKeyDown( def.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Move the camera with the numpad keys
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
-    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_8 )){ def.G_CAM.moveByS( Vec2.new(  0, -8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_2 )){ def.G_CAM.moveByS( Vec2.new(  0,  8 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_4 )){ def.G_CAM.moveByS( Vec2.new( -8,  0 )); }
+    if( def.ray.isKeyDown( def.ray.KeyboardKey.kp_6 )){ def.G_CAM.moveByS( Vec2.new(  8,  0 )); }
 
     // Reset the camera zoom and position when r is pressed
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
     {
-      ng.camera.setZoom( 1.0 );
-      ng.camera.pos = .{};
+      def.G_CAM.setZoom( 1.0 );
+      def.G_CAM.pos = .{};
       def.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -426,8 +426,8 @@ pub fn OnRenderOverlay( ng : *Engine ) void
   const screenCenter = def.getHalfScreenSize();
 
   // Draw each player's score in the middle of their respective fields
-  def.drawTextCenter( &s1_buff, .new( screenCenter.x + 512, screenCenter.y ), 64, def.Colour.blue );
-  def.drawTextCenter( &s2_buff, .new( screenCenter.x - 512, screenCenter.y ), 64, def.Colour.red );
+  def.drawTextCenter( &s1_buff, .new( screenCenter.x - 512, screenCenter.y ), 64, def.Colour.blue );
+  def.drawTextCenter( &s2_buff, .new( screenCenter.x + 512, screenCenter.y ), 64, def.Colour.red );
 
   if( ng.state == .OPENED )
   {

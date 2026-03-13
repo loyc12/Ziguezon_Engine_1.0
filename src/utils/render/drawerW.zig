@@ -18,7 +18,7 @@ pub const BASE_LINE_WIDTH : f64 = 2.0; // TODO : Move to engine settings
 // Used in world render to cancel-out camera position
 inline fn wtrRay( worldPos : Vec2 ) def.RayVec2
 {
-  return def.G_NG.camera.worldToRender( worldPos ).toRayVec2();
+  return def.G_CAM.worldToRender( worldPos ).toRayVec2();
 }
 
 

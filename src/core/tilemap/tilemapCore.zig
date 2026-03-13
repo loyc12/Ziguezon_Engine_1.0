@@ -457,7 +457,7 @@ pub const Tilemap = struct
       return;
     }
 
-    const viewBox = def.G_NG.camera.toViewBox();
+    const viewBox = def.G_CAM.toViewBox();
 
     if( !viewBox.isOverlapping( &self.getMapBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
 

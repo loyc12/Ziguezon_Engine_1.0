@@ -49,20 +49,20 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ def.G_CAM.moveByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ def.G_CAM.moveByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ def.G_CAM.moveByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ def.G_CAM.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 11.0 / 10.0 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy(  9.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ def.G_CAM.zoomBy( 11.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ def.G_CAM.zoomBy(  9.0 / 10.0 ); }
 
   // Reset the camera zoom and position when r is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
   {
-    ng.camera.setZoom(   1.0 );
-    ng.camera.pos = .{};
+    def.G_CAM.setZoom(   1.0 );
+    def.G_CAM.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 
@@ -73,7 +73,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   };
 
   // Keep the camera looking over the map area
-  ng.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
+  def.G_CAM.clampCenterInArea( worldGrid.getMapBoundingBox() );
 
   const mouseWorldPos = def.getMouseWorldPos();
 

@@ -33,20 +33,20 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w )){ def.G_CAM.moveByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s )){ def.G_CAM.moveByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a )){ def.G_CAM.moveByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d )){ def.G_CAM.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 1.1 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy( 0.9 ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ def.G_CAM.zoomBy( 1.1 ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ def.G_CAM.zoomBy( 0.9 ); }
 
   // Reset the camera zoom and position when r is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
   {
-    ng.camera.setZoom(   1.0 );
-    ng.camera.pos = .{};
+    def.G_CAM.setZoom(   1.0 );
+    def.G_CAM.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reset" );
   }
 
@@ -57,7 +57,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   };
 
   // Keep the camera over the world grid
-  ng.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
+  def.G_CAM.clampCenterInArea( worldGrid.getMapBoundingBox() );
 
   if( def.ray.isMouseButtonPressed( def.ray.MouseButton.left ))
   {

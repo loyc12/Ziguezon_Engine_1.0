@@ -239,7 +239,7 @@ pub const OrbitComp = struct
 
   pub fn renderDebug( self : *const OrbitComp, orbitedPos : Vec2, selfPos : Vec2, selfRadius : f64, moonDensity : f64 ) void
   {
-    const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
+    const zoomedWidth = 1.0 / def.G_CAM.getZoom();
     const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 );
 
     def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
@@ -276,7 +276,7 @@ pub const OrbitComp = struct
     var p1 : Vec2 = self.getRelPosAtAngle( 0 );
     var p2 : Vec2 = p1;
 
-    const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
+    const zoomedWidth = 1.0 / def.G_CAM.getZoom();
 
     for( 0..N )| i |
     {
@@ -291,7 +291,7 @@ pub const OrbitComp = struct
 
   pub fn renderLPs( self : *const OrbitComp, orbitedPos : Vec2, maxLP : usize ) void
   {
-    const zoomedWidth = 1.0 / def.G_NG.camera.getZoom();
+    const zoomedWidth = 1.0 / def.G_CAM.getZoom();
 
     const LPcount = @min( 5, maxLP ) + 1;
 

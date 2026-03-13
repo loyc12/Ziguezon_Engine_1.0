@@ -48,7 +48,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   {
     const offset = shaker.getOffsetAtTime( s_time );
 
-    ng.camera.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 0.2, }};
+    def.G_CAM.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 0.2, }};
     s_time += ( 1.0 / 120.0 );
 
     def.log( .INFO, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
@@ -56,20 +56,20 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
 
   // Move the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ ng.camera.moveByS( Vec2.new(  0, -8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ ng.camera.moveByS( Vec2.new(  0,  8 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ ng.camera.moveByS( Vec2.new( -8,  0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ ng.camera.moveByS( Vec2.new(  8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ def.G_CAM.moveByS( Vec2.new(  0, -8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ def.G_CAM.moveByS( Vec2.new(  0,  8 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ def.G_CAM.moveByS( Vec2.new( -8,  0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ def.G_CAM.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ ng.camera.zoomBy( 11.0 / 10.0 ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ ng.camera.zoomBy(  9.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ def.G_CAM.zoomBy( 11.0 / 10.0 ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ def.G_CAM.zoomBy(  9.0 / 10.0 ); }
 
   // Reset the camera zoom and position when r is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
   {
-    ng.camera.setZoom(   1.0 );
-    ng.camera.pos = .{};
+    def.G_CAM.setZoom(   1.0 );
+    def.G_CAM.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 

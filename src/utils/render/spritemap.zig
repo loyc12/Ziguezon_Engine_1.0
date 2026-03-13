@@ -161,7 +161,7 @@ pub const Spritemap = struct
   {
     def.log( .TRACE, 0, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
 
-    const screenPos = def.G_NG.camera.worldToRender( pos.toVec2() );
+    const screenPos = def.G_CAM.worldToRender( pos.toVec2() );
 
 
     if( self.atlas == null )

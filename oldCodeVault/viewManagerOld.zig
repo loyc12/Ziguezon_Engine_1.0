@@ -1,8 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Box2    = def.Box2;
-const Vec2   = def.Vec2;
+const Box2  = def.Box2;
+const Vec2  = def.Vec2;
 const Cam2D = def.Cam2D;
 
 
@@ -127,7 +127,7 @@ pub const ViewManager = struct
 
     const camView : Box2 = Box2{
       .center = Vec2{ .x = self.Cam2D.target.x, .y = self.Cam2D.target.y },
-      .scale  = getScreenSize().divVal( 2.0 * self.Cam2D.zoom ).?,
+      .scale  = getScreenSize().mulVal( 0.5 / self.Cam2D.zoom ),
     };
     return camView;
   }

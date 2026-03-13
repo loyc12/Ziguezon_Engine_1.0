@@ -60,7 +60,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
   // Returns the effective render scale, clamping to minSize in screen space if set
   inline fn getRenderScale( self : *const ShapeComp ) Vec2
   {
-    const zoom = def.G_NG.camera.getZoom(); // fetch current zoom factor
+    const zoom = def.G_CAM.getZoom(); // fetch current zoom factor
 
     var renderScale = self.scale.mulVal( zoom );
 

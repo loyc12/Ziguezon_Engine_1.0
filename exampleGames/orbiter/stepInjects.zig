@@ -51,7 +51,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.seven )){ mainEcon.addResCount( .fromIdx( 6 ), 10000 ); }
   }
 
-  utl.updateCameraLogic( &ng.camera );
+  utl.updateCameraLogic( &def.G_CAM );
 }
 
 

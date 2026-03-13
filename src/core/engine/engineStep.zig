@@ -72,7 +72,7 @@ inline fn updateInputs( ng : *Engine ) void
     if( def.ray.isWindowResized() )
     {
       def.qlog( .TRACE, 0, @src(), "Updating camera dimensions" );
-      ng.camera.updateView();
+      def.G_CAM.updateView();
     }
   }
   //def.tryHook( .OffUpdateInputs, ng );
@@ -173,7 +173,7 @@ inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instea
   def.tryHook( .OnRenderBckgrnd, ng );
 
 
-  def.ray.beginMode2D( ng.camera.toRayCam() );
+  def.ray.beginMode2D( def.G_CAM.toRayCam() );
   {
     def.tryHook( .OnRenderWorld, ng );
 

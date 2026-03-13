@@ -353,7 +353,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   {
     const offset = shaker.getOffsetAtTime( shake_prog );
 
-    ng.camera.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 0.1, }};
+    def.G_CAM.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 0.1, }};
 
     shake_prog += ( 1.0 / 120.0 );
   }
@@ -498,7 +498,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   }
 
 
-  const screenCenter = def.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, ng.camera.toRayCam() );
+  const screenCenter = def.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, def.G_CAM.toRayCam() );
 
 
   var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
@@ -530,7 +530,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   {
     const tile : *def.Tile = &grid.tileArray.items.ptr[ index ];
 
-    const tileCenter = ng.camera.worldToScreen( grid.getAbsTilePos( tile.mapCoords ).toVec2() );
+    const tileCenter = def.G_CAM.worldToScreen( grid.getAbsTilePos( tile.mapCoords ).toVec2() );
 
     if(      tile.colour.isEq( .blue   )){ def.drawTextCenter( "1", tileCenter, text_scale, .white ); }
     else if( tile.colour.isEq( .lBlue  )){ def.drawTextCenter( "2", tileCenter, text_scale, .white ); }
@@ -609,7 +609,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 //{
 //  const offset = shaker.getOffsetAtTime( shake_prog );
 
-//  ng.camera.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+//  def.G_CAM.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
 
 //  shake_prog += ( 1.0 / 120.0 );
 //}
