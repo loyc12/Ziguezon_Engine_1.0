@@ -18,6 +18,10 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
   if( orbitedId != glb.starId ){ if( glb.bodyStore.get( orbitedId ))| b |
   {
     orbitedMass = b.mass;
+  }
+  else
+  {
+    def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
   }}
 
   orbitComp.* = .initFromParams(
@@ -42,7 +46,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     const id = glb.entityArray[ idx ].id;
 
-    def.log( .INFO, 0, @src(), "Initializing components of entity #{} at idx #{}", .{ id, idx });
+    def.log( .INFO, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
 
 
     if( id == 1 ) // Here comes the sun, lalalala
@@ -131,6 +135,10 @@ pub fn initStellarSystem( ng : *def.Engine ) void
     if( orbitComp.orbitedID != glb.starId ){ if( glb.transStore.get( orbitComp.orbitedID ))| trans |
     {
       startPos = startPos.add( trans.pos.toVec2() );
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitComp.orbitedID });
     }}
 
     _ = glb.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
