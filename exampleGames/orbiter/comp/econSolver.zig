@@ -384,14 +384,40 @@ const EconSolver = struct
 
   fn applyResDelta( self : *EconSolver ) void
   {
-  //def.qlog( .DEBUG, 0, @src(), "Logging general resource prod. and cons. :" );
+    // Industrial pass
+    inline for( 0..indTypeCount )| d |{ inline for( 0..resTypeCount )| r |
+    {
+      const resType     = ResType.fromIdx( r );
+      const indActivity = self.indActivity[ d ];
 
+      if( indActivity > def.EPS )
+      {
+        // Production
+        if( resType != .WORK ) // Skipping WORK ( see applyWorkWeek() )
+        {
+          const rawIndProd   : f32 = @floatFromInt( self.perIndProd[ d ][ r ]);
+          const finalIndProd : u64 = @intFromFloat( @floor( rawIndProd * indActivity ));
+
+          self.finalIndProd[ r ] += finalIndProd;
+          self.finalGenProd[ r ] += finalIndProd;
+        }
+
+        // Consumption
+        const rawIndCons   : f32 = @floatFromInt( self.perIndCons[ d ][ r ]);
+        const finalIndCons : u64 = @intFromFloat( @floor( rawIndCons * indActivity ));
+
+        self.finalIndCons[ r ] += finalIndCons;
+        self.finalGenCons[ r ] += finalIndCons;
+      }
+    }}
+    //def.qlog( .DEBUG, 0, @src(), "Logging general resource prod. and cons. :" );
+
+    // Population + Application pass
     inline for( 0..resTypeCount )| r |
     {
-      // Iterating over population
-      const popResAccess = self.popAccess[ r ];
 
-      const resType = ResType.fromIdx( r );
+      const resType      = ResType.fromIdx( r );
+      const popResAccess = self.popAccess[ r ];
 
       if( popResAccess > def.EPS and resType != .WORK ) // Skipping WORK ( see applyWorkWeek() )
       {
@@ -408,32 +434,6 @@ const EconSolver = struct
 
         self.finalPopCons[ r ]  = finalPopCons;
         self.finalGenCons[ r ] += finalPopCons;
-      }
-
-      // Iterating over industry
-      inline for( 0..indTypeCount )| d |
-      {
-        const indActivity = self.indActivity[ d ];
-
-        if( indActivity > def.EPS )
-        {
-          // Production
-          if( resType != .WORK ) // Skipping WORK ( see applyWorkWeek() )
-          {
-            const rawIndProd   : f32 = @floatFromInt( self.perIndProd[ d ][ r ]);
-            const finalIndProd : u64 = @intFromFloat( @floor( rawIndProd * indActivity ));
-
-            self.finalIndProd[ r ] += finalIndProd;
-            self.finalGenProd[ r ] += finalIndProd;
-          }
-
-          // Consumption
-          const rawIndCons   : f32 = @floatFromInt( self.perIndCons[ d ][ r ]);
-          const finalIndCons : u64 = @intFromFloat( @floor( rawIndCons * indActivity ));
-
-          self.finalIndCons[ r ] += finalIndCons;
-          self.finalGenCons[ r ] += finalIndCons;
-        }
       }
 
     //def.log( .CONT, 0, @src(), "{s}  \t: {d}\t( +{d}\t-{d} )", .{ @tagName( ResType.fromIdx( r )), econ.resBank[ r ], self.finalGenProd[ r ], self.finalGenCons[ r ] });
