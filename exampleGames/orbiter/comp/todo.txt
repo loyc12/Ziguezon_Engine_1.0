@@ -1,9 +1,7 @@
 ==== Engine Update ====
 
-1. Finish f32 -> f64 conversion for relevant values ( pos )
-2. Autoconvert f64 pos to screen relative f32 pos when rendering
-3. Zoom towards mouse, not center of screen ( add bool setting )
-4. ? Allow for user definable precision for Pos (f/u) via engineSettings ( lots of work )
+1. Zoom towards mouse, not center of screen ( add bool setting )
+2. ? Allow for user definable precision for positions structs (f/u) via engineSettings ? ( lots of work )
 
 
 ==== Economy Integration ====
@@ -21,6 +19,7 @@ HIGH PRIORITY ( Required for basic functionality ) :
 
 3. Add collapse revert mechanism
   - smart industry/infrastructure decay
+  - WORK prioritization
 
 
 MEDIUM PRIORITY :
@@ -34,4 +33,3 @@ LOW PRIORITY :
 1. Add fractional carry buffers for res production ( avoid rounding losses )
 2. Implement local res distribution system ( POWER_GRID, etc )
 3. Add tax / revenue mechanics for COMMERCE and auto-trade
-4. Building management automation ( add and del )
