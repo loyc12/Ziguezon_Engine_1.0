@@ -26,12 +26,9 @@ pub fn newDataGrid( comptime DataType : type, comptime RowEnum : type, comptime 
     {
       var grid : SelfType = .{};
 
-      inline for( 0..colLen )| col |{ inline for( 0..colLen )| row |
+      inline for( 0..colLen )| col |{ inline for( 0..rowLen )| row |
       {
-        const rowPos : usize = @intFromEnum( row );
-        const colPos : usize = @intFromEnum( col );
-
-        grid.data[ rowPos ][ colPos ] = newData[ rowPos ][ colPos ];
+        grid.data[ row][ col ] = newData[ row ][ col ];
       }}
 
       return grid;
@@ -39,9 +36,9 @@ pub fn newDataGrid( comptime DataType : type, comptime RowEnum : type, comptime 
 
     pub fn fillWith( self : *SelfType, value : DataType ) void
     {
-      inline for( 0..colLen )| col |{ inline for( 0..colLen )| row |
+      inline for( 0..colLen )| col |{ inline for( 0..rowLen )| row |
       {
-        self.data[ @intFromEnum( row )][ @intFromEnum( col )] = value;
+        self.data[ row ][ col] = value;
       }}
     }
 

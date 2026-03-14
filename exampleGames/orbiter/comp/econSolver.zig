@@ -1,24 +1,18 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const inf = @import( "infrastructure.zig" );
-const ind = @import( "industry.zig" );
-const res = @import( "resource.zig" );
-
 const ecn = @import( "economy.zig" );
 
+const gbl = @import( "../gameGlobals.zig" );
 
-const resTypeCount = res.resTypeCount;
-const infTypeCount = inf.infTypeCount;
-const indTypeCount = ind.indTypeCount;
 
-const ResType = res.ResType;
-const InfType = inf.InfType;
-const IndType = ind.IndType;
+const resTypeCount = gbl.resTypeCount;
+const infTypeCount = gbl.infTypeCount;
+const indTypeCount = gbl.indTypeCount;
 
-const ResInstance = res.ResInstance;
-const InfInstance = inf.InfInstance;
-const IndInstance = ind.IndInstance;
+const ResType      = gbl.ResType;
+const InfType      = gbl.InfType;
+const IndType      = gbl.IndType;
 
 
 // Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
@@ -129,7 +123,7 @@ const EconSolver = struct
       if( self.econ.resBank[ r ] != 0 )
       {
         const resType   = ResType.fromIdx( r );
-        const decayRate = resType.getDecayRate();
+        const decayRate = resType.getMetric( .DECAY_RATE );
 
         const decay_f32 : f32 = @floatFromInt( self.econ.resBank[ r ]);
         const decay_u64 : u64 = @intFromFloat( @floor( decay_f32 * decayRate ));
@@ -151,7 +145,7 @@ const EconSolver = struct
     inline for( 0..resTypeCount )| r |
     {
       const resType  = ResType.fromIdx( r );
-      const growRate = resType.getGrowthRate();
+      const growRate = resType.getMetric( .GROWTH_RATE );
 
       if( growRate >= def.EPS ) // Most res do not grow. Skipping those
       {
@@ -173,20 +167,22 @@ const EconSolver = struct
     inline for( 0..resTypeCount )| r |
     {
       const resType = ResType.fromIdx( r );
-      const delta   = self.prevPopCount * resType.getPerPopDelta();
 
-      if( delta > def.EPS ) // If res produced
+      const prod = self.prevPopCount * resType.getMetric( .POP_PROD );
+      const cons = self.prevPopCount * resType.getMetric( .POP_CONS );
+
+      if( prod > def.EPS ) // If res produced
       {
-        const maxProd : u64 = @intFromFloat( @floor( delta ));
+        const maxProd : u64 = @intFromFloat( @floor( prod ));
 
         self.maxPopProd[ r ]  = maxProd;
         self.maxGenProd[ r ] += maxProd;
 
       //def.log( .CONT, 0, @src(), "{s}  \t: +{d}", .{ @tagName( ResType.fromIdx( r )), maxProd });
       }
-      else if( delta < -def.EPS ) // If res consumed
+      if( cons > def.EPS ) // If res consumed
       {
-        const maxCons : u64 = @intFromFloat( @floor( -delta ));
+        const maxCons : u64 = @intFromFloat( @floor( cons ));
 
         self.maxPopCons[ r ]  = maxCons;
         self.maxGenCons[ r ] += maxCons;
@@ -201,7 +197,6 @@ const EconSolver = struct
     inline for( 0..indTypeCount )| d |{ if( self.econ.indBank[ d ] != 0 ) // Skips absent industries
     {
       const indType = IndType.fromIdx( d );
-      const inst    = IndInstance.initByType( indType ); // TODO : use a static comptime table if this is a performance bottleneck
 
     //def.log( .DEBUG, 0, @src(), "Logging bank amounts for {s} ({d}):", .{ @tagName( indType ), self.econ.indBank[ d ]});
 
@@ -209,10 +204,10 @@ const EconSolver = struct
       {
         const resType = ResType.fromIdx( r );
 
-        var maxProd = self.econ.indBank[ d ] * inst.getResProdPerInd( resType );
-        var maxCons = self.econ.indBank[ d ] * inst.getResConsPerInd( resType );
+        var maxProd = self.econ.indBank[ d ] * indType.getResProd( resType );
+        var maxCons = self.econ.indBank[ d ] * indType.getResCons( resType );
 
-        if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
+        if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
         {
           const maxProd_f32 : f32 = @floatFromInt( maxProd );
           const maxCons_f32 : f32 = @floatFromInt( maxCons );

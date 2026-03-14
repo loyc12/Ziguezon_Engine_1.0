@@ -59,12 +59,44 @@ pub const G_FACTOR : f64 = 498.163; // km³/Gt¹wk²
 
 
 
-//  ================ DATA LOADING ================
+// ================ DATA LOADING ================
 
-pub const stlr_d = @import( "stellarData.zig" );
-pub const STLR_DATA = &stlr_d.stellarData;
+pub const stlr_d    = @import( "data/stellarData.zig" );
+pub const STLR_DATA =        &stlr_d.stellarData;
+
+
+pub const powr_d = @import( "data/powerData.zig" );
+pub const vesl_d = @import( "data/vesselData.zig" );
+pub const rsrc_d = @import( "data/resourceData.zig" );
+pub const nfrs_d = @import( "data/infrastructureData.zig" );
+pub const ndst_d = @import( "data/industryData.zig" );
+
+pub const POWR_DATA     = &powr_d.powerData;
+pub const VESL_DATA     = &vesl_d.vesselData;
+pub const RSRC_DATA     = &rsrc_d.resourceData;
+pub const NFRS_DATA     = &nfrs_d.infrastructureData;
+pub const NDST_DATA     = &ndst_d.industryData;
+
+pub const PowerSrc      = powr_d.PowerSrc;
+pub const VesType       = vesl_d.VesType;
+pub const ResType       = rsrc_d.ResType;
+pub const InfType       = nfrs_d.InfType;
+pub const IndType       = ndst_d.IndType;
+
+pub const powerSrcCount = powr_d.powerSrcCount;
+pub const vesTypeCount  = vesl_d.vesTypeCount;
+pub const resTypeCount  = rsrc_d.resTypeCount;
+pub const infTypeCount  = nfrs_d.infTypeCount;
+pub const indTypeCount  = ndst_d.indTypeCount;
+
 
 pub fn loadAllData() void
 {
   stlr_d.loadStellarData();
+
+  powr_d.loadPowerSrcData();
+  vesl_d.loadVesselData();
+  rsrc_d.loadResourceData();
+  nfrs_d.loadInfrastructureData();
+  ndst_d.loadIndustryData();
 }

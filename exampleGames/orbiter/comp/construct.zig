@@ -1,28 +1,19 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const ves = @import( "vessel.zig" );
-const res = @import( "resource.zig" );
-const inf = @import( "infrastructure.zig" );
-const ind = @import( "industry.zig" );
-
 const ecn = @import( "economy.zig" );
 
+const gbl = @import( "../gameGlobals.zig" );
 
-const vesTypeCount = ves.vesTypeCount;
-const resTypeCount = res.resTypeCount;
-const infTypeCount = inf.infTypeCount;
-const indTypeCount = ind.indTypeCount;
+const vesTypeCount = gbl.vesTypeCount;
+const resTypeCount = gbl.resTypeCount;
+const infTypeCount = gbl.infTypeCount;
+const indTypeCount = gbl.indTypeCount;
 
-const VesType = ves.VesType;
-const ResType = res.ResType;
-const InfType = inf.InfType;
-const IndType = ind.IndType;
-
-const VesInstance = ves.VesInstance;
-const ResInstance = res.ResInstance;
-const InfInstance = inf.InfInstance;
-const IndInstance = ind.IndInstance;
+const VesType      = gbl.VesType;
+const ResType      = gbl.ResType;
+const InfType      = gbl.InfType;
+const IndType      = gbl.IndType;
 
 
 pub const ConstructTag = enum
@@ -43,9 +34,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | vesType | vesType.getMass(),
-      .inf => | infType | infType.getMass(),
-      .ind => | indType | indType.getMass(),
+    //.ves => | vesType | vesType.getMetric( .MASS ),
+      .inf => | infType | infType.getMetric( .MASS ),
+      .ind => | indType | indType.getMetric( .MASS ),
     };
   }
 
@@ -54,27 +45,27 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     return switch( c )
     {
     //.ves =>             0.0,
-      .inf => | infType | infType.getAreaCost(),
-      .ind => | indType | indType.getAreaCost(),
+      .inf => | infType | infType.getMetric( .MASS ),
+      .ind => | indType | indType.getMetric( .MASS ),
     };
   }
 
-  pub fn getPartCost( c : Construct ) u64
+  pub fn getPartCost( c : Construct ) f32
   {
     return switch( c )
     {
-    //.ves => | vesType | vesType.getPartCost(),
-      .inf => | infType | infType.getPartCost(),
-      .ind => | indType | indType.getPartCost(),
+    //.ves => | vesType | vesType.getMetric( .MASS ),
+      .inf => | infType | infType.getMetric( .MASS ),
+      .ind => | indType | indType.getMetric( .MASS ),
     };
   }
 
-  pub fn getCapacity( c : Construct ) u64
+  pub fn getCapacity( c : Construct ) f32
   {
     return switch( c )
     {
-    //.ves => | vesType | vesType.getCapacity(),
-      .inf => | infType | infType.getCapacity(),
+    //.ves => | vesType | vesType.getMetric( .CAPACITY ),
+      .inf => | infType | infType.getMetric( .CAPACITY ),
       .ind =>             0,
     };
   }

@@ -106,7 +106,7 @@ pub const InfType = enum( u8 )
         .HABITAT => true,
 
         .STORAGE => true,
-      //.BATTERY => true,
+      //.BATTERY => true,POLLUTION,
 
       //else     => false,
       };
@@ -127,15 +127,4 @@ pub const InfType = enum( u8 )
   }
 
   // TODO : Add maintenance costs ?
-};
-
-
-
-pub const InfInstance = struct
-{
-  infType  : InfType,
-//powerSrc : PowerSrc,
-//baseCost : Cash = 1.0, // For market simulation
-
-  infCount : u64 = 0,
 };

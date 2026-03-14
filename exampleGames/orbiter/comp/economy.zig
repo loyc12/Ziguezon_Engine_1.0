@@ -1,38 +1,31 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const ves = @import( "vessel.zig" );
-const res = @import( "resource.zig" );
-const inf = @import( "infrastructure.zig" );
-const ind = @import( "industry.zig" );
-const cst = @import( "construct.zig" );
 
-const ecnSlvr = @import( "econSolver.zig" );
-const ecnBldr = @import( "econBuilder.zig" );
+pub const ecnSlvr = @import( "econSolver.zig"  );
+pub const ecnBldr = @import( "econBuilder.zig" );
+pub const ecnLoc  = @import( "econLoc.zig"     );
+pub const cst     = @import( "construct.zig"   );
 
-const BuildQueue = ecnBldr.BuildQueue;
+pub const BuildQueue    = ecnBldr.BuildQueue;
+pub const econLocCount  = ecnLoc.econLocCount;
+pub const EconLoc       = ecnLoc.EconLoc;
+pub const Construct     = cst.Construct;
 
-const ecnLoc  = @import( "econLoc.zig" );
 
-pub const econLocCount = ecnLoc.econLocCount;
-pub const EconLoc      = ecnLoc.EconLoc;
+const gbl     = @import( "../gameGlobals.zig" );
 
-pub const vesTypeCount = ves.vesTypeCount;
-pub const resTypeCount = res.resTypeCount;
-pub const infTypeCount = inf.infTypeCount;
-pub const indTypeCount = ind.indTypeCount;
+const PowerSrc      = gbl.PowerSrc;
+const VesType       = gbl.VesType;
+const ResType       = gbl.ResType;
+const InfType       = gbl.InfType;
+const IndType       = gbl.IndType;
 
-pub const VesType = ves.VesType;
-pub const ResType = res.ResType;
-pub const InfType = inf.InfType;
-pub const IndType = ind.IndType;
-
-pub const VesInstance = ves.VesInstance;
-pub const ResInstance = res.ResInstance;
-pub const InfInstance = inf.InfInstance;
-pub const IndInstance = ind.IndInstance;
-
-pub const Construct = cst.Construct;
+const PowerSrcCount = gbl.PowerSrcCount;
+const vesTypeCount  = gbl.vesTypeCount;
+const resTypeCount  = gbl.resTypeCount;
+const infTypeCount  = gbl.infTypeCount;
+const indTypeCount  = gbl.indTypeCount;
 
 
 const POLLUTION_PER_POP     = 1.0;
@@ -108,10 +101,13 @@ pub const Economy = struct
   {
     inline for( 0..resTypeCount )| r |
     {
-      const resType      = ResType.fromIdx( r );
-      const infStoreType = resType.getInfStore();
+      const resType        = ResType.fromIdx( r );
+      const infStoreType   = resType.getInfStore();
+      const infCount : f32 = @floatFromInt( self.infBank[ infStoreType.toIdx() ]);
 
-      self.resCap[ r ] = MIN_RES_CAP + ( self.infBank[ infStoreType.toIdx() ] * infStoreType.getCapacity() );
+      const infResCap : u64 = @intFromFloat( @floor( infCount * infStoreType.getMetric( .CAPACITY )));
+
+      self.resCap[ r ] = MIN_RES_CAP + infResCap;
     }
   }
 
@@ -202,7 +198,9 @@ pub const Economy = struct
       const infType  = InfType.fromIdx(  f );
       const infCount = self.infBank[     f ];
       const infDelta = self.infDelta[    f ];
-      const infBonus = infCount * infType.getCapacity();
+
+      const infCount_f32 : f32 = @floatFromInt( self.infBank[ infType.toIdx() ]);
+      const infBonus     : u64 = @intFromFloat( @floor( infCount_f32 * infType.getMetric( .CAPACITY )));
 
       def.log( .CONT, 0, @src(), "{s}\t: {d}\t +{d}\t) [ {d} ]", .{ @tagName( infType ), infCount, infBonus, infDelta });
     }
@@ -351,7 +349,9 @@ pub const Economy = struct
 
   pub fn getPopCap( self : *const Economy ) u64
   {
-    return self.getInfCount( .HOUSING ) * InfType.HOUSING.getCapacity();
+    const housing : f32 = @floatFromInt( self.getInfCount( .HOUSING ));
+
+    return @intFromFloat( @floor( housing * InfType.HOUSING.getMetric( .CAPACITY )));
   }
 
 
@@ -406,7 +406,7 @@ pub const Economy = struct
     {
       const activity = self.indActivity[ d ];
 
-      var tmp : f64 = IndType.fromIdx( d ).getPollution();
+      var tmp : f64 = IndType.fromIdx( d ).getMetric( .POLLUTION );
           tmp      *= @floatFromInt( self.indBank[ d ]);
           tmp      *= activity;
 
@@ -418,7 +418,7 @@ pub const Economy = struct
 
     for( 0..infTypeCount )| f |
     {
-      var tmp : f64 = InfType.fromIdx( f ).getPollution();
+      var tmp : f64 = InfType.fromIdx( f ).getMetric( .POLLUTION );
           tmp      *= @floatFromInt( self.infBank[ f ]);
           tmp      *= averageActivity;
 
@@ -453,7 +453,10 @@ pub const Economy = struct
 
   pub inline fn getHabitatArea( self : *const Economy ) f64
   {
-    return @floatFromInt( self.getInfCount( .HABITAT ) * InfType.HABITAT.getCapacity() );
+    const habCount : f64 = @floatFromInt( self.getInfCount( .HABITAT ));
+    const habBonus : f64 = @floatCast( InfType.HABITAT.getMetric( .CAPACITY ));
+
+    return habCount * habBonus;
   }
 
   pub fn updateAreas( self : *Economy ) void
@@ -481,7 +484,7 @@ pub const Economy = struct
       const infType  = InfType.fromIdx( f );
 
       var area : f64 = @floatFromInt( self.getInfCount( infType ));
-          area      *= infType.getAreaCost();
+          area      *= @floatCast( infType.getMetric( .AREA_COST ));
 
       self.areaUsed += area;
     }}
@@ -490,7 +493,7 @@ pub const Economy = struct
       const indType = IndType.fromIdx( d );
 
       var area : f64 = @floatFromInt( self.getIndCount( indType ));
-          area      *= indType.getAreaCost();
+          area      *= @floatCast( indType.getMetric( .AREA_COST ));
 
       self.areaUsed += area;
     }
@@ -544,11 +547,10 @@ pub const Economy = struct
     inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
     {
       const indType = IndType.fromIdx( d );
-      const inst    = IndInstance.initByType( indType );
 
-      maxCons += self.indBank[ d ] * inst.getResProdPerInd( resType );
+      maxCons += self.indBank[ d ] * indType.getResProd( resType );
 
-      if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
+      if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
       {
         const factor = self.sunAccess;
 
@@ -592,11 +594,10 @@ pub const Economy = struct
     inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
     {
       const indType = IndType.fromIdx( d );
-      const inst    = IndInstance.initByType( indType );
 
-      maxProd += self.indBank[ d ] * inst.getResProdPerInd( resType );
+      maxProd += self.indBank[ d ] * indType.getResProd( resType );
 
-      if( inst.powerSrc == .SOLAR ) // Limits activity based on available sunshine
+      if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
       {
         const factor = @min( self.getSunshineAccess(), 1.0 );
 
@@ -620,61 +621,64 @@ pub const Economy = struct
       return 0;
     }
 
-    const partIdx    = ResType.PART.toIdx();
-    const availParts = self.resBank[ partIdx ];
-    var   maxAmount  = amount;
+    const partIdx          = ResType.PART.toIdx();
+    const availParts : f64 = @floatFromInt( self.resBank[ partIdx ]);
+    const amount_f64 : f64 = @floatFromInt( amount );
+    const partCost   : f64 = @floatCast( c.getPartCost() );
+    const areaCost   : f64 = @floatCast( c.getAreaCost() );
 
-    if( availParts < c.getPartCost())
+    var maxAmount = amount_f64;
+
+    if( availParts < partCost )
     {
       def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
       return 0;
     }
-    if( availParts < amount * c.getPartCost() )
+    if( availParts < amount_f64 * partCost  )
     {
       def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting" );
 
-      maxAmount = @divFloor( availParts, c.getPartCost() );
+      maxAmount = @divFloor( availParts, partCost );
     }
 
     if( !std.meta.eql( c, .{ .inf = .HABITAT })) // HABITATS can always be built
     {
-      const amout_f32 : f64 = @floatFromInt( amount );
-
-      if( self.areaAvail < c.getAreaCost() )
+      if( self.areaAvail < areaCost )
       {
         def.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
         return 0;
       }
 
-      if( self.areaAvail < amout_f32 * c.getAreaCost())
+      if( self.areaAvail < maxAmount * areaCost )
       {
         def.qlog( .WARN, 0, @src(), "Not enough area : adjusting" );
 
-        maxAmount = @intFromFloat( @divFloor( self.areaAvail, c.getAreaCost()));
+        maxAmount = @divFloor( self.areaAvail, areaCost );
       }
     }
 
-    const totalCost = maxAmount * c.getPartCost();
+    const finalAmount : u64 = @intFromFloat( @floor( maxAmount ));
+    const totalCost   : u64 = @intFromFloat( @floor( partCost * maxAmount ));
 
     self.resBank[  partIdx ] -= totalCost;
     self.resDelta[ partIdx ] -= @intCast( totalCost );
 
     switch( c )
     {
-    //.ves => | vesType | self.vesBank[ vesType.toIdx() ] += maxAmount,
+    //.ves => | vesType | self.vesBank[ vesType.toIdx() ] += finalAmount,
       .inf => | infType |
       {
-        self.infBank[  infType.toIdx() ] += maxAmount;
-        self.infDelta[ infType.toIdx() ] += @intCast( maxAmount );
+        self.infBank[  infType.toIdx() ] += finalAmount;
+        self.infDelta[ infType.toIdx() ] += @intCast( finalAmount );
       },
       .ind => | indType |
       {
-        self.indBank[  indType.toIdx() ] += maxAmount;
-        self.indDelta[ indType.toIdx() ] += @intCast( maxAmount );
+        self.indBank[  indType.toIdx() ] += finalAmount;
+        self.indDelta[ indType.toIdx() ] += @intCast( finalAmount );
       },
     }
 
-    return maxAmount;
+    return finalAmount;
   }
 
 

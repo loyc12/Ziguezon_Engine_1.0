@@ -1,31 +1,24 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const ves = @import( "vessel.zig" );
-const res = @import( "resource.zig" );
-const inf = @import( "infrastructure.zig" );
-const ind = @import( "industry.zig" );
+
+const ecn = @import( "economy.zig"   );
 const cst = @import( "construct.zig" );
 
-const ecn = @import( "economy.zig" );
+const Construct = cst.Construct;
 
 
-pub const vesTypeCount = ves.vesTypeCount;
-pub const resTypeCount = res.resTypeCount;
-pub const infTypeCount = inf.infTypeCount;
-pub const indTypeCount = ind.indTypeCount;
+const gbl = @import( "../gameGlobals.zig" );
 
-pub const VesType = ves.VesType;
-pub const ResType = res.ResType;
-pub const InfType = inf.InfType;
-pub const IndType = ind.IndType;
+const vesTypeCount = gbl.vesTypeCount;
+const resTypeCount = gbl.resTypeCount;
+const infTypeCount = gbl.infTypeCount;
+const indTypeCount = gbl.indTypeCount;
 
-pub const VesInstance = ves.VesInstance;
-pub const ResInstance = res.ResInstance;
-pub const InfInstance = inf.InfInstance;
-pub const IndInstance = ind.IndInstance;
-
-pub const Construct = cst.Construct;
+const VesType      = gbl.VesType;
+const ResType      = gbl.ResType;
+const InfType      = gbl.InfType;
+const IndType      = gbl.IndType;
 
 
 pub const BuildEntry = struct
@@ -38,26 +31,29 @@ pub const BuildEntry = struct
     return( self.buildCount == 0 );
   }
 
-  pub inline fn getUnitPartCost( self : *const BuildEntry ) u64
+  pub inline fn getUnitPartCost( self : *const BuildEntry ) f32
   {
     return self.construct.getPartCost();
   }
 
-  pub inline fn getRemainingPartCost( self : *const BuildEntry ) u64
+  pub inline fn getRemainingPartCost( self : *const BuildEntry ) f32
   {
-    return ( self.buildCount * self.getUnitPartCost() );
+    const count : f32 = @floatFromInt( self.buildCount );
+    return @intFromFloat( @floor( count * self.getUnitPartCost() ));
   }
 
   pub fn calcBuildableAmount( self : *BuildEntry, availParts : u64 ) u64
   {
     const unitPartCost = self.getUnitPartCost();
+    const count : f32  = @floatFromInt( self.buildCount );
+    const parts : f32  = @floatFromInt( availParts );
 
-    if( availParts > self.buildCount * unitPartCost )
+    if( parts > count * unitPartCost )
     {
       return self.buildCount;
     }
 
-    return @divFloor( availParts, unitPartCost );
+    return @intFromFloat( @divFloor( parts, unitPartCost ));
   }
 };
 
