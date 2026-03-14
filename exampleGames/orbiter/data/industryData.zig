@@ -73,20 +73,57 @@ pub const IndType = enum( u8 )
     };
   }
 
-  pub fn getMetric( self : IndType, metric : IndMetricEnum ) f32
+  pub fn getMetric_f32( self : IndType, metric : IndMetricEnum ) f32
   {
     return indMetricData.get( self, metric );
   }
+  pub fn getMetric_f64( self : IndType, metric : IndMetricEnum ) f64
+  {
+    return @floatCast( indMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u32( self : IndType, metric : IndMetricEnum ) u32
+  {
+    return @intFromFloat( indMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u64( self : IndType, metric : IndMetricEnum ) u64
+  {
+    return @intFromFloat( indMetricData.get( self, metric ));
+  }
 
-  pub fn getResCons( self : IndType, resType : ResType ) u64
+  pub fn getResCons_f32( self : IndType, resType : ResType ) f32
+  {
+    return @floatFromInt( indResValData.get( self, IndResValEnum.consTypeFromResType( resType )));
+  }
+  pub fn getResCons_f64( self : IndType, resType : ResType ) f64
+  {
+    return @floatFromInt( indResValData.get( self, IndResValEnum.consTypeFromResType( resType )));
+  }
+  pub fn getResCons_u32( self : IndType, resType : ResType ) u32
+  {
+    return @intCast( indResValData.get( self, IndResValEnum.consTypeFromResType( resType )));
+  }
+  pub fn getResCons_u64( self : IndType, resType : ResType ) u64
   {
     return indResValData.get( self, IndResValEnum.consTypeFromResType( resType ));
   }
 
-  pub fn getResProd( self : IndType, resType : ResType ) u64
+  pub fn getResProd_f32( self : IndType, resType : ResType ) f32
+  {
+    return @floatFromInt( indResValData.get( self, IndResValEnum.prodTypeFromResType( resType )));
+  }
+  pub fn getResProd_f64( self : IndType, resType : ResType ) f64
+  {
+    return @floatFromInt( indResValData.get( self, IndResValEnum.prodTypeFromResType( resType )));
+  }
+  pub fn getResProd_u32( self : IndType, resType : ResType ) u32
+  {
+    return @intCast( indResValData.get( self, IndResValEnum.prodTypeFromResType( resType )));
+  }
+  pub fn getResProd_u64( self : IndType, resType : ResType ) u64
   {
     return indResValData.get( self, IndResValEnum.prodTypeFromResType( resType ));
   }
+
 };
 
 

@@ -34,9 +34,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | vesType | vesType.getMetric( .MASS ),
-      .inf => | infType | infType.getMetric( .MASS ),
-      .ind => | indType | indType.getMetric( .MASS ),
+    //.ves => | vesType | vesType.getMetric_f32( .MASS ),
+      .inf => | infType | infType.getMetric_f32( .MASS ),
+      .ind => | indType | indType.getMetric_f32( .MASS ),
     };
   }
 
@@ -45,8 +45,8 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     return switch( c )
     {
     //.ves =>             0.0,
-      .inf => | infType | infType.getMetric( .AREA_COST ),
-      .ind => | indType | indType.getMetric( .AREA_COST ),
+      .inf => | infType | infType.getMetric_f32( .AREA_COST ),
+      .ind => | indType | indType.getMetric_f32( .AREA_COST ),
     };
   }
 
@@ -54,9 +54,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | vesType | vesType.getMetric( .PART_COST ),
-      .inf => | infType | infType.getMetric( .PART_COST ),
-      .ind => | indType | indType.getMetric( .PART_COST ),
+    //.ves => | vesType | vesType.getMetric_f32( .PART_COST ),
+      .inf => | infType | infType.getMetric_f32( .PART_COST ),
+      .ind => | indType | indType.getMetric_f32( .PART_COST ),
     };
   }
 
@@ -64,8 +64,8 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | vesType | vesType.getMetric( .CAPACITY ),
-      .inf => | infType | infType.getMetric( .CAPACITY ),
+    //.ves => | vesType | vesType.getMetric_f32( .CAPACITY ),
+      .inf => | infType | infType.getMetric_f32( .CAPACITY ),
       .ind =>             0,
     };
   }

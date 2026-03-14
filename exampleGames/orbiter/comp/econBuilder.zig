@@ -39,21 +39,20 @@ pub const BuildEntry = struct
   pub inline fn getRemainingPartCost( self : *const BuildEntry ) f32
   {
     const count : f32 = @floatFromInt( self.buildCount );
-    return @intFromFloat( @floor( count * self.getUnitPartCost() ));
+    return count * self.getUnitPartCost();
   }
 
-  pub fn calcBuildableAmount( self : *BuildEntry, availParts : u64 ) u64
+  pub fn calcBuildableAmount( self : *BuildEntry, availParts : f32 ) f32
   {
     const unitPartCost = self.getUnitPartCost();
     const count : f32  = @floatFromInt( self.buildCount );
-    const parts : f32  = @floatFromInt( availParts );
 
-    if( parts > count * unitPartCost )
+    if( availParts > count * unitPartCost )
     {
-      return self.buildCount;
+      return count;
     }
 
-    return @intFromFloat( @divFloor( parts, unitPartCost ));
+    return( availParts / unitPartCost );
   }
 };
 
@@ -147,25 +146,23 @@ pub const BuildQueue = struct
 
       var entriesClosed : u64 = 0;
 
-      var availParts_f32  = econ.indActivity[ assemblyIdx ];
-          availParts_f32 *= @floatFromInt( econ.indBank[ assemblyIdx ]);
-          availParts_f32 *= ASSEMBLY_EFFICIENCY;
-
-      var availParts : u64 = @intFromFloat( @floor( availParts_f32 ));
+      var availParts  = econ.indActivity[ assemblyIdx ];
+          availParts *= @floatFromInt( econ.indBank[ assemblyIdx ]);
+          availParts *= ASSEMBLY_EFFICIENCY;
 
       for( 0..self.entryCount )| idx |
       {
         var entry = &self.entries[ idx ];
-        var unitsBuilt : u64 = 0;
+        var unitsBuilt : f32 = 0;
 
         const unitPartCost = entry.construct.getPartCost();
         const unitsToBuild = entry.calcBuildableAmount( availParts );
 
         if( unitsToBuild > 0 )
         {
-          unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild );
+          unitsBuilt = @floatFromInt( econ.tryBuild( entry.construct, @intFromFloat( unitsToBuild )));
 
-          entry.buildCount -= unitsBuilt;
+          entry.buildCount -= @intFromFloat( unitsBuilt );
           availParts       -= unitsBuilt * unitPartCost;
 
           // Failed to close the entry : likely cannot build anything more
@@ -178,9 +175,7 @@ pub const BuildQueue = struct
         //if( availParts < unitPartCost ) break; // Used all available parts ( cannot build any more )
 
       }
-
       self.removeEntryAmount( entriesClosed );
-      econ.addResCount( .PART, availParts );
     }
     return;
   }

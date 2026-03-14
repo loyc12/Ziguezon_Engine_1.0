@@ -14,9 +14,21 @@ pub const PowerSrc = enum( u8 )
 //NUCLEAR,
 //BEAM,
 
-  pub fn getMetric( self : PowerSrc, metric : PowerMetricEnum ) f32
+  pub fn getMetric_f32( self : PowerSrc, metric : PowerMetricEnum ) f32
   {
     return powerMetricData.get( self, metric );
+  }
+  pub fn getMetric_f64( self : PowerSrc, metric : PowerMetricEnum ) f64
+  {
+    return @floatCast( powerMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u32( self : PowerSrc, metric : PowerMetricEnum ) u32
+  {
+    return @intFromFloat( powerMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u64( self : PowerSrc, metric : PowerMetricEnum ) u64
+  {
+    return @intFromFloat( powerMetricData.get( self, metric ));
   }
 };
 

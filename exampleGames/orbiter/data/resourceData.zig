@@ -31,9 +31,21 @@ pub const ResType = enum( u8 )
     return .STORAGE; // TODO : update once multiple storage types exist
   }
 
-  pub fn getMetric( self : ResType, metric : ResMetricEnum ) f32
+  pub fn getMetric_f32( self : ResType, metric : ResMetricEnum ) f32
   {
     return resMetricData.get( self, metric );
+  }
+  pub fn getMetric_f64( self : ResType, metric : ResMetricEnum ) f64
+  {
+    return @floatCast( resMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u32( self : ResType, metric : ResMetricEnum ) u32
+  {
+    return @intFromFloat( resMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u64( self : ResType, metric : ResMetricEnum ) u64
+  {
+    return @intFromFloat( resMetricData.get( self, metric ));
   }
 };
 
@@ -56,6 +68,7 @@ pub fn loadResourceData() void
 {
   resMetricData.fillWith( 0.0 );
 
+
   // ================================ MASS ================================
 
   resMetricData.set( .FOOD,  .MASS, 1.0 );
@@ -65,6 +78,7 @@ pub fn loadResourceData() void
   resMetricData.set( .ORE,   .MASS, 5.0 );
   resMetricData.set( .INGOT, .MASS, 4.0 );
   resMetricData.set( .PART,  .MASS, 3.0 );
+
 
   // ================================ DECAY RATE ================================
 
@@ -78,19 +92,19 @@ pub fn loadResourceData() void
   resMetricData.set( .INGOT, .DECAY_RATE, 0.02 );
   resMetricData.set( .PART,  .DECAY_RATE, 0.03 );
 
+
   // ================================ GROWTH RATE ================================
 
   resMetricData.set( .FOOD,  .GROWTH_RATE, 150.0 );
   resMetricData.set( .WATER, .GROWTH_RATE, 200.0 );
   resMetricData.set( .POWER, .GROWTH_RATE, 100.0 );
 
-  // ================================ POP CONSUMPTION ================================
+
+  // ================================ POP CONS / PROD ================================
+
+  resMetricData.set( .WORK,  .POP_PROD, 1.00 );
 
   resMetricData.set( .FOOD,  .POP_CONS, 0.40 );
   resMetricData.set( .WATER, .POP_CONS, 0.20 );
   resMetricData.set( .POWER, .POP_CONS, 0.10 );
-
-  // ================================ POP PRODUCTION ================================
-
-  resMetricData.set( .WORK,  .POP_PROD, 1.00 );
 }

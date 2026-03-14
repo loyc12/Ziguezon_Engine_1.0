@@ -123,10 +123,10 @@ const EconSolver = struct
       if( self.econ.resBank[ r ] != 0 )
       {
         const resType   = ResType.fromIdx( r );
-        const decayRate = resType.getMetric( .DECAY_RATE );
+        const decayRate = resType.getMetric_f32( .DECAY_RATE );
 
         const decay_f32 : f32 = @floatFromInt( self.econ.resBank[ r ]);
-        const decay_u64 : u64 = @intFromFloat( @floor( decay_f32 * decayRate ));
+        const decay_u64 : u64 = @intFromFloat( decay_f32 * decayRate );
 
         self.econ.resBank[ r ]     -= decay_u64;
         self.econ.prevResDecay[ r ] = decay_u64;
@@ -145,7 +145,7 @@ const EconSolver = struct
     inline for( 0..resTypeCount )| r |
     {
       const resType  = ResType.fromIdx( r );
-      const growRate = resType.getMetric( .GROWTH_RATE );
+      const growRate = resType.getMetric_f32( .GROWTH_RATE );
 
       if( growRate >= def.EPS ) // Most res do not grow. Skipping those
       {
@@ -168,12 +168,12 @@ const EconSolver = struct
     {
       const resType = ResType.fromIdx( r );
 
-      const prod = self.prevPopCount * resType.getMetric( .POP_PROD );
-      const cons = self.prevPopCount * resType.getMetric( .POP_CONS );
+      const prod = self.prevPopCount * resType.getMetric_f32( .POP_PROD );
+      const cons = self.prevPopCount * resType.getMetric_f32( .POP_CONS );
 
       if( prod > def.EPS ) // If res produced
       {
-        const maxProd : u64 = @intFromFloat( @floor( prod ));
+        const maxProd : u64 = @intFromFloat( prod );
 
         self.maxPopProd[ r ]  = maxProd;
         self.maxGenProd[ r ] += maxProd;
@@ -182,7 +182,7 @@ const EconSolver = struct
       }
       if( cons > def.EPS ) // If res consumed
       {
-        const maxCons : u64 = @intFromFloat( @floor( cons ));
+        const maxCons : u64 = @intFromFloat( cons );
 
         self.maxPopCons[ r ]  = maxCons;
         self.maxGenCons[ r ] += maxCons;
@@ -204,16 +204,16 @@ const EconSolver = struct
       {
         const resType = ResType.fromIdx( r );
 
-        var maxProd = self.econ.indBank[ d ] * indType.getResProd( resType );
-        var maxCons = self.econ.indBank[ d ] * indType.getResCons( resType );
+        var maxProd = self.econ.indBank[ d ] * indType.getResProd_u64( resType );
+        var maxCons = self.econ.indBank[ d ] * indType.getResCons_u64( resType );
 
         if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
         {
           const maxProd_f32 : f32 = @floatFromInt( maxProd );
           const maxCons_f32 : f32 = @floatFromInt( maxCons );
 
-          maxProd = @intFromFloat( @floor( maxProd_f32 * self.econ.sunAccess ));
-          maxCons = @intFromFloat( @floor( maxCons_f32 * self.econ.sunAccess ));
+          maxProd = @intFromFloat( maxProd_f32 * self.econ.sunAccess );
+          maxCons = @intFromFloat( maxCons_f32 * self.econ.sunAccess );
         }
 
         self.perIndProd[ d ][ r ] = maxProd;
@@ -299,7 +299,7 @@ const EconSolver = struct
     const popWorkRate = @max( minPopAccess, MIN_WORK_RATE ); // Clamping pop work rates to a minimum to prevent total supply chain collapse
 
     const rawWorkProd   : f32 = @floatFromInt( self.maxPopProd[ workIdx ]);
-    const weeklyPopWork : u64 = @intFromFloat( @floor( popWorkRate * rawWorkProd ));
+    const weeklyPopWork : u64 = @intFromFloat( popWorkRate * rawWorkProd );
 
     def.log( .CONT, 0, @src(), "# WORK rate\t: {d:.4}", .{ popWorkRate });
 
@@ -391,7 +391,7 @@ const EconSolver = struct
         if( resType != .WORK ) // Skipping WORK ( see applyWorkWeek() )
         {
           const rawIndProd   : f32 = @floatFromInt( self.perIndProd[ d ][ r ]);
-          const finalIndProd : u64 = @intFromFloat( @floor( rawIndProd * indActivity ));
+          const finalIndProd : u64 = @intFromFloat( rawIndProd * indActivity );
 
           self.finalIndProd[ r ] += finalIndProd;
           self.finalGenProd[ r ] += finalIndProd;
@@ -399,7 +399,7 @@ const EconSolver = struct
 
         // Consumption
         const rawIndCons   : f32 = @floatFromInt( self.perIndCons[ d ][ r ]);
-        const finalIndCons : u64 = @intFromFloat( @floor( rawIndCons * indActivity ));
+        const finalIndCons : u64 = @intFromFloat( rawIndCons * indActivity );
 
         self.finalIndCons[ r ] += finalIndCons;
         self.finalGenCons[ r ] += finalIndCons;
@@ -418,14 +418,14 @@ const EconSolver = struct
       {
         // Production ( nothing for now )
         const rawPopProd   : f32 = @floatFromInt( self.maxPopProd[ r ]);
-        const finalPopProd : u64 = @intFromFloat( @floor( rawPopProd * popResAccess ));
+        const finalPopProd : u64 = @intFromFloat( rawPopProd * popResAccess );
 
         self.finalPopProd[ r ]  = finalPopProd;
         self.finalGenProd[ r ] += finalPopProd;
 
         // Consumption ( FOOD, WATER, POWER )
         const rawPopCons   : f32 = @floatFromInt( self.maxPopCons[ r ]);
-        const finalPopCons : u64 = @intFromFloat( @floor( rawPopCons * popResAccess ));
+        const finalPopCons : u64 = @intFromFloat( rawPopCons * popResAccess );
 
         self.finalPopCons[ r ]  = finalPopCons;
         self.finalGenCons[ r ] += finalPopCons;

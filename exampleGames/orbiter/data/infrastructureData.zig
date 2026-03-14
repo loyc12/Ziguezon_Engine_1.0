@@ -64,9 +64,21 @@ pub const InfType = enum( u8 )
     }
   }
 
-  pub fn getMetric( self : InfType, metric : InfMetricEnum ) f32
+  pub fn getMetric_f32( self : InfType, metric : InfMetricEnum ) f32
   {
     return infMetricData.get( self, metric );
+  }
+  pub fn getMetric_f64( self : InfType, metric : InfMetricEnum ) f64
+  {
+    return @floatCast( infMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u32( self : InfType, metric : InfMetricEnum ) u32
+  {
+    return @intFromFloat( infMetricData.get( self, metric ));
+  }
+  pub fn getMetric_u64( self : InfType, metric : InfMetricEnum ) u64
+  {
+    return @intFromFloat( infMetricData.get( self, metric ));
   }
 };
 
@@ -90,17 +102,20 @@ pub fn loadInfrastructureData() void
 {
   infMetricData.fillWith( 0.0 );
 
+
   // ================================ MASS ================================
 
   infMetricData.set( .HOUSING, .MASS, 1.0 );
   infMetricData.set( .HABITAT, .MASS, 3.0 );
   infMetricData.set( .STORAGE, .MASS, 5.0 );
 
+
   // ================================ AREA COST ================================
 
   infMetricData.set( .HOUSING, .AREA_COST,  1.0 );
-  infMetricData.set( .HABITAT, .AREA_COST, -8.0 ); // Provides area
+  infMetricData.set( .HABITAT, .AREA_COST,  0.0 ); // Provides area
   infMetricData.set( .STORAGE, .AREA_COST,  4.0 );
+
 
   // ================================ PART COST ================================
 
@@ -108,11 +123,13 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .HABITAT, .PART_COST, 3.0 );
   infMetricData.set( .STORAGE, .PART_COST, 2.0 );
 
+
   // ================================ POLLUTION ================================
 
   infMetricData.set( .HOUSING, .POLLUTION, 0.1 );
   infMetricData.set( .HABITAT, .POLLUTION, 0.1 );
   infMetricData.set( .STORAGE, .POLLUTION, 0.1 );
+
 
   // ================================ CAPACITY ================================
 

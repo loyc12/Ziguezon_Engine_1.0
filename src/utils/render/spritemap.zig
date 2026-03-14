@@ -123,7 +123,7 @@ pub const Spritemap = struct
     }
     else
     {
-      self.layoutWidth  = @intFromFloat( @floor( atlasSize.x / self.frameSize.x ));
+      self.layoutWidth  = @intFromFloat( atlasSize.x / self.frameSize.x );
       self.layoutHeight = @divFloor( frameCount, self.layoutWidth );
 
       if( self.layoutWidth * self.layoutHeight > frameCount ){ self.layoutHeight += 1; }

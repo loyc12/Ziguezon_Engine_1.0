@@ -149,7 +149,7 @@ fn initGrid( ng : *def.Engine, grid : *def.Tilemap, startTile : *def.Tile ) void
   var initMineCount  = DIFFICULTY * 0.01;
       initMineCount *= @floatFromInt( tileCount );
 
-  MINE_COUNT = @intFromFloat( @floor( initMineCount ));
+  MINE_COUNT = @intFromFloat( initMineCount );
   FLAG_COUNT = 0;
 
   var remaingingMineCount = MINE_COUNT;

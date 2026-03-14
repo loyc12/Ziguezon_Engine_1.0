@@ -101,13 +101,10 @@ pub const Economy = struct
   {
     inline for( 0..resTypeCount )| r |
     {
-      const resType        = ResType.fromIdx( r );
-      const infStoreType   = resType.getInfStore();
-      const infCount : f32 = @floatFromInt( self.infBank[ infStoreType.toIdx() ]);
+      const resType = ResType.fromIdx( r );
+      const infType = resType.getInfStore();
 
-      const infResCap : u64 = @intFromFloat( @floor( infCount * infStoreType.getMetric( .CAPACITY )));
-
-      self.resCap[ r ] = MIN_RES_CAP + infResCap;
+      self.resCap[ r ] = MIN_RES_CAP + self.infBank[ infType.toIdx() ] * infType.getMetric_u64( .CAPACITY );
     }
   }
 
@@ -195,12 +192,10 @@ pub const Economy = struct
 
     inline for( 0..infTypeCount )| f |
     {
-      const infType  = InfType.fromIdx(  f );
-      const infCount = self.infBank[     f ];
-      const infDelta = self.infDelta[    f ];
-
-      const infCount_f32 : f32 = @floatFromInt( self.infBank[ infType.toIdx() ]);
-      const infBonus     : u64 = @intFromFloat( @floor( infCount_f32 * infType.getMetric( .CAPACITY )));
+      const infType  = InfType.fromIdx( f );
+      const infCount = self.infBank[    f ];
+      const infDelta = self.infDelta[   f ];
+      const infBonus = self.infBank[    f ] * infType.getMetric_u64( .CAPACITY );
 
       def.log( .CONT, 0, @src(), "{s}\t: {d}\t +{d}\t) [ {d} ]", .{ @tagName( infType ), infCount, infBonus, infDelta });
     }
@@ -241,7 +236,7 @@ pub const Economy = struct
 
   pub fn canBuildInf( self : *const Economy, infType : InfType, count : u64 ) bool
   {
-    if( !InfType.canBeBuiltAt( infType, self.location, self.hasAtmosphere ))
+    if( !InfType.canBeBuiltIn( infType, self.location, self.hasAtmo ))
     {
       def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
       return false;
@@ -323,7 +318,7 @@ pub const Economy = struct
 
   pub fn canBuildInd( self : *const Economy, indType : IndType, count : u64 ) bool
   {
-    if( !IndType.canBeBuiltAt( indType, self.location, self.hasAtmosphere ))
+    if( !IndType.canBeBuiltIn( indType, self.location, self.hasAtmo ))
     {
       def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {}", .{ @tagName( indType ), @tagName( self.location ) });
       return false;
@@ -349,9 +344,7 @@ pub const Economy = struct
 
   pub fn getPopCap( self : *const Economy ) u64
   {
-    const housing : f32 = @floatFromInt( self.getInfCount( .HOUSING ));
-
-    return @intFromFloat( @floor( housing * InfType.HOUSING.getMetric( .CAPACITY )));
+    return self.getInfCount( .HOUSING ) * InfType.HOUSING.getMetric_u64( .CAPACITY );
   }
 
 
@@ -401,14 +394,14 @@ pub const Economy = struct
     var pollutionAmount : f64 = @floatFromInt( self.popCount );
         pollutionAmount      *= POLLUTION_PER_POP;
 
-
     for( 0..indTypeCount )| d |
     {
       const activity = self.indActivity[ d ];
+      const indType  = IndType.fromIdx( d );
 
-      var tmp : f64 = IndType.fromIdx( d ).getMetric( .POLLUTION );
-          tmp      *= @floatFromInt( self.indBank[ d ]);
-          tmp      *= activity;
+      var tmp  = indType.getMetric_f64( .POLLUTION );
+          tmp *= @floatFromInt( self.indBank[ d ]);
+          tmp *= activity;
 
       pollutionAmount += tmp;
       averageActivity += activity;
@@ -418,9 +411,11 @@ pub const Economy = struct
 
     for( 0..infTypeCount )| f |
     {
-      var tmp : f64 = InfType.fromIdx( f ).getMetric( .POLLUTION );
-          tmp      *= @floatFromInt( self.infBank[ f ]);
-          tmp      *= averageActivity;
+      const infType  = InfType.fromIdx( f );
+
+      var tmp  = infType.getMetric_f64( .POLLUTION );
+          tmp *= @floatFromInt( self.infBank[ f ]);
+          tmp *= averageActivity;
 
       pollutionAmount += tmp;
     }
@@ -454,9 +449,8 @@ pub const Economy = struct
   pub inline fn getHabitatArea( self : *const Economy ) f64
   {
     const habCount : f64 = @floatFromInt( self.getInfCount( .HABITAT ));
-    const habBonus : f64 = @floatCast( InfType.HABITAT.getMetric( .CAPACITY ));
 
-    return habCount * habBonus;
+    return habCount * InfType.HABITAT.getMetric_f64( .CAPACITY );
   }
 
   pub fn updateAreas( self : *Economy ) void
@@ -467,8 +461,8 @@ pub const Economy = struct
 
     if( self.location == .GROUND and self.hasAtmo )
     {
-      const groundArea  = self.areaCap * self.landCover;
-      self.areaMax = habitatArea + groundArea;
+      const groundArea = self.areaCap * self.landCover;
+      self.areaMax     = habitatArea + groundArea;
     }
     else
     {
@@ -481,21 +475,19 @@ pub const Economy = struct
 
     inline for( 0..infTypeCount )| f |{ if( f != InfType.HABITAT.toIdx() )
     {
-      const infType  = InfType.fromIdx( f );
+      const infType = InfType.fromIdx( f );
 
-      var area : f64 = @floatFromInt( self.getInfCount( infType ));
-          area      *= @floatCast( infType.getMetric( .AREA_COST ));
+      const infCount : f64 = @floatFromInt( self.getInfCount( infType ));
 
-      self.areaUsed += area;
+      self.areaUsed += infCount * infType.getMetric_f64( .AREA_COST );
     }}
     inline for( 0..indTypeCount )| d |
     {
       const indType = IndType.fromIdx( d );
 
-      var area : f64 = @floatFromInt( self.getIndCount( indType ));
-          area      *= @floatCast( indType.getMetric( .AREA_COST ));
+      const indCount : f64 = @floatFromInt( self.getIndCount( indType ));
 
-      self.areaUsed += area;
+      self.areaUsed += indCount * indType.getMetric_f64( .AREA_COST );
     }
 
 
@@ -516,98 +508,80 @@ pub const Economy = struct
 
   // ================================ ECONOMY ================================
 
-  pub inline fn getMaxTotResCons( self : *const Economy, resType : ResType ) u64
-  {
-    var maxCons : u64 = 0;
-
-    maxCons += self.getMaxPopResCons( resType );
-    maxCons += self.getMaxIndResCons( resType );
-
-    return maxCons;
-  }
-
-  pub inline fn getMaxPopResCons( self : *const Economy, resType : ResType ) u64
-  {
-    var maxCons : u64 = 0;
-
-    const popResDelta = self.popCount * resType.getPerPopDelta();
-
-    if( popResDelta < -def.EPS ) // If res consumed by pop
-    {
-      maxCons += @intFromFloat( @floor( -popResDelta ));
-    }
-
-    return maxCons;
-  }
-
-  pub inline fn getMaxIndResCons( self : *const Economy, resType : ResType ) u64
-  {
-    var maxCons : u64 = 0;
-
-    inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
-    {
-      const indType = IndType.fromIdx( d );
-
-      maxCons += self.indBank[ d ] * indType.getResProd( resType );
-
-      if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
-      {
-        const factor = self.sunAccess;
-
-        const maxCons_f32 : f64 = @floatFromInt( maxCons );
-        maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
-      }
-    }}
-
-    return maxCons;
-  }
-
-
-  pub inline fn getMaxTotResProd( self : *const Economy, resType : ResType ) u64
-  {
-    var maxProd : u64 = 0;
-
-    maxProd += self.getMaxPopResProd( resType );
-    maxProd += self.getMaxIndResProd( resType );
-
-    return maxProd;
-  }
-
-  pub inline fn getMaxPopResProd( self : *const Economy, resType : ResType ) u64
-  {
-    var maxProd : u64 = 0;
-
-    const popResDelta = self.popCount * resType.getPerPopDelta();
-
-    if( popResDelta > def.EPS ) // If res produced by pop
-    {
-      maxProd += @intFromFloat( @floor( popResDelta ));
-    }
-
-    return maxProd;
-  }
-
-  pub inline fn getMaxIndResProd( self : *const Economy, resType : ResType ) u64
-  {
-    var maxProd : u64 = 0;
-
-    inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
-    {
-      const indType = IndType.fromIdx( d );
-
-      maxProd += self.indBank[ d ] * indType.getResProd( resType );
-
-      if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
-      {
-        const factor = @min( self.getSunshineAccess(), 1.0 );
-
-        const maxProd_f32 : f64 = @floatFromInt( maxProd );
-        maxProd = @intFromFloat( @floor( maxProd_f32 * factor ));
-      }
-    }}
-
-    return maxProd;
-  }
+//pub inline fn getMaxTotResCons( self : *const Economy, resType : ResType ) u64
+//{
+//  var maxCons : u64 = 0;
+//
+//  maxCons += self.getMaxPopResCons( resType );
+//  maxCons += self.getMaxIndResCons( resType );
+//
+//  return maxCons;
+//}
+//
+//pub inline fn getMaxPopResCons( self : *const Economy, resType : ResType ) u64
+//{
+//  return @intFromFloat( self.popCount * resType.getMetric_f32( .POP_CONS ));
+//}
+//
+//pub inline fn getMaxIndResCons( self : *const Economy, resType : ResType ) u64
+//{
+//  var maxCons : u64 = 0;
+//
+//  inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
+//  {
+//    const indType = IndType.fromIdx( d );
+//
+//    maxCons += self.indBank[ d ] * indType.getResProd( resType );
+//
+//    if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
+//    {
+//      const factor = self.sunAccess;
+//
+//      const maxCons_f32 : f64 = @floatFromInt( maxCons );
+//      maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
+//    }
+//  }}
+//
+//  return maxCons;
+//}
+//
+//
+//pub inline fn getMaxTotResProd( self : *const Economy, resType : ResType ) u64
+//{
+//  var maxProd : u64 = 0;
+//
+//  maxProd += self.getMaxPopResProd( resType );
+//  maxProd += self.getMaxIndResProd( resType );
+//
+//  return maxProd;
+//}
+//
+//pub inline fn getMaxPopResProd( self : *const Economy, resType : ResType ) u64
+//{
+//  return @intFromFloat( self.popCount * resType.getMetric_f32( .POP_PROD ));
+//}
+//
+//pub inline fn getMaxIndResProd( self : *const Economy, resType : ResType ) u64
+//{
+//  var maxProd : u64 = 0;
+//
+//  inline for( 0..indTypeCount )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
+//  {
+//    const indType = IndType.fromIdx( d );
+//
+//    maxProd += self.indBank[ d ] * indType.getResProd( resType );
+//
+//    if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
+//    {
+//      const factor = @min( self.getSunshineAccess(), 1.0 );
+//
+//      const maxProd_f32 : f64 = @floatFromInt( maxProd );
+//      maxProd = @intFromFloat( @floor( maxProd_f32 * factor ));
+//    }
+//  }}
+//
+//  return maxProd;
+//}
 
 
   // ================================ CONSTRUCTION ================================
@@ -657,8 +631,8 @@ pub const Economy = struct
       }
     }
 
-    const finalAmount : u64 = @intFromFloat( @floor( maxAmount ));
-    const totalCost   : u64 = @intFromFloat( @floor( partCost * maxAmount ));
+    const finalAmount : u64 = @intFromFloat( maxAmount );
+    const totalCost   : u64 = @intFromFloat( partCost * maxAmount );
 
     self.resBank[  partIdx ] -= totalCost;
     self.resDelta[ partIdx ] -= @intCast( totalCost );
