@@ -712,6 +712,8 @@ pub const Economy = struct
   {
     self.itrCount += 1;
 
+    if( @mod( self.itrCount, 7 ) != 1 ){ return; } // Only tick econ at start of week
+
     self.updateResCaps();
     self.updateAreas();
     self.updateSunshine( newSunshine );

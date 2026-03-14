@@ -132,7 +132,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
         const distSqr = orbiterPos.getDistSqr( starPos );
         const shine   = glb.starCompInst.getSunshineAt( distSqr );
 
-        def.log( .INFO, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} at pos {d:.2}:{d:.2}", .{ @tagName( econ.location ), shine, orbiterPos.x, orbiterPos.y });
+        def.log( .CONT, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} ( day {d} )", .{ @tagName( econ.location ), shine, econ.itrCount + 1 });
 
         econ.tickEcon( shine );
       }
