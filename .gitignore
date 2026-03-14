@@ -2,6 +2,7 @@
 ZiguezonEngine
 *.log
 LanguageRef.txt
+*.tmp*
 
 # Zig
 zig-cache*
