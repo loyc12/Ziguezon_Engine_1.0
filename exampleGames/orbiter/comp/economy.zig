@@ -367,7 +367,7 @@ pub const Economy = struct
 
         if( developedArea < surfaceArea ) // If the planet is not fully developed
         {
-          tmp = 0.5 * sunshine;
+          tmp = 0.5 * sunshine; // 50 % due to nighttime
         }
         else
         {
@@ -377,7 +377,7 @@ pub const Economy = struct
         }
       },
 
-      .ORBIT => tmp = sunshine * 0.95,
+      .ORBIT => tmp = sunshine * 0.98, // PLanetary shadow
       else   => tmp = sunshine,
     }
 
@@ -729,7 +729,7 @@ pub const Economy = struct
 
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
-      _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING     }, 1 );
+      _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING     }, 2 );
       _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT     }, 4 );
       _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE     }, 4 );
 
