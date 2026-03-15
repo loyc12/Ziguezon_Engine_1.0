@@ -241,7 +241,7 @@ pub fn tickGlobalEconomy( transStore : *glb.TransStore, bodyStore : *glb.BodySto
 
     if( trans != null and body != null )
     {
-      def.log( .DEBUG, 0, @src(), "Updating economies of entity #{d}", .{ id });
+    //def.log( .DEBUG, 0, @src(), "Updating economies of entity #{d}", .{ id });
 
       body.?.tickEcons( trans.?.pos.toVec2(), starPos );
     }

@@ -132,7 +132,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
         const distSqr = orbiterPos.getDistSqr( starPos );
         const shine   = glb.starCompInst.getSunshineAt( distSqr );
 
-        def.log( .CONT, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} ( day {d} )", .{ @tagName( econ.location ), shine, econ.dayCount + 1 });
+      //def.log( .CONT, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} ( day {d} )", .{ @tagName( econ.location ), shine, econ.dayCount + 1 });
 
         econ.tickEcon( shine );
       }
@@ -167,10 +167,10 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
       if( econ.isActive ) // TODO : Activate locs when player build infra there
       {
-        econ.addPopCount(       value * 1600 );
         econ.debugSetResCounts( value * 1600 );
         econ.debugSetInfCounts( value );
         econ.debugSetIndCounts( value );
+        econ.addPopCount(       value * 1600 );
       }
     }
   }

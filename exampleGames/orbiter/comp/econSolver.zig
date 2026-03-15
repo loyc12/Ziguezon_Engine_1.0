@@ -520,7 +520,7 @@ const EconSolver = struct
 
     if( foodAccess < 1.0 )
     {
-      def.qlog( .WARN, 0, @src(), "Population is experiencing food shortages !" );
+      def.log( .WARN, 0, @src(), "Population is experiencing food shortages ! ( {d:.3} )", .{ foodAccess });
 
       deaths += self.prevPopCount * def.pow( f64, 1.0 - foodAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_STARVE_RATE;
     }
@@ -531,7 +531,7 @@ const EconSolver = struct
 
     if( waterAccess < 1.0 )
     {
-      def.qlog( .WARN, 0, @src(), "Population is experiencing water shortages !" );
+      def.log( .WARN, 0, @src(), "Population is experiencing water shortages ! ( {d:.3} )", .{ waterAccess });
 
       deaths += self.prevPopCount * def.pow( f64, 1.0 - waterAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_PARCH_RATE;
     }
@@ -542,7 +542,7 @@ const EconSolver = struct
 
     if( powerAccess < 1.0 )
     {
-      def.qlog( .WARN, 0, @src(), "Population is experiencing power shortages !" );
+      def.log( .WARN, 0, @src(), "Population is experiencing power shortages ! ( {d:.3} )", .{ powerAccess });
 
       deaths += self.prevPopCount * def.pow( f64, 1.0 - powerAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_FREEZE_RATE;
     }
