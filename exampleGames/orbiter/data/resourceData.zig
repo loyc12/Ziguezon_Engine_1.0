@@ -4,10 +4,10 @@ const def = @import( "defs" );
 const InfType = @import( "infrastructureData.zig" ).InfType;
 
 
-pub const resTypeCount = @typeInfo( ResType ).@"enum".fields.len;
-
 pub const ResType = enum( u8 )
 {
+  pub const count = @typeInfo( ResType ).@"enum".fields.len;
+
   pub inline fn toIdx( self : ResType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) ResType  { return @enumFromInt( @as( u8, @intCast( i ))); }
 

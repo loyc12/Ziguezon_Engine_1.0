@@ -5,10 +5,10 @@ const EconLoc    = @import( "../comp/economy.zig" ).EconLoc;
 //const PowerSrc = @import( "powerData.zig"       ).PowerSrc;
 
 
-pub const infTypeCount = @typeInfo( InfType ).@"enum".fields.len;
-
 pub const InfType = enum( u8 )
 {
+  pub const count = @typeInfo( InfType ).@"enum".fields.len;
+
   pub inline fn toIdx( self : InfType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) InfType  { return @enumFromInt( @as( u8, @intCast( i ))); }
 

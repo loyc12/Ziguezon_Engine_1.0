@@ -2,10 +2,10 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-pub const econLocCount = @typeInfo( EconLoc ).@"enum".fields.len;
-
 pub const EconLoc = enum( u8 )
 {
+  pub const count = @typeInfo( EconLoc ).@"enum".fields.len;
+
   pub inline fn toIdx( self : EconLoc ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) EconLoc {  return @enumFromInt( @as( u8, @intCast( i ))); }
 

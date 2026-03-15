@@ -2,10 +2,10 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-pub const vesTypeCount = @typeInfo( VesType ).@"enum".fields.len;
-
 pub const VesType = enum( u8 )
 {
+  pub const count = @typeInfo( VesType ).@"enum".fields.len;
+
   pub inline fn toIdx( self : VesType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) VesType  { return @enumFromInt( @as( u8, @intCast( i ))); }
 

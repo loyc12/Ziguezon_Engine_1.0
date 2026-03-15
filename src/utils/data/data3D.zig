@@ -10,15 +10,13 @@ pub fn newDataMatrix( comptime DataType : type, comptime RowEnum : type, comptim
     if( @typeInfo( LayerEnum  ) != .@"enum" ){ @compileError( "LayerEnum must be an enum"  ); }
   }
 
-  const rowLen = @typeInfo( RowEnum    ).@"enum".fields.len;
-  const colLen = @typeInfo( ColumnEnum ).@"enum".fields.len;
-  const layLen = @typeInfo( LayerEnum  ).@"enum".fields.len;
-
-
   return struct
   {
-
     const SelfType = @This();
+
+    const rowLen = @typeInfo( RowEnum    ).@"enum".fields.len;
+    const colLen = @typeInfo( ColumnEnum ).@"enum".fields.len;
+    const layLen = @typeInfo( LayerEnum  ).@"enum".fields.len;
 
     // NOTE : Row can be easily sliced, Columns and Layers are harder to iterate over without original struct
     data : [ rowLen ][ colLen ][ layLen ]DataType = undefined,

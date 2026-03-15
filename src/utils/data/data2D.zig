@@ -9,14 +9,12 @@ pub fn newDataGrid( comptime DataType : type, comptime RowEnum : type, comptime 
     if( @typeInfo( ColumnEnum ) != .@"enum" ){ @compileError( "ColumnEnum must be an enum" ); }
   }
 
-  const rowLen = @typeInfo( RowEnum    ).@"enum".fields.len;
-  const colLen = @typeInfo( ColumnEnum ).@"enum".fields.len;
-
-
   return struct
   {
-
     const SelfType = @This();
+
+    const rowLen = @typeInfo( RowEnum    ).@"enum".fields.len;
+    const colLen = @typeInfo( ColumnEnum ).@"enum".fields.len;
 
     // NOTE : Row can be easily sliced, Columns are harder to iterate over without original struct
     data : [ rowLen ][ colLen ]DataType = undefined,

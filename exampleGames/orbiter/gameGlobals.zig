@@ -83,12 +83,6 @@ pub const ResType       = rsrc_d.ResType;
 pub const InfType       = nfrs_d.InfType;
 pub const IndType       = ndst_d.IndType;
 
-pub const powerSrcCount = powr_d.powerSrcCount;
-pub const vesTypeCount  = vesl_d.vesTypeCount;
-pub const resTypeCount  = rsrc_d.resTypeCount;
-pub const infTypeCount  = nfrs_d.infTypeCount;
-pub const indTypeCount  = ndst_d.indTypeCount;
-
 
 pub fn loadAllData() void
 {

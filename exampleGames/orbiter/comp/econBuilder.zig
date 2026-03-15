@@ -10,15 +10,10 @@ const Construct = cst.Construct;
 
 const gbl = @import( "../gameGlobals.zig" );
 
-const vesTypeCount = gbl.vesTypeCount;
-const resTypeCount = gbl.resTypeCount;
-const infTypeCount = gbl.infTypeCount;
-const indTypeCount = gbl.indTypeCount;
-
-const VesType      = gbl.VesType;
-const ResType      = gbl.ResType;
-const InfType      = gbl.InfType;
-const IndType      = gbl.IndType;
+const VesType = gbl.VesType;
+const ResType = gbl.ResType;
+const InfType = gbl.InfType;
+const IndType = gbl.IndType;
 
 
 pub const BuildEntry = struct

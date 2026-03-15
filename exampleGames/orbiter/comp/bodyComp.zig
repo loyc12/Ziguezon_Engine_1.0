@@ -7,10 +7,10 @@ const orb = @import( "orbitComp.zig" );
 const ecn = @import( "economy.zig" );
 
 
-pub const bodyTypeCount = @typeInfo( BodyType ).@"enum".fields.len;
-
 pub const BodyType = enum( u8 )
 {
+  pub const count = @typeInfo( BodyType ).@"enum".fields.len;
+
   pub inline fn toIdx( self : BodyType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) BodyType {  return @enumFromInt( @as( u8, @intCast( i ))); }
 
@@ -49,7 +49,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 //temp   : f32 =               390.0, // Kelvins    ( Dk )
 //tilt   : f32 =                 0.0, // Radians
 
-  econArray : [ ecn.econLocCount ]ecn.Economy = std.mem.zeroes([ ecn.econLocCount ]ecn.Economy ),
+  econArray : [ ecn.EconLoc.count ]ecn.Economy = std.mem.zeroes([ ecn.EconLoc.count ]ecn.Economy ),
 
 
   // Sphere surface area : 4πr^2
@@ -132,7 +132,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
         const distSqr = orbiterPos.getDistSqr( starPos );
         const shine   = glb.starCompInst.getSunshineAt( distSqr );
 
-        def.log( .CONT, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} ( day {d} )", .{ @tagName( econ.location ), shine, econ.itrCount + 1 });
+        def.log( .CONT, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} ( day {d} )", .{ @tagName( econ.location ), shine, econ.dayCount + 1 });
 
         econ.tickEcon( shine );
       }

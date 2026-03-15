@@ -3,16 +3,20 @@ const def = @import( "defs" );
 
 const ecn = @import( "economy.zig" );
 
+
 const gbl = @import( "../gameGlobals.zig" );
 
+const PowerSrc = gbl.PowerSrc;
+const VesType  = gbl.VesType;
+const ResType  = gbl.ResType;
+const InfType  = gbl.InfType;
+const IndType  = gbl.IndType;
 
-const resTypeCount = gbl.resTypeCount;
-const infTypeCount = gbl.infTypeCount;
-const indTypeCount = gbl.indTypeCount;
-
-const ResType      = gbl.ResType;
-const InfType      = gbl.InfType;
-const IndType      = gbl.IndType;
+const powerSrcC = PowerSrc.count;
+const vesTypeC  = VesType.count;
+const resTypeC  = ResType.count;
+const infTypeC  = InfType.count;
+const indTypeC  = IndType.count;
 
 
 // Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
@@ -56,34 +60,34 @@ const EconSolver = struct
 
   // NOTE : Remove redundant zeroing if this becomes a performance bottleneck
 
-  maxPopCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  maxPopProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  maxPopCons : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+  maxPopProd : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
 
-  maxIndCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  maxIndProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  maxIndCons : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+  maxIndProd : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
 
-  maxGenCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  maxGenProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-
-
-  popAccess  : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Population resource access ratios
-  indAccess  : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Industrial resource access ratios ( aggregated )
-  genAccess  : [ resTypeCount ]f32 = std.mem.zeroes([ resTypeCount ]f32 ), // Aggregated resource access ratios
-
-  indActivity : [ indTypeCount ]f32 = std.mem.zeroes([ indTypeCount ]f32 ), // Industrial activity ratios
-
-  perIndCons  : [ indTypeCount ][ resTypeCount ]u64 = std.mem.zeroes([ indTypeCount ][ resTypeCount ]u64 ),
-  perIndProd  : [ indTypeCount ][ resTypeCount ]u64 = std.mem.zeroes([ indTypeCount ][ resTypeCount ]u64 ),
+  maxGenCons : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+  maxGenProd : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
 
 
-  finalPopCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  finalPopProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  popAccess  : [ resTypeC ]f32 = std.mem.zeroes([ resTypeC ]f32 ), // Population resource access ratios
+  indAccess  : [ resTypeC ]f32 = std.mem.zeroes([ resTypeC ]f32 ), // Industrial resource access ratios ( aggregated )
+  genAccess  : [ resTypeC ]f32 = std.mem.zeroes([ resTypeC ]f32 ), // Aggregated resource access ratios
 
-  finalIndCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  finalIndProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  indActivity : [ indTypeC ]f32 = std.mem.zeroes([ indTypeC ]f32 ), // Industrial activity ratios
 
-  finalGenCons : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
-  finalGenProd : [ resTypeCount ]u64 = std.mem.zeroes([ resTypeCount ]u64 ),
+  perIndCons  : [ indTypeC ][ resTypeC ]u64 = std.mem.zeroes([ indTypeC ][ resTypeC ]u64 ),
+  perIndProd  : [ indTypeC ][ resTypeC ]u64 = std.mem.zeroes([ indTypeC ][ resTypeC ]u64 ),
+
+
+  finalPopCons : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+  finalPopProd : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+
+  finalIndCons : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+  finalIndProd : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+
+  finalGenCons : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
+  finalGenProd : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
 
 
   pub fn resolve( self : *EconSolver ) void
@@ -118,7 +122,7 @@ const EconSolver = struct
   {
   //def.qlog( .DEBUG, 0, @src(), "Logging natural resource decay :" );
 
-    inline for( 0..resTypeCount )| r |
+    inline for( 0..resTypeC )| r |
     {
       if( self.econ.resBank[ r ] != 0 )
       {
@@ -142,7 +146,7 @@ const EconSolver = struct
 
   //def.qlog( .DEBUG, 0, @src(), "Logging natural resource growth :" );
 
-    inline for( 0..resTypeCount )| r |
+    inline for( 0..resTypeC )| r |
     {
       const resType  = ResType.fromIdx( r );
       const growRate = resType.getMetric_f32( .GROWTH_RATE );
@@ -164,7 +168,7 @@ const EconSolver = struct
   {
   //def.log( .DEBUG, 0, @src(), "Logging population prod. and cons. ({d:.0}) :", .{ self.prevPopCount });
 
-    inline for( 0..resTypeCount )| r |
+    inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
 
@@ -194,13 +198,13 @@ const EconSolver = struct
 
   fn calcIndNeeds( self : *EconSolver ) void
   {
-    inline for( 0..indTypeCount )| d |{ if( self.econ.indBank[ d ] != 0 ) // Skips absent industries
+    inline for( 0..indTypeC )| d |{ if( self.econ.indBank[ d ] != 0 ) // Skips absent industries
     {
       const indType = IndType.fromIdx( d );
 
     //def.log( .DEBUG, 0, @src(), "Logging bank amounts for {s} ({d}):", .{ @tagName( indType ), self.econ.indBank[ d ]});
 
-      inline for ( 0..resTypeCount )| r |
+      inline for ( 0..resTypeC )| r |
       {
         const resType = ResType.fromIdx( r );
 
@@ -231,7 +235,7 @@ const EconSolver = struct
 
   //def.qlog( .DEBUG, 0, @src(), "Logging industrial resource prod. and cons. :" );
 
-  //inline for ( 0..resTypeCount )| r | // NOTE : DEBUG INFO
+  //inline for ( 0..resTypeC )| r | // NOTE : DEBUG INFO
   //{
   //  const maxProd = self.maxIndProd[ r ];
   //  const maxCons = self.maxIndCons[ r ];
@@ -245,7 +249,7 @@ const EconSolver = struct
     // Skips WORK res, as it is calc later
     def.qlog( .DEBUG, 0, @src(), "Logging resource availabilities and requirements :" );
 
-    inline for( 0..resTypeCount )| r |{ if( ResType.fromIdx( r ) != .WORK ) // Skipping WORK ( see calcWorkAccess() )
+    inline for( 0..resTypeC )| r |{ if( ResType.fromIdx( r ) != .WORK ) // Skipping WORK ( see calcWorkAccess() )
     {
       const available : f32 = @floatFromInt( self.econ.resBank[ r ]);
       const required  : f32 = @floatFromInt( self.maxGenCons[   r ]);
@@ -291,7 +295,7 @@ const EconSolver = struct
 
     var minPopAccess = self.maxPopAccess;
 
-    inline for( 0..resTypeCount )| r |{ if( ResType.fromIdx( r ) != .WORK ) // Skipping WORK ( see calcWorkAccess )
+    inline for( 0..resTypeC )| r |{ if( ResType.fromIdx( r ) != .WORK ) // Skipping WORK ( see calcWorkAccess )
     {
       minPopAccess = @min( minPopAccess, self.popAccess[ r ]);
     }}
@@ -350,7 +354,7 @@ const EconSolver = struct
   {
   //def.qlog( .DEBUG, 0, @src(), "Logging industrial activity :" );
 
-    inline for( 0..indTypeCount )| d |
+    inline for( 0..indTypeC )| d |
     {
       var activity : f32 = self.maxIndActivity;
 
@@ -362,7 +366,7 @@ const EconSolver = struct
       {
         // NOTE : Sunshine ratio effect moved to maxResProd phase, to avoid planning for impossible supplies
 
-        inline for( 0..resTypeCount )| r |
+        inline for( 0..resTypeC )| r |
         {
           if( self.perIndCons[ d ][ r ] != 0 ) // Non consumed resources do not affect industrial activity
           {
@@ -380,7 +384,7 @@ const EconSolver = struct
   fn applyResDelta( self : *EconSolver ) void
   {
     // Industrial pass
-    inline for( 0..indTypeCount )| d |{ inline for( 0..resTypeCount )| r |
+    inline for( 0..indTypeC )| d |{ inline for( 0..resTypeC )| r |
     {
       const resType     = ResType.fromIdx( r );
       const indActivity = self.indActivity[ d ];
@@ -408,7 +412,7 @@ const EconSolver = struct
     //def.qlog( .DEBUG, 0, @src(), "Logging general resource prod. and cons. :" );
 
     // Population + Application pass
-    inline for( 0..resTypeCount )| r |
+    inline for( 0..resTypeC )| r |
     {
 
       const resType      = ResType.fromIdx( r );

@@ -8,12 +8,11 @@ pub fn newDataArray( comptime DataType : type, comptime IdxEnum : type ) type
     if( @typeInfo( IdxEnum ) != .@"enum" ){ @compileError( "IdxEnum must be an enum" ); }
   }
 
-  const len = @typeInfo( IdxEnum ).@"enum".fields.len;
-
-
   return struct
   {
     const SelfType = @This();
+
+    const len = @typeInfo( IdxEnum ).@"enum".fields.len;
 
     data : [ len ]DataType = undefined,
 
