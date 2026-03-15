@@ -4,23 +4,27 @@ const def = @import( "defs" );
 const gbl = @import( "../gameGlobals.zig" );
 
 const ResType = gbl.ResType;
+const InfType = gbl.IndType;
 const IndType = gbl.IndType;
 
 
 // ================================ RESOURCE FLOW MATRIX ================================
+// NOTE : used in EconSolver
 
 pub const FlowAgent = enum
 {
+  pub const count = @typeInfo( FlowAgent ).@"enum".fields.len;
+
   NAT, // Natural processes     (decay, growth)
   POP, // Population            (work prod, food/water/power cons)
   IND, // Industry aggregate    (all industrial prod/cons)
   COM, // Commerce / trade      (imports/exports — stub for now)
-
-  pub const count = @typeInfo( FlowAgent ).@"enum".fields.len;
 };
 
 pub const FlowPhase = enum
 {
+  pub const count = @typeInfo( FlowPhase ).@"enum".fields.len;
+
   MAX_PROD,  // Theoretical maximum production    ( before scarcity )
   MAX_CONS,  // Theoretical maximum consumption   ( before scarcity )
 
@@ -29,76 +33,49 @@ pub const FlowPhase = enum
 
   REAL_PROD, // Realized production               ( after activity / access applied )
   REAL_CONS, // Realized consumption              ( after activity / access applied )
-
-  pub const count = @typeInfo( FlowPhase ).@"enum".fields.len;
 };
 
-pub var resFlowData: def.newDataMatrix( u64, FlowAgent, FlowPhase, ResType ) = .{};
+// var resFlowData: def.newDataMatrix( u64, FlowAgent, FlowPhase, ResType ) = .{};
 
 
-// ================================ INDUSTRY FLOW MATRIX ================================
 // NOTE : de-agregated version of resFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
+// var indFlowData: def.newDataMatrix( u64, IndType, FlowPhase, ResType ) = .{};
 
-pub var indFlowData: def.newDataMatrix( u64, IndType, FlowPhase, ResType ) = .{};
+// NOTE : equivalent of [ SAT_LVL ] for industries
+// var indActivityData: def.newDataArray( f64, IndType ) = .{};
 
-
-// ================================ RESOURCE STATE GRID ================================
-
-pub const ResStateMetric = enum
-{
-    BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
-    CAP,        // Storage capacity            ( u64, but stored as f64 for uniformity )
-
-    DELTA,      // Net total change this tick
-
-    DECAY,      // Amount lost to stock decay this tick
-    GROWTH,     // Amount gained from nature  this tick
-
-    MAX_DEM,    // Total maximal consumption this tick
-    MAX_SUP,    // Total maximal produciton  this tick
-
-    FIN_DEM,    // Total applied consumption this tick
-    FIN_SUP,    // Total applied produciton  this tick
-
-    SAT_LVL,    // How much of demand could be satisfied by supply this tick
-
-    pub const count = @typeInfo( ResStateMetric ).@"enum".fields.len;
-};
-
-pub var resStateData: def.newDataGrid( f64, ResStateMetric, ResType ) = .{};
 
 
 // ================================ RESOURCE ACCESS GRID ================================
+// NOTE : used in EconSolver
+
 
 pub const AccessAgent = enum
 {
+  pub const count = @typeInfo( AccessAgent ).@"enum".fields.len;
+
   POP, // Population access ratio for this resource
   IND, // Industry aggregate access ratio
   GEN, // General / combined access ratio
-
-  pub const count = @typeInfo( AccessAgent ).@"enum".fields.len;
 };
 
-pub var resAccessData: def.newDataGrid( f32, AccessAgent, ResType ) = .{};
+// var resAccessData: def.newDataGrid( f32, AccessAgent, ResType ) = .{};
 
-
-// ================================ INDUSTRY STATE ARRAY ================================
-
-pub var indActivityData: def.newDataArray( f32, IndType ) = .{};
 
 
 // ================================ AREA METRIC ARRAY ================================
+// NOTE : used in Economy
 
 pub const AreaMetric = enum
 {
+  pub const count = @typeInfo( AreaMetric ).@"enum".fields.len;
+
   BODY,  // SURFACE AREA ( if on GROUND )
   INHAB, // Inhabitable proportion of surface
   LAND,  // LAND AREAD
   CAP,   // LAND + HAB
   AVAIL, // MAX - USED
   USED,  // IND + INF costs
-
-  pub const count = @typeInfo( AreaMetric ).@"enum".fields.len;
 };
 
-pub var areaMetricData: def.newDataArray( f64, AreaMetric ) = .{};
+// var areaMetricData: def.newDataArray( f64, AreaMetric ) = .{};

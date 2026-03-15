@@ -17,7 +17,7 @@ pub const EconLoc = enum( u8 )
   L4,
   L5,
 
-  pub inline fn toLagrange( self : EconLoc ) u4
+  pub inline fn toLagrangeIdx( self : EconLoc ) u4
   {
     return switch( self )
     {
@@ -30,3 +30,4 @@ pub const EconLoc = enum( u8 )
     };
   }
 };
+

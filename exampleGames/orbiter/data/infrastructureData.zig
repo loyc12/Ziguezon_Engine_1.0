@@ -83,13 +83,14 @@ pub const InfType = enum( u8 )
 };
 
 
-// Scalar metrics ( f32 )
+// ================================ INFRASTRUCTURE METRICS GRID ================================
+
 pub var infMetricData : def.newDataGrid( f32, InfType, InfMetricEnum ) = .{};
 
 pub const InfMetricEnum = enum
 {
   MASS,
-  AREA_COST,  // Negative = provides area
+  AREA_COST,
   PART_COST,
 //CASH_COST,
   POLLUTION,
@@ -137,3 +138,19 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .HABITAT, .CAPACITY, 16.0 ); // Area
   infMetricData.set( .STORAGE, .CAPACITY, 16.0 ); // Resources
 }
+
+
+// ================================ INFRASTRUCTURE STATE ENUM ================================
+// NOTE : used in Economy to store local quantities and metrics
+
+pub const InfStateEnum = enum
+{
+  pub const count = @typeInfo( InfStateEnum ).@"enum".fields.len;
+
+  BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
+
+  DELTA,      // Net total change this tick  ( i64, but stored as f64 for uniformity )
+
+  DECAY,      // Amount lost to building decay this tick
+  BUILT,      // Amount gained from construction this tick
+};
