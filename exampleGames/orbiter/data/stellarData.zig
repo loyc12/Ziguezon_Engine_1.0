@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-pub var stellarData : def.newDataGrid( f64, StellarBodyEnum, StellarMetricEnum ) = .{};
+pub var stellarData : def.NewDataGrid( f64, StellarBodyEnum, StellarMetricEnum ) = .{};
 
 
 pub const StellarMetricEnum = enum

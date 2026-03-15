@@ -1,7 +1,7 @@
 const std = @import( "std" );
 
 
-pub fn newDataGrid( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type ) type
+pub fn NewDataGrid( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type ) type
 {
   comptime // Validate enums
   {
@@ -43,6 +43,35 @@ pub fn newDataGrid( comptime DataType : type, comptime RowEnum : type, comptime 
     pub inline fn set( self : *SelfType, row : RowEnum, col : ColumnEnum, value : DataType ) void
     {
       self.data[ @intFromEnum( row )][ @intFromEnum( col )] = value;
+    }
+    pub inline fn add( self : *SelfType, row : RowEnum, col : ColumnEnum, value : DataType ) void
+    {
+      self.data[ @intFromEnum( row )][ @intFromEnum( col )] += value;
+    }
+    pub inline fn sub( self : *SelfType, row : RowEnum, col : ColumnEnum, value : DataType ) void
+    {
+      self.data[ @intFromEnum( row )][ @intFromEnum( col )] -= value;
+    }
+    pub inline fn mul( self : *SelfType, row : RowEnum, col : ColumnEnum, value : DataType ) void
+    {
+      self.data[ @intFromEnum( row )][ @intFromEnum( col )] *= value;
+    }
+    pub inline fn div( self : *SelfType, row : RowEnum, col : ColumnEnum, value : DataType ) void
+    {
+      switch( @typeInfo( @TypeOf( value )))
+      {
+        .float, .comptime_float =>
+        {
+          std.debug.assert( value != 0.0 );
+          self.data[ @intFromEnum( row )][ @intFromEnum( col )] /= value;
+        },
+        .int, .comptime_int =>
+        {
+          std.debug.assert( value != 0 );
+          self.data[ @intFromEnum( row )][ @intFromEnum( col )] /= value;
+        },
+        else => @compileError( "div() only supports Int and Float types" ),
+      }
     }
 
     pub inline fn get( self : *const SelfType, row : RowEnum, col : ColumnEnum ) DataType

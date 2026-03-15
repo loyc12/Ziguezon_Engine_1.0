@@ -1,7 +1,7 @@
 const std = @import( "std" );
 
 
-pub fn newDataArray( comptime DataType : type, comptime IdxEnum : type ) type
+pub fn NewDataArray( comptime DataType : type, comptime IdxEnum : type ) type
 {
   comptime // Validate enum
   {
@@ -23,9 +23,7 @@ pub fn newDataArray( comptime DataType : type, comptime IdxEnum : type ) type
 
       inline for( 0..len )| idx |
       {
-        const pos : usize = @intFromEnum( idx );
-
-        array.data[ pos ] = newData[ pos ];
+        array.data[ idx ] = newData[ idx ];
       }
 
       return array;
@@ -35,13 +33,42 @@ pub fn newDataArray( comptime DataType : type, comptime IdxEnum : type ) type
     {
       inline for( 0..len )| idx |
       {
-        self.data[ @intFromEnum( idx )] = value;
+        self.data[ idx ] = value;
       }
     }
 
     pub inline fn set( self : *SelfType, idx : IdxEnum, value : DataType ) void
     {
       self.data[ @intFromEnum( idx )] = value;
+    }
+    pub inline fn add( self : *SelfType, idx : IdxEnum, value : DataType ) void
+    {
+      self.data[ @intFromEnum( idx )] += value;
+    }
+    pub inline fn sub( self : *SelfType, idx : IdxEnum, value : DataType ) void
+    {
+      self.data[ @intFromEnum( idx )] -= value;
+    }
+    pub inline fn mul( self : *SelfType, idx : IdxEnum, value : DataType ) void
+    {
+      self.data[ @intFromEnum( idx )] *= value;
+    }
+    pub inline fn div( self : *SelfType, idx : IdxEnum, value : DataType ) void
+    {
+      switch( @typeInfo( @TypeOf( value )))
+      {
+        .float, .comptime_float =>
+        {
+          std.debug.assert( value != 0.0 );
+          self.data[ @intFromEnum( idx )] /= value;
+        },
+        .int, .comptime_int =>
+        {
+          std.debug.assert( value != 0 );
+          self.data[ @intFromEnum( idx )] /= value;
+        },
+        else => @compileError( "div() only supports Int and Float types" ),
+      }
     }
 
     pub inline fn get( self : *const SelfType, idx : IdxEnum ) DataType

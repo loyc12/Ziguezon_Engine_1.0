@@ -111,11 +111,11 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
     if( loc == .GROUND ) // TODO : add useableLand modifier ( ex : what proportion is solid ground )
     {
-      econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), true ); // TODO : Stop giving all GROUND an atmosphere
+      econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), 0.6, true ); // TODO : Stop giving all GROUND an atmosphere and 0.6 habitability
     }
     else
     {
-      econ = ecn.Economy.newEcon( loc, 1_000_000_000.0, true );
+      econ = ecn.Economy.newEcon( loc, 1_000_000_000.0, 1.0, true );
     }
 
     self.econArray[ loc.toIdx() ] = econ;
@@ -167,7 +167,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
       if( econ.isActive ) // TODO : Activate locs when player build infra there
       {
-        econ.popCount =       ( value * 1600 );
+        econ.addPopCount(       value * 1600 );
         econ.debugSetResCounts( value * 1600 );
         econ.debugSetInfCounts( value );
         econ.debugSetIndCounts( value );

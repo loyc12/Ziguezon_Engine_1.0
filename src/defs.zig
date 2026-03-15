@@ -218,9 +218,9 @@ pub const d1d_u  = @import( "utils/data/data1D.zig" );
 pub const d2d_u  = @import( "utils/data/data2D.zig" );
 pub const d3d_u  = @import( "utils/data/data3D.zig" );
 
-pub const newDataArray  = d1d_u.newDataArray;
-pub const newDataGrid   = d2d_u.newDataGrid;
-pub const newDataMatrix = d3d_u.newDataMatrix;
+pub const NewDataArray  = d1d_u.NewDataArray;
+pub const NewDataGrid   = d2d_u.NewDataGrid;
+pub const NewDataMatrix = d3d_u.NewDataMatrix;
 
 
 // ======== BITFLAGS ========

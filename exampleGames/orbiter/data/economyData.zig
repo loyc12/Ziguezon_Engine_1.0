@@ -4,26 +4,35 @@ const def = @import( "defs" );
 const gbl = @import( "../gameGlobals.zig" );
 
 const ResType = gbl.ResType;
-const InfType = gbl.IndType;
+const InfType = gbl.InfType;
 const IndType = gbl.IndType;
-
 
 // ================================ RESOURCE FLOW MATRIX ================================
 // NOTE : used in EconSolver
 
-pub const FlowAgent = enum
+pub const ResFlowData = def.NewDataMatrix( u64, FlowAgentEnum, FlowPhaseEnum, ResType );
+
+// NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
+pub const IndFlowData = def.NewDataMatrix( u64, IndType, FlowPhaseEnum, ResType );
+
+// NOTE : individual industry's max activity level
+pub const IndActivityData = def.NewDataArray( f64, IndType );
+
+
+pub const FlowAgentEnum = enum
 {
-  pub const count = @typeInfo( FlowAgent ).@"enum".fields.len;
+  pub const count = @typeInfo( FlowAgentEnum ).@"enum".fields.len;
 
   NAT, // Natural processes     (decay, growth)
   POP, // Population            (work prod, food/water/power cons)
   IND, // Industry aggregate    (all industrial prod/cons)
-  COM, // Commerce / trade      (imports/exports — stub for now)
+//COM, // Commerce / trade      (imports/exports — stub for now)
+  GEN, // Sum of non-NAT values
 };
 
-pub const FlowPhase = enum
+pub const FlowPhaseEnum = enum
 {
-  pub const count = @typeInfo( FlowPhase ).@"enum".fields.len;
+  pub const count = @typeInfo( FlowPhaseEnum ).@"enum".fields.len;
 
   MAX_PROD,  // Theoretical maximum production    ( before scarcity )
   MAX_CONS,  // Theoretical maximum consumption   ( before scarcity )
@@ -35,47 +44,50 @@ pub const FlowPhase = enum
   REAL_CONS, // Realized consumption              ( after activity / access applied )
 };
 
-// var resFlowData: def.newDataMatrix( u64, FlowAgent, FlowPhase, ResType ) = .{};
-
-
-// NOTE : de-agregated version of resFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
-// var indFlowData: def.newDataMatrix( u64, IndType, FlowPhase, ResType ) = .{};
-
-// NOTE : equivalent of [ SAT_LVL ] for industries
-// var indActivityData: def.newDataArray( f64, IndType ) = .{};
-
-
 
 // ================================ RESOURCE ACCESS GRID ================================
 // NOTE : used in EconSolver
 
+pub const ResAccessData = def.NewDataGrid( f64, AccessAgentEnum, ResType );
 
-pub const AccessAgent = enum
+pub const AccessAgentEnum = enum
 {
-  pub const count = @typeInfo( AccessAgent ).@"enum".fields.len;
+  pub const count = @typeInfo( AccessAgentEnum ).@"enum".fields.len;
 
   POP, // Population access ratio for this resource
   IND, // Industry aggregate access ratio
   GEN, // General / combined access ratio
 };
 
-// var resAccessData: def.newDataGrid( f32, AccessAgent, ResType ) = .{};
-
-
 
 // ================================ AREA METRIC ARRAY ================================
 // NOTE : used in Economy
 
-pub const AreaMetric = enum
-{
-  pub const count = @typeInfo( AreaMetric ).@"enum".fields.len;
+pub const AreaMetricData = def.NewDataArray( f64, AreaMetricEnum );
 
-  BODY,  // SURFACE AREA ( if on GROUND )
-  INHAB, // Inhabitable proportion of surface
-  LAND,  // LAND AREAD
-  CAP,   // LAND + HAB
-  AVAIL, // MAX - USED
-  USED,  // IND + INF costs
+pub const AreaMetricEnum = enum
+{
+  pub const count = @typeInfo( AreaMetricEnum ).@"enum".fields.len;
+
+  BODY,  // Total body's surface area         : if on GROUND
+  INHAB, // Proportion of inhabitable surface : 0 to 1
+  LAND,  // BODY * INHAB                      : Total useable land area
+  CAP,   // LAND + HAB                        : Total buildable
+  AVAIL, // MAX - USED                        : Total unused
+  USED,  // sum of all area spent             : INF + IND
 };
 
-// var areaMetricData: def.newDataArray( f64, AreaMetric ) = .{};
+
+// ================================ POPULATION METRIC ARRAY ================================
+// NOTE : used in Economy
+
+pub const PopMetricData = def.NewDataArray( f64, PopMetricEnum );
+
+pub const PopMetricEnum = enum
+{
+  pub const count = @typeInfo( PopMetricEnum ).@"enum".fields.len;
+
+  COUNT,  // Total amount of population last tick
+  DELTA,  // Change sin population last tick
+  ACCESS, // Population's access to demanded goods last tick
+};

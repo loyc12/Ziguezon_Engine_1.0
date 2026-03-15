@@ -41,7 +41,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 
     var mainEcon = bodyStore.get( glb.homeworldId ).?.getEcon( .GROUND );
 
-    if( def.ray.isKeyPressed( def.ray.KeyboardKey.zero  )){ mainEcon.popCount += 1000; }
+    if( def.ray.isKeyPressed( def.ray.KeyboardKey.zero  )){ mainEcon.addPopCount(                10000 ); }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.two   )){ mainEcon.addResCount( .fromIdx( 1 ), 10000 ); }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.three )){ mainEcon.addResCount( .fromIdx( 2 ), 10000 ); }

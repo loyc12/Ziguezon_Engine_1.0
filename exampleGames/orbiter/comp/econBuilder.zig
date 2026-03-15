@@ -26,21 +26,21 @@ pub const BuildEntry = struct
     return( self.buildCount == 0 );
   }
 
-  pub inline fn getUnitPartCost( self : *const BuildEntry ) f32
+  pub inline fn getUnitPartCost( self : *const BuildEntry ) f64
   {
     return self.construct.getPartCost();
   }
 
-  pub inline fn getRemainingPartCost( self : *const BuildEntry ) f32
+  pub inline fn getRemainingPartCost( self : *const BuildEntry ) f64
   {
-    const count : f32 = @floatFromInt( self.buildCount );
+    const count : f64 = @floatFromInt( self.buildCount );
     return count * self.getUnitPartCost();
   }
 
-  pub fn calcBuildableAmount( self : *BuildEntry, availParts : f32 ) f32
+  pub fn calcBuildableAmount( self : *BuildEntry, availParts : f64 ) f64
   {
     const unitPartCost = self.getUnitPartCost();
-    const count : f32  = @floatFromInt( self.buildCount );
+    const count : f64  = @floatFromInt( self.buildCount );
 
     if( availParts > count * unitPartCost )
     {
@@ -53,7 +53,7 @@ pub const BuildEntry = struct
 
 
 const BUILD_QUEUE_CAPACITY : usize = 64;
-const ASSEMBLY_EFFICIENCY  : f32   = 2.0; // Max amount of parts used per assembly per tick
+const ASSEMBLY_EFFICIENCY  : f64   = 2.0; // Max amount of parts used per assembly per tick
 
 pub const BuildQueue = struct
 {
@@ -137,25 +137,25 @@ pub const BuildQueue = struct
   {
     if( self.entryCount > 0 )
     {
-      const assemblyIdx = IndType.ASSEMBLY.toIdx();
-
       var entriesClosed : u64 = 0;
 
-      var availParts  = econ.indActivity[ assemblyIdx ];
-          availParts *= @floatFromInt( econ.indBank[ assemblyIdx ]);
+      const assemblyCount = econ.indState.get( .BANK, .ASSEMBLY );
+
+      var availParts  = econ.indState.get( .ACT_LVL, .ASSEMBLY );
+          availParts *= assemblyCount;
           availParts *= ASSEMBLY_EFFICIENCY;
 
       for( 0..self.entryCount )| idx |
       {
         var entry = &self.entries[ idx ];
-        var unitsBuilt : f32 = 0;
+        var unitsBuilt : f64 = 0;
 
         const unitPartCost = entry.construct.getPartCost();
         const unitsToBuild = entry.calcBuildableAmount( availParts );
 
         if( unitsToBuild > 0 )
         {
-          unitsBuilt = @floatFromInt( econ.tryBuild( entry.construct, @intFromFloat( unitsToBuild )));
+          unitsBuilt = @floatFromInt( econ.tryBuild( entry.construct, unitsToBuild ));
 
           entry.buildCount -= @intFromFloat( unitsBuilt );
           availParts       -= unitsBuilt * unitPartCost;

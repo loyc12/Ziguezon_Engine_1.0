@@ -52,7 +52,7 @@ pub const ResType = enum( u8 )
 
 // ================================ RESOURCE METRICS GRID ================================
 
-pub var resMetricData : def.newDataGrid( f32, ResType, ResMetricEnum ) = .{};
+pub var resMetricData : def.NewDataGrid( f32, ResType, ResMetricEnum ) = .{};
 
 pub const ResMetricEnum = enum
 {
@@ -114,6 +114,8 @@ pub fn loadResourceData() void
 // ================================ RESOURCE STATE GRID ================================
 // NOTE : used in Economy to store local quantities and metrics
 
+pub const ResStateData = def.NewDataGrid( f64, ResStateEnum, ResType );
+
 pub const ResStateEnum = enum
 {
   pub const count = @typeInfo( ResStateEnum ).@"enum".fields.len;
@@ -134,3 +136,4 @@ pub const ResStateEnum = enum
 
   SAT_LVL,    // How much of demand could be satisfied by supply this tick
 };
+

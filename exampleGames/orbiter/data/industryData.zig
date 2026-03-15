@@ -129,7 +129,7 @@ pub const IndType = enum( u8 )
 
 // ================================ INDUSTRY METRICS GRID ================================
 
-pub var indMetricData : def.newDataGrid( f32, IndType, IndMetricEnum ) = .{};
+pub var indMetricData : def.NewDataGrid( f32, IndType, IndMetricEnum ) = .{};
 
 pub const IndMetricEnum = enum
 {
@@ -145,7 +145,7 @@ pub const IndMetricEnum = enum
 // ================================ INDUSTRY CONS / PROD GRID ================================
 
 // Resource consumption / production per industry ( u64 )
-pub var indResValData : def.newDataGrid( u64, IndType, IndResValEnum ) = .{};
+pub var indResValData : def.NewDataGrid( u64, IndType, IndResValEnum ) = .{};
 
 pub const IndResValEnum = enum
 {
@@ -291,9 +291,11 @@ pub fn loadIndustryData() void
 // ================================ INDUSTRY STATE GRID ================================
 // NOTE : used in Economy to store local quantities and metrics
 
-pub const IndStateData = enum
+pub const IndStateData = def.NewDataGrid( f64, IndStateEnum, IndType );
+
+pub const IndStateEnum = enum
 {
-  pub const count = @typeInfo( IndStateData ).@"enum".fields.len;
+  pub const count = @typeInfo( IndStateEnum ).@"enum".fields.len;
 
   BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
 
@@ -304,3 +306,4 @@ pub const IndStateData = enum
 
   ACT_LVL,    // How active this industry was this tick
 };
+
