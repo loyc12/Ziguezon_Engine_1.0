@@ -43,7 +43,7 @@ pub const IndType = enum( u8 )
         .FACTORY     => true,
         .ASSEMBLY    => true,
 
-        else         => false,
+        else => false,
       };
     }
     else // .ORBIT or .L1-5
@@ -57,7 +57,7 @@ pub const IndType = enum( u8 )
         .FACTORY     => true,
         .ASSEMBLY    => true,
 
-        else         => false,
+        else => false,
       };
     }
   }
