@@ -62,9 +62,10 @@ pub const G_FACTOR : f64 = 498.163; // km³/Gt¹wk²
 // ================ DATA LOADING ================
 
 pub const stlr_d    = @import( "data/stellarData.zig" );
-pub const STLR_DATA =  &stlr_d.stellarData;
+pub const STLR_DATA = &stlr_d.stellarData;
 
-pub const ecnm_d = @import( "data/economyData.zig" );
+pub const ecnm_d  = @import( "data/economyData.zig" );
+pub const EconLoc = ecnm_d.EconLoc;
 
 pub const powr_d = @import( "data/powerData.zig" );
 pub const vesl_d = @import( "data/vesselData.zig" );
@@ -78,11 +79,11 @@ pub const RSRC_DATA = &rsrc_d.resourceData;
 pub const NFRS_DATA = &nfrs_d.infrastructureData;
 pub const NDST_DATA = &ndst_d.industryData;
 
-pub const PowerSrc   = powr_d.PowerSrc;
-pub const VesType    = vesl_d.VesType;
-pub const ResType    = rsrc_d.ResType;
-pub const InfType    = nfrs_d.InfType;
-pub const IndType    = ndst_d.IndType;
+pub const PowerSrc = powr_d.PowerSrc;
+pub const VesType  = vesl_d.VesType;
+pub const ResType  = rsrc_d.ResType;
+pub const InfType  = nfrs_d.InfType;
+pub const IndType  = ndst_d.IndType;
 
 
 pub fn loadAllData() void

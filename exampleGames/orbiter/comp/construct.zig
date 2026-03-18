@@ -65,7 +65,7 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     };
   }
 
-  pub fn canBeBuiltIn( c : Construct, loc : ecn.EconLoc, hasAtmo : bool ) bool
+  pub fn canBeBuiltIn( c : Construct, loc : gbl.EconLoc, hasAtmo : bool ) bool
   {
     return switch( c )
     {

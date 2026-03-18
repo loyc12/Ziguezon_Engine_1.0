@@ -4,15 +4,15 @@ const def = @import( "defs" );
 
 pub const ecnSlvr = @import( "econSolver.zig"  );
 pub const ecnBldr = @import( "econBuilder.zig" );
-pub const ecnLoc  = @import( "econLoc.zig"     );
 pub const cst     = @import( "construct.zig"   );
 
 pub const BuildQueue    = ecnBldr.BuildQueue;
-pub const EconLoc       = @import( "econLoc.zig"   ).EconLoc;
 pub const Construct     = @import( "construct.zig" ).Construct;
 
 
 const gbl = @import( "../gameGlobals.zig" );
+
+const EconLoc  = gbl.EconLoc;
 
 const PowerSrc = gbl.PowerSrc;
 const VesType  = gbl.VesType;

@@ -1,10 +1,12 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const glb = @import( "../gameGlobals.zig" );
+const gbl = @import( "../gameGlobals.zig" );
 const orb = @import( "orbitComp.zig" );
 
 const ecn = @import( "economy.zig" );
+
+const EconLoc = gbl.EconLoc;
 
 
 pub const BodyType = enum( u8 )
@@ -49,7 +51,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 //temp   : f32 =               390.0, // Kelvins    ( Dk )
 //tilt   : f32 =                 0.0, // Radians
 
-  econArray : [ ecn.EconLoc.count ]ecn.Economy = std.mem.zeroes([ ecn.EconLoc.count ]ecn.Economy ),
+  econArray : [ EconLoc.count ]ecn.Economy = std.mem.zeroes([ EconLoc.count ]ecn.Economy ),
 
 
   // Sphere surface area : 4πr^2
@@ -105,7 +107,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   // ================================ ECONOMIES ================================
 
   // NOTE : Radius needs to be properly set BEFORE calling this function
-  pub fn initEcon( self : *BodyComp, loc : ecn.EconLoc ) void
+  pub fn initEcon( self : *BodyComp, loc : EconLoc ) void
   {
     var econ : ecn.Economy = undefined;
 
@@ -130,7 +132,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
       if( econ.isActive ) // TODO : Activate locs when player build infra there
       {
         const distSqr = orbiterPos.getDistSqr( starPos );
-        const shine   = glb.starCompInst.getSunshineAt( distSqr );
+        const shine   = gbl.starCompInst.getSunshineAt( distSqr );
 
       //def.log( .CONT, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} ( day {d} )", .{ @tagName( econ.location ), shine, econ.dayCount + 1 });
 
@@ -139,7 +141,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     }
   }
 
-  pub fn getEcon( self : *BodyComp, econLoc : ecn.EconLoc ) *ecn.Economy
+  pub fn getEcon( self : *BodyComp, econLoc : EconLoc ) *ecn.Economy
   {
     return &self.econArray[ econLoc.toIdx() ];
   }

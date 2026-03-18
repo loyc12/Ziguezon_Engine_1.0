@@ -1,9 +1,10 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
+const gbl = @import( "../gameGlobals.zig" );
+
 const ResType  = @import( "resourceData.zig"    ).ResType;
 const PowerSrc = @import( "powerData.zig"       ).PowerSrc;
-const EconLoc  = @import( "../comp/economy.zig" ).EconLoc;
 
 
 pub const IndType = enum( u8 )
@@ -26,7 +27,7 @@ pub const IndType = enum( u8 )
   ASSEMBLY,     // Assembles parts into industry, infrastructure & vehicles
 
 
-  pub inline fn canBeBuiltIn( self : IndType, loc : EconLoc, hasAtmo : bool ) bool
+  pub inline fn canBeBuiltIn( self : IndType, loc : gbl.EconLoc, hasAtmo : bool ) bool
   {
     if( loc == .GROUND )
     {

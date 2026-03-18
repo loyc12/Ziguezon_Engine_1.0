@@ -7,6 +7,38 @@ const ResType = gbl.ResType;
 const InfType = gbl.InfType;
 const IndType = gbl.IndType;
 
+
+// ================================ ECONOMY LOCATION ENUM ================================
+pub const EconLoc = enum( u8 )
+{
+  pub const count = @typeInfo( EconLoc ).@"enum".fields.len;
+
+  pub inline fn toIdx( self : EconLoc ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) EconLoc {  return @enumFromInt( @as( u8, @intCast( i ))); }
+
+  GROUND, // Does not garantee breathable atmosphere
+  ORBIT,
+  L1,     // Lagrange Points
+  L2,
+  L3,
+  L4,
+  L5,
+
+  pub inline fn toLagrangeIdx( self : EconLoc ) u4
+  {
+    return switch( self )
+    {
+      .L1  => 1,
+      .L2  => 2,
+      .L3  => 3,
+      .L4  => 4,
+      .L5  => 5,
+      else => 0,
+    };
+  }
+};
+
+
 // ================================ RESOURCE FLOW MATRIX ================================
 // NOTE : used in EconSolver
 

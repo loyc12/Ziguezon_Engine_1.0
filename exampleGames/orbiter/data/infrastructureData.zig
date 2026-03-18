@@ -1,7 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const EconLoc    = @import( "../comp/economy.zig" ).EconLoc;
+const gbl = @import( "../gameGlobals.zig" );
+
 //const PowerSrc = @import( "powerData.zig"       ).PowerSrc;
 
 
@@ -32,7 +33,7 @@ pub const InfType = enum( u8 )
 //DATA_CENTER,  // ???
 
 
-  pub inline fn canBeBuiltIn( self : InfType, loc : EconLoc, hasAtmo : bool ) bool
+  pub inline fn canBeBuiltIn( self : InfType, loc : gbl.EconLoc, hasAtmo : bool ) bool
   {
     _ = hasAtmo;
 
