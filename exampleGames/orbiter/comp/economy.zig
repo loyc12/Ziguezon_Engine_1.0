@@ -54,6 +54,9 @@ pub const Economy = struct
   infState    : gbl.nfrs_d.InfStateData   = .{},
   indState    : gbl.ndst_d.IndStateData   = .{},
 
+  avgIndActivity : f64 = 0.0,
+  avgResAccess   : f64 = 0.0,
+
   pub inline fn newEcon( loc : EconLoc, area : f64, landCover : f64, atmo : bool ) Economy
   {
     var econ : Economy = .{ .location = loc, .hasAtmo = atmo, .isActive = true };
@@ -682,6 +685,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
   pub fn resetCountMetrics( self : *Economy ) void
   {
     self.popMetrics.set( .DELTA, 0.0 );
+
+    self.avgIndActivity = 0.0;
+    self.avgResAccess   = 0.0;
 
     inline for( 0..resTypeC )| r |
     {

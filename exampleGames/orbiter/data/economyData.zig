@@ -42,7 +42,8 @@ pub const EconLoc = enum( u8 )
 // ================================ RESOURCE FLOW MATRIX ================================
 // NOTE : used in EconSolver
 
-pub const ResFlowData = def.NewDataMatrix( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
+pub const ResStockData = def.NewDataArray(  f64, ResType );
+pub const ResFlowData  = def.NewDataMatrix( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
 
 // NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
 pub const IndFlowData = def.NewDataMatrix( f64, IndType, FlowPhaseEnum, ResType );

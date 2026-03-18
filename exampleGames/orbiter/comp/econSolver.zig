@@ -27,33 +27,50 @@ const Access    = ecnm_d.AccessAgentEnum;
 
 
 // Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
-const WEEKLY_POP_GROWTH : f32 = 0.0003;
+const WEEKLY_POP_GROWTH     : f32 = 0.0003;
 
 // Pop decay factors
-const WEEKLY_PARCH_RATE  : f32 = 0.10;
-const WEEKLY_STARVE_RATE : f32 = 0.05;
-const WEEKLY_FREEZE_RATE : f32 = 0.02;
+const WEEKLY_PARCH_RATE     : f32 = 0.10;
+const WEEKLY_STARVE_RATE    : f32 = 0.05;
+const WEEKLY_FREEZE_RATE    : f32 = 0.02;
 
-const POP_SHORTAGE_EXPONENT : f32 = 2.0; // Smooth out death rates from pop res shortages
+const POP_SHORTAGE_EXPONENT : f32 = 2.0; // Smooth out death rates from pop res shortages0.20;
 
-const MIN_WORK_RATE : f32 = 0.20;
 
 
 pub inline fn resolveEcon( econ : *ecn.Economy ) void
 {
   var solver : EconSolver = .{ .econ = econ };
 
-  solver.resolve();
+  solver.initBaseState();   // Zeroes out dataMatrices and resets econ metrics
+  solver.applyResDecay();   // Decays stored resources based on defined rates
+  solver.applyResGrowth();  // Grows wild resources based on ecology factor
+
+  solver.calcIndMaxDelta(); // Computes industrial potential prod and cons
+  solver.calcPopMaxDelta(); // Computes population potential prod and cons
+
+  solver.calcResAccess();   // Computes non-WORK resource access     TODO : add access-tweaking policies / modifiers
+  solver.applyWorkWeek();   // Precomputes real WORK production to inform industrial WORK access
+  solver.calcWorkAccess();  // Computes industrial WORK access
+
+  solver.calcIndActivity(); // Computes the activity rate of each industry
+
+  solver.calcIndResDelta(); // Computes real ressource delta from industry   based on activity
+  solver.calcPopResDelta(); // Computes real ressource delta from population based on popCount
+
+  solver.applyResDelta();   // Apply resources  delta based on previous calcs
+  solver.applyPopDelta();   // Apply population delta based on access
 }
 
 
 const EconSolver = struct
 {
   // Global consumption-production throttles / multipliers
-  maxGenAccess     : f64 = 1.0,
-  maxPopAccess     : f64 = 1.0,
-  maxIndAccess     : f64 = 1.0,
-  maxIndActivity   : f64 = 1.0,
+  maxResAccess   : f64 = 1.0,
+  maxIndActivity : f64 = 1.0,
+
+  minWorkRate    : f64 = 0.2,
+  maxWorkRate    : f64 = 1.0,
 
   sunshineModifier : f32 = 1.0,
   natureModifier   : f32 = 1.0,
@@ -61,33 +78,14 @@ const EconSolver = struct
   // Solver data
   econ : *ecn.Economy,
 
-  prevPopCount     : f64 = 0.0,
-  nextPopCount     : f64 = 0.0,
+  prevPopCount  : f64 = 0.0,
+  nextPopCount  : f64 = 0.0,
 
+  resStockData  : ecnm_d.ResStockData    = .{},
   resAccessData : ecnm_d.ResAccessData   = .{},
   indActivity   : ecnm_d.IndActivityData = .{},
   indFlowData   : ecnm_d.IndFlowData     = .{}, // Per industry
   resFlowData   : ecnm_d.ResFlowData     = .{}, // Agregated industry
-
-
-  pub fn resolve( self : *EconSolver ) void
-  {
-    self.initBaseState();   // TODO : move the zeroing or arrays to here
-    self.applyResDecay();   // Decays stored resources from previous weeks
-    self.applyResGrowth();  // Grow wild resources based on ecology factor
-
-    self.calcPopNeeds();    // Computes population potential prod and cons
-    self.calcIndNeeds();    // Computes industrial potential prod and cons
-
-    self.calcResAccess();   // Computes non-WORK resource access     TODO : add access-tweaking policies / modifiers
-    self.applyWorkWeek();   // Precomputes current WORK production to inform industrial WORK access
-    self.calcWorkAccess();  // Computes WORK access
-
-    self.calcIndActivity(); // Computes the final activity rate of each industry
-
-    self.applyPopDelta();   // Update population based on access
-    self.applyResDelta();   // Update resources based on access
-  }
 
 
   fn initBaseState( self : *EconSolver ) void
@@ -101,6 +99,14 @@ const EconSolver = struct
     self.indFlowData.fillWith(   0.0 );
     self.resFlowData.fillWith(   0.0 );
 
+    inline for( 0..ResType.count )| r |
+    {
+      const resType   = ResType.fromIdx( r );
+      const econStock = self.econ.resState.get( .BANK, resType );
+
+      self.resStockData.set( resType, econStock );
+    }
+
     self.econ.resetCountMetrics();
   }
 
@@ -110,20 +116,21 @@ const EconSolver = struct
 
     inline for( 0..resTypeC )| r |
     {
-      const resType  = ResType.fromIdx( r );
-      const resBank  = self.econ.resState.get( .BANK, resType );
+      const resType   = ResType.fromIdx( r );
+      const decayRate = resType.getMetric_f64( .DECAY_RATE );
+      const resCount  = self.resStockData.get( resType );
 
-      if( resBank > 0.0 )
+      if( decayRate > def.EPS and resCount > def.EPS  )
       {
-        const decayRate = resType.getMetric_f64( .DECAY_RATE );
-        const decay     = resBank * decayRate;
+        const decayLoss = resCount * decayRate;
 
-        // Update economy state
-        self.econ.resState.sub( .BANK,  resType, decay );
-        self.econ.resState.set( .DECAY, resType, decay );
+        self.resStockData.sub( resType, decayLoss );
 
         // Store in flow data as natural consumption ( not included in .GEN )
-        self.resFlowData.set( .NAT, .REAL_CONS, resType, decay );
+        self.resFlowData.set( .NAT, .REAL_CONS, resType, decayLoss );
+
+        // Update economy state
+        self.econ.resState.set( .DECAY, resType, decayLoss );
 
       //def.log( .CONT, 0, @src(), "{s}  \t: -{d}", .{ @tagName( ResType.fromIdx( r )), decay_u64 });
       }
@@ -143,14 +150,15 @@ const EconSolver = struct
 
       if( growRate >= def.EPS )
       {
-        const growth = ecoFactor * ecoFactor * growRate;
+        const growthGain = ecoFactor * ecoFactor * growRate;
 
-        // Update economy state
-        self.econ.resState.add( .BANK,   resType, growth );
-        self.econ.resState.set( .GROWTH, resType, growth );
+        self.resStockData.add( resType, growthGain );
 
         // Store in flow data as natural production ( not included in .GEN )
-        self.resFlowData.set( .NAT, .REAL_PROD, resType, growth );
+        self.resFlowData.set( .NAT, .REAL_PROD, resType, growthGain );
+
+        // Update economy state
+        self.econ.resState.set( .GROWTH, resType, growthGain );
 
       //def.log( .CONT, 0, @src(), "{s}  \t: +{d}", .{ @tagName( ResType.fromIdx( r )), grow_u64 });
       }
@@ -158,38 +166,14 @@ const EconSolver = struct
     }
   }
 
-  fn calcPopNeeds( self : *EconSolver ) void
-  {
-  //def.log( .DEBUG, 0, @src(), "Logging population prod. and cons. ({d:.0}) :", .{ self.prevPopCount });
 
-    inline for( 0..resTypeC )| r |
-    {
-      const resType = ResType.fromIdx( r );
 
-      const maxProd = self.prevPopCount * resType.getMetric_f64( .POP_PROD );
-      const maxCons = self.prevPopCount * resType.getMetric_f64( .POP_CONS );
-
-      if( maxProd > def.EPS ) // If res produced
-      {
-        self.resFlowData.set( .POP, .MAX_PROD, resType, maxProd );
-      //def.log( .CONT, 0, @src(), "{s}  \t: +{d}", .{ @tagName( ResType.fromIdx( r )), maxProd });
-      }
-      if( maxCons > def.EPS ) // If res consumed
-      {
-        self.resFlowData.set( .POP, .MAX_CONS, resType, maxCons );
-      //def.log( .CONT, 0, @src(), "{s}  \t: -{d}", .{ @tagName( ResType.fromIdx( r )), maxCons });
-      }
-    }
-  }
-
-  fn calcIndNeeds( self : *EconSolver ) void
+  fn calcIndMaxDelta( self : *EconSolver ) void
   {
     inline for( 0..indTypeC )| d |
     {
       const indType  = IndType.fromIdx( d );
       const indCount = self.econ.indState.get( .BANK, indType );
-
-    //def.log( .DEBUG, 0, @src(), "Logging bank amounts for {s} ({d}):", .{ @tagName( indType ), self.econ.indBank[ d ]});
 
       if( indCount > def.EPS ){ inline for ( 0..resTypeC )| r | // Skip absent industries
       {
@@ -198,6 +182,7 @@ const EconSolver = struct
         var maxProd = indCount * indType.getResProd_f64( resType );
         var maxCons = indCount * indType.getResCons_f64( resType );
 
+        // Adjust expected max prob based on sunlight
         if( indType.getPowerSrc() == .SOLAR )
         {
           maxProd *= @floatCast( self.econ.sunAccess );
@@ -208,27 +193,44 @@ const EconSolver = struct
         self.indFlowData.set( indType, .MAX_PROD, resType, maxProd );
         self.indFlowData.set( indType, .MAX_CONS, resType, maxCons );
 
-        // Aggregate into IND agent
+        // Aggregate into IND flowAgent
         self.resFlowData.add( .IND, .MAX_PROD, resType, maxProd );
         self.resFlowData.add( .IND, .MAX_CONS, resType, maxCons );
 
-      //def.log( .CONT, 0, @src(), "{s}  \t: +{d:.0}\t-{d:.0}", .{ @tagName( resType ), maxProd, maxCons  });
+        self.resFlowData.add( .GEN, .MAX_PROD, resType, maxProd );
+        self.resFlowData.add( .GEN, .MAX_CONS, resType, maxCons );
       }}
     }
 
-
-  //def.qlog( .DEBUG, 0, @src(), "Logging industrial resource prod. and cons. :" );
-
-  //inline for ( 0..resTypeC )| r | // NOTE : DEBUG INFO
-  //{
-  //  const maxProd = self.maxIndProd[ r ];
-  //  const maxCons = self.maxIndCons[ r ];
-
-  //  def.log( .CONT, 0, @src(), "{s}  \t: +{d:.0}\t-{d:.0}", .{ @tagName( ResType.fromIdx( r ) ), maxProd, maxCons  });
-  //}
   }
 
-  fn calcResAccess( self : *EconSolver ) void // TODO : Tweak population vs industry access ratio here if need be
+  fn calcPopMaxDelta( self : *EconSolver ) void
+  {
+    inline for( 0..resTypeC )| r |
+    {
+      const resType = ResType.fromIdx( r );
+
+      const maxProd = self.prevPopCount * resType.getMetric_f64( .POP_PROD );
+      const maxCons = self.prevPopCount * resType.getMetric_f64( .POP_CONS );
+
+      if( maxProd > def.EPS ) // If res produced ( WORK )
+      {
+        self.resFlowData.set( .POP, .MAX_PROD, resType, maxProd );
+        self.resFlowData.add( .GEN, .MAX_PROD, resType, maxProd );
+      }
+      if( maxCons > def.EPS ) // If res consumed ( FOOD, WATER, POWER )
+      {
+        self.resFlowData.set( .POP, .MAX_CONS, resType, maxCons );
+        self.resFlowData.add( .GEN, .MAX_CONS, resType, maxCons );
+      }
+    }
+  }
+
+
+
+  // TODO : Tweak population vs industry access ratio here if need be
+  // TODO : Split ind and pop access passes if need be
+  fn calcResAccess( self : *EconSolver ) void
   {
     def.qlog( .DEBUG, 0, @src(), "Logging resource availabilities and requirements :" );
 
@@ -236,109 +238,106 @@ const EconSolver = struct
     {
       const resType = ResType.fromIdx( r );
 
-      // Agregating all production and consumption
-      const popMaxProd = self.resFlowData.get( .POP, .MAX_PROD, resType );
-      const popMaxCons = self.resFlowData.get( .POP, .MAX_CONS, resType );
-
-      const indMaxProd = self.resFlowData.get( .IND, .MAX_PROD, resType );
-      const indMaxCons = self.resFlowData.get( .IND, .MAX_CONS, resType );
-
-      self.resFlowData.add( .GEN, .MAX_PROD, resType, popMaxProd + indMaxProd );
-      self.resFlowData.add( .GEN, .MAX_CONS, resType, popMaxCons + indMaxCons );
-
       // Calculating supply and demand
-      const supply = self.econ.resState.get( .BANK, resType );
+      const supply = self.resStockData.get( resType );
       const demand = self.resFlowData.get( .GEN, .MAX_CONS, resType );
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( ResType.fromIdx( r )), supply, demand });
 
-      if( @abs( demand ) < def.EPS )
-      {
-        self.resAccessData.set( .POP, resType, self.maxPopAccess );
-        self.resAccessData.set( .IND, resType, self.maxIndAccess );
-        self.resAccessData.set( .GEN, resType, self.maxGenAccess );
 
-        self.econ.resState.set( .SAT_LVL, resType, self.maxGenAccess );
-      }
-      else
+      var access : f64 = self.maxResAccess;
+
+      if( demand > def.EPS )
       {
-        const maxAccess = supply / demand;
+        access = supply / demand;
 
         // If res is needed by EITHER pop or ind ( not both ), have mark the other as fully supplied
-        if( popMaxCons > 0 ){ self.resAccessData.set( .POP, resType, @min( self.maxPopAccess, maxAccess )); }
-        else                { self.resAccessData.set( .POP, resType,       self.maxPopAccess             ); }
+        const popMaxCons = self.resFlowData.get( .POP, .MAX_CONS, resType );
+        const indMaxCons = self.resFlowData.get( .IND, .MAX_CONS, resType );
 
-        if( indMaxCons > 0 ){ self.resAccessData.set( .IND, resType, @min( self.maxIndAccess, maxAccess )); }
-        else                { self.resAccessData.set( .IND, resType,       self.maxIndAccess             ); }
+        if( popMaxCons > def.EPS ){ self.resAccessData.set( .POP, resType, access            ); }
+        else                      { self.resAccessData.set( .POP, resType, self.maxResAccess ); }
 
-        self.resAccessData.set( .GEN, resType, @min( self.maxGenAccess, maxAccess ));
+        if( indMaxCons > def.EPS ){ self.resAccessData.set( .IND, resType, access            ); }
+        else                      { self.resAccessData.set( .IND, resType, self.maxResAccess ); }
 
-        if( maxAccess < 1.0 )
+        if( access < 1.0 - def.EPS )
         {
           def.log( .CONT, 0, @src(), "@ {s} shortage", .{ @tagName( ResType.fromIdx( r ))});
         }
-
-        // Updating economy metrics
-        self.econ.resState.set( .SAT_LVL, resType, maxAccess );
       }
+
+      // Updating economy metrics
+      self.resAccessData.set( .GEN,     resType, access );
+      self.econ.resState.set( .SAT_LVL, resType, access );
+
+      self.econ.avgResAccess += access / ResType.count;
     }}
   }
 
   fn applyWorkWeek( self : *EconSolver ) void // TODO : If some industries produce work, produce it here too
   {
-    var minPopAccess : f64 = self.maxPopAccess;
+    var workRate : f64 = self.maxWorkRate;
 
     inline for( 0..resTypeC )| r |{ if( ResType.fromIdx( r ) != .WORK )
     {
       const resType = ResType.fromIdx( r );
 
-      minPopAccess = @min( minPopAccess, self.resAccessData.get( .POP, resType ));
+      workRate = @min( workRate, self.resAccessData.get( .POP, resType ));
     }}
 
-    const popWorkRate   = @max( minPopAccess, MIN_WORK_RATE ); // Clamping pop work rates to a minimum to prevent total supply chain collapse
-    const weeklyPopWork = popWorkRate * self.resFlowData.get( .POP, .MAX_PROD, .WORK ) ;
+    // Clamping pop work rates to a minimum to prevent total supply chain collapse
+    workRate = @max( workRate, self.minWorkRate );
 
-    def.log( .CONT, 0, @src(), "# WORK rate\t: {d:.4}", .{ popWorkRate });
+    def.log( .CONT, 0, @src(), "# WORK rate\t: {d:.4}", .{ workRate });
+
+    // Updating economy metrics
+    const weeklyPopWork = workRate * self.resFlowData.get( .POP, .MAX_PROD, .WORK );
 
     self.resFlowData.set( .POP, .REAL_PROD, .WORK, weeklyPopWork );
     self.resFlowData.add( .GEN, .REAL_PROD, .WORK, weeklyPopWork );
+
+    self.resStockData.set( .WORK, weeklyPopWork );
+
   }
 
   fn calcWorkAccess( self : *EconSolver ) void
   {
     // Like calcResAccess() + applyResDelta(), but only for work, since we need other res to calculate work prod
 
-    const supply = self.resFlowData.get( .POP, .REAL_PROD, .WORK );
-    const demand = self.resFlowData.get( .IND, .MAX_CONS,  .WORK );
+    // Calculating supply and demand
+    const supply = self.resStockData.get( .WORK );
+    const demand = self.resFlowData.get( .IND, .MAX_CONS, .WORK );
 
     def.log( .CONT, 0, @src(), "WORK  \t: {d:.0}\t-{d:.0}", .{ supply, demand });
 
-    self.resAccessData.set( .POP, .WORK, self.maxPopAccess ); // POP will never need work, so access is always maxed
+    self.resFlowData.add( .GEN, .MAX_PROD, .WORK, supply );
+    self.resFlowData.add( .GEN, .MAX_CONS, .WORK, demand );
 
-    if( demand < def.EPS ) // If WORK is somehow not needed, mark it as fully supplied
+    var access : f64 = self.maxResAccess;
+
+    if( demand > def.EPS )
     {
-      self.resAccessData.set( .IND, .WORK, self.maxIndAccess );
-      self.resAccessData.set( .GEN, .WORK, self.maxGenAccess );
+      access = supply / demand;
 
-      // Updating economy metrics
-      self.econ.resState.set( .SAT_LVL, .WORK, self.maxGenAccess );
-    }
-    else
-    {
-      const maxAccess = supply / demand;
-
-      self.resAccessData.set( .IND, .WORK, @min( self.maxIndAccess, maxAccess ));
-      self.resAccessData.set( .GEN, .WORK, @min( self.maxGenAccess, maxAccess ));
-
-      if( maxAccess < 1.0 )
+      if( access < 1.0 - def.EPS )
       {
         def.qlog( .CONT, 0, @src(), "@ WORK shortage" );
       }
-
-      // Updating economy metrics
-      self.econ.resState.set( .SAT_LVL, .WORK, maxAccess );
     }
+
+    // Updating economy metrics
+    self.resAccessData.set( .POP, .WORK, self.maxResAccess ); // POP will never need work, so access is always maxed
+
+    self.resAccessData.set( .IND, .WORK, access );
+    self.resAccessData.set( .GEN, .WORK, access );
+
+    self.econ.resState.set( .SAT_LVL, .WORK, access );
+
+    self.econ.avgResAccess += access / ResType.count;
   }
+
+
 
   fn calcIndActivity( self : *EconSolver ) void
   {
@@ -363,23 +362,25 @@ const EconSolver = struct
         {
           const resType = ResType.fromIdx( r );
 
-          if( self.indFlowData.get( indType, .MAX_CONS, resType ) != 0 )
+          const maxCons = self.indFlowData.get( indType, .MAX_CONS, resType );
+
+          if( maxCons > def.EPS )
           {
             activity = @min( activity, self.resAccessData.get( .IND, resType ));
           }
         }
       }
-      self.indActivity.set( indType, @floatCast( activity ));
 
       // Updating economy metrics
-      self.econ.indState.set( .ACT_LVL, indType, @floatCast( activity ));
+      self.indActivity.set(             indType, activity );
+      self.econ.indState.set( .ACT_LVL, indType, activity );
+
+      self.econ.avgIndActivity += activity / IndType.count;
     }
   }
 
-  fn applyResDelta( self : *EconSolver ) void
+  fn calcIndResDelta( self : *EconSolver ) void
   {
-    // ================ Industrial pass ================
-
     inline for( 0..indTypeC )| d |
     {
       const indType     = IndType.fromIdx( d );
@@ -391,28 +392,30 @@ const EconSolver = struct
         {
           const resType = ResType.fromIdx( r );
 
-          // ProductionkWeek )
-          if( resType != .WORK ) // WORK handled in applyWorkWeek()
+          // Ind Production
+          if( resType != .WORK ) // WORK production handled in applyWorkWeek()
           {
             const realIndProd = indActivity * self.indFlowData.get( indType, .MAX_PROD, resType );
 
             self.indFlowData.set( indType, .REAL_PROD, resType, realIndProd );
             self.resFlowData.add( .IND,    .REAL_PROD, resType, realIndProd );
+            self.resFlowData.add( .GEN,    .REAL_PROD, resType, realIndProd );
           }
 
-          // Consumption
+          // Ind Consumption
           const realIndCons = indActivity * self.indFlowData.get( indType, .MAX_CONS, resType );
 
           self.indFlowData.set( indType, .REAL_CONS, resType, realIndCons );
           self.resFlowData.add( .IND,    .REAL_CONS, resType, realIndCons );
+          self.resFlowData.add( .GEN,    .REAL_CONS, resType, realIndCons );
         }
       }
     }
     //def.qlog( .DEBUG, 0, @src(), "Logging general resource prod. and cons. :" );
+  }
 
-
-    // ================ Population + Aplication pass ================
-
+  fn calcPopResDelta( self : *EconSolver ) void
+  {
     inline for( 0..resTypeC )| r |
     {
       const resType   = ResType.fromIdx( r );
@@ -420,51 +423,45 @@ const EconSolver = struct
 
       if( popAccess > def.EPS and resType != .WORK ) // WORK handled in applyWorkWeek()
       {
-        // Production ( Nothing atm )
+        const realPopCons = popAccess * self.resFlowData.get( .POP, .MAX_CONS, resType );
         const realPopProd = popAccess * self.resFlowData.get( .POP, .MAX_PROD, resType );
 
         self.resFlowData.set( .POP, .REAL_PROD, resType, realPopProd );
-
-        // Consumption ( FOOD, WATER, POWER )
-        const realPopCons = popAccess * self.resFlowData.get( .POP, .MAX_CONS, resType );
+        self.resFlowData.add( .GEN, .REAL_PROD, resType, realPopProd );
 
         self.resFlowData.set( .POP, .REAL_CONS, resType, realPopCons );
+        self.resFlowData.add( .GEN, .REAL_CONS, resType, realPopCons );
       }
+    }
+  }
 
-    //def.log( .CONT, 0, @src(), "{s}  \t: {d}\t( +{d}\t-{d} )", .{ @tagName( ResType.fromIdx( r )), econ.resBank[ r ], self.finalGenProd[ r ], self.finalGenCons[ r ] });
+  fn applyResDelta( self : *EconSolver ) void
+  {
+    inline for( 0..resTypeC )| r |
+    {
+      const resType   = ResType.fromIdx( r );
 
-      // Agregating all production and consumption
-      const popMaxProd = self.resFlowData.get( .POP, .REAL_PROD, resType );
-      const popMaxCons = self.resFlowData.get( .POP, .REAL_CONS, resType );
+      const maxSupply = self.resFlowData.get( .GEN, .MAX_PROD, resType );
+      const maxDemand = self.resFlowData.get( .GEN, .MAX_CONS, resType );
 
-      const indMaxProd = self.resFlowData.get( .IND, .REAL_PROD, resType );
-      const indMaxCons = self.resFlowData.get( .IND, .REAL_CONS, resType );
-
-      self.resFlowData.add( .GEN, .REAL_PROD, resType, popMaxProd + indMaxProd );
-      self.resFlowData.add( .GEN, .REAL_CONS, resType, popMaxCons + indMaxCons );
+      const realProd  = self.resFlowData.get( .GEN, .REAL_PROD, resType );
+      const realCons  = self.resFlowData.get( .GEN, .REAL_CONS, resType );
 
 
       // Updating economy metrics and storage
-      const econ = self.econ;
+      self.econ.resState.set( .MAX_SUP, resType, maxSupply );
+      self.econ.resState.set( .MAX_DEM, resType, maxDemand );
 
-      const maxSupply  = self.resFlowData.get( .GEN, .MAX_PROD, resType );
-      const maxDemand  = self.resFlowData.get( .GEN, .MAX_CONS, resType );
+      self.econ.resState.set( .FIN_PROD, resType, realProd );
+      self.econ.resState.set( .FIN_CONS, resType, realCons );
 
-      const finalProd = self.resFlowData.get( .GEN, .REAL_PROD, resType );
-      const finalCons = self.resFlowData.get( .GEN, .REAL_CONS, resType );
+      self.econ.resState.set( .DELTA, resType, realProd - realCons );
 
+      self.resStockData.add( resType, realProd );
+      self.resStockData.sub( resType, realProd );
 
-      econ.resState.set( .MAX_SUP, resType, maxSupply );
-      econ.resState.set( .MAX_DEM, resType, maxDemand );
-
-      econ.resState.set( .FIN_PROD, resType, finalProd );
-      econ.resState.set( .FIN_CONS, resType, finalCons );
-
-      econ.resState.set( .DELTA, resType, finalProd - finalCons );
-
-      econ.addResCount( resType, @intFromFloat( @floor( finalProd )));
-      econ.subResCount( resType, @intFromFloat( @ceil(  finalCons )));
-
+      self.econ.resState.set( .BANK, resType, self.resStockData.get( resType ));
+      self.econ.resState.set( .BANK, resType, self.resStockData.get( resType ));
     }
   }
 
@@ -475,7 +472,7 @@ const EconSolver = struct
     var births : f64 = 0.0;
 
     // ================ FOOD ================
-    var foodAccess = self.maxPopAccess;
+    var foodAccess = self.maxResAccess;
         foodAccess = @min( foodAccess, self.resAccessData.get( .POP, .FOOD ));
 
     if( foodAccess < 1.0 )
@@ -486,7 +483,7 @@ const EconSolver = struct
     }
 
     // ================ WATER ================
-    var waterAccess = self.maxPopAccess;
+    var waterAccess = self.maxResAccess;
         waterAccess = @min( waterAccess, self.resAccessData.get( .POP, .WATER ));
 
     if( waterAccess < 1.0 )
@@ -497,7 +494,7 @@ const EconSolver = struct
     }
 
     // ================ POWER ================
-    var powerAccess = self.maxPopAccess;
+    var powerAccess = self.maxResAccess;
         powerAccess = @min( powerAccess, self.resAccessData.get( .POP, .POWER ));
 
     if( powerAccess < 1.0 )
