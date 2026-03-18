@@ -46,42 +46,13 @@ pub const Economy = struct
   sunshine  : f64 = 0.0,
   sunAccess : f32 = 1.0,
 
-  buildQueue : ?BuildQueue = null,
+  buildQueue  : ?BuildQueue = null,
 
   areaMetrics : gbl.ecnm_d.AreaMetricData = .{},
-//areaCap   : f64,
-//areaMax   : f64 = 0.0,
-//areaUsed  : f64 = 0.0,
-//areaAvail : f64 = 0.0,
-//landCover : f64 = 0.7,
-
-  popMetrics : gbl.ecnm_d.PopMetricData = .{},
-//popCount  : u64 = 0,
-//popDelta  : i64 = 0,
-//popAccess : f32 = 0.0,
-
-  resState : gbl.rsrc_d.ResStateData = .{},
-//resCap    : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
-//resBank   : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
-//resDelta  : [ resTypeC ]i64 = std.mem.zeroes([ resTypeC ]i64 ),
-//resAccess : [ resTypeC ]f32 = std.mem.zeroes([ resTypeC ]f32 ),
-//
-//prevResCons   : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
-//prevResProd   : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
-//
-//prevResDecay  : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
-//prevResGrowth : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
-//prevResReq    : [ resTypeC ]u64 = std.mem.zeroes([ resTypeC ]u64 ),
-
-  infState : gbl.nfrs_d.InfStateData = .{},
-//infBank     : [ infTypeC ]u64 = std.mem.zeroes([ infTypeC ]u64 ),
-//infDelta    : [ infTypeC ]i64 = std.mem.zeroes([ infTypeC ]i64 ),
-
-  indState : gbl.ndst_d.IndStateData = .{},
-//indBank     : [ indTypeC ]u64 = std.mem.zeroes([ indTypeC ]u64 ),
-//indDelta    : [ indTypeC ]i64 = std.mem.zeroes([ indTypeC ]i64 ),
-//indActivity : [ indTypeC ]f32 = std.mem.zeroes([ indTypeC ]f32 ),
-
+  popMetrics  : gbl.ecnm_d.PopMetricData  = .{},
+  resState    : gbl.rsrc_d.ResStateData   = .{},
+  infState    : gbl.nfrs_d.InfStateData   = .{},
+  indState    : gbl.ndst_d.IndStateData   = .{},
 
   pub inline fn newEcon( loc : EconLoc, area : f64, landCover : f64, atmo : bool ) Economy
   {
@@ -169,15 +140,15 @@ pub const Economy = struct
     {
       const resType = ResType.fromIdx( r );
 
-      const resCount  : u64 = @intFromFloat( self.resState.get( .BANK,    resType ));
-      const resCap    : u64 = @intFromFloat( self.resState.get( .CAP,     resType ));
-      const resDelta  : i64 = @intFromFloat( self.resState.get( .DELTA,   resType ));
-      const resProd   : u64 = @intFromFloat( self.resState.get( .FIN_SUP, resType ));
-      const resCons   : u64 = @intFromFloat( self.resState.get( .FIN_DEM, resType ));
-      const resGrowth : u64 = @intFromFloat( self.resState.get( .GROWTH,  resType ));
-      const resDecay  : u64 = @intFromFloat( self.resState.get( .DECAY,   resType ));
-      const resReq    : u64 = @intFromFloat( self.resState.get( .MAX_DEM, resType ));
-      const resAccess : f32 = @floatCast(    self.resState.get( .SAT_LVL, resType ));
+      const resCount  : u64 = @intFromFloat( self.resState.get( .BANK,     resType ));
+      const resCap    : u64 = @intFromFloat( self.resState.get( .CAP,      resType ));
+      const resDelta  : i64 = @intFromFloat( self.resState.get( .DELTA,    resType ));
+      const resProd   : u64 = @intFromFloat( self.resState.get( .FIN_PROD, resType ));
+      const resCons   : u64 = @intFromFloat( self.resState.get( .FIN_CONS, resType ));
+      const resGrowth : u64 = @intFromFloat( self.resState.get( .GROWTH,   resType ));
+      const resDecay  : u64 = @intFromFloat( self.resState.get( .DECAY,    resType ));
+      const resReq    : u64 = @intFromFloat( self.resState.get( .MAX_DEM,  resType ));
+      const resAccess : f32 = @floatCast(    self.resState.get( .SAT_LVL,  resType ));
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| +{d}\t-{d}\t| {d}\t ]",
         .{ @tagName( resType ), resCount, resCap, resAccess, resDelta, resProd, resCons, resGrowth, resDecay, resReq });
@@ -619,7 +590,7 @@ pub const Economy = struct
 
   // ================================ CONSTRUCTION ================================
 
-pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
+pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
   {
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
@@ -627,21 +598,21 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
       return 0;
     }
 
-    const availParts : f64 = self.resState.get( .BANK, .PART );
-    const partCost   : f64 = @floatCast( c.getPartCost() );
-    const areaCost   : f64 = @floatCast( c.getAreaCost() );
+    const availParts  = self.resState.get( .BANK, .PART );
+    const partCost    = c.getPartCost();
+    const areaCost    = c.getAreaCost();
 
-    var maxAmount = amount;
+    var builtAmount = amount;
 
     if( availParts < partCost )
     {
       def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
       return 0;
     }
-    if( availParts < amount * partCost )
+    if( availParts < builtAmount * partCost )
     {
-      def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting" );
-      maxAmount = @divFloor( availParts, partCost );
+      def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
+      builtAmount = availParts / partCost;
     }
 
     if( !std.meta.eql( c, .{ .inf = .HABITAT }))
@@ -653,47 +624,46 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
         def.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
         return 0;
       }
-      if( areaAvail < maxAmount * areaCost )
+      if( areaAvail < builtAmount * areaCost )
       {
-        def.qlog( .WARN, 0, @src(), "Not enough area : adjusting" );
-        maxAmount = @divFloor( areaAvail, areaCost );
+        def.qlog( .WARN, 0, @src(), "Not enough area : adjusting amount" );
+        builtAmount = areaAvail / areaCost;
       }
     }
 
-    const finalAmount : u64 = @intFromFloat( maxAmount );
-    const totalCost   : f64 = partCost * maxAmount;
+    builtAmount = @floor( builtAmount );
+
+    const totalCost   = @ceil( builtAmount * partCost );
 
     // Deduct parts
-    const currentParts = self.resState.get( .BANK, .PART );
-
-    self.resState.set( .BANK,  .PART, currentParts - totalCost );
-    self.resState.set( .DELTA, .PART, self.resState.get( .DELTA, .PART ) - totalCost );
+    self.resState.sub( .BANK,     .PART, totalCost );
+    self.resState.add( .FIN_CONS, .PART, totalCost );
 
     switch( c )
     {
       .inf => | infType |
       {
-        const cur = self.infState.get( .BANK,  infType );
-        const del = self.infState.get( .DELTA, infType );
-        self.infState.set( .BANK,  infType, cur + @as( f64, @floatFromInt( finalAmount )));
-        self.infState.set( .DELTA, infType, del + @as( f64, @floatFromInt( finalAmount )));
+        self.infState.add( .BANK,  infType, builtAmount );
+        self.infState.add( .BUILT, infType, builtAmount );
       },
       .ind => | indType |
       {
-        const cur = self.indState.get( .BANK,  indType );
-        const del = self.indState.get( .DELTA, indType );
-        self.indState.set( .BANK,  indType, cur + @as( f64, @floatFromInt( finalAmount )));
-        self.indState.set( .DELTA, indType, del + @as( f64, @floatFromInt( finalAmount )));
+        self.indState.add( .BANK,  indType, builtAmount );
+        self.indState.add( .BUILT, indType, builtAmount );
       },
+    //else =>
+    //{
+    //  // TODO : build vessels
+    //},
     }
 
-    return finalAmount;
+    return builtAmount;
   }
 
 
   // ================================ UPDATING ================================
 
-  pub fn logMetrics( self : *Economy ) void
+  pub fn logMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "Logging general metrics");
     def.log(  .CONT, 0, @src(), "Day since settled : {d:.6}",     .{ self.dayCount });
@@ -703,6 +673,12 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
   }
 
+  pub fn calcDeltas( self : *const Economy ) void
+  {
+    _ = self;
+    // TODO : sum all cons and prod into deltas for res, inf, and ind
+  }
+
   pub fn resetCountMetrics( self : *Economy ) void
   {
     self.popMetrics.set( .DELTA, 0.0 );
@@ -710,23 +686,40 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
     inline for( 0..resTypeC )| r |
     {
       const res = ResType.fromIdx( r );
-      self.resState.set( .DELTA,   res, 0.0 );
-      self.resState.set( .SAT_LVL, res, 0.0 );
-      self.resState.set( .FIN_SUP, res, 0.0 );
-      self.resState.set( .FIN_DEM, res, 0.0 );
-      self.resState.set( .DECAY,   res, 0.0 );
-      self.resState.set( .GROWTH,  res, 0.0 );
-      self.resState.set( .MAX_DEM, res, 0.0 );
-      self.resState.set( .MAX_SUP, res, 0.0 );
+
+      self.resState.set( .DELTA,    res, 0.0 );
+
+      self.resState.set( .DECAY,    res, 0.0 );
+      self.resState.set( .GROWTH,   res, 0.0 );
+
+      self.resState.set( .MAX_SUP,  res, 0.0 );
+      self.resState.set( .MAX_DEM,  res, 0.0 );
+
+      self.resState.set( .FIN_PROD, res, 0.0 );
+      self.resState.set( .FIN_CONS, res, 0.0 );
+
+      self.resState.set( .SAT_LVL,  res, 0.0 );
     }
     inline for( 0..infTypeC )| f |
     {
-      self.infState.set( .DELTA, InfType.fromIdx( f ), 0.0 );
+      const inf = InfType.fromIdx( f );
+
+      self.infState.set( .DELTA,   inf, 0.0 );
+
+      self.infState.set( .BUILT,   inf, 0.0 );
+      self.infState.set( .DECAY,   inf, 0.0 );
+
+      self.infState.set( .USE_LVL, inf, 0.0 );
     }
     inline for( 0..indTypeC )| d |
     {
       const ind = IndType.fromIdx( d );
+
       self.indState.set( .DELTA,   ind, 0.0 );
+
+      self.indState.set( .BUILT,   ind, 0.0 );
+      self.indState.set( .DECAY,   ind, 0.0 );
+
       self.indState.set( .ACT_LVL, ind, 0.0 );
     }
   }
@@ -756,6 +749,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
     ecnSlvr.resolveEcon( self );
     self.tickBuildQueue();
 
+    self.calcDeltas();
+
     // NOTE : DEBUG SECTION
     self.logPopCount();
     self.logResCounts();
@@ -781,6 +776,5 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
       _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY    }, 1 );
 
     }
-
   }
 };

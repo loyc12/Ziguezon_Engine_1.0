@@ -123,7 +123,7 @@ pub const BuildQueue = struct
     }
   }
 
-  pub inline fn getEntryCount( self : *BuildQueue ) u32
+  pub inline fn getEntryCount( self : *const BuildQueue ) u32
   {
     for( self.entries, 0.. )| e, idx |
     {
@@ -148,14 +148,15 @@ pub const BuildQueue = struct
       for( 0..self.entryCount )| idx |
       {
         var entry = &self.entries[ idx ];
-        var unitsBuilt : f64 = 0;
+
+        var unitsBuilt : f64 = 0.0;
 
         const unitPartCost = entry.construct.getPartCost();
         const unitsToBuild = entry.calcBuildableAmount( availParts );
 
         if( unitsToBuild > 0 )
         {
-          unitsBuilt = @floatFromInt( econ.tryBuild( entry.construct, unitsToBuild ));
+          unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild );
 
           entry.buildCount -= @intFromFloat( unitsBuilt );
           availParts       -= unitsBuilt * unitPartCost;

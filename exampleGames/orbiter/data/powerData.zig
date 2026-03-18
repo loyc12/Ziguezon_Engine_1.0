@@ -35,8 +35,7 @@ pub const PowerSrc = enum( u8 )
 };
 
 
-// Scalar metrics ( f32 )
-pub var powerMetricData : def.NewDataGrid( f32, PowerSrc, PowerMetricEnum ) = .{};
+pub var powerMetricData : def.NewDataGrid( f64, PowerSrc, PowerMetricEnum ) = .{};
 
 pub const PowerMetricEnum = enum
 {

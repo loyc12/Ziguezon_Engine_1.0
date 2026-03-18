@@ -33,8 +33,7 @@ pub const VesType = enum( u8 )
 };
 
 
-// Scalar metrics ( f32 )
-pub var vesMetricData : def.NewDataGrid( f32, VesType, VesMetricEnum ) = .{};
+pub var vesMetricData : def.NewDataGrid( f64, VesType, VesMetricEnum ) = .{};
 
 pub const VesMetricEnum = enum
 {

@@ -85,7 +85,7 @@ pub const InfType = enum( u8 )
 
 // ================================ INFRASTRUCTURE METRICS GRID ================================
 
-pub var infMetricData : def.NewDataGrid( f32, InfType, InfMetricEnum ) = .{};
+pub var infMetricData : def.NewDataGrid( f64, InfType, InfMetricEnum ) = .{};
 
 pub const InfMetricEnum = enum
 {
@@ -155,4 +155,6 @@ pub const InfStateEnum = enum
 
   DECAY,      // Amount lost to building decay this tick
   BUILT,      // Amount gained from construction this tick
+
+  USE_LVL,    // How much of the infrastructure was used this tick
 };

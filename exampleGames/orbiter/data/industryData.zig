@@ -129,7 +129,7 @@ pub const IndType = enum( u8 )
 
 // ================================ INDUSTRY METRICS GRID ================================
 
-pub var indMetricData : def.NewDataGrid( f32, IndType, IndMetricEnum ) = .{};
+pub var indMetricData : def.NewDataGrid( f64, IndType, IndMetricEnum ) = .{};
 
 pub const IndMetricEnum = enum
 {

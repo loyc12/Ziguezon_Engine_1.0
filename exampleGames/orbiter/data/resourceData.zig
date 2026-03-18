@@ -52,7 +52,7 @@ pub const ResType = enum( u8 )
 
 // ================================ RESOURCE METRICS GRID ================================
 
-pub var resMetricData : def.NewDataGrid( f32, ResType, ResMetricEnum ) = .{};
+pub var resMetricData : def.NewDataGrid( f64, ResType, ResMetricEnum ) = .{};
 
 pub const ResMetricEnum = enum
 {
@@ -120,20 +120,20 @@ pub const ResStateEnum = enum
 {
   pub const count = @typeInfo( ResStateEnum ).@"enum".fields.len;
 
-  BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
-  CAP,        // Storage capacity            ( u64, but stored as f64 for uniformity )
+  BANK,     // Current stockpile           ( u64, but stored as f64 for uniformity )
+  CAP,      // Storage capacity            ( u64, but stored as f64 for uniformity )
 
-  DELTA,      // Net total change this tick  ( i64, but stored as f64 for uniformity )
+  DELTA,    // Net total change this tick  ( i64, but stored as f64 for uniformity )
 
-  DECAY,      // Amount lost to stock decay this tick
-  GROWTH,     // Amount gained from nature  this tick
+  DECAY,    // Amount lost to stock decay this tick
+  GROWTH,   // Amount gained from nature  this tick
 
-  MAX_DEM,    // Total maximal consumption this tick
-  MAX_SUP,    // Total maximal produciton  this tick
+  MAX_SUP,  // Total maximal production  this tick
+  MAX_DEM,  // Total maximal consumption this tick
 
-  FIN_DEM,    // Total applied consumption this tick
-  FIN_SUP,    // Total applied produciton  this tick
+  FIN_PROD, // Total applied production  this tick
+  FIN_CONS, // Total applied consumption this tick
 
-  SAT_LVL,    // How much of demand could be satisfied by supply this tick
+  SAT_LVL,  // How much of demand could be satisfied by supply this tick
 };
 

@@ -10,10 +10,10 @@ const IndType = gbl.IndType;
 // ================================ RESOURCE FLOW MATRIX ================================
 // NOTE : used in EconSolver
 
-pub const ResFlowData = def.NewDataMatrix( u64, FlowAgentEnum, FlowPhaseEnum, ResType );
+pub const ResFlowData = def.NewDataMatrix( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
 
 // NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
-pub const IndFlowData = def.NewDataMatrix( u64, IndType, FlowPhaseEnum, ResType );
+pub const IndFlowData = def.NewDataMatrix( f64, IndType, FlowPhaseEnum, ResType );
 
 // NOTE : individual industry's max activity level
 pub const IndActivityData = def.NewDataArray( f64, IndType );
