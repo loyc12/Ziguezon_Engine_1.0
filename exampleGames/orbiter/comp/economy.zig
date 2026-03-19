@@ -638,7 +638,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
     builtAmount = @floor( builtAmount );
 
-    const totalCost   = @ceil( builtAmount * partCost );
+    const totalCost = @ceil( builtAmount * partCost );
 
     // Deduct parts
     self.resState.sub( .BANK,     .PART, totalCost );
