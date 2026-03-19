@@ -297,7 +297,7 @@ const EconSolver = struct
     self.resFlowData.set( .POP, .REAL_PROD, .WORK, weeklyPopWork );
     self.resFlowData.add( .GEN, .REAL_PROD, .WORK, weeklyPopWork );
 
-    self.resStockData.set( .WORK, weeklyPopWork );
+    self.resStockData.add( .WORK, weeklyPopWork );
 
   }
 
@@ -447,20 +447,23 @@ const EconSolver = struct
       const realProd  = self.resFlowData.get( .GEN, .REAL_PROD, resType );
       const realCons  = self.resFlowData.get( .GEN, .REAL_CONS, resType );
 
+      const initialStock = self.econ.resState.get( .BANK, resType );
+      const finalStock   = self.resStockData.get( resType );
+
 
       // Updating economy metrics and storage
+      self.econ.resState.set( .DELTA, resType, finalStock - initialStock );
+
       self.econ.resState.set( .MAX_SUP, resType, maxSupply );
       self.econ.resState.set( .MAX_DEM, resType, maxDemand );
 
       self.econ.resState.set( .FIN_PROD, resType, realProd );
       self.econ.resState.set( .FIN_CONS, resType, realCons );
 
-      self.econ.resState.set( .DELTA, resType, realProd - realCons );
 
       self.resStockData.add( resType, realProd );
-      self.resStockData.sub( resType, realProd );
+      self.resStockData.sub( resType, realCons );
 
-      self.econ.resState.set( .BANK, resType, self.resStockData.get( resType ));
       self.econ.resState.set( .BANK, resType, self.resStockData.get( resType ));
     }
   }

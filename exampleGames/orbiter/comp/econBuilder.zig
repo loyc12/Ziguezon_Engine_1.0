@@ -37,6 +37,12 @@ pub const BuildEntry = struct
     return count * self.getUnitPartCost();
   }
 
+  pub inline fn getTotalPartCost( self : *const BuildEntry ) f64
+  {
+    const  count : f64 = @floatFromInt( self.buildCount );
+    return count * self.construct.getPartCost();
+  }
+
   pub fn calcBuildableAmount( self : *BuildEntry, availParts : f64 ) f64
   {
     const unitPartCost = self.getUnitPartCost();
@@ -132,9 +138,25 @@ pub const BuildQueue = struct
     return self.entries.len;
   }
 
+  pub inline fn getTotalPartCost( self : *const BuildQueue ) f64
+  {
+    var total : f64 = 0;
+    for( self.entries )| e |
+    {
+      if( e.buildCount != 0 )
+      {
+        total += e.getTotalPartCost();
+      }
+      else break;
+    }
+    return total;
+  }
+
 
   pub fn update( self : *BuildQueue, econ : *ecn.Economy ) void
   {
+    econ.resState.add( .MAX_DEM, .PART, self.getTotalPartCost() );
+
     if( self.entryCount > 0 )
     {
       var entriesClosed : u64 = 0;

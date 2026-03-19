@@ -211,9 +211,11 @@ pub const Economy = struct
 
   pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
   {
-    self.infState.set( .BANK, .HOUSING, @floatFromInt( value * 100 ));
-    self.infState.set( .BANK, .HABITAT,                        0.0  );
-    self.infState.set( .BANK, .STORAGE, @floatFromInt( value * 100 ));
+    self.infState.set( .BANK, .HOUSING, @floatFromInt( value ));
+    self.infState.set( .BANK, .HABITAT,                 0.0  );
+    self.infState.set( .BANK, .STORAGE, @floatFromInt( value ));
+
+    self.updateResCaps();
   }
 
   pub inline fn logInfCounts( self : *const Economy ) void
@@ -287,7 +289,7 @@ pub const Economy = struct
     self.indState.set( .BANK, .WATER_PLANT, @floatFromInt( value * 50  ));
     self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 100 ));
 
-    self.indState.set( .BANK, .PROBE_MINE,                         0.0  );
+    self.indState.set( .BANK, .PROBE_MINE,                         0    );
     self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 200 ));
     self.indState.set( .BANK, .REFINERY,    @floatFromInt( value * 100 ));
     self.indState.set( .BANK, .FACTORY,     @floatFromInt( value * 50  ));
@@ -609,12 +611,12 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
     if( availParts < partCost )
     {
-      def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
+    //def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
       return 0;
     }
     if( availParts < builtAmount * partCost )
     {
-      def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
+    //def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
       builtAmount = availParts / partCost;
     }
 
@@ -624,12 +626,12 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
       if( areaAvail < areaCost )
       {
-        def.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
+      //def.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
         return 0;
       }
       if( areaAvail < builtAmount * areaCost )
       {
-        def.qlog( .WARN, 0, @src(), "Not enough area : adjusting amount" );
+      //def.qlog( .WARN, 0, @src(), "Not enough area : adjusting amount" );
         builtAmount = areaAvail / areaCost;
       }
     }

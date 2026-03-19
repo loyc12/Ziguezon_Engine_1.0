@@ -105,9 +105,9 @@ pub fn loadResourceData() void
 
   resMetricData.set( .WORK,  .POP_PROD, 1.00 );
 
-  resMetricData.set( .FOOD,  .POP_CONS, 0.40 );
-  resMetricData.set( .WATER, .POP_CONS, 0.20 );
-  resMetricData.set( .POWER, .POP_CONS, 0.10 );
+  resMetricData.set( .FOOD,  .POP_CONS, 0.10 );
+  resMetricData.set( .WATER, .POP_CONS, 0.05 );
+  resMetricData.set( .POWER, .POP_CONS, 0.01 );
 }
 
 
