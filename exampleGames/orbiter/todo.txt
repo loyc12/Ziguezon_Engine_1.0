@@ -1,7 +1,6 @@
 ==== Engine Update ====
 
-1. Zoom towards mouse, not center of screen ( add bool setting )
-2. ? Allow for user definable precision for positions structs (f/u) via engineSettings ? ( lots of work )
+1. ? Allow for user definable precision for positions structs (f/u) via engineSettings ? ( lots of work )
 
 
 ==== Economy Integration ====

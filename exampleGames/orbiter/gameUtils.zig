@@ -173,8 +173,8 @@ pub fn updateCameraLogic( cam : *def.Cam2D ) void
   if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  glb.scrollSpeed,  0.0 )); }
 
   // Zooms in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * glb.zoomSpeed ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / glb.zoomSpeed ); }
+  if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomOnMouseBy( 1.0 * glb.zoomSpeed ); }
+  if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomOnMouseBy( 1.0 / glb.zoomSpeed ); }
 
   // Resets the camera zoom and position
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))

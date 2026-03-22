@@ -145,17 +145,36 @@ return res;
   pub inline fn getRot(    self : *const Cam2D ) Angle { return self.pos.a; }
   pub inline fn getZoom(   self : *const Cam2D ) f64   { return self.zoom; }
 
-  pub inline fn setCenter( self : *Cam2D, p : Vec2  ) void { self.pos.x = p.x; self.pos.y = p.y; }
-  pub inline fn setRot(    self : *Cam2D, a : Angle ) void { self.pos.a = a; }
-  pub inline fn setZoom(   self : *Cam2D, z : f64   ) void
+  pub inline fn setCenter( self : *Cam2D, worldPos : Vec2  ) void { self.pos.x = worldPos.x; self.pos.y = worldPos.y; }
+  pub inline fn setRot(    self : *Cam2D, a        : Angle ) void { self.pos.a = a; }
+  pub inline fn setZoom(   self : *Cam2D, zoom     : f64   ) void
   {
-    self.zoom = z;
+    self.zoom = def.clmp( zoom, def.G_ST.Camera_Zoom_Min, def.G_ST.Camera_Zoom_Max );
 
-    const maxZoom = def.G_ST.Camera_Zoom_Max;
-    const minZoom = def.G_ST.Camera_Zoom_Min;
+    self.updateView();
+  }
 
-    if( self.zoom < minZoom ) { self.zoom = minZoom; }
-    if( self.zoom > maxZoom ) { self.zoom = maxZoom; }
+  pub inline fn setMouseRelZoom( self : *Cam2D, z : f64 ) void
+  {
+    self.setWorldRelZoom( z, getMouseWorldPos() );
+  }
+  pub inline fn setScreenRelZoom( self : *Cam2D, z : f64, screenPos : Vec2 ) void
+  {
+    self.setWorldRelZoom( z, self.screenToWorld( screenPos ) );
+  }
+  pub fn setWorldRelZoom( self : *Cam2D, z : f64, worldPos : Vec2 ) void
+  {
+    const newZoom = def.clmp( z, def.G_ST.Camera_Zoom_Min, def.G_ST.Camera_Zoom_Max );
+    const ratio   = self.zoom / newZoom;
+
+    // Vector from anchor point to current cam center, scaled by zoom ratio
+    // This keeps worldPos at the same screen-space position after the zoom
+    const oldCenter = self.pos.toVec2();
+    const newCenter = worldPos.add( oldCenter.sub( worldPos ).mulVal( ratio ) );
+
+    self.zoom  = newZoom;
+    self.pos.x = newCenter.x;
+    self.pos.y = newCenter.y;
 
     self.updateView();
   }
@@ -188,6 +207,12 @@ return res;
 
   pub inline fn rotBy(  self : *Cam2D, a      : Angle ) void { self.pos.a.rot( a ); }
   pub inline fn zoomBy( self : *Cam2D, factor : f64   ) void { self.setZoom( self.zoom * factor ); }
+
+  pub inline fn zoomOnMouseBy( self : *Cam2D, factor : f64 ) void
+  {
+    self.setMouseRelZoom( self.zoom * factor );
+  }
+
 
   pub fn clampOnArea( self : *Cam2D, area : Box2 ) void
   {
