@@ -31,6 +31,21 @@ pub inline fn coverScreenWithCol( col : Colour ) void
 {
   ray.drawRectangleV( def.zeroRayVec2, def.getScreenSize().toRayVec2(), col.toRayCol() );
 }
+pub inline fn surroundScreenWithCol( col : Colour, width : f64 ) void
+{
+  const o : Vec2 = .{};
+  const c : Vec2 = def.getScreenSize();
+
+  // Offset to avoid overlapping transparency
+  const l : f64  = o.x + ( width + def.EPS );
+  const r : f64  = c.x - ( width + def.EPS );
+
+  drawLine( .{ .x = l,   .y = o.y }, .{ .x = r,   .y = o.y }, col, width * 2.0 ); // Top
+  drawLine( .{ .x = o.x, .y = o.y }, .{ .x = o.x, .y = c.y }, col, width * 2.0 ); // Left
+  drawLine( .{ .x = c.x, .y = o.y }, .{ .x = c.x, .y = c.y }, col, width * 2.0 ); // Right
+  drawLine( .{ .x = l,   .y = c.y }, .{ .x = r,   .y = c.y }, col, width * 2.0 ); // Bottom
+
+}
 pub inline fn clearBackground( col : Colour ) void
 {
   ray.clearBackground( col.toRayCol() );

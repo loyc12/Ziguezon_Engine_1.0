@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const glb = @import( "gameGlobals.zig" );
+const gbl = @import( "gameGlobals.zig" );
 const utl = @import( "gameUtils.zig" );
 
 // ================================ ENGINE SETTINGS ================================
@@ -37,8 +37,8 @@ const utl = @import( "gameUtils.zig" );
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = glb.backColour;
-  pub const Graphic_Metrics_Colour   : ?def.Colour = glb.textColour;
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = gbl.backColour;
+  pub const Graphic_Metrics_Colour   : ?def.Colour = gbl.textColour;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
   pub const Graphic_Ellipse_Facets   : u16 = 128;

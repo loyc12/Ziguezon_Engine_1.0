@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const glb = @import( "gameGlobals.zig" );
+const gbl = @import( "gameGlobals.zig" );
 const orb = @import( "comp/orbitComp.zig" );
 const bdy = @import( "comp/bodyComp.zig" );
 const ecn = @import( "comp/economy.zig" );
@@ -10,12 +10,12 @@ const ecn = @import( "comp/economy.zig" );
 
 // ================================ STATE INJECT ================================
 
-inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : glb.stlr_d.StellarBodyEnum, orbitedId : def.EntityId ) void
+inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : gbl.stlr_d.StellarBodyEnum, orbitedId : def.EntityId ) void
 {
-  const orbiterMass = glb.STLR_DATA.get( bodyName, .MASS );
-  var   orbitedMass = glb.STLR_DATA.get( .SOL,     .MASS );
+  const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
+  var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
 
-  if( orbitedId != glb.starId ){ if( glb.bodyStore.get( orbitedId ))| b |
+  if( orbitedId != gbl.starId ){ if( gbl.bodyStore.get( orbitedId ))| b |
   {
     orbitedMass = b.mass;
   }
@@ -26,15 +26,15 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
 
   orbitComp.* = .initFromParams(
     orbitedMass,       orbiterMass,
-    glb.STLR_DATA.get( bodyName, .PERIAP ),
-    glb.STLR_DATA.get( bodyName, .APOAP  ),
-    glb.STLR_DATA.get( bodyName, .LONG   ),
+    gbl.STLR_DATA.get( bodyName, .PERIAP ),
+    gbl.STLR_DATA.get( bodyName, .APOAP  ),
+    gbl.STLR_DATA.get( bodyName, .LONG   ),
     null,
   );
   orbitComp.orbitedID = orbitedId;
 
   bodyComp.mass   = orbiterMass;
-  bodyComp.radius = glb.STLR_DATA.get( bodyName, .RADIUS );
+  bodyComp.radius = gbl.STLR_DATA.get( bodyName, .RADIUS );
 }
 
 inline fn getBodyMinSize( bodyType : bdy.BodyType ) def.Vec2
@@ -50,32 +50,32 @@ inline fn getBodyMinSize( bodyType : bdy.BodyType ) def.Vec2
 pub fn initStellarSystem( ng : *def.Engine ) void
 {
   // Setting up relevant components
-  for( 0..glb.ENTITY_COUNT )| idx |
+  for( 0..gbl.ENTITY_COUNT )| idx |
   {
-    glb.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
+    gbl.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
 
-    const id = glb.entityArray[ idx ].id;
+    const id = gbl.entityArray[ idx ].id;
 
     def.log( .INFO, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
 
 
     if( id == 1 ) // Here comes the sun, lalalala
     {
-    //glb.starId = 1;
+    //gbl.starId = 1;
 
-      glb.starCompInst.mass   = glb.STLR_DATA.get( .SOL, .MASS );
-      glb.starCompInst.radius = glb.STLR_DATA.get( .SOL, .RADIUS );
+      gbl.starCompInst.mass   = gbl.STLR_DATA.get( .SOL, .MASS );
+      gbl.starCompInst.radius = gbl.STLR_DATA.get( .SOL, .RADIUS );
 
-      const terraMin = glb.STLR_DATA.get( .TERRA, .PERIAP );
-      const terraMax = glb.STLR_DATA.get( .TERRA, .APOAP  );
+      const terraMin = gbl.STLR_DATA.get( .TERRA, .PERIAP );
+      const terraMax = gbl.STLR_DATA.get( .TERRA, .APOAP  );
 
-      glb.starCompInst.setShineAtDist( 1.0, 0.5 * ( terraMin + terraMax ));
+      gbl.starCompInst.setShineAtDist( 1.0, 0.5 * ( terraMin + terraMax ));
 
-      const r = glb.starCompInst.radius;
+      const r = gbl.starCompInst.radius;
 
-      _ = glb.transStore.add(  id, .{ .pos    = .{} });
-      _ = glb.shapeStore.add(  id, .{ .colour = .yellow, .minSize = .new( 6, 6 ), .scale = .new( r, r ), .shape = .ELLI });
-    //_ = glb.spriteStore.add( id, .{} );
+      _ = gbl.transStore.add(  id, .{ .pos    = .{} });
+      _ = gbl.shapeStore.add(  id, .{ .colour = .gold, .minSize = .new( 6, 6 ), .scale = .new( r, r ), .shape = .ELLI });
+    //_ = gbl.spriteStore.add( id, .{} );
 
       continue;
     }
@@ -83,8 +83,8 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     // Non-sun component instanciation
 
-    var orbitComp : glb.orb.OrbitComp = undefined;
-    var bodyComp  : glb.bdy.BodyComp  = .{};
+    var orbitComp : gbl.orb.OrbitComp = undefined;
+    var bodyComp  : gbl.bdy.BodyComp  = .{};
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
@@ -142,7 +142,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     var startPos = orbitComp.getRelPos(); // Get initial position from orbit
 
-    if( orbitComp.orbitedID != glb.starId ){ if( glb.transStore.get( orbitComp.orbitedID ))| trans |
+    if( orbitComp.orbitedID != gbl.starId ){ if( gbl.transStore.get( orbitComp.orbitedID ))| trans |
     {
       startPos = startPos.add( trans.pos.toVec2() );
     }
@@ -151,12 +151,12 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitComp.orbitedID });
     }}
 
-    _ = glb.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
-    _ = glb.shapeStore.add(  id, .{ .colour = .nWhite, .minSize = getBodyMinSize( bodyComp.bodyType ), .scale = .new( bodyComp.radius, bodyComp.radius ), .shape = .ELLI });
-  //_ = glb.spriteStore.add( id, .{} );
+    _ = gbl.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
+    _ = gbl.shapeStore.add(  id, .{ .colour = .cerul, .minSize = getBodyMinSize( bodyComp.bodyType ), .scale = .new( bodyComp.radius, bodyComp.radius ), .shape = .ELLI });
+  //_ = gbl.spriteStore.add( id, .{} );
 
-    _ = glb.orbitStore.add(  id, orbitComp );
-    _ = glb.bodyStore.add(   id, bodyComp  );
+    _ = gbl.orbitStore.add(  id, orbitComp );
+    _ = gbl.bodyStore.add(   id, bodyComp  );
   }
 }
 
@@ -164,17 +164,27 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
 // ================================ STEP INJECT ================================
 
-pub fn updateCameraLogic( cam : *def.Cam2D ) void
+pub fn updateCameraLogic() void
 {
+  var cam = &def.G_CAM;
+
   // Moves the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0.0, -glb.scrollSpeed )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ cam.moveByS( def.Vec2.new(  0.0,  glb.scrollSpeed )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ cam.moveByS( def.Vec2.new( -glb.scrollSpeed,  0.0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  glb.scrollSpeed,  0.0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0.0, -gbl.scrollSpeed )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ cam.moveByS( def.Vec2.new(  0.0,  gbl.scrollSpeed )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ cam.moveByS( def.Vec2.new( -gbl.scrollSpeed,  0.0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  gbl.scrollSpeed,  0.0 )); }
 
   // Zooms in and out with the mouse wheel
-  if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomOnMouseBy( 1.0 * glb.zoomSpeed ); }
-  if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomOnMouseBy( 1.0 / glb.zoomSpeed ); }
+  if( gbl.followTarget )
+  {
+    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * gbl.zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / gbl.zoomSpeed ); }
+  }
+  else
+  {
+    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomOnMouseBy( 1.0 * gbl.zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomOnMouseBy( 1.0 / gbl.zoomSpeed ); }
+  }
 
   // Resets the camera zoom and position
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
@@ -185,14 +195,16 @@ pub fn updateCameraLogic( cam : *def.Cam2D ) void
   }
 
   // Centers the camera on current valid target
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.t ))
+  if( gbl.targetId != 0 and gbl.targetHasMoved and gbl.followTarget )
   {
-    const targetTrans = glb.transStore.get( glb.targetId );
+    gbl.targetHasMoved = false;
+
+    const targetTrans = gbl.transStore.get( gbl.targetId );
 
     if( targetTrans )| trans |
     {
       cam.pos = trans.pos;
-      def.qlog( .INFO, 0, @src(), "View centered on target" );
+      def.qlog( .TRACE, 0, @src(), "View centered on target" );
     }
     else
     {
@@ -201,11 +213,11 @@ pub fn updateCameraLogic( cam : *def.Cam2D ) void
   }
 }
 
-pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore, sdt : f32 ) void
+pub fn tickOrbiters( transStore : *gbl.TransStore, orbitStore : *gbl.OrbitStore, sdt : f32 ) void
 {
-  for( 1..glb.entityArray.len )| idx |
+  for( 1..gbl.entityArray.len )| idx |
   {
-    const id      = glb.entityArray[ idx ].id;
+    const id      = gbl.entityArray[ idx ].id;
     const orbiter = orbitStore.get( id );
 
     if( orbiter == null ){ continue; }
@@ -219,7 +231,7 @@ pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore,
       orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
 
       // NOTE : DEBUG
-      if( id == glb.targetId )
+      if( id == gbl.targetId )
       {
         def.log( .DEBUG, 0, @src(), "Period lenght of targeted body : {d:.3}", .{ orbiter.?.period });
       }
@@ -229,13 +241,15 @@ pub fn tickOrbiters( transStore : *glb.TransStore, orbitStore : *glb.OrbitStore,
       def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
     }
   }
+
+  gbl.targetHasMoved = true;
 }
 
-pub fn tickGlobalEconomy( transStore : *glb.TransStore, bodyStore : *glb.BodyStore, starPos : def.Vec2 ) void
+pub fn tickGlobalEconomy( transStore : *gbl.TransStore, bodyStore : *gbl.BodyStore, starPos : def.Vec2 ) void
 {
-  inline for( 1..glb.entityArray.len )| idx |
+  inline for( 1..gbl.entityArray.len )| idx |
   {
-    const id    = glb.entityArray[ idx ].id;
+    const id    = gbl.entityArray[ idx ].id;
     const trans = transStore.get( id );
     const body  = bodyStore.get(  id );
 
@@ -252,12 +266,12 @@ pub fn tickGlobalEconomy( transStore : *glb.TransStore, bodyStore : *glb.BodySto
   }
 }
 
-pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStore, orbitStore : *glb.OrbitStore, bodyStore : *glb.BodyStore ) void
+pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStore, orbitStore : *gbl.OrbitStore, bodyStore : *gbl.BodyStore ) void
 {
   // Rendering bodies' orbits and debug info
-  for( 1..glb.entityArray.len )| idx |
+  for( 1..gbl.entityArray.len )| idx |
   {
-    const id = glb.entityArray[ idx ].id;
+    const id = gbl.entityArray[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -275,7 +289,7 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
 
       orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
 
-      if( glb.targetId == id )
+      if( gbl.targetId == id )
       {
         orbiter.?.renderDebug( orbitedTrans.?.pos.toVec2(), orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
         orbiter.?.renderLPs(   orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
@@ -289,9 +303,9 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   }
 
   // Rendering bodies
-  for( 0..glb.entityArray.len )| idx |
+  for( 0..gbl.entityArray.len )| idx |
   {
-    const id = glb.entityArray[ idx ].id;
+    const id = gbl.entityArray[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -309,19 +323,19 @@ pub fn renderOrbiters( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
   }
 }
 
-pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStore, orbitStore : *glb.OrbitStore, bodyStore : *glb.BodyStore ) void
+pub fn drawTargetInfo( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStore, orbitStore : *gbl.OrbitStore, bodyStore : *gbl.BodyStore ) void
 {
   const col   = def.G_ST.Graphic_Metrics_Colour.?;
   const posX  = def.getScreenWidth() - 16.0;
-  const id    = glb.targetId;
+  const id    = gbl.targetId;
 
-  if( id == 0 or id > glb.ENTITY_COUNT ){ return; }
+  if( id == 0 or id > gbl.ENTITY_COUNT ){ return; }
 
   const trans = transStore.get( id );
   const shape = shapeStore.get( id );
 
-  const orbit = if( id != glb.starId ) orbitStore.get( id ) else null;
-  const body  = if( id != glb.starId ) bodyStore.get(  id ) else null;
+  const orbit = if( id != gbl.starId ) orbitStore.get( id ) else null;
+  const body  = if( id != gbl.starId ) bodyStore.get(  id ) else null;
 
 
   var lineCount : f32 = 1.0;
@@ -345,9 +359,9 @@ pub fn drawTargetInfo( transStore : *glb.TransStore, shapeStore : *glb.ShapeStor
     lineCount += 0.5;
   }
 
-  if( glb.targetId == glb.starId ) // SUN
+  if( gbl.targetId == gbl.starId ) // SUN
   {
-    const star = glb.starCompInst;
+    const star = gbl.starCompInst;
 
     def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass         }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;

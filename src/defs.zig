@@ -365,16 +365,19 @@ pub const Colour = col_u.Colour;
 
 pub const drwS_u = @import( "utils/render/drawerS.zig" );
 
-pub const getDefaultFont     = drwS_u.getDefaultFont;
-pub const setDefaultFont     = drwS_u.setDefaultFont;
+pub const getDefaultFont  = drwS_u.getDefaultFont;
+pub const setDefaultFont  = drwS_u.setDefaultFont;
 
-pub const clearBackground    = drwS_u.clearBackground;
-pub const coverScreenWithCol = drwS_u.coverScreenWithCol;
+pub const coverScreenWithCol    = drwS_u.coverScreenWithCol;
+pub const surroundScreenWithCol = drwS_u.surroundScreenWithCol;
+pub const clearBackground       = drwS_u.clearBackground;
 
-pub const drawScreenPixel                = drwS_u.drawPixel;
-pub const drawScreenMacroPixel           = drwS_u.drawMacroPixel;
-pub const drawScreenLine                 = drwS_u.drawLine;
-// pub const drawDotedLine                 = drwS_u.drawDotedLine; // TODO : Implement this function
+
+pub const drawScreenPixel      = drwS_u.drawPixel;
+pub const drawScreenMacroPixel = drwS_u.drawMacroPixel;
+pub const drawScreenLine       = drwS_u.drawLine;
+// pub const drawDotedLine     = drwS_u.drawDotedLine; // TODO : Implement this function
+
 pub const drawScreenCircle               = drwS_u.drawCircle;
 pub const drawScreenCircleLines          = drwS_u.drawCircleLines;
 pub const drawScreenSimpleEllipse        = drwS_u.drawEllipse;

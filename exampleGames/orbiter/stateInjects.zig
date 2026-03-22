@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const glb = @import( "gameGlobals.zig" );
+const gbl = @import( "gameGlobals.zig" );
 const utl = @import( "gameUtils.zig" );
 
 
@@ -12,7 +12,7 @@ pub fn OnStart( ng : *def.Engine ) void // Called by engine.start()    // NOTE :
 {
   _ = ng; // Prevent unused variable warning
 
-  glb.loadAllData();
+  gbl.loadAllData();
 }
 pub fn OnStop( ng : *def.Engine ) void // Called by engine.stop()
 {
@@ -24,32 +24,32 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
 {
   const alloc = def.getAlloc();
 
-  glb.transStore.init(  alloc );
-  glb.shapeStore.init(  alloc );
-  glb.spriteStore.init( alloc );
+  gbl.transStore.init(  alloc );
+  gbl.shapeStore.init(  alloc );
+  gbl.spriteStore.init( alloc );
 
-  glb.orbitStore.init(  alloc );
-  glb.bodyStore.init(   alloc );
+  gbl.orbitStore.init(  alloc );
+  gbl.bodyStore.init(   alloc );
 
   // Registering componentStores
-  if( !ng.componentRegistry.register( "transStore", &glb.transStore ))
+  if( !ng.componentRegistry.register( "transStore", &gbl.transStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
   }
-  if( !ng.componentRegistry.register( "shapeStore", &glb.shapeStore ))
+  if( !ng.componentRegistry.register( "shapeStore", &gbl.shapeStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
   }
-  if( !ng.componentRegistry.register( "spriteStore", &glb.spriteStore ))
+  if( !ng.componentRegistry.register( "spriteStore", &gbl.spriteStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
   }
 
-  if( !ng.componentRegistry.register( "orbitStore", &glb.orbitStore ))
+  if( !ng.componentRegistry.register( "orbitStore", &gbl.orbitStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
   }
-  if( !ng.componentRegistry.register( "bodyStore", &glb.bodyStore ))
+  if( !ng.componentRegistry.register( "bodyStore", &gbl.bodyStore ))
   {
     def.qlog( .ERROR, 0, @src(), "Failed to register bodyStore" );
   }
@@ -62,12 +62,12 @@ pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()
 {
   _ = ng; // Prevent unused variable warning
 
-  glb.transStore.deinit();
-  glb.shapeStore.deinit();
-  glb.spriteStore.deinit();
+  gbl.transStore.deinit();
+  gbl.shapeStore.deinit();
+  gbl.spriteStore.deinit();
 
-  glb.orbitStore.deinit();
-  glb.bodyStore.deinit();
+  gbl.orbitStore.deinit();
+  gbl.bodyStore.deinit();
 }
 
 

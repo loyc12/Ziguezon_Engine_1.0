@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const glb = @import( "gameGlobals.zig" );
+const gbl = @import( "gameGlobals.zig" );
 const utl = @import( "gameUtils.zig" );
 
 
@@ -29,17 +29,21 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 {
     // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
-  if( ng.isPaused() and def.ray.isKeyPressed( def.ray.KeyboardKey.o )){ ng.forceTick(); }
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ glb.targetId = glb.targetId +| 1; }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ glb.targetId = glb.targetId -| 1; }
+  if( ng.isPaused() and def.ray.isKeyPressed( def.ray.KeyboardKey.o ))
+  {
+    ng.forceTick();
+  }
 
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ gbl.targetId = gbl.targetId +| 1; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ gbl.targetId = gbl.targetId -| 1; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.f           )){ gbl.followTarget = !gbl.followTarget; }
 
   if( def.ray.isKeyDown( def.ray.KeyboardKey.left_shift ))
   {
-    const bodyStore : *glb.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+    const bodyStore : *gbl.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-    var mainEcon = bodyStore.get( glb.homeworldId ).?.getEcon( .GROUND );
+    var mainEcon = bodyStore.get( gbl.homeworldId ).?.getEcon( .GROUND );
 
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.zero  )){ mainEcon.addPopCount(                10000 ); }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
@@ -51,21 +55,21 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.seven )){ mainEcon.addResCount( .fromIdx( 6 ), 10000 ); }
   }
 
-  utl.updateCameraLogic( &def.G_CAM );
+  utl.updateCameraLogic();
 }
 
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
-  const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
-  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
-  const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+  const transStore : *gbl.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
+  const orbitStore : *gbl.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
+  const bodyStore  : *gbl.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
   utl.tickOrbiters( transStore, orbitStore, 1.0 ); // Each update will represent exactly one wekk of in-game time
 
 
-  const starPos : def.Vec2 = transStore.get( glb.starId ).?.pos.toVec2();
+  const starPos : def.Vec2 = transStore.get( gbl.starId ).?.pos.toVec2();
 
   utl.tickGlobalEconomy( transStore, bodyStore, starPos );
 }
@@ -82,11 +86,11 @@ pub fn OnRenderBckgrnd( ng : *def.Engine ) void // Called by engine.renderGraphi
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {
-  const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
-  const shapeStore : *glb.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
+  const transStore : *gbl.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
+  const shapeStore : *gbl.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
 
-  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
-  const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+  const orbitStore : *gbl.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
+  const bodyStore  : *gbl.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
 
   utl.renderOrbiters( transStore, shapeStore, orbitStore, bodyStore );
@@ -103,14 +107,18 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
 {
   if( ng.isPaused() )
   {
-    def.coverScreenWithCol( def.Colour.new( 0, 0, 0, 64 )); // grays out the screen
+    const edgeWidth : f64 = 10.0;
+    // Draw lines around screen edge to show it is paused
+    def.surroundScreenWithCol( def.Colour.new( 255, 0, 0, 64 ), edgeWidth );
+
+    def.drawTextTop( "Press P to unpause", .{ .x = def.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
   }
 
-  const transStore : *glb.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
-  const shapeStore : *glb.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
+  const transStore : *gbl.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
+  const shapeStore : *gbl.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));
 
-  const orbitStore : *glb.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
-  const bodyStore  : *glb.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
+  const orbitStore : *gbl.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
+  const bodyStore  : *gbl.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
   utl.drawTargetInfo( transStore, shapeStore, orbitStore, bodyStore );
 }

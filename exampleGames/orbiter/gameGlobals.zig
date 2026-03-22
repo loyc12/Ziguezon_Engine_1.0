@@ -44,6 +44,9 @@ pub var   homeworldId  : def.EntityId = 4; // EARTH
 pub var   targetId     : def.EntityId = 0;
 pub var   entityArray  : [ ENTITY_COUNT ]def.Entity = std.mem.zeroes([ ENTITY_COUNT ]def.Entity );
 
+pub var   followTarget   : bool = false;
+pub var   targetHasMoved : bool = false;
+
 
 
 // ================ UNITS AND CONSTANTS ================

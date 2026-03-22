@@ -1,7 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const glb = @import( "../gameGlobals.zig" );
+const gbl = @import( "../gameGlobals.zig" );
 const ecn = @import( "economy.zig" );
 
 const Vec2 = def.Vec2;
@@ -11,7 +11,7 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  const G : f64 = glb.G_FACTOR;
+  const G : f64 = gbl.G_FACTOR;
   const N : u32 = 256; // number of segments used to render orbital path
 
   orbitedID   : def.EntityId = 1, // 1 is the sun by default
@@ -242,7 +242,7 @@ pub const OrbitComp = struct
     const zoomedWidth = 1.0 / def.G_CAM.getZoom();
     const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 );
 
-    def.drawLine( selfPos, selfPos.add( scaledVel ), .orange, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
+    def.drawLine( selfPos, selfPos.add( scaledVel ), .red, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
@@ -267,7 +267,7 @@ pub const OrbitComp = struct
       def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, @floatCast( zoomedWidth ));
     }
 
-    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .blue,   def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange, def.G_ST.Graphic_Ellipse_Facets );
     def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
   }
 
@@ -285,7 +285,7 @@ pub const OrbitComp = struct
       p2 = p1;
       p1 = self.getRelPosAtAngle( a );
 
-      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, @floatCast( zoomedWidth * 2.0 ));
+      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, @floatCast( zoomedWidth ));
     }
   }
 
