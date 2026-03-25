@@ -1,34 +1,165 @@
-==== Engine Update ====
+================ Economy Integration ================
 
-1. ? Allow for user definable precision for positions structs (f/u) via engineSettings ? ( lots of work )
-
-
-==== Economy Integration ====
-
-HIGH PRIORITY ( Required for basic functionality ) :
-
-1. Define inter-Econ transfer abstraction
-  - Allow teleporting resources and infra from one econ to another ( for now )
-  - Needed to boostarp econs where none exist prior
-
-2. Infrastructure maintenance resource sinks
-  - Per-inf maintenance costs
-  - Soft shutdown when unpaid (activity ratio scaling)
-  - Hard decay when unpaid long-term (optional)
-
-3. Add collapse revert mechanism
-  - smart industry/infrastructure decay
-  - WORK prioritization
+======== PHASE 1 - Foundations ( Do First ) ========
 
 
-MEDIUM PRIORITY :
+HIGH :
 
-1. Implement true resource transport between econs
-2. Implement more efficiency modifiers ( like sunAccess )
+1. Ecology system extraction
+   - Extract getEcologyFactor() out of Economy into its own EcologyState struct
+   - Give it persistent pollution and biosphere fields updated each tick
+   - Economy reads a single environmentQuality : f32 field as input to solver
+   - Currently recalculated inline every tick from scratch — no persistence
 
 
-LOW PRIORITY :
+ANYTIME ( low effort, no deps ) :
 
-1. Add fractional carry buffers for res production ( avoid rounding losses )
-2. Implement local res distribution system ( POWER_GRID, etc )
-3. Add tax / revenue mechanics for COMMERCE and auto-trade
+2. Trade field stubs
+   - Add exportCapacity, importDemand, tradeBalance fields (unused for now)
+
+3. Solver scratch restructuring
+   - Consolidate indFlowData / resFlowData into production[producerType][res]
+   - Already partially done via FlowAgent/FlowPhase enums — finish the cleanup
+
+
+
+======== PHASE 2 - Allocation & Population ========
+
+
+CRITICAL :
+
+1. Priority-weighted allocation
+   - Replace uniform (supply / demand) ratio in calcResAccess() with per-consumer-class weights
+   - Population gets priority over industry
+   - Currently both share the same access scalar — split into separate POP/IND access paths
+   - Address the TODO in calcResAccess() : "Split ind and pop access passes if need be"
+   - Policy levers modify weights
+
+2. Remove minWorkRate floor
+   - minWorkRate = 0.2 is a hack to prevent total supply chain collapse
+   - Should become unnecessary once priority-weighted allocation protects pop first
+   - Remove after weighted allocation is validated
+
+
+HIGH :
+
+3. Labor as weighted allocation
+   - Apply priority-weighted allocation to WORK in calcWorkAccess()
+   - Industries compete for labor with per-industry weights
+   - Address the TODO in applyWorkWeek() : industries that produce WORK
+   - Enables unemployment and automation
+   - Same mechanism as resource allocation above
+
+4. Welfare-based population model
+   - Replace hardcoded FOOD/WATER/POWER checks in applyPopDelta() with a
+     composite welfare score iterating over all ResType with POP_CONS > 0
+   - Drives birth/death/migration rates
+   - suppliedRatio currently only uses food+water — power is excluded from births
+
+5. Economic metrics dashboard
+   - Complete calcDeltas() first ( Phase 1 )
+   - Track GDP ( total output value ), industrial output, welfare score, scarcity index
+   - Essential for balancing and player feedback
+
+
+
+======== PHASE 3 - Signals & Depletion ========
+
+
+CRITICAL :
+
+1. Resource price signals
+   - Add resBasePrice[res] and resPriceElas[res]
+   - Add resPrice[res] computed as basePrice * (demand/supply)^elasticity
+   - Apply lerp smoothing updates each tick
+   - Informational only — does not yet drive behavior
+
+
+HIGH :
+
+2. Extraction depletion
+   - Add mineDeposit[res] and mineRate[res] per economy
+   - Mines extract from finite deposits with decreasing rates
+   - Enables exploration and planetary differentiation
+
+
+MEDIUM :
+
+3. Infrastructure throughput constraints
+   - Power grid, transport, water network have capacity limits
+   - Exceeding limits degrades effective access
+
+4. Capital depreciation
+   - Buildings degrade over time without maintenance (parts/labor cost)
+   - First step toward capital dynamics
+
+
+
+======== PHASE 4 - Trade & Investment ========
+
+
+CRITICAL :
+
+1. Trade layer
+   - Inter-colony exchange using price differentials
+   - Surplus flows to deficit
+   - Requires transport capacity, travel times, and interaction graph
+
+
+HIGH :
+
+2. Investment signals from prices
+   - Replace hardcoded debug build queue at bottom of tickEcon() with
+     AI-driven queue decisions based on price/scarcity signals
+   - Investment guidance only — not operational shutdown
+
+3. Variable tick rate / abstraction
+   - Abstract micro-level simulation as populations scale to billions
+   - Aggregate economies above a threshold
+
+
+MEDIUM :
+
+4. Implement inter-economies transport
+  - Freighter
+  - Mass drivers
+  - Megastructures
+
+5. Implement monetary exchanges
+  - Taxation
+  - Upkeep
+  - Capital incentives for automatic growth
+
+
+
+======== PHASE 5 - Dynamics & Cycles ========
+
+
+MEDIUM :
+
+1. Economic expectations
+   - Smoothed price/demand expectations
+   - Dampens oscillation, enables business cycles
+
+2. Profit-modulated activity
+   - Industry activity influenced by profitability with inertia/dampening
+   - Physical constraints remain primary; profit is secondary
+
+
+LOW :
+
+3. Full capital accumulation
+   - Production as f(labor, capital, tech)
+   - Buildings become capital stock
+
+
+
+======== PHASE 6 - Longterm Game Progression =======
+
+
+HIGH :
+
+1. Technology system integration
+   - Tech modifies indMetricData/indResValData tables over time
+   - New industries and resources unlocks
+   - Ensure tech layer feeds back into Phase 5 dynamics

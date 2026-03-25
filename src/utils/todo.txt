@@ -1,0 +1,1 @@
+1. ? Allow for user definable precision for positions structs (f/u) via engineSettings ? ( lots of work )

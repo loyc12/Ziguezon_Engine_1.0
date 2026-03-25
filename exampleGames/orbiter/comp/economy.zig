@@ -668,7 +668,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   // ================================ UPDATING ================================
 
-  pub fn logMetrics( self : *const Economy ) void
+  pub inline fn logMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "Logging general metrics");
     def.log(  .CONT, 0, @src(), "Day since settled : {d:.6}",     .{ self.dayCount });
@@ -678,13 +678,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
   }
 
-  pub fn calcDeltas( self : *const Economy ) void
-  {
-    _ = self;
-    // TODO : sum all cons and prod into deltas for res, inf, and ind
-  }
-
-  pub fn resetCountMetrics( self : *Economy ) void
+  pub inline fn resetCountMetrics( self : *Economy ) void
   {
     self.popMetrics.set( .DELTA, 0.0 );
 
@@ -732,7 +726,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     }
   }
 
-  pub fn tickBuildQueue( self : *Economy ) void
+
+  inline fn tickBuildQueue( self : *Economy ) void
   {
     if( self.buildQueue != null )
     {
@@ -756,8 +751,6 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
     ecnSlvr.resolveEcon( self );
     self.tickBuildQueue();
-
-    self.calcDeltas();
 
     // NOTE : DEBUG SECTION
     self.logPopCount();
