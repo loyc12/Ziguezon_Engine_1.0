@@ -4,6 +4,7 @@ const def = @import( "defs" );
 pub const orb = @import( "comp/orbitComp.zig" );
 pub const bdy = @import( "comp/bodyComp.zig"  );
 pub const str = @import( "comp/starComp.zig"  );
+pub const ecn = @import( "econ/economy.zig"  );
 
 
 // ================================ ENGINE & GAME SETTINGS ================================

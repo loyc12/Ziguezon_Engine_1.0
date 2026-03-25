@@ -2,10 +2,10 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
-const orb = @import( "comp/orbitComp.zig" );
-const bdy = @import( "comp/bodyComp.zig" );
-const ecn = @import( "comp/economy.zig" );
 
+const orb = gbl.orb;
+const bdy = gbl.bdy;
+const ecn = gbl.econ;
 
 
 // ================================ STATE INJECT ================================

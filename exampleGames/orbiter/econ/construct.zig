@@ -1,9 +1,9 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const ecn = @import( "economy.zig" );
 
 const gbl = @import( "../gameGlobals.zig" );
+const ecn = gbl.ecn;
 
 const VesType = gbl.VesType;
 const ResType = gbl.ResType;

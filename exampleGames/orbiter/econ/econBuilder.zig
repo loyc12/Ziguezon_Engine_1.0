@@ -2,18 +2,17 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-const ecn = @import( "economy.zig"   );
-const cst = @import( "construct.zig" );
-
-const Construct = cst.Construct;
-
-
 const gbl = @import( "../gameGlobals.zig" );
+const ecn = gbl.ecn;
 
 const VesType = gbl.VesType;
 const ResType = gbl.ResType;
 const InfType = gbl.InfType;
 const IndType = gbl.IndType;
+
+const cst = @import( "construct.zig" );
+
+const Construct = cst.Construct;
 
 
 pub const BuildEntry = struct

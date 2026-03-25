@@ -1,10 +1,11 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const gbl = @import( "../gameGlobals.zig" );
-const ecn = @import( "economy.zig" );
-
 const Vec2 = def.Vec2;
+
+
+const gbl = @import( "../gameGlobals.zig" );
+const ecn = gbl.econ;
 
 
 pub const OrbitComp = struct
