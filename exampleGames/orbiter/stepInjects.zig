@@ -28,16 +28,16 @@ pub fn OnLoopCycle( ng : *def.Engine ) void // Called by engine.loopLogic() ( ev
 pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
     // Toggle pause if the P key is pressed
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   if( ng.isPaused() and def.ray.isKeyPressed( def.ray.KeyboardKey.o ))
   {
     ng.forceTick();
   }
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ gbl.targetId = gbl.targetId +| 1; }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ gbl.targetId = gbl.targetId -| 1; }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.f           )){ gbl.followTarget = !gbl.followTarget; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ gbl.targetId     =  gbl.targetId +| 1; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ gbl.targetId     =  gbl.targetId -| 1; }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.f           )){ gbl.followTarget = !gbl.followTarget;  }
 
   if( def.ray.isKeyDown( def.ray.KeyboardKey.left_shift ))
   {
@@ -111,7 +111,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
     // Draw lines around screen edge to show it is paused
     def.surroundScreenWithCol( def.Colour.new( 255, 0, 0, 64 ), edgeWidth );
 
-    def.drawTextTop( "Press P to unpause", .{ .x = def.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
+    def.drawTextTop( "Press P to resume", .{ .x = def.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
   }
 
   const transStore : *gbl.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));

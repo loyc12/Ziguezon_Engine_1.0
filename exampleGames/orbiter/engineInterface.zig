@@ -41,7 +41,7 @@ const utl = @import( "gameUtils.zig" );
   pub const Graphic_Metrics_Colour   : ?def.Colour = gbl.textColour;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
-  pub const Graphic_Ellipse_Facets   : u16 = 128;
+  pub const Graphic_Ellipse_Facets   : u16 = 255;
 
   pub const Camera_Zoom_Max          : f32 = 1.000000;
   pub const Camera_Zoom_Min          : f32 = 0.000001;

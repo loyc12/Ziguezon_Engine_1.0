@@ -3,8 +3,14 @@ const def = @import( "defs" );
 
 const TimeVal = def.TimeVal;
 
-const TICK_LAG_LIMIT  = 4;
+// TODO : move these cosntants to engine settings
+
+const TICK_LAG_LIMIT  = 3;
 const FRAME_LAG_LIMIT = 2;
+
+const TICK_BUFF_LEN   = 8;
+const FRAME_BUFF_LEN  = 16;
+
 
 pub const EngineTime = struct
 {
@@ -15,12 +21,14 @@ pub const EngineTime = struct
 
   targetTickDelta : TimeVal = .{}, // How far appart should each tick update be
   lastTickDelta   : TimeVal = .{}, // How far appart the last two tick updates were
+  buffTickDelta   : TimeVal = .{},
   tickOffset      : TimeVal = .{}, // Time since the last tick update occured
   tickEpoch       : TimeVal = .{}, // simTime at which the last tick occured
   tickCount       : u128    = 0,   // Number of tick updates since launch
 
   targetFrameDelta : TimeVal = .{}, // How far appart should each frame update be
   lastFrameDelta   : TimeVal = .{}, // How far appart the last two frame updates were
+  buffFrameDelta   : TimeVal = .{},
   frameOffset      : TimeVal = .{}, // Time since last frame update occured
   frameEpoch       : TimeVal = .{}, // simTime at which the last frame update occured
   frameCount       : u128    = 0,   // Number of frame updates since launch
@@ -33,19 +41,24 @@ pub const EngineTime = struct
   //const spt : f32 = @floatFromInt( def.G_ST.Startup_Target_TickRate );
   //const spf : f32 = @floatFromInt( def.G_ST.Startup_Target_FrameRate );
 
-    const now : TimeVal = .newNow();
+    const now : TimeVal   = .newNow();
+
+    self.simEpoch   = now;
+    self.tickEpoch  = now;
+    self.frameEpoch = now;
+
+
     const tps : TimeVal = .fromRayDeltaTime( @floatCast( def.inv1( def.G_ST.Startup_Target_TickRate  ))); // == 1.0 / spt
     const fps : TimeVal = .fromRayDeltaTime( @floatCast( def.inv1( def.G_ST.Startup_Target_FrameRate ))); // == 1.0 / spf
 
-    self.simEpoch = now;
-
-    self.targetTickDelta = tps;
-    self.lastTickDelta   = tps;
-    self.tickEpoch       = now;
+    self.targetTickDelta  = tps;
+    self.lastTickDelta    = tps;
+    self.buffTickDelta    = tps;
 
     self.targetFrameDelta = fps;
     self.lastFrameDelta   = fps;
-    self.frameEpoch       = now;
+    self.buffFrameDelta   = fps;
+
 
     self.simTimeUpdate( def.G_NG.isPlaying() );
 
@@ -126,6 +139,12 @@ pub const EngineTime = struct
 
     self.tickEpoch  = now;
     self.tickCount += 1;
+
+    // Smooth buffTickDelta toward lastTickDelta over TICK_BUFF_LEN samples
+    const tickAlpha : f32 = 1.0 / @as( f32, @floatFromInt( TICK_BUFF_LEN ));
+    const tmp       : f32 = def.lerp( self.buffTickDelta.toRayDeltaTime(), self.lastTickDelta.toRayDeltaTime(), tickAlpha );
+
+    self.buffTickDelta = TimeVal.fromRayDeltaTime( tmp );
   }
 
   pub fn consumeFrame( self: *EngineTime ) void
@@ -155,6 +174,12 @@ pub const EngineTime = struct
 
     self.frameEpoch  = now;
     self.frameCount += 1;
+
+    // Smooth buffFrameDelta toward lastFrameDelta over FRAME_BUFF_LEN samples
+    const frameAlpha : f32 = 1.0 / @as( f32, @floatFromInt( FRAME_BUFF_LEN ));
+    const tmp        : f32 = def.lerp( self.buffFrameDelta.toRayDeltaTime(), self.lastFrameDelta.toRayDeltaTime(), frameAlpha );
+
+    self.buffFrameDelta = TimeVal.fromRayDeltaTime( tmp );
   }
 
 

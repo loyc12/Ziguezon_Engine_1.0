@@ -226,7 +226,7 @@ inline fn drawDebugFpsCount( ng : *Engine ) void
 {
   if( def.G_ST.DebugDraw_FPS and def.G_ST.Graphic_Metrics_Colour != null )
   {
-    const frameTime = ng.times.lastFrameDelta;
+    const frameTime = ng.times.buffFrameDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), def.TimeVal.usPerSec() ));
@@ -240,7 +240,7 @@ inline fn drawDebugTpsCount( ng : *Engine ) void
 {
   if( def.G_ST.DebugDraw_FPS )
   {
-    const tickTime = ng.times.lastTickDelta;
+    const tickTime = ng.times.buffTickDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( tickTime.toSec() );
     const mic : u64 = @intCast( @rem( tickTime.toUs(), def.TimeVal.usPerSec() ));

@@ -267,13 +267,13 @@ pub const OrbitComp = struct
       def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, @floatCast( zoomedWidth ));
     }
 
-    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange, def.G_ST.Graphic_Ellipse_Facets );
-    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 5.0 ), .{}, .orange, def.G_ST.Graphic_Ellipse_Facets );
+    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 5.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
   }
 
   pub fn renderPath( self : *const OrbitComp, orbitedPos : Vec2 ) void
   {
-    var p1 : Vec2 = self.getRelPosAtAngle( 0 );
+    var p1 : Vec2 = self.getRelPosAtAngle( self.angularPos );
     var p2 : Vec2 = p1;
 
     const zoomedWidth = 1.0 / def.G_CAM.getZoom();
@@ -283,7 +283,7 @@ pub const OrbitComp = struct
       const a = def.TAU * @as( f32, @floatFromInt( i + 1 )) / @as( f32, @floatFromInt( N ));
 
       p2 = p1;
-      p1 = self.getRelPosAtAngle( a );
+      p1 = self.getRelPosAtAngle( self.angularPos + a );
 
       def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, @floatCast( zoomedWidth ));
     }
@@ -304,7 +304,7 @@ pub const OrbitComp = struct
     {
       const pos = self.getAbsLpPos( orbitedPos, @intCast( i ));
 
-      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
+      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3.0 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
     }
   }
 
