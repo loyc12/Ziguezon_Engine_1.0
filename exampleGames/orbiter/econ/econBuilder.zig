@@ -84,6 +84,8 @@ pub const BuildQueue = struct
 
   pub fn addEntry( self : *BuildQueue, c : Construct, count : u64 ) bool
   {
+    if( count == 0 ){ return false; }
+
     // If construct same as last in list, increment amount to be built
     if( self.entryCount > 0 and std.meta.eql( c, self.entries[ self.entryCount - 1 ].construct ))
     {

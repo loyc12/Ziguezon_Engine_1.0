@@ -25,17 +25,6 @@ const FlowPhase = ecnm_d.FlowPhaseEnum;
 const Access    = ecnm_d.AccessAgentEnum;
 
 
-// Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
-const WEEKLY_POP_GROWTH     : f32 = 0.0003;
-
-// Pop decay factors
-const WEEKLY_PARCH_RATE     : f32 = 0.10;
-const WEEKLY_STARVE_RATE    : f32 = 0.05;
-const WEEKLY_FREEZE_RATE    : f32 = 0.02;
-
-const POP_SHORTAGE_EXPONENT : f32 = 2.0; // Smooth out death rates from pop res shortages0.20;
-
-
 
 pub inline fn resolveEcon( econ : *ecn.Economy ) void
 {
@@ -138,19 +127,18 @@ const EconSolver = struct
 
   fn applyResGrowth( self : *EconSolver ) void
   {
-    const ecoFactor = self.econ.getEcologyFactor();
+    const ecoFactor = self.econ.getEcoFactor();
 
   //def.qlog( .DEBUG, 0, @src(), "Logging natural resource growth :" );
 
     inline for( 0..resTypeC )| r |
     {
-      const resType  = ResType.fromIdx( r );
-      const growRate = resType.getMetric_f64( .GROWTH_RATE );
+      const resType    = ResType.fromIdx( r );
+      const growRate   = resType.getMetric_f64( .GROWTH_RATE );
+      const growthGain = @max( 0.0, ecoFactor * ecoFactor * ecoFactor * growRate );
 
-      if( growRate >= def.EPS )
+      if( growthGain >= def.EPS )
       {
-        const growthGain = ecoFactor * ecoFactor * growRate;
-
         self.resStockData.add( resType, growthGain );
 
         // Store in flow data as natural production ( not included in .GEN )
@@ -468,53 +456,78 @@ const EconSolver = struct
   }
 
 
+  // Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
+  const WEEKLY_POP_GROWTH     : f32 = 0.0003;
+
+  // Pop decay factors
+  const WEEKLY_PARCH_RATE     : f32 = 0.10;
+  const WEEKLY_STARVE_RATE    : f32 = 0.05;
+  const WEEKLY_FREEZE_RATE    : f32 = 0.02;
+
+  const RES_SHORTAGE_EXPONENT : f32 = 2.0; // Smooth out death rates from pop res shortages
+  const JOB_SHORTAGE_EXPONENT : f32 = 1.0; // Smooth out growth suppression from pop job shortages
+
+  const MAX_RES_MODIFIER      : f32 = def.PHI;
+  const MAX_JOB_MODIFIER      : f32 = def.PHI;
+
   fn applyPopDelta( self : *EconSolver ) void
   {
     var deaths : f64 = 0.0;
     var births : f64 = 0.0;
 
+
     // ================ FOOD ================
-    var foodAccess = self.maxResAccess;
-        foodAccess = @min( foodAccess, self.resAccessData.get( .POP, .FOOD ));
+
+    const foodAccess = self.resAccessData.get( .POP, .FOOD );
 
     if( foodAccess < 1.0 )
     {
       def.log( .WARN, 0, @src(), "Population is experiencing food  shortages ! ( {d:.3} )", .{ foodAccess });
 
-      deaths += self.prevPopCount * def.pow( f64, 1.0 - foodAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_STARVE_RATE;
+      deaths += self.prevPopCount * def.pow( f64, 1.0 - foodAccess, RES_SHORTAGE_EXPONENT ) * WEEKLY_STARVE_RATE;
     }
 
+
     // ================ WATER ================
-    var waterAccess = self.maxResAccess;
-        waterAccess = @min( waterAccess, self.resAccessData.get( .POP, .WATER ));
+
+    const waterAccess = self.resAccessData.get( .POP, .WATER );
 
     if( waterAccess < 1.0 )
     {
       def.log( .WARN, 0, @src(), "Population is experiencing water shortages ! ( {d:.3} )", .{ waterAccess });
 
-      deaths += self.prevPopCount * def.pow( f64, 1.0 - waterAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_PARCH_RATE;
+      deaths += self.prevPopCount * def.pow( f64, 1.0 - waterAccess, RES_SHORTAGE_EXPONENT ) * WEEKLY_PARCH_RATE;
     }
 
+
     // ================ POWER ================
-    var powerAccess = self.maxResAccess;
-        powerAccess = @min( powerAccess, self.resAccessData.get( .POP, .POWER ));
+
+    const powerAccess = self.resAccessData.get( .POP, .POWER );
 
     if( powerAccess < 1.0 )
     {
       def.log( .WARN, 0, @src(), "Population is experiencing power shortages ! ( {d:.3} )", .{ powerAccess });
 
-      deaths += self.prevPopCount * def.pow( f64, 1.0 - powerAccess, POP_SHORTAGE_EXPONENT ) * WEEKLY_FREEZE_RATE;
+      deaths += self.prevPopCount * def.pow( f64, 1.0 - powerAccess, RES_SHORTAGE_EXPONENT ) * WEEKLY_FREEZE_RATE;
     }
 
+
     // ================ POP DELTA ================
-    const suppliedRatio : f64 = def.pow( f64, @min( foodAccess, waterAccess ), 1.0 / POP_SHORTAGE_EXPONENT );
 
-    births = self.prevPopCount * suppliedRatio * @as( f64, WEEKLY_POP_GROWTH );
+    const minResAccess : f64 = @min( foodAccess, waterAccess, powerAccess );
+    const workAccess   : f64 = self.resAccessData.get( .IND, .WORK );
 
-    def.log( .INFO, 0, @src(), "Pop access : F {d:.4}\tW {d:.4}\tP {d:.4}", .{ foodAccess, waterAccess, powerAccess });
-    def.log( .CONT, 0, @src(), "Deaths     : {d:.8}", .{ deaths });
-    def.log( .CONT, 0, @src(), "Births     : {d:.8}", .{ births });
-    def.log( .CONT, 0, @src(), "Supplied   : {d:.8}", .{ suppliedRatio });
+    const resModifier : f64 = @min( def.pow( f64,     minResAccess, 1.0 / RES_SHORTAGE_EXPONENT ), MAX_RES_MODIFIER );
+    const jobModifier : f64 = @min( def.pow( f64, 1.0 / workAccess, 1.0 / JOB_SHORTAGE_EXPONENT ), MAX_JOB_MODIFIER );
+
+    births = self.prevPopCount * @as( f64, WEEKLY_POP_GROWTH ) * resModifier * jobModifier;
+
+
+    def.log( .INFO, 0, @src(), "Pop access   : F {d:.4}\tW {d:.4}\tP {d:.4}", .{ foodAccess, waterAccess, powerAccess });
+    def.log( .CONT, 0, @src(), "Deaths       : {d:.8}", .{ deaths });
+    def.log( .CONT, 0, @src(), "Births       : {d:.8}", .{ births });
+    def.log( .CONT, 0, @src(), "Res Modifier : {d:.8}", .{ resModifier });
+    def.log( .CONT, 0, @src(), "Job modifier : {d:.8}", .{ jobModifier });
 
 
     // Updating economy

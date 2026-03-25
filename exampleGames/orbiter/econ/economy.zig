@@ -5,9 +5,11 @@ const def = @import( "defs" );
 pub const ecnSlvr = @import( "econSolver.zig"  );
 pub const ecnBldr = @import( "econBuilder.zig" );
 pub const cst     = @import( "construct.zig"   );
+pub const eco     = @import( "ecology.zig"     );
 
-pub const BuildQueue    = ecnBldr.BuildQueue;
-pub const Construct     = @import( "construct.zig" ).Construct;
+pub const BuildQueue = ecnBldr.BuildQueue;
+pub const Construct  = @import( "construct.zig" ).Construct;
+pub const Ecology    = eco.EcoState;
 
 
 const gbl = @import( "../gameGlobals.zig" );
@@ -27,8 +29,6 @@ const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
 
-
-const POLLUTION_PER_POP     =   1.0;
 const MIN_RES_CAP           = 100.0;
 const MAX_SUN_ACCESS_CAP    =   1.0;
 const SUN_SHORTAGE_EXPONENT =   2.0;
@@ -47,6 +47,7 @@ pub const Economy = struct
   sunAccess : f32 = 1.0,
 
   buildQueue  : ?BuildQueue = null,
+  ecology     : ?Ecology    = null,
 
   areaMetrics : gbl.ecnm_d.AreaMetricData = .{},
   popMetrics  : gbl.ecnm_d.PopMetricData  = .{},
@@ -70,6 +71,13 @@ pub const Economy = struct
     }
 
     econ.buildQueue = BuildQueue.init();
+
+    econ.updateAreas();
+
+    if( econ.hasEcology() )
+    {
+      econ.ecology = .init( &econ );
+    }
 
     return econ;
   }
@@ -358,7 +366,7 @@ pub const Economy = struct
   }
 
 
-  // ================================ SUNSHINE ================================
+  // ================================ ENVIRONMENT ================================
 
   pub inline fn updateSunshine( self : *Economy, sunshine : f64 ) void
   {
@@ -393,60 +401,24 @@ pub const Economy = struct
     self.sunAccess = @floatCast( def.clmp( tmp, 0.001, MAX_SUN_ACCESS_CAP ));
   }
 
-
-  pub fn getEcologyFactor( self : *const Economy ) f32
+  pub inline fn hasEcology( self : *const Economy ) bool
   {
-    if( self.location != .GROUND or !self.hasAtmo ){ return 0.0; }
+    return( self.location == .GROUND and self.hasAtmo );
+  }
 
-    const popCount : u64 = @intFromFloat( self.popMetrics.get( .COUNT ));
+  pub inline fn getEcoFactor( self : *const Economy ) f64
+  {
+    if( !self.hasEcology() ){ return 0.0; }
 
-    var averageActivity : f64 = 0.0;
-    var pollutionAmount : f64 = @floatFromInt( popCount );
-        pollutionAmount      *= POLLUTION_PER_POP;
-
-    for( 0..indTypeC )| d |
+    if( self.ecology != null )
     {
-      const activity = self.indState.get( .ACT_LVL, IndType.fromIdx( d ));
-      const indType  = IndType.fromIdx( d );
-
-      var tmp  = indType.getMetric_f64( .POLLUTION );
-          tmp *= self.indState.get( .BANK, indType );
-          tmp *= activity;
-
-      pollutionAmount += tmp;
-      averageActivity += activity;
+      return self.ecology.?.ecoFactor;
     }
-
-    averageActivity /= indTypeC;
-
-    for( 0..infTypeC )| f |
+    else
     {
-      const infType = InfType.fromIdx( f );
-
-      var tmp  = infType.getMetric_f64( .POLLUTION );
-          tmp *= self.infState.get( .BANK, infType );
-          tmp *= averageActivity;
-
-      pollutionAmount += tmp;
+      def.qlog( .WARN, 0, @src(), "Cannot get ecology factor : uninitialized" );
+      return 0.0;
     }
-
-    pollutionAmount *= 100.0;
-
-    const landArea      : f64 = self.areaMetrics.get( .LAND );
-    const developedArea : f64 = self.areaMetrics.get( .USED );
-
-    const pollutionRatio   : f32 = @floatCast( def.clmp( pollutionAmount / @max( landArea, 1.0 ), 0.0, 1.0 ));
-    const developmentRatio : f32 = @floatCast( def.clmp( developedArea   / landArea,              0.0, 1.0 ));
-
-    const ecologyRatio = ( 1.0 - developmentRatio ) * ( 1.0 - pollutionRatio );
-
-  //def.qlog( .INFO, 0, @src(), "Loggin ecology :" );
-  //def.log(  .CONT, 0, @src(), "Pollution  amount\t: {d}",    .{ pollutionAmount  });
-  //def.log(  .CONT, 0, @src(), "Pollution   ratio\t: {d:.6}", .{ pollutionRatio   });
-  //def.log(  .CONT, 0, @src(), "Development ratio\t: {d:.6}", .{ developmentRatio });
-  //def.log(  .CONT, 0, @src(), "Ecology    factor\t: {d:.6}", .{ ecoFactor        });
-
-    return def.clmp( ecologyRatio, 0.000001, 1.0 );
   }
 
 
@@ -515,84 +487,6 @@ pub const Economy = struct
 
 
 
-  // ================================ ECONOMY ================================
-
-//pub inline fn getMaxTotResCons( self : *const Economy, resType : ResType ) u64
-//{
-//  var maxCons : u64 = 0;
-//
-//  maxCons += self.getMaxPopResCons( resType );
-//  maxCons += self.getMaxIndResCons( resType );
-//
-//  return maxCons;
-//}
-//
-//pub inline fn getMaxPopResCons( self : *const Economy, resType : ResType ) u64
-//{
-//  return @intFromFloat( self.popCount * resType.getMetric_f32( .POP_CONS ));
-//}
-//
-//pub inline fn getMaxIndResCons( self : *const Economy, resType : ResType ) u64
-//{
-//  var maxCons : u64 = 0;
-//
-//  inline for( 0..indTypeC )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
-//  {
-//    const indType = IndType.fromIdx( d );
-//
-//    maxCons += self.indBank[ d ] * indType.getResProd( resType );
-//
-//    if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
-//    {
-//      const factor = self.sunAccess;
-//
-//      const maxCons_f32 : f64 = @floatFromInt( maxCons );
-//      maxCons = @intFromFloat( @floor( maxCons_f32 * factor ));
-//    }
-//  }}
-//
-//  return maxCons;
-//}
-//
-//
-//pub inline fn getMaxTotResProd( self : *const Economy, resType : ResType ) u64
-//{
-//  var maxProd : u64 = 0;
-//
-//  maxProd += self.getMaxPopResProd( resType );
-//  maxProd += self.getMaxIndResProd( resType );
-//
-//  return maxProd;
-//}
-//
-//pub inline fn getMaxPopResProd( self : *const Economy, resType : ResType ) u64
-//{
-//  return @intFromFloat( self.popCount * resType.getMetric_f32( .POP_PROD ));
-//}
-//
-//pub inline fn getMaxIndResProd( self : *const Economy, resType : ResType ) u64
-//{
-//  var maxProd : u64 = 0;
-//
-//  inline for( 0..indTypeC )| d |{ if( self.indBank[ d ] != 0 ) // Skips absent industries
-//  {
-//    const indType = IndType.fromIdx( d );
-//
-//    maxProd += self.indBank[ d ] * indType.getResProd( resType );
-//
-//    if( indType.getPowerSrc() == .SOLAR ) // Limits activity based on available sunshine
-//    {
-//      const factor = @min( self.getSunshineAccess(), 1.0 );
-//
-//      const maxProd_f32 : f64 = @floatFromInt( maxProd );
-//      maxProd = @intFromFloat( @floor( maxProd_f32 * factor ));
-//    }
-//  }}
-//
-//  return maxProd;
-//}
-
-
   // ================================ CONSTRUCTION ================================
 
 pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
@@ -650,11 +544,13 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
       {
         self.infState.add( .BANK,  infType, builtAmount );
         self.infState.add( .BUILT, infType, builtAmount );
+        self.infState.add( .DELTA, infType, builtAmount );
       },
       .ind => | indType |
       {
         self.indState.add( .BANK,  indType, builtAmount );
         self.indState.add( .BUILT, indType, builtAmount );
+        self.indState.add( .DELTA, indType, builtAmount );
       },
     //else =>
     //{
@@ -673,7 +569,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     def.qlog( .INFO, 0, @src(), "Logging general metrics");
     def.log(  .CONT, 0, @src(), "Day since settled : {d:.6}",     .{ self.dayCount });
     def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
-    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcologyFactor() });
+    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
   }
@@ -727,6 +623,20 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
   }
 
 
+  inline fn tickEcology( self : *Economy ) void
+  {
+    if( !self.hasEcology() ){ return; }
+
+    if( self.ecology != null )
+    {
+      self.ecology.?.update( self );
+    }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot tick ecology : uninitialized" );
+    }
+  }
+
   inline fn tickBuildQueue( self : *Economy ) void
   {
     if( self.buildQueue != null )
@@ -739,18 +649,53 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     }
   }
 
+  inline fn updateInfUsage( self : *Economy ) void
+  {
+    // HOUSING
+    const popCount : f64 = @floatFromInt( self.getPopCount() );
+    const popCap   : f64 = @floatFromInt( self.getPopCap()   );
+
+    self.infState.set( .USE_LVL, .HOUSING, popCount / popCap );
+
+
+    // HABITAT
+    const areaUsed : f64 = self.areaMetrics.get( .USED );
+    const areaCap  : f64 = self.areaMetrics.get( .CAP );
+
+    self.infState.set( .USE_LVL, .HABITAT, areaUsed / areaCap );
+
+
+    // STORAGE
+    var maxStorageUsage : f64 = 0.0;
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resType = ResType.fromIdx( r );
+
+      const resCount : f64 = @floatFromInt( self.getResCount( resType ));
+      const resCap   : f64 = @floatFromInt( self.getResCap(   resType ));
+
+      maxStorageUsage = @max( maxStorageUsage, resCount / resCap );
+    }
+
+    self.infState.set( .USE_LVL, .STORAGE, maxStorageUsage );
+  }
+
   pub fn tickEcon( self : *Economy, newSunshine : f64 ) void
   {
     self.dayCount += 1;
 
-    if( @mod( self.dayCount, 7 ) != 1 ){ return; } // Only tick econ at start of week
+    if( @mod( self.dayCount, 7 ) != 1 ){ return; } // Only tick econ at start of week  // TODO : REACTIVATE
 
     self.updateResCaps();
     self.updateAreas();
     self.updateSunshine( newSunshine );
 
+    self.tickEcology();
     ecnSlvr.resolveEcon( self );
     self.tickBuildQueue();
+
+    self.updateInfUsage();
 
     // NOTE : DEBUG SECTION
     self.logPopCount();
@@ -762,20 +707,44 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
-      _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING     }, 2 );
-      _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT     }, 4 );
-      _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE     }, 4 );
+      if( self.infState.get( .USE_LVL, .HOUSING ) > 0.8 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING }, 2 );
+      }
 
-      _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 1 );
-      _ = self.buildQueue.?.addEntry( .{ .ind = .HYDROPONIC  }, 1 );
-      _ = self.buildQueue.?.addEntry( .{ .ind = .WATER_PLANT }, 2 );
-      _ = self.buildQueue.?.addEntry( .{ .ind = .SOLAR_PLANT }, 4 );
+      if( self.infState.get( .USE_LVL, .HABITAT ) > 0.9 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT }, 2 );
+      }
 
-      _ = self.buildQueue.?.addEntry( .{ .ind = .GROUND_MINE }, 8 );
-      _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY    }, 4 );
-      _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY     }, 2 );
-      _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY    }, 1 );
+      if( self.infState.get( .USE_LVL, .STORAGE ) > 0.5 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE }, 2 );
+      }
 
+      if( self.resState.get( .SAT_LVL, .FOOD ) < 1.1 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 1 );
+        _ = self.buildQueue.?.addEntry( .{ .ind = .HYDROPONIC  }, 1 );
+      }
+
+      if( self.resState.get( .SAT_LVL, .WATER ) < 1.1 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .ind = .WATER_PLANT }, 2 );
+      }
+
+      if( self.resState.get( .SAT_LVL, .POWER ) < 1.1 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .ind = .SOLAR_PLANT }, 4 );
+      }
+
+      if( self.resState.get( .SAT_LVL, .WORK ) > 0.9 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .ind = .GROUND_MINE }, 8 );
+        _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY    }, 4 );
+        _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY     }, 2 );
+        _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY    }, 1 );
+      }
     }
   }
 };
