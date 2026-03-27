@@ -365,42 +365,42 @@ pub const Colour = col_u.Colour;
 
 pub const drwS_u = @import( "utils/render/drawerS.zig" );
 
-pub const getDefaultFont  = drwS_u.getDefaultFont;
-pub const setDefaultFont  = drwS_u.setDefaultFont;
+pub const getDefaultFont            = drwS_u.getDefaultFont;
+pub const setDefaultFont            = drwS_u.setDefaultFont;
 
-pub const coverScreenWithCol    = drwS_u.coverScreenWithCol;
-pub const surroundScreenWithCol = drwS_u.surroundScreenWithCol;
-pub const clearBackground       = drwS_u.clearBackground;
-
-
-pub const drawScreenPixel      = drwS_u.drawPixel;
-pub const drawScreenMacroPixel = drwS_u.drawMacroPixel;
-pub const drawScreenLine       = drwS_u.drawLine;
-// pub const drawDotedLine     = drwS_u.drawDotedLine; // TODO : Implement this function
-
-pub const drawScreenCircle               = drwS_u.drawCircle;
-pub const drawScreenCircleLines          = drwS_u.drawCircleLines;
-pub const drawScreenSimpleEllipse        = drwS_u.drawEllipse;
-pub const drawScreenSimpleEllipseLines   = drwS_u.drawEllipseLines;
-pub const drawScreenSimpleRectangle      = drwS_u.drawRectangle;
-pub const drawScreenSimpleRectangleLines = drwS_u.drawRectangleLines;
-
-pub const drawScreenBasicTria            = drwS_u.drawTria;
-pub const drawScreenBasicTriaLines       = drwS_u.drawTriaLines;
-pub const drawScreenBasicQuad            = drwS_u.drawQuad;
-pub const drawScreenBasicQuadLines       = drwS_u.drawQuadLines;
-pub const drawScreenBasicPoly            = drwS_u.drawPoly;
-pub const drawScreenBasicPolyLines       = drwS_u.drawPolyLines;
+pub const coverScreenWithCol        = drwS_u.coverScreenWithCol;
+pub const surroundScreenWithCol     = drwS_u.surroundScreenWithCol;
+pub const clearBackground           = drwS_u.clearBackground;
 
 
-pub const drawScreenTria = drwS_u.drawTrianglePlus;
-pub const drawScreenDiam = drwS_u.drawDiamondPlus;
-pub const drawScreenPent = drwS_u.drawPentagonPlus;
-pub const drawScreenHexa = drwS_u.drawHexagonPlus;
+pub const drawScreenPixel           = drwS_u.drawPixel;
+pub const drawScreenMacroPixel      = drwS_u.drawMacroPixel;
+pub const drawScreenLine            = drwS_u.drawLine;
+// pub const drawDotedLine          = drwS_u.drawDotedLine; // TODO : Implement this function
 
-pub const drawScreenRect = drwS_u.drawRectanglePlus;
-pub const drawScreenPoly = drwS_u.drawPolygonPlus;
-pub const drawScreenStar = drwS_u.drawStarPlus;
+pub const drawScreenCircle          = drwS_u.drawCircle;
+pub const drawScreenSimpleEllipse   = drwS_u.drawEllipse;
+pub const drawScreenSimpleRectangle = drwS_u.drawRectangle;
+
+pub const drawScreenBasicTria       = drwS_u.drawTria;
+pub const drawScreenBasicQuad       = drwS_u.drawQuad;
+pub const drawScreenBasicPoly       = drwS_u.drawPoly;
+
+
+pub const drawScreenTria            = drwS_u.drawTrianglePlus;
+pub const drawScreenDiam            = drwS_u.drawDiamondPlus;
+pub const drawScreenPent            = drwS_u.drawPentagonPlus;
+pub const drawScreenHexa            = drwS_u.drawHexagonPlus;
+pub const drawScreenOcta            = drwS_u.drawOctagonPlus;
+pub const drawScreenElli            = drwS_u.drawEllipsePlus;
+
+pub const drawScreenRect            = drwS_u.drawRectanglePlus;
+pub const drawScreenPoly            = drwS_u.drawPolygonPlus;
+pub const drawScreenStar            = drwS_u.drawStarPlus;
+
+pub const drawScreenRectLines       = drwS_u.drawRectangleLinesPlus;
+pub const drawScreenPolyLines       = drwS_u.drawPolygonLinesPlus;
+pub const drawScreenStarLines       = drwS_u.drawStarLinesPlus;
 
 
 pub const drawScreenTexture         = drwS_u.drawTexture;
@@ -433,33 +433,34 @@ pub const drawTextTopFmt    = drwS_u.drawTextTopFmt;
 
 pub const drwW_u = @import( "utils/render/drawerW.zig" );
 
-pub const drawPixel                = drwW_u.drawPixel;
-pub const drawMacroPixel           = drwW_u.drawMacroPixel;
-pub const drawLine                 = drwW_u.drawLine;
-// pub const drawDotedLine           = drwS_u.drawDotedLine; // TODO : Implement this function
-pub const drawCircle               = drwW_u.drawCircle;
-pub const drawCircleLines          = drwW_u.drawCircleLines;
-pub const drawSimpleEllipse        = drwW_u.drawEllipse;
-pub const drawSimpleEllipseLines   = drwW_u.drawEllipseLines;
-pub const drawSimpleRectangle      = drwW_u.drawRectangle;
-pub const drawSimpleRectangleLines = drwW_u.drawRectangleLines;
+pub const drawPixel           = drwW_u.drawPixel;
+pub const drawMacroPixel      = drwW_u.drawMacroPixel;
+pub const drawLine            = drwW_u.drawLine;
+// pub const drawDotedLine      = drwS_u.drawDotedLine; // TODO : Implement this function
 
-pub const drawBasicTria            = drwW_u.drawTria;
-pub const drawBasicTriaLines       = drwW_u.drawTriaLines;
-pub const drawBasicQuad            = drwW_u.drawQuad;
-pub const drawBasicQuadLines       = drwW_u.drawQuadLines;
-pub const drawBasicPoly            = drwW_u.drawPoly;
-pub const drawBasicPolyLines       = drwW_u.drawPolyLines;
+pub const drawCircle          = drwW_u.drawCircle;
+pub const drawSimpleEllipse   = drwW_u.drawEllipse;
+pub const drawSimpleRectangle = drwW_u.drawRectangle;
+
+pub const drawBasicTria       = drwW_u.drawTria;
+pub const drawBasicQuad       = drwW_u.drawQuad;
+pub const drawBasicPoly       = drwW_u.drawPoly;
 
 
-pub const drawTria = drwW_u.drawTrianglePlus;
-pub const drawDiam = drwW_u.drawDiamondPlus;
-pub const drawPent = drwW_u.drawPentagonPlus;
-pub const drawHexa = drwW_u.drawHexagonPlus;
+pub const drawTria            = drwW_u.drawTrianglePlus;
+pub const drawDiam            = drwW_u.drawDiamondPlus;
+pub const drawPent            = drwW_u.drawPentagonPlus;
+pub const drawHexa            = drwW_u.drawHexagonPlus;
+pub const drawOcta            = drwW_u.drawOctagonPlus;
+pub const drawElli            = drwW_u.drawEllipsePlus;
 
-pub const drawRect = drwW_u.drawRectanglePlus;
-pub const drawPoly = drwW_u.drawPolygonPlus;
-pub const drawStar = drwW_u.drawStarPlus;
+pub const drawRect            = drwW_u.drawRectanglePlus;
+pub const drawPoly            = drwW_u.drawPolygonPlus;
+pub const drawStar            = drwW_u.drawStarPlus;
+
+pub const drawRectLines       = drwW_u.drawRectangleLinesPlus;
+pub const drawPolyLines       = drwW_u.drawPolygonLinesPlus;
+pub const drawStarLines       = drwW_u.drawStarLinesPlus;
 
 
 pub const drawTexture         = drwW_u.drawTexture;
