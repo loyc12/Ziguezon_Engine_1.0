@@ -73,7 +73,7 @@ pub inline fn drawCircle( pos : Vec2, radius : f64, col : Colour ) void
 }
 pub inline fn drawCircleLines( pos : Vec2, radius : f64, col : Colour ) void // TODO : Add line thickness
 {
-  ray.drawCircleLinesV( pos, @floatCast( radius ), col.toRayCol() );
+  ray.drawCircleLinesV( toRay( pos ), @floatCast( radius ), col.toRayCol() );
 }
 
 pub inline fn drawSimpleEllipse( pos : Vec2, radii : Vec2, col : Colour ) void
@@ -113,7 +113,7 @@ pub inline fn drawBasicTria( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour ) voi
 {
   ray.drawTriangle( toRay( p1 ), toRay( p2 ), toRay( p3 ), col.toRayCol() );
 }
-pub inline fn drawBasicTriaLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f32 ) void
+pub inline fn drawBasicTriaLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f64 ) void
 {
   ray.drawLineEx( toRay( p1 ), toRay( p2 ), width, col.toRayCol() );
   ray.drawLineEx( toRay( p2 ), toRay( p3 ), width, col.toRayCol() );
@@ -125,7 +125,7 @@ pub inline fn drawBasicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : C
   ray.drawTriangle( toRay( p1 ), toRay( p2 ), toRay( p3 ), col.toRayCol() );
   ray.drawTriangle( toRay( p3 ), toRay( p4 ), toRay( p1 ), col.toRayCol() );
 }
-pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f32  ) void
+pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f64  ) void
 {
   ray.drawLineEx( toRay( p1 ), toRay( p2 ), width, col.toRayCol() );
   ray.drawLineEx( toRay( p2 ), toRay( p3 ), width, col.toRayCol() );
@@ -137,7 +137,7 @@ pub inline fn drawBasicPoly( pos : Vec2, radius : f64, a : Angle, col : Colour, 
 {
   ray.drawPoly( toRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), col.toRayCol() );
 }
-pub inline fn drawBasicPolyLines( pos : Vec2, radius : f64, a : Angle, col : Colour, width : f64, sides : u16  ) void // TODO : Add line thickness
+pub inline fn drawBasicPolyLines( pos : Vec2, radius : f64, a : Angle, col : Colour, sides : u16, width : f64 ) void // TODO : Add line thickness
 {
   ray.drawPolyLinesEx( toRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), @floatCast( width ), col.toRayCol() );
 }
@@ -149,18 +149,30 @@ pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colou
 pub inline fn drawDiamondPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 4 ); }
 pub inline fn drawPentagonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 5 ); }
 pub inline fn drawHexagonPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 6 ); }
+pub inline fn drawOctagonPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 8 ); }
+pub inline fn drawEllipsePlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, def.G_ST.Graphic_Ellipse_Facets ); }
+
 
 // Draws a rectangle centered at a given position with specified rotation (rad), colour and size, and scaled in x/y by radii
-pub inline fn drawRectanglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour) void
+pub inline fn drawRectanglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
-  drawBasicQuad(
-    pos.add( Vec2.new(  radii.x,  radii.y ).rot( a )),
-    pos.add( Vec2.new(  radii.x, -radii.y ).rot( a )),
-    pos.add( Vec2.new( -radii.x, -radii.y ).rot( a )),
-    pos.add( Vec2.new( -radii.x,  radii.y ).rot( a )),
-    col
-  );
+  const p1 = pos.add( Vec2.new(  radii.x,  radii.y ).rot( a ));
+  const p2 = pos.add( Vec2.new(  radii.x, -radii.y ).rot( a ));
+  const p3 = pos.add( Vec2.new( -radii.x, -radii.y ).rot( a ));
+  const p4 = pos.add( Vec2.new( -radii.x,  radii.y ).rot( a ));
+
+  drawBasicQuad( p1, p2, p3, p4, col );
 }
+pub inline fn drawRectangleLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, width : f64 ) void
+{
+  const p1 = pos.add( Vec2.new(  radii.x,  radii.y ).rot( a ));
+  const p2 = pos.add( Vec2.new(  radii.x, -radii.y ).rot( a ));
+  const p3 = pos.add( Vec2.new( -radii.x, -radii.y ).rot( a ));
+  const p4 = pos.add( Vec2.new( -radii.x,  radii.y ).rot( a ));
+
+  drawBasicQuadLines( p1, p2, p3, p4, col, width );
+}
+
 
 // Draws a polygon centered at a given position with specified rotation (rad), colour and facet count, and scaled in x/y by radii
 pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16 ) void
@@ -209,6 +221,53 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
     }
   }
 }
+pub fn drawPolygonLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, width : f64 ) void
+{
+  if( sides < 1 )
+  {
+    def.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with 0 sides" );
+    return;
+  }
+
+  const N : f32 = @floatFromInt( sides );
+  const sideStepAngle = Angle.newRad( def.TAU / N );
+  const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
+
+  if( sides < 3 ) // NOTE : only for radius or diametre lines
+  {
+    const rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+
+    if( sides == 1 ){ drawLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+    else { drawLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+  }
+  else if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
+  {
+    var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+
+    for( 2..sides )| i |
+    {
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
+
+      drawLine( pos.add( rP1 ), pos.add( rP2 ), col );
+      rP1 = rP2;
+    }
+  }
+  else // NOTE : slightly faster, but requires isoscalar polygons
+  {
+    var rP1 = rP0.rot( sideStepAngle );
+
+    for( 2..sides )| i |
+    {
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      const rP2 = rP0.rot( angle );
+
+      drawLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
+      rP1 = rP2;
+    }
+  }
+}
+
 
 pub fn drawStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16 ) void
 {
@@ -262,6 +321,62 @@ pub fn drawStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : 
     {
       const idx2 = ( idx1 + skipFactor ) % sides;
       drawBasicTria( pos, pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col );
+      idx1 = idx2;
+    }
+  }
+}
+pub fn drawStarLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16, width : f64 ) void
+{
+  if( sides < 5 )
+  {
+    def.qlog( .ERROR, 0, @src(), "Cannot draw a star with fewer than 5 vertices" );
+    return;
+  }
+
+  if( skipFactor == 1 )
+  {
+    def.qlog( .WARN, 0, @src(), "Not a star : drawing a polygon instead" );
+    drawPolygonLinesPlus( pos, radii, a, col, sides, width );
+    return;
+  }
+
+  const N : f32 = @floatFromInt( sides );
+  const sideStepAngle : Angle = Angle.newRad( def.TAU / N );
+
+  // Precompute all vertex positions
+  var verts : [ 32 ]Vec2 = undefined; // 32 is enough for all defined star shapes FOR NOW
+
+  if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
+  {
+    for( 0..sides )| i |
+    {
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      verts[ i ]  = Vec2.fromAngleScaled( angle, radii ).rot( a );
+    }
+  }
+  else // NOTE : slightly faster, but requires isoscalar polygons
+  {
+    for( 0..sides )| i |
+    {
+      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      verts[ i ]  = Vec2.new( radii.x, 0.0 ).rot( a.add( angle ));
+    }
+  }
+
+  // Connect vertices by skipFactor step, drawing lines between them
+  // NOTE : We need to traverse enough steps to close all sub-paths
+
+  const gcdenom = def.gcd( @as( u32, sides ), @as( u32, skipFactor )); // TODO : Implement me
+  const pathLen = @divFloor( sides, gcdenom ); // Number of vertices per sub-path
+
+  for( 0..gcdenom )| startIdx |
+  {
+    var idx1 : usize = startIdx;
+
+    for( 0..pathLen )| _ |
+    {
+      const idx2 = ( idx1 + skipFactor ) % sides;
+      drawLine( pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col, width );
       idx1 = idx2;
     }
   }

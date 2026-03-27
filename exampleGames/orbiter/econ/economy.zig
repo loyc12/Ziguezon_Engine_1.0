@@ -685,7 +685,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
   {
     self.dayCount += 1;
 
-    if( @mod( self.dayCount, 7 ) != 1 ){ return; } // Only tick econ at start of week  // TODO : REACTIVATE
+    if( @mod( self.dayCount, 7 ) != 1 ){ return; } // Only tick econ at start of week     // NOTE : comment out this line for faster econ testing
 
     self.updateResCaps();
     self.updateAreas();
