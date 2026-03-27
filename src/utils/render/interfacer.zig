@@ -133,146 +133,155 @@ pub const Interfacer2D = struct
         .OCT_P => drawer.drawPolygonLinesPlus( self.pos.toVec2(), self.scale, self.pos.a.addDeg(  0 ), self.edgeCol, 8, self.edgeWidth ),
         .OCT_F => drawer.drawPolygonLinesPlus( self.pos.toVec2(), self.scale, self.pos.a.addDeg( 45 ), self.edgeCol, 8, self.edgeWidth ),
       }
+
+      return;
     }
-    else
+
+    const n = self.shape.getCornerCount();  // Shape vertex count
+    var  a0 = self.pos.a;                   // Shape initial angle
+    var  s2 = self.scale;                   // outer shape scale
+    var  s1 = s2.subVal( self.bevelDepth ); // inner shape scale
+
+    // Draw center shape ( minus bevel depth ), offsetting starting angle appropriately
+    switch( self.shape )
     {
-      const n = self.shape.getCornerCount();  // Shape vertex count
-      var  a0 = self.pos.a;                   // Shape initial angle
-      var  s2 = self.scale;                   // outer shape scale
-      var  s1 = s2.subVal( self.bevelDepth ); // inner shape scale
-
-      // Draw center shape ( minus bevel depth )
-      switch( self.shape )
+      .ELLI  => // Cannot happen
       {
-        .ELLI  => {}, // Cannot happen
+        def.qlog( .ERROR, 0, @src(), "How did you even get here ???" );
+        return;
+      },
 
-        .TRI_R =>
-        {
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
-        },
-        .TRI_D =>
-        {
-          a0 = a0.addDeg( 90 );
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
-        },
-        .TRI_L =>
-        {
-          a0 = a0.addDeg( 180 );
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
-        },
-        .TRI_U =>
-        {
-          a0 = a0.addDeg( 270 );
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
-        },
-
-        .DIAM  =>
-        {
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
-        },
-        .RECT  =>
-        {
-          s1 = s1.mulVal( def.R2 );
-          s2 = s2.mulVal( def.R2 );
-
-          a0 = a0.addDeg( 45 );
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
-        },
-
-        .HEX_P =>
-        {
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
-        },
-        .HEX_F =>
-        {
-          a0 = a0.addDeg( 30 );
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
-        },
-
-        .OCT_P =>
-        {
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
-        },
-        .OCT_F =>
-        {
-          a0 = a0.addDeg( 22.5 );
-          drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
-        },
-      }
-
-      const n_f    : f64 = @floatFromInt( n );
-      const aDelta : f64 = def.TAU / n_f;
-
-      // Edge corner points
-      var p1 : Vec2 = .fromAngleScaled( a0 , s1 ); // inner corner 1 ( bevel origin )
-      var p2 : Vec2 = .fromAngleScaled( a0 , s2 ); // outer corner 1 ( bevel endpoint )
-
-      var p3 : Vec2 = .{}; // inner corner 2
-      var p4 : Vec2 = .{}; // outer corner 2
-
-      // Circumradius angles
-      var a1 = a0;
-      var a2 = .{};
-
-      // Bevel angles
-      var a1_b = a1.subRad( aDelta * 0.5 );
-      var a2_b = .{};
-
-      for( 0..n )| b |
+      .TRI_R =>
       {
-        a2   = a1.addRad(   aDelta );
-        a2_b = a1_b.addRad( aDelta );
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
+      },
+      .TRI_D =>
+      {
+        a0 = a0.addDeg( 90 );
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
+      },
+      .TRI_L =>
+      {
+        a0 = a0.addDeg( 180 );
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
+      },
+      .TRI_U =>
+      {
+        a0 = a0.addDeg( 270 );
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
+      },
 
-        p3 = .fromAngleScaled( a2 , s1 );
-        p4 = .fromAngleScaled( a2 , s2 );
+      .DIAM  =>
+      {
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
+      },
+      .RECT  =>
+      {
+        // Scale increased so the rect isn't squashed when drawn via drawPoly
+        s1 = s1.mulVal( def.R2 );
+        s2 = s2.mulVal( def.R2 );
 
-        // Drawing the edge
-        drawer.drawBasicQuad( p1, p2, p3, p4, self.fillCol );
-        drawer.drawLine( p2, p4, self.fillCol, self.edgeWidth );
+        a0 = a0.addDeg( 45 );
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 4 );
+      },
 
-        // Drawing the bevel
-        switch( self.bevelTypes[ b ])
+      .HEX_P =>
+      {
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
+      },
+      .HEX_F =>
+      {
+        a0 = a0.addDeg( 30 );
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
+      },
+
+      .OCT_P =>
+      {
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
+      },
+      .OCT_F =>
+      {
+        a0 = a0.addDeg( 22.5 );
+        drawer.drawPolygonPlus( self.pos.toVec2(), s1, a0, self.fillCol, 6 );
+      },
+    }
+
+    const n_f    : f64 = @floatFromInt( n );
+    const aDelta : f64 = def.TAU / n_f;
+
+    // Shape angles
+    var a1 = a0;
+    var a2 = undefined;
+
+    // Bevel angles
+    var a1_b = a1.subRad( aDelta * 0.5 );
+    var a2_b = undefined;
+
+    // Edge corner points
+    var p1 : Vec2 = .fromAngleScaled( a0 , s1 ); // inner corner 1 ( bevel     origin   )
+    var p2 : Vec2 = .fromAngleScaled( a0 , s2 ); // outer corner 1 ( bevelless midpoint )
+
+    var p3 : Vec2 = undefined;                   // inner corner 2
+    var p4 : Vec2 = undefined;                   // outer corner 2
+
+    // Iterating over every side / vertex
+    for( 0..n )| b |
+    {
+      a2   = a1.addRad(   aDelta );
+      a2_b = a1_b.addRad( aDelta );
+
+      p3 = .fromAngleScaled( a2 , s1 );
+      p4 = .fromAngleScaled( a2 , s2 );
+
+      // Drawing the edge
+      drawer.drawBasicQuad( p1, p2, p3, p4, self.fillCol );
+      drawer.drawLine( p2, p4, self.fillCol, self.edgeWidth );
+
+      // Drawing the bevel
+      switch( self.bevelTypes[ b ])
+      {
+        .NONE =>
         {
-          .NONE =>
-          {
-            const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
-            const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
+          const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
+          const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
 
-            drawer.drawBasicTria( p1, p1_b, p2, self.fillCol );
-            drawer.drawBasicTria( p1, p2, p2_b, self.fillCol );
+          drawer.drawBasicTria( p1, p1_b, p2, self.fillCol );
+          drawer.drawBasicTria( p1, p2, p2_b, self.fillCol );
 
-            drawer.drawLine( p1_b, p2, self.fillCol, self.edgeWidth );
-            drawer.drawLine( p2_b, p2, self.fillCol, self.edgeWidth );
-          },
+          drawer.drawLine( p1_b, p2, self.fillCol, self.edgeWidth );
+          drawer.drawLine( p2_b, p2, self.fillCol, self.edgeWidth );
+        },
 
-          .CUTOUT =>
-          {
-            const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
-            const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
+        .CUTOUT =>
+        {
+          const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
+          const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
 
-            drawer.drawLine( p1, p1_b, self.fillCol, self.edgeWidth );
-            drawer.drawLine( p1, p2_b, self.fillCol, self.edgeWidth );
-          },
+          drawer.drawLine( p1, p1_b, self.fillCol, self.edgeWidth );
+          drawer.drawLine( p1, p2_b, self.fillCol, self.edgeWidth );
+        },
 
-          .DIAGONAL =>
-          {
-            const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
-            const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
+        .DIAGONAL =>
+        {
+          const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
+          const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
 
-            drawer.drawBasicTria( p1, p1_b, p2_b, self.fillCol );
-            drawer.drawLine( p1_b, p2_b, self.fillCol, self.edgeWidth );
-          },
+          drawer.drawBasicTria( p1, p1_b, p2_b, self.fillCol );
+          drawer.drawLine( p1_b, p2_b, self.fillCol, self.edgeWidth );
+        },
 
-          // TODO : draw inner and outer curved bevels
+        else => // TODO : draw inner and outer curved bevels
+        {
+          def.qlog( .ERROR, 0, @src(), "UNIMPLEMENTED" );
         }
-
-        // Reusing old angles for next iteration
-        p1 = p3;
-        p2 = p4;
-
-        a1   = a2;
-        a1_b = a2_b;
       }
+
+      // Reusing old angles for next iteration
+      p1 = p3;
+      p2 = p4;
+
+      a1   = a2;
+      a1_b = a2_b;
     }
   }
 };
