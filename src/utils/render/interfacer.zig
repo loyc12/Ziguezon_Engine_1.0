@@ -9,8 +9,10 @@ const Angle   = def.Angle;
 const drawer  = def.drwS_u;
 
 
-pub const InterfaceShape = enum
+pub const InterfaceShape = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   ELLI,  // Ellipse
 
   TRI_R, // Points right
@@ -28,7 +30,7 @@ pub const InterfaceShape = enum
   OCT_F, // Flat side up
 
 
-  pub fn getCornerCount( self : InterfaceShape ) usize
+  pub fn getCornerCount( self : InterfaceShape ) u8
   {
     return switch( self )
     {
@@ -42,8 +44,10 @@ pub const InterfaceShape = enum
   }
 };
 
-pub const BevelType = enum
+pub const BevelType = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   NONE,      // no cutout
   CUTOUT,    // Straight angle cuttout
   DIAGONAL,  // linear cutout ( chamfer )
@@ -65,19 +69,21 @@ pub const Interfacer2D = struct
   scale  : Vec2 = .new( 128, 128 ),
   layer  : u16  = 1,
 
-  shape    : InterfaceShape = .RECT,
-  fillCol  : def.Colour     = .nWhite,
-  edgeCol  : def.Colour     = .nBlack,
-  edgeWidth : f64           = 1,
+  shape      : InterfaceShape = .RECT,
+  fillCol    : def.Colour     = .nWhite,
+  edgeCol    : def.Colour     = .nBlack,
+  edgeWidth  : f64            = 1,
 
-  bevelTypes : BevelArray = getEmptyBevelArray(),
-  bevelDepth : f64        = 8,
+  bevelTypes : BevelArray     = getEmptyBevelArray(),
+  bevelDepth : f64            = 8,
 
-  isActive   : bool = true,
-  isSelected : bool = false,
+  isActive   : bool           = true,
+  isSelected : bool           = false,
 
 
-  fn hasAnyBevel( self : *const Interfacer2D ) bool
+  pub inline fn getCornerCount( self : *const Interfacer2D ) u8 { return self.shape.getCornerCount(); }
+
+  pub fn hasAnyBevel( self : *const Interfacer2D ) bool
   {
     if( self.bevelDepth < def.EPS ){ return false; }
 
@@ -206,16 +212,16 @@ pub const Interfacer2D = struct
       },
     }
 
-    const n_f    : f64 = @floatFromInt( n );
-    const aDelta : f64 = def.TAU / n_f;
+    const n_f    : f32 = @floatFromInt( n );
+    const aDelta : f32 = def.TAU / n_f;
 
     // Shape angles
-    var a1 = a0;
-    var a2 = undefined;
+    var a1 : Angle = a0;
+    var a2 : Angle = undefined;
 
     // Bevel angles
-    var a1_b = a1.subRad( aDelta * 0.5 );
-    var a2_b = undefined;
+    var a1_b : Angle = a1.subRad( aDelta * 0.5 );
+    var a2_b : Angle = undefined;
 
     // Edge corner points
     var p1 : Vec2 = .fromAngleScaled( a0 , s1 ); // inner corner 1 ( bevel     origin   )
@@ -242,8 +248,8 @@ pub const Interfacer2D = struct
       {
         .NONE =>
         {
-          const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
-          const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
+          const p1_b = p1.add( Vec2.fromAngle( a1_b ).mulVal( self.bevelDepth ));
+          const p2_b = p1.add( Vec2.fromAngle( a2_b ).mulVal( self.bevelDepth ));
 
           drawer.drawBasicTria( p1, p1_b, p2, self.fillCol );
           drawer.drawBasicTria( p1, p2, p2_b, self.fillCol );
@@ -254,8 +260,8 @@ pub const Interfacer2D = struct
 
         .CUTOUT =>
         {
-          const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
-          const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
+          const p1_b = p1.add( Vec2.fromAngle( a1_b ).mulVal( self.bevelDepth ));
+          const p2_b = p1.add( Vec2.fromAngle( a2_b ).mulVal( self.bevelDepth ));
 
           drawer.drawLine( p1, p1_b, self.fillCol, self.edgeWidth );
           drawer.drawLine( p1, p2_b, self.fillCol, self.edgeWidth );
@@ -263,8 +269,8 @@ pub const Interfacer2D = struct
 
         .DIAGONAL =>
         {
-          const p1_b = p1.add( .fromAngle( a1_b ).mulVal( self.bevelDepth ));
-          const p2_b = p1.add( .fromAngle( a2_b ).mulVal( self.bevelDepth ));
+          const p1_b = p1.add( Vec2.fromAngle( a1_b ).mulVal( self.bevelDepth ));
+          const p2_b = p1.add( Vec2.fromAngle( a2_b ).mulVal( self.bevelDepth ));
 
           drawer.drawBasicTria( p1, p1_b, p2_b, self.fillCol );
           drawer.drawLine( p1_b, p2_b, self.fillCol, self.edgeWidth );

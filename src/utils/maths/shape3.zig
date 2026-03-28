@@ -16,6 +16,8 @@ const PI = def.PI;
 
 const Shape3D = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   TETRA, // Tetrahedron  ( 4  triangles )
   CUBE,  // Hexahedron   ( 6  squares )
   OCTA,  // Octahedron   ( 8  triangles )

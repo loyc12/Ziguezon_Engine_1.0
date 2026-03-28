@@ -5,6 +5,8 @@ const EntityId  = def.EntityId;
 
 pub const EventType = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   CLICK_WORLD,
   CLICK_UI,
 
@@ -23,6 +25,8 @@ pub const EventType = enum( u8 )
 
 pub const EventPhase = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   STEP, // Default
 
   START,
@@ -34,6 +38,8 @@ pub const EventPhase = enum( u8 )
 
 //pub const EventTiming = enum( u8 )
 //{
+//  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+//
 //  INSTANT,
 //  DELAYED,
 //  PERISHABLE, // useful ?

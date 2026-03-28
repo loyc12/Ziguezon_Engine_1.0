@@ -11,7 +11,7 @@ const IndType = gbl.IndType;
 // ================================ ECONOMY LOCATION ENUM ================================
 pub const EconLoc = enum( u8 )
 {
-  pub const count = @typeInfo( EconLoc ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : EconLoc ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) EconLoc {  return @enumFromInt( @as( u8, @intCast( i ))); }
@@ -52,9 +52,9 @@ pub const IndFlowData = def.NewDataMatrix( f64, IndType, FlowPhaseEnum, ResType 
 pub const IndActivityData = def.NewDataArray( f64, IndType );
 
 
-pub const FlowAgentEnum = enum
+pub const FlowAgentEnum = enum( u8 )
 {
-  pub const count = @typeInfo( FlowAgentEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   NAT, // Natural processes     (decay, growth)
   POP, // Population            (work prod, food/water/power cons)
@@ -63,9 +63,9 @@ pub const FlowAgentEnum = enum
   GEN, // Sum of non-NAT values
 };
 
-pub const FlowPhaseEnum = enum
+pub const FlowPhaseEnum = enum( u8 )
 {
-  pub const count = @typeInfo( FlowPhaseEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   MAX_PROD,  // Theoretical maximum production    ( before scarcity )
   MAX_CONS,  // Theoretical maximum consumption   ( before scarcity )
@@ -83,9 +83,9 @@ pub const FlowPhaseEnum = enum
 
 pub const ResAccessData = def.NewDataGrid( f64, AccessAgentEnum, ResType );
 
-pub const AccessAgentEnum = enum
+pub const AccessAgentEnum = enum( u8 )
 {
-  pub const count = @typeInfo( AccessAgentEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   POP, // Population access ratio for this resource
   IND, // Industry aggregate access ratio
@@ -98,9 +98,9 @@ pub const AccessAgentEnum = enum
 
 pub const AreaMetricData = def.NewDataArray( f64, AreaMetricEnum );
 
-pub const AreaMetricEnum = enum
+pub const AreaMetricEnum = enum( u8 )
 {
-  pub const count = @typeInfo( AreaMetricEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   BODY,  // Total body's surface area         : if on GROUND
   INHAB, // Proportion of inhabitable surface : 0 to 1
@@ -116,9 +116,9 @@ pub const AreaMetricEnum = enum
 
 pub const PopMetricData = def.NewDataArray( f64, PopMetricEnum );
 
-pub const PopMetricEnum = enum
+pub const PopMetricEnum = enum( u8 )
 {
-  pub const count = @typeInfo( PopMetricEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   COUNT,  // Total amount of population last tick
   DELTA,  // Change sin population last tick

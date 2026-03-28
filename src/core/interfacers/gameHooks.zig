@@ -7,6 +7,9 @@ const def = @import( "defs" );
 // These tags are used to identify which hook to call in the GameHooks struct
 pub const e_hook_tag = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+
   // Engine State Hooks
 
   OnStart = 0, // Called when the engine starts

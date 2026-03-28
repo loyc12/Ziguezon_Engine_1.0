@@ -10,6 +10,8 @@ const idSize   = @sizeOf( u20 );
 
 const flagType = enum( u12 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   FREE    = 0b100000000000, // Whether this UUID is free to be reused
   DELETE  = 0b010000000000, // Whether this UUID is marked for deletion
 

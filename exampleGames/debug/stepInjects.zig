@@ -26,19 +26,17 @@ const SHOW_SPRITE_ANIM = true;
 var sprite_i : i32 = 0;
 var sprite_r : f32 = 0;
 
+const SHOW_INTERFACE = true;
+
+var ui : def.Interfacer2D = .{ .pos = .new( 256, 512, .{} ), .scale = .new( 128, 256 ), .bevelDepth = 32 };
 
 // ================================ STEP INJECTION FUNCTIONS ================================
-
-pub fn OnLoopStart( ng : *def.Engine ) void // Called by engine.loopLogic()
-{
-  ng.changeState( .PLAYING ); // force the game to unpause on start
-}
-
 
 pub fn OnUpdateInputs( ng : *def.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }
+
 
   // Play a shake animation the camera when Q is held
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.i )){ sprite_i = @mod( sprite_i + 1, 256 ); }
@@ -61,9 +59,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ def.G_CAM.moveByS( Vec2.new( -8,  0 )); }
   if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ def.G_CAM.moveByS( Vec2.new(  8,  0 )); }
 
+
   // Zoom in and out with the mouse wheel
   if( def.ray.getMouseWheelMove() > 0.0 ){ def.G_CAM.zoomBy( 11.0 / 10.0 ); }
   if( def.ray.getMouseWheelMove() < 0.0 ){ def.G_CAM.zoomBy(  9.0 / 10.0 ); }
+
 
   // Reset the camera zoom and position when r is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.r ))
@@ -72,6 +72,29 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     def.G_CAM.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
+
+
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
+  {
+    var newShape : usize = @intFromEnum( ui.shape);
+        newShape = @mod( newShape + 1, def.BevelType.count );
+
+    ui.shape = @enumFromInt( newShape );
+  }
+
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.b ))
+  {
+    const n = ui.getCornerCount();
+
+    for( 0..n )| b |
+    {
+      var newBevel : u8 = @intFromEnum( ui.bevelTypes[ b ]);
+          newBevel = @mod( newBevel + 1, n );
+
+      ui.bevelTypes[ b ] = @enumFromInt( newBevel );
+    }
+  }
+
 
   var exampleTilemap = ng.tilemapManager.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
@@ -219,6 +242,11 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   if( SHOW_SPRITE_ANIM )
   {
     ng.resourceManager.drawScreenFromSprite( "cubes_1", @intCast( sprite_i ), .{ .x = width / 2, .y = height / 2, .a = .{ .r = sprite_r }}, .{ .x = 4.0, .y = 4.0 }, .white );
+  }
+
+  if( SHOW_INTERFACE )
+  {
+    ui.drawSelf();
   }
 
   if( SHOW_SHAKE_GRAPHS )

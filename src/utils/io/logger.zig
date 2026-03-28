@@ -12,8 +12,10 @@ var LoggedLastMsg : bool = false;
 
 // ================================ DEFINITIONS ================================
 
-pub const LogLevel = enum
+pub const LogLevel = enum( u4 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   // These values are used to control the verbosity of debug output.
   // The higher the value, the more verbose the output.
   // This means each value prints all values below it.

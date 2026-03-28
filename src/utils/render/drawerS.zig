@@ -115,9 +115,9 @@ pub inline fn drawBasicTria( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour ) voi
 }
 pub inline fn drawBasicTriaLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f64 ) void
 {
-  ray.drawLineEx( toRay( p1 ), toRay( p2 ), width, col.toRayCol() );
-  ray.drawLineEx( toRay( p2 ), toRay( p3 ), width, col.toRayCol() );
-  ray.drawLineEx( toRay( p3 ), toRay( p1 ), width, col.toRayCol() );
+  ray.drawLineEx( toRay( p1 ), toRay( p2 ), @floatCast( width ), col.toRayCol() );
+  ray.drawLineEx( toRay( p2 ), toRay( p3 ), @floatCast( width ), col.toRayCol() );
+  ray.drawLineEx( toRay( p3 ), toRay( p1 ), @floatCast( width ), col.toRayCol() );
 }
 
 pub inline fn drawBasicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour ) void
@@ -127,10 +127,10 @@ pub inline fn drawBasicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : C
 }
 pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f64  ) void
 {
-  ray.drawLineEx( toRay( p1 ), toRay( p2 ), width, col.toRayCol() );
-  ray.drawLineEx( toRay( p2 ), toRay( p3 ), width, col.toRayCol() );
-  ray.drawLineEx( toRay( p3 ), toRay( p4 ), width, col.toRayCol() );
-  ray.drawLineEx( toRay( p4 ), toRay( p1 ), width, col.toRayCol() );
+  ray.drawLineEx( toRay( p1 ), toRay( p2 ), @floatCast( width ), col.toRayCol() );
+  ray.drawLineEx( toRay( p2 ), toRay( p3 ), @floatCast( width ), col.toRayCol() );
+  ray.drawLineEx( toRay( p3 ), toRay( p4 ), @floatCast( width ), col.toRayCol() );
+  ray.drawLineEx( toRay( p4 ), toRay( p1 ), @floatCast( width ), col.toRayCol() );
 }
 
 pub inline fn drawBasicPoly( pos : Vec2, radius : f64, a : Angle, col : Colour, sides : u16 ) void
@@ -249,7 +249,7 @@ pub fn drawPolygonLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, 
       const angle = sideStepAngle.mulVal( @floatFromInt( i ));
       const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
 
-      drawLine( pos.add( rP1 ), pos.add( rP2 ), col );
+      drawLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
       rP1 = rP2;
     }
   }

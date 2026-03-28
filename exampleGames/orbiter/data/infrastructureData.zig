@@ -8,7 +8,7 @@ const gbl = @import( "../gameGlobals.zig" );
 
 pub const InfType = enum( u8 )
 {
-  pub const count = @typeInfo( InfType ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : InfType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) InfType  { return @enumFromInt( @as( u8, @intCast( i ))); }
@@ -88,7 +88,7 @@ pub const InfType = enum( u8 )
 
 pub var infMetricData : def.NewDataGrid( f64, InfType, InfMetricEnum ) = .{};
 
-pub const InfMetricEnum = enum
+pub const InfMetricEnum = enum( u8 )
 {
   MASS,
   AREA_COST,
@@ -146,9 +146,9 @@ pub fn loadInfrastructureData() void
 
 pub const InfStateData = def.NewDataGrid( f64, InfStateEnum, InfType );
 
-pub const InfStateEnum = enum
+pub const InfStateEnum = enum( u8 )
 {
-  pub const count = @typeInfo( InfStateEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
 

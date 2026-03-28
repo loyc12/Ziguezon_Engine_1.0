@@ -29,6 +29,8 @@ const HEXA_FACTOR = def.getPolyCircumRad( 1.0, 6 );
 
 pub const e_tlmp_shape = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   TRI1, // A V ( upright )
   TRI2, // > < ( sideway )
 

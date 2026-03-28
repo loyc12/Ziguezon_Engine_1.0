@@ -9,7 +9,7 @@ const PowerSrc = @import( "powerData.zig"       ).PowerSrc;
 
 pub const IndType = enum( u8 )
 {
-  pub const count = @typeInfo( IndType ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : IndType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) IndType  { return @enumFromInt( @as( u8, @intCast( i ))); }
@@ -132,7 +132,7 @@ pub const IndType = enum( u8 )
 
 pub var indMetricData : def.NewDataGrid( f64, IndType, IndMetricEnum ) = .{};
 
-pub const IndMetricEnum = enum
+pub const IndMetricEnum = enum( u8 )
 {
   MASS,
   AREA_COST,
@@ -148,7 +148,7 @@ pub const IndMetricEnum = enum
 // Resource consumption / production per industry ( u64 )
 pub var indResValData : def.NewDataGrid( u64, IndType, IndResValEnum ) = .{};
 
-pub const IndResValEnum = enum
+pub const IndResValEnum = enum( u8 )
 {
   CONS_WORK,
   PROD_WORK,
@@ -294,9 +294,9 @@ pub fn loadIndustryData() void
 
 pub const IndStateData = def.NewDataGrid( f64, IndStateEnum, IndType );
 
-pub const IndStateEnum = enum
+pub const IndStateEnum = enum( u8 )
 {
-  pub const count = @typeInfo( IndStateEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
 

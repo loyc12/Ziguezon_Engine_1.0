@@ -32,6 +32,8 @@ inline fn getRamanujanFactor( a : f32, b : f32 ) f32
 
 pub const Shape2D = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   // NOTE : for polygons, "s" param scales the circumradius in X and Y
   ///       Aka : Affine-stretched regular polygon ( ellipse-affine model )
 

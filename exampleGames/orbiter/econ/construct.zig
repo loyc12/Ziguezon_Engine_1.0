@@ -11,8 +11,10 @@ const InfType = gbl.InfType;
 const IndType = gbl.IndType;
 
 
-pub const ConstructTag = enum
+pub const ConstructTag = enum( u4 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
 //ves,
   inf,
   ind,

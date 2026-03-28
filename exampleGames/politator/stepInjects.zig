@@ -20,6 +20,8 @@ var TILEMAP_DATA = stateInj.TILEMAP_DATA;
 
 const dis_mode_e = enum( u2 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   ALL,
   POP,
   INF,

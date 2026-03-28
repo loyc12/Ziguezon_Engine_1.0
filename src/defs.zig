@@ -467,6 +467,16 @@ pub const drawTexture         = drwW_u.drawTexture;
 pub const drawTextureCentered = drwW_u.drawTextureCentered;
 
 
+// ======== INTERFACER ========
+
+pub const ntf_u = @import( "utils/render/interfacer.zig" );
+
+pub const InterfaceShape = ntf_u.InterfaceShape;
+pub const BevelType      = ntf_u.BevelType;
+pub const BevelArray     = ntf_u.BevelArray;
+pub const Interfacer2D   = ntf_u.Interfacer2D;
+
+
 // ======== SPRITEMAPS ========
 
 pub const spm_u = @import( "utils/render/spritemap.zig" );

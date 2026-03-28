@@ -8,6 +8,8 @@ const Vec3 = def.Vec3;
 
 pub const e_dir_3 = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   TSE, TEA, TNE, TSO,
   TNO, TSW, TWE, TNW,
 

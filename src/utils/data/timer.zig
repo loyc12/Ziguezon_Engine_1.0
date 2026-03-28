@@ -170,6 +170,8 @@ pub const TimeVal = struct
 
 pub const e_timer_flags = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   DELETE  = 0b10000000, // Timer is marked for deletion
   STARTED = 0b01000000, // Timer has started
   STOPPED = 0b00100000, // Timer has completed ( expired )

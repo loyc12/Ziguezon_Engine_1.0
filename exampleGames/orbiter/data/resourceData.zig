@@ -6,7 +6,7 @@ const InfType = @import( "infrastructureData.zig" ).InfType;
 
 pub const ResType = enum( u8 )
 {
-  pub const count = @typeInfo( ResType ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : ResType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) ResType  { return @enumFromInt( @as( u8, @intCast( i ))); }
@@ -54,7 +54,7 @@ pub const ResType = enum( u8 )
 
 pub var resMetricData : def.NewDataGrid( f64, ResType, ResMetricEnum ) = .{};
 
-pub const ResMetricEnum = enum
+pub const ResMetricEnum = enum( u8 )
 {
   MASS,
 //CASH_COST,
@@ -116,9 +116,9 @@ pub fn loadResourceData() void
 
 pub const ResStateData = def.NewDataGrid( f64, ResStateEnum, ResType );
 
-pub const ResStateEnum = enum
+pub const ResStateEnum = enum( u8 )
 {
-  pub const count = @typeInfo( ResStateEnum ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   BANK,     // Current stockpile           ( u64, but stored as f64 for uniformity )
   CAP,      // Storage capacity            ( u64, but stored as f64 for uniformity )

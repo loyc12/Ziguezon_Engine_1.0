@@ -5,6 +5,8 @@ const Coords2 = def.Coords2;
 
 pub const e_tile_flags = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
 //DELETE  = 0b10000000, // Tile is marked for deletion ( tiles are on stack )
 //IS_INIT = 0b01000000, // Tile is initialized
 //ACTIVE  = 0b00100000, // Tile is active and can be used
@@ -23,6 +25,8 @@ pub const e_tile_flags = enum( u8 )
 
 pub const e_tile_type = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   // True tile types
   EMPTY   = 0,
   T1      = 1,

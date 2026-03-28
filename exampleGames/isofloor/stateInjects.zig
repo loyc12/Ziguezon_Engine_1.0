@@ -9,6 +9,8 @@ pub const GRID_HEIGHT = 64;
 
 pub const ground_type_e = enum
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   Empty,
   Floor,
 
@@ -18,6 +20,8 @@ pub const ground_type_e = enum
 
 pub const object_type_e = enum
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   Empty,
 
   Player,

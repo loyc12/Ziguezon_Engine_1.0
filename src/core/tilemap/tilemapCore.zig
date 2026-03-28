@@ -22,6 +22,8 @@ const DEF_TILE_SCALE   = Vec2{    .x = 32, .y = 32 };
 
 pub const e_tlmp_flags = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   DELETE  = 0b10000000, // Grid is marked for deletion
   IS_INIT = 0b01000000, // Grid is initialized
   ACTIVE  = 0b00100000, // Grid is active and can be used

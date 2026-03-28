@@ -11,6 +11,8 @@ const VecA   = def.VecA;
 
 pub const e_bdy_flags = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   DELETE  = 0b10000000, // Body is marked for deletion ( will be cleaned up at the end of the frame )
   ACTIVE  = 0b01000000, // Body is active ( overrides the following flags if set to false )
   VISIBLE = 0b00100000, // Body will be rendered

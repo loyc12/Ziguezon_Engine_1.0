@@ -9,8 +9,10 @@ const Angle = def.Angle;
 
 // ================================ DEFINITIONS ================================
 
-pub const e_ng_state = enum
+pub const e_ng_state = enum( u4 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   OFF,     // The engine is uninitialized
   STARTED, // The engine is initialized, but no window is created yet
   OPENED,  // The window is opened but game is paused ( input and render only )

@@ -5,8 +5,10 @@ const def = @import( "defs" );
 pub var stellarData : def.NewDataGrid( f64, StellarBodyEnum, StellarMetricEnum ) = .{};
 
 
-pub const StellarMetricEnum = enum
+pub const StellarMetricEnum = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   MASS,
   RADIUS, // Mean body radius
   PERIAP, // Minimal orbital radius
@@ -17,8 +19,10 @@ pub const StellarMetricEnum = enum
 
 // https://en.wikipedia.org/wiki/List_of_Solar_System_objects
 
-pub const StellarBodyEnum = enum
+pub const StellarBodyEnum = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   SOL,
 
 //  INNER - TERRESTRIALS

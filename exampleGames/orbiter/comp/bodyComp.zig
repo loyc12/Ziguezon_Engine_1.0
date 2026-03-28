@@ -11,7 +11,7 @@ const EconLoc = gbl.EconLoc;
 
 pub const BodyType = enum( u8 )
 {
-  pub const count = @typeInfo( BodyType ).@"enum".fields.len;
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : BodyType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) BodyType {  return @enumFromInt( @as( u8, @intCast( i ))); }
