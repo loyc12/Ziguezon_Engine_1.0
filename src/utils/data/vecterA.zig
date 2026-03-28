@@ -127,7 +127,9 @@ pub const VecA = struct
 
   // ================ VECTOR MATHS ================
 
-  pub inline fn normToUnit( self : *const VecA ) VecA { return self. normToLen( 1.0 ); }
+  pub inline fn norm(  self : *const Vec2               ) Vec2 { return self.normToLen( 1.0 ); }
+  pub inline fn dot(   self : *const Vec2, other : Vec2 ) f64  { return ( self.x * other.x ) + ( self.y * other.y ); }
+  pub inline fn cross( self : *const Vec2, other : Vec2 ) f64  { return ( self.x * other.y ) - ( self.y * other.x ); }
 
   // Normalizes a vector to a new length, returns null if the vector is zero'd
   pub fn normToLen( self : *const VecA, newLen : f64 ) VecA
@@ -145,7 +147,7 @@ pub const VecA = struct
       return .{};
     }
 
-    if( oldLenSqr == newLen * newLen ){ return self; }
+    if( oldLenSqr == newLen * newLen ){ return self; } // TODO : use EPS for float comparisons
     const factor = newLen / @sqrt( oldLenSqr );
 
     return self.mulVal( factor );

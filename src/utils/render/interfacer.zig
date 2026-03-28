@@ -160,17 +160,59 @@ pub const Interfacer2D = struct
     }
     else
     {
+
+      // Inner corners via perpendicular edge insets + line intersection
       for( 0..n )| i |
       {
         const iPrev = ( i + n - 1 ) % n;
         const iNext = ( i + 1     ) % n;
 
-        const offsetA = self.shapeVerts1[ iPrev ].sub( self.shapeVerts1[ i ] ).normToLen( self.bevelDepth );
-        const offsetB = self.shapeVerts1[ iNext ].sub( self.shapeVerts1[ i ] ).normToLen( self.bevelDepth );
+        // Edge A: iPrev -> i
+        const eA_dir  = self.shapeVerts1[ i ].sub( self.shapeVerts1[ iPrev ] ).norm();
+        const eA_norm = Vec2.new( eA_dir.y, -eA_dir.x );
+        const eA_pt   = self.shapeVerts1[ iPrev ].sub( eA_norm.mulVal( self.bevelDepth ));
 
-        self.bevelVerts1[ i ] = self.shapeVerts1[ i ].add( offsetA );
-        self.bevelVerts2[ i ] = self.shapeVerts1[ i ].add( offsetB );
-        self.shapeVerts2[ i ] = self.shapeVerts1[ i ].add( offsetA ).add( offsetB );
+        // Edge B: i -> iNext
+        const eB_dir  = self.shapeVerts1[ iNext ].sub( self.shapeVerts1[ i ] ).norm();
+        const eB_norm = Vec2.new( eB_dir.y, -eB_dir.x );
+        const eB_pt   = self.shapeVerts1[ i ].sub( eB_norm.mulVal( self.bevelDepth ));
+
+        const cross = eA_dir.x * eB_dir.y - eA_dir.y * eB_dir.x;
+
+        if( @abs( cross ) < def.EPS )
+        {
+          self.shapeVerts2[ i ] = self.shapeVerts1[ i ].sub( eA_norm.mulVal( self.bevelDepth ));
+        }
+        else
+        {
+          const d = eB_pt.sub( eA_pt );
+          const t = ( d.x * eB_dir.y - d.y * eB_dir.x ) / cross;
+          self.shapeVerts2[ i ] = eA_pt.add( eA_dir.mulVal( t ));
+        }
+      }
+
+      // Bevel vertices via projecting inner corners perpendicularly onto outer edges
+      for( 0..n )| i |
+      {
+        const iPrev = ( i + n - 1 ) % n;
+        const iNext = ( i + 1     ) % n;
+
+        const inner = self.shapeVerts2[ i ];
+        const outer = self.shapeVerts1[ i ];
+
+        // Edge arriving at corner i: iPrev -> i
+        // Project inner corner onto this outer edge
+        const edgeA_dir = self.shapeVerts1[ i ].sub( self.shapeVerts1[ iPrev ] ).norm();
+        const toInnerA  = inner.sub( outer );
+        const projA     = toInnerA.dot( edgeA_dir );
+        self.bevelVerts1[ i ] = outer.add( edgeA_dir.mulVal( projA ));
+
+        // Edge leaving corner i: i -> iNext
+        // Project inner corner onto this outer edge
+        const edgeB_dir = self.shapeVerts1[ iNext ].sub( self.shapeVerts1[ i ] ).norm();
+        const toInnerB  = inner.sub( outer );
+        const projB     = toInnerB.dot( edgeB_dir );
+        self.bevelVerts2[ i ] = outer.add( edgeB_dir.mulVal( projB ));
       }
     }
   }

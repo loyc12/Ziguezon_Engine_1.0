@@ -120,8 +120,16 @@ pub const Vec3 = struct
 
   // ================ VECTOR MATHS ================
 
-  pub inline fn normToUnit( self : *const Vec3 ) Vec3 { return self. normToLen( 1.0 ); }
-
+  pub inline fn norm(  self : *const Vec3               ) Vec3 { return self.normToLen( 1.0 ); }
+  pub inline fn dot(   self : *const Vec3, other : Vec3 ) f64  { return ( self.x * other.x ) + ( self.y * other.y ) + ( self.z * other.z ); }
+  pub inline fn cross( self : *const Vec3, other : Vec3 ) Vec3
+  {
+    return Vec3{
+      .x = ( self.y * other.z ) - ( self.z * other.y ),
+      .y = ( self.z * other.x ) - ( self.x * other.z ),
+      .z = ( self.x * other.y ) - ( self.y * other.x ),
+    };
+  }
   // Normalizes a vector to a new length, returns null if the vector is zero'd
   pub fn normToLen( self : *const Vec3, newLen : f64 ) Vec3
   {
@@ -132,13 +140,13 @@ pub const Vec3 = struct
     }
 
     const oldLenSqr = self.lenSqr();
-    if( oldLenSqr  == 0.0 )
+    if( @abs( oldLenSqr ) < def.eps )
     {
       def.qlog( .WARN, 0, @src(), "Normalizing a 0:0 Vec3" );
       return .{};
     }
 
-    if( oldLenSqr == newLen * newLen ){ return self; }
+    if( oldLenSqr == newLen * newLen ){ return self; } // TODO : use EPS for float comparisons
     const factor = newLen / @sqrt( oldLenSqr );
 
     return self.mulVal( factor );
