@@ -49,11 +49,19 @@ pub const BevelType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  NONE,      // no cutout
-  CUTOUT,    // Straight angle cuttout
-  DIAGONAL,  // linear cutout ( chamfer )
-  CURVE_OUT, // convex circular cutout
-  CURVE_INT, // Concave circular cutout
+  NONE,      // No cutout / bevelless
+
+//CURVE_OUT, // Convex  circular cutout
+  HALF_OUT,  // Concave triangular cutout
+
+  DIAGONAL,  // Diagonal cutout ( chamfer )
+
+  HALF_IN,   // Convex  triangular cutout
+//CURVE_INT, // Concave circular cutout
+
+  CUTOUT,    // Full cuttout
+
+
 };
 
 const BevelArray = [ InterfaceShape.maxCornerCount ]BevelType;
@@ -76,12 +84,15 @@ pub const Interfacer2D = struct
   layer  : u16  = 1,
 
   shape      : InterfaceShape = .RECT,
+
   fillCol    : def.Colour     = .nWhite,
-  edgeCol    : def.Colour     = .nBlack,
-  edgeWidth  : f64            = 1,
+  edgeCol    : def.Colour     = .lGray,
+  lineCol    : def.Colour     = .nBlack,
+
+  lineWidth  : f64            = 1,
+  edgeWidth  : f64            = 8,
 
   bevelTypes : BevelArray     = getEmptyBevelArray(),
-  bevelDepth : f64            = 8,
 
   shapeVerts1 : VertexArray   = getEmptyVertexArray(), // Outer corners
   bevelVerts1 : VertexArray   = getEmptyVertexArray(), // Bevel start point
@@ -97,7 +108,7 @@ pub const Interfacer2D = struct
 
   pub fn hasAnyBevel( self : *const Interfacer2D ) bool
   {
-    if( self.bevelDepth < def.EPS ){ return false; }
+    if( self.edgeWidth < def.EPS ){ return false; }
 
     for( 0..self.shape.getCornerCount() )| b |
     {
@@ -114,9 +125,6 @@ pub const Interfacer2D = struct
     const n      : u8  = self.shape.getCornerCount();
     const n_f    : f32 = @floatFromInt( n );
     const step_a : f32 = def.TAU / n_f; // Angle between each vertex, in radians
-
-    const a0 = self.pos.a;              // Interface angle
-    const p0 = self.pos.toVec2();       // Interface centerpoint
 
     var draw_a : f32  = 0.0;
     var draw_s : Vec2 = self.scale;
@@ -143,9 +151,11 @@ pub const Interfacer2D = struct
     // Compute outer vertices
     for( 0..n )| i |
     {
-      const angle = a0.addRad( draw_a + ( step_a * @as( f32, @floatFromInt( i ))));
+      const angle : Angle = .newRad( draw_a + ( step_a * @as( f32, @floatFromInt( i ))));
 
-      self.shapeVerts1[ i ] = p0.add( .fromAngleScaled( angle, draw_s ));
+      const rPos = Vec2.fromAngleScaled( angle, draw_s ).rot( self.pos.a );
+
+      self.shapeVerts1[ i ] = self.pos.toVec2().add( rPos );
     }
 
      // Compute other vertices if need be
@@ -160,59 +170,53 @@ pub const Interfacer2D = struct
     }
     else
     {
+      var edgeDirs  : [ InterfaceShape.maxCornerCount ]Vec2 = undefined;
+      var edgeNorms : [ InterfaceShape.maxCornerCount ]Vec2 = undefined;
 
-      // Inner corners via perpendicular edge insets + line intersection
+      // Precompute edge directions and normals (edge i ~~ shapeVerts1[ i ] -> shapeVerts1[ i + 1 ])
+      for( 0..n )| i |
+      {
+        const iNext    = ( i + 1 ) % n;
+        const dir      = self.shapeVerts1[ iNext ].sub( self.shapeVerts1[ i ] ).norm();
+
+        edgeDirs[  i ] = dir;
+        edgeNorms[ i ] = Vec2.new( dir.y, -dir.x );
+      }
+
+      // Inner corners + bevel vertices in a single pass
       for( 0..n )| i |
       {
         const iPrev = ( i + n - 1 ) % n;
-        const iNext = ( i + 1     ) % n;
 
-        // Edge A: iPrev -> i
-        const eA_dir  = self.shapeVerts1[ i ].sub( self.shapeVerts1[ iPrev ] ).norm();
-        const eA_norm = Vec2.new( eA_dir.y, -eA_dir.x );
-        const eA_pt   = self.shapeVerts1[ iPrev ].sub( eA_norm.mulVal( self.bevelDepth ));
+        // Edge A (arriving): edge iPrev  ( iPrev -> i )
+        // Edge B (leaving) : edge i      ( i -> iNext )
+        const eA_dir  = edgeDirs[ iPrev ];
+        const eA_norm = edgeNorms[ iPrev ];
+        const eA_pt   = self.shapeVerts1[ iPrev ].sub( eA_norm.mulVal( self.edgeWidth ));
 
-        // Edge B: i -> iNext
-        const eB_dir  = self.shapeVerts1[ iNext ].sub( self.shapeVerts1[ i ] ).norm();
-        const eB_norm = Vec2.new( eB_dir.y, -eB_dir.x );
-        const eB_pt   = self.shapeVerts1[ i ].sub( eB_norm.mulVal( self.bevelDepth ));
+        const eB_dir  = edgeDirs[ i ];
+        const eB_norm = edgeNorms[ i ];
+        const eB_pt   = self.shapeVerts1[ i ].sub( eB_norm.mulVal( self.edgeWidth ));
 
+        // Intersect inset edges to find inner corner
         const cross = eA_dir.x * eB_dir.y - eA_dir.y * eB_dir.x;
 
-        if( @abs( cross ) < def.EPS )
-        {
-          self.shapeVerts2[ i ] = self.shapeVerts1[ i ].sub( eA_norm.mulVal( self.bevelDepth ));
-        }
-        else
+        const inner = if( @abs( cross ) < def.EPS )
+          self.shapeVerts1[ i ].sub( eA_norm.mulVal( self.edgeWidth ))
+        else blk:
         {
           const d = eB_pt.sub( eA_pt );
           const t = ( d.x * eB_dir.y - d.y * eB_dir.x ) / cross;
-          self.shapeVerts2[ i ] = eA_pt.add( eA_dir.mulVal( t ));
-        }
-      }
+          break :blk eA_pt.add( eA_dir.mulVal( t ));
+        };
 
-      // Bevel vertices via projecting inner corners perpendicularly onto outer edges
-      for( 0..n )| i |
-      {
-        const iPrev = ( i + n - 1 ) % n;
-        const iNext = ( i + 1     ) % n;
+        self.shapeVerts2[ i ] = inner;
 
-        const inner = self.shapeVerts2[ i ];
-        const outer = self.shapeVerts1[ i ];
+        // Project inner corner perpendicularly onto the two outer edges meeting at corner i
+        const toInner = inner.sub( self.shapeVerts1[ i ] );
 
-        // Edge arriving at corner i: iPrev -> i
-        // Project inner corner onto this outer edge
-        const edgeA_dir = self.shapeVerts1[ i ].sub( self.shapeVerts1[ iPrev ] ).norm();
-        const toInnerA  = inner.sub( outer );
-        const projA     = toInnerA.dot( edgeA_dir );
-        self.bevelVerts1[ i ] = outer.add( edgeA_dir.mulVal( projA ));
-
-        // Edge leaving corner i: i -> iNext
-        // Project inner corner onto this outer edge
-        const edgeB_dir = self.shapeVerts1[ iNext ].sub( self.shapeVerts1[ i ] ).norm();
-        const toInnerB  = inner.sub( outer );
-        const projB     = toInnerB.dot( edgeB_dir );
-        self.bevelVerts2[ i ] = outer.add( edgeB_dir.mulVal( projB ));
+        self.bevelVerts1[ i ] = self.shapeVerts1[ i ].add( eA_dir.mulVal( toInner.dot( eA_dir )));
+        self.bevelVerts2[ i ] = self.shapeVerts1[ i ].add( eB_dir.mulVal( toInner.dot( eB_dir )));
       }
     }
   }
@@ -226,7 +230,7 @@ pub const Interfacer2D = struct
     if( self.shape == .ELLI )
     {
       drawer.drawPolygonPlus(      p0, self.scale, a0, self.fillCol, def.G_ST.Graphic_Ellipse_Facets                 );
-      drawer.drawPolygonLinesPlus( p0, self.scale, a0, self.edgeCol, def.G_ST.Graphic_Ellipse_Facets, self.edgeWidth );
+      drawer.drawPolygonLinesPlus( p0, self.scale, a0, self.lineCol, def.G_ST.Graphic_Ellipse_Facets, self.lineWidth );
       return;
     }
 
@@ -254,7 +258,7 @@ pub const Interfacer2D = struct
         {
           const vec2 = self.shapeVerts1[ i ];
 
-          drawer.drawLine( vec1, vec2, self.edgeCol, self.edgeWidth );
+          drawer.drawLine( vec1, vec2, self.lineCol, self.lineWidth );
 
           vec1 = vec2;
         }
@@ -272,7 +276,7 @@ pub const Interfacer2D = struct
       {
         const vec2 = self.shapeVerts2[ i ];
 
-        drawer.drawBasicTria( vec0, vec2, vec1, .red );
+        drawer.drawBasicTria( vec0, vec2, vec1, self.fillCol );
 
         vec1 = vec2;
       }
@@ -284,13 +288,13 @@ pub const Interfacer2D = struct
       {
         const iNext = ( iPrev + 1 ) % n;
 
-        const vec1 = self.bevelVerts2[ iPrev ]; // Edge's leftmost  outer corner
-        const vec2 = self.shapeVerts2[ iPrev ]; // Edge's leftmost  inner corner
-        const vec3 = self.shapeVerts2[ iNext ]; // Edge's rightmost inner corner
-        const vec4 = self.bevelVerts1[ iNext ]; // Edge's rightmost outer corner
+        const vec1 = self.bevelVerts2[ iPrev ]; // Edge's leftmost  outer vertex
+        const vec2 = self.shapeVerts2[ iPrev ]; // Edge's leftmost  inner vertex
+        const vec3 = self.shapeVerts2[ iNext ]; // Edge's rightmost inner vertex
+        const vec4 = self.bevelVerts1[ iNext ]; // Edge's rightmost outer vertex
 
-        drawer.drawBasicQuad( vec1, vec2, vec3, vec4, self.fillCol );
-        drawer.drawLine( vec1, vec4, self.edgeCol, self.edgeWidth );
+        drawer.drawBasicQuad( vec1, vec2, vec3, vec4, self.edgeCol );
+        drawer.drawLine( vec1, vec4, self.lineCol, self.lineWidth );
       }
     }
 
@@ -298,33 +302,54 @@ pub const Interfacer2D = struct
     {
       for( 0..n )| i |
       {
-        const vec1 = self.bevelVerts1[ i ]; // Bevel's left  corner
-        const vec2 = self.shapeVerts2[ i ]; // Bevel's inner corner
-        const vec3 = self.bevelVerts2[ i ]; // Bevel's right corner
-        const vec4 = self.shapeVerts1[ i ]; // Bevel's outer corner
+        const vec1 = self.bevelVerts1[ i ]; // Corner's left  vertex
+        const vec2 = self.shapeVerts2[ i ]; // Corner's inner vertex
+        const vec3 = self.bevelVerts2[ i ]; // Corner's right vertex
+        const vec4 = self.shapeVerts1[ i ]; // Corner's outer vertex
 
         switch( self.bevelTypes[ i ])
         {
           .NONE =>
           {
-            drawer.drawBasicQuad( vec1, vec2, vec3, vec4, self.fillCol );
-            drawer.drawLine( vec4, vec1, self.edgeCol, self.edgeWidth );
-            drawer.drawLine( vec4, vec3, self.edgeCol, self.edgeWidth );
+            drawer.drawBasicQuad( vec1, vec2, vec3, vec4, self.edgeCol );
+            drawer.drawLine( vec4, vec1, self.lineCol, self.lineWidth );
+            drawer.drawLine( vec4, vec3, self.lineCol, self.lineWidth );
+          },
+
+          .DIAGONAL =>
+          {
+            drawer.drawBasicTria( vec1, vec2, vec3, self.edgeCol );
+            drawer.drawLine( vec1, vec3, self.lineCol, self.lineWidth );
           },
           .CUTOUT =>
           {
-            drawer.drawLine( vec2, vec1, self.edgeCol, self.edgeWidth );
-            drawer.drawLine( vec2, vec3, self.edgeCol, self.edgeWidth );
+            drawer.drawLine( vec2, vec1, self.lineCol, self.lineWidth );
+            drawer.drawLine( vec2, vec3, self.lineCol, self.lineWidth );
           },
-          .DIAGONAL =>
+
+          .HALF_IN =>
           {
-            drawer.drawBasicTria( vec1, vec2, vec3, self.fillCol );
-            drawer.drawLine( vec1, vec3, self.edgeCol, self.edgeWidth );
+            const vec5 = vec2.add( vec2 ).add( vec2 ).add( vec4 ).mulVal( 0.25 );
+
+            drawer.drawBasicTria( vec1, vec2, vec5, self.edgeCol );
+            drawer.drawBasicTria( vec2, vec3, vec5, self.edgeCol );
+            drawer.drawLine( vec5, vec1, self.lineCol, self.lineWidth );
+            drawer.drawLine( vec5, vec3, self.lineCol, self.lineWidth );
           },
-          else => // TODO : draw inner and outer curved bevels
+          .HALF_OUT =>
           {
-            def.qlog( .ERROR, 0, @src(), "UNIMPLEMENTED" );
-          }
+            const vec5 = vec2.add( vec4 ).add( vec4 ).add( vec4 ).mulVal( 0.25 );
+
+            drawer.drawBasicTria( vec1, vec2, vec5, self.edgeCol );
+            drawer.drawBasicTria( vec2, vec3, vec5, self.edgeCol );
+            drawer.drawLine( vec5, vec1, self.lineCol, self.lineWidth );
+            drawer.drawLine( vec5, vec3, self.lineCol, self.lineWidth );
+          },
+
+        //else => // TODO : draw inner and outer curved bevels
+        //{
+        //  def.qlog( .ERROR, 0, @src(), "UNIMPLEMENTED" );
+        //}
         }
       }
     }

@@ -28,7 +28,7 @@ var sprite_r : f32 = 0;
 
 const SHOW_INTERFACE = true;
 
-var ui : def.Interfacer2D = .{ .pos = .new( 256, 512, .{} ), .scale = .new( 128, 256 ), .bevelDepth = 32, .edgeWidth = 4 };
+var ui : def.Interfacer2D = .{ .pos = .new( 256, 512, .{ .r = 0 }), .scale = .new( 128, 256 ), .edgeWidth = 32, .lineWidth = 4 };
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
