@@ -28,7 +28,7 @@ var sprite_r : f32 = 0;
 
 const SHOW_INTERFACE = true;
 
-var ui : def.Interfacer2D = .{ .pos = .new( 256, 512, .{} ), .scale = .new( 128, 256 ), .bevelDepth = 32 };
+var ui : def.Interfacer2D = .{ .pos = .new( 256, 512, .{} ), .scale = .new( 128, 256 ), .bevelDepth = 32, .edgeWidth = 4 };
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
@@ -80,17 +80,21 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
         newShape = @mod( newShape + 1, def.InterfaceShape.count );
 
     ui.shape = @enumFromInt( newShape );
+
+    ui.updateShapeVertices();
   }
 
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.b ))
   {
-    for( 0..ui.getCornerCount() )| b |
-    {
-      var newBevel : usize = @intFromEnum( ui.bevelTypes[ b ]);
-          newBevel = @mod( newBevel + 1, def.BevelType.count );
+    var newBevel : usize = @intFromEnum( ui.bevelTypes[ 0 ]);
+        newBevel = @mod( newBevel + 1, def.BevelType.count );
 
+    for( 0..def.BevelType.count )| b |
+    {
       ui.bevelTypes[ b ] = @enumFromInt( newBevel );
     }
+
+    ui.updateShapeVertices();
   }
 
 
@@ -102,7 +106,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   // Swap tilemap shape if the V key is pressed
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.c ))
   {
     switch( exampleTilemap.tileShape )
     {
