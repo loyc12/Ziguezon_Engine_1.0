@@ -170,7 +170,7 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
   {
     var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
 
-    for( 2..sides )| i |
+    for( 2..sides )| i | // Starting at two since each triangle needs 3 points to draw ( 0, 1, 2 )
     {
       const angle = sideStepAngle.mulVal( @floatFromInt( i ));
       const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
@@ -183,7 +183,7 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
   {
     var rP1 = rP0.rot( sideStepAngle );
 
-    for( 2..sides )| i |
+    for( 2..sides )| i | // Starting at two since each triangle needs 3 points to draw ( 0, 1, 2 )
     {
       const angle = sideStepAngle.mulVal( @floatFromInt( i ));
       const rP2 = rP0.rot( angle );
@@ -214,24 +214,24 @@ pub fn drawPolygonLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, 
   }
   else if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
   {
-    var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+    var rP1 = rP0;
 
-    for( 2..sides )| i |
+    for( 0..sides )| i |
     {
-      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      const angle = sideStepAngle.mulVal( @floatFromInt( i + 1 ));
       const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
 
-      drawLine( pos.add( rP1 ), pos.add( rP2 ), col );
+      drawLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
       rP1 = rP2;
     }
   }
   else // NOTE : slightly faster, but requires isoscalar polygons
   {
-    var rP1 = rP0.rot( sideStepAngle );
+    var rP1 = rP0;
 
-    for( 2..sides )| i |
+    for( 0..sides )| i |
     {
-      const angle = sideStepAngle.mulVal( @floatFromInt( i ));
+      const angle = sideStepAngle.mulVal( @floatFromInt( i + 1 ));
       const rP2 = rP0.rot( angle );
 
       drawLine( pos.add( rP1 ), pos.add( rP2 ), col, width );

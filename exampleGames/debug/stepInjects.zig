@@ -76,20 +76,18 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
   {
-    var newShape : usize = @intFromEnum( ui.shape);
-        newShape = @mod( newShape + 1, def.BevelType.count );
+    var newShape : usize = @intFromEnum( ui.shape );
+        newShape = @mod( newShape + 1, def.InterfaceShape.count );
 
     ui.shape = @enumFromInt( newShape );
   }
 
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.b ))
   {
-    const n = ui.getCornerCount();
-
-    for( 0..n )| b |
+    for( 0..ui.getCornerCount() )| b |
     {
-      var newBevel : u8 = @intFromEnum( ui.bevelTypes[ b ]);
-          newBevel = @mod( newBevel + 1, n );
+      var newBevel : usize = @intFromEnum( ui.bevelTypes[ b ]);
+          newBevel = @mod( newBevel + 1, def.BevelType.count );
 
       ui.bevelTypes[ b ] = @enumFromInt( newBevel );
     }

@@ -85,6 +85,7 @@ pub const Coords2 = struct
   pub inline fn toVecA( self : Coords2, r : f32 ) VecA { return VecA{ .x = @floatFromInt( self.x ), .y = @floatFromInt( self.y ), .z = r }; }
   pub inline fn toVec3( self : Coords2, z : f32 ) Vec3 { return Vec3{ .x = @floatFromInt( self.x ), .y = @floatFromInt( self.y ), .z = z }; }
 
+  pub inline fn swap( self : Coords2 ) Coords2 { return .{ .x = self.y, .y = self.x }; }
 
   // ================ COMPARISONS ================
 

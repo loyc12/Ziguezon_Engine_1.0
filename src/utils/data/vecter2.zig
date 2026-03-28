@@ -64,6 +64,10 @@ pub const Vec2 = struct
       .y = @intFromFloat( @trunc( self.y )),
     };
   }
+  pub inline fn swap( self : *const Vec2 ) Vec2
+  {
+    return .{ .x = self.y, .y = self.x };
+  }
 
   // ================ COMPARISONS ================
 
