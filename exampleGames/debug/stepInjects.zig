@@ -89,9 +89,11 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     var newBevel : usize = @intFromEnum( ui.bevelTypes[ 0 ]);
         newBevel = @mod( newBevel + 1, def.BevelType.count );
 
-    for( 0..def.BevelType.count )| b |
+    const n = def.InterfaceShape.maxCornerCount;
+
+    for( 0..n )| i |
     {
-      ui.bevelTypes[ b ] = @enumFromInt( newBevel );
+      ui.bevelTypes[ i ] = @enumFromInt( newBevel );
     }
 
     ui.updateShapeVertices();

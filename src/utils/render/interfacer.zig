@@ -41,6 +41,8 @@ pub const InterfaceShape = enum( u8 )
       .OCT_F, .OCT_P                 => 8, // Max bevel count
     };
   }
+
+  pub const maxCornerCount = 8;
 };
 
 pub const BevelType = enum( u8 )
@@ -54,13 +56,12 @@ pub const BevelType = enum( u8 )
   CURVE_INT, // Concave circular cutout
 };
 
-const maxBevelCount = 8;
-const BevelArray    = [ maxBevelCount ]BevelType;
+const BevelArray = [ InterfaceShape.maxCornerCount ]BevelType;
 
 fn getEmptyBevelArray() BevelArray { comptime return .{ .NONE, .NONE, .NONE, .NONE, .NONE, .NONE, .NONE, .NONE }; }
 
 
-const VertexArray = [ maxBevelCount ]Vec2;
+const VertexArray = [ InterfaceShape.maxCornerCount ]Vec2;
 
 fn getEmptyVertexArray() VertexArray { comptime return .{ .{}, .{}, .{}, .{}, .{}, .{}, .{}, .{} }; }
 
@@ -69,6 +70,7 @@ fn getEmptyVertexArray() VertexArray { comptime return .{ .{}, .{}, .{}, .{}, .{
 
 pub const Interfacer2D = struct
 {
+
   pos    : VecA,
   scale  : Vec2 = .new( 128, 128 ),
   layer  : u16  = 1,
