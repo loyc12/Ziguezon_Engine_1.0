@@ -51,23 +51,20 @@ pub fn initStellarSystem( ng : *def.Engine ) void
     def.log( .INFO, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
 
 
-    if( id == 1 ) // Here comes the sun, lalalala
+    if( id == 1 ) // TODO : use bodyComp for sol as well, as it need not be its own thing
     {
-    //gbl.starId = 1;
-
       gbl.starCompInst.mass   = gbl.STLR_DATA.get( .SOL, .MASS );
       gbl.starCompInst.radius = gbl.STLR_DATA.get( .SOL, .RADIUS );
 
       const terraMin = gbl.STLR_DATA.get( .TERRA, .PERIAP );
       const terraMax = gbl.STLR_DATA.get( .TERRA, .APOAP  );
 
-      gbl.starCompInst.setShineAtDist( 1.0, 0.5 * ( terraMin + terraMax ));
+      gbl.starCompInst.setShineAtDist( 1.0, 0.5 * ( terraMin + terraMax )); // TODO : replace with irl units for sunlight
 
       const r = gbl.starCompInst.radius;
 
       _ = gbl.transStore.add(  id, .{ .pos    = .{} });
       _ = gbl.shapeStore.add(  id, .{ .colour = .gold, .minSize = .new( 6, 6 ), .scale = .new( r, r ), .shape = .ELLI });
-    //_ = gbl.spriteStore.add( id, .{} );
 
       continue;
     }
@@ -253,8 +250,6 @@ pub fn tickGlobalEconomy( transStore : *gbl.TransStore, bodyStore : *gbl.BodySto
 
     if( trans != null and body != null )
     {
-    //def.log( .DEBUG, 0, @src(), "Updating economies of entity #{d}", .{ id });
-
       body.?.tickEcons( trans.?.pos.toVec2(), starPos );
     }
     else
@@ -292,7 +287,6 @@ pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStor
         orbiter.?.renderDebug( orbitedTrans.?.pos.toVec2(), orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
         orbiter.?.renderLPs(   orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
       }
-
     }
     else
     {
