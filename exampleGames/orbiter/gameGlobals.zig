@@ -57,9 +57,7 @@ pub var   targetHasMoved : bool = false;
 // Time     : Day       ( Dy ) = 86_400 s
 // Density  : Gt/km³           = g/cm³
 
-
-pub const G_FACTOR : f64 = 498.163; // km³/Gt¹wk²
-                                    // km³/Gt¹Dy²
+pub const G_FACTOR : f64 = 498.163; // km³/Gt¹Day²
 
 
 
