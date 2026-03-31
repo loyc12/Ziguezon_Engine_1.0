@@ -42,14 +42,14 @@ pub const EconLoc = enum( u8 )
 // ================================ RESOURCE FLOW MATRIX ================================
 // NOTE : used in EconSolver
 
-pub const ResStockData = def.NewDataArray(  f64, ResType );
-pub const ResFlowData  = def.NewDataMatrix( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
+pub const ResStockData = def.GenDataLine(  f64, ResType );
+pub const ResFlowData  = def.GenDataCube( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
 
 // NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
-pub const IndFlowData = def.NewDataMatrix( f64, IndType, FlowPhaseEnum, ResType );
+pub const IndFlowData  = def.GenDataCube( f64, IndType, FlowPhaseEnum, ResType );
 
 // NOTE : individual industry's max activity level
-pub const IndActivityData = def.NewDataArray( f64, IndType );
+pub const IndActivityData = def.GenDataLine( f64, IndType );
 
 
 pub const FlowAgentEnum = enum( u8 )
@@ -81,7 +81,7 @@ pub const FlowPhaseEnum = enum( u8 )
 // ================================ RESOURCE ACCESS GRID ================================
 // NOTE : used in EconSolver
 
-pub const ResAccessData = def.NewDataGrid( f64, AccessAgentEnum, ResType );
+pub const ResAccessData = def.GenDataGrid( f64, AccessAgentEnum, ResType );
 
 pub const AccessAgentEnum = enum( u8 )
 {
@@ -96,7 +96,7 @@ pub const AccessAgentEnum = enum( u8 )
 // ================================ AREA METRIC ARRAY ================================
 // NOTE : used in Economy
 
-pub const AreaMetricData = def.NewDataArray( f64, AreaMetricEnum );
+pub const AreaMetricData = def.GenDataLine( f64, AreaMetricEnum );
 
 pub const AreaMetricEnum = enum( u8 )
 {
@@ -114,7 +114,7 @@ pub const AreaMetricEnum = enum( u8 )
 // ================================ POPULATION METRIC ARRAY ================================
 // NOTE : used in Economy
 
-pub const PopMetricData = def.NewDataArray( f64, PopMetricEnum );
+pub const PopMetricData = def.GenDataLine( f64, PopMetricEnum );
 
 pub const PopMetricEnum = enum( u8 )
 {

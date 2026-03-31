@@ -1,7 +1,7 @@
 const std = @import( "std" );
 
 
-pub fn NewDataArray( comptime DataType : type, comptime IdxEnum : type ) type
+pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
 {
   comptime // Validate enum
   {

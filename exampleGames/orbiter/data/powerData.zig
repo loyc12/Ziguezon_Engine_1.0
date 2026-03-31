@@ -33,7 +33,7 @@ pub const PowerSrc = enum( u8 )
 };
 
 
-pub var powerMetricData : def.NewDataGrid( f64, PowerSrc, PowerMetricEnum ) = .{};
+pub var powerMetricData : def.GenDataGrid( f64, PowerSrc, PowerMetricEnum ) = .{};
 
 pub const PowerMetricEnum = enum( u8 )
 {

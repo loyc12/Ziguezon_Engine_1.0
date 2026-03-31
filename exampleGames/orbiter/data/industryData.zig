@@ -130,7 +130,7 @@ pub const IndType = enum( u8 )
 
 // ================================ INDUSTRY METRICS GRID ================================
 
-pub var indMetricData : def.NewDataGrid( f64, IndType, IndMetricEnum ) = .{};
+pub var indMetricData : def.GenDataGrid( f64, IndType, IndMetricEnum ) = .{};
 
 pub const IndMetricEnum = enum( u8 )
 {
@@ -146,7 +146,7 @@ pub const IndMetricEnum = enum( u8 )
 // ================================ INDUSTRY CONS / PROD GRID ================================
 
 // Resource consumption / production per industry ( u64 )
-pub var indResValData : def.NewDataGrid( u64, IndType, IndResValEnum ) = .{};
+pub var indResValData : def.GenDataGrid( u64, IndType, IndResValEnum ) = .{};
 
 pub const IndResValEnum = enum( u8 )
 {
@@ -292,7 +292,7 @@ pub fn loadIndustryData() void
 // ================================ INDUSTRY STATE GRID ================================
 // NOTE : used in Economy to store local quantities and metrics
 
-pub const IndStateData = def.NewDataGrid( f64, IndStateEnum, IndType );
+pub const IndStateData = def.GenDataGrid( f64, IndStateEnum, IndType );
 
 pub const IndStateEnum = enum( u8 )
 {

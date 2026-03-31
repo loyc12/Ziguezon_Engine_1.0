@@ -1,7 +1,7 @@
 const std = @import( "std" );
 
 
-pub fn NewDataMatrix( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type, comptime LayerEnum : type ) type
+pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type, comptime LayerEnum : type ) type
 {
   comptime // Validate enums
   {
@@ -86,6 +86,6 @@ pub fn NewDataMatrix( comptime DataType : type, comptime RowEnum : type, comptim
       return &self.data[ @intFromEnum( row )][ @intFromEnum( col )][ @intFromEnum( lay )];
     }
 
-    // TODO : Add a way to convert any pair of axis to a dataGrid
+    // TODO : Add a way to convert any pair of axis to a dataMatrix
   };
 }

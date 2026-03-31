@@ -52,7 +52,7 @@ pub const ResType = enum( u8 )
 
 // ================================ RESOURCE METRICS GRID ================================
 
-pub var resMetricData : def.NewDataGrid( f64, ResType, ResMetricEnum ) = .{};
+pub var resMetricData : def.GenDataGrid( f64, ResType, ResMetricEnum ) = .{};
 
 pub const ResMetricEnum = enum( u8 )
 {
@@ -114,7 +114,7 @@ pub fn loadResourceData() void
 // ================================ RESOURCE STATE GRID ================================
 // NOTE : used in Economy to store local quantities and metrics
 
-pub const ResStateData = def.NewDataGrid( f64, ResStateEnum, ResType );
+pub const ResStateData = def.GenDataGrid( f64, ResStateEnum, ResType );
 
 pub const ResStateEnum = enum( u8 )
 {

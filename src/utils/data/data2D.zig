@@ -1,7 +1,7 @@
 const std = @import( "std" );
 
 
-pub fn NewDataGrid( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type ) type
+pub fn GenDataGrid( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type ) type
 {
   comptime // Validate enums
   {

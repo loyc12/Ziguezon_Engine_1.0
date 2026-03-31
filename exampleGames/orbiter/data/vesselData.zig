@@ -33,7 +33,7 @@ pub const VesType = enum( u8 )
 };
 
 
-pub var vesMetricData : def.NewDataGrid( f64, VesType, VesMetricEnum ) = .{};
+pub var vesMetricData : def.GenDataGrid( f64, VesType, VesMetricEnum ) = .{};
 
 pub const VesMetricEnum = enum( u8 )
 {

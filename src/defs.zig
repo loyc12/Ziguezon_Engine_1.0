@@ -212,15 +212,17 @@ pub const Coords2 = cor2_u.Coords2;
 pub const Coords3 = cor3_u.Coords3;
 
 
-// ======== DATA MATRIX ========
+// ======== DATA MATRICES ========
 
 pub const d1d_u  = @import( "utils/data/data1D.zig" );
 pub const d2d_u  = @import( "utils/data/data2D.zig" );
 pub const d3d_u  = @import( "utils/data/data3D.zig" );
+pub const d4d_u  = @import( "utils/data/data4D.zig" );
 
-pub const NewDataArray  = d1d_u.NewDataArray;
-pub const NewDataGrid   = d2d_u.NewDataGrid;
-pub const NewDataMatrix = d3d_u.NewDataMatrix;
+pub const GenDataLine     = d1d_u.GenDataLine;
+pub const GenDataGrid     = d2d_u.GenDataGrid;
+pub const GenDataCube     = d3d_u.GenDataCube;
+pub const GenDataMatrix4  = d3d_u.GenDataMatrix4;
 
 
 // ======== BITFLAGS ========
@@ -242,6 +244,17 @@ pub const Timer         = tmr_u.Timer;
 pub const e_timer_flags = tmr_u.e_timer_flags;
 
 pub const getNow        = tmr_u.getNow;
+
+
+// ======== TYPING ========
+
+pub const tpr_u         = @import( "utils/data/typer.zig" );
+
+pub const GenPairedEnum = tpr_u.GenPairedEnum;
+pub const GenSplitEnum  = tpr_u.GenSplitEnum;
+
+pub const pairEnums     = tpr_u.pairEnums;
+pub const splitEnums    = tpr_u.splitEnums;
 
 
 // ======== VECTORS ========
