@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-pub const StarComp = struct
+pub const StarComp = struct // TODO : merge back users into BodyComp. split of shine logic
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 

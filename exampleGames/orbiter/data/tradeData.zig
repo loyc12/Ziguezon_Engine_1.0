@@ -16,13 +16,17 @@ pub const BodyEconSplit = def.GenSplitEnum(  StellarBody, EconLoc );
 
 
 //  Combine StellarBody & EconLoc into the corresponding composite enum
-pub fn toPair( body : StellarBody, econ : EconLoc ) BodyEconPair
+pub fn toBodyEconPair( body : StellarBody, econ : EconLoc ) BodyEconPair
 {
+  if( body == .CUSTOM )
+  {
+    // TODO : Raise issue
+  }
   return def.pairEnums( StellarBody, body, EconLoc, econ );
 }
 
 //  Extract StellarBody & EconLoc from the corresponding composite enum
-pub fn fromPair( pair : BodyEconPair ) BodyEconSplit
+pub fn fromBodyEconPair( pair : BodyEconPair ) BodyEconSplit
 {
   return def.splitEnums( StellarBody, EconLoc, pair );
 }
@@ -31,8 +35,8 @@ pub fn fromPair( pair : BodyEconPair ) BodyEconSplit
 // ================================ LATEST INTRA-STELLAR TRADE DATA ================================
 
 // Root of the current distance from the sun's center
-pub const EconRootRadiusData = def.GenDataLine( f64, BodyEconPair );
+pub var econRootRadiusData : def.GenDataLine( f64, BodyEconPair ) = .{};
 
-// char of latest travel data between any two econs  DEPARTURE,    ARRIVAL
-pub const EconDeltaTimeTable = def.GenDataGrid( f64, BodyEconPair, BodyEconPair );
-pub const EconDeltaVelTable  = def.GenDataGrid( f64, BodyEconPair, BodyEconPair );
+// Most recent travel data between any two econs | DEPARTURE   | ARRIVAL
+pub var econDeltaTimeTable : def.GenDataGrid( f64, BodyEconPair, BodyEconPair ) = .{};
+pub var econDeltaVelTable  : def.GenDataGrid( f64, BodyEconPair, BodyEconPair ) = .{};

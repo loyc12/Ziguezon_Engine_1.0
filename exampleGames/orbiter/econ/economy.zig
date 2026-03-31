@@ -39,10 +39,12 @@ pub const Economy = struct
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
   location  : EconLoc,
-  isActive  : bool = false,
-  dayCount  : u64  = 0,
 
+  isValid   : bool = false,
+  isActive  : bool = false,
   hasAtmo   : bool,
+
+  dayCount  : u64 = 0,
   sunshine  : f64 = 0.0,
   sunAccess : f32 = 1.0,
 

@@ -23,6 +23,8 @@ pub const StellarBodyEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
+  CUSTOM, // Default value
+
   SOL,
 
 //  INNER - TERRESTRIALS

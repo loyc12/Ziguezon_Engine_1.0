@@ -16,10 +16,42 @@ pub const BodyType = enum( u8 )
   pub inline fn toIdx( self : BodyType ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) BodyType {  return @enumFromInt( @as( u8, @intCast( i ))); }
 
-  PLANET, // Has L1-5
-  MOON,   // Has L1-2 only
-  COMET,  // Has no LPs    // NOTE : Also includes asteroids, captured or otherwise
+//STAR,      // Has no LPs     Ex : Sol
+  PLANET,    // Has L1-5       Ex : Earth,   Saturn
+  PLANETOID, // Has L1-2 only  Ex : Ceres,   Pluto
+  MOON,      // Has L1-2 only  Ex : Luna,    Titan
+  MOONLET,   // Has no LPs     Ex : Phobos,  Deimos
+  ASTEROID,  // Has no LPs     Ex : Common belt asteroids
+  COMET,     // Has no LPs     Ex : Haley's, extreme orbits
 
+
+  pub inline fn getMinDisplaySize( self : BodyType ) def.Vec2
+  {
+    return switch( self )
+    {
+    //.STAR      => .new( 8, 8 ),
+      .PLANET    => .new( 4, 4 ),
+      .PLANETOID => .new( 3, 3 ),
+      .MOON      => .new( 4, 4 ),
+      .MOONLET   => .new( 3, 3 ),
+      .ASTEROID  => .new( 2, 2 ),
+      .COMET     => .new( 2, 2 ),
+    };
+  }
+
+  pub inline fn getDisplayColour( self : BodyType ) def.Colour
+  {
+    return switch( self )
+    {
+    //.STAR      => .gold,
+      .PLANET    => .cerul,
+      .PLANETOID => .lCerul,
+      .MOON      => .nWhite,
+      .MOONLET   => .pGray,
+      .ASTEROID  => .lGray,
+      .COMET     => .mGray,
+    };
+  }
 
   pub inline fn getEconLocCount( self : BodyType ) usize
   {
@@ -30,10 +62,22 @@ pub const BodyType = enum( u8 )
   {
     return switch( self )
     {
-      .PLANET => 5,
-      .MOON   => 2,
-      .COMET  => 0,
+    //.STAR      => 0,
+      .PLANET    => 5,
+      .PLANETOID => 2,
+      .MOON      => 2,
+      .MOONLET   => 0,
+      .ASTEROID  => 0,
+      .COMET     => 0,
     };
+  }
+
+  // Whether or not the specified econLoc can be hosted on this bodyType
+  pub inline fn canHostEconLoc( self : BodyType, loc : EconLoc ) bool
+  {
+    const locIdx = loc.toIdx();
+
+    return( locIdx < self.getEconLocCount() );
   }
 };
 
@@ -42,7 +86,8 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  bodyType : BodyType = .PLANET, // TODO : auto-assign type based on mass instead ? ( and orbital radius ? )
+  name : gbl.StellarBodyEnum = .CUSTOM,
+  bodyType : BodyType        = .PLANET, // TODO : auto-assign type based on mass instead ? ( and orbital radius ? )
 
   // NOTE : defaults to earth values
 
@@ -111,13 +156,19 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   {
     var econ : ecn.Economy = undefined;
 
-    if( loc == .GROUND ) // TODO : add useableLand modifier ( ex : what proportion is solid ground )
+    if( loc == .GROUND ) // TODO : Stop giving all GROUND an atmosphere and 0.6 landCover
     {
-      econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), 0.6, true ); // TODO : Stop giving all GROUND an atmosphere and 0.6 habitability
+      econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), 0.6, true );
     }
     else
     {
       econ = ecn.Economy.newEcon( loc, 1_000_000_000.0, 1.0, true );
+    }
+
+    // Checking if the econ is allowed to exist according to bodyType
+    if( self.bodyType.canHostEconLoc( loc ))
+    {
+      econ.isValid = true;
     }
 
     self.econArray[ loc.toIdx() ] = econ;
@@ -129,14 +180,24 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     {
       const econ : *ecn.Economy = &self.econArray[ i ];
 
-      if( econ.isActive ) // TODO : Activate locs when player build infra there
+      if( econ.isValid )
       {
-        const distSqr = orbiterPos.getDistSqr( starPos );
-        const shine   = gbl.starCompInst.getSunshineAt( distSqr );
+        const econPos = orbiterPos; // TODO : get precise pos for L1-L5 points instead of using orbiter pos
+        const distSqr = econPos.getDistSqr( starPos );
 
-      //def.log( .CONT, 0, @src(), "Ticking {s} econ with sunshine of {d:.4} ( day {d} )", .{ @tagName( econ.location ), shine, econ.dayCount + 1 });
+        gbl.ECON_ROOT_RAD_DATA.set( gbl.toBodyEconPair( self.name, econ.location ), @sqrt( @sqrt( distSqr )));
 
-        econ.tickEcon( shine );
+
+        if( econ.isActive ) // TODO : Activate locations dynamically
+        {
+          const shine = gbl.starCompInst.getSunshineAt( distSqr );
+
+          econ.tickEcon( shine );
+        }
+      }
+      else
+      {
+        gbl.ECON_ROOT_RAD_DATA.set( gbl.toBodyEconPair( self.name, econ.location ), 0.0 );
       }
     }
   }

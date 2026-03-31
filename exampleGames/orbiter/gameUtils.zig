@@ -33,19 +33,11 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
   );
   orbitComp.orbitedID = orbitedId;
 
+  bodyComp.name   = bodyName;
   bodyComp.mass   = orbiterMass;
   bodyComp.radius = gbl.STLR_DATA.get( bodyName, .RADIUS );
 }
 
-inline fn getBodyMinSize( bodyType : bdy.BodyType ) def.Vec2
-{
-  return switch( bodyType )
-  {
-    .PLANET => .new( 4, 4 ),
-    .MOON   => .new( 3, 3 ),
-    .COMET  => .new( 2, 2 ),
-  };
-}
 
 pub fn initStellarSystem( ng : *def.Engine ) void
 {
@@ -124,12 +116,12 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       7 => // PHOBOS
       {
         initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 );
-        bodyComp.bodyType = .COMET;
+        bodyComp.bodyType = .MOONLET;
       },
       8 => // DEIMOS
       {
         initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 );
-        bodyComp.bodyType = .COMET;
+        bodyComp.bodyType = .MOONLET;
       },
 
 
@@ -152,7 +144,13 @@ pub fn initStellarSystem( ng : *def.Engine ) void
     }}
 
     _ = gbl.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
-    _ = gbl.shapeStore.add(  id, .{ .colour = .cerul, .minSize = getBodyMinSize( bodyComp.bodyType ), .scale = .new( bodyComp.radius, bodyComp.radius ), .shape = .ELLI });
+    _ = gbl.shapeStore.add(  id,
+    .{
+      .colour  = bodyComp.bodyType.getDisplayColour(),
+      .minSize = bodyComp.bodyType.getMinDisplaySize(),
+      .scale   = .new( bodyComp.radius, bodyComp.radius ),
+      .shape   = .ELLI
+    });
   //_ = gbl.spriteStore.add( id, .{} );
 
     _ = gbl.orbitStore.add(  id, orbitComp );
@@ -303,9 +301,10 @@ pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStor
   }
 
   // Rendering bodies
-  for( 0..gbl.entityArray.len )| idx |
+  for( 0..gbl.entityArray.len )| i |
   {
-    const id = gbl.entityArray[ idx ].id;
+    const idx = gbl.entityArray.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
+    const id  = gbl.entityArray[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
 

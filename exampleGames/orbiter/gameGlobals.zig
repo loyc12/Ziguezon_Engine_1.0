@@ -61,27 +61,24 @@ pub const G_FACTOR : f64 = 498.163; // km³/Gt¹Day²
 
 
 
-// ================ DATA LOADING ================
+// ================ GENERAL GAME DATA ================
 
 pub const stlr_d = @import( "data/stellarData.zig" );
-
-pub const STLR_DATA = &stlr_d.stellarData;
-
-pub const StellarBodyEnum   = stlr_d.StellarBodyEnum;
-pub const StellarMetrucEnum = stlr_d.StellarMetricEnum;
-
-
 pub const ecnm_d = @import( "data/economyData.zig" );
-pub const trde_d = @import( "data/tradeData.zig" );
+pub const trde_d = @import( "data/tradeData.zig"   );
 
-pub const ECON_ROOT_RAD_DATA = &trde_d.EconRootRadiusData;
-pub const ECON_D_TIME_TABLE  = &trde_d.EconDeltaTimeTable;
-pub const ECON_D_VEL_TABLE   = &trde_d.EconDeltaVelTable;
+pub const STLR_DATA          = &stlr_d.stellarData;
+pub const ECON_ROOT_RAD_DATA = &trde_d.econRootRadiusData;
+pub const ECON_D_TIME_TABLE  = &trde_d.econDeltaTimeTable;
+pub const ECON_D_VEL_TABLE   = &trde_d.econDeltaVelTable;
 
-pub const EconLoc      = ecnm_d.EconLoc;
-pub const BodyEconPair = trde_d.BodyEconPair;
-pub const toPair       = trde_d.toPair;
-pub const fromPair     = trde_d.fromPair;
+pub const EconLoc            = ecnm_d.EconLoc;
+pub const StellarBodyEnum    = stlr_d.StellarBodyEnum;
+pub const StellarMetrucEnum  = stlr_d.StellarMetricEnum;
+
+pub const BodyEconPair       = trde_d.BodyEconPair;
+pub const toBodyEconPair     = trde_d.toBodyEconPair;
+pub const fromBodyEconPair   = trde_d.fromBodyEconPair;
 
 
 pub const powr_d = @import( "data/powerData.zig"          );
