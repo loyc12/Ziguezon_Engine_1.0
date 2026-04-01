@@ -94,9 +94,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       4 => // EARTH
       {
         initStellarBody( &orbitComp, &bodyComp, .TERRA, 1 );
-
-        // NOTE : DEBUG
-        bodyComp.debugSetEconVals( .GROUND, 1 );
+        bodyComp.debugSetEconVals( .GROUND, 1 );            // NOTE : DEBUG
       },
       5 => initStellarBody( &orbitComp, &bodyComp, .LUNA,   4 ),
 
