@@ -102,7 +102,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       7 => initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 ),
       8 => initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 ),
 
-      else => // Wil ignore all subsequent Ids ( should be none )
+      else => // Wil ignore all subsequent Ids ( should have none left )
       {
         def.log( .INFO, 0, @src(), "Id #{d} is invalid: will not initialize related comps", .{ id });
         continue;
@@ -267,8 +267,13 @@ pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStor
 
       if( gbl.targetId == id )
       {
-        orbiter.?.renderDebug( orbitedTrans.?.pos.toVec2(), orbiterTrans.?.pos.toVec2(), orbiterBody.?.radius, 1.0 );
-        orbiter.?.renderLPs(   orbitedTrans.?.pos.toVec2(), orbiterBody.?.bodyType.getLPCount() );
+        const orbitedPos = orbitedTrans.?.pos.toVec2();
+        const orbitedVel = orbitedTrans.?.vel.toVec2();
+
+        const orbiterPos = orbiterTrans.?.pos.toVec2();
+
+        orbiter.?.renderDebug( orbitedVel, orbitedPos, orbiterPos, orbiterBody.?.radius, 1.0 );
+        orbiter.?.renderLPs(   orbitedPos, orbiterBody.?.bodyType.getLPCount() );
       }
     }
     else

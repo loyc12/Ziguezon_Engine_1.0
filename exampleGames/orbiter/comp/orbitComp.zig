@@ -238,12 +238,15 @@ pub const OrbitComp = struct
 
   // ================================ RENDERING ================================
 
-  pub fn renderDebug( self : *const OrbitComp, orbitedPos : Vec2, selfPos : Vec2, selfRadius : f64, moonDensity : f64 ) void
+  pub fn renderDebug( self : *const OrbitComp, orbitedVel : Vec2, orbitedPos : Vec2, selfPos : Vec2, selfRadius : f64, moonDensity : f64 ) void
   {
-    const zoomedWidth = 1.0 / def.G_CAM.getZoom();
-    const scaledVel   = self.getRelVel().normToLen( selfRadius * 3.0 );
+    const scaledAbsVel = self.getAbsVel( orbitedVel ).normToLen( selfRadius * 3.0 );
+    const scaledRelVel = self.getRelVel(            ).normToLen( selfRadius * 3.0 );
+    const zoomedWidth  = 1.0 / def.G_CAM.getZoom();
 
-    def.drawLine( selfPos, selfPos.add( scaledVel ), .red, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
+
+    def.drawLine( selfPos, selfPos.add( scaledAbsVel ), .blue, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
+    def.drawLine( selfPos, selfPos.add( scaledRelVel ), .red,  @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
