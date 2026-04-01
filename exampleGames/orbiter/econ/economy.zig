@@ -575,6 +575,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
 
+    // TODO : generalise this code
     def.qlog( .INFO, 0, @src(), "Trade fuel / time costs from Earth to :" );
 
     inline for( 0..gbl.StellarBodyEnum.count )| b |

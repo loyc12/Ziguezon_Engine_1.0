@@ -56,11 +56,11 @@ pub const FlowAgentEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  NAT, // Natural processes     (decay, growth)
-  POP, // Population            (work prod, food/water/power cons)
-  IND, // Industry aggregate    (all industrial prod/cons)
-//COM, // Commerce / trade      (imports/exports — stub for now)
-  GEN, // Sum of non-NAT values
+  NAT, // Natural processes     ( decay, growth, disasters         )
+  GEN, // Sum of non-NAT values ( to avoid it being equal to DELTA )
+  POP, // Population            ( work prod, food/water/power cons )
+  IND, // Industry aggregate    ( all industrial prod/cons         )
+//COM, // Commerce / trade      ( imports/exports — stub for now   )
 };
 
 pub const FlowPhaseEnum = enum( u8 )

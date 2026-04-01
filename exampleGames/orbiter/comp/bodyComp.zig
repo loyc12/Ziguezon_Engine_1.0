@@ -197,6 +197,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     self.econArray[ loc.toIdx() ] = econ;
   }
 
+  // TODO : move this function out of bodyComp
   pub fn tickEcons( self : *BodyComp, orbiterPos : def.Vec2, orbiterVel : def.Vec2, starPos : def.Vec2 ) void
   {
     for( 0..self.bodyType.getEconLocCount() )| i |
