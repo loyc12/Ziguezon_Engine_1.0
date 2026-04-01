@@ -12,7 +12,7 @@ pub const IndType = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
   AGRONOMIC,    // Generate food   ( solar powered )
   HYDROPONIC,   // Generate food   ( grid powered )

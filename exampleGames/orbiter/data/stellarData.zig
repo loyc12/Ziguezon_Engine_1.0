@@ -10,7 +10,7 @@ pub const StellarMetricEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( i    ); }
 
 
   MASS,
@@ -28,7 +28,7 @@ pub const StellarBodyEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( i    ); }
 
 
   CUSTOM, // Default value   // NOTE : Is this too memory intensive ?

@@ -7,7 +7,7 @@ pub const PowerSrc = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
   GRID,
   SOLAR,   // Efficiency divided by two on GROUND due to nighttime

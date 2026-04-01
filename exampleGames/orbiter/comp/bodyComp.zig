@@ -14,7 +14,7 @@ pub const BodyType = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( i    ); }
 
 //STAR,      // Has no LPs     Ex : Sol
   PLANET,    // Has L1-5       Ex : Earth,   Saturn

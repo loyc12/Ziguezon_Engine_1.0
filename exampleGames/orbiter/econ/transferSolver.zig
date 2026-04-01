@@ -135,13 +135,13 @@ pub fn estimateTransfer( a : OData, b : OData, epsilon : f64 ) TData
   const r_a = if( @abs( a.orbitLvl ) > EPS ) 1.0 / ( a.orbitLvl * a.orbitLvl ) else 0.0;
   const r_b = if( @abs( b.orbitLvl ) > EPS ) 1.0 / ( b.orbitLvl * b.orbitLvl ) else 0.0;
 
-  // If either node has no valid orbital data, return zero
   if( r_a < EPS or r_b < EPS ) return .{};
 
-  // Radial component
+  // Radial component ( moving away / towards the star )
   const radial = computeRadialTransfer( r_a, r_b, mu );
 
-  // Phase component ( evaluated at the mean radius, using departure angVel )
+  // Phase component ( moving around the star faster/slower than the orbit suggests )
+  // evaluated at the mean radius, using departure angVel
   const r_mean  = 0.5 * ( r_a + r_b );
   const dTheta  = b.angPos - a.angPos;
   const angVelA = if( @abs( a.angVel ) > EPS ) a.angVel else b.angVel; // NOTE : Why this fallback exactly ?
