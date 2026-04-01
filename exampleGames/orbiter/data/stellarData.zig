@@ -9,6 +9,10 @@ pub const StellarMetricEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( @as( u8, @intCast( i ))); }
+
+
   MASS,
   RADIUS, // Mean body radius
   PERIAP, // Minimal orbital radius
@@ -23,7 +27,11 @@ pub const StellarBodyEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  CUSTOM, // Default value
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( @as( u8, @intCast( i ))); }
+
+
+  CUSTOM, // Default value   // NOTE : Is this too memory intensive ?
 
   SOL,
 
@@ -32,13 +40,13 @@ pub const StellarBodyEnum = enum( u8 )
   MERCURY,
 
   VENUS,
-    ZOOZVE,      // QUASI-SATELLITE
+//  ZOOZVE,      // QUASI-SATELLITE
 
   TERRA,
     LUNA,
 //  CRUITHNE,    // CO-ORBITAL OBJECT
 
-  EROS,
+//EROS,
 
   MARS,
     PHOBOS,
@@ -168,11 +176,11 @@ pub fn loadStellarData() void
     stellarData.set( .LUNA,   .LONG,             218.030 );
 
 
-  stellarData.set( .EROS,     .MASS,               6_687 );
-  stellarData.set( .EROS,     .RADIUS,            16.840 );
-  stellarData.set( .EROS,     .PERIAP,       169_554_226 );
-  stellarData.set( .EROS,     .APOAP,        266_658_204 );
-  stellarData.set( .EROS,     .LONG,             123.140 );
+//stellarData.set( .EROS,     .MASS,               6_687 );
+//stellarData.set( .EROS,     .RADIUS,            16.840 );
+//stellarData.set( .EROS,     .PERIAP,       169_554_226 );
+//stellarData.set( .EROS,     .APOAP,        266_658_204 );
+//stellarData.set( .EROS,     .LONG,             123.140 );
 
 
   stellarData.set( .MARS,     .MASS,     641_691_000_000 );

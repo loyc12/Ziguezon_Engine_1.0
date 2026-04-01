@@ -32,11 +32,26 @@ pub fn fromBodyEconPair( pair : BodyEconPair ) BodyEconSplit
 }
 
 
-// ================================ LATEST INTRA-STELLAR TRADE DATA ================================
+// ================================ TRADE DATA SNAPSHOT ================================
 
-// Root of the current distance from the sun's center
-pub var econRootRadiusData : def.GenDataLine( f64, BodyEconPair ) = .{};
+pub const OrbitalData = struct // NOTE : invalid if orbitLvl < EPS
+{
+  orbitLvl : f64  = 0.0, // 1 / root( distFromSun )
+  angPos   : f64  = 0.0, // Current angle relative to the reference plane ( centered on sun )
+  angVel   : f64  = 0.0, // Instantanious angular speed ( - == counter-clockwise )
+  radVel   : f64  = 0.0, // Instantanious radial  speed ( - == towards the sun )
+};
 
-// Most recent travel data between any two econs | DEPARTURE   | ARRIVAL
-pub var econDeltaTimeTable : def.GenDataGrid( f64, BodyEconPair, BodyEconPair ) = .{};
-pub var econDeltaVelTable  : def.GenDataGrid( f64, BodyEconPair, BodyEconPair ) = .{};
+pub const TravelData = struct // NOTE : invalid if deltaV < EPS
+{
+  deltaV   : f64  = 0.0,
+  duration : f64  = 0.0,
+};
+
+
+
+// Most recent positional data for any econ
+pub var econOrbitalData : def.GenDataLine( OrbitalData, BodyEconPair ) = .{};
+
+// Most recent travel data betwix any two econs     | DEPARTURE   | ARRIVAL
+pub var econTravelTable : def.GenDataGrid( TravelData, BodyEconPair, BodyEconPair ) = .{};

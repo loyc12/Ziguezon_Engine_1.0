@@ -3,9 +3,10 @@ const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
 
-const orb = gbl.orb;
-const bdy = gbl.bdy;
-const ecn = gbl.econ;
+
+const orb    = gbl.orb;
+const bdy    = gbl.bdy;
+const ecn    = gbl.econ;
 
 
 // ================================ STATE INJECT ================================
@@ -36,6 +37,13 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
   bodyComp.name   = bodyName;
   bodyComp.mass   = orbiterMass;
   bodyComp.radius = gbl.STLR_DATA.get( bodyName, .RADIUS );
+
+  inline for( 0..gbl.EconLoc.count )| l |
+  {
+    const loc = gbl.EconLoc.fromIdx( l );
+
+    bodyComp.initEcon( loc, ( bodyName == .TERRA and loc == .GROUND ));
+  }
 }
 
 
@@ -79,46 +87,45 @@ pub fn initStellarSystem( ng : *def.Engine ) void
     {
       2 => // MERCURY
       {
-        initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 );
         bodyComp.bodyType = .PLANET;
+        initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 );
       },
       3 => // VENUS
       {
-        initStellarBody( &orbitComp, &bodyComp, .VENUS, 1 );
         bodyComp.bodyType = .PLANET;
+        initStellarBody( &orbitComp, &bodyComp, .VENUS, 1 );
       },
 
 
       4 => // EARTH
       {
-        initStellarBody( &orbitComp, &bodyComp, .TERRA, 1 );
         bodyComp.bodyType = .PLANET;
-        bodyComp.initEcon( .GROUND );
+        initStellarBody( &orbitComp, &bodyComp, .TERRA, 1 );
 
         // NOTE : DEBUG
         bodyComp.debugSetEconVals( 1 );
       },
       5 => // MOON
       {
-        initStellarBody( &orbitComp, &bodyComp, .LUNA, 4 );
         bodyComp.bodyType = .MOON;
+        initStellarBody( &orbitComp, &bodyComp, .LUNA, 4 );
       },
 
 
       6 => // MARS
       {
-        initStellarBody( &orbitComp, &bodyComp, .MARS, 1 );
         bodyComp.bodyType = .PLANET;
+        initStellarBody( &orbitComp, &bodyComp, .MARS, 1 );
       },
       7 => // PHOBOS
       {
-        initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 );
         bodyComp.bodyType = .MOONLET;
+        initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 );
       },
       8 => // DEIMOS
       {
-        initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 );
         bodyComp.bodyType = .MOONLET;
+        initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 );
       },
 
 
@@ -250,13 +257,16 @@ pub fn tickGlobalEconomy( transStore : *gbl.TransStore, bodyStore : *gbl.BodySto
 
     if( trans != null and body != null )
     {
-      body.?.tickEcons( trans.?.pos.toVec2(), starPos );
+      body.?.tickEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
     }
     else
     {
       def.log( .WARN, 0, @src(), "Failed to get all required components to tick economy of entity #{d}", .{ id });
     }
   }
+
+  // Update travel table from the fresh orbital data generated in tickEcons()
+  gbl.trfSlvr.updateTravelTable();
 }
 
 pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStore, orbitStore : *gbl.OrbitStore, bodyStore : *gbl.BodyStore ) void

@@ -8,8 +8,8 @@ pub const ResType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  pub inline fn toIdx( self : ResType ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) ResType  { return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( @as( u8, @intCast( i ))); }
 
   WORK, // Each pop generate N work per cycle
 //CASH, // Money

@@ -568,12 +568,30 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   pub inline fn logMetrics( self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging general metrics");
+    def.qlog( .INFO, 0, @src(), "Logging general metrics" );
     def.log(  .CONT, 0, @src(), "Day since settled : {d:.6}",     .{ self.dayCount });
     def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
     def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
+
+    def.qlog( .INFO, 0, @src(), "Trade fuel / distance costs from Earth to :" );
+
+    inline for( 0..gbl.StellarBodyEnum.count )| b |
+    {
+      const body  = gbl.StellarBodyEnum.fromIdx( b );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gbl.toBodyEconPair( .TERRA, .GROUND ), gbl.toBodyEconPair( body, .GROUND ) );
+
+      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( body ), table.deltaV, table.duration });
+    }
+    inline for( 0..gbl.EconLoc.count )| l |
+    {
+      const loc   = gbl.EconLoc.fromIdx( l );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gbl.toBodyEconPair( .TERRA, .GROUND ), gbl.toBodyEconPair( .TERRA, loc ) );
+
+      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( loc ), table.deltaV, table.duration });
+    }
+
   }
 
   pub inline fn resetCountMetrics( self : *Economy ) void
@@ -685,6 +703,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   pub fn tickEcon( self : *Economy, newSunshine : f64 ) void
   {
+    if( !self.isValid ){  return; }
+    if( !self.isActive ){ return; }
+
     self.dayCount += 1;
 
     if( @mod( self.dayCount, 7 ) != 1 ){ return; } // Only tick econ at start of week     // NOTE : comment out this line for faster econ testing

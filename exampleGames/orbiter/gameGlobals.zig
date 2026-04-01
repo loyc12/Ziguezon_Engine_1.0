@@ -6,6 +6,8 @@ pub const bdy = @import( "comp/bodyComp.zig"  );
 pub const str = @import( "comp/starComp.zig"  );
 pub const ecn = @import( "econ/economy.zig"  );
 
+pub const trfSlvr = @import( "econ/transferSolver.zig"  );
+
 
 // ================================ ENGINE & GAME SETTINGS ================================
 
@@ -37,7 +39,7 @@ pub var bodyStore    : BodyStore    = .{};
 pub var starCompInst : str.StarComp = .{};
 
 
-pub const ENTITY_COUNT : usize = 8; // @typeInfo( stlr_d.StellarBodyEnum ).@"enum".fields.len;
+pub const ENTITY_COUNT : usize = StellarBodyEnum.count - 1;
 
 pub var   starId       : def.EntityId = 1; // SUN
 pub var   homeworldId  : def.EntityId = 4; // EARTH
@@ -57,7 +59,8 @@ pub var   targetHasMoved : bool = false;
 // Time     : Day       ( Dy ) = 86_400 s
 // Density  : Gt/km³           = g/cm³
 
-pub const G_FACTOR : f64 = 498.163; // km³/Gt¹Day²
+/// Unit : km³/Gt¹Day²
+pub const G_FACTOR : f64 = 498.163;
 
 
 
@@ -67,18 +70,19 @@ pub const stlr_d = @import( "data/stellarData.zig" );
 pub const ecnm_d = @import( "data/economyData.zig" );
 pub const trde_d = @import( "data/tradeData.zig"   );
 
-pub const STLR_DATA          = &stlr_d.stellarData;
-pub const ECON_ROOT_RAD_DATA = &trde_d.econRootRadiusData;
-pub const ECON_D_TIME_TABLE  = &trde_d.econDeltaTimeTable;
-pub const ECON_D_VEL_TABLE   = &trde_d.econDeltaVelTable;
+pub const STLR_DATA         = &stlr_d.stellarData;
+pub const ECON_ORBIT_DATA   = &trde_d.econOrbitalData;
+pub const ECON_TRAVEL_TABLE = &trde_d.econTravelTable;
 
-pub const EconLoc            = ecnm_d.EconLoc;
-pub const StellarBodyEnum    = stlr_d.StellarBodyEnum;
-pub const StellarMetrucEnum  = stlr_d.StellarMetricEnum;
+pub const EconLoc           = ecnm_d.EconLoc;
+pub const StellarBodyEnum   = stlr_d.StellarBodyEnum;
+pub const StellarMetrucEnum = stlr_d.StellarMetricEnum;
 
-pub const BodyEconPair       = trde_d.BodyEconPair;
-pub const toBodyEconPair     = trde_d.toBodyEconPair;
-pub const fromBodyEconPair   = trde_d.fromBodyEconPair;
+pub const BodyEconPair      = trde_d.BodyEconPair;
+pub const toBodyEconPair    = trde_d.toBodyEconPair;
+pub const fromBodyEconPair  = trde_d.fromBodyEconPair;
+pub const OrbitalData       = trde_d.OrbitalData;
+pub const TravelData        = trde_d.TravelData;
 
 
 pub const powr_d = @import( "data/powerData.zig"          );

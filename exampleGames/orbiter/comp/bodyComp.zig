@@ -13,8 +13,8 @@ pub const BodyType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  pub inline fn toIdx( self : BodyType ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) BodyType {  return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( @as( u8, @intCast( i ))); }
 
 //STAR,      // Has no LPs     Ex : Sol
   PLANET,    // Has L1-5       Ex : Earth,   Saturn
@@ -152,41 +152,87 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   // ================================ ECONOMIES ================================
 
   // NOTE : Radius needs to be properly set BEFORE calling this function
-  pub fn initEcon( self : *BodyComp, loc : EconLoc ) void
+  // TODO : move this function out of bodyComp
+  pub fn initEcon( self : *BodyComp, loc : EconLoc, activate : bool ) void
   {
     var econ : ecn.Economy = undefined;
 
-    if( loc == .GROUND ) // TODO : Stop giving all GROUND an atmosphere and 0.6 landCover
-    {
-      econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), 0.6, true );
-    }
-    else
-    {
-      econ = ecn.Economy.newEcon( loc, 1_000_000_000.0, 1.0, true );
-    }
+    econ.isValid  = false;
+    econ.isActive = false;
+    econ.location = loc;
 
     // Checking if the econ is allowed to exist according to bodyType
     if( self.bodyType.canHostEconLoc( loc ))
     {
-      econ.isValid = true;
+
+      if( activate )
+      {
+        def.log( .DEBUG, 0, @src(), "Initializing an active econ at {s}_{s}", .{ @tagName( self.name ), @tagName( loc )});
+
+        if( self.name == .TERRA and loc == .GROUND )
+        {
+          econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), 0.6, true );
+        }
+        else if( loc == .GROUND ) // TODO : Stop giving all GROUND econs a 0.1 landCover
+        {
+          econ = ecn.Economy.newEcon( loc, self.getSurfaceArea(), 0.1, false );
+        }
+        else
+        {
+          econ = ecn.Economy.newEcon( loc, 1_000_000_000_000.0, 1.0, false );
+        }
+        econ.isActive = true;
+      }
+      else
+      {
+        def.log( .TRACE, 0, @src(), "Skipping initialization of unactive econ at {s}_{s}", .{ @tagName( self.name ), @tagName( loc )});
+      }
+      econ.isValid  = true;
+    }
+    else if( activate )
+    {
+      def.log( .WARN, 0, @src(), "Failed to initialize economy at {s}_{s} : invalid location", .{ @tagName( self.name ), @tagName( loc )});
     }
 
     self.econArray[ loc.toIdx() ] = econ;
   }
 
-  pub fn tickEcons( self : *BodyComp, orbiterPos : def.Vec2, starPos : def.Vec2 ) void
+  pub fn tickEcons( self : *BodyComp, orbiterPos : def.Vec2, orbiterVel : def.Vec2, starPos : def.Vec2 ) void
   {
     for( 0..self.bodyType.getEconLocCount() )| i |
     {
       const econ : *ecn.Economy = &self.econArray[ i ];
 
+      var data : gbl.OrbitalData = .{};
+
+      // REfresh the orbital data of the concerned economy
       if( econ.isValid )
       {
-        const econPos = orbiterPos; // TODO : get precise pos for L1-L5 points instead of using orbiter pos
+        // TODO : get precise pos and vel for L1-L5 points instead of using orbiter's
+        const econPos = orbiterPos;
+        const econVel = orbiterVel;
+
         const distSqr = econPos.getDistSqr( starPos );
 
-        gbl.ECON_ROOT_RAD_DATA.set( gbl.toBodyEconPair( self.name, econ.location ), @sqrt( @sqrt( distSqr )));
 
+        if( distSqr > def.EPS )
+        {
+          const dist    = @sqrt( distSqr );
+          data.orbitLvl = 1.0 / @sqrt( dist );
+
+          // Angular position relative to star
+          const delta = econPos.sub( starPos );
+          data.angPos = delta.toAngle().r;
+
+          // Angular velocity : v_tangential / r
+          // Tangential component = perpendicular to radial direction
+          const radDir = delta.mulVal( 1.0 / dist );
+          const tanVel = ( econVel.y * radDir.x ) - ( econVel.x * radDir.y );
+          data.angVel  = ( tanVel / dist );
+
+          // Radial velocity
+          data.radVel = econVel.dot( radDir );
+        }
 
         if( econ.isActive ) // TODO : Activate locations dynamically
         {
@@ -195,10 +241,8 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
           econ.tickEcon( shine );
         }
       }
-      else
-      {
-        gbl.ECON_ROOT_RAD_DATA.set( gbl.toBodyEconPair( self.name, econ.location ), 0.0 );
-      }
+
+      gbl.ECON_ORBIT_DATA.set( gbl.toBodyEconPair( self.name, econ.location ), data );
     }
   }
 

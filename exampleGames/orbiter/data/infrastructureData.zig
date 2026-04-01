@@ -10,8 +10,8 @@ pub const InfType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  pub inline fn toIdx( self : InfType ) usize { return @intFromEnum( self ); }
-  pub inline fn fromIdx( i : usize ) InfType  { return @enumFromInt( @as( u8, @intCast( i ))); }
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( @as( u8, @intCast( i ))); }
 
   HOUSING,      // Increases population cap
   HABITAT,      // Increase area of pressurized locations
