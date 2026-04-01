@@ -205,11 +205,10 @@ pub fn tickOrbiters( transStore : *gbl.TransStore, orbitStore : *gbl.OrbitStore,
       def.log( .TRACE, 0, @src(), "Updating orbit of entity #{d}", .{ id });
       orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
 
-      // NOTE : DEBUG
-      if( id == gbl.targetId )
-      {
-        def.log( .DEBUG, 0, @src(), "Period lenght of targeted body : {d:.3}", .{ orbiter.?.period });
-      }
+    //if( id == gbl.targetId )
+    //{
+    //  def.log( .DEBUG, 0, @src(), "Period lenght of targeted body : {d:.3}", .{ orbiter.?.period });
+    //}
     }
     else
     {

@@ -372,11 +372,12 @@ pub const OrbitComp = struct
   }
 
 
+  /// NOTE : radius at which the principal gravitational source swaps from this body to its parent body
   pub inline fn getHillRadius( self : *const OrbitComp ) f64 { return self.getSemiMajor() * self.getHillFactor(); }
 
-  // NOTE : moonRigidity  : 1.0 = fluid, 0.0 = rigid
-  // NOTE : selfRadius    = planet radius
-  // NOTE : density ratio = planetDensity / moonDensity
+  /// moonRigidity  : 1.0 = fluid, 0.0 = rigid
+  /// selfRadius    = planet radius
+  /// density ratio = planetDensity / moonDensity
   pub inline fn getRocheLimit( self: *const OrbitComp, selfRadius : f64, moonDensity : f64, moonRigidity : f32 ) f64
   {
     const volume = ( 4.0 / 3.0 ) * def.PI * ( selfRadius * selfRadius * selfRadius );
