@@ -60,28 +60,54 @@ pub const Economy = struct
   avgIndActivity : f64 = 0.0,
   avgResAccess   : f64 = 0.0,
 
-  pub inline fn newEcon( loc : EconLoc, area : f64, landCover : f64, atmo : bool ) Economy
-  {
-    var econ : Economy = .{ .location = loc, .hasAtmo = atmo, .isActive = true };
 
-    econ.areaMetrics.set( .BODY,  area      );
-    econ.areaMetrics.set( .INHAB, landCover );
+  pub inline fn newDeadEcon( loc : EconLoc ) Economy
+  {
+    var econ : Economy = undefined;
+
+    econ.softInit( loc );
+
+    return econ;
+  }
+
+  pub inline fn softInit( self : *Economy, loc : EconLoc ) void
+  {
+    self.isValid  = true;
+    self.isActive = false;
+    self.location = loc;
+  }
+
+
+  pub inline fn newLiveEcon( loc : EconLoc, area : f64, landCover : f64, atmo : bool ) Economy
+  {
+    var econ : Economy = undefined;
+
+    econ.hardInit( loc, area, landCover, atmo );
+
+    return econ;
+  }
+
+  pub inline fn hardInit( self : *Economy, loc : EconLoc, area : f64, landCover : f64, atmo : bool ) void
+  {
+    if( !self.isValid ){ self.softInit( loc ); } // NOTE : check might pass if garbage data ( not softInit beforehand )
+
+    self.hasAtmo  = atmo;
+
+    self.areaMetrics.set( .BODY,  area      );
+    self.areaMetrics.set( .INHAB, landCover );
 
     inline for( 0..resTypeC )| r |
     {
-      econ.resState.set( .CAP, ResType.fromIdx( r ), MIN_RES_CAP );
+      self.resState.set( .CAP, ResType.fromIdx( r ), MIN_RES_CAP );
     }
 
-    econ.buildQueue = BuildQueue.init();
+    self.buildQueue = BuildQueue.init();
+    self.updateAreas();
 
-    econ.updateAreas();
-
-    if( econ.hasEcology() )
+    if( self.hasEcology() )
     {
-      econ.ecology = .init( &econ );
+      self.ecology = .init( self );
     }
-
-    return econ;
   }
 
 
@@ -578,9 +604,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     // TODO : generalise this code
     def.qlog( .INFO, 0, @src(), "Trade fuel / time costs from Earth to :" );
 
-    inline for( 0..gbl.StellarBodyEnum.count )| b |
+    inline for( 0..gbl.BodyName.count )| b |
     {
-      const body  = gbl.StellarBodyEnum.fromIdx( b );
+      const body  = gbl.BodyName.fromIdx( b );
       const table = gbl.ECON_TRAVEL_TABLE.get( gbl.toBodyEconPair( .TERRA, .GROUND ), gbl.toBodyEconPair( body, .GROUND ) );
 
       def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( body ), table.deltaV, table.duration });
@@ -701,18 +727,10 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     self.infState.set( .USE_LVL, .STORAGE, maxStorageUsage );
   }
 
-  pub fn tickEcon( self : *Economy, newSunshine : f64 ) void
+  pub fn tickEcon( self : *Economy ) void
   {
-    if( !self.isValid ){  return; }
-    if( !self.isActive ){ return; }
-
-    self.dayCount += 1;
-
-    if( @mod( self.dayCount, 7 ) != 1 ){ return; } // Only tick econ at start of week     // NOTE : comment out this line for faster econ testing
-
     self.updateResCaps();
     self.updateAreas();
-    self.updateSunshine( newSunshine );
 
     self.tickEcology();
     ecnSlvr.resolveEcon( self );
@@ -769,5 +787,21 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
         _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY    }, 1 );
       }
     }
+  }
+
+  pub fn tryTick( self : *Economy, sunshine : f64 ) bool
+  {
+    if( !self.isValid ){  return false; }
+    if( !self.isActive ){ return false; }
+
+    self.dayCount += 1;
+    self.updateSunshine( sunshine );
+
+     // Only tick econ at start of week  // NOTE : comment out this check for faster econ testing
+    if( @mod( self.dayCount, 7 ) != 1 ){ return false; }
+
+    self.tickEcon();
+
+    return true;
   }
 };

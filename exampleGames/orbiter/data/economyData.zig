@@ -103,7 +103,7 @@ pub const AreaMetricEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   BODY,  // Total body's surface area         : if on GROUND
-  INHAB, // Proportion of inhabitable surface : 0 to 1
+  INHAB, // Proportion of inhabitable surface : 0.0 to 1.0
   LAND,  // BODY * INHAB                      : Total useable land area
   CAP,   // LAND + HAB                        : Total buildable
   AVAIL, // MAX - USED                        : Total unused

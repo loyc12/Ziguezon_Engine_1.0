@@ -3,6 +3,7 @@ const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
 
+const BodyType = gbl.BodyType;
 
 const orb    = gbl.orb;
 const bdy    = gbl.bdy;
@@ -11,7 +12,7 @@ const ecn    = gbl.econ;
 
 // ================================ STATE INJECT ================================
 
-inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : gbl.stlr_d.StellarBodyEnum, orbitedId : def.EntityId ) void
+inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : gbl.BodyName, orbitedId : def.EntityId ) void
 {
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
@@ -34,15 +35,16 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
   );
   orbitComp.orbitedID = orbitedId;
 
-  bodyComp.name   = bodyName;
-  bodyComp.mass   = orbiterMass;
-  bodyComp.radius = gbl.STLR_DATA.get( bodyName, .RADIUS );
+  bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
+  bodyComp.name     = bodyName;
+  bodyComp.mass     = orbiterMass;
+  bodyComp.radius   = gbl.STLR_DATA.get( bodyName, .RADIUS );
 
-  inline for( 0..gbl.EconLoc.count )| l |
+  bodyComp.softInitAllEcons();
+
+  if( bodyName == .TERRA )
   {
-    const loc = gbl.EconLoc.fromIdx( l );
-
-    bodyComp.initEcon( loc, ( bodyName == .TERRA and loc == .GROUND ));
+    bodyComp.quickInitEcon( .GROUND, true );
   }
 }
 
@@ -85,49 +87,22 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
-      2 => // MERCURY
-      {
-        bodyComp.bodyType = .PLANET;
-        initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 );
-      },
-      3 => // VENUS
-      {
-        bodyComp.bodyType = .PLANET;
-        initStellarBody( &orbitComp, &bodyComp, .VENUS, 1 );
-      },
+      2 => initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 ),
 
+      3 => initStellarBody( &orbitComp, &bodyComp, .VENUS,   1 ),
 
       4 => // EARTH
       {
-        bodyComp.bodyType = .PLANET;
         initStellarBody( &orbitComp, &bodyComp, .TERRA, 1 );
 
         // NOTE : DEBUG
-        bodyComp.debugSetEconVals( 1 );
+        bodyComp.debugSetEconVals( .GROUND, 1 );
       },
-      5 => // MOON
-      {
-        bodyComp.bodyType = .MOON;
-        initStellarBody( &orbitComp, &bodyComp, .LUNA, 4 );
-      },
+      5 => initStellarBody( &orbitComp, &bodyComp, .LUNA,   4 ),
 
-
-      6 => // MARS
-      {
-        bodyComp.bodyType = .PLANET;
-        initStellarBody( &orbitComp, &bodyComp, .MARS, 1 );
-      },
-      7 => // PHOBOS
-      {
-        bodyComp.bodyType = .MOONLET;
-        initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 );
-      },
-      8 => // DEIMOS
-      {
-        bodyComp.bodyType = .MOONLET;
-        initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 );
-      },
-
+      6 => initStellarBody( &orbitComp, &bodyComp, .MARS,   1 ),
+      7 => initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 ),
+      8 => initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 ),
 
       else => // Wil ignore all subsequent Ids ( should be none )
       {
@@ -257,7 +232,7 @@ pub fn tickGlobalEconomy( transStore : *gbl.TransStore, bodyStore : *gbl.BodySto
 
     if( trans != null and body != null )
     {
-      body.?.tickEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
+      body.?.tickAllEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
     }
     else
     {
@@ -265,7 +240,7 @@ pub fn tickGlobalEconomy( transStore : *gbl.TransStore, bodyStore : *gbl.BodySto
     }
   }
 
-  // Update travel table from the fresh orbital data generated in tickEcons()
+  // Update travel table from the fresh orbital data generated in tickAllEcons()
   gbl.trfSlvr.updateTravelTable();
 }
 

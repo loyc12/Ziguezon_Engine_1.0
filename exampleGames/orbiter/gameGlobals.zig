@@ -39,7 +39,7 @@ pub var bodyStore    : BodyStore    = .{};
 pub var starCompInst : str.StarComp = .{};
 
 
-pub const ENTITY_COUNT : usize = StellarBodyEnum.count - 1;
+pub const ENTITY_COUNT : usize = BodyName.count - 1;
 
 pub var   starId       : def.EntityId = 1; // SUN
 pub var   homeworldId  : def.EntityId = 4; // EARTH
@@ -75,14 +75,17 @@ pub const ECON_ORBIT_DATA   = &trde_d.econOrbitalData;
 pub const ECON_TRAVEL_TABLE = &trde_d.econTravelTable;
 
 pub const EconLoc           = ecnm_d.EconLoc;
-pub const StellarBodyEnum   = stlr_d.StellarBodyEnum;
-pub const StellarMetrucEnum = stlr_d.StellarMetricEnum;
+pub const BodyType          = stlr_d.StellarBodyType;
+pub const BodyName          = stlr_d.StellarBodyName;
+pub const StellarMetricEnum = stlr_d.StellarMetricEnum;
 
 pub const BodyEconPair      = trde_d.BodyEconPair;
 pub const toBodyEconPair    = trde_d.toBodyEconPair;
 pub const fromBodyEconPair  = trde_d.fromBodyEconPair;
 pub const OrbitalData       = trde_d.OrbitalData;
 pub const TravelData        = trde_d.TravelData;
+
+pub const updateOrbitalDataEntry = trde_d.updateOrbitalDataEntry;
 
 
 pub const powr_d = @import( "data/powerData.zig"          );
