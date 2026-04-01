@@ -3,24 +3,10 @@
 ======== PHASE 1 - Foundations ( Do First ) ========
 
 
-HIGH :
-
-1. Ecology system extraction
-   - Extract getEcologyFactor() out of Economy into its own EcologyState struct
-   - Give it persistent pollution and biosphere fields updated each tick
-   - Economy reads a single environmentQuality : f32 field as input to solver
-   - Currently recalculated inline every tick from scratch — no persistence
-
-
 ANYTIME ( low effort, no deps ) :
 
-2. Trade field stubs
+1. Trade field stubs
    - Add exportCapacity, importDemand, tradeBalance fields (unused for now)
-
-3. Solver scratch restructuring
-   - Consolidate indFlowData / resFlowData into production[producerType][res]
-   - Already partially done via FlowAgent/FlowPhase enums — finish the cleanup
-
 
 
 ======== PHASE 2 - Allocation & Population ========
@@ -34,29 +20,28 @@ CRITICAL :
    - Currently both share the same access scalar — split into separate POP/IND access paths
    - Address the TODO in calcResAccess() : "Split ind and pop access passes if need be"
    - Policy levers modify weights
-
-2. Remove minWorkRate floor
-   - minWorkRate = 0.2 is a hack to prevent total supply chain collapse
-   - Should become unnecessary once priority-weighted allocation protects pop first
-   - Remove after weighted allocation is validated
+   - Remove minWorkRate floor
+     - minWorkRate = 0.2 is a hack to prevent total supply chain collapse
+     - Should become unnecessary once priority-weighted allocation protects pop first
+     - Remove after weighted allocation is validated
 
 
 HIGH :
 
-3. Labor as weighted allocation
+2. Labor as weighted allocation
    - Apply priority-weighted allocation to WORK in calcWorkAccess()
    - Industries compete for labor with per-industry weights
    - Address the TODO in applyWorkWeek() : industries that produce WORK
    - Enables unemployment and automation
    - Same mechanism as resource allocation above
 
-4. Welfare-based population model
+3. Welfare-based population model
    - Replace hardcoded FOOD/WATER/POWER checks in applyPopDelta() with a
      composite welfare score iterating over all ResType with POP_CONS > 0
    - Drives birth/death/migration rates
    - suppliedRatio currently only uses food+water — power is excluded from births
 
-5. Economic metrics dashboard
+4. Economic metrics dashboard
    - Complete calcDeltas() first ( Phase 1 )
    - Track GDP ( total output value ), industrial output, welfare score, scarcity index
    - Essential for balancing and player feedback
@@ -85,7 +70,7 @@ HIGH :
 
 MEDIUM :
 
-3. Infrastructure throughput constraints
+3. Infrastructure throughput constraints ( tied with 2.1 / 2.2 )
    - Power grid, transport, water network have capacity limits
    - Exceeding limits degrades effective access
 
@@ -125,11 +110,6 @@ MEDIUM :
   - Mass drivers
   - Megastructures
 
-5. Implement monetary exchanges
-  - Taxation
-  - Upkeep
-  - Capital incentives for automatic growth
-
 
 
 ======== PHASE 5 - Dynamics & Cycles ========
@@ -141,16 +121,21 @@ MEDIUM :
    - Smoothed price/demand expectations
    - Dampens oscillation, enables business cycles
 
+
+LOW :
+
 2. Profit-modulated activity
    - Industry activity influenced by profitability with inertia/dampening
    - Physical constraints remain primary; profit is secondary
 
-
-LOW :
-
 3. Full capital accumulation
    - Production as f(labor, capital, tech)
    - Buildings become capital stock
+
+4. Implement monetary exchanges
+  - Taxation
+  - Upkeep
+  - Capital incentives for automatic growth
 
 
 
