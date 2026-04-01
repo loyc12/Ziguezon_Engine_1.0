@@ -245,8 +245,8 @@ pub const OrbitComp = struct
     const zoomedWidth  = 1.0 / def.G_CAM.getZoom();
 
 
-    def.drawLine( selfPos, selfPos.add( scaledAbsVel ), .blue, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
-    def.drawLine( selfPos, selfPos.add( scaledRelVel ), .red,  @floatCast( zoomedWidth * 2.0 )); // Velocity Vector
+    def.drawLine( selfPos, selfPos.add( scaledAbsVel ), .blue, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector ( absolute )
+    def.drawLine( selfPos, selfPos.add( scaledRelVel ), .red,  @floatCast( zoomedWidth * 2.0 )); // Velocity Vector ( relative )
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
