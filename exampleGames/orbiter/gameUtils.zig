@@ -187,6 +187,11 @@ pub fn updateCameraLogic() void
     def.qlog( .INFO, 0, @src(), "Camera reset" );
   }
 
+
+}
+
+pub fn updateCameraTracking() void
+{
   // Centers the camera on current valid target
   if( gbl.GAME_DATA.targetId != 0 and gbl.GAME_DATA.targetHasMoved and gbl.GAME_DATA.followTarget )
   {
@@ -196,7 +201,7 @@ pub fn updateCameraLogic() void
 
     if( targetTrans )| trans |
     {
-      cam.pos = trans.pos;
+      def.G_CAM.pos = trans.pos;
       def.qlog( .TRACE, 0, @src(), "View centered on target" );
     }
     else
@@ -243,6 +248,7 @@ pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore 
   def.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
 
   gbl.GAME_DATA.targetHasMoved = true;
+  updateCameraTracking();
 }
 
 pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodyStore, starPos : def.Vec2 ) void
