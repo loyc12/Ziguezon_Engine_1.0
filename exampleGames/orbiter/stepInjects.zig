@@ -72,7 +72,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
 
   gbl.GAME_DATA.times.stepTime();
 
-  gtl.tickOrbiters( transStore, orbitStore, 1.0 ); // Each update will represent exactly one wekk of in-game time
+  gtl.tickOrbiters( transStore, orbitStore );
 
   const starPos : def.Vec2 = transStore.get( gbl.GAME_DATA.starId ).?.pos.toVec2();
 

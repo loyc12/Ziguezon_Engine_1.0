@@ -42,45 +42,47 @@ pub const GameData = struct
 pub const GameTimes = struct
 {
   speedSetting : SpeedFactor = .DAY,
-  secsPerTick  : i128 = SpeedFactor.DAY.getStepLen(),
+  secsPerStep  : i128 = SpeedFactor.DAY.getStepLen(),
 
-  bodyTickOffset : i128 = 0,
-  econTickOffset : i128 = 0,
+  bodyStepOffset : i128 = 0,
+  econStepOffset : i128 = 0,
 
 
   pub inline fn changeSpeed( self : *GameTimes, delta : i8 )void
   {
     self.speedSetting = self.speedSetting.change( delta );
-    self.secsPerTick  = self.speedSetting.getStepLen();
+    self.secsPerStep  = self.speedSetting.getStepLen();
   }
-  pub inline fn stepTime( self : *GameTimes ) void
+  pub inline fn stepTime( self : *GameTimes ) void // Run every tick
   {
     if( def.G_NG.isPaused() ){ return; }
 
-    self.bodyTickOffset += self.secsPerTick;
-    self.econTickOffset += self.secsPerTick;
+    const tickPerSec : i128 = @intCast( def.G_ST.Startup_Target_TickRate );
+
+    self.bodyStepOffset += @divFloor( self.secsPerStep, tickPerSec );
+    self.econStepOffset += @divFloor( self.secsPerStep, tickPerSec );
   }
 
-  pub inline fn shouldBodyTick( self : *GameTimes) bool
+  pub inline fn shouldBodyTick( self : *GameTimes ) bool
   {
     if( def.G_NG.isPaused() ){ return false; }
 
-    return( self.bodyTickOffset >= gdf.GAME_CONSTS.bodyTickLen );
+    return( self.bodyStepOffset >= gdf.GAME_CONSTS.bodyStepLen );
   }
   pub inline fn consumeBodyTick( self : *GameTimes ) void
   {
-    self.bodyTickOffset -= gdf.GAME_CONSTS.bodyTickLen;
+    self.bodyStepOffset -= gdf.GAME_CONSTS.bodyStepLen;
   }
 
   pub inline fn shouldEconTick( self : *GameTimes ) bool
   {
     if( def.G_NG.isPaused() ){ return false; }
 
-    return( self.econTickOffset >= gdf.GAME_CONSTS.econTickLen );
+    return( self.econStepOffset >= gdf.GAME_CONSTS.econStepLen );
   }
   pub inline fn consumeEconTick( self : *GameTimes ) void
   {
-    self.econTickOffset -= gdf.GAME_CONSTS.econTickLen;
+    self.econStepOffset -= gdf.GAME_CONSTS.econStepLen;
   }
 };
 
@@ -96,7 +98,6 @@ pub const SpeedFactor = enum( i8 )
   DAY,
   WEEK,
   MONTH,
-  YEAR,
 
   pub inline fn getStepLen( self : SpeedFactor ) i128
   {
@@ -109,7 +110,6 @@ pub const SpeedFactor = enum( i8 )
       .DAY    => def.TimeVal.secPerDay(),
       .WEEK   => def.TimeVal.secPerDay() * 7,
       .MONTH  => def.TimeVal.secPerDay() * 30,
-      .YEAR   => def.TimeVal.secPerDay() * 365,
     };
   }
 

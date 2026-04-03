@@ -206,42 +206,60 @@ pub fn updateCameraLogic() void
   }
 }
 
-pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore, sdt : f32 ) void
+pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore ) void
 {
-  if( gbl.GAME_DATA.times.shouldBodyTick() )
+  var stepCount : u64 = 0;
+
+  while( gbl.GAME_DATA.times.shouldBodyTick() )
   {
+    stepCount += 1;
     gbl.GAME_DATA.times.consumeBodyTick();
-
-    for( 1..gbl.GAME_DATA.entityArray.len )| idx |
-    {
-      const id      = gbl.GAME_DATA.entityArray[ idx ].id;
-      const orbiter = orbitStore.get( id );
-
-      if( orbiter == null ){ continue; }
-
-      const orbiterTrans = transStore.get( id );
-      const orbitedTrans = transStore.get( orbiter.?.orbitedID );
-
-      if( orbiterTrans != null and orbitedTrans != null )
-      {
-        def.log( .TRACE, 0, @src(), "Updating orbit of entity #{d}", .{ id });
-        orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
-      }
-      else
-      {
-        def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
-      }
-    }
-
-    gbl.GAME_DATA.targetHasMoved = true;
   }
+
+  if( stepCount == 0 ){ return; }
+
+
+  for( 1..gbl.GAME_DATA.entityArray.len )| idx |
+  {
+    const id      = gbl.GAME_DATA.entityArray[ idx ].id;
+    const orbiter = orbitStore.get( id );
+
+    if( orbiter == null ){ continue; }
+
+    const orbiterTrans = transStore.get( id );
+    const orbitedTrans = transStore.get( orbiter.?.orbitedID );
+
+    if( orbiterTrans != null and orbitedTrans != null )
+    {
+      def.log( .TRACE, 0, @src(), "Updating orbit of entity #{d}", .{ id });
+      orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, stepCount );
+    }
+    else
+    {
+      def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
+    }
+  }
+
+  def.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
+
+  gbl.GAME_DATA.targetHasMoved = true;
 }
 
 pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodyStore, starPos : def.Vec2 ) void
 {
-  if( gbl.GAME_DATA.times.shouldEconTick() )
+  var stepCount : u64 = 0;
+
+  while( gbl.GAME_DATA.times.shouldEconTick() )
   {
+    stepCount += 1;
     gbl.GAME_DATA.times.consumeEconTick();
+  }
+
+  if( stepCount == 0 ){ return; }
+
+  for( 0..stepCount )| _ |
+  {
+    def.qlog( .DEBUG, 0, @src(), "Ticking all econs once" );
 
     inline for( 1..gbl.GAME_DATA.entityArray.len )| idx |
     {
@@ -262,6 +280,7 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
     // Update travel table from the fresh orbital data generated in tickAllEcons()
     gdf.trfSlvr.updateTravelTable();
   }
+  def.log( .DEBUG, 0, @src(), "Ticked global economy {d} times", .{ stepCount });
 }
 
 pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void

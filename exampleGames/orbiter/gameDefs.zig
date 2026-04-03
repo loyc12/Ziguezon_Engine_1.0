@@ -30,10 +30,10 @@ pub const GAME_CONSTS : GameConsts = .{};
 
 pub const GameConsts = struct
 {
-  gravFactor  : f64 = 498.163, // Unit : km³/Gt¹Day² // TODO : adjust based on bodyTickLen
+  gravFactor  : f64 = 0.000240241,// 498.163, // Unit : km³/Gt¹Min² // TODO : adjust based on bodyTickLen
 
-  bodyTickLen : i128 = def.TimeVal.secPerDay(),
-  econTickLen : i128 = def.TimeVal.secPerWeek(),
+  bodyStepLen : i128 = def.TimeVal.secPerMin(),
+  econStepLen : i128 = def.TimeVal.secPerDay(),
 };
 
 

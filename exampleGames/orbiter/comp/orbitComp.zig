@@ -220,15 +220,20 @@ pub const OrbitComp = struct
   }
 
 
-  pub fn updateOrbit( self : *OrbitComp, selfTrans : *def.TransComp, otherTrans : *const def.TransComp, sdt : f32 ) void
+  pub fn updateOrbit( self : *OrbitComp, selfTrans : *def.TransComp, otherTrans : *const def.TransComp, stepCount : u64 ) void
   {
-    self.angularPos += self.angularVel * sdt;
+    if( stepCount == 0 ){ return; }
 
-    // Wrap to 0-2π ( handles both positive and negative )
-    self.angularPos = def.wrap( self.angularPos, 0.0, def.TAU );
+    for( 0..stepCount )| _ |
+    {
+      self.angularPos += self.angularVel;
 
-    // NOTE : Be careful about update ordering, as angular vel is cached for reuse in getAbsVel()
-    self.angularVel = self.getAngularVel(); // negative angularVel == retrograde orbits
+      // Wrap to 0-2π ( handles both positive and negative )
+      self.angularPos = def.wrap( self.angularPos, 0.0, def.TAU );
+
+      // NOTE : Be careful about update ordering, as angular vel is cached for reuse in getAbsVel()
+      self.angularVel = self.getAngularVel(); // negative angularVel == retrograde orbits
+    }
 
     selfTrans.pos = self.getAbsPos( otherTrans.pos.toVec2() ).toVecA( selfTrans.pos.a );
     selfTrans.vel = self.getAbsVel( otherTrans.vel.toVec2() ).toVecA( selfTrans.vel.a );

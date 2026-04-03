@@ -459,7 +459,7 @@ const EconSolver = struct
 
 
   // Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
-  const WEEKLY_POP_GROWTH     : f32 = 0.0003;
+  const WEEKLY_POP_GROWTH     : f32 = 0.0003;   // TODO : update based on econTickLen
 
   // Pop decay factors
   const WEEKLY_PARCH_RATE     : f32 = 0.10;
