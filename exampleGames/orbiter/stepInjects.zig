@@ -40,6 +40,9 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ gbl.GAME_DATA.targetId     =  gbl.GAME_DATA.targetId -| 1; }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.f           )){ gbl.GAME_DATA.followTarget = !gbl.GAME_DATA.followTarget;  }
 
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_multiply )){ gbl.GAME_DATA.times.changeSpeed(  1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_divide   )){ gbl.GAME_DATA.times.changeSpeed( -1 ); }
+
   if( def.ray.isKeyDown( def.ray.KeyboardKey.left_shift ))
   {
     const bodyStore : *gdf.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
@@ -67,8 +70,9 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
   const orbitStore : *gdf.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
   const bodyStore  : *gdf.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-  gtl.tickOrbiters( transStore, orbitStore, 1.0 ); // Each update will represent exactly one wekk of in-game time
+  gbl.GAME_DATA.times.stepTime();
 
+  gtl.tickOrbiters( transStore, orbitStore, 1.0 ); // Each update will represent exactly one wekk of in-game time
 
   const starPos : def.Vec2 = transStore.get( gbl.GAME_DATA.starId ).?.pos.toVec2();
 
@@ -106,14 +110,17 @@ pub fn OffRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphic
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
 pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphics()
 {
+  const edgeWidth : f64 = 10.0;
   if( ng.isPaused() )
   {
-    const edgeWidth : f64 = 10.0;
     // Draw lines around screen edge to show it is paused
     def.surroundScreenWithCol( def.Colour.new( 255, 0, 0, 64 ), edgeWidth );
 
     def.drawTextTop( "Press P to resume", .{ .x = def.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
   }
+
+  def.drawTextOffsetFmt( "Speed : {s}", .{ @tagName( gbl.GAME_DATA.times.speedSetting )}, .{ .x = def.getScreenWidth() - 10.0, .y = def.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
+
 
   const transStore : *gdf.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
   const shapeStore : *gdf.ShapeStore = @ptrCast( @alignCast( ng.componentRegistry.get( "shapeStore" )));

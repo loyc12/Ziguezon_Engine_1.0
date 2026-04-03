@@ -1,8 +1,9 @@
-const std = @import( "std" );
+const std = @import( "std"  );
 const def = @import( "defs" );
 
+const gbl = @import( "../gameGlobals.zig" );
+const gdf = @import( "../gameDefs.zig"    );
 
-const gdf = @import( "../gameDefs.zig" );
 const orb = gdf.orb;
 const ecn = gdf.ecn;
 

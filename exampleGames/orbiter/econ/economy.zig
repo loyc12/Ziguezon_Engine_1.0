@@ -45,7 +45,7 @@ pub const Economy = struct
   isActive  : bool = false,
   hasAtmo   : bool,
 
-  dayCount  : u64 = 0,
+  stepCount  : u64 = 0,
   sunshine  : f64 = 0.0,
   sunAccess : f32 = 1.0,
 
@@ -596,7 +596,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
   pub inline fn logMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "Logging general metrics" );
-    def.log(  .CONT, 0, @src(), "Day since settled : {d:.6}",     .{ self.dayCount });
+    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}",          .{ self.stepCount });
     def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
     def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
@@ -795,12 +795,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     if( !self.isValid ){  return false; }
     if( !self.isActive ){ return false; }
 
-    self.dayCount += 1;
+    self.stepCount += 1;
+
     self.updateSunshine( sunshine );
-
-     // Only tick econ at start of week  // NOTE : comment out this check for faster econ testing
-    if( @mod( self.dayCount, 7 ) != 1 ){ return false; }
-
     self.tickEcon();
 
     return true;

@@ -48,12 +48,12 @@ pub const GameTimes = struct
   econTickOffset : i128 = 0,
 
 
-  pub inline fn changeSpeed( self : *GameData, delta : i8 )void
+  pub inline fn changeSpeed( self : *GameTimes, delta : i8 )void
   {
     self.speedSetting = self.speedSetting.change( delta );
     self.secsPerTick  = self.speedSetting.getStepLen();
   }
-  pub inline fn tickTime( self : *GameData ) void
+  pub inline fn stepTime( self : *GameTimes ) void
   {
     if( def.G_NG.isPaused() ){ return; }
 
@@ -61,35 +61,35 @@ pub const GameTimes = struct
     self.econTickOffset += self.secsPerTick;
   }
 
-  pub inline fn shouldBodyTick( self : *GameData ) bool
+  pub inline fn shouldBodyTick( self : *GameTimes) bool
   {
     if( def.G_NG.isPaused() ){ return false; }
 
     return( self.bodyTickOffset >= gdf.GAME_CONSTS.bodyTickLen );
   }
-  pub inline fn consumeBodyTick( self : *GameData ) bool
+  pub inline fn consumeBodyTick( self : *GameTimes ) void
   {
     self.bodyTickOffset -= gdf.GAME_CONSTS.bodyTickLen;
   }
 
-  pub inline fn shouldEconTick( self : *GameData ) bool
+  pub inline fn shouldEconTick( self : *GameTimes ) bool
   {
     if( def.G_NG.isPaused() ){ return false; }
 
     return( self.econTickOffset >= gdf.GAME_CONSTS.econTickLen );
   }
-  pub inline fn consumeEconTick( self : *GameData ) bool
+  pub inline fn consumeEconTick( self : *GameTimes ) void
   {
     self.econTickOffset -= gdf.GAME_CONSTS.econTickLen;
   }
 };
 
 
-pub const SpeedFactor = enum( u8 )
+pub const SpeedFactor = enum( i8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  PAUSED,
+  PAUSED = 0,
   SECOND,
   MINUTE,
   HOUR,
@@ -116,7 +116,7 @@ pub const SpeedFactor = enum( u8 )
   pub inline fn change( self : SpeedFactor, delta : i8 ) SpeedFactor
   {
     const current : i8 = @intFromEnum( self );
-    const next    : i8 = current + delta;
+    var   next    : i8 = current + delta;
 
     if( next < 0      ){ next = 0;         }
     if( next >= count ){ next = count - 1; }

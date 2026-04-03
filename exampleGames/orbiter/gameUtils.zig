@@ -208,55 +208,60 @@ pub fn updateCameraLogic() void
 
 pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore, sdt : f32 ) void
 {
-  for( 1..gbl.GAME_DATA.entityArray.len )| idx |
+  if( gbl.GAME_DATA.times.shouldBodyTick() )
   {
-    const id      = gbl.GAME_DATA.entityArray[ idx ].id;
-    const orbiter = orbitStore.get( id );
+    gbl.GAME_DATA.times.consumeBodyTick();
 
-    if( orbiter == null ){ continue; }
-
-    const orbiterTrans = transStore.get( id );
-    const orbitedTrans = transStore.get( orbiter.?.orbitedID );
-
-    if( orbiterTrans != null and orbitedTrans != null )
+    for( 1..gbl.GAME_DATA.entityArray.len )| idx |
     {
-      def.log( .TRACE, 0, @src(), "Updating orbit of entity #{d}", .{ id });
-      orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
+      const id      = gbl.GAME_DATA.entityArray[ idx ].id;
+      const orbiter = orbitStore.get( id );
 
-    //if( id == gbl.targetId )
-    //{
-    //  def.log( .DEBUG, 0, @src(), "Period lenght of targeted body : {d:.3}", .{ orbiter.?.period });
-    //}
+      if( orbiter == null ){ continue; }
+
+      const orbiterTrans = transStore.get( id );
+      const orbitedTrans = transStore.get( orbiter.?.orbitedID );
+
+      if( orbiterTrans != null and orbitedTrans != null )
+      {
+        def.log( .TRACE, 0, @src(), "Updating orbit of entity #{d}", .{ id });
+        orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, sdt );
+      }
+      else
+      {
+        def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
+      }
     }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
-    }
+
+    gbl.GAME_DATA.targetHasMoved = true;
   }
-
-  gbl.GAME_DATA.targetHasMoved = true;
 }
 
 pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodyStore, starPos : def.Vec2 ) void
 {
-  inline for( 1..gbl.GAME_DATA.entityArray.len )| idx |
+  if( gbl.GAME_DATA.times.shouldEconTick() )
   {
-    const id    = gbl.GAME_DATA.entityArray[ idx ].id;
-    const trans = transStore.get( id );
-    const body  = bodyStore.get(  id );
+    gbl.GAME_DATA.times.consumeEconTick();
 
-    if( trans != null and body != null )
+    inline for( 1..gbl.GAME_DATA.entityArray.len )| idx |
     {
-      body.?.tickAllEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
+      const id    = gbl.GAME_DATA.entityArray[ idx ].id;
+      const trans = transStore.get( id );
+      const body  = bodyStore.get(  id );
+
+      if( trans != null and body != null )
+      {
+        body.?.tickAllEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
+      }
+      else
+      {
+        def.log( .WARN, 0, @src(), "Failed to get all required components to tick economy of entity #{d}", .{ id });
+      }
     }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to get all required components to tick economy of entity #{d}", .{ id });
-    }
+
+    // Update travel table from the fresh orbital data generated in tickAllEcons()
+    gdf.trfSlvr.updateTravelTable();
   }
-
-  // Update travel table from the fresh orbital data generated in tickAllEcons()
-  gdf.trfSlvr.updateTravelTable();
 }
 
 pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
