@@ -247,7 +247,7 @@ pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore 
 
   def.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
 
-  gbl.GAME_DATA.targetHasMoved = true;
+  gbl.GAME_DATA.targetHasMoved = true; // Redundant for now since we update right after, but might become useful again later
   updateCameraTracking();
 }
 
