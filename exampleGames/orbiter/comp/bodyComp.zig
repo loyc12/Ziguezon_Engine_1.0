@@ -2,13 +2,13 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-const gbl = @import( "../gameGlobals.zig" );
-const orb = gbl.orb;
-const ecn = gbl.ecn;
+const gdf = @import( "../gameDefs.zig" );
+const orb = gdf.orb;
+const ecn = gdf.ecn;
 
-const EconLoc  = gbl.EconLoc;
-const BodyName = gbl.BodyName;
-const BodyType = gbl.BodyType;
+const EconLoc  = gdf.EconLoc;
+const BodyName = gdf.BodyName;
+const BodyType = gdf.BodyType;
 
 
 pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
@@ -120,9 +120,9 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
       def.log( .WARN, 0, @src(), "BodyComp radius not set for {s} : will result in area errors", .{ @tagName( self.name )});
     }
 
-    for( 0..gbl.EconLoc.count )| i |
+    for( 0..gdf.EconLoc.count )| i |
     {
-      const loc  : gbl.EconLoc  = .fromIdx( i );
+      const loc  : gdf.EconLoc  = .fromIdx( i );
       const econ : *ecn.Economy = self.getEcon( loc );
 
       econ.softInit( loc );
@@ -133,16 +133,16 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   {
     for( 0..self.bodyType.getEconLocCount() )| i |
     {
-      const loc  : gbl.EconLoc  = .fromIdx( i );
+      const loc  : gdf.EconLoc  = .fromIdx( i );
       const econ : *ecn.Economy = self.getEcon( loc );
 
-      gbl.updateOrbitalDataEntry( self, loc, orbiterPos, orbiterVel, starPos );
+      gdf.updateOrbitalDataEntry( self, loc, orbiterPos, orbiterVel, starPos );
 
       _ = econ.tryTick( econ.sunshine ); // NOTE : econ sunshine updated in updateOrbitalDataEntry()
     }
   }
 
-  pub fn logEcon( self : *const BodyComp, loc : gbl.EconLoc ) void
+  pub fn logEcon( self : *const BodyComp, loc : gdf.EconLoc ) void
   {
     const econ : *const ecn.Economy = self.getEcon( loc );
 
@@ -154,7 +154,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     }
   }
 
-  pub fn debugSetEconVals( self : *BodyComp, loc : gbl.EconLoc, value : u64 ) void
+  pub fn debugSetEconVals( self : *BodyComp, loc : gdf.EconLoc, value : u64 ) void
   {
     const econ : *ecn.Economy = self.getEcon( loc );
 

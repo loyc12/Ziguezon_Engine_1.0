@@ -1,16 +1,16 @@
-const std = @import( "std" );
+const std = @import( "std"  );
 const def = @import( "defs" );
 
 const Vec2 = def.Vec2;
 
 
 const gbl = @import( "../gameGlobals.zig" );
+const gdf = @import( "../gameDefs.zig"    );
 
-const bdy = gbl.bdy;
+const bdy = gdf.bdy;
 
-
-const BodyName = gbl.BodyName;
-const EconLoc     = gbl.EconLoc;
+const BodyName = gdf.BodyName;
+const EconLoc  = gdf.EconLoc;
 
 
 // ================================ COMPOSITE PAIR ENUM ================================
@@ -62,7 +62,7 @@ pub var econTravelTable : def.GenDataGrid( TravelData, BodyEconPair, BodyEconPai
 
 
 /// Also updates econ's sunshine value
-pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gbl.EconLoc, bodyPos : Vec2, bodyVel : Vec2, starPos : Vec2 ) void
+pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gdf.EconLoc, bodyPos : Vec2, bodyVel : Vec2, starPos : Vec2 ) void
 {
   // TODO : get precise pos and vel for L1-L5 points instead of using orbiter's
   const econPos = bodyPos;
@@ -70,7 +70,7 @@ pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gbl.EconLoc, body
 
   const distSqr = econPos.getDistSqr( starPos );
 
-  var data : gbl.OrbitalData = .{};
+  var data : gdf.OrbitalData = .{};
 
   if( distSqr > def.EPS )
   {
@@ -91,8 +91,8 @@ pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gbl.EconLoc, body
     data.radVel = econVel.dot( radDir );
 
     // Also updating sunshine for econ
-    bodyComp.getEcon( loc ).sunshine = gbl.starCompInst.getSunshineAt( distSqr );
+    bodyComp.getEcon( loc ).sunshine = gbl.SUNSHINE.getShineAt( distSqr );
   }
 
-  gbl.ECON_ORBIT_DATA.set( gbl.toBodyEconPair( bodyComp.name, loc ), data );
+  gbl.ECON_ORBIT_DATA.set( gdf.toBodyEconPair( bodyComp.name, loc ), data );
 }

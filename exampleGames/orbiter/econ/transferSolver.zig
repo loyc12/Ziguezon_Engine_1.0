@@ -1,16 +1,19 @@
 const std = @import( "std" );
 const def = @import( "defs" );
-const gbl = @import( "../gameGlobals.zig" );
-
-const trde  = gbl.trde_d;
-const OData = gbl.OrbitalData;
-const TData = gbl.TravelData;
-
-const BodyEconPair = gbl.BodyEconPair;
 
 const PI  = def.PI;
 const TAU = def.TAU;
 const EPS = def.EPS;
+
+
+const gbl = @import( "../gameGlobals.zig" );
+const gdf = @import( "../gameDefs.zig"    );
+
+const trde  = gdf.trde_d;
+const OData = gdf.OrbitalData;
+const TData = gdf.TravelData;
+
+const BodyEconPair = gdf.BodyEconPair;
 
 
 
@@ -129,7 +132,7 @@ fn combineTransfers( radial : TData, phase : TData ) TData
 pub fn estimateTransfer( a : OData, b : OData, epsilon : f64 ) TData
 {
   // Gravitational parameter μ = G * M_star ( km³ / Day² )
-  const mu = gbl.G_FACTOR * gbl.starCompInst.mass;
+  const mu = gdf.GAME_CONSTS.gravFactor * gbl.STLR_DATA.get( .SOL, .MASS );
 
   // Recover radii from orbitLvl = 1 / sqrt(r)  =>  r = 1 / orbitLvl²
   const r_a = if( @abs( a.orbitLvl ) > EPS ) 1.0 / ( a.orbitLvl * a.orbitLvl ) else 0.0;

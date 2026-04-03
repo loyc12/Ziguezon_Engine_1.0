@@ -1,7 +1,8 @@
-const std = @import( "std" );
+const std = @import( "std"  );
 const def = @import( "defs" );
 
 const gbl = @import( "../gameGlobals.zig" );
+const gdf = @import( "../gameDefs.zig"    );
 
 const ResType  = @import( "resourceData.zig"    ).ResType;
 const PowerSrc = @import( "powerData.zig"       ).PowerSrc;
@@ -27,7 +28,7 @@ pub const IndType = enum( u8 )
   ASSEMBLY,     // Assembles parts into industry, infrastructure & vehicles
 
 
-  pub inline fn canBeBuiltIn( self : IndType, loc : gbl.EconLoc, hasAtmo : bool ) bool
+  pub inline fn canBeBuiltIn( self : IndType, loc : gdf.EconLoc, hasAtmo : bool ) bool
   {
     if( loc == .GROUND )
     {

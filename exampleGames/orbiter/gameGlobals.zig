@@ -1,12 +1,7 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub const orb = @import( "comp/orbitComp.zig" );
-pub const bdy = @import( "comp/bodyComp.zig"  );
-pub const str = @import( "comp/starComp.zig"  );
-pub const ecn = @import( "econ/economy.zig"  );
-
-pub const trfSlvr = @import( "econ/transferSolver.zig"  );
+pub const gdf = @import( "gameDefs.zig" );
 
 
 // ================================ ENGINE & GAME SETTINGS ================================
@@ -20,51 +15,187 @@ pub const scrollSpeed : f64 = 12.0;
 
 pub const renderScale : f64 = 0.000_001;
 
-
-pub const TransStore  = def.TransComp.getStoreType();
-pub const ShapeStore  = def.ShapeComp.getStoreType();
-pub const SpriteStore = def.SpriteComp.getStoreType();
-
-pub const OrbitStore  = orb.OrbitComp.getStoreType();
-pub const BodyStore   = bdy.BodyComp.getStoreType();
+pub const bodyCount   : usize = gdf.BodyName.count - 1;
 
 
-pub var transStore   : TransStore   = .{};
-pub var shapeStore   : ShapeStore   = .{};
-pub var spriteStore  : SpriteStore  = .{};
+// ================ GAMEDATA STRUCTS ================
 
-pub var orbitStore   : OrbitStore   = .{};
-pub var bodyStore    : BodyStore    = .{};
+pub var GAME_DATA : GameData = .{};
 
-pub var starCompInst : str.StarComp = .{};
+pub const GameData = struct
+{
+  times  : GameTimes  = .{},
+  stores : CompStores = .{},
 
+  followTarget   : bool = false,
+  targetHasMoved : bool = false,
 
-pub const ENTITY_COUNT : usize = BodyName.count - 1;
+  targetId    : def.EntityId = 0,
+  starId      : def.EntityId = 1, // SUN
+  homeworldId : def.EntityId = 4, // EARTH
 
-pub var   starId       : def.EntityId = 1; // SUN
-pub var   homeworldId  : def.EntityId = 4; // EARTH
-
-pub var   targetId     : def.EntityId = 0;
-pub var   entityArray  : [ ENTITY_COUNT ]def.Entity = std.mem.zeroes([ ENTITY_COUNT ]def.Entity );
-
-pub var   followTarget   : bool = false;
-pub var   targetHasMoved : bool = false;
-
+  maxEntityId : usize = gdf.BodyName.count - 1,
+  entityArray : [ bodyCount ]def.Entity = std.mem.zeroes([ bodyCount ]def.Entity ),
+};
 
 
-// ================ UNITS AND CONSTANTS ================
+pub const GameTimes = struct
+{
+  speedSetting : SpeedFactor = .DAY,
+  secsPerTick  : i128 = SpeedFactor.DAY.getStepLen(),
 
-// Mass     : Gigaton   ( Gt ) = 1e12 kg ( 1_000_000_000_000 )
-// Distance : Kilometer ( km ) = 1_000 m
-// Time     : Day       ( Dy ) = 86_400 s
-// Density  : Gt/km³           = g/cm³
-
-/// Unit : km³/Gt¹Day²
-pub const G_FACTOR : f64 = 498.163;
+  bodyTickOffset : i128 = 0,
+  econTickOffset : i128 = 0,
 
 
+  pub inline fn changeSpeed( self : *GameData, delta : i8 )void
+  {
+    self.speedSetting = self.speedSetting.change( delta );
+    self.secsPerTick  = self.speedSetting.getStepLen();
+  }
+  pub inline fn tickTime( self : *GameData ) void
+  {
+    if( def.G_NG.isPaused() ){ return; }
 
-// ================ GENERAL GAME DATA ================
+    self.bodyTickOffset += self.secsPerTick;
+    self.econTickOffset += self.secsPerTick;
+  }
+
+  pub inline fn shouldBodyTick( self : *GameData ) bool
+  {
+    if( def.G_NG.isPaused() ){ return false; }
+
+    return( self.bodyTickOffset >= gdf.GAME_CONSTS.bodyTickLen );
+  }
+  pub inline fn consumeBodyTick( self : *GameData ) bool
+  {
+    self.bodyTickOffset -= gdf.GAME_CONSTS.bodyTickLen;
+  }
+
+  pub inline fn shouldEconTick( self : *GameData ) bool
+  {
+    if( def.G_NG.isPaused() ){ return false; }
+
+    return( self.econTickOffset >= gdf.GAME_CONSTS.econTickLen );
+  }
+  pub inline fn consumeEconTick( self : *GameData ) bool
+  {
+    self.econTickOffset -= gdf.GAME_CONSTS.econTickLen;
+  }
+};
+
+
+pub const SpeedFactor = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  PAUSED,
+  SECOND,
+  MINUTE,
+  HOUR,
+  DAY,
+  WEEK,
+  MONTH,
+  YEAR,
+
+  pub inline fn getStepLen( self : SpeedFactor ) i128
+  {
+    return switch( self )
+    {
+      .PAUSED => 0,
+      .SECOND => 1,
+      .MINUTE => def.TimeVal.secPerMin(),
+      .HOUR   => def.TimeVal.secPerHour(),
+      .DAY    => def.TimeVal.secPerDay(),
+      .WEEK   => def.TimeVal.secPerDay() * 7,
+      .MONTH  => def.TimeVal.secPerDay() * 30,
+      .YEAR   => def.TimeVal.secPerDay() * 365,
+    };
+  }
+
+  pub inline fn change( self : SpeedFactor, delta : i8 ) SpeedFactor
+  {
+    const current : i8 = @intFromEnum( self );
+    const next    : i8 = current + delta;
+
+    if( next < 0      ){ next = 0;         }
+    if( next >= count ){ next = count - 1; }
+
+    return @enumFromInt( next );
+  }
+};
+
+
+pub const CompStores = struct
+{
+  transStore  : gdf.TransStore  = .{},
+  shapeStore  : gdf.ShapeStore  = .{},
+  spriteStore : gdf.SpriteStore = .{},
+  orbitStore  : gdf.OrbitStore  = .{},
+  bodyStore   : gdf.BodyStore   = .{},
+
+  /// Returns true if the registry process failed somewhere
+  pub inline fn registerAllStores( self : *CompStores, ng : *def.Engine ) bool
+  {
+    const alloc = def.getAlloc();
+
+    var hasError : bool = false;
+
+    self.transStore.init(  alloc );
+    self.shapeStore.init(  alloc );
+    self.spriteStore.init( alloc );
+
+    self.orbitStore.init(  alloc );
+    self.bodyStore.init(   alloc );
+
+    // Registering componentStores
+    if( !ng.componentRegistry.register( "transStore", &self.transStore ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
+      hasError = true;
+    }
+    if( !ng.componentRegistry.register( "shapeStore", &self.shapeStore ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
+      hasError = true;
+    }
+    if( !ng.componentRegistry.register( "spriteStore", &self.spriteStore ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
+      hasError = true;
+    }
+
+    if( !ng.componentRegistry.register( "orbitStore", &self.orbitStore ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
+      hasError = true;
+    }
+    if( !ng.componentRegistry.register( "bodyStore", &self.bodyStore ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register bodyStore" );
+      hasError = true;
+    }
+
+    return hasError;
+  }
+
+  pub inline fn deinitAllStores( self : *CompStores ) void
+  {
+    self.transStore.deinit();
+    self.shapeStore.deinit();
+    self.spriteStore.deinit();
+    self.orbitStore.deinit();
+    self.bodyStore.deinit();
+  }
+};
+
+
+
+// ================ GAMEDATA MATRICES ================
+
+pub const sshn_d = @import( "econ/starShine.zig"   );
+
+pub const SUNSHINE = &sshn_d.solShine;
 
 pub const stlr_d = @import( "data/stellarData.zig" );
 pub const ecnm_d = @import( "data/economyData.zig" );
@@ -73,20 +204,6 @@ pub const trde_d = @import( "data/tradeData.zig"   );
 pub const STLR_DATA         = &stlr_d.stellarData;
 pub const ECON_ORBIT_DATA   = &trde_d.econOrbitalData;
 pub const ECON_TRAVEL_TABLE = &trde_d.econTravelTable;
-
-pub const EconLoc           = ecnm_d.EconLoc;
-pub const BodyType          = stlr_d.StellarBodyType;
-pub const BodyName          = stlr_d.StellarBodyName;
-pub const StellarMetricEnum = stlr_d.StellarMetricEnum;
-
-pub const BodyEconPair      = trde_d.BodyEconPair;
-pub const toBodyEconPair    = trde_d.toBodyEconPair;
-pub const fromBodyEconPair  = trde_d.fromBodyEconPair;
-pub const OrbitalData       = trde_d.OrbitalData;
-pub const TravelData        = trde_d.TravelData;
-
-pub const updateOrbitalDataEntry = trde_d.updateOrbitalDataEntry;
-
 
 pub const powr_d = @import( "data/powerData.zig"          );
 pub const vesl_d = @import( "data/vesselData.zig"         );
@@ -100,14 +217,8 @@ pub const RSRC_DATA = &rsrc_d.resourceData;
 pub const NFRS_DATA = &nfrs_d.infrastructureData;
 pub const NDST_DATA = &ndst_d.industryData;
 
-pub const PowerSrc = powr_d.PowerSrc;
-pub const VesType  = vesl_d.VesType;
-pub const ResType  = rsrc_d.ResType;
-pub const InfType  = nfrs_d.InfType;
-pub const IndType  = ndst_d.IndType;
 
-
-pub fn loadAllData() void
+pub fn loadStaticDataMatrices() void
 {
   stlr_d.loadStellarData();
 

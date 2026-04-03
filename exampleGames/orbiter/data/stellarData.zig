@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const gbl = @import( "../gameGlobals.zig" );
-
+const gdf = @import( "../gameDefs.zig"    );
 
 pub var stellarData : def.GenDataGrid( f64, StellarBodyName, StellarMetricEnum ) = .{};
 
@@ -207,7 +207,7 @@ pub const StellarBodyType = enum( u8 )
   }
 
   // Whether or not the specified econLoc can be hosted on this bodyType
-  pub inline fn canHostEconLoc( self : StellarBodyType, loc : gbl.EconLoc ) bool
+  pub inline fn canHostEconLoc( self : StellarBodyType, loc : gdf.EconLoc ) bool
   {
     const locIdx = loc.toIdx();
 

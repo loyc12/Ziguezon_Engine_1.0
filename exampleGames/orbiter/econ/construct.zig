@@ -2,13 +2,13 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-const gbl = @import( "../gameGlobals.zig" );
-const ecn = gbl.ecn;
+const gdf = @import( "../gameDefs.zig"    );
+const ecn = gdf.ecn;
 
-const VesType = gbl.VesType;
-const ResType = gbl.ResType;
-const InfType = gbl.InfType;
-const IndType = gbl.IndType;
+const VesType = gdf.VesType;
+const ResType = gdf.ResType;
+const InfType = gdf.InfType;
+const IndType = gdf.IndType;
 
 
 pub const ConstructTag = enum( u4 )
@@ -67,7 +67,7 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     };
   }
 
-  pub fn canBeBuiltIn( c : Construct, loc : gbl.EconLoc, hasAtmo : bool ) bool
+  pub fn canBeBuiltIn( c : Construct, loc : gdf.EconLoc, hasAtmo : bool ) bool
   {
     return switch( c )
     {

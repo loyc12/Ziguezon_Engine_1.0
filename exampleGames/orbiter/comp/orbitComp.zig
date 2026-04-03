@@ -5,14 +5,16 @@ const Vec2 = def.Vec2;
 
 
 const gbl = @import( "../gameGlobals.zig" );
-const ecn = gbl.econ;
+const gdf = @import( "../gameDefs.zig" );
+
+const ecn = gdf.econ;
 
 
 pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  const G : f64 = gbl.G_FACTOR;
+  const G : f64 = gdf.GAME_CONSTS.gravFactor;
   const N : u32 = 256; // number of segments used to render orbital path
 
   orbitedID   : def.EntityId = 1, // 1 is the sun by default

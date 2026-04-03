@@ -13,14 +13,15 @@ pub const Ecology    = eco.EcoState;
 
 
 const gbl = @import( "../gameGlobals.zig" );
+const gdf = @import( "../gameDefs.zig" );
 
-const EconLoc  = gbl.EconLoc;
+const EconLoc  = gdf.EconLoc;
 
-const PowerSrc = gbl.PowerSrc;
-const VesType  = gbl.VesType;
-const ResType  = gbl.ResType;
-const InfType  = gbl.InfType;
-const IndType  = gbl.IndType;
+const PowerSrc = gdf.PowerSrc;
+const VesType  = gdf.VesType;
+const ResType  = gdf.ResType;
+const InfType  = gdf.InfType;
+const IndType  = gdf.IndType;
 
 const powerSrcC = PowerSrc.count;
 const vesTypeC  = VesType.count;
@@ -604,17 +605,17 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     // TODO : generalise this code
     def.qlog( .INFO, 0, @src(), "Trade fuel / time costs from Earth to :" );
 
-    inline for( 0..gbl.BodyName.count )| b |
+    inline for( 0..gdf.BodyName.count )| b |
     {
-      const body  = gbl.BodyName.fromIdx( b );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gbl.toBodyEconPair( .TERRA, .GROUND ), gbl.toBodyEconPair( body, .GROUND ) );
+      const body  = gdf.BodyName.fromIdx( b );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, .GROUND ), gdf.toBodyEconPair( body, .GROUND ) );
 
       def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( body ), table.deltaV, table.duration });
     }
-    inline for( 0..gbl.EconLoc.count )| l |
+    inline for( 0..EconLoc.count )| l |
     {
-      const loc   = gbl.EconLoc.fromIdx( l );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gbl.toBodyEconPair( .TERRA, .GROUND ), gbl.toBodyEconPair( .TERRA, loc ) );
+      const loc   = EconLoc.fromIdx( l );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, .GROUND ), gdf.toBodyEconPair( .TERRA, loc ) );
 
       def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( loc ), table.deltaV, table.duration });
     }

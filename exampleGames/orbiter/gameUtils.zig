@@ -2,22 +2,43 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
+const gdf = @import( "gameDefs.zig"    );
 
-const BodyType = gbl.BodyType;
+const BodyName = gdf.BodyName;
+const BodyType = gdf.BodyType;
 
-const orb    = gbl.orb;
-const bdy    = gbl.bdy;
-const ecn    = gbl.econ;
+const orb    = gdf.orb;
+const bdy    = gdf.bdy;
+const ecn    = gdf.econ;
 
 
 // ================================ STATE INJECT ================================
 
-inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : gbl.BodyName, orbitedId : def.EntityId ) void
+inline fn initStar( bodyComp : *bdy.BodyComp, bodyName : BodyName ) void
+{
+  bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
+  bodyComp.name     = bodyName;
+  bodyComp.mass     = gbl.STLR_DATA.get( bodyName, .MASS );
+  bodyComp.radius   = gbl.STLR_DATA.get( bodyName, .RADIUS );
+
+  bodyComp.softInitAllEcons();
+
+  // TODO : find a better way to manage shine
+  if( bodyName == .SOL )
+  {
+    const terraMin = gbl.STLR_DATA.get( .TERRA, .PERIAP );
+    const terraMax = gbl.STLR_DATA.get( .TERRA, .APOAP  );
+
+    gbl.SUNSHINE.setShineAt( 1.0, @sqrt( terraMin * terraMax ));
+  }
+}
+
+inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : BodyName, orbitedId : def.EntityId ) void
 {
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
 
-  if( orbitedId != gbl.starId ){ if( gbl.bodyStore.get( orbitedId ))| b |
+  if( orbitedId != gbl.GAME_DATA.starId ){ if( gbl.GAME_DATA.stores.bodyStore.get( orbitedId ))| b |
   {
     orbitedMass = b.mass;
   }
@@ -52,41 +73,39 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
 pub fn initStellarSystem( ng : *def.Engine ) void
 {
   // Setting up relevant components
-  for( 0..gbl.ENTITY_COUNT )| idx |
+  for( 0..gbl.bodyCount )| idx |
   {
-    gbl.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
+    gbl.GAME_DATA.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
 
-    const id = gbl.entityArray[ idx ].id;
+    const id = gbl.GAME_DATA.entityArray[ idx ].id;
 
     def.log( .INFO, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
 
 
-    if( id == 1 ) // TODO : use bodyComp for sol as well, as it need not be its own thing
-    {
-      gbl.starCompInst.mass   = gbl.STLR_DATA.get( .SOL, .MASS );
-      gbl.starCompInst.radius = gbl.STLR_DATA.get( .SOL, .RADIUS );
-
-      const terraMin = gbl.STLR_DATA.get( .TERRA, .PERIAP );
-      const terraMax = gbl.STLR_DATA.get( .TERRA, .APOAP  );
-
-      gbl.starCompInst.setShineAtDist( 1.0, 0.5 * ( terraMin + terraMax )); // TODO : replace with irl units for sunlight
-
-      const r = gbl.starCompInst.radius;
-
-      _ = gbl.transStore.add(  id, .{ .pos    = .{} });
-      _ = gbl.shapeStore.add(  id, .{ .colour = .gold, .minSize = .new( 6, 6 ), .scale = .new( r, r ), .shape = .ELLI });
-
-      continue;
-    }
-
-
     // Non-sun component instanciation
 
-    var orbitComp : gbl.orb.OrbitComp = undefined;
-    var bodyComp  : gbl.bdy.BodyComp  = .{};
+    var orbitComp : orb.OrbitComp = undefined;
+    var bodyComp  : bdy.BodyComp  = .{};
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
+      1 =>
+      {
+        initStar( &bodyComp, .SOL );
+
+        _ = gbl.GAME_DATA.stores.transStore.add( id, .{ .pos = .{} });
+        _ = gbl.GAME_DATA.stores.bodyStore.add(  id, bodyComp  );
+        _ = gbl.GAME_DATA.stores.shapeStore.add( id,
+        .{
+          .colour  = bodyComp.bodyType.getDisplayColour(),
+          .minSize = bodyComp.bodyType.getMinDisplaySize(),
+          .scale   = .new( bodyComp.radius, bodyComp.radius ),
+          .shape   = .ELLI
+        });
+
+        continue;
+      },
+
       2 => initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 ),
 
       3 => initStellarBody( &orbitComp, &bodyComp, .VENUS,   1 ),
@@ -111,7 +130,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     var startPos = orbitComp.getRelPos(); // Get initial position from orbit
 
-    if( orbitComp.orbitedID != gbl.starId ){ if( gbl.transStore.get( orbitComp.orbitedID ))| trans |
+    if( orbitComp.orbitedID != gbl.GAME_DATA.starId ){ if( gbl.GAME_DATA.stores.transStore.get( orbitComp.orbitedID ))| trans |
     {
       startPos = startPos.add( trans.pos.toVec2() );
     }
@@ -120,18 +139,17 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitComp.orbitedID });
     }}
 
-    _ = gbl.transStore.add(  id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
-    _ = gbl.shapeStore.add(  id,
+    _ = gbl.GAME_DATA.stores.transStore.add( id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
+    _ = gbl.GAME_DATA.stores.orbitStore.add( id, orbitComp );
+    _ = gbl.GAME_DATA.stores.bodyStore.add(  id, bodyComp  );
+    _ = gbl.GAME_DATA.stores.shapeStore.add( id,
     .{
       .colour  = bodyComp.bodyType.getDisplayColour(),
       .minSize = bodyComp.bodyType.getMinDisplaySize(),
       .scale   = .new( bodyComp.radius, bodyComp.radius ),
       .shape   = .ELLI
     });
-  //_ = gbl.spriteStore.add( id, .{} );
 
-    _ = gbl.orbitStore.add(  id, orbitComp );
-    _ = gbl.bodyStore.add(   id, bodyComp  );
   }
 }
 
@@ -150,7 +168,7 @@ pub fn updateCameraLogic() void
   if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  gbl.scrollSpeed,  0.0 )); }
 
   // Zooms in and out with the mouse wheel
-  if( gbl.followTarget )
+  if( gbl.GAME_DATA.followTarget )
   {
     if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * gbl.zoomSpeed ); }
     if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / gbl.zoomSpeed ); }
@@ -170,11 +188,11 @@ pub fn updateCameraLogic() void
   }
 
   // Centers the camera on current valid target
-  if( gbl.targetId != 0 and gbl.targetHasMoved and gbl.followTarget )
+  if( gbl.GAME_DATA.targetId != 0 and gbl.GAME_DATA.targetHasMoved and gbl.GAME_DATA.followTarget )
   {
-    gbl.targetHasMoved = false;
+    gbl.GAME_DATA.targetHasMoved = false;
 
-    const targetTrans = gbl.transStore.get( gbl.targetId );
+    const targetTrans = gbl.GAME_DATA.stores.transStore.get( gbl.GAME_DATA.targetId );
 
     if( targetTrans )| trans |
     {
@@ -188,11 +206,11 @@ pub fn updateCameraLogic() void
   }
 }
 
-pub fn tickOrbiters( transStore : *gbl.TransStore, orbitStore : *gbl.OrbitStore, sdt : f32 ) void
+pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore, sdt : f32 ) void
 {
-  for( 1..gbl.entityArray.len )| idx |
+  for( 1..gbl.GAME_DATA.entityArray.len )| idx |
   {
-    const id      = gbl.entityArray[ idx ].id;
+    const id      = gbl.GAME_DATA.entityArray[ idx ].id;
     const orbiter = orbitStore.get( id );
 
     if( orbiter == null ){ continue; }
@@ -216,14 +234,14 @@ pub fn tickOrbiters( transStore : *gbl.TransStore, orbitStore : *gbl.OrbitStore,
     }
   }
 
-  gbl.targetHasMoved = true;
+  gbl.GAME_DATA.targetHasMoved = true;
 }
 
-pub fn tickGlobalEconomy( transStore : *gbl.TransStore, bodyStore : *gbl.BodyStore, starPos : def.Vec2 ) void
+pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodyStore, starPos : def.Vec2 ) void
 {
-  inline for( 1..gbl.entityArray.len )| idx |
+  inline for( 1..gbl.GAME_DATA.entityArray.len )| idx |
   {
-    const id    = gbl.entityArray[ idx ].id;
+    const id    = gbl.GAME_DATA.entityArray[ idx ].id;
     const trans = transStore.get( id );
     const body  = bodyStore.get(  id );
 
@@ -238,15 +256,15 @@ pub fn tickGlobalEconomy( transStore : *gbl.TransStore, bodyStore : *gbl.BodySto
   }
 
   // Update travel table from the fresh orbital data generated in tickAllEcons()
-  gbl.trfSlvr.updateTravelTable();
+  gdf.trfSlvr.updateTravelTable();
 }
 
-pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStore, orbitStore : *gbl.OrbitStore, bodyStore : *gbl.BodyStore ) void
+pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
 {
   // Rendering bodies' orbits and debug info
-  for( 1..gbl.entityArray.len )| idx |
+  for( 1..gbl.GAME_DATA.entityArray.len )| idx |
   {
-    const id = gbl.entityArray[ idx ].id;
+    const id = gbl.GAME_DATA.entityArray[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -264,7 +282,7 @@ pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStor
 
       orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
 
-      if( gbl.targetId == id )
+      if( gbl.GAME_DATA.targetId == id )
       {
         const orbitedPos = orbitedTrans.?.pos.toVec2();
         const orbitedVel = orbitedTrans.?.vel.toVec2();
@@ -282,10 +300,10 @@ pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStor
   }
 
   // Rendering bodies
-  for( 0..gbl.entityArray.len )| i |
+  for( 0..gbl.GAME_DATA.entityArray.len )| i |
   {
-    const idx = gbl.entityArray.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
-    const id  = gbl.entityArray[ idx ].id;
+    const idx = gbl.GAME_DATA.entityArray.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
+    const id  = gbl.GAME_DATA.entityArray[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -303,19 +321,19 @@ pub fn renderOrbiters( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStor
   }
 }
 
-pub fn drawTargetInfo( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStore, orbitStore : *gbl.OrbitStore, bodyStore : *gbl.BodyStore ) void
+pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
 {
   const col   = def.G_ST.Graphic_Metrics_Colour.?;
   const posX  = def.getScreenWidth() - 16.0;
-  const id    = gbl.targetId;
+  const id    = gbl.GAME_DATA.targetId;
 
-  if( id == 0 or id > gbl.ENTITY_COUNT ){ return; }
+  if( id == 0 or id > gbl.bodyCount ){ return; }
 
   const trans = transStore.get( id );
   const shape = shapeStore.get( id );
 
-  const orbit = if( id != gbl.starId ) orbitStore.get( id ) else null;
-  const body  = if( id != gbl.starId ) bodyStore.get(  id ) else null;
+  const orbit = if( id != gbl.GAME_DATA.starId ) orbitStore.get( id ) else null;
+  const body  = if( id != gbl.GAME_DATA.starId ) bodyStore.get(  id ) else null;
 
 
   var lineCount : f32 = 1.0;
@@ -339,22 +357,16 @@ pub fn drawTargetInfo( transStore : *gbl.TransStore, shapeStore : *gbl.ShapeStor
     lineCount += 0.5;
   }
 
-  if( gbl.targetId == gbl.starId ) // SUN
-  {
-    const star = gbl.starCompInst;
-
-    def.drawTextRightFmt( "{d:.3} :     mass", .{ star.mass         }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius",  .{ star.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} : density",  .{ star.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :    shine", .{ star.shine        }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-
-    lineCount += 0.5;
-  }
-  else if( body != null ) // PLANETS AND CO.
+  if( body != null ) // PLANETS AND CO.
   {
     def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass         }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+
+    if( gbl.GAME_DATA.targetId == gbl.GAME_DATA.starId )
+    {
+      def.drawTextRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrenght }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    }
 
     lineCount += 0.5;
   }

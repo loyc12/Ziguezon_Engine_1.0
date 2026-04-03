@@ -2,13 +2,13 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
-const gbl = @import( "../gameGlobals.zig" );
-const ecn = gbl.ecn;
+const gdf = @import( "../gameDefs.zig" );
+const ecn = gdf.ecn;
 
-const VesType = gbl.VesType;
-const ResType = gbl.ResType;
-const InfType = gbl.InfType;
-const IndType = gbl.IndType;
+const VesType = gdf.VesType;
+const ResType = gdf.ResType;
+const InfType = gdf.InfType;
+const IndType = gdf.IndType;
 
 const cst = @import( "construct.zig" );
 
