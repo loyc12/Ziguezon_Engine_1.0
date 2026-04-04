@@ -3,7 +3,12 @@ const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
 const gdf = @import( "gameDefs.zig"    );
-const gtl = @import( "gameUtils.zig"   );
+const utl = @import( "gameUtils.zig"   );
+
+const times  = &gbl.GAME_DATA.times;
+const stores = &gbl.GAME_DATA.stores;
+const target = &gbl.GAME_DATA.target;
+const nttArr = &gbl.GAME_DATA.entityArray;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -36,18 +41,26 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     ng.forceTick();
   }
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ gbl.GAME_DATA.targetId     =  gbl.GAME_DATA.targetId +| 1; }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ gbl.GAME_DATA.targetId     =  gbl.GAME_DATA.targetId -| 1; }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.f           )){ gbl.GAME_DATA.followTarget = !gbl.GAME_DATA.followTarget;  }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ target.changeTargetBy(  1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ target.changeTargetBy( -1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.f ))
+  {
+    target.camFollow = !target.camFollow;
+    if( target.camFollow )
+    {
+      target.hasMoved = true;
+      target.moveCamOver();
+    }
+  }
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_multiply )){ gbl.GAME_DATA.times.changeSpeed(  1 ); }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_divide   )){ gbl.GAME_DATA.times.changeSpeed( -1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_multiply )){ times.changeSpeed(  1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_divide   )){ times.changeSpeed( -1 ); }
 
   if( def.ray.isKeyDown( def.ray.KeyboardKey.left_shift ))
   {
     const bodyStore : *gdf.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-    var mainEcon = bodyStore.get( gbl.GAME_DATA.homeworldId ).?.getEcon( .GROUND );
+    var mainEcon = bodyStore.get( target.homeId ).?.getEcon( .GROUND );
 
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.zero  )){ mainEcon.addPopCount(                10000 ); }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
@@ -59,7 +72,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.seven )){ mainEcon.addResCount( .fromIdx( 6 ), 10000 ); }
   }
 
-  gtl.updateCameraLogic();
+  utl.updateCameraLogic();
 }
 
 
@@ -70,13 +83,13 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
   const orbitStore : *gdf.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
   const bodyStore  : *gdf.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-  gbl.GAME_DATA.times.stepTime();
+  times.stepTime();
 
-  gtl.tickOrbiters( transStore, orbitStore );
+  utl.tickOrbiters( transStore, orbitStore );
 
-  const starPos : def.Vec2 = transStore.get( gbl.GAME_DATA.starId ).?.pos.toVec2();
+  const starPos : def.Vec2 = transStore.get( target.starId ).?.pos.toVec2();
 
-  gtl.tickGlobalEconomy( transStore, bodyStore, starPos );
+  utl.tickGlobalEconomy( transStore, bodyStore, starPos );
 }
 
 
@@ -98,7 +111,7 @@ pub fn OnRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics
   const bodyStore  : *gdf.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
 
-  gtl.renderOrbiters( transStore, shapeStore, orbitStore, bodyStore );
+  utl.renderOrbiters( transStore, shapeStore, orbitStore, bodyStore );
 }
 
 pub fn OffRenderWorld( ng : *def.Engine ) void // Called by engine.renderGraphics()
@@ -119,7 +132,7 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
     def.drawTextTop( "Press P to resume", .{ .x = def.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
   }
 
-  def.drawTextOffsetFmt( "Speed : {s}", .{ @tagName( gbl.GAME_DATA.times.speedSetting )}, .{ .x = def.getScreenWidth() - 10.0, .y = def.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
+  def.drawTextOffsetFmt( "Speed : {s}", .{ @tagName( times.speedSetting )}, .{ .x = def.getScreenWidth() - 10.0, .y = def.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
 
 
   const transStore : *gdf.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));
@@ -128,5 +141,5 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
   const orbitStore : *gdf.OrbitStore = @ptrCast( @alignCast( ng.componentRegistry.get( "orbitStore" )));
   const bodyStore  : *gdf.BodyStore  = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-  gtl.drawTargetInfo( transStore, shapeStore, orbitStore, bodyStore );
+  utl.drawTargetInfo( transStore, shapeStore, orbitStore, bodyStore );
 }

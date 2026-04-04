@@ -2,7 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
-const gtl = @import( "gameUtils.zig" );
+const utl = @import( "gameUtils.zig" );
 
 // ================================ ENGINE SETTINGS ================================
 // NOTE : All engine settings have a default value - see engineSettingHandler.zig for more info on those

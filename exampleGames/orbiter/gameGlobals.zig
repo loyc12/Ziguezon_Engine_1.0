@@ -26,13 +26,7 @@ pub const GameData = struct
 {
   times  : GameTimes  = .{},
   stores : CompStores = .{},
-
-  followTarget   : bool = false,
-  targetHasMoved : bool = false,
-
-  targetId    : def.EntityId = 0,
-  starId      : def.EntityId = 1, // SUN
-  homeworldId : def.EntityId = 4, // EARTH
+  target : TargetInfo = .{},
 
   maxEntityId : usize = gdf.BodyName.count - 1,
   entityArray : [ bodyCount ]def.Entity = std.mem.zeroes([ bodyCount ]def.Entity ),
@@ -86,6 +80,135 @@ pub const GameTimes = struct
   }
 };
 
+pub const CompStores = struct
+{
+  trans  : gdf.TransStore  = .{},
+  shape  : gdf.ShapeStore  = .{},
+  sprite : gdf.SpriteStore = .{},
+  orbit  : gdf.OrbitStore  = .{},
+  body   : gdf.BodyStore   = .{},
+
+  /// Returns true if the registry process failed somewhere
+  pub inline fn registerAllStores( self : *CompStores, ng : *def.Engine ) bool
+  {
+    const alloc = def.getAlloc();
+
+    var hasError : bool = false;
+
+    self.trans.init(  alloc );
+    self.shape.init(  alloc );
+    self.sprite.init( alloc );
+
+    self.orbit.init(  alloc );
+    self.body.init(   alloc );
+
+    // Registering componentStores
+    if( !ng.componentRegistry.register( "transStore", &self.trans ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
+      hasError = true;
+    }
+    if( !ng.componentRegistry.register( "shapeStore", &self.shape ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
+      hasError = true;
+    }
+    if( !ng.componentRegistry.register( "spriteStore", &self.sprite ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
+      hasError = true;
+    }
+
+    if( !ng.componentRegistry.register( "orbitStore", &self.orbit ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
+      hasError = true;
+    }
+    if( !ng.componentRegistry.register( "bodyStore", &self.body ))
+    {
+      def.qlog( .ERROR, 0, @src(), "Failed to register bodyStore" );
+      hasError = true;
+    }
+    return hasError;
+  }
+
+  pub inline fn deinitAllStores( self : *CompStores ) void
+  {
+    self.trans.deinit();
+    self.shape.deinit();
+    self.sprite.deinit();
+    self.orbit.deinit();
+    self.body.deinit();
+  }
+};
+
+pub const TargetInfo = struct
+{
+  camFollow : bool = false,
+  hasMoved  : bool = false,
+
+  targetId : def.EntityId = 0,
+  starId   : def.EntityId = 1, // SUN
+  homeId   : def.EntityId = 4, // EARTH // TODO : stop harcoding ?
+
+
+  pub fn changeTargetTo( self : *TargetInfo, targetId : def.EntityId ) void
+  {
+    if( targetId >= 0 and targetId < bodyCount )
+    {
+      self.targetId = targetId;
+      self.hasMoved = true;
+    }
+    else
+    {
+      def.qlog( .WARN, 0, @src(), "Target does not exist : defaulting to Id 0 ( none )" );
+      self.targetId = 0;
+    }
+  }
+
+  pub fn changeTargetBy( self : *TargetInfo, delta : i64 ) void
+  {
+    const current : i64 = @intCast( self.targetId );
+    var next = current + delta;
+
+    if( next < 0 ){ next = 0; }
+    if( next >= bodyCount ){ next = bodyCount - 1; }
+
+    self.targetId = @intCast( next );
+    self.hasMoved = true;
+  }
+
+  pub fn moveCamOver( self : *TargetInfo ) void
+  {
+    if( self.targetId == 0 )
+    {
+      def.qlog( .TRACE, 0, @src(), "targetId is 0 : returning" );
+      return;
+    }
+
+    // Centers the camera on current valid target
+    if( self.camFollow and self.hasMoved )
+    {
+      self.hasMoved = false;
+
+      const targetTrans = GAME_DATA.stores.trans.get( self.targetId );
+
+      if( targetTrans )| trans |
+      {
+        def.G_CAM.pos = trans.pos;
+        def.qlog( .TRACE, 0, @src(), "View centered on target" );
+      }
+      else
+      {
+        def.qlog( .WARN, 0, @src(), "Target does not exist : cannot center view" );
+        self.camFollow = false;
+      }
+    }
+  }
+};
+
+
+// ================ GAMEDATA SUB-STRUCTS ================
 
 pub const SpeedFactor = enum( i8 )
 {
@@ -124,71 +247,6 @@ pub const SpeedFactor = enum( i8 )
     return @enumFromInt( next );
   }
 };
-
-
-pub const CompStores = struct
-{
-  transStore  : gdf.TransStore  = .{},
-  shapeStore  : gdf.ShapeStore  = .{},
-  spriteStore : gdf.SpriteStore = .{},
-  orbitStore  : gdf.OrbitStore  = .{},
-  bodyStore   : gdf.BodyStore   = .{},
-
-  /// Returns true if the registry process failed somewhere
-  pub inline fn registerAllStores( self : *CompStores, ng : *def.Engine ) bool
-  {
-    const alloc = def.getAlloc();
-
-    var hasError : bool = false;
-
-    self.transStore.init(  alloc );
-    self.shapeStore.init(  alloc );
-    self.spriteStore.init( alloc );
-
-    self.orbitStore.init(  alloc );
-    self.bodyStore.init(   alloc );
-
-    // Registering componentStores
-    if( !ng.componentRegistry.register( "transStore", &self.transStore ))
-    {
-      def.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
-      hasError = true;
-    }
-    if( !ng.componentRegistry.register( "shapeStore", &self.shapeStore ))
-    {
-      def.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
-      hasError = true;
-    }
-    if( !ng.componentRegistry.register( "spriteStore", &self.spriteStore ))
-    {
-      def.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
-      hasError = true;
-    }
-
-    if( !ng.componentRegistry.register( "orbitStore", &self.orbitStore ))
-    {
-      def.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
-      hasError = true;
-    }
-    if( !ng.componentRegistry.register( "bodyStore", &self.bodyStore ))
-    {
-      def.qlog( .ERROR, 0, @src(), "Failed to register bodyStore" );
-      hasError = true;
-    }
-
-    return hasError;
-  }
-
-  pub inline fn deinitAllStores( self : *CompStores ) void
-  {
-    self.transStore.deinit();
-    self.shapeStore.deinit();
-    self.spriteStore.deinit();
-    self.orbitStore.deinit();
-    self.bodyStore.deinit();
-  }
-};
-
 
 
 // ================ GAMEDATA MATRICES ================

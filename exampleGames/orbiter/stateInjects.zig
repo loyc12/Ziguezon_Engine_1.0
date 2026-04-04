@@ -3,7 +3,7 @@ const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
 const gdf = @import( "gameDefs.zig"    );
-const gtl = @import( "gameUtils.zig"   );
+const utl = @import( "gameUtils.zig"   );
 
 
 // ================================ STATE INJECTION FUNCTIONS ================================
@@ -27,7 +27,7 @@ pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE :
   _ = gbl.GAME_DATA.stores.registerAllStores( ng );
 
   // Initializing individual components components
-  gtl.initStellarSystem( ng );
+  utl.initStellarSystem( ng );
 }
 
 pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()

@@ -4,6 +4,11 @@ const def = @import( "defs" );
 const gbl = @import( "gameGlobals.zig" );
 const gdf = @import( "gameDefs.zig"    );
 
+const times  = &gbl.GAME_DATA.times;
+const stores = &gbl.GAME_DATA.stores;
+const target = &gbl.GAME_DATA.target;
+const nttArr = &gbl.GAME_DATA.entityArray;
+
 const BodyName = gdf.BodyName;
 const BodyType = gdf.BodyType;
 
@@ -38,7 +43,7 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
 
-  if( orbitedId != gbl.GAME_DATA.starId ){ if( gbl.GAME_DATA.stores.bodyStore.get( orbitedId ))| b |
+  if( orbitedId != target.starId ){ if( stores.body.get( orbitedId ))| b |
   {
     orbitedMass = b.mass;
   }
@@ -75,9 +80,9 @@ pub fn initStellarSystem( ng : *def.Engine ) void
   // Setting up relevant components
   for( 0..gbl.bodyCount )| idx |
   {
-    gbl.GAME_DATA.entityArray[ idx ] = ng.entityIdRegistry.getNewEntity();
+    nttArr[ idx ] = ng.entityIdRegistry.getNewEntity();
 
-    const id = gbl.GAME_DATA.entityArray[ idx ].id;
+    const id = nttArr[ idx ].id;
 
     def.log( .INFO, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -93,9 +98,9 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       {
         initStar( &bodyComp, .SOL );
 
-        _ = gbl.GAME_DATA.stores.transStore.add( id, .{ .pos = .{} });
-        _ = gbl.GAME_DATA.stores.bodyStore.add(  id, bodyComp  );
-        _ = gbl.GAME_DATA.stores.shapeStore.add( id,
+        _ = stores.trans.add( id, .{ .pos = .{} });
+        _ = stores.body.add(  id, bodyComp  );
+        _ = stores.shape.add( id,
         .{
           .colour  = bodyComp.bodyType.getDisplayColour(),
           .minSize = bodyComp.bodyType.getMinDisplaySize(),
@@ -130,7 +135,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     var startPos = orbitComp.getRelPos(); // Get initial position from orbit
 
-    if( orbitComp.orbitedID != gbl.GAME_DATA.starId ){ if( gbl.GAME_DATA.stores.transStore.get( orbitComp.orbitedID ))| trans |
+    if( orbitComp.orbitedID != target.starId ){ if( stores.trans.get( orbitComp.orbitedID ))| trans |
     {
       startPos = startPos.add( trans.pos.toVec2() );
     }
@@ -139,10 +144,10 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitComp.orbitedID });
     }}
 
-    _ = gbl.GAME_DATA.stores.transStore.add( id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
-    _ = gbl.GAME_DATA.stores.orbitStore.add( id, orbitComp );
-    _ = gbl.GAME_DATA.stores.bodyStore.add(  id, bodyComp  );
-    _ = gbl.GAME_DATA.stores.shapeStore.add( id,
+    _ = stores.trans.add( id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
+    _ = stores.orbit.add( id, orbitComp );
+    _ = stores.body.add(  id, bodyComp  );
+    _ = stores.shape.add( id,
     .{
       .colour  = bodyComp.bodyType.getDisplayColour(),
       .minSize = bodyComp.bodyType.getMinDisplaySize(),
@@ -168,7 +173,7 @@ pub fn updateCameraLogic() void
   if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  gbl.scrollSpeed,  0.0 )); }
 
   // Zooms in and out with the mouse wheel
-  if( gbl.GAME_DATA.followTarget )
+  if( target.camFollow )
   {
     if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * gbl.zoomSpeed ); }
     if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / gbl.zoomSpeed ); }
@@ -186,47 +191,25 @@ pub fn updateCameraLogic() void
     cam.pos = .{};
     def.qlog( .INFO, 0, @src(), "Camera reset" );
   }
-
-
 }
 
-pub fn updateCameraTracking() void
-{
-  // Centers the camera on current valid target
-  if( gbl.GAME_DATA.targetId != 0 and gbl.GAME_DATA.targetHasMoved and gbl.GAME_DATA.followTarget )
-  {
-    gbl.GAME_DATA.targetHasMoved = false;
-
-    const targetTrans = gbl.GAME_DATA.stores.transStore.get( gbl.GAME_DATA.targetId );
-
-    if( targetTrans )| trans |
-    {
-      def.G_CAM.pos = trans.pos;
-      def.qlog( .TRACE, 0, @src(), "View centered on target" );
-    }
-    else
-    {
-      def.qlog( .WARN, 0, @src(), "Target does not exist : cannot center view" );
-    }
-  }
-}
 
 pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore ) void
 {
   var stepCount : u64 = 0;
 
-  while( gbl.GAME_DATA.times.shouldBodyTick() )
+  while( times.shouldBodyTick() )
   {
     stepCount += 1;
-    gbl.GAME_DATA.times.consumeBodyTick();
+    times.consumeBodyTick();
   }
 
   if( stepCount == 0 ){ return; }
 
 
-  for( 1..gbl.GAME_DATA.entityArray.len )| idx |
+  for( 1..nttArr.len )| idx |
   {
-    const id      = gbl.GAME_DATA.entityArray[ idx ].id;
+    const id      = nttArr[ idx ].id;
     const orbiter = orbitStore.get( id );
 
     if( orbiter == null ){ continue; }
@@ -247,18 +230,17 @@ pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore 
 
   def.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
 
-  gbl.GAME_DATA.targetHasMoved = true; // Redundant for now since we update right after, but might become useful again later
-  updateCameraTracking();
+  target.hasMoved = true; // Redundant for now since we update right after, but might become useful again later
 }
 
 pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodyStore, starPos : def.Vec2 ) void
 {
   var stepCount : u64 = 0;
 
-  while( gbl.GAME_DATA.times.shouldEconTick() )
+  while( times.shouldEconTick() )
   {
     stepCount += 1;
-    gbl.GAME_DATA.times.consumeEconTick();
+    times.consumeEconTick();
   }
 
   if( stepCount == 0 ){ return; }
@@ -267,9 +249,9 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
   {
     def.qlog( .DEBUG, 0, @src(), "Ticking all econs once" );
 
-    inline for( 1..gbl.GAME_DATA.entityArray.len )| idx |
+    inline for( 1..nttArr.len )| idx |
     {
-      const id    = gbl.GAME_DATA.entityArray[ idx ].id;
+      const id    = nttArr[ idx ].id;
       const trans = transStore.get( id );
       const body  = bodyStore.get(  id );
 
@@ -291,10 +273,12 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
 
 pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
 {
+  if( target.hasMoved ){ target.moveCamOver(); }
+
   // Rendering bodies' orbits and debug info
-  for( 1..gbl.GAME_DATA.entityArray.len )| idx |
+  for( 1..nttArr.len )| idx |
   {
-    const id = gbl.GAME_DATA.entityArray[ idx ].id;
+    const id = nttArr[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -312,7 +296,7 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
       orbiter.?.renderPath( orbitedTrans.?.pos.toVec2() );
 
-      if( gbl.GAME_DATA.targetId == id )
+      if( target.targetId == id )
       {
         const orbitedPos = orbitedTrans.?.pos.toVec2();
         const orbitedVel = orbitedTrans.?.vel.toVec2();
@@ -330,10 +314,10 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
   }
 
   // Rendering bodies
-  for( 0..gbl.GAME_DATA.entityArray.len )| i |
+  for( 0..nttArr.len )| i |
   {
-    const idx = gbl.GAME_DATA.entityArray.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
-    const id  = gbl.GAME_DATA.entityArray[ idx ].id;
+    const idx = nttArr.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
+    const id  = nttArr[ idx ].id;
 
     def.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -355,15 +339,15 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 {
   const col   = def.G_ST.Graphic_Metrics_Colour.?;
   const posX  = def.getScreenWidth() - 16.0;
-  const id    = gbl.GAME_DATA.targetId;
+  const id    = target.targetId;
 
   if( id == 0 or id > gbl.bodyCount ){ return; }
 
   const trans = transStore.get( id );
   const shape = shapeStore.get( id );
 
-  const orbit = if( id != gbl.GAME_DATA.starId ) orbitStore.get( id ) else null;
-  const body  = if( id != gbl.GAME_DATA.starId ) bodyStore.get(  id ) else null;
+  const orbit = if( id != target.starId ) orbitStore.get( id ) else null;
+  const body  = if( id != target.starId ) bodyStore.get(  id ) else null;
 
 
   var lineCount : f32 = 1.0;
@@ -393,7 +377,7 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
     def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
-    if( gbl.GAME_DATA.targetId == gbl.GAME_DATA.starId )
+    if( target.targetId == target.starId )
     {
       def.drawTextRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrenght }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     }
@@ -406,6 +390,12 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
     def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
+    lineCount += 0.5;
+  }
+
+  if( target.camFollow )
+  {
+    def.drawTextRight( "Traking ON", .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     lineCount += 0.5;
   }
 }
