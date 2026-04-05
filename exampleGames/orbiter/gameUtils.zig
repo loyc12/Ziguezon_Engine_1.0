@@ -53,26 +53,24 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
     def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
   }}
 
+  bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
+  bodyComp.name     = bodyName;
+  bodyComp.mass     = orbiterMass;
+  bodyComp.radius   = gbl.STLR_DATA.get( bodyName, .RADIUS );
+
   orbitComp.* = .initFromParams(
     orbitedMass,       orbiterMass,
     gbl.STLR_DATA.get( bodyName, .PERIAP ),
     gbl.STLR_DATA.get( bodyName, .APOAP  ),
     gbl.STLR_DATA.get( bodyName, .LONG   ),
     null,
+    bodyComp.bodyType.getDisplayColour(),
   );
   orbitComp.orbitedID = orbitedId;
 
-  bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
-  bodyComp.name     = bodyName;
-  bodyComp.mass     = orbiterMass;
-  bodyComp.radius   = gbl.STLR_DATA.get( bodyName, .RADIUS );
-
   bodyComp.softInitAllEcons();
 
-  if( bodyName == .TERRA )
-  {
-    bodyComp.quickInitEcon( .GROUND, true );
-  }
+  if( bodyName == .TERRA ){ bodyComp.quickInitEcon( .GROUND, true ); }
 }
 
 
@@ -95,21 +93,35 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
-      1 => initStar(                    &bodyComp, .SOL        ),
-      2 => initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 ),
-      3 => initStellarBody( &orbitComp, &bodyComp, .VENUS,   1 ),
-      4 => // EARTH
-      {
-        initStellarBody(    &orbitComp, &bodyComp, .TERRA, 1 );
-        bodyComp.debugSetEconVals( .GROUND, 1 );            // NOTE : DEBUG
-      },
-      5 => initStellarBody( &orbitComp, &bodyComp, .LUNA,   4 ),
-      6 => initStellarBody( &orbitComp, &bodyComp, .MARS,   1 ),
-      7 => initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 ),
-      8 => initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 ),
-      9 => initStellarBody( &orbitComp, &bodyComp, .DEBUGY, 1 ),
+      1  => initStar( &bodyComp, .SOL ),
+      2  => initStellarBody( &orbitComp, &bodyComp, .DEBUGY,  1 ),
 
-      else => // Wil ignore all subsequent Ids ( should have none left )
+      3  => initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 ),
+      4  => initStellarBody( &orbitComp, &bodyComp, .VENUS,   1 ),
+      5  => // EARTH
+      {
+            initStellarBody( &orbitComp, &bodyComp, .TERRA,   1 );
+            bodyComp.debugSetEconVals( .GROUND, 1 );              // NOTE : DEBUG
+      },
+      6  => initStellarBody( &orbitComp, &bodyComp, .LUNA,    5 ),
+      7  => initStellarBody( &orbitComp, &bodyComp, .MARS,    1 ),
+      8  => initStellarBody( &orbitComp, &bodyComp, .PHOBOS,  7 ),
+      9  => initStellarBody( &orbitComp, &bodyComp, .DEIMOS,  7 ),
+
+      10 => initStellarBody( &orbitComp, &bodyComp, .CERES,   1 ),
+      11 => initStellarBody( &orbitComp, &bodyComp, .VESTA,   1 ),
+      12 => initStellarBody( &orbitComp, &bodyComp, .PALLAS,  1 ),
+      13 => initStellarBody( &orbitComp, &bodyComp, .HYGIEA,  1 ),
+      14 => initStellarBody( &orbitComp, &bodyComp, .EUROPEA, 1 ),
+      15 => initStellarBody( &orbitComp, &bodyComp, .DAVIDA,  1 ),
+      16 => initStellarBody( &orbitComp, &bodyComp, .SYLVIA,  1 ),
+
+      17 => initStellarBody( &orbitComp, &bodyComp, .JUPITER, 1 ),
+      18 => initStellarBody( &orbitComp, &bodyComp, .SATURN,  1 ),
+      19 => initStellarBody( &orbitComp, &bodyComp, .URANUS,  1 ),
+      20 => initStellarBody( &orbitComp, &bodyComp, .NEPTUNE, 1 ),
+
+      else => // Will ignore all subsequent Ids ( should have none left )
       {
         def.log( .INFO, 0, @src(), "Id #{d} is invalid: will not initialize related comps", .{ id });
         continue;

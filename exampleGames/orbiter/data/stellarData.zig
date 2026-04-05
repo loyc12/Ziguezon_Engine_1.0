@@ -41,6 +41,7 @@ pub const StellarBodyName = enum( u8 )
 
   SOL,
 
+
 //  INNER - TERRESTRIALS
 
   MERCURY,
@@ -52,7 +53,6 @@ pub const StellarBodyName = enum( u8 )
     LUNA,
 //  CRUITHNE,    // CO-ORBITAL OBJECT
 
-//EROS,
 
   MARS,
     PHOBOS,
@@ -61,26 +61,35 @@ pub const StellarBodyName = enum( u8 )
 //  TBA_M_2,     // L5 TROJAN 121514
 //  EUREKA,      // L5 TROJAN
 
+
 //  MAIN BELT
 
-//CERES,
-//VESTA,
-//PALLAS,
-//HYGIEA,
-//EUROPA_A,
-//DAVIDA,
-//SYLVIA,
+//EROS,
+
+// https://en.wikipedia.org/wiki/List_of_minor_planets:_1-1000
+
+  CERES,   // # 1
+  VESTA,   // # 4
+  PALLAS,  // # 2
+  HYGIEA,  // # 10
+//  HYGIEA FAMILLY
+  EUROPEA, // # 52
+  DAVIDA,  // # 511
+  SYLVIA,  // # 87
+//  ROMULUS
+//  REMUS
+
 
 //  OUTER - GIANTS
 
-//  JUPITER,
+    JUPITER,
 //    IO,
 //    EUROPA,
 //    GANYMEDE,
 //    CALLISTO,
 //    // + TROJANS
 //
-//  SATURN,
+    SATURN,
 //    MIMAS,
 //    ENCELADUS,
 //
@@ -99,7 +108,7 @@ pub const StellarBodyName = enum( u8 )
 //    PHOEBE,
 //    // SHEPHERD MOONS
 //
-//  URANUS,
+    URANUS,
 //    MIRANDA,
 //    ARIEL,
 //    UMBRIEL,
@@ -107,7 +116,7 @@ pub const StellarBodyName = enum( u8 )
 //    OBERON,
 //    // + TROJANS
 //
-//  NEPTUNE,
+    NEPTUNE,
 //    PROTEUS,
 //    TRITON,
 //    NEREID,
@@ -221,13 +230,7 @@ pub fn loadStellarData() void
 {
   const SBT = StellarBodyType;
 
-
-  stellarData.set( .DEBUGY,   .MASS,                   1_000_000 );
-  stellarData.set( .DEBUGY,   .RADIUS,                   100.000 );
-  stellarData.set( .DEBUGY,   .PERIAP,                40_000_000 );
-  stellarData.set( .DEBUGY,   .APOAP,                800_000_000 );
-  stellarData.set( .DEBUGY,   .LONG,                     123.456 );
-  stellarData.set( .DEBUGY,   .TYPE,        SBT.ASTEROID.toFlt() );
+  // INNER SYSTEM
 
   stellarData.set( .SOL,      .MASS,   1_988_475_000_000_000_000 );
   stellarData.set( .SOL,      .RADIUS,                   695_700 );
@@ -236,12 +239,19 @@ pub fn loadStellarData() void
   stellarData.set( .SOL,      .LONG,                           0 );
   stellarData.set( .SOL,      .TYPE,            SBT.STAR.toFlt() );
 
+  stellarData.set( .DEBUGY,   .MASS,            1_000_000 );
+  stellarData.set( .DEBUGY,   .RADIUS,            100.000 );
+  stellarData.set( .DEBUGY,   .PERIAP,         50_000_000 );
+  stellarData.set( .DEBUGY,   .APOAP,       5_000_000_000 );
+  stellarData.set( .DEBUGY,   .LONG,              123.456 );
+  stellarData.set( .DEBUGY,   .TYPE,    SBT.COMET.toFlt() );
 
-  stellarData.set( .MERCURY,  .MASS,      330_103_000_000 );
-  stellarData.set( .MERCURY,  .RADIUS,          2_439.400 );
+
+  stellarData.set( .MERCURY,  .MASS,      330_110_000_000 );
+  stellarData.set( .MERCURY,  .RADIUS,          2_439.700 );
   stellarData.set( .MERCURY,  .PERIAP,         46_000_000 );
   stellarData.set( .MERCURY,  .APOAP,          69_820_000 );
-  stellarData.set( .MERCURY,  .LONG,               77.460 );
+  stellarData.set( .MERCURY,  .LONG,               77.455 );
   stellarData.set( .MERCURY,  .TYPE,   SBT.PLANET.toFlt() );
 
 
@@ -249,7 +259,7 @@ pub fn loadStellarData() void
   stellarData.set( .VENUS,    .RADIUS,          6_051.800 );
   stellarData.set( .VENUS,    .PERIAP,        107_480_000 );
   stellarData.set( .VENUS,    .APOAP,         108_940_000 );
-  stellarData.set( .VENUS,    .LONG,              131.530 );
+  stellarData.set( .VENUS,    .LONG,              131.564 );
   stellarData.set( .VENUS,    .TYPE,   SBT.PLANET.toFlt() );
 
   //stellarData.set( .ZOOZVE, .MASS,                0.024 ); // Estimated
@@ -275,19 +285,11 @@ pub fn loadStellarData() void
     stellarData.set( .LUNA,   .TYPE,     SBT.MOON.toFlt() );
 
 
-//stellarData.set( .EROS,     .MASS,                 6_687 );
-//stellarData.set( .EROS,     .RADIUS,              16.840 );
-//stellarData.set( .EROS,     .PERIAP,         169_554_226 );
-//stellarData.set( .EROS,     .APOAP,          266_658_204 );
-//stellarData.set( .EROS,     .LONG,               123.140 );
-//stellarData.set( .EROS,     .TYPE,    SBT.ASTEROID.toFlt() );
-
-
   stellarData.set( .MARS,     .MASS,       641_691_000_000 );
   stellarData.set( .MARS,     .RADIUS,           3_389.500 );
   stellarData.set( .MARS,     .PERIAP,         206_650_000 );
   stellarData.set( .MARS,     .APOAP,          249_261_000 );
-  stellarData.set( .MARS,     .LONG,               336.040 );
+  stellarData.set( .MARS,     .LONG,               336.078 );
   stellarData.set( .MARS,     .TYPE,    SBT.PLANET.toFlt() );
 
     stellarData.set( .PHOBOS, .MASS,                16_000 );
@@ -303,4 +305,102 @@ pub fn loadStellarData() void
     stellarData.set( .DEIMOS, .APOAP,           23_470.900 );
     stellarData.set( .DEIMOS, .LONG,                     0 );
     stellarData.set( .DEIMOS, .TYPE,   SBT.MOONLET.toFlt() );
+
+
+// MAIN BELT
+
+//stellarData.set( .EROS,     .MASS,                 6_687 );
+//stellarData.set( .EROS,     .RADIUS,              16.840 );
+//stellarData.set( .EROS,     .PERIAP,         169_554_226 );
+//stellarData.set( .EROS,     .APOAP,          266_658_204 );
+//stellarData.set( .EROS,     .LONG,               123.140 );
+//stellarData.set( .EROS,     .TYPE,  SBT.ASTEROID.toFlt() );
+
+  stellarData.set( .CERES,    .MASS,           938_392_000 ); // 1
+  stellarData.set( .CERES,    .RADIUS,             469.700 );
+  stellarData.set( .CERES,    .PERIAP,         381_000_000 );
+  stellarData.set( .CERES,    .APOAP,          446_000_000 );
+  stellarData.set( .CERES,    .LONG,               153.900 );
+  stellarData.set( .CERES,    .TYPE,  SBT.ASTEROID.toFlt() );
+
+  stellarData.set( .VESTA,    .MASS,           259_027_100 ); // 4
+  stellarData.set( .VESTA,    .RADIUS,             262.700 );
+  stellarData.set( .VESTA,    .PERIAP,         322_000_000 );
+  stellarData.set( .VESTA,    .APOAP,          384_000_000 );
+  stellarData.set( .VESTA,    .LONG,               255.370 );
+  stellarData.set( .VESTA,    .TYPE,  SBT.ASTEROID.toFlt() );
+
+  stellarData.set( .PALLAS,   .MASS,           204_200_000 ); // 2
+  stellarData.set( .PALLAS,   .RADIUS,             256.500 );
+  stellarData.set( .PALLAS,   .PERIAP,         319_000_000 );
+  stellarData.set( .PALLAS,   .APOAP,          510_000_000 );
+  stellarData.set( .PALLAS,   .LONG,               123.800 );
+  stellarData.set( .PALLAS,   .TYPE,  SBT.ASTEROID.toFlt() );
+
+  stellarData.set( .HYGIEA,   .MASS,            87_400_000 ); // 10
+  stellarData.set( .HYGIEA,   .RADIUS,             216.500 );
+  stellarData.set( .HYGIEA,   .PERIAP,         419_000_000 );
+  stellarData.set( .HYGIEA,   .APOAP,          522_000_000 );
+  stellarData.set( .HYGIEA,   .LONG,               235.840 );
+  stellarData.set( .HYGIEA,   .TYPE,  SBT.ASTEROID.toFlt() );
+
+  stellarData.set( .EUROPEA,  .MASS,             2_400_000 ); // 52
+  stellarData.set( .EUROPEA,  .RADIUS,             159.500 );
+  stellarData.set( .EUROPEA,  .PERIAP,         420_000_000 );
+  stellarData.set( .EUROPEA,  .APOAP,          510_000_000 );
+  stellarData.set( .EUROPEA,  .LONG,               112.000 );
+  stellarData.set( .EUROPEA,  .TYPE,  SBT.ASTEROID.toFlt() );
+
+  stellarData.set( .DAVIDA,   .MASS,             2_660_000 ); // 511
+  stellarData.set( .DAVIDA,   .RADIUS,             149.000 );
+  stellarData.set( .DAVIDA,   .PERIAP,         384_320_000 );
+  stellarData.set( .DAVIDA,   .APOAP,          562_340_000 );
+  stellarData.set( .DAVIDA,   .LONG,                84.800 );
+  stellarData.set( .DAVIDA,   .TYPE,  SBT.ASTEROID.toFlt() );
+
+  stellarData.set( .SYLVIA,   .MASS,             1_476_000 ); // 87
+  stellarData.set( .SYLVIA,   .RADIUS,             135.500 );
+  stellarData.set( .SYLVIA,   .PERIAP,         480_000_000 );
+  stellarData.set( .SYLVIA,   .APOAP,          560_000_000 );
+  stellarData.set( .SYLVIA,   .LONG,               336.000 );
+  stellarData.set( .SYLVIA,   .TYPE,  SBT.ASTEROID.toFlt() );
+
+// OUTER SYSTEM
+
+  stellarData.set( .JUPITER,  .MASS, 1_898_125_000_000_000 );
+  stellarData.set( .JUPITER,  .RADIUS,          69_886.000 );
+  stellarData.set( .JUPITER,  .PERIAP,         740_595_000 );
+  stellarData.set( .JUPITER,  .APOAP,          816_363_000 );
+  stellarData.set( .JUPITER,  .LONG,                14.331 );
+  stellarData.set( .JUPITER,  .TYPE,    SBT.PLANET.toFlt() );
+
+  stellarData.set( .SATURN,   .MASS,   568_317_000_000_000 );
+  stellarData.set( .SATURN,   .RADIUS,          58_232.000 );
+  stellarData.set( .SATURN,   .PERIAP,       1_352_550_000 );
+  stellarData.set( .SATURN,   .APOAP,        1_514_500_000 );
+  stellarData.set( .SATURN,   .LONG,                93.057 );
+  stellarData.set( .SATURN,   .TYPE,    SBT.PLANET.toFlt() );
+
+  stellarData.set( .URANUS,   .MASS,    86_809_900_000_000 );
+  stellarData.set( .URANUS,   .RADIUS,          25_362.000 );
+  stellarData.set( .URANUS,   .PERIAP,       2_735_560_000 );
+  stellarData.set( .URANUS,   .APOAP,        3_006_390_000 );
+  stellarData.set( .URANUS,   .LONG,               171.005 );
+  stellarData.set( .URANUS,   .TYPE,    SBT.PLANET.toFlt() );
+
+  stellarData.set( .NEPTUNE,  .MASS,   102_409_200_000_000 );
+  stellarData.set( .NEPTUNE,  .RADIUS,          24_622.000 );
+  stellarData.set( .NEPTUNE,  .PERIAP,       4_460_000_000 );
+  stellarData.set( .NEPTUNE,  .APOAP,        4_540_000_000 );
+  stellarData.set( .NEPTUNE,  .LONG,                44.970 );
+  stellarData.set( .NEPTUNE,  .TYPE,    SBT.PLANET.toFlt() );
 }
+
+
+//CERES,
+//VESTA,
+//PALLAS,
+//HYGIEA,
+//EUROPEA,
+//DAVIDA,
+//SYLVIA,

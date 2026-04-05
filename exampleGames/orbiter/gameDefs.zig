@@ -44,8 +44,8 @@ pub const GameConsts = struct
 
   renderScale : f64  = 0.000_001,
 
-  orbitPathLenFactor : f32 = 0.25, // 0.0 - 1.0 // Controls orbital path lenght
-  orbitFadeStrenght  : u8  = 8,   // 0 - 255   // Controls orbital path fading
+  orbitPathLenFactor : f32 = 1.0, // 0.0 - 1.0 // Controls orbital path lenght
+  orbitFadeStrenght  : u8  = 1,   // 0 - 255   // Controls orbital path fading
 
   backColour : def.Colour = .dIndigo,
   foreColour : def.Colour = .dCrimson,
@@ -55,7 +55,7 @@ pub const GameConsts = struct
   maxEntityId : usize = BodyName.count - 1, // Skipping .CUSTOM
 
   starId : def.EntityId = 1, // SUN
-  homeId : def.EntityId = 4, // EARTH
+  homeId : def.EntityId = 5, // EARTH
 };
 
 

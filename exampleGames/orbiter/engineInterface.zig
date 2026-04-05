@@ -30,23 +30,23 @@ const utl = @import( "gameUtils.zig"   );
 //pub const Startup_Target_TickRate  : u16 = 60;
 //pub const Startup_Target_FrameRate : u16 = 120;
 
-//pub const Startup_Window_Width     : u16 = 2048;
-//pub const Startup_Window_Height    : u16 = 1024;
+//pub const Startup_Window_Width  : u16 = 2048;
+//pub const Startup_Window_Height : u16 = 1024;
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Orbiter";
+  pub const Startup_Window_Title  : [ :0 ] const u8 = "Ziguezon Engine - Orbiter";
 
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = gdf.G_CONSTS.backColour;
-  pub const Graphic_Metrics_Colour   : ?def.Colour = gdf.G_CONSTS.textColour;
-//pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
+  pub const Graphic_Bckgrd_Colour  : ?def.Colour = gdf.G_CONSTS.backColour;
+  pub const Graphic_Metrics_Colour : ?def.Colour = gdf.G_CONSTS.textColour;
+//pub const Graphic_Default_Font   : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
-  pub const Graphic_Ellipse_Facets   : u16 = 255;
+  pub const Graphic_Ellipse_Facets : u16 = 255;
 
-  pub const Camera_Zoom_Max          : f32 = 1.000000;
-  pub const Camera_Zoom_Min          : f32 = 0.000001;
-  pub const Camera_Zoom_Init         : f32 = 0.000010;
+  pub const Camera_Zoom_Max  : f32 = 1.0000000;
+  pub const Camera_Zoom_Min  : f32 = 0.0000001;
+  pub const Camera_Zoom_Init : f32 = 0.0000100;
 
 
 // ================================ GAME HOOKS ================================

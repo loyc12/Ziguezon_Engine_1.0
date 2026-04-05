@@ -28,20 +28,22 @@ pub const OrbitComp = struct
   maxRadius : f64 = 600.0, // Apoapsis  (farthest)
 
   // Eccentricity and Procession direction
-  orientation : f32  = 0.0,   // Periapsis angle ( 0 to 2π, 0 => +X )
+  orientation : f64  = 0.0,   // Periapsis angle ( 0 to 2π, 0 => +X )
   retrograde  : bool = false, // If the orbit is counter-clockwise visually ( clockwise mathematically )
 
   // Current position
-  angularPos : f32 = 0.0, // Current position along orbit ( 0 to 2π, 0 => +X )
-  angularVel : f32 = 0.0,
+  angularPos : f64 = 0.0, // Current position along orbit ( 0 to 2π, 0 => +X )
+  angularVel : f64 = 0.0,
 
   // Other metrics
-  period : f32 = 0.0, // how many days to complete a full orbit around its path
+  period  : f64 = 0.0, // how many days to complete a full orbit around its path
+  pathCol : def.Colour = gdf.G_CONSTS.textColour,
 
   pub fn initFromParams(
     orbitedMass : f64,  orbiterMass : f64,
     minRadius   : f64,  maxRadius   : f64,
-    orientation : f64,  periodOvrd  : ?f32, // If null, period is calculated from masses and orbit shape
+    orientation : f64,  periodOvrd  : ?f64, // If null, period is calculated from masses and orbit shape
+    pathColour : def.Colour
   ) OrbitComp
   {
     var self = OrbitComp
@@ -52,6 +54,7 @@ pub const OrbitComp = struct
       .maxRadius   = maxRadius,
       .orientation = @floatCast( orientation ),
       .period      = 0.0,
+      .pathCol     = pathColour
     };
 
     if( periodOvrd )| p |
@@ -105,7 +108,7 @@ pub const OrbitComp = struct
   {
     return self.getRadiusAtAngle( self.angularPos );
   }
-  pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : f32 ) f64
+  pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : f64 ) f64
   {
     const e = self.getEccentricity();
     const eSqr = e * e;
@@ -120,7 +123,7 @@ pub const OrbitComp = struct
 
   // Orbital period depends on semi-major axis and central mass ( Kepler's 3rd Law )
   // T² ∝ a³/M  →  ω = √(GM/a³)
-  pub inline fn getMeanAngularVel( self : *const OrbitComp ) f32 // AKA mean motion
+  pub inline fn getMeanAngularVel( self : *const OrbitComp ) f64 // AKA mean motion
   {
     // Prevent division by zero / very small values
     if( self.period < 1.0 ){ return 0.0; }
@@ -137,7 +140,7 @@ pub const OrbitComp = struct
 
   // True angular velocity varies with angular position ( Kepler's 2nd Law )
   // ω_true = ω_mean * ( 1 + e·cos(θ) )² / ( 1 - e² )^( 3/2 )
-  pub inline fn getAngularVel( self : *const OrbitComp ) f32
+  pub inline fn getAngularVel( self : *const OrbitComp ) f64
   {
     const meanAngVel = self.getMeanAngularVel();
 
@@ -147,7 +150,7 @@ pub const OrbitComp = struct
     const numerRoot = 1.0 + ( ecc * @cos( self.angularPos ));
     const denom     = ( 1.0 - eccSqr ) * @sqrt( 1.0 - eccSqr );
 
-    const ratio : f32 = @floatCast(( numerRoot * numerRoot ) / denom );
+    const ratio : f64 = @floatCast(( numerRoot * numerRoot ) / denom );
 
     return meanAngVel * ratio;
   }
@@ -170,8 +173,8 @@ pub const OrbitComp = struct
 
   pub inline fn getOrbitLen( self : *const OrbitComp ) f64
   {
-    const a : f32 = @floatCast( self.getSemiMajor() );
-    const b : f32 = @floatCast( self.getSemiMinor() );
+    const a = self.getSemiMajor(); // TODO : check if these need doubling
+    const b = self.getSemiMinor();
 
     return def.Shape2D.ELLI.getPerim( .new( a, b ));
   }
@@ -196,7 +199,7 @@ pub const OrbitComp = struct
   {
     return self.getRelPosAtAngle( self.angularPos );
   }
-  pub inline fn getRelPosAtAngle( self : *const OrbitComp, angle : f32 ) Vec2
+  pub inline fn getRelPosAtAngle( self : *const OrbitComp, angle : f64 ) Vec2
   {
     const radius = self.getRadiusAtAngle( angle );
 
@@ -205,7 +208,7 @@ pub const OrbitComp = struct
     const y = radius * @sin( angle );
 
     // Return the position after rotating it appropriately
-    return Vec2.new( x, y ).rot( .{ .r = self.orientation });
+    return Vec2.new( x, y ).rot( .{ .r = @floatCast( self.orientation )});
   }
 
 
@@ -226,11 +229,11 @@ pub const OrbitComp = struct
     const velTan = self.angularVel * self.getCurrentRadius();
 
     // Convert to Cartesian vectors
-    const vecRad = Vec2.fromAngle(.{ .r = self.angularPos }).mulVal( velRad );
-    const vecTan = Vec2.fromAngle(.{ .r = self.angularPos + def.PI / 2.0 }).mulVal( velTan );
+    const vecRad = Vec2.fromAngle( .{ .r = @floatCast( self.angularPos )}).mulVal( velRad );
+    const vecTan = Vec2.fromAngle( .{ .r = @floatCast( self.angularPos + def.PI / 2.0 )}).mulVal( velTan );
 
     // Rotate by orbit orientation
-    return vecRad.add( vecTan ).rot(.{ .r = self.orientation });
+    return vecRad.add( vecTan ).rot(.{ .r = @floatCast( self.orientation )});
   }
 
 
@@ -278,15 +281,15 @@ pub const OrbitComp = struct
     var vecMin2 : Vec2 = vecMin1;
     var vecMax2 : Vec2 = vecMax1;
 
-    const a = def.TAU / @as( f32, @floatFromInt( N ));
+    const a = def.TAU / @as( f64, @floatFromInt( N ));
 
     for( 0..N )| _ | // Moon friendly region ( Disk )
     {
       vecMin2 = vecMin1;
       vecMax2 = vecMax1;
 
-      vecMin1 = vecMin1.rot( .{ .r = a });
-      vecMax1 = vecMax1.rot( .{ .r = a });
+      vecMin1 = vecMin1.rot( .{ .r = @floatCast( a )});
+      vecMax1 = vecMax1.rot( .{ .r = @floatCast( a )});
 
       def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    @floatCast( zoomedWidth ));
       def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, @floatCast( zoomedWidth ));
@@ -308,36 +311,34 @@ pub const OrbitComp = struct
     if( !doDraw ){ return; }
 
     const zoomedWidth : f64 = 1.0 / def.G_CAM.getZoom();
-    const ecc         : f64 = self.getEccentricity();
     const N_f         : f64 = @floatFromInt( N );
-    const semiMajor   : f32 = @floatCast( self.getSemiMajor() );
+    const ecc         : f64 = self.getEccentricity();
+    const semiMajor   : f64 = self.getSemiMajor();
 
-    var  baseStep : f32 = @floatCast( def.TAU / N_f );
+    var  baseStep : f64 = @floatCast( def.TAU / N_f );
+    const maxStep : f64 = baseStep * 4.00; // Prevents huge jumps near periapsis
+    const minStep : f64 = baseStep * 0.25; // Prevents tiny crawl near apoapsis
 
-    var lineCol : def.Colour = .green;
-    const maxStep : f32 = baseStep * 4.00; // Prevents huge jumps near periapsis
-    const minStep : f32 = baseStep * 0.25; // Prevents tiny crawl near apoapsis
+    var pathCol = self.pathCol;
 
     // Checking for non-circular orbits
     if( ecc > 0.3 )
     {
       // Correction factor: the mean of ( r/a )² over a full orbit is ( 1-e² )^( 3/2 )
-      // Multiplying by this ensures N adaptive steps still sum to ~TAU
-      const ecc_f : f32 = @floatCast( ecc );
-      const oneMinusE2  = 1.0 - ( ecc_f * ecc_f );
+      // Multiplying by this ensures N adaptive steps still sum to ~TAU;
+      const oneMinusE2  = 1.0 - ( ecc * ecc );
 
       baseStep *= oneMinusE2 * @sqrt( oneMinusE2 );
-      lineCol   = .yellow;
     }
 
     const maxLen : f64 = self.getOrbitLen() * pathLenFactor;
     var   sumLen : f64 = 0.0;
 
-    var drawAngle : f32 = self.angularPos;
-    var sumAngle  : f32 = 0.0;
+    var drawAngle : f64 = self.angularPos;
+    var sumAngle  : f64 = 0.0;
 
-    var  step : f32 = baseStep;
-    const dir : f32 = if( self.retrograde ) 1.0 else -1.0;
+    var  step : f64 = baseStep;
+    const dir : f64 = if( self.retrograde ) 1.0 else -1.0;
 
     while( doDraw )
     {
@@ -347,8 +348,7 @@ pub const OrbitComp = struct
         // Scales step by (r/a)² meaning :
         // larger  radius -> smaller steps
         // smaller radius -> larger  steps
-        const r : f32 = @floatCast( self.getRadiusAtAngle( drawAngle ));
-        const ratio   = r / semiMajor;
+        const ratio = self.getRadiusAtAngle( drawAngle ) / semiMajor;
 
         step = baseStep / ( ratio * ratio );
         step = def.clmp( step, minStep, maxStep );
@@ -369,11 +369,11 @@ pub const OrbitComp = struct
       p2 = p1;
       p1 = self.getRelPosAtAngle( drawAngle );
 
-      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), lineCol, @floatCast( zoomedWidth ));
+      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, @floatCast( zoomedWidth ));
 
-      lineCol = lineCol.subA( gdf.G_CONSTS.orbitFadeStrenght ); // Fading-out path's alpha
+      pathCol = pathCol.subA( gdf.G_CONSTS.orbitFadeStrenght ); // Fading-out path's alpha
 
-      if( lineCol.a == 0 ){ break; }
+      if( pathCol.a == 0 ){ break; }
 
       if( pathLenFactor < 1.0 - def.EPS )
       {
@@ -423,7 +423,7 @@ pub const OrbitComp = struct
 
     // First-order libration correction
     const dt = ( 2.0 / 3.0 ) * e * @as( f64, @floatCast( @sin( t )));
-    const lagAngle : f32 = @floatCast( t + ( sign * def.PI / 3.0 ) + dt );
+    const lagAngle = t + ( sign * def.PI / 3.0 ) + dt;
 
     return self.getRelPosAtAngle( lagAngle );
   }
@@ -468,15 +468,15 @@ pub const OrbitComp = struct
   /// moonRigidity  : 1.0 = fluid, 0.0 = rigid
   /// selfRadius    = planet radius
   /// density ratio = planetDensity / moonDensity
-  pub inline fn getRocheLimit( self: *const OrbitComp, selfRadius : f64, moonDensity : f64, moonRigidity : f32 ) f64
+  pub inline fn getRocheLimit( self: *const OrbitComp, selfRadius : f64, moonDensity : f64, moonRigidity : f64 ) f64
   {
     const volume = ( 4.0 / 3.0 ) * def.PI * ( selfRadius * selfRadius * selfRadius );
     const densityRatio = ( self.orbiterMass / volume ) / moonDensity;
 
-    const FLUID: f32 = 2.44;
-    const RIGID: f32 = 1.26;
+    const FLUID: f64 = 2.44;
+    const RIGID: f64 = 1.26;
 
-    const rigidity : f64 = @floatCast( def.lerp( RIGID, FLUID, moonRigidity ));
+    const rigidity = def.lerp( RIGID, FLUID, moonRigidity );
 
     return selfRadius * rigidity * def.cbrt( densityRatio );
   }
