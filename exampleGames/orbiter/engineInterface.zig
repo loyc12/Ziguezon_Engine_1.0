@@ -1,8 +1,9 @@
-const std = @import( "std" );
+const std = @import( "std"  );
 const def = @import( "defs" );
 
 const gbl = @import( "gameGlobals.zig" );
-const utl = @import( "gameUtils.zig" );
+const gdf = @import( "gameDefs.zig"    );
+const utl = @import( "gameUtils.zig"   );
 
 // ================================ ENGINE SETTINGS ================================
 // NOTE : All engine settings have a default value - see engineSettingHandler.zig for more info on those
@@ -37,8 +38,8 @@ const utl = @import( "gameUtils.zig" );
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = gbl.backColour;
-  pub const Graphic_Metrics_Colour   : ?def.Colour = gbl.textColour;
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = gdf.GAME_CONSTS.backColour;
+  pub const Graphic_Metrics_Colour   : ?def.Colour = gdf.GAME_CONSTS.textColour;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
   pub const Graphic_Ellipse_Facets   : u16 = 255;

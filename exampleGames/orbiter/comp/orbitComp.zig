@@ -17,7 +17,7 @@ pub const OrbitComp = struct
   const G : f64 = gdf.GAME_CONSTS.gravFactor;
   const N : u32 = 256; // number of segments used to render orbital path
 
-  orbitedID   : def.EntityId = 1, // 1 is the sun by default
+  orbitedID : def.EntityId = 1, // 1 is the sun by default
 
   // Orbit's masses ( ought to be near-constant )
   orbitedMass : f64 = 100.0, // mass of whatever self orbits

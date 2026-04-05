@@ -9,12 +9,13 @@ const stores = &gbl.GAME_DATA.stores;
 const target = &gbl.GAME_DATA.target;
 const nttArr = &gbl.GAME_DATA.entityArray;
 
-const BodyName = gdf.BodyName;
-const BodyType = gdf.BodyType;
+const BodyName  = gdf.BodyName;
+const BodyType  = gdf.BodyType;
+const bodyCount = gdf.GAME_CONSTS.bodyCount;
 
-const orb    = gdf.orb;
-const bdy    = gdf.bdy;
-const ecn    = gdf.econ;
+const orb = gdf.orb;
+const bdy = gdf.bdy;
+const ecn = gdf.econ;
 
 
 // ================================ STATE INJECT ================================
@@ -78,7 +79,7 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
 pub fn initStellarSystem( ng : *def.Engine ) void
 {
   // Setting up relevant components
-  for( 0..gbl.bodyCount )| idx |
+  for( 0..bodyCount )| idx |
   {
     nttArr[ idx ] = ng.entityIdRegistry.getNewEntity();
 
@@ -158,22 +159,25 @@ pub fn updateCameraLogic() void
 {
   var cam = &def.G_CAM;
 
+  const scrollSpeed = gdf.GAME_CONSTS.scrollSpeed;
+  const zoomSpeed   = gdf.GAME_CONSTS.zoomSpeed;
+
   // Moves the camera with the WASD or arrow keys
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0.0, -gbl.scrollSpeed )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ cam.moveByS( def.Vec2.new(  0.0,  gbl.scrollSpeed )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ cam.moveByS( def.Vec2.new( -gbl.scrollSpeed,  0.0 )); }
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  gbl.scrollSpeed,  0.0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0.0, -scrollSpeed )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.s ) or def.ray.isKeyDown( def.ray.KeyboardKey.down  )){ cam.moveByS( def.Vec2.new(  0.0,  scrollSpeed )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.a ) or def.ray.isKeyDown( def.ray.KeyboardKey.left  )){ cam.moveByS( def.Vec2.new( -scrollSpeed,  0.0 )); }
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.d ) or def.ray.isKeyDown( def.ray.KeyboardKey.right )){ cam.moveByS( def.Vec2.new(  scrollSpeed,  0.0 )); }
 
   // Zooms in and out with the mouse wheel
   if( target.camFollow )
   {
-    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * gbl.zoomSpeed ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / gbl.zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / zoomSpeed ); }
   }
   else
   {
-    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomOnMouseBy( 1.0 * gbl.zoomSpeed ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomOnMouseBy( 1.0 / gbl.zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomOnMouseBy( 1.0 * zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomOnMouseBy( 1.0 / zoomSpeed ); }
   }
 
   // Resets the camera zoom and position
@@ -333,7 +337,7 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
   const posX  = def.getScreenWidth() - 16.0;
   const id    = target.targetId;
 
-  if( id == 0 or id > gbl.bodyCount ){ return; }
+  if( id == 0 or id > bodyCount ){ return; }
 
   const trans = transStore.get( id );
   const shape = shapeStore.get( id );

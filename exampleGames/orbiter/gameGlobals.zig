@@ -3,20 +3,7 @@ const def = @import( "defs" );
 
 pub const gdf = @import( "gameDefs.zig" );
 
-
-// ================================ ENGINE & GAME SETTINGS ================================
-
-pub const backColour : def.Colour = .dIndigo;
-pub const foreColour : def.Colour = .dCrimson;
-pub const textColour : def.Colour = .lGreen;
-
-pub const zoomSpeed   : f32 =  1.2;
-pub const scrollSpeed : f64 = 12.0;
-
-pub const renderScale : f64 = 0.000_001;
-
-pub const bodyCount   : usize = gdf.BodyName.count - 1;
-
+const bodyCount = gdf.GAME_CONSTS.bodyCount;
 
 // ================ GAMEDATA STRUCTS ================
 
@@ -28,7 +15,6 @@ pub const GameData = struct
   stores : CompStores = .{},
   target : TargetInfo = .{},
 
-  maxEntityId : usize = gdf.BodyName.count - 1,
   entityArray : [ bodyCount ]def.Entity = std.mem.zeroes([ bodyCount ]def.Entity ),
 };
 

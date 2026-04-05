@@ -26,15 +26,33 @@ pub const BodyStore   = bdy.BodyComp.getStoreType();
 // Density  : Gt/km³           = g/cm³
 
 
+// ================================ ENGINE & GAME SETTINGS ================================
+
+
+
 pub const GAME_CONSTS : GameConsts = .{};
 
 pub const GameConsts = struct
 {
-  gravFactor      : f64 = 0.000240241,// 498.163, // Unit : km³/Gt¹Min² // TODO : adjust based on bodyTickLen
-  orbitDrawFactor : f32 = 0.25,
+  zoomSpeed   : f32  =  1.2,
+  scrollSpeed : f64  = 12.0,
+
+
+  gravFactor  : f64  = 0.000240241, // 498.163, // Unit : km³/Gt¹Min² // TODO : adjust based on bodyTickLen
 
   bodyStepLen : i128 = def.TimeVal.secPerMin(),
-  econStepLen : i128 = def.TimeVal.secPerDay(),
+  econStepLen : i128 = def.TimeVal.secPerWeek(),
+
+  renderScale : f64  = 0.000_001,
+
+  orbitDrawFactor : f32 = 0.25,
+
+  backColour : def.Colour = .dIndigo,
+  foreColour : def.Colour = .dCrimson,
+  textColour : def.Colour = .lGreen,
+
+  bodyCount   : usize = BodyName.count - 1, // Skipping .CUSTOM
+  maxEntityId : usize = BodyName.count - 1, // Skipping .CUSTOM
 };
 
 
