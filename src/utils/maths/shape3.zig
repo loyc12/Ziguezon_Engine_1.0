@@ -117,38 +117,38 @@ const Shape3D = enum( u8 )
   }
 
   // Sum of all boundary edges
-  pub inline fn getPerim( self : Shape3D, s : Vec3, baseShape : ?Shape2D ) f32
+  pub inline fn getPerim( self : Shape3D, s : Vec3, baseShape : ?Shape2D ) f64
   {
     const r = s.mulVal( 0.5 );
 
     switch( self )
     {
       .TETRA => return ,
-      .CUBE  => return 2.0 * ( s.X + s.Y + s.Z ),
+      .CUBE  => return 2.0 * ( s.x + s.y + s.z ),
       .OCTA  => return ,
       .DODE  => return ,
       .ICOSA => return ,
 
       .SPHER => return 0,
 //    .TORUS => return 0,
-      .CONE  => return Shape2D.ELLI.getPerim( .new( s.X, s.Z )),
-      .CYLIN => return Shape2D.ELLI.getPerim( .new( s.X, s.Z )) * 2.0,
+      .CONE  => return Shape2D.ELLI.getPerim( .new( s.x, s.z )),
+      .CYLIN => return Shape2D.ELLI.getPerim( .new( s.x, s.z )) * 2.0,
 
       else => if( Shape2D.isValidBaseShape( baseShape ))
       {
-        const N : f32 = @floatFromInt( baseShape.?.getEdgeCount() );
-        const bP      = baseShape.?.getPerim( .new( s.X, s.Z ));
+        const N : f64 = @floatFromInt( baseShape.?.getEdgeCount() );
+        const bP      = baseShape.?.getPerim( .new( s.x, s.z ));
 
         if( self == .PYRAM )
         {
-          const sH = @sqrt(( s.Y * s.Y ) + ( r.X * r.Z ));
+          const sH = @sqrt(( s.y * s.y ) + ( r.x * r.z ));
           const sP = N * sH;
 
           return bP + sP;
         }
         if( self == .PRISM )
         {
-          const sP = N * s.Y;
+          const sP = N * s.y;
 
           return bP + bP + sP;
         }
@@ -161,14 +161,14 @@ const Shape3D = enum( u8 )
   }
 
   // Sum of all faces
-  pub inline fn getArea( self : Shape3D, s : Vec3, baseShape : ?Shape2D ) f32
+  pub inline fn getArea( self : Shape3D, s : Vec3, baseShape : ?Shape2D ) f64
   {
     const r = s.mulVal( 0.5 );
 
     switch( self )
     {
       .TETRA => { return 0.0; }, // TODO : implement me
-      .CUBE  => { return 2.0 * (( s.X * s.Y ) + ( s.X * s.Z ) + ( s.Y * s.Z )); },
+      .CUBE  => { return 2.0 * (( s.x * s.y ) + ( s.x * s.z ) + ( s.y * s.z )); },
       .OCTA  => { return 0.0; }, // TODO : implement me
       .DODE  => { return 0.0; }, // TODO : implement me
       .ICOSA => { return 0.0; }, // TODO : implement me
@@ -177,49 +177,49 @@ const Shape3D = enum( u8 )
       {
         const p = 1.6075;
 
-        const a = def.pow( r.X, p );
-        const b = def.pow( r.Y, p );
-        const c = def.pow( r.Z, p );
+        const a = def.pow( r.x, p );
+        const b = def.pow( r.y, p );
+        const c = def.pow( r.z, p );
 
         return ( 4.0 * PI ) * def.pow((( a * b ) + ( a * c ) + ( b * c )) / 3.0, 1.0 / p ) ;
       },
 
       .CONE  =>
       {
-        const sH = @sqrt(( s.Y * s.Y ) + ( r.X * r.Z ));
-        const sA = Shape2D.ELLI.getPerim( .new( s.X, s.Z )) * sH;
-        const bA = Shape2D.ELLI.getArea(  .new( s.X, s.Z ));
+        const sH = @sqrt(( s.y * s.y ) + ( r.x * r.z ));
+        const sA = Shape2D.ELLI.getPerim( .new( s.x, s.z )) * sH;
+        const bA = Shape2D.ELLI.getArea(  .new( s.x, s.z ));
 
         return  bA + sA;
       },
 
       .CYLIN =>
       {
-        const sA = Shape2D.ELLI.getPerim( .new( s.X, s.Z )) * s.Y;
-        const bA = Shape2D.ELLI.getArea(  .new( s.X, s.Z ));
+        const sA = Shape2D.ELLI.getPerim( .new( s.x, s.z )) * s.y;
+        const bA = Shape2D.ELLI.getArea(  .new( s.x, s.z ));
 
         return bA + bA + sA;
       },
 
       else => if( Shape2D.isValidBaseShape( baseShape ))
       {
-        const bA = baseShape.?.getArea( .new( s.X, s.Z ));
+        const bA = baseShape.?.getArea( .new( s.x, s.z ));
 
         if( self == .PYRAM )
         {
-          const N : f32 = @floatFromInt( baseShape.?.getEdgeCount() );
-          const bP      = baseShape.?.getPerim( .new( s.X, s.Z ));
+          const N : f64 = @floatFromInt( baseShape.?.getEdgeCount() );
+          const bP      = baseShape.?.getPerim( .new( s.x, s.z ));
 
           // Exact lateral slant height via stacked pytagorean
           const sW = bP / N;
-          const sH = @sqrt(( s.Y * s.Y ) + ( r.X * r.Z ) - (( sW * 0.5 ) * ( sW * 0.5 )));
-          const sA = baseShape.?.getPerim( .new( s.X, s.Z )) * sH / 2.0;
+          const sH = @sqrt(( s.y * s.y ) + ( r.x * r.z ) - (( sW * 0.5 ) * ( sW * 0.5 )));
+          const sA = baseShape.?.getPerim( .new( s.x, s.z )) * sH / 2.0;
 
           return bA + sA;
         }
         if( self == .PRISM )
         {
-          const sA = baseShape.?.getPerim( .new( s.X, s.Z )) * s.Y;
+          const sA = baseShape.?.getPerim( .new( s.x, s.z )) * s.y;
 
           return bA + bA + sA;
         }
@@ -231,34 +231,34 @@ const Shape3D = enum( u8 )
     return 0;
   }
 
-  pub inline fn getVolume( self : Shape3D, s : Vec3, baseShape : ?Shape2D ) f32
+  pub inline fn getVolume( self : Shape3D, s : Vec3, baseShape : ?Shape2D ) f64
   {
     const r = s.mulVal( 0.5 );
 
     switch( self )
     {
       .TETRA => { return 0.0; }, // TODO : implement me
-      .CUBE  => { return s.X * s.Y * s.Z; },
+      .CUBE  => { return s.x * s.y * s.z; },
       .OCTA  => { return 0.0; }, // TODO : implement me
       .DODE  => { return 0.0; }, // TODO : implement me
       .ICOSA => { return 0.0; }, // TODO : implement me
 
-      .SHPER => return ( 4.0 / 3.0 ) * PI * r.X * r.Y * r.Z,
+      .SHPER => return ( 4.0 / 3.0 ) * PI * r.x * r.y * r.z,
 
       .CONE, .CYLIN =>
       {
-        const bA = Shape2D.ELLI.getArea( .new( s.X, s.Z ));
+        const bA = Shape2D.ELLI.getArea( .new( s.x, s.z ));
 
-        if( self == .CONE  ){ return s.Y * bA / 3.0; }
-        if( self == .CYLIN ){ return s.Y * bA;       }
+        if( self == .CONE  ){ return s.y * bA / 3.0; }
+        if( self == .CYLIN ){ return s.y * bA;       }
       },
 
       else => if( Shape2D.isValidBaseShape( baseShape ))
       {
-        const bA = baseShape.?.getArea( .new( s.X, s.Z ));
+        const bA = baseShape.?.getArea( .new( s.x, s.z ));
 
-        if( self == .PYRAM ){ return s.Y * bA / 3.0; }
-        if( self == .PRISM ){ return s.Y * bA;       }
+        if( self == .PYRAM ){ return s.y * bA / 3.0; }
+        if( self == .PRISM ){ return s.y * bA;       }
       }
     }
 

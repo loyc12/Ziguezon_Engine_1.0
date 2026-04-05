@@ -73,6 +73,12 @@ pub const OrbitComp = struct
   {
     return ( self.maxRadius + self.minRadius ) / 2.0;
   }
+  pub inline fn getSemiMinor( self : *const OrbitComp ) f64
+  {
+    const  a = self.getSemiMajor();
+    const  e = self.getEccentricity();
+    return a * @sqrt( 1.0 - ( e * e ));
+  }
   pub inline fn getEccentricity( self : *const OrbitComp ) f64
   {
     // Clamping avoids some high eccentricity math issues
@@ -160,6 +166,14 @@ pub const OrbitComp = struct
   pub inline fn getApsidesVec( self : *const OrbitComp ) Vec2
   {
     return self.getRelPosAtAngle( def.PI ).sub( self.getRelPosAtAngle( 0 ));
+  }
+
+  pub inline fn getOrbitLen( self : *const OrbitComp ) f64
+  {
+    const a : f32 = @floatCast( self.getSemiMajor() );
+    const b : f32 = @floatCast( self.getSemiMinor() );
+
+    return def.Shape2D.ELLI.getPerim( .new( a, b ));
   }
 
   // Calculates the position of a given economy
@@ -287,60 +301,85 @@ pub const OrbitComp = struct
     var p1 : Vec2 = self.getRelPosAtAngle( self.angularPos );
     var p2 : Vec2 = p1;
 
+    const pathLenFactor : f64 = def.clmp( gdf.G_CONSTS.orbitPathLenFactor, 0.0, 1.0 );
+
+    var doDraw : bool = ( pathLenFactor > def.EPS );
+
+    if( !doDraw ){ return; }
+
     const zoomedWidth : f64 = 1.0 / def.G_CAM.getZoom();
     const ecc         : f64 = self.getEccentricity();
-    const N_f         : f32 = @floatFromInt( N );
-    const maxSegments : u32 = @intFromFloat( N_f * gdf.G_CONSTS.orbitDrawFactor );
+    const N_f         : f64 = @floatFromInt( N );
     const semiMajor   : f32 = @floatCast( self.getSemiMajor() );
 
-    var  baseStep : f32 = def.TAU / N_f;
+    var  baseStep : f32 = @floatCast( def.TAU / N_f );
+
+    var lineCol : def.Colour = .green;
     const maxStep : f32 = baseStep * 4.00; // Prevents huge jumps near periapsis
     const minStep : f32 = baseStep * 0.25; // Prevents tiny crawl near apoapsis
 
-    var lineCol : def.Colour = .green;
-
     // Checking for non-circular orbits
-    if( ecc > 0.1 )
+    if( ecc > 0.3 )
     {
       // Correction factor: the mean of ( r/a )² over a full orbit is ( 1-e² )^( 3/2 )
       // Multiplying by this ensures N adaptive steps still sum to ~TAU
       const ecc_f : f32 = @floatCast( ecc );
       const oneMinusE2  = 1.0 - ( ecc_f * ecc_f );
 
-      baseStep *= oneMinusE2 * @sqrt( oneMinusE2 ); // *= ( 1 - e² )^( 3/2 )
+      baseStep *= oneMinusE2 * @sqrt( oneMinusE2 );
       lineCol   = .yellow;
     }
 
+    const maxLen : f64 = self.getOrbitLen() * pathLenFactor;
+    var   sumLen : f64 = 0.0;
+
     var drawAngle : f32 = self.angularPos;
+    var sumAngle  : f32 = 0.0;
 
     var  step : f32 = baseStep;
     const dir : f32 = if( self.retrograde ) 1.0 else -1.0;
 
-    for( 0..maxSegments )| _ |
+    while( doDraw )
     {
       // Checking for non-circular orbits
-      if( ecc > 0.1 )
+      if( ecc > 0.3 )
       {
         // Scales step by (r/a)² meaning :
-        // larger radius → smaller step
-        // smaller radius → larger step
+        // larger  radius -> smaller steps
+        // smaller radius -> larger  steps
         const r : f32 = @floatCast( self.getRadiusAtAngle( drawAngle ));
         const ratio   = r / semiMajor;
 
-        step = def.clmp( baseStep / ( ratio * ratio ), minStep, maxStep );
+        step = baseStep / ( ratio * ratio );
+        step = def.clmp( step, minStep, maxStep );
       }
 
+      sumAngle += step;
 
-      drawAngle += step * dir;
+      if( sumAngle >= def.TAU ) // Prevent doubling pathlines
+      {
+        drawAngle  = self.angularPos;
+        doDraw     = false;
+      }
+      else
+      {
+        drawAngle += step * dir;
+      }
 
       p2 = p1;
       p1 = self.getRelPosAtAngle( drawAngle );
 
       def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), lineCol, @floatCast( zoomedWidth ));
 
-      // Fading away lineCol
-      lineCol = lineCol.subA( 0 );
+      lineCol = lineCol.subA( gdf.G_CONSTS.orbitFadeStrenght ); // Fading-out path's alpha
+
       if( lineCol.a == 0 ){ break; }
+
+      if( pathLenFactor < 1.0 - def.EPS )
+      {
+        sumLen += p1.getDist( p2 );
+        if( sumLen >= maxLen ){ break; }
+      }
     }
   }
 

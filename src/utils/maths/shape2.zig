@@ -12,7 +12,7 @@ const PI = def.PI;
 
 
 // Ramanujan ellipse perimeter correction factor ( dimensionless )
-inline fn getRamanujanFactor( a : f32, b : f32 ) f32
+inline fn getRamanujanFactor( a : f64, b : f64 ) f64
 {
   const sum = a + b;
   const dif = a - b;
@@ -146,16 +146,16 @@ pub const Shape2D = enum( u8 )
   }
 
   // Sum of all edges
-  pub inline fn getPerim( self : Shape2D, s : Vec2 ) f32
+  pub inline fn getPerim( self : Shape2D, s : Vec2 ) f64
   {
-    const rX = 0.5 * s.X;
-    const rY = 0.5 * s.Y;
+    const rX = 0.5 * s.x;
+    const rY = 0.5 * s.y;
 
     switch( self )
     {
       .RLIN => return 0.5 * ( rX  + rY  ),
-      .DLIN => return 0.5 * ( s.X + s.Y ),
-      .RECT => return 2.0 * ( s.X + s.Y ),
+      .DLIN => return 0.5 * ( s.x + s.y ),
+      .RECT => return 2.0 * ( s.x + s.y ),
 
       .ELLI =>
       {
@@ -173,8 +173,8 @@ pub const Shape2D = enum( u8 )
 
       else =>
       {
-        const N : f32 = @floatFromInt( self.getEdgeCount()  );
-        const k : f32 = @floatFromInt( self.getSkipFactor() );
+        const N : f64 = @floatFromInt( self.getEdgeCount()  );
+        const k : f64 = @floatFromInt( self.getSkipFactor() );
 
         // Mean radius ellipse perimeter
         const rM   = ( rX + rY ) * 0.5;
@@ -193,20 +193,20 @@ pub const Shape2D = enum( u8 )
     }
   }
 
-  pub inline fn getArea( self : Shape2D, s : Vec2 ) f32
+  pub inline fn getArea( self : Shape2D, s : Vec2 ) f64
   {
-    const rX = 0.5 * s.X;
-    const rY = 0.5 * s.Y;
+    const rX = 0.5 * s.x;
+    const rY = 0.5 * s.y;
 
     switch( self )
     {
       .RLIN, .DLIN => return 0.0,
-      .RECT        => return s.X * s.Y,
+      .RECT        => return s.x * s.y,
       .ELLI        => return PI * ( rX * rY ),
       else => // Exact formula for regular and affine polygon's area
       {
-        const N : f32 = @floatFromInt( self.getEdgeCount()  );
-        const k : f32 = @floatFromInt( self.getSkipFactor() );
+        const N : f64 = @floatFromInt( self.getEdgeCount()  );
+        const k : f64 = @floatFromInt( self.getSkipFactor() );
 
         return ( N / 2.0 ) * ( rX * rY ) * @sin( 2.0 * k * PI / N );
       //return ( N / 2.0 ) * ( rX * rY ) * @sin( 2.0 * PI / N );

@@ -44,7 +44,8 @@ pub const GameConsts = struct
 
   renderScale : f64  = 0.000_001,
 
-  orbitDrawFactor : f32 = 0.2, // 0.0 - 1.0 // Controls orbital path lenght
+  orbitPathLenFactor : f32 = 0.25, // 0.0 - 1.0 // Controls orbital path lenght
+  orbitFadeStrenght  : u8  = 8,   // 0 - 255   // Controls orbital path fading
 
   backColour : def.Colour = .dIndigo,
   foreColour : def.Colour = .dCrimson,
