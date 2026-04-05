@@ -13,13 +13,13 @@ const RayVec2 = def.RayVec2;
 
 pub const Angle = struct
 {
-  r : f32 = 0,
+  r : f64 = 0,
 
 
   // ================ GENERATION ================
 
-  pub inline fn newDeg( d : f32 ) Angle { return Angle.newRad( def.DtR( d )); }
-  pub inline fn newRad( r : f32 ) Angle
+  pub inline fn newDeg( d : f64 ) Angle { return Angle.newRad( def.DtR( d )); }
+  pub inline fn newRad( r : f64 ) Angle
   {
     var tmp = Angle{ .r = r };
     return tmp.norm();
@@ -28,7 +28,7 @@ pub const Angle = struct
   // ================ CONVERSIONS ================
 
   pub inline fn toRayVec2( self : *const Angle, scale : ?Vec2 ) RayVec2        { return self.toVec2( scale ).toRayVec2(); }
-  pub inline fn toVecA(    self : *const Angle, scale : ?Vec2, r : ?f32 ) VecA { return self.toVec2( scale ).toVecA( r ); }
+  pub inline fn toVecA(    self : *const Angle, scale : ?Vec2, r : ?f64 ) VecA { return self.toVec2( scale ).toVecA( r ); }
   pub inline fn toVec2(    self : *const Angle, scale : ?Vec2 ) Vec2
   {
     const r = @cos( self.r ) * if( scale )| s | s.r else 1.0;
@@ -37,9 +37,9 @@ pub const Angle = struct
     return Vec2{ .r = r, .y = y };
   }
 
-  pub inline fn toRad( self : *const Angle ) f32 { return self.r; }
-  pub inline fn toDeg( self : *const Angle ) f32 { return def.RtD( self.r ); }
-  pub inline fn toOne( self : *const Angle ) f32 { return self.r / def.PI; }
+  pub inline fn toRad( self : *const Angle ) f64 { return self.r; }
+  pub inline fn toDeg( self : *const Angle ) f64 { return def.RtD( self.r ); }
+  pub inline fn toOne( self : *const Angle ) f64 { return self.r / def.PI; }
 
   pub inline fn normSelf( self :   *Angle ) void  { self.r =           def.wrap( self.r, -def.PI, def.PI );  }
   pub inline fn norm( self : *const Angle ) Angle { return Angle{ .r = def.wrap( self.r, -def.PI, def.PI )}; }
@@ -57,9 +57,9 @@ pub const Angle = struct
   pub inline fn isLeftOf(  self : *const Angle, other : Angle ) bool { return self.sub( other ).isPosi(); }
   pub inline fn isRightOf( self : *const Angle, other : Angle ) bool { return self.sub( other ).isNeg(); }
 
-  pub inline fn isAlignedTo(  self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( self.sub( other ).r ) <= threshold; }
-  pub inline fn isOppositeTo( self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - def.PI ) <= threshold; }
-  pub inline fn isPerpTo(     self : *const Angle, other : Angle, threshold : f32 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - ( def.PI / 2 )) <= threshold; }
+  pub inline fn isAlignedTo(  self : *const Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( self.sub( other ).r ) <= threshold; }
+  pub inline fn isOppositeTo( self : *const Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - def.PI ) <= threshold; }
+  pub inline fn isPerpTo(     self : *const Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - ( def.PI / 2 )) <= threshold; }
 
 
   // ================ BACIS MATHS ================
@@ -74,16 +74,16 @@ pub const Angle = struct
   pub inline fn add( self : *const Angle, other : Angle ) Angle { return Angle.newRad( self.r + other.r ).norm(); }
   pub inline fn sub( self : *const Angle, other : Angle ) Angle { return Angle.newRad( self.r - other.r ).norm(); }
 
-  pub inline fn rotRad( self : *const Angle, val : f32 ) Angle { return self.addRad(  val ); }
-  pub inline fn addRad( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r + val ).norm(); }
-  pub inline fn subRad( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r - val ).norm(); }
+  pub inline fn rotRad( self : *const Angle, val : f64 ) Angle { return self.addRad(  val ); }
+  pub inline fn addRad( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r + val ).norm(); }
+  pub inline fn subRad( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r - val ).norm(); }
 
-  pub inline fn rotDeg( self : *const Angle, val : f32 ) Angle { return self.addDeg(  val ); }
-  pub inline fn addDeg( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r + def.DtR( val )).norm(); }
-  pub inline fn subDeg( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r - def.DtR( val )).norm(); }
+  pub inline fn rotDeg( self : *const Angle, val : f64 ) Angle { return self.addDeg(  val ); }
+  pub inline fn addDeg( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r + def.DtR( val )).norm(); }
+  pub inline fn subDeg( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r - def.DtR( val )).norm(); }
 
-  pub inline fn mulVal( self : *const Angle, val : f32 ) Angle { return Angle.newRad( self.r * val ).norm(); }
-  pub inline fn divVal( self : *const Angle, val : f32 ) Angle
+  pub inline fn mulVal( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r * val ).norm(); }
+  pub inline fn divVal( self : *const Angle, val : f64 ) Angle
   {
     if( val == 0 )
     {
@@ -96,23 +96,23 @@ pub const Angle = struct
 
   // ================ TRIGONOMETRY ================
 
-  pub inline fn cos(   self : *const Angle ) f32 { return @cos( self.r ); }
-  pub inline fn sin(   self : *const Angle ) f32 { return @sin( self.r ); }
-  pub inline fn tan(   self : *const Angle ) f32 { return @tan( self.r ); }
-  pub inline fn slerp( self : *const Angle, other : Angle, t : f32 ) Angle
+  pub inline fn cos(   self : *const Angle ) f64 { return @cos( self.r ); }
+  pub inline fn sin(   self : *const Angle ) f64 { return @sin( self.r ); }
+  pub inline fn tan(   self : *const Angle ) f64 { return @tan( self.r ); }
+  pub inline fn slerp( self : *const Angle, other : Angle, t : f64 ) Angle
   {
     const diff = other.sub( self );
     return self.add( diff.mul( def.clamp( t, 0.0, 1.0 )));
   }
 
-  pub inline fn acos( val : f32 ) Angle { return Angle.newRad( std.math.acos( val ) ).norm(); }
-  pub inline fn asin( val : f32 ) Angle { return Angle.newRad( std.math.asin( val ) ).norm(); }
-  pub inline fn atan( val : f32 ) Angle { return Angle.newRad( std.math.atan( val ) ).norm(); }
+  pub inline fn acos( val : f64 ) Angle { return Angle.newRad( std.math.acos( val ) ).norm(); }
+  pub inline fn asin( val : f64 ) Angle { return Angle.newRad( std.math.asin( val ) ).norm(); }
+  pub inline fn atan( val : f64 ) Angle { return Angle.newRad( std.math.atan( val ) ).norm(); }
 
-  pub inline fn sec( val : f32 ) Angle { return Angle.newRad( std.math.acos( 1.0 / val ) ).norm(); }
-  pub inline fn csc( val : f32 ) Angle { return Angle.newRad( std.math.asin( 1.0 / val ) ).norm(); }
-  pub inline fn cot( val : f32 ) Angle { return Angle.newRad( std.math.atan( 1.0 / val ) ).norm(); }
+  pub inline fn sec( val : f64 ) Angle { return Angle.newRad( std.math.acos( 1.0 / val ) ).norm(); }
+  pub inline fn csc( val : f64 ) Angle { return Angle.newRad( std.math.asin( 1.0 / val ) ).norm(); }
+  pub inline fn cot( val : f64 ) Angle { return Angle.newRad( std.math.atan( 1.0 / val ) ).norm(); }
 
-  pub inline fn atan2( y : f32, x : f32 ) Angle { return Angle.newRad( std.math.atan2( y, x ) ).norm(); }
+  pub inline fn atan2( y : f64, x : f64 ) Angle { return Angle.newRad( std.math.atan2( y, x ) ).norm(); }
 
 };

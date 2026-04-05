@@ -208,7 +208,7 @@ pub const OrbitComp = struct
     const y = radius * @sin( angle );
 
     // Return the position after rotating it appropriately
-    return Vec2.new( x, y ).rot( .{ .r = @floatCast( self.orientation )});
+    return Vec2.new( x, y ).rot( .{ .r = self.orientation });
   }
 
 
@@ -229,11 +229,11 @@ pub const OrbitComp = struct
     const velTan = self.angularVel * self.getCurrentRadius();
 
     // Convert to Cartesian vectors
-    const vecRad = Vec2.fromAngle( .{ .r = @floatCast( self.angularPos )}).mulVal( velRad );
-    const vecTan = Vec2.fromAngle( .{ .r = @floatCast( self.angularPos + def.PI / 2.0 )}).mulVal( velTan );
+    const vecRad = Vec2.fromAngle( .{ .r = self.angularPos }).mulVal( velRad );
+    const vecTan = Vec2.fromAngle( .{ .r = self.angularPos + def.PI / 2.0 }).mulVal( velTan );
 
     // Rotate by orbit orientation
-    return vecRad.add( vecTan ).rot(.{ .r = @floatCast( self.orientation )});
+    return vecRad.add( vecTan ).rot(.{ .r = self.orientation });
   }
 
 
@@ -269,8 +269,8 @@ pub const OrbitComp = struct
     const zoomedWidth  = 1.0 / def.G_CAM.getZoom();
 
 
-    def.drawLine( selfPos, selfPos.add( scaledAbsVel ), .blue, @floatCast( zoomedWidth * 2.0 )); // Velocity Vector ( absolute )
-    def.drawLine( selfPos, selfPos.add( scaledRelVel ), .red,  @floatCast( zoomedWidth * 2.0 )); // Velocity Vector ( relative )
+    def.drawLine( selfPos, selfPos.add( scaledAbsVel ), .blue, zoomedWidth * 2.0 ); // Velocity Vector ( absolute )
+    def.drawLine( selfPos, selfPos.add( scaledRelVel ), .red,  zoomedWidth * 2.0 ); // Velocity Vector ( relative )
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
@@ -288,11 +288,11 @@ pub const OrbitComp = struct
       vecMin2 = vecMin1;
       vecMax2 = vecMax1;
 
-      vecMin1 = vecMin1.rot( .{ .r = @floatCast( a )});
-      vecMax1 = vecMax1.rot( .{ .r = @floatCast( a )});
+      vecMin1 = vecMin1.rot( .{ .r = a });
+      vecMax1 = vecMax1.rot( .{ .r = a });
 
-      def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    @floatCast( zoomedWidth ));
-      def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, @floatCast( zoomedWidth ));
+      def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
+      def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
     }
 
     def.drawHexa( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange );
@@ -369,7 +369,7 @@ pub const OrbitComp = struct
       p2 = p1;
       p1 = self.getRelPosAtAngle( drawAngle );
 
-      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, @floatCast( zoomedWidth ));
+      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, zoomedWidth );
 
       pathCol = pathCol.subA( gdf.G_CONSTS.orbitFadeStrenght ); // Fading-out path's alpha
 

@@ -98,13 +98,12 @@ pub const VecA = struct
   pub inline fn mulVal( self : *const VecA, val : f64 ) VecA { return VecA{ .x = self.x * val, .y = self.y * val, .a = self.a.mulVal( @floatCast( val ))}; }
   pub inline fn divVal( self : *const VecA, val : f64 ) ?VecA
   {
-    const tmp : f32 = @floatCast( val );
-    if( -def.EPS > tmp and tmp < def.EPS )
+    if( -def.EPS > val and val < def.EPS )
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in VecA.divVal()" );
       return null;
     }
-    return VecA{ .x = self.x / val, .y = self.y / val, .a = self.a.mulVal( 1.0 / tmp )};
+    return VecA{ .x = self.x / val, .y = self.y / val, .a = self.a.mulVal( 1.0 / val )};
   }
 
   pub inline fn getDist(    self : *const VecA, other : VecA ) f64 { return @sqrt( self.getDistSqr( other )); }

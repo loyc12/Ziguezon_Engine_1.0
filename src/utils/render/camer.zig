@@ -113,7 +113,7 @@ pub const Cam2D = struct
     //.target   = tmp.pos.toRayVec2(),
       .target   = .{ .x = 0.0, .y = 0.0 }, // Always zero - we handle world offset manually during worldRender step
       .offset   = getHalfScreenSize().toRayVec2(),
-      .rotation = tmp.pos.a.toDeg(),
+      .rotation = @floatCast( tmp.pos.a.toDeg() ),
       .zoom     = @floatCast( tmp.zoom ),
     };
 
