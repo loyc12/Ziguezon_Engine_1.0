@@ -239,23 +239,23 @@ pub const SpeedFactor = enum( i8 )
 
 // ================ GAMEDATA MATRICES ================
 
-pub const sshn_d = @import( "econ/starShine.zig"   );
+    const sshn_d = @import( "econ/starShine.zig"   );
 
 pub const SUNSHINE = &sshn_d.solShine;
 
-pub const stlr_d = @import( "data/stellarData.zig" );
-pub const ecnm_d = @import( "data/economyData.zig" );
-pub const trde_d = @import( "data/tradeData.zig"   );
+    const stlr_d = @import( "data/stellarData.zig" );
+    const ecnm_d = @import( "data/economyData.zig" );
+    const trde_d = @import( "data/tradeData.zig"   );
 
 pub const STLR_DATA         = &stlr_d.stellarData;
 pub const ECON_ORBIT_DATA   = &trde_d.econOrbitalData;
 pub const ECON_TRAVEL_TABLE = &trde_d.econTravelTable;
 
-pub const powr_d = @import( "data/powerData.zig"          );
-pub const vesl_d = @import( "data/vesselData.zig"         );
-pub const rsrc_d = @import( "data/resourceData.zig"       );
-pub const nfrs_d = @import( "data/infrastructureData.zig" );
-pub const ndst_d = @import( "data/industryData.zig"       );
+    const powr_d = @import( "data/powerData.zig"          );
+    const vesl_d = @import( "data/vesselData.zig"         );
+    const rsrc_d = @import( "data/resourceData.zig"       );
+    const nfrs_d = @import( "data/infrastructureData.zig" );
+    const ndst_d = @import( "data/industryData.zig"       );
 
 pub const POWR_DATA = &powr_d.powerData;
 pub const VESL_DATA = &vesl_d.vesselData;
