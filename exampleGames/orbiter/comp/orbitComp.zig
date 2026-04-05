@@ -14,7 +14,7 @@ pub const OrbitComp = struct
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  const G : f64 = gdf.GAME_CONSTS.gravFactor;
+  const G : f64 = gdf.G_CONSTS.gravFactor;
   const N : u32 = 256; // number of segments used to render orbital path
 
   orbitedID : def.EntityId = 1, // 1 is the sun by default
@@ -278,8 +278,8 @@ pub const OrbitComp = struct
       def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, @floatCast( zoomedWidth ));
     }
 
-    def.drawPoly( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 5.0 ), .{}, .orange, def.G_ST.Graphic_Ellipse_Facets );
-    def.drawPoly( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 5.0 ), .{}, .purple, def.G_ST.Graphic_Ellipse_Facets );
+    def.drawHexa( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange );
+    def.drawHexa( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple );
   }
 
   pub fn renderPath( self : *const OrbitComp, orbitedPos : Vec2 ) void
@@ -287,21 +287,60 @@ pub const OrbitComp = struct
     var p1 : Vec2 = self.getRelPosAtAngle( self.angularPos );
     var p2 : Vec2 = p1;
 
-    const zoomedWidth = 1.0 / def.G_CAM.getZoom();
+    const zoomedWidth : f64 = 1.0 / def.G_CAM.getZoom();
+    const ecc         : f64 = self.getEccentricity();
+    const N_f         : f32 = @floatFromInt( N );
+    const maxSegments : u32 = @intFromFloat( N_f * gdf.G_CONSTS.orbitDrawFactor );
+    const semiMajor   : f32 = @floatCast( self.getSemiMajor() );
 
-    var drawN : f32 = @floatFromInt( N );
-        drawN      *= gdf.GAME_CONSTS.orbitDrawFactor;
+    var  baseStep : f32 = def.TAU / N_f;
+    const maxStep : f32 = baseStep * 4.00; // Prevents huge jumps near periapsis
+    const minStep : f32 = baseStep * 0.25; // Prevents tiny crawl near apoapsis
 
-    for( 0..@intFromFloat( drawN ))| i |
+    var lineCol : def.Colour = .green;
+
+    // Checking for non-circular orbits
+    if( ecc > 0.1 )
     {
-      var a = def.TAU * @as( f32, @floatFromInt( i + 1 )) / @as( f32, @floatFromInt( N ));
+      // Correction factor: the mean of ( r/a )² over a full orbit is ( 1-e² )^( 3/2 )
+      // Multiplying by this ensures N adaptive steps still sum to ~TAU
+      const ecc_f : f32 = @floatCast( ecc );
+      const oneMinusE2  = 1.0 - ( ecc_f * ecc_f );
 
-      if( self.retrograde ){ a *= -1.0; }
+      baseStep *= oneMinusE2 * @sqrt( oneMinusE2 ); // *= ( 1 - e² )^( 3/2 )
+      lineCol   = .yellow;
+    }
+
+    var drawAngle : f32 = self.angularPos;
+
+    var  step : f32 = baseStep;
+    const dir : f32 = if( self.retrograde ) 1.0 else -1.0;
+
+    for( 0..maxSegments )| _ |
+    {
+      // Checking for non-circular orbits
+      if( ecc > 0.1 )
+      {
+        // Scales step by (r/a)² meaning :
+        // larger radius → smaller step
+        // smaller radius → larger step
+        const r : f32 = @floatCast( self.getRadiusAtAngle( drawAngle ));
+        const ratio   = r / semiMajor;
+
+        step = def.clmp( baseStep / ( ratio * ratio ), minStep, maxStep );
+      }
+
+
+      drawAngle += step * dir;
 
       p2 = p1;
-      p1 = self.getRelPosAtAngle( self.angularPos - a );
+      p1 = self.getRelPosAtAngle( drawAngle );
 
-      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, @floatCast( zoomedWidth ));
+      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), lineCol, @floatCast( zoomedWidth ));
+
+      // Fading away lineCol
+      lineCol = lineCol.subA( 0 );
+      if( lineCol.a == 0 ){ break; }
     }
   }
 
@@ -320,7 +359,7 @@ pub const OrbitComp = struct
     {
       const pos = self.getAbsLpPos( orbitedPos, @intCast( i ));
 
-      def.drawPoly( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3.0 ), .{}, .red, def.G_ST.Graphic_Ellipse_Facets );
+      def.drawHexa( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3.0 ), .{}, .red );
     }
   }
 

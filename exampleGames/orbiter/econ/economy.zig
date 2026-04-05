@@ -52,11 +52,11 @@ pub const Economy = struct
   buildQueue  : ?BuildQueue = null,
   ecology     : ?Ecology    = null,
 
-  areaMetrics : gbl.ecnm_d.AreaMetricData = .{},
-  popMetrics  : gbl.ecnm_d.PopMetricData  = .{},
-  resState    : gbl.rsrc_d.ResStateData   = .{},
-  infState    : gbl.nfrs_d.InfStateData   = .{},
-  indState    : gbl.ndst_d.IndStateData   = .{},
+  areaMetrics : gdf.ecnm_d.AreaMetricData = .{},
+  popMetrics  : gdf.ecnm_d.PopMetricData  = .{},
+  resState    : gdf.rsrc_d.ResStateData   = .{},
+  infState    : gdf.nfrs_d.InfStateData   = .{},
+  indState    : gdf.ndst_d.IndStateData   = .{},
 
   avgIndActivity : f64 = 0.0,
   avgResAccess   : f64 = 0.0,

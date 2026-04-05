@@ -5,10 +5,10 @@ const gbl = @import( "gameGlobals.zig" );
 const gdf = @import( "gameDefs.zig"    );
 const utl = @import( "gameUtils.zig"   );
 
-const times  = &gbl.GAME_DATA.times;
-const stores = &gbl.GAME_DATA.stores;
-const target = &gbl.GAME_DATA.target;
-const nttArr = &gbl.GAME_DATA.entityArray;
+const times  = &gbl.G_DATA.times;
+const stores = &gbl.G_DATA.stores;
+const target = &gbl.G_DATA.target;
+const nttArr = &gbl.G_DATA.entityArray;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -60,7 +60,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
   {
     const bodyStore : *gdf.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
-    var mainEcon = bodyStore.get( target.homeId ).?.getEcon( .GROUND );
+    var mainEcon = bodyStore.get( gdf.G_CONSTS.homeId ).?.getEcon( .GROUND );
 
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.zero  )){ mainEcon.addPopCount(                10000 ); }
     if( def.ray.isKeyPressed( def.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
@@ -87,7 +87,7 @@ pub fn OnTickWorld( ng : *def.Engine ) void // Called by engine.tryTick() ( ever
 
   utl.tickOrbiters( transStore, orbitStore );
 
-  const starPos : def.Vec2 = transStore.get( target.starId ).?.pos.toVec2();
+  const starPos : def.Vec2 = transStore.get( gdf.G_CONSTS.starId ).?.pos.toVec2();
 
   utl.tickGlobalEconomy( transStore, bodyStore, starPos );
 }

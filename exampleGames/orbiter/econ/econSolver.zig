@@ -20,7 +20,7 @@ const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
 
-const ecnm_d = gbl.ecnm_d;
+const ecnm_d = gdf.ecnm_d;
 
 const FlowAgent = ecnm_d.FlowAgentEnum;
 const FlowPhase = ecnm_d.FlowPhaseEnum;

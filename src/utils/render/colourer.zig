@@ -203,31 +203,88 @@ pub const Colour = struct
 
   // ================ CONVERSIONS ================
 
-  pub inline fn toRayCol( self : *const Colour ) RayCol { return .{ .r = self.r, .g = self.g, .b = self.b, .a = self.a }; }
+  pub inline fn toRayCol( self : Colour ) RayCol { return .{ .r = self.r, .g = self.g, .b = self.b, .a = self.a }; }
 
-  pub inline fn setR( self : *const Colour, r : u8 ) Colour { return .{ .r = r, .g = self.g, .b = self.b, .a = self.a }; }
-  pub inline fn setG( self : *const Colour, g : u8 ) Colour { return .{ .r = self.r, .g = g, .b = self.b, .a = self.a }; }
-  pub inline fn setB( self : *const Colour, b : u8 ) Colour { return .{ .r = self.r, .g = self.g, .b = b, .a = self.a }; }
-  pub inline fn setA( self : *const Colour, a : u8 ) Colour { return .{ .r = self.r, .g = self.g, .b = self.b, .a = a }; }
 
+  pub inline fn setRGB(  self : Colour, r : u8, g : u8, b : u8 ) Colour { return .{ .r = r, .g = g, .b = b, .a = self.a }; }
+
+  pub inline fn setR( self : Colour, r : u8 ) Colour { return .{ .r = r,      .g = self.g, .b = self.b, .a = self.a }; }
+  pub inline fn setG( self : Colour, g : u8 ) Colour { return .{ .r = self.r, .g = g,      .b = self.b, .a = self.a }; }
+  pub inline fn setB( self : Colour, b : u8 ) Colour { return .{ .r = self.r, .g = self.g, .b = b,      .a = self.a }; }
+  pub inline fn setA( self : Colour, a : u8 ) Colour { return .{ .r = self.r, .g = self.g, .b = self.b, .a = a      }; }
+
+
+  pub inline fn addRGBA( self : Colour, v : u8 ) Colour { return .{ .r = self.r +| v, .g = self.g +| v, .b = self.b +| v, .a = self.a +| v }; }
+  pub inline fn addRGB(  self : Colour, v : u8 ) Colour { return .{ .r = self.r +| v, .g = self.g +| v, .b = self.b +| v, .a = self.a      }; }
+
+  pub inline fn addR( self : Colour, r : u8 ) Colour { return .{ .r = self.r +| r, .g = self.g,      .b = self.b,      .a = self.a      }; }
+  pub inline fn addG( self : Colour, g : u8 ) Colour { return .{ .r = self.r,      .g = self.g +| g, .b = self.b,      .a = self.a      }; }
+  pub inline fn addB( self : Colour, b : u8 ) Colour { return .{ .r = self.r,      .g = self.g,      .b = self.b +| b, .a = self.a      }; }
+  pub inline fn addA( self : Colour, a : u8 ) Colour { return .{ .r = self.r,      .g = self.g,      .b = self.b,      .a = self.a +| a }; }
+
+
+  pub inline fn subRGBA( self : Colour, v : u8 ) Colour { return .{ .r = self.r -| v, .g = self.g -| v, .b = self.b -| v, .a = self.a -| v }; }
+  pub inline fn subRGB(  self : Colour, v : u8 ) Colour { return .{ .r = self.r -| v, .g = self.g -| v, .b = self.b -| v, .a = self.a      }; }
+
+  pub inline fn subR( self : Colour, r : u8 ) Colour { return .{ .r = self.r -| r, .g = self.g,      .b = self.b,      .a = self.a      }; }
+  pub inline fn subG( self : Colour, g : u8 ) Colour { return .{ .r = self.r,      .g = self.g -| g, .b = self.b,      .a = self.a      }; }
+  pub inline fn subB( self : Colour, b : u8 ) Colour { return .{ .r = self.r,      .g = self.g,      .b = self.b -| b, .a = self.a      }; }
+  pub inline fn subA( self : Colour, a : u8 ) Colour { return .{ .r = self.r,      .g = self.g,      .b = self.b,      .a = self.a -| a }; }
+
+
+  pub inline fn mergeRGBA( self : Colour, other : Colour ) Colour
+  {
+    const r : u8 = self.r +| other.r;
+    const g : u8 = self.g +| other.g;
+    const b : u8 = self.b +| other.b;
+    const a : u8 = self.a +| other.a;
+
+    return .new( r, g, b, a );
+  }
+
+  pub inline fn mergeRGB( self : Colour, other : Colour ) Colour
+  {
+    const r : u8 = self.r +| other.r;
+    const g : u8 = self.g +| other.g;
+    const b : u8 = self.b +| other.b;
+
+    return .new( r, g, b, self.a );
+  }
 
 
   // ================ COMPARISONS ================
 
-  pub inline fn isWhite( self : *const Colour ) bool { return self.r >= 0 and self.g >= 0 and self.b >= 0; }
-  pub inline fn isBlack( self : *const Colour ) bool { return self.r == 0 and self.g == 0 and self.b == 0; }
-  pub inline fn isGray(  self : *const Colour ) bool { return self.r == self.g and self.g == self.b; }
+  pub inline fn isWhite( self : Colour ) bool { return self.r >= 0 and self.g >= 0 and self.b >= 0; }
+  pub inline fn isBlack( self : Colour ) bool { return self.r == 0 and self.g == 0 and self.b == 0; }
+  pub inline fn isGray(  self : Colour ) bool { return self.r == self.g and self.g == self.b; }
 
-  pub inline fn isRed(   self : *const Colour ) bool { return self.r > self.g and self.r > self.b; }
-  pub inline fn isGreen( self : *const Colour ) bool { return self.g > self.r and self.r > self.b; }
-  pub inline fn isBlue(  self : *const Colour ) bool { return self.b > self.g and self.b > self.g; }
+  pub inline fn isRed(   self : Colour ) bool { return self.r > self.g and self.r > self.b; }
+  pub inline fn isGreen( self : Colour ) bool { return self.g > self.r and self.r > self.b; }
+  pub inline fn isBlue(  self : Colour ) bool { return self.b > self.g and self.b > self.g; }
 
 
-  pub inline fn isSolid( self : *const Colour ) bool { return self.a == 255; }
-  pub inline fn isTrans( self : *const Colour ) bool { return self.a != 0 and self.a != 255; }
-  pub inline fn isVisib( self : *const Colour ) bool { return self.a >  0; }
+  pub inline fn isSolid( self : Colour ) bool { return self.a == 255; }
+  pub inline fn isTrans( self : Colour ) bool { return self.a != 0 and self.a != 255; }
+  pub inline fn isVisib( self : Colour ) bool { return self.a >  0; }
 
-  pub inline fn isEq(    self : *const Colour, other : Colour ) bool { return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a; }
-  pub inline fn isDiff(  self : *const Colour, other : Colour ) bool { return self.r != other.r or  self.g != other.g or  self.b != other.b or  self.a != other.a; }
+  pub inline fn isEq(    self : Colour, other : Colour ) bool { return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a; }
+  pub inline fn isDiff(  self : Colour, other : Colour ) bool { return self.r != other.r or  self.g != other.g or  self.b != other.b or  self.a != other.a; }
 
+  pub inline fn sumRGBA(  self : Colour ) u16
+  {
+    const r : u16 = @intCast( self.r );
+    const g : u16 = @intCast( self.g );
+    const b : u16 = @intCast( self.b );
+    const a : u16 = @intCast( self.a );
+
+    return( r + g + b + a );
+  }
+  pub inline fn sumRGB(  self : Colour ) u16
+  {
+    const r : u16 = @intCast( self.r );
+    const g : u16 = @intCast( self.g );
+    const b : u16 = @intCast( self.b );
+
+    return( r + g + b );
+  }
 };

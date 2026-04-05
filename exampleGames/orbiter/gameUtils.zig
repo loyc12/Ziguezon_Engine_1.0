@@ -4,14 +4,14 @@ const def = @import( "defs" );
 const gbl = @import( "gameGlobals.zig" );
 const gdf = @import( "gameDefs.zig"    );
 
-const times  = &gbl.GAME_DATA.times;
-const stores = &gbl.GAME_DATA.stores;
-const target = &gbl.GAME_DATA.target;
-const nttArr = &gbl.GAME_DATA.entityArray;
+const times  = &gbl.G_DATA.times;
+const stores = &gbl.G_DATA.stores;
+const target = &gbl.G_DATA.target;
+const nttArr = &gbl.G_DATA.entityArray;
 
 const BodyName  = gdf.BodyName;
 const BodyType  = gdf.BodyType;
-const bodyCount = gdf.GAME_CONSTS.bodyCount;
+const bodyCount = gdf.G_CONSTS.bodyCount;
 
 const orb = gdf.orb;
 const bdy = gdf.bdy;
@@ -44,7 +44,7 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
 
-  if( orbitedId != target.starId ){ if( stores.body.get( orbitedId ))| b |
+  if( orbitedId != gdf.G_CONSTS.starId ){ if( stores.body.get( orbitedId ))| b |
   {
     orbitedMass = b.mass;
   }
@@ -118,11 +118,11 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     var startPos : def.Vec2 = .{};
 
-    if( id != target.starId )
+    if( id != gdf.G_CONSTS.starId )
     {
       startPos = orbitComp.getRelPos(); // Getting initial position from orbit
 
-      if( orbitComp.orbitedID != target.starId )
+      if( orbitComp.orbitedID != gdf.G_CONSTS.starId )
       {
         if( stores.trans.get( orbitComp.orbitedID ))| trans |
         {
@@ -159,8 +159,8 @@ pub fn updateCameraLogic() void
 {
   var cam = &def.G_CAM;
 
-  const scrollSpeed = gdf.GAME_CONSTS.scrollSpeed;
-  const zoomSpeed   = gdf.GAME_CONSTS.zoomSpeed;
+  const scrollSpeed = gdf.G_CONSTS.scrollSpeed;
+  const zoomSpeed   = gdf.G_CONSTS.zoomSpeed;
 
   // Moves the camera with the WASD or arrow keys
   if( def.ray.isKeyDown( def.ray.KeyboardKey.w ) or def.ray.isKeyDown( def.ray.KeyboardKey.up    )){ cam.moveByS( def.Vec2.new(  0.0, -scrollSpeed )); }
@@ -342,8 +342,8 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
   const trans = transStore.get( id );
   const shape = shapeStore.get( id );
 
-  const orbit = if( id != target.starId ) orbitStore.get( id ) else null;
-  const body  = if( id != target.starId ) bodyStore.get(  id ) else null;
+  const orbit = if( id != gdf.G_CONSTS.starId ) orbitStore.get( id ) else null;
+  const body  = if( id != gdf.G_CONSTS.starId ) bodyStore.get(  id ) else null;
 
 
   var lineCount : f32 = 1.0;
@@ -373,7 +373,7 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
     def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
-    if( target.targetId == target.starId )
+    if( target.targetId == gdf.G_CONSTS.starId )
     {
       def.drawTextRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrenght }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     }

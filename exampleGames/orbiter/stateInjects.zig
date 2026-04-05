@@ -24,7 +24,7 @@ pub fn OnStop( ng : *def.Engine ) void // Called by engine.stop()
 pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your entities
 {
   // Initializing and registering all component stores
-  _ = gbl.GAME_DATA.stores.registerAllStores( ng );
+  _ = gbl.G_DATA.stores.registerAllStores( ng );
 
   // Initializing individual components components
   utl.initStellarSystem( ng );
@@ -34,7 +34,7 @@ pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()
 {
   _ = ng; // Prevent unused variable warning
 
-  gbl.GAME_DATA.stores.deinitAllStores();
+  gbl.G_DATA.stores.deinitAllStores();
 }
 
 

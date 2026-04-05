@@ -3,11 +3,11 @@ const def = @import( "defs" );
 
 pub const gdf = @import( "gameDefs.zig" );
 
-const bodyCount = gdf.GAME_CONSTS.bodyCount;
+const bodyCount = gdf.G_CONSTS.bodyCount;
 
 // ================ GAMEDATA STRUCTS ================
 
-pub var GAME_DATA : GameData = .{};
+pub var G_DATA : GameData = .{};
 
 pub const GameData = struct
 {
@@ -47,24 +47,25 @@ pub const GameTimes = struct
   {
     if( def.G_NG.isPaused() ){ return false; }
 
-    return( self.bodyStepOffset >= gdf.GAME_CONSTS.bodyStepLen );
+    return( self.bodyStepOffset >= gdf.G_CONSTS.bodyStepLen );
   }
   pub inline fn consumeBodyTick( self : *GameTimes ) void
   {
-    self.bodyStepOffset -= gdf.GAME_CONSTS.bodyStepLen;
+    self.bodyStepOffset -= gdf.G_CONSTS.bodyStepLen;
   }
 
   pub inline fn shouldEconTick( self : *GameTimes ) bool
   {
     if( def.G_NG.isPaused() ){ return false; }
 
-    return( self.econStepOffset >= gdf.GAME_CONSTS.econStepLen );
+    return( self.econStepOffset >= gdf.G_CONSTS.econStepLen );
   }
   pub inline fn consumeEconTick( self : *GameTimes ) void
   {
-    self.econStepOffset -= gdf.GAME_CONSTS.econStepLen;
+    self.econStepOffset -= gdf.G_CONSTS.econStepLen;
   }
 };
+
 
 pub const CompStores = struct
 {
@@ -73,6 +74,7 @@ pub const CompStores = struct
   sprite : gdf.SpriteStore = .{},
   orbit  : gdf.OrbitStore  = .{},
   body   : gdf.BodyStore   = .{},
+
 
   /// Returns true if the registry process failed somewhere
   pub inline fn registerAllStores( self : *CompStores, ng : *def.Engine ) bool
@@ -87,6 +89,7 @@ pub const CompStores = struct
 
     self.orbit.init(  alloc );
     self.body.init(   alloc );
+
 
     // Registering componentStores
     if( !ng.componentRegistry.register( "transStore", &self.trans ))
@@ -128,14 +131,13 @@ pub const CompStores = struct
   }
 };
 
+
 pub const TargetInfo = struct
 {
   camFollow : bool = false,
   hasMoved  : bool = false,
 
   targetId : def.EntityId = 0,
-  starId   : def.EntityId = 1, // SUN
-  homeId   : def.EntityId = 4, // EARTH // TODO : stop harcoding ?
 
 
   pub fn changeTargetTo( self : *TargetInfo, targetId : def.EntityId ) void
@@ -177,7 +179,7 @@ pub const TargetInfo = struct
     {
       self.hasMoved = false;
 
-      const targetTrans = GAME_DATA.stores.trans.get( self.targetId );
+      const targetTrans = G_DATA.stores.trans.get( self.targetId );
 
       if( targetTrans )| trans |
       {
@@ -208,6 +210,7 @@ pub const SpeedFactor = enum( i8 )
   WEEK,
   MONTH,
   YEAR,
+
 
   pub inline fn getStepLen( self : SpeedFactor ) i128
   {

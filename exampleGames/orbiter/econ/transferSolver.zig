@@ -132,7 +132,7 @@ fn combineTransfers( radial : TData, phase : TData ) TData
 pub fn estimateTransfer( a : OData, b : OData, epsilon : f64 ) TData
 {
   // Gravitational parameter μ = G * M_star ( km³ / Day² )
-  const mu = gdf.GAME_CONSTS.gravFactor * gbl.STLR_DATA.get( .SOL, .MASS );
+  const mu = gdf.G_CONSTS.gravFactor * gbl.STLR_DATA.get( .SOL, .MASS );
 
   // Recover radii from orbitLvl = 1 / sqrt(r)  =>  r = 1 / orbitLvl²
   const r_a = if( @abs( a.orbitLvl ) > EPS ) 1.0 / ( a.orbitLvl * a.orbitLvl ) else 0.0;

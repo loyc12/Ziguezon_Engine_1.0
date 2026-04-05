@@ -30,13 +30,12 @@ pub const BodyStore   = bdy.BodyComp.getStoreType();
 
 
 
-pub const GAME_CONSTS : GameConsts = .{};
+pub const G_CONSTS : GameConsts = .{};
 
 pub const GameConsts = struct
 {
   zoomSpeed   : f32  =  1.2,
   scrollSpeed : f64  = 12.0,
-
 
   gravFactor  : f64  = 0.000240241, // 498.163, // Unit : km³/Gt¹Min² // TODO : adjust based on bodyTickLen
 
@@ -45,7 +44,7 @@ pub const GameConsts = struct
 
   renderScale : f64  = 0.000_001,
 
-  orbitDrawFactor : f32 = 0.25,
+  orbitDrawFactor : f32 = 0.2, // 0.0 - 1.0 // Controls orbital path lenght
 
   backColour : def.Colour = .dIndigo,
   foreColour : def.Colour = .dCrimson,
@@ -53,6 +52,9 @@ pub const GameConsts = struct
 
   bodyCount   : usize = BodyName.count - 1, // Skipping .CUSTOM
   maxEntityId : usize = BodyName.count - 1, // Skipping .CUSTOM
+
+  starId : def.EntityId = 1, // SUN
+  homeId : def.EntityId = 4, // EARTH
 };
 
 

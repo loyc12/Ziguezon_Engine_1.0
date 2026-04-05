@@ -38,8 +38,8 @@ const utl = @import( "gameUtils.zig"   );
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour    : ?def.Colour = gdf.GAME_CONSTS.backColour;
-  pub const Graphic_Metrics_Colour   : ?def.Colour = gdf.GAME_CONSTS.textColour;
+  pub const Graphic_Bckgrd_Colour    : ?def.Colour = gdf.G_CONSTS.backColour;
+  pub const Graphic_Metrics_Colour   : ?def.Colour = gdf.G_CONSTS.textColour;
 //pub const Graphic_Default_Font     : ?[ :0 ] const u8 = "src/assets/fonts/F77MinecraftRegular.ttf";
 
   pub const Graphic_Ellipse_Facets   : u16 = 255;
