@@ -94,37 +94,19 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
     {
-      1 =>
-      {
-        initStar( &bodyComp, .SOL );
-
-        _ = stores.trans.add( id, .{ .pos = .{} });
-        _ = stores.body.add(  id, bodyComp  );
-        _ = stores.shape.add( id,
-        .{
-          .colour  = bodyComp.bodyType.getDisplayColour(),
-          .minSize = bodyComp.bodyType.getMinDisplaySize(),
-          .scale   = .new( bodyComp.radius, bodyComp.radius ),
-          .shape   = .ELLI
-        });
-
-        continue;
-      },
-
+      1 => initStar(                    &bodyComp, .SOL        ),
       2 => initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 ),
-
       3 => initStellarBody( &orbitComp, &bodyComp, .VENUS,   1 ),
-
       4 => // EARTH
       {
-        initStellarBody( &orbitComp, &bodyComp, .TERRA, 1 );
+        initStellarBody(    &orbitComp, &bodyComp, .TERRA, 1 );
         bodyComp.debugSetEconVals( .GROUND, 1 );            // NOTE : DEBUG
       },
       5 => initStellarBody( &orbitComp, &bodyComp, .LUNA,   4 ),
-
       6 => initStellarBody( &orbitComp, &bodyComp, .MARS,   1 ),
       7 => initStellarBody( &orbitComp, &bodyComp, .PHOBOS, 6 ),
       8 => initStellarBody( &orbitComp, &bodyComp, .DEIMOS, 6 ),
+      9 => initStellarBody( &orbitComp, &bodyComp, .DEBUGY, 1 ),
 
       else => // Wil ignore all subsequent Ids ( should have none left )
       {
@@ -133,19 +115,29 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       },
     }
 
-    var startPos = orbitComp.getRelPos(); // Get initial position from orbit
+    var startPos : def.Vec2 = .{};
 
-    if( orbitComp.orbitedID != target.starId ){ if( stores.trans.get( orbitComp.orbitedID ))| trans |
+    if( id != target.starId )
     {
-      startPos = startPos.add( trans.pos.toVec2() );
+      startPos = orbitComp.getRelPos(); // Getting initial position from orbit
+
+      if( orbitComp.orbitedID != target.starId )
+      {
+        if( stores.trans.get( orbitComp.orbitedID ))| trans |
+        {
+          startPos = startPos.add( trans.pos.toVec2() );
+        }
+        else
+        {
+          def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitComp.orbitedID });
+        }
+      }
+
+      _ = stores.orbit.add( id, orbitComp ); // Adding this here because SOL doesn't need one
     }
-    else
-    {
-      def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitComp.orbitedID });
-    }}
 
-    _ = stores.trans.add( id, .{ .pos = .new( startPos.x, startPos.y, .{} )});
-    _ = stores.orbit.add( id, orbitComp );
+
+    _ = stores.trans.add( id, .{ .pos = startPos.toVecA( .{} )});
     _ = stores.body.add(  id, bodyComp  );
     _ = stores.shape.add( id,
     .{

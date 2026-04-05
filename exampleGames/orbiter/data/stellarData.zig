@@ -37,6 +37,7 @@ pub const StellarBodyName = enum( u8 )
 
 
   CUSTOM, // Default value   // NOTE : Is this too memory intensive ?
+  DEBUGY, // TEST OBJECT
 
   SOL,
 
@@ -220,6 +221,14 @@ pub fn loadStellarData() void
 {
   const SBT = StellarBodyType;
 
+
+  stellarData.set( .DEBUGY,   .MASS,                   1_000_000 );
+  stellarData.set( .DEBUGY,   .RADIUS,                   100.000 );
+  stellarData.set( .DEBUGY,   .PERIAP,                40_000_000 );
+  stellarData.set( .DEBUGY,   .APOAP,                800_000_000 );
+  stellarData.set( .DEBUGY,   .LONG,                     123.456 );
+  stellarData.set( .DEBUGY,   .TYPE,        SBT.ASTEROID.toFlt() );
+
   stellarData.set( .SOL,      .MASS,   1_988_475_000_000_000_000 );
   stellarData.set( .SOL,      .RADIUS,                   695_700 );
   stellarData.set( .SOL,      .PERIAP,                         0 );
@@ -228,70 +237,70 @@ pub fn loadStellarData() void
   stellarData.set( .SOL,      .TYPE,            SBT.STAR.toFlt() );
 
 
-  stellarData.set( .MERCURY,  .MASS,     330_103_000_000 );
-  stellarData.set( .MERCURY,  .RADIUS,         2_439.400 );
-  stellarData.set( .MERCURY,  .PERIAP,        46_000_000 );
-  stellarData.set( .MERCURY,  .APOAP,         69_820_000 );
-  stellarData.set( .MERCURY,  .LONG,              77.460 );
-  stellarData.set( .MERCURY,  .TYPE,  SBT.PLANET.toFlt() );
+  stellarData.set( .MERCURY,  .MASS,      330_103_000_000 );
+  stellarData.set( .MERCURY,  .RADIUS,          2_439.400 );
+  stellarData.set( .MERCURY,  .PERIAP,         46_000_000 );
+  stellarData.set( .MERCURY,  .APOAP,          69_820_000 );
+  stellarData.set( .MERCURY,  .LONG,               77.460 );
+  stellarData.set( .MERCURY,  .TYPE,   SBT.PLANET.toFlt() );
 
 
-  stellarData.set( .VENUS,    .MASS,   4_867_310_000_000 );
-  stellarData.set( .VENUS,    .RADIUS,         6_051.800 );
-  stellarData.set( .VENUS,    .PERIAP,       107_480_000 );
-  stellarData.set( .VENUS,    .APOAP,        108_940_000 );
-  stellarData.set( .VENUS,    .LONG,             131.530 );
-  stellarData.set( .VENUS,    .TYPE,  SBT.PLANET.toFlt() );
+  stellarData.set( .VENUS,    .MASS,    4_867_310_000_000 );
+  stellarData.set( .VENUS,    .RADIUS,          6_051.800 );
+  stellarData.set( .VENUS,    .PERIAP,        107_480_000 );
+  stellarData.set( .VENUS,    .APOAP,         108_940_000 );
+  stellarData.set( .VENUS,    .LONG,              131.530 );
+  stellarData.set( .VENUS,    .TYPE,   SBT.PLANET.toFlt() );
 
-  //stellarData.set( .ZOOZVE, .MASS,               0.024 ); // Estimated
-  //stellarData.set( .ZOOZVE, .RADIUS,             0.236 );
-  //stellarData.set( .ZOOZVE, .PERIAP,        63_848_371 );
-  //stellarData.set( .ZOOZVE, .APOAP,        152_679_586 );
-  //stellarData.set( .ZOOZVE, .LONG,              227.03 );
-  //stellarData.set( .ZOOZVE, .TYPE,  SBT.ASTEROID.toFlt() );
-
-
-  stellarData.set( .TERRA,    .MASS,   5_972_170_000_000 );
-  stellarData.set( .TERRA,    .RADIUS,         6_371.008 );
-  stellarData.set( .TERRA,    .PERIAP,       147_098_450 );
-  stellarData.set( .TERRA,    .APOAP,        152_097_597 );
-  stellarData.set( .TERRA,    .LONG,             102.947 );
-  stellarData.set( .TERRA,    .TYPE,  SBT.PLANET.toFlt() );
-
-    stellarData.set( .LUNA,   .MASS,      73_460_000_000 );
-    stellarData.set( .LUNA,   .RADIUS,         1_737.400 );
-    stellarData.set( .LUNA,   .PERIAP,           362_600 );
-    stellarData.set( .LUNA,   .APOAP,            405_400 );
-    stellarData.set( .LUNA,   .LONG,             218.030 );
-    stellarData.set( .LUNA,   .TYPE,    SBT.MOON.toFlt() );
+  //stellarData.set( .ZOOZVE, .MASS,                0.024 ); // Estimated
+  //stellarData.set( .ZOOZVE, .RADIUS,              0.236 );
+  //stellarData.set( .ZOOZVE, .PERIAP,         63_848_371 );
+  //stellarData.set( .ZOOZVE, .APOAP,         152_679_586 );
+  //stellarData.set( .ZOOZVE, .LONG,               227.03 );
+  //stellarData.set( .ZOOZVE, .TYPE, SBT.ASTEROID.toFlt() );
 
 
-//stellarData.set( .EROS,     .MASS,               6_687 );
-//stellarData.set( .EROS,     .RADIUS,            16.840 );
-//stellarData.set( .EROS,     .PERIAP,       169_554_226 );
-//stellarData.set( .EROS,     .APOAP,        266_658_204 );
-//stellarData.set( .EROS,     .LONG,             123.140 );
-//stellarData.set( .EROS,     .TYPE,  SBT.ASTEROID.toFlt() );
+  stellarData.set( .TERRA,    .MASS,    5_972_170_000_000 );
+  stellarData.set( .TERRA,    .RADIUS,          6_371.008 );
+  stellarData.set( .TERRA,    .PERIAP,        147_098_450 );
+  stellarData.set( .TERRA,    .APOAP,         152_097_597 );
+  stellarData.set( .TERRA,    .LONG,              102.947 );
+  stellarData.set( .TERRA,    .TYPE,   SBT.PLANET.toFlt() );
+
+    stellarData.set( .LUNA,   .MASS,       73_460_000_000 );
+    stellarData.set( .LUNA,   .RADIUS,          1_737.400 );
+    stellarData.set( .LUNA,   .PERIAP,            362_600 );
+    stellarData.set( .LUNA,   .APOAP,             405_400 );
+    stellarData.set( .LUNA,   .LONG,              218.030 );
+    stellarData.set( .LUNA,   .TYPE,     SBT.MOON.toFlt() );
 
 
-  stellarData.set( .MARS,     .MASS,     641_691_000_000 );
-  stellarData.set( .MARS,     .RADIUS,         3_389.500 );
-  stellarData.set( .MARS,     .PERIAP,       206_650_000 );
-  stellarData.set( .MARS,     .APOAP,        249_261_000 );
-  stellarData.set( .MARS,     .LONG,             336.040 );
-  stellarData.set( .MARS,     .TYPE,  SBT.PLANET.toFlt() );
+//stellarData.set( .EROS,     .MASS,                 6_687 );
+//stellarData.set( .EROS,     .RADIUS,              16.840 );
+//stellarData.set( .EROS,     .PERIAP,         169_554_226 );
+//stellarData.set( .EROS,     .APOAP,          266_658_204 );
+//stellarData.set( .EROS,     .LONG,               123.140 );
+//stellarData.set( .EROS,     .TYPE,    SBT.ASTEROID.toFlt() );
 
-    stellarData.set( .PHOBOS, .MASS,              16_000 );
-    stellarData.set( .PHOBOS, .RADIUS,            11.080 );
-    stellarData.set( .PHOBOS, .PERIAP,         9_234.420 );
-    stellarData.set( .PHOBOS, .APOAP,          9_517.580 );
-    stellarData.set( .PHOBOS, .LONG,              21.520 );
-    stellarData.set( .PHOBOS, .TYPE, SBT.MOONLET.toFlt() );
 
-    stellarData.set( .DEIMOS, .MASS,               1_510 );
-    stellarData.set( .DEIMOS, .RADIUS,             6.270 );
-    stellarData.set( .DEIMOS, .PERIAP,        23_455.500 );
-    stellarData.set( .DEIMOS, .APOAP,         23_470.900 );
-    stellarData.set( .DEIMOS, .LONG,                   0 );
-    stellarData.set( .DEIMOS, .TYPE, SBT.MOONLET.toFlt() );
+  stellarData.set( .MARS,     .MASS,       641_691_000_000 );
+  stellarData.set( .MARS,     .RADIUS,           3_389.500 );
+  stellarData.set( .MARS,     .PERIAP,         206_650_000 );
+  stellarData.set( .MARS,     .APOAP,          249_261_000 );
+  stellarData.set( .MARS,     .LONG,               336.040 );
+  stellarData.set( .MARS,     .TYPE,    SBT.PLANET.toFlt() );
+
+    stellarData.set( .PHOBOS, .MASS,                16_000 );
+    stellarData.set( .PHOBOS, .RADIUS,              11.080 );
+    stellarData.set( .PHOBOS, .PERIAP,           9_234.420 );
+    stellarData.set( .PHOBOS, .APOAP,            9_517.580 );
+    stellarData.set( .PHOBOS, .LONG,                21.520 );
+    stellarData.set( .PHOBOS, .TYPE,   SBT.MOONLET.toFlt() );
+
+    stellarData.set( .DEIMOS, .MASS,                 1_510 );
+    stellarData.set( .DEIMOS, .RADIUS,               6.270 );
+    stellarData.set( .DEIMOS, .PERIAP,          23_455.500 );
+    stellarData.set( .DEIMOS, .APOAP,           23_470.900 );
+    stellarData.set( .DEIMOS, .LONG,                     0 );
+    stellarData.set( .DEIMOS, .TYPE,   SBT.MOONLET.toFlt() );
 }

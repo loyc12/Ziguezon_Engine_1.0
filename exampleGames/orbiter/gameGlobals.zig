@@ -172,7 +172,7 @@ pub const TargetInfo = struct
     var next = current + delta;
 
     if( next < 0 ){ next = 0; }
-    if( next >= bodyCount ){ next = bodyCount - 1; }
+    if( next > bodyCount ){ next = bodyCount; }
 
     self.targetId = @intCast( next );
     self.hasMoved = true;
@@ -221,6 +221,7 @@ pub const SpeedFactor = enum( i8 )
   DAY,
   WEEK,
   MONTH,
+  YEAR,
 
   pub inline fn getStepLen( self : SpeedFactor ) i128
   {
@@ -233,6 +234,7 @@ pub const SpeedFactor = enum( i8 )
       .DAY    => def.TimeVal.secPerDay(),
       .WEEK   => def.TimeVal.secPerDay() * 7,
       .MONTH  => def.TimeVal.secPerDay() * 30,
+      .YEAR   => def.TimeVal.secPerDay() * 365,
     };
   }
 

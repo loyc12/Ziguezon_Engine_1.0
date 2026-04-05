@@ -289,12 +289,17 @@ pub const OrbitComp = struct
 
     const zoomedWidth = 1.0 / def.G_CAM.getZoom();
 
-    for( 0..N )| i |
+    var drawN : f32 = @floatFromInt( N );
+        drawN      *= gdf.GAME_CONSTS.orbitDrawFactor;
+
+    for( 0..@intFromFloat( drawN ))| i |
     {
-      const a = def.TAU * @as( f32, @floatFromInt( i + 1 )) / @as( f32, @floatFromInt( N ));
+      var a = def.TAU * @as( f32, @floatFromInt( i + 1 )) / @as( f32, @floatFromInt( N ));
+
+      if( self.retrograde ){ a *= -1.0; }
 
       p2 = p1;
-      p1 = self.getRelPosAtAngle( self.angularPos + a );
+      p1 = self.getRelPosAtAngle( self.angularPos - a );
 
       def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), .green, @floatCast( zoomedWidth ));
     }
