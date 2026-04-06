@@ -324,7 +324,7 @@ pub const Economy = struct
     self.indState.set( .BANK, .AGRONOMIC,   @floatFromInt( value * 25  ));
     self.indState.set( .BANK, .HYDROPONIC,  @floatFromInt( value * 25  ));
     self.indState.set( .BANK, .WATER_PLANT, @floatFromInt( value * 50  ));
-    self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 100 ));
+    self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 50  ));
 
     self.indState.set( .BANK, .PROBE_MINE,                         0    );
     self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 200 ));
@@ -370,6 +370,11 @@ pub const Economy = struct
     const cap     = self.getPopCap();
     const current = self.getPopCount();
     const new_val = @min( value + current, cap );
+
+    if( new_val == cap )
+    {
+      def.log( .WARN, 0, @src(), "@ Tried to add {d} pops to economy, but only had space for {d}", .{ value, new_val - current });
+    }
     self.popMetrics.set( .COUNT, @floatFromInt( new_val ));
   }
   pub inline fn subPopCount( self : *Economy, value : u64 ) void
@@ -380,7 +385,7 @@ pub const Economy = struct
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} pops of from economy, but only had {d} left", .{ value, count });
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} pops from economy, but only had {d} left", .{ value, count });
     }
   }
 
@@ -601,21 +606,24 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
+  }
 
-    // TODO : generalise this code
+  // TODO : generalise this code
+  pub inline fn logTravelCostsTERRA( self : *const Economy ) void
+  {
     def.qlog( .INFO, 0, @src(), "Trade fuel / time costs from Earth to :" );
 
     inline for( 0..gdf.BodyName.count )| b |
     {
       const body  = gdf.BodyName.fromIdx( b );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, .GROUND ), gdf.toBodyEconPair( body, .GROUND ) );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( body, self.location ) );
 
       def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( body ), table.deltaV, table.duration });
     }
     inline for( 0..EconLoc.count )| l |
     {
       const loc   = EconLoc.fromIdx( l );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, .GROUND ), gdf.toBodyEconPair( .TERRA, loc ) );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( .TERRA, loc ) );
 
       def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( loc ), table.deltaV, table.duration });
     }
@@ -728,24 +736,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     self.infState.set( .USE_LVL, .STORAGE, maxStorageUsage );
   }
 
-  pub fn tickEcon( self : *Economy ) void
+  pub fn debugAutoBuild( self : *Economy ) void
   {
-    self.updateResCaps();
-    self.updateAreas();
-
-    self.tickEcology();
-    ecnSlvr.resolveEcon( self );
-    self.tickBuildQueue();
-
-    self.updateInfUsage();
-
-    // NOTE : DEBUG SECTION
-    self.logPopCount();
-    self.logResCounts();
-    self.logInfCounts();
-    self.logIndCounts();
-    self.logMetrics();
-
 
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
@@ -754,38 +746,57 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
         _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING }, 2 );
       }
 
-      if( self.infState.get( .USE_LVL, .HABITAT ) > 0.9 )
+      if( self.infState.get( .USE_LVL, .HABITAT ) > 0.95 )
       {
         _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT }, 2 );
       }
 
-      if( self.infState.get( .USE_LVL, .STORAGE ) > 0.5 )
+      if( self.infState.get( .USE_LVL, .STORAGE ) > 0.8 )
       {
         _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE }, 2 );
       }
 
-      if( self.resState.get( .SAT_LVL, .FOOD ) < 1.1 )
+      if( self.resState.get( .SAT_LVL, .FOOD ) < 1.2 )
       {
-        _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 1 );
-        _ = self.buildQueue.?.addEntry( .{ .ind = .HYDROPONIC  }, 1 );
+        if( self.resState.get( .SAT_LVL, .POWER ) < 1.6 and self.resState.get( .SAT_LVL, .WATER ) > 1.2 )
+        {
+          _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 2 );
+        }
+        else
+        {
+          _ = self.buildQueue.?.addEntry( .{ .ind = .HYDROPONIC  }, 2 );
+        }
       }
 
-      if( self.resState.get( .SAT_LVL, .WATER ) < 1.1 )
+      if( self.resState.get( .SAT_LVL, .WATER ) < 1.2 )
       {
         _ = self.buildQueue.?.addEntry( .{ .ind = .WATER_PLANT }, 2 );
       }
 
-      if( self.resState.get( .SAT_LVL, .POWER ) < 1.1 )
+      if( self.resState.get( .SAT_LVL, .POWER ) < 1.5 )
       {
         _ = self.buildQueue.?.addEntry( .{ .ind = .SOLAR_PLANT }, 4 );
       }
 
-      if( self.resState.get( .SAT_LVL, .WORK ) > 0.9 )
+      if( self.resState.get( .SAT_LVL, .WORK ) > 0.98 )
       {
-        _ = self.buildQueue.?.addEntry( .{ .ind = .GROUND_MINE }, 8 );
-        _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY    }, 4 );
-        _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY     }, 2 );
-        _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY    }, 1 );
+        if( self.resState.get( .SAT_LVL, .ORE ) < 1.0 )
+        {
+          _ = self.buildQueue.?.addEntry( .{ .ind = .GROUND_MINE }, 8 );
+        }
+        else
+        {
+          _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY }, 6 );
+        }
+
+        if( self.resState.get( .SAT_LVL, .INGOT ) > 1.0 )
+        {
+          _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY }, 4 );
+        }
+        else
+        {
+          _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY }, 2 );
+        }
       }
     }
   }
@@ -801,5 +812,27 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     self.tickEcon();
 
     return true;
+  }
+
+  pub fn tickEcon( self : *Economy ) void
+  {
+    self.updateResCaps();
+    self.updateAreas();
+
+    self.tickEcology();
+    ecnSlvr.resolveEcon( self );
+    self.tickBuildQueue();
+
+    self.updateInfUsage();
+
+    // NOTE : DEBUG SECTION
+    self.debugAutoBuild();
+
+    self.logPopCount();
+    self.logResCounts();
+    self.logInfCounts();
+    self.logIndCounts();
+  //self.logTravelCostsTERRA();
+    self.logMetrics();
   }
 };

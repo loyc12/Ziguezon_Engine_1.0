@@ -255,6 +255,11 @@ const EconSolver = struct
           def.log( .CONT, 0, @src(), "@ {s} shortage", .{ @tagName( ResType.fromIdx( r ))});
         }
       }
+      else
+      {
+        self.resAccessData.set( .POP, resType, self.maxResAccess );
+        self.resAccessData.set( .IND, resType, self.maxResAccess );
+      }
 
       // Updating economy metrics
       self.resAccessData.set( .GEN,     resType, access );
@@ -272,7 +277,12 @@ const EconSolver = struct
     {
       const resType = ResType.fromIdx( r );
 
-      workRate = @min( workRate, self.resAccessData.get( .POP, resType ));
+      const popMaxCons = self.resFlowData.get( .POP, .MAX_CONS, resType );
+
+      if( popMaxCons > def.EPS )
+      {
+        workRate = @min( workRate, self.resAccessData.get( .POP, resType ));
+      }
     }}
 
     // Clamping pop work rates to a minimum to prevent total supply chain collapse

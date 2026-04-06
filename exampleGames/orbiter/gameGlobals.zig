@@ -210,7 +210,6 @@ pub const SpeedFactor = enum( i8 )
   WEEK,
   MONTH,
   YEAR,
-  DECADE,
 
 
   pub inline fn getStepLen( self : SpeedFactor ) i128

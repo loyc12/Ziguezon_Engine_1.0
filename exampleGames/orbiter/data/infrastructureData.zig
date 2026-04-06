@@ -137,7 +137,7 @@ pub fn loadInfrastructureData() void
   // ================================ CAPACITY ================================
 
   infMetricData.set( .HOUSING, .CAPACITY, 32.0 ); // Pop
-  infMetricData.set( .HABITAT, .CAPACITY, 8.0  ); // Area
+  infMetricData.set( .HABITAT, .CAPACITY, 16.0 ); // Area
   infMetricData.set( .STORAGE, .CAPACITY, 16.0 ); // Resources
 }
 

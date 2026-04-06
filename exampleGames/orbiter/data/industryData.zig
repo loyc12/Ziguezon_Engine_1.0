@@ -252,40 +252,40 @@ pub fn loadIndustryData() void
 
   // ================================ RESOURCES ================================
 
-  indResValData.set( .AGRONOMIC,   .CONS_WORK,  2  );
-  indResValData.set( .AGRONOMIC,   .CONS_WATER, 6  );
-  indResValData.set( .AGRONOMIC,   .PROD_FOOD,  16 );
+  indResValData.set( .AGRONOMIC,   .CONS_WORK,  20 );
+  indResValData.set( .AGRONOMIC,   .CONS_WATER, 8  );
+  indResValData.set( .AGRONOMIC,   .PROD_FOOD,  20 );
 
-  indResValData.set( .HYDROPONIC,  .CONS_WORK,  4  );
+  indResValData.set( .HYDROPONIC,  .CONS_WORK,  40 );
   indResValData.set( .HYDROPONIC,  .CONS_WATER, 4  );
   indResValData.set( .HYDROPONIC,  .CONS_POWER, 4  );
-  indResValData.set( .HYDROPONIC,  .PROD_FOOD,  16 );
+  indResValData.set( .HYDROPONIC,  .PROD_FOOD,  20 );
 
-  indResValData.set( .WATER_PLANT, .CONS_WORK,  2  );
+  indResValData.set( .WATER_PLANT, .CONS_WORK,  20 );
   indResValData.set( .WATER_PLANT, .CONS_POWER, 4  );
   indResValData.set( .WATER_PLANT, .PROD_WATER, 16 );
 
-  indResValData.set( .SOLAR_PLANT, .CONS_WORK,  1  );
-  indResValData.set( .SOLAR_PLANT, .PROD_POWER, 32 );
+  indResValData.set( .SOLAR_PLANT, .CONS_WORK,  10 );
+  indResValData.set( .SOLAR_PLANT, .PROD_POWER, 50 ); // NOTE : take into acount day/night effciciency loss on GROUND
 
   indResValData.set( .PROBE_MINE,  .PROD_ORE,   1  );
 
-  indResValData.set( .GROUND_MINE, .CONS_WORK,  3  );
-  indResValData.set( .GROUND_MINE, .CONS_WATER, 1  );
-  indResValData.set( .GROUND_MINE, .CONS_POWER, 3  );
-  indResValData.set( .GROUND_MINE, .PROD_ORE,   1  );
+  indResValData.set( .GROUND_MINE, .CONS_WORK,  50 );
+  indResValData.set( .GROUND_MINE, .CONS_WATER, 5  );
+  indResValData.set( .GROUND_MINE, .CONS_POWER, 4  );
+  indResValData.set( .GROUND_MINE, .PROD_ORE,   3  );
 
-  indResValData.set( .REFINERY,    .CONS_WORK,  3  );
-  indResValData.set( .REFINERY,    .CONS_POWER, 3  );
-  indResValData.set( .REFINERY,    .CONS_ORE,   2  );
-  indResValData.set( .REFINERY,    .PROD_INGOT, 1  );
+  indResValData.set( .REFINERY,    .CONS_WORK,  40 );
+  indResValData.set( .REFINERY,    .CONS_POWER, 4  );
+  indResValData.set( .REFINERY,    .CONS_ORE,   4  );
+  indResValData.set( .REFINERY,    .PROD_INGOT, 3  );
 
-  indResValData.set( .FACTORY,     .CONS_WORK,  3  );
+  indResValData.set( .FACTORY,     .CONS_WORK,  30 );
   indResValData.set( .FACTORY,     .CONS_POWER, 3  );
-  indResValData.set( .FACTORY,     .CONS_INGOT, 2  );
-  indResValData.set( .FACTORY,     .PROD_PART,  1  );
+  indResValData.set( .FACTORY,     .CONS_INGOT, 4  );
+  indResValData.set( .FACTORY,     .PROD_PART,  3  );
 
-  indResValData.set( .ASSEMBLY,    .CONS_WORK,  2  );
+  indResValData.set( .ASSEMBLY,    .CONS_WORK,  20 );
   indResValData.set( .ASSEMBLY,    .CONS_POWER, 2  );
 }
 

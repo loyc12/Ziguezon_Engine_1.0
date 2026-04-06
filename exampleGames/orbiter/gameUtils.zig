@@ -236,7 +236,7 @@ pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore 
     }
   }
 
-  def.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
+//def.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
 
   target.hasMoved = true; // Redundant for now since we update right after, but might become useful again later
 }

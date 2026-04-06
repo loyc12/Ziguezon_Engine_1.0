@@ -103,11 +103,11 @@ pub fn loadResourceData() void
 
   // ================================ POP CONS / PROD ================================
 
-  resMetricData.set( .WORK,  .POP_PROD, 1.00 );
+  resMetricData.set( .WORK,  .POP_PROD, 1.000 );
 
-  resMetricData.set( .FOOD,  .POP_CONS, 0.10 );
-  resMetricData.set( .WATER, .POP_CONS, 0.05 );
-  resMetricData.set( .POWER, .POP_CONS, 0.01 );
+  resMetricData.set( .FOOD,  .POP_CONS, 0.010 );
+  resMetricData.set( .WATER, .POP_CONS, 0.005 );
+  resMetricData.set( .POWER, .POP_CONS, 0.001 );
 }
 
 
