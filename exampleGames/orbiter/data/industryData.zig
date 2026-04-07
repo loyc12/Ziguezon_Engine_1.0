@@ -4,9 +4,11 @@ const def = @import( "defs" );
 const gbl = @import( "../gameGlobals.zig" );
 const gdf = @import( "../gameDefs.zig"    );
 
-const ResType  = @import( "resourceData.zig"    ).ResType;
-const PowerSrc = @import( "powerData.zig"       ).PowerSrc;
+const ResType  = @import( "resourceData.zig" ).ResType;
+const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
 
+
+pub const CAPITAL_DECAY_RATE = 0.02;
 
 pub const IndType = enum( u8 )
 {
@@ -94,36 +96,36 @@ pub const IndType = enum( u8 )
 
   pub fn getResCons_f32( self : IndType, resType : ResType ) f32
   {
-    return @floatFromInt( indResValData.get( self, IndResValEnum.consTypeFromResType( resType )));
+    return @floatFromInt( indResDeltaTable.get( self, .CONS, resType  ));
   }
   pub fn getResCons_f64( self : IndType, resType : ResType ) f64
   {
-    return @floatFromInt( indResValData.get( self, IndResValEnum.consTypeFromResType( resType )));
+    return @floatFromInt( indResDeltaTable.get( self, .CONS, resType  ));
   }
   pub fn getResCons_u32( self : IndType, resType : ResType ) u32
   {
-    return @intCast( indResValData.get( self, IndResValEnum.consTypeFromResType( resType )));
+    return @intCast( indResDeltaTable.get( self, .CONS, resType  ));
   }
   pub fn getResCons_u64( self : IndType, resType : ResType ) u64
   {
-    return indResValData.get( self, IndResValEnum.consTypeFromResType( resType ));
+    return indResDeltaTable.get( self, .CONS, resType  );
   }
 
   pub fn getResProd_f32( self : IndType, resType : ResType ) f32
   {
-    return @floatFromInt( indResValData.get( self, IndResValEnum.prodTypeFromResType( resType )));
+    return @floatFromInt( indResDeltaTable.get( self, .PROD, resType ));
   }
   pub fn getResProd_f64( self : IndType, resType : ResType ) f64
   {
-    return @floatFromInt( indResValData.get( self, IndResValEnum.prodTypeFromResType( resType )));
+    return @floatFromInt( indResDeltaTable.get( self, .PROD, resType ));
   }
   pub fn getResProd_u32( self : IndType, resType : ResType ) u32
   {
-    return @intCast( indResValData.get( self, IndResValEnum.prodTypeFromResType( resType )));
+    return @intCast( indResDeltaTable.get( self, .PROD, resType ));
   }
   pub fn getResProd_u64( self : IndType, resType : ResType ) u64
   {
-    return indResValData.get( self, IndResValEnum.prodTypeFromResType( resType ));
+    return indResDeltaTable.get( self, .PROD, resType );
   }
 
 };
@@ -136,10 +138,11 @@ pub var indMetricData : def.GenDataGrid( f64, IndType, IndMetricEnum ) = .{};
 pub const IndMetricEnum = enum( u8 )
 {
   MASS,
+
   AREA_COST,
   PART_COST,
-//CASH_COST,
   POLLUTION,
+
 //POWER_SRC,
 };
 
@@ -147,65 +150,19 @@ pub const IndMetricEnum = enum( u8 )
 // ================================ INDUSTRY CONS / PROD GRID ================================
 
 // Resource consumption / production per industry ( u64 )
-pub var indResValData : def.GenDataGrid( u64, IndType, IndResValEnum ) = .{};
+pub var indResDeltaTable : def.GenDataCube( u64, IndType, ResActionEnum, ResType ) = .{};
 
-pub const IndResValEnum = enum( u8 )
+pub const ResActionEnum = enum( u8 )
 {
-  CONS_WORK,
-  PROD_WORK,
-
-  CONS_FOOD,
-  PROD_FOOD,
-
-  CONS_WATER,
-  PROD_WATER,
-
-  CONS_POWER,
-  PROD_POWER,
-
-  CONS_ORE,
-  PROD_ORE,
-
-  CONS_INGOT,
-  PROD_INGOT,
-
-  CONS_PART,
-  PROD_PART,
-
-  pub inline fn consTypeFromResType( resType : ResType ) IndResValEnum
-  {
-    return switch( resType )
-    {
-      .WORK  => return .CONS_WORK,
-      .FOOD  => return .CONS_FOOD,
-      .WATER => return .CONS_WATER,
-      .POWER => return .CONS_POWER,
-      .ORE   => return .CONS_ORE,
-      .INGOT => return .CONS_INGOT,
-      .PART  => return .CONS_PART,
-    };
-  }
-
-  pub inline fn prodTypeFromResType( resType : ResType ) IndResValEnum
-  {
-    return switch( resType )
-    {
-      .WORK  => return .PROD_WORK,
-      .FOOD  => return .PROD_FOOD,
-      .WATER => return .PROD_WATER,
-      .POWER => return .PROD_POWER,
-      .ORE   => return .PROD_ORE,
-      .INGOT => return .PROD_INGOT,
-      .PART  => return .PROD_PART,
-    };
-  }
+  CONS,
+  PROD,
 };
 
 
 pub fn loadIndustryData() void
 {
-  indMetricData.fillWith( 0.0 );
-  indResValData.fillWith( 0   );
+  indMetricData.fillWith(   0.0 );
+  indResDeltaTable.fillWith( 0.0 );
 
   // ================================ METRICS ================================
 
@@ -252,41 +209,41 @@ pub fn loadIndustryData() void
 
   // ================================ RESOURCES ================================
 
-  indResValData.set( .AGRONOMIC,   .CONS_WORK,  20 );
-  indResValData.set( .AGRONOMIC,   .CONS_WATER, 8  );
-  indResValData.set( .AGRONOMIC,   .PROD_FOOD,  20 );
+  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WORK,  20 );
+  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WATER, 8  );
+  indResDeltaTable.set( .AGRONOMIC,   .PROD, .FOOD,  20 );
 
-  indResValData.set( .HYDROPONIC,  .CONS_WORK,  40 );
-  indResValData.set( .HYDROPONIC,  .CONS_WATER, 4  );
-  indResValData.set( .HYDROPONIC,  .CONS_POWER, 4  );
-  indResValData.set( .HYDROPONIC,  .PROD_FOOD,  20 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WORK,  40 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WATER, 4  );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .POWER, 4  );
+  indResDeltaTable.set( .HYDROPONIC,  .PROD, .FOOD,  20 );
 
-  indResValData.set( .WATER_PLANT, .CONS_WORK,  20 );
-  indResValData.set( .WATER_PLANT, .CONS_POWER, 4  );
-  indResValData.set( .WATER_PLANT, .PROD_WATER, 16 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,  20 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER, 4  );
+  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 16 );
 
-  indResValData.set( .SOLAR_PLANT, .CONS_WORK,  10 );
-  indResValData.set( .SOLAR_PLANT, .PROD_POWER, 50 ); // NOTE : take into acount day/night effciciency loss on GROUND
+  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,  10 );
+  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 50 ); // NOTE : take into acount day/night effciciency loss on GROUND
 
-  indResValData.set( .PROBE_MINE,  .PROD_ORE,   1  );
+  indResDeltaTable.set( .PROBE_MINE,  .PROD, .ORE,   1  );
 
-  indResValData.set( .GROUND_MINE, .CONS_WORK,  50 );
-  indResValData.set( .GROUND_MINE, .CONS_WATER, 5  );
-  indResValData.set( .GROUND_MINE, .CONS_POWER, 4  );
-  indResValData.set( .GROUND_MINE, .PROD_ORE,   3  );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,  50 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER, 5  );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER, 4  );
+  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,   3  );
 
-  indResValData.set( .REFINERY,    .CONS_WORK,  40 );
-  indResValData.set( .REFINERY,    .CONS_POWER, 4  );
-  indResValData.set( .REFINERY,    .CONS_ORE,   4  );
-  indResValData.set( .REFINERY,    .PROD_INGOT, 3  );
+  indResDeltaTable.set( .REFINERY,    .CONS, .WORK,  40 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .POWER, 4  );
+  indResDeltaTable.set( .REFINERY,    .CONS, .ORE,   4  );
+  indResDeltaTable.set( .REFINERY,    .PROD, .INGOT, 3  );
 
-  indResValData.set( .FACTORY,     .CONS_WORK,  30 );
-  indResValData.set( .FACTORY,     .CONS_POWER, 3  );
-  indResValData.set( .FACTORY,     .CONS_INGOT, 4  );
-  indResValData.set( .FACTORY,     .PROD_PART,  3  );
+  indResDeltaTable.set( .FACTORY,     .CONS, .WORK,  30 );
+  indResDeltaTable.set( .FACTORY,     .CONS, .POWER, 3  );
+  indResDeltaTable.set( .FACTORY,     .CONS, .INGOT, 4  );
+  indResDeltaTable.set( .FACTORY,     .PROD, .PART,  3  );
 
-  indResValData.set( .ASSEMBLY,    .CONS_WORK,  20 );
-  indResValData.set( .ASSEMBLY,    .CONS_POWER, 2  );
+  indResDeltaTable.set( .ASSEMBLY,    .CONS, .WORK,  20 );
+  indResDeltaTable.set( .ASSEMBLY,    .CONS, .POWER, 2  );
 }
 
 
@@ -299,13 +256,19 @@ pub const IndStateEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
+  BANK,     // Current industry count
+  DELTA,    // Net total change last tick
 
-  DELTA,      // Net total change this tick  ( i64, but stored as f64 for uniformity )
+  DECAY,    // Amount lost to building decay   last tick
+  BUILT,    // Amount gained from construction last tick
 
-  DECAY,      // Amount lost to building decay this tick
-  BUILT,      // Amount gained from construction this tick
+  EXPENSE,  // Amount of money spent by the owners to maintain and fuel the industry last tick
+  REVENUE,  // Amount of money gained by the owners from selling the output products last tick
 
-  ACT_LVL,    // How active this industry was this tick
+  PROFIT,   // Revenues - Costs
+  CAPITAL,  // Stored profits from previous ticks ( decays )
+
+  ACT_TRGT, // How active this industry wanted to be   last tick
+  ACT_LVL,  // How active this industry ended up being last tick
 };
 

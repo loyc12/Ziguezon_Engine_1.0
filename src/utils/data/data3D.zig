@@ -26,7 +26,7 @@ pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime 
     {
       var matrix : SelfType = .{};
 
-      inline for( 0..layLen )| lay |{ inline for( 0..colLen )| col |{ inline for( 0..colLen )| row |
+      inline for( 0..layLen )| lay |{ inline for( 0..colLen )| col |{ inline for( 0..rowLen )| row |
       {
         matrix.data[ row ][ col ][ lay ] = newData[ row ][ col ][ lay ];
       }}}
@@ -36,7 +36,7 @@ pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime 
 
     pub fn fillWith( self : *SelfType, value : DataType ) void
     {
-      inline for( 0..layLen )| lay |{ inline for( 0..colLen )| col |{ inline for( 0..colLen )| row |
+      inline for( 0..layLen )| lay |{ inline for( 0..colLen )| col |{ inline for( 0..rowLen )| row |
       {
         self.data[ row ][ col ][ lay ] = value;
       }}}

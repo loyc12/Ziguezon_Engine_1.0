@@ -94,12 +94,18 @@ pub const Economy = struct
 
     self.hasAtmo  = atmo;
 
+    self.areaMetrics.fillWith( 0.0 );
+    self.popMetrics.fillWith(  0.0 );
+    self.resState.fillWith(    0.0 );
+    self.infState.fillWith(    0.0 );
+    self.indState.fillWith(    0.0 );
+
     self.areaMetrics.set( .BODY,  area      );
     self.areaMetrics.set( .INHAB, landCover );
 
     inline for( 0..resTypeC )| r |
     {
-      self.resState.set( .CAP, ResType.fromIdx( r ), MIN_RES_CAP );
+      self.resState.set( .LIMIT, ResType.fromIdx( r ), MIN_RES_CAP );
     }
 
     self.buildQueue = BuildQueue.init();
@@ -124,12 +130,12 @@ pub const Economy = struct
       const infCount = self.infState.get( .BANK, infType );
       const capacity = infType.getMetric_f64( .CAPACITY );
 
-      self.resState.set( .CAP, resType, MIN_RES_CAP + ( infCount * capacity ));
+      self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity ));
     }
   }
   pub inline fn getResCap( self : *const Economy, resType : ResType ) u64
   {
-    return @intFromFloat( self.resState.get( .CAP, resType ));
+    return @intFromFloat( self.resState.get( .LIMIT, resType ));
   }
 
 
@@ -181,10 +187,10 @@ pub const Economy = struct
       const resType = ResType.fromIdx( r );
 
       const resCount  : u64 = @intFromFloat( self.resState.get( .BANK,     resType ));
-      const resCap    : u64 = @intFromFloat( self.resState.get( .CAP,      resType ));
+      const resCap    : u64 = @intFromFloat( self.resState.get( .LIMIT,    resType ));
       const resDelta  : i64 = @intFromFloat( self.resState.get( .DELTA,    resType ));
-      const resProd   : u64 = @intFromFloat( self.resState.get( .FIN_PROD, resType ));
-      const resCons   : u64 = @intFromFloat( self.resState.get( .FIN_CONS, resType ));
+      const resProd   : u64 = @intFromFloat( self.resState.get( .GEN_PROD, resType ));
+      const resCons   : u64 = @intFromFloat( self.resState.get( .GEN_CONS, resType ));
       const resGrowth : u64 = @intFromFloat( self.resState.get( .GROWTH,   resType ));
       const resDecay  : u64 = @intFromFloat( self.resState.get( .DECAY,    resType ));
       const resReq    : u64 = @intFromFloat( self.resState.get( .MAX_DEM,  resType ));
@@ -570,7 +576,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
     // Deduct parts
     self.resState.sub( .BANK,     .PART, totalCost );
-    self.resState.add( .FIN_CONS, .PART, totalCost );
+    self.resState.add( .GEN_CONS, .PART, totalCost );
 
     switch( c )
     {
@@ -648,8 +654,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
       self.resState.set( .MAX_SUP,  res, 0.0 );
       self.resState.set( .MAX_DEM,  res, 0.0 );
 
-      self.resState.set( .FIN_PROD, res, 0.0 );
-      self.resState.set( .FIN_CONS, res, 0.0 );
+      self.resState.set( .GEN_PROD, res, 0.0 );
+      self.resState.set( .GEN_CONS, res, 0.0 );
 
       self.resState.set( .SAT_LVL,  res, 0.0 );
     }
@@ -715,7 +721,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
     // HABITAT
     const areaUsed : f64 = self.areaMetrics.get( .USED );
-    const areaCap  : f64 = self.areaMetrics.get( .CAP );
+    const areaCap  : f64 = self.areaMetrics.get( .CAP  );
 
     self.infState.set( .USE_LVL, .HABITAT, areaUsed / areaCap );
 

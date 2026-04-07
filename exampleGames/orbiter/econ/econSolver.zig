@@ -71,11 +71,11 @@ const EconSolver = struct
   prevPopCount  : f64 = 0.0,
   nextPopCount  : f64 = 0.0,
 
-  resStockData  : ecnm_d.ResStockData    = .{},
-  resAccessData : ecnm_d.ResAccessData   = .{},
-  indActivity   : ecnm_d.IndActivityData = .{},
-  indFlowData   : ecnm_d.IndFlowData     = .{}, // Per industry
-  resFlowData   : ecnm_d.ResFlowData     = .{}, // Agregated industry
+  resStockData     : ecnm_d.ResStockData     = .{},
+  genResAccessData : ecnm_d.GenResAccessData = .{},
+  indActivity      : ecnm_d.IndActivityData  = .{},
+  indFlowData      : ecnm_d.IndFlowData      = .{}, // Per industry
+  resFlowData      : ecnm_d.ResFlowData      = .{}, // Agregated industry
 
 
   fn initBaseState( self : *EconSolver ) void
@@ -83,11 +83,10 @@ const EconSolver = struct
     self.prevPopCount = self.econ.popMetrics.get( .COUNT );
     self.nextPopCount = self.prevPopCount;
 
-    // Zero solver scratch
-    self.resAccessData.fillWith( 0.0 );
-    self.indActivity.fillWith(   0.0 );
-    self.indFlowData.fillWith(   0.0 );
-    self.resFlowData.fillWith(   0.0 );
+    self.genResAccessData.fillWith( 0.0 );
+    self.indActivity.fillWith(      0.0 );
+    self.indFlowData.fillWith(      0.0 );
+    self.resFlowData.fillWith(      0.0 );
 
     inline for( 0..ResType.count )| r |
     {
@@ -164,6 +163,8 @@ const EconSolver = struct
       const indType  = IndType.fromIdx( d );
       const indCount = self.econ.indState.get( .BANK, indType );
 
+    //def.log( .INFO, 0, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( indType )}); // NOTE : DEBUG
+
       if( indCount > def.EPS ){ inline for ( 0..resTypeC )| r | // Skip absent industries
       {
         const resType = ResType.fromIdx( r );
@@ -177,6 +178,7 @@ const EconSolver = struct
           maxProd *= @floatCast( self.econ.sunAccess );
           maxCons *= @floatCast( self.econ.sunAccess );
         }
+      //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resType ), maxProd, maxCons }); // NOTE : DEBUG
 
         // Per-industry flow
         self.indFlowData.set( indType, .MAX_PROD, resType, maxProd );
@@ -195,12 +197,16 @@ const EconSolver = struct
 
   fn calcPopMaxDelta( self : *EconSolver ) void
   {
+  //def.qlog( .INFO, 0, @src(), "$ LOGGING DELTAS FOR POP :" ); // NOTE : DEBUG
+
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
 
       const maxProd = self.prevPopCount * resType.getMetric_f64( .POP_PROD );
       const maxCons = self.prevPopCount * resType.getMetric_f64( .POP_CONS );
+
+    //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resType ), maxProd, maxCons }); // NOTE : DEBUG
 
       if( maxProd > def.EPS ) // If res produced ( WORK )
       {
@@ -244,11 +250,11 @@ const EconSolver = struct
         const popMaxCons = self.resFlowData.get( .POP, .MAX_CONS, resType );
         const indMaxCons = self.resFlowData.get( .IND, .MAX_CONS, resType );
 
-        if( popMaxCons > def.EPS ){ self.resAccessData.set( .POP, resType, access            ); }
-        else                      { self.resAccessData.set( .POP, resType, self.maxResAccess ); }
+        if( popMaxCons > def.EPS ){ self.genResAccessData.set( .POP, resType, access            ); }
+        else                      { self.genResAccessData.set( .POP, resType, self.maxResAccess ); }
 
-        if( indMaxCons > def.EPS ){ self.resAccessData.set( .IND, resType, access            ); }
-        else                      { self.resAccessData.set( .IND, resType, self.maxResAccess ); }
+        if( indMaxCons > def.EPS ){ self.genResAccessData.set( .IND, resType, access            ); }
+        else                      { self.genResAccessData.set( .IND, resType, self.maxResAccess ); }
 
         if( access < 1.0 - def.EPS )
         {
@@ -257,12 +263,12 @@ const EconSolver = struct
       }
       else
       {
-        self.resAccessData.set( .POP, resType, self.maxResAccess );
-        self.resAccessData.set( .IND, resType, self.maxResAccess );
+        self.genResAccessData.set( .POP, resType, self.maxResAccess );
+        self.genResAccessData.set( .IND, resType, self.maxResAccess );
       }
 
       // Updating economy metrics
-      self.resAccessData.set( .GEN,     resType, access );
+      self.genResAccessData.set( .GEN,     resType, access );
       self.econ.resState.set( .SAT_LVL, resType, access );
 
       self.econ.avgResAccess += access / ResType.count;
@@ -281,7 +287,7 @@ const EconSolver = struct
 
       if( popMaxCons > def.EPS )
       {
-        workRate = @min( workRate, self.resAccessData.get( .POP, resType ));
+        workRate = @min( workRate, self.genResAccessData.get( .POP, resType ));
       }
     }}
 
@@ -326,10 +332,10 @@ const EconSolver = struct
     }
 
     // Updating economy metrics
-    self.resAccessData.set( .POP, .WORK, self.maxResAccess ); // POP will never need work, so access is always maxed
+    self.genResAccessData.set( .POP, .WORK, self.maxResAccess ); // POP will never need work, so access is always maxed
 
-    self.resAccessData.set( .IND, .WORK, access );
-    self.resAccessData.set( .GEN, .WORK, access );
+    self.genResAccessData.set( .IND, .WORK, access );
+    self.genResAccessData.set( .GEN, .WORK, access );
 
     self.econ.resState.set( .SAT_LVL, .WORK, access );
 
@@ -365,7 +371,7 @@ const EconSolver = struct
 
           if( maxCons > def.EPS )
           {
-            activity = @min( activity, self.resAccessData.get( .IND, resType ));
+            activity = @min( activity, self.genResAccessData.get( .IND, resType ));
           }
         }
       }
@@ -418,7 +424,7 @@ const EconSolver = struct
     inline for( 0..resTypeC )| r |
     {
       const resType   = ResType.fromIdx( r );
-      const popAccess = self.resAccessData.get( .POP, resType );
+      const popAccess = self.genResAccessData.get( .POP, resType );
 
       if( popAccess > def.EPS and resType != .WORK ) // WORK handled in applyWorkWeek()
       {
@@ -447,7 +453,7 @@ const EconSolver = struct
       const realCons  = self.resFlowData.get( .GEN, .REAL_CONS, resType );
 
       const initialStock = self.econ.resState.get( .BANK, resType );
-      const finalStock   = self.resStockData.get( resType );
+      const finalStock   = self.resStockData.get(  resType );
 
 
       // Updating economy metrics and storage
@@ -456,8 +462,8 @@ const EconSolver = struct
       self.econ.resState.set( .MAX_SUP, resType, maxSupply );
       self.econ.resState.set( .MAX_DEM, resType, maxDemand );
 
-      self.econ.resState.set( .FIN_PROD, resType, realProd );
-      self.econ.resState.set( .FIN_CONS, resType, realCons );
+      self.econ.resState.set( .GEN_PROD, resType, realProd );
+      self.econ.resState.set( .GEN_CONS, resType, realCons );
 
 
       self.resStockData.add( resType, realProd );
@@ -490,7 +496,7 @@ const EconSolver = struct
 
     // ================ FOOD ================
 
-    const foodAccess = self.resAccessData.get( .POP, .FOOD );
+    const foodAccess = self.genResAccessData.get( .POP, .FOOD );
 
     if( foodAccess < 1.0 )
     {
@@ -502,7 +508,7 @@ const EconSolver = struct
 
     // ================ WATER ================
 
-    const waterAccess = self.resAccessData.get( .POP, .WATER );
+    const waterAccess = self.genResAccessData.get( .POP, .WATER );
 
     if( waterAccess < 1.0 )
     {
@@ -514,7 +520,7 @@ const EconSolver = struct
 
     // ================ POWER ================
 
-    const powerAccess = self.resAccessData.get( .POP, .POWER );
+    const powerAccess = self.genResAccessData.get( .POP, .POWER );
 
     if( powerAccess < 1.0 )
     {
@@ -527,7 +533,7 @@ const EconSolver = struct
     // ================ POP DELTA ================
 
     const minResAccess : f64 = @min( foodAccess, waterAccess, powerAccess );
-    const workAccess   : f64 = self.resAccessData.get( .IND, .WORK );
+    const workAccess   : f64 = self.genResAccessData.get( .IND, .WORK );
 
     const resModifier : f64 = @min( def.pow( f64,     minResAccess, 1.0 / RES_SHORTAGE_EXPONENT ), MAX_RES_MODIFIER );
     const jobModifier : f64 = @min( def.pow( f64, 1.0 / workAccess, 1.0 / JOB_SHORTAGE_EXPONENT ), MAX_JOB_MODIFIER );

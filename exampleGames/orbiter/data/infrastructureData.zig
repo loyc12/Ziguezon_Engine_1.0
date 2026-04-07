@@ -151,12 +151,14 @@ pub const InfStateEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  BANK,       // Current stockpile           ( u64, but stored as f64 for uniformity )
+  BANK,    // Current infrastructure count
+  DELTA,   // Net total change last tick
 
-  DELTA,      // Net total change this tick  ( i64, but stored as f64 for uniformity )
+  DECAY,   // Amount lost to building decay   last tick
+  BUILT,   // Amount gained from construction last tick
 
-  DECAY,      // Amount lost to building decay this tick
-  BUILT,      // Amount gained from construction this tick
+  EXPENSE, // Amount of money spent by the gov  to maintain the infrastructure last tick
+  REVENUE, // Amount of money gained by the gov from taxing the infrastructure last tick
 
-  USE_LVL,    // How much of the infrastructure was used this tick
+  USE_LVL, // How much of the available infrastructure was used last tick
 };

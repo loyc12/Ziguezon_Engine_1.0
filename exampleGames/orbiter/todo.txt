@@ -145,6 +145,6 @@ LOW :
 HIGH :
 
 1. Technology system integration
-   - Tech modifies indMetricData/indResValData tables over time
+   - Tech modifies indMetricData/indResDeltaTable tables over time
    - New industries and resources unlocks
    - Ensure tech layer feeds back into Phase 5 dynamics

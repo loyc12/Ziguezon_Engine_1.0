@@ -44,7 +44,7 @@ pub const EconLoc = enum( u8 )
 // ================================ RESOURCE FLOW MATRIX ================================
 // NOTE : used in EconSolver
 
-pub const ResStockData = def.GenDataLine(  f64, ResType );
+pub const ResStockData = def.GenDataLine( f64, ResType );
 pub const ResFlowData  = def.GenDataCube( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
 
 // NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
@@ -83,16 +83,21 @@ pub const FlowPhaseEnum = enum( u8 )
 // ================================ RESOURCE ACCESS GRID ================================
 // NOTE : used in EconSolver
 
-pub const ResAccessData = def.GenDataGrid( f64, AccessAgentEnum, ResType );
+pub const GenResAccessData = def.GenDataGrid( f64, AccessAgentEnum, ResType );
+pub const IndResAccessData = def.GenDataGrid( f64, IndType,         ResType );
 
 pub const AccessAgentEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  POP, // Population access ratio for this resource
-  IND, // Industry aggregate access ratio
+  POP_C, // Absolute amount claimed by pop
+  IND_A, // Absolute amount remaining for industry after pop claim
+
+  POP, // Population access ratio (computed first, has priority)
+  IND, // Industry aggregate access ratio (computed on remainder)
   GEN, // General / combined access ratio
 };
+
 
 
 // ================================ AREA METRIC ARRAY ================================

@@ -12,7 +12,7 @@ pub const ResType = enum( u8 )
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
   WORK, // Each pop generate N work per cycle
-//CASH, // Money
+//FUEL,
 //FLOP, // Computation
 
   FOOD,
@@ -57,11 +57,16 @@ pub var resMetricData : def.GenDataGrid( f64, ResType, ResMetricEnum ) = .{};
 pub const ResMetricEnum = enum( u8 )
 {
   MASS,
-//CASH_COST,
-  DECAY_RATE,
-  GROWTH_RATE,
-  POP_CONS,    // Resource consumed per pop per cycle
-  POP_PROD,    // Resource produced per pop per cycle
+
+  DECAY_RATE,  // Natural decay  ( peremption )
+  GROWTH_RATE, // Natural growth ( natural bounty)
+
+  POP_CONS, // Resource consumed per pop per cycle
+  POP_PROD, // Resource produced per pop per cycle
+
+  PRICE_BASE, // Base cost per unit
+  PRICE_ELAS, // Price variation elasticity exponent
+  PRICE_DAMP, // Price change time dampening factor
 };
 
 
@@ -120,20 +125,24 @@ pub const ResStateEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  BANK,     // Current stockpile           ( u64, but stored as f64 for uniformity )
-  CAP,      // Storage capacity            ( u64, but stored as f64 for uniformity )
+  BANK,     // Current stockpile
+  DELTA,    // Net total change last tick
 
-  DELTA,    // Net total change this tick  ( i64, but stored as f64 for uniformity )
+  LIMIT,    // Current storage capacity
+  PRICE,    // Market price of the resource last tick
 
-  DECAY,    // Amount lost to stock decay this tick
-  GROWTH,   // Amount gained from nature  this tick
+  DECAY,    // Amount lost to stock decay last tick
+  GROWTH,   // Amount gained from nature  last tick
 
-  MAX_SUP,  // Total maximal production  this tick
-  MAX_DEM,  // Total maximal consumption this tick
+  MAX_DEM,  // Maximum possible consumption last tick
+  MAX_SUP,  // Maximum possible production  last tick
 
-  FIN_PROD, // Total applied production  this tick
-  FIN_CONS, // Total applied consumption this tick
+  GEN_CONS, // Total applied consumption last tick
+  GEN_PROD, // Total applied production  last tick
 
-  SAT_LVL,  // How much of demand could be satisfied by supply this tick
+  TRD_EXP,  // Total exports last tick
+  TRD_IMP,  // Total imports last tick
+
+  SAT_LVL,  // Demand satisfaction rates from last tick
 };
 
