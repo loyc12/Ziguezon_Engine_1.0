@@ -148,7 +148,7 @@ pub const EcoState = struct
     const logRatio = @log( 1.0 + rawRatio );
 
     // Sigmoid on log-space input, remapped from [ 0.5, 1.0 ] to [ 0.0, 1.0 ]
-    self.pollution = 1.0 / ( 1.0 + @exp( -logRatio * POLLUTION_SCALE ));
+    self.pollution = def.sigmoid( -logRatio, POLLUTION_SCALE );
     self.pollution = ( self.pollution - 0.5 ) * 2.0;
     self.pollution = @max( 0.0, self.pollution );
   }

@@ -834,10 +834,10 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     // NOTE : DEBUG SECTION
     self.debugAutoBuild();
 
-    self.logPopCount();
-    self.logResCounts();
-    self.logInfCounts();
-    self.logIndCounts();
+  //self.logPopCount();
+  //self.logResCounts();
+  //self.logInfCounts();
+  //self.logIndCounts();
   //self.logTravelCostsTERRA();
     self.logMetrics();
   }

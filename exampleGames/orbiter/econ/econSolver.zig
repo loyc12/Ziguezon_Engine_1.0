@@ -38,6 +38,8 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
 
   solver.calcIndMaxDelta(); // Computes industrial potential prod and cons
   solver.calcPopMaxDelta(); // Computes population potential prod and cons
+  solver.calcPriceDelta();
+  solver.calcProfitability();
 
   solver.calcResAccess();   // Computes non-WORK resource access     TODO : add access-tweaking policies / modifiers
   solver.applyWorkWeek();   // Precomputes real WORK production to inform industrial WORK access
@@ -221,6 +223,100 @@ const EconSolver = struct
     }
   }
 
+  fn calcPriceDelta( self : *EconSolver ) void
+  {
+    def.qlog( .INFO, 0, @src(), "Logging resource prices :" );
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resType    = ResType.fromIdx( r );
+      const basePrice  = resType.getMetric_f64( .PRICE_BASE );
+      const elasticity = resType.getMetric_f64( .PRICE_ELAS );
+      const dampening  = resType.getMetric_f64( .PRICE_DAMP ); // Lerp factor (0 = no change, 1 = instant)
+
+      if( basePrice > def.EPS )
+      {
+        const maxSupply = self.resFlowData.get( .GEN, .MAX_PROD, resType ) + self.resStockData.get( resType );
+        const maxDemand = self.resFlowData.get( .GEN, .MAX_CONS, resType );
+
+        const ceil : f64 = 1000.0; // Scarcity ceiling
+        var  ratio : f64 =    0.0;
+
+        if(      maxSupply > def.EPS ){ ratio = @min( ceil, maxDemand / maxSupply ); }
+        else if( maxDemand > def.EPS ){ ratio = ceil; }
+
+        const oldPrice = self.econ.resState.get( .PRICE, resType );
+        var   rawPrice = basePrice;
+
+        // TODO : calc PART demand in advance for this
+        if( maxDemand > def.EPS ){ rawPrice *= def.pow( f64, ratio, elasticity ); }
+        else                     { rawPrice *= 0.05; } // Prevents unused res costing absolutely nothing.
+
+        const newPrice = def.lerp(  oldPrice, rawPrice, dampening ); // Lerp smoothing
+        const delta    = newPrice - oldPrice;
+
+        def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}\t| {d:.6}\t {d:.6}\t| {d:.6}", .{ @tagName( resType ), basePrice, oldPrice, newPrice, delta });
+
+        self.econ.resState.set( .PRICE,   resType, newPrice );
+        self.econ.resState.set( .PRICE_D, resType, delta    );
+      }
+    }
+  }
+
+  fn calcProfitability( self : *EconSolver ) void
+  {
+    def.qlog( .DEBUG, 0, @src(), "Logging individual industrial profitability :" );
+
+    inline for( 0..indTypeC )| d |
+    {
+      const indType  = IndType.fromIdx( d );
+      const indCount = self.econ.indState.get( .BANK, indType );
+
+      if( indCount > def.EPS )
+      {
+        var revenue : f64 = 0.0;
+        var expense : f64 = 0.0;
+
+        inline for( 0..resTypeC )| r |
+        {
+          const resType = ResType.fromIdx( r );
+          const price   = self.econ.resState.get( .PRICE, resType );
+
+          const prodPerUnit = indType.getResProd_f64( resType );
+          const consPerUnit = indType.getResCons_f64( resType );
+
+          revenue += prodPerUnit * price;
+          expense += consPerUnit * price;
+        }
+
+        const profit = revenue - expense;
+
+        const floor : f64 = -10.0; // profitlesness floor
+        var  margin : f64 =   0.0;
+
+        if(      revenue > def.EPS ){ margin = @max( floor, ( revenue - expense ) / revenue ); }
+        else if( expense > def.EPS ){ margin =       floor; }
+
+        // large profits will tend to 1.0, large losses will tend to 0.0
+        const activityTarget = self.maxIndActivity * def.sigmoid( margin, 4.0 ); // NOTE : lower K for smoother transitioning
+
+        def.log( .CONT, 0, @src(), "{s}\t: {d:.6}\t-{d:.6}\t| {d:.6}\t{d:.6}", .{ @tagName( indType ), revenue, expense, margin, activityTarget });
+
+        self.econ.indState.set( .EXPENSE,  indType, expense * indCount );
+        self.econ.indState.set( .REVENUE,  indType, revenue * indCount );
+        self.econ.indState.set( .PROFIT,   indType, profit  * indCount );
+        self.econ.indState.set( .ACT_TRGT, indType, activityTarget     );
+      }
+      else
+      {
+        self.econ.indState.set( .EXPENSE,  indType, 0.0 );
+        self.econ.indState.set( .REVENUE,  indType, 0.0 );
+        self.econ.indState.set( .PROFIT,   indType, 0.0 );
+        self.econ.indState.set( .ACT_TRGT, indType, 1.0 );
+      }
+    }
+  }
+
 
 
   // TODO : Tweak population vs industry access ratio here if need be
@@ -237,8 +333,7 @@ const EconSolver = struct
       const supply = self.resStockData.get( resType );
       const demand = self.resFlowData.get( .GEN, .MAX_CONS, resType );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( ResType.fromIdx( r )), supply, demand });
-
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resType ), supply, demand });
 
       var access : f64 = self.maxResAccess;
 
@@ -258,7 +353,7 @@ const EconSolver = struct
 
         if( access < 1.0 - def.EPS )
         {
-          def.log( .CONT, 0, @src(), "@ {s} shortage", .{ @tagName( ResType.fromIdx( r ))});
+          def.log( .CONT, 0, @src(), "@ {s} shortage", .{ @tagName( resType )});
         }
       }
       else
@@ -375,6 +470,8 @@ const EconSolver = struct
           }
         }
       }
+
+    //activity = @min( activity, self.econ.indState.get( .ACT_TRGT, indType )); // TODO : figure out why activating this crashes activity
 
       // Updating economy metrics
       self.indActivity.set(             indType, activity );

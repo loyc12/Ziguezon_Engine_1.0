@@ -8,8 +8,6 @@ const ResType  = @import( "resourceData.zig" ).ResType;
 const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
 
 
-pub const CAPITAL_DECAY_RATE = 0.02;
-
 pub const IndType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -213,14 +211,14 @@ pub fn loadIndustryData() void
   indResDeltaTable.set( .AGRONOMIC,   .CONS, .WATER, 8  );
   indResDeltaTable.set( .AGRONOMIC,   .PROD, .FOOD,  20 );
 
-  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WORK,  40 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WORK,  20 );
   indResDeltaTable.set( .HYDROPONIC,  .CONS, .WATER, 4  );
   indResDeltaTable.set( .HYDROPONIC,  .CONS, .POWER, 4  );
   indResDeltaTable.set( .HYDROPONIC,  .PROD, .FOOD,  20 );
 
   indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,  20 );
   indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER, 4  );
-  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 16 );
+  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 20 );
 
   indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,  10 );
   indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 50 ); // NOTE : take into acount day/night effciciency loss on GROUND
@@ -230,17 +228,17 @@ pub fn loadIndustryData() void
   indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,  50 );
   indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER, 5  );
   indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER, 4  );
-  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,   3  );
+  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,   10 );
 
   indResDeltaTable.set( .REFINERY,    .CONS, .WORK,  40 );
   indResDeltaTable.set( .REFINERY,    .CONS, .POWER, 4  );
   indResDeltaTable.set( .REFINERY,    .CONS, .ORE,   4  );
-  indResDeltaTable.set( .REFINERY,    .PROD, .INGOT, 3  );
+  indResDeltaTable.set( .REFINERY,    .PROD, .INGOT, 4  );
 
   indResDeltaTable.set( .FACTORY,     .CONS, .WORK,  30 );
   indResDeltaTable.set( .FACTORY,     .CONS, .POWER, 3  );
   indResDeltaTable.set( .FACTORY,     .CONS, .INGOT, 4  );
-  indResDeltaTable.set( .FACTORY,     .PROD, .PART,  3  );
+  indResDeltaTable.set( .FACTORY,     .PROD, .PART,  4  );
 
   indResDeltaTable.set( .ASSEMBLY,    .CONS, .WORK,  20 );
   indResDeltaTable.set( .ASSEMBLY,    .CONS, .POWER, 2  );
@@ -267,6 +265,7 @@ pub const IndStateEnum = enum( u8 )
 
   PROFIT,   // Revenues - Costs
   CAPITAL,  // Stored profits from previous ticks ( decays )
+  INFLAT_R,   // Rate of depreciation of accumulated capital // NOTE : should be very low by default
 
   ACT_TRGT, // How active this industry wanted to be   last tick
   ACT_LVL,  // How active this industry ended up being last tick

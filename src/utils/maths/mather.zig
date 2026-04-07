@@ -1,9 +1,6 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-pub const atan2 = std.math.atan2;
-pub const DtR   = std.math.degreesToRadians;
-pub const RtD   = std.math.radiansToDegrees;
 
 pub const E     = std.math.e;
 pub const PI    = std.math.pi;
@@ -19,14 +16,24 @@ pub const R3  = @sqrt( 3.0 );
 pub const HR3 = R3 / 2.0;
 pub const IR3 = 1.0 / R3;
 
+// Builtins
 
+pub const atan2 = std.math.atan2;
+pub const DtR   = std.math.degreesToRadians;
+pub const RtD   = std.math.radiansToDegrees;
+
+pub const clmp  = std.math.clamp;
 pub const lerp  = std.math.lerp;
+
 pub const pow   = std.math.pow;
+pub const exp   = std.math.exp;
 
 pub const sqrt  = std.math.sqrt;
 pub const cbrt  = std.math.cbrt;
 
 pub const gcd   = std.math.gcd;
+
+// Custom
 
 
 pub fn sign( val : anytype ) @TypeOf( val )
@@ -91,6 +98,21 @@ pub fn pow2( val : anytype ) @TypeOf( val )
   }
 }
 
+/// Maps any value to the range [0,1]
+/// Negatives val = bellow 0.5, Positives val = above 0.5
+/// Small k = gentle slope, large k = steep curve
+pub fn sigmoid( val : anytype, k : @TypeOf( val )) @TypeOf( val )
+{
+  switch( @typeInfo( @TypeOf( val )))
+  {
+    .float, .comptime_float =>
+    {
+      return 1.0 / ( 1.0 + @exp( -val * k ));
+    },
+    else => @compileError( "med3() only supports Int and Float types" ),
+  }
+}
+
 pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 {
   switch( @typeInfo( @TypeOf( a )))
@@ -114,16 +136,6 @@ pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
   }
 }
 
-// Equivalent to successives calls to min() and max()
-pub fn clmp( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
-{
-  return std.math.clamp( val, min, max );
-  //switch( @typeInfo( @TypeOf( val )))
-  //{
-  //  .float, .comptime_float, .int, .comptime_int => return if( val < min ) min else if( val > max ) max else val,
-  //  else => @compileError( "clmp() only supports Int and Float types" ),
-  //}
-}
 
 // Equivalent to modulo operation that wraps the value around the range [ min, max ]
 pub fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )

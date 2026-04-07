@@ -66,7 +66,7 @@ pub const ResMetricEnum = enum( u8 )
 
   PRICE_BASE, // Base cost per unit
   PRICE_ELAS, // Price variation elasticity exponent
-  PRICE_DAMP, // Price change time dampening factor
+  PRICE_DAMP, // Price updating lerp factor
 };
 
 
@@ -113,6 +113,32 @@ pub fn loadResourceData() void
   resMetricData.set( .FOOD,  .POP_CONS, 0.010 );
   resMetricData.set( .WATER, .POP_CONS, 0.005 );
   resMetricData.set( .POWER, .POP_CONS, 0.001 );
+
+  // ================================ PRICES ================================
+
+  resMetricData.set( .WORK,  .PRICE_BASE, 0.001 );
+  resMetricData.set( .FOOD,  .PRICE_BASE, 0.020 );
+  resMetricData.set( .WATER, .PRICE_BASE, 0.010 );
+  resMetricData.set( .POWER, .PRICE_BASE, 0.005 );
+  resMetricData.set( .ORE,   .PRICE_BASE, 0.040 );
+  resMetricData.set( .INGOT, .PRICE_BASE, 0.050 );
+  resMetricData.set( .PART,  .PRICE_BASE, 0.060 );
+
+  resMetricData.set( .WORK,  .PRICE_ELAS, 0.50 );
+  resMetricData.set( .FOOD,  .PRICE_ELAS, 0.50 );
+  resMetricData.set( .WATER, .PRICE_ELAS, 0.50 );
+  resMetricData.set( .POWER, .PRICE_ELAS, 0.50 );
+  resMetricData.set( .ORE,   .PRICE_ELAS, 0.50 );
+  resMetricData.set( .INGOT, .PRICE_ELAS, 0.50 );
+  resMetricData.set( .PART,  .PRICE_ELAS, 0.50 );
+
+  resMetricData.set( .WORK,  .PRICE_DAMP, 0.20 );
+  resMetricData.set( .FOOD,  .PRICE_DAMP, 0.20 );
+  resMetricData.set( .WATER, .PRICE_DAMP, 0.20 );
+  resMetricData.set( .POWER, .PRICE_DAMP, 0.20 );
+  resMetricData.set( .ORE,   .PRICE_DAMP, 0.20 );
+  resMetricData.set( .INGOT, .PRICE_DAMP, 0.20 );
+  resMetricData.set( .PART,  .PRICE_DAMP, 0.20 );
 }
 
 
@@ -127,9 +153,10 @@ pub const ResStateEnum = enum( u8 )
 
   BANK,     // Current stockpile
   DELTA,    // Net total change last tick
-
   LIMIT,    // Current storage capacity
-  PRICE,    // Market price of the resource last tick
+
+  PRICE,    // Market price last tick
+  PRICE_D,  // Price change last tick
 
   DECAY,    // Amount lost to stock decay last tick
   GROWTH,   // Amount gained from nature  last tick
