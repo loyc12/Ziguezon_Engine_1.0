@@ -474,7 +474,6 @@ const EconSolver = struct
         const realNatCons = remainder * resType.getMetric_f64( .DECAY_RATE );
 
         self.resFlowData.set( .NAT, .REAL_CONS, resType, realNatCons );
-        self.resFlowData.add( .GEN, .REAL_CONS, resType, realNatCons );
       }
     }
   }
@@ -485,8 +484,9 @@ const EconSolver = struct
     {
       const resType = ResType.fromIdx( r );
       const genCons = self.resFlowData.get( .GEN, .REAL_CONS, resType );
+      const natCons = self.resFlowData.get( .NAT, .REAL_CONS, resType );
 
-      self.resStockData.sub( resType, genCons );
+      self.resStockData.sub( resType, genCons + natCons );
     }
   }
 
@@ -542,7 +542,6 @@ const EconSolver = struct
         const realNatProd = @max( 0.0, ecoFactor * ecoFactor * ecoFactor * growthRate );
 
         self.resFlowData.set( .NAT, .REAL_PROD, resType, realNatProd );
-        self.resFlowData.add( .GEN, .REAL_PROD, resType, realNatProd );
       }
     }
   }
@@ -553,8 +552,9 @@ const EconSolver = struct
     {
       const resType = ResType.fromIdx( r );
       const genProd = self.resFlowData.get( .GEN, .REAL_PROD, resType );
+      const natProd = self.resFlowData.get( .NAT, .REAL_PROD, resType );
 
-      self.resStockData.add( resType, genProd );
+      self.resStockData.add( resType, genProd + natProd );
     }
   }
 
@@ -576,8 +576,11 @@ const EconSolver = struct
       const elasticity = resType.getMetric_f64( .PRICE_ELAS );
       const dampening  = resType.getMetric_f64( .PRICE_DAMP ); // Lerp factor (0 = no change, 1 = instant)
 
+      // Flow-based: compare this tick's production vs this tick's consumption demand
+      const realDemand = self.resFlowData.get( .GEN, .REAL_CONS, resType ); // NOTE : EXCLUDES NATURAL DECAY
       const realSupply = self.resStockData.get( resType );
-      const realDemand = self.resFlowData.get( .GEN, .REAL_CONS, resType );
+                    // + self.resFlowData.get( .GEN, .REAL_PROD, resType )
+                    // + self.resFlowData.get( .NAT, .REAL_PROD, resType );
 
       const ceil : f64 = MAX_SCARC_RATIO; // Scarcity ceiling
       var  ratio : f64 =   0.0;
@@ -652,7 +655,7 @@ const EconSolver = struct
         self.econ.indState.set( .EXPENSE,  indType, 0.0 );
         self.econ.indState.set( .REVENUE,  indType, 0.0 );
         self.econ.indState.set( .PROFIT,   indType, 0.0 );
-        self.econ.indState.set( .ACT_TRGT, indType, 1.0 );
+        self.econ.indState.set( .ACT_TRGT, indType, 0.0 );
       }
     }
   }

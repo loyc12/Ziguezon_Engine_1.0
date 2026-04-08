@@ -343,13 +343,13 @@ pub const Economy = struct
   {
     self.indState.set( .BANK, .AGRONOMIC,   @floatFromInt( value * 25  ));
     self.indState.set( .BANK, .HYDROPONIC,  @floatFromInt( value * 25  ));
-    self.indState.set( .BANK, .WATER_PLANT, @floatFromInt( value * 50  ));
-    self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 50  ));
+    self.indState.set( .BANK, .WATER_PLANT, @floatFromInt( value * 25  ));
+    self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 25  ));
 
     self.indState.set( .BANK, .PROBE_MINE,                         0    );
-    self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 200 ));
+    self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 100 ));
     self.indState.set( .BANK, .REFINERY,    @floatFromInt( value * 100 ));
-    self.indState.set( .BANK, .FACTORY,     @floatFromInt( value * 50  ));
+    self.indState.set( .BANK, .FACTORY,     @floatFromInt( value * 100 ));
   }
 
   pub inline fn logIndMetrics( self : *const Economy ) void
@@ -799,9 +799,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     self.infState.set( .USE_LVL, .STORAGE, maxStorageUsage );
   }
 
-  pub fn debugAutoBuild( self : *Economy ) void
+  pub fn debugAutoBuild1( self : *Economy ) void
   {
-
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
       if( self.infState.get( .USE_LVL, .ASSEMBLY ) > 0.95 )
@@ -863,6 +862,35 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     }
   }
 
+  const AUTO_BUILD_AMOUNT_PER_TICK : u64 = 5;
+
+  pub fn debugAutoBuild2( self : *Economy ) void
+  {
+    if( self.buildQueue.?.getEntryCount() < 32 )
+    {
+      for( 0..infTypeC )| f |
+      {
+        const infType = InfType.fromIdx( f );
+
+        if( self.infState.get( .USE_LVL, infType ) > 0.9 )
+        {
+          _ = self.buildQueue.?.addEntry( .{ .inf = infType }, AUTO_BUILD_AMOUNT_PER_TICK );
+        }
+      }
+
+      for( 0..indTypeC )| d |
+      {
+        const indType = IndType.fromIdx( d );
+
+        if( self.indState.get( .ACT_LVL, indType ) > 0.8 )
+        {
+          _ = self.buildQueue.?.addEntry( .{ .ind = indType }, AUTO_BUILD_AMOUNT_PER_TICK );
+        }
+      }
+    }
+  }
+
+
   pub fn tryTick( self : *Economy, sunshine : f64 ) bool
   {
     if( !self.isValid ){  return false; }
@@ -889,7 +917,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     self.updateInfUsage();
 
     // NOTE : DEBUG SECTION
-    self.debugAutoBuild();
+    self.debugAutoBuild2();
 
     self.logAllMetrics();
   }

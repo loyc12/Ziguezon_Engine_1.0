@@ -126,10 +126,10 @@ pub fn loadInfrastructureData() void
 
   // ================================ PART COST ================================
 
-  infMetricData.set( .ASSEMBLY, .PART_COST, 5.0 );
-  infMetricData.set( .HOUSING,  .PART_COST, 1.0 );
-  infMetricData.set( .HABITAT,  .PART_COST, 3.0 );
-  infMetricData.set( .STORAGE,  .PART_COST, 2.0 );
+  infMetricData.set( .ASSEMBLY, .PART_COST, 10.0 );
+  infMetricData.set( .HOUSING,  .PART_COST,  2.0 );
+  infMetricData.set( .HABITAT,  .PART_COST, 10.0 );
+  infMetricData.set( .STORAGE,  .PART_COST,  1.0 );
 
 
   // ================================ POLLUTION ================================

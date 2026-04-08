@@ -108,22 +108,22 @@ pub fn loadResourceData() void
 
   // ================================ POP CONS / PROD ================================
 
-  resMetricData.set( .WORK,  .POP_PROD, 1.0000 );
+  resMetricData.set( .WORK,  .POP_PROD, 1.000 );
 
-  resMetricData.set( .FOOD,  .POP_CONS, 0.0120 );
-  resMetricData.set( .WATER, .POP_CONS, 0.0050 );
-  resMetricData.set( .POWER, .POP_CONS, 0.0020 );
+  resMetricData.set( .FOOD,  .POP_CONS, 0.0150 );
+  resMetricData.set( .WATER, .POP_CONS, 0.0100 );
+  resMetricData.set( .POWER, .POP_CONS, 0.0050 );
   resMetricData.set( .PART,  .POP_CONS, 0.0001 );
 
   // ================================ PRICES ================================
 
-  resMetricData.set( .WORK,  .PRICE_BASE, 0.001 );
-  resMetricData.set( .FOOD,  .PRICE_BASE, 0.020 );
-  resMetricData.set( .WATER, .PRICE_BASE, 0.010 );
-  resMetricData.set( .POWER, .PRICE_BASE, 0.005 );
-  resMetricData.set( .ORE,   .PRICE_BASE, 0.040 );
-  resMetricData.set( .INGOT, .PRICE_BASE, 0.050 );
-  resMetricData.set( .PART,  .PRICE_BASE, 0.060 );
+  resMetricData.set( .WORK,  .PRICE_BASE, 0.01 );
+  resMetricData.set( .FOOD,  .PRICE_BASE, 0.05 );
+  resMetricData.set( .WATER, .PRICE_BASE, 0.04 );
+  resMetricData.set( .POWER, .PRICE_BASE, 0.03 );
+  resMetricData.set( .ORE,   .PRICE_BASE, 0.20 );
+  resMetricData.set( .INGOT, .PRICE_BASE, 0.15 );
+  resMetricData.set( .PART,  .PRICE_BASE, 0.20 );
 
   resMetricData.set( .WORK,  .PRICE_ELAS, 0.50 );
   resMetricData.set( .FOOD,  .PRICE_ELAS, 0.50 );

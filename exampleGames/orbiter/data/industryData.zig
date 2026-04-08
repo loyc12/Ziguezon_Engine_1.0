@@ -179,14 +179,14 @@ pub fn loadIndustryData() void
   indMetricData.set( .REFINERY,    .AREA_COST,  5.0 );
   indMetricData.set( .FACTORY,     .AREA_COST,  5.0 );
 
-  indMetricData.set( .AGRONOMIC,   .PART_COST,  1.0 );
-  indMetricData.set( .HYDROPONIC,  .PART_COST,  2.0 );
-  indMetricData.set( .WATER_PLANT, .PART_COST,  2.0 );
-  indMetricData.set( .SOLAR_PLANT, .PART_COST,  3.0 );
-  indMetricData.set( .PROBE_MINE,  .PART_COST,  1.0 );
-  indMetricData.set( .GROUND_MINE, .PART_COST,  2.0 );
-  indMetricData.set( .REFINERY,    .PART_COST,  3.0 );
-  indMetricData.set( .FACTORY,     .PART_COST,  4.0 );
+  indMetricData.set( .AGRONOMIC,   .PART_COST,   5.0 );
+  indMetricData.set( .HYDROPONIC,  .PART_COST,  10.0 );
+  indMetricData.set( .WATER_PLANT, .PART_COST,  15.0 );
+  indMetricData.set( .SOLAR_PLANT, .PART_COST,  20.0 );
+  indMetricData.set( .PROBE_MINE,  .PART_COST,   5.0 );
+  indMetricData.set( .GROUND_MINE, .PART_COST,  30.0 );
+  indMetricData.set( .REFINERY,    .PART_COST,  25.0 );
+  indMetricData.set( .FACTORY,     .PART_COST,  20.0 );
 
   indMetricData.set( .AGRONOMIC,   .POLLUTION,  1.0 );
   indMetricData.set( .HYDROPONIC,  .POLLUTION,  0.0 );
@@ -200,38 +200,39 @@ pub fn loadIndustryData() void
 
   // ================================ RESOURCES ================================
 
-  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WORK,  20 );
-  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WATER, 8  );
-  indResDeltaTable.set( .AGRONOMIC,   .PROD, .FOOD,  20 );
+  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WORK,   25 );
+  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WATER,  10 );
+  indResDeltaTable.set( .AGRONOMIC,   .PROD, .FOOD,   25 );
 
-  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WORK,  20 );
-  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WATER, 4  );
-  indResDeltaTable.set( .HYDROPONIC,  .CONS, .POWER, 4  );
-  indResDeltaTable.set( .HYDROPONIC,  .PROD, .FOOD,  20 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WORK,   25 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WATER,   5 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .POWER,   5 );
+  indResDeltaTable.set( .HYDROPONIC,  .PROD, .FOOD,   25 );
 
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,  20 );
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER, 4  );
-  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 20 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,   25 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER,  20 );
+  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 100 );
 
-  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,  10 );
-  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 50 ); // NOTE : take into acount day/night effciciency loss on GROUND
+  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,   25 );
+  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WATER,   2 );
+  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 100 ); // NOTE : take into acount day/night effciciency loss on GROUND
 
-  indResDeltaTable.set( .PROBE_MINE,  .PROD, .ORE,   1  );
+  indResDeltaTable.set( .PROBE_MINE,  .PROD, .ORE,     1 );
 
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,  50 );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER, 5  );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER, 4  );
-  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,   10 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,  100 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER,  15 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER,  25 );
+  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,    10 );
 
-  indResDeltaTable.set( .REFINERY,    .CONS, .WORK,  40 );
-  indResDeltaTable.set( .REFINERY,    .CONS, .POWER, 4  );
-  indResDeltaTable.set( .REFINERY,    .CONS, .ORE,   4  );
-  indResDeltaTable.set( .REFINERY,    .PROD, .INGOT, 4  );
+  indResDeltaTable.set( .REFINERY,    .CONS, .WORK,  100 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .POWER,  25 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .ORE,    15 );
+  indResDeltaTable.set( .REFINERY,    .PROD, .INGOT,  10 );
 
-  indResDeltaTable.set( .FACTORY,     .CONS, .WORK,  30 );
-  indResDeltaTable.set( .FACTORY,     .CONS, .POWER, 3  );
-  indResDeltaTable.set( .FACTORY,     .CONS, .INGOT, 4  );
-  indResDeltaTable.set( .FACTORY,     .PROD, .PART,  4  );
+  indResDeltaTable.set( .FACTORY,     .CONS, .WORK,  100 );
+  indResDeltaTable.set( .FACTORY,     .CONS, .POWER,  10 );
+  indResDeltaTable.set( .FACTORY,     .CONS, .INGOT,  15 );
+  indResDeltaTable.set( .FACTORY,     .PROD, .PART,   10 );
 }
 
 
