@@ -25,7 +25,6 @@ pub const IndType = enum( u8 )
   GROUND_MINE,  // Extracts raw materials
   REFINERY,     // Refines  raw materials
   FACTORY,      // Create parts from refined materials
-  ASSEMBLY,     // Assembles parts into industry, infrastructure & vehicles
 
 
   pub inline fn canBeBuiltIn( self : IndType, loc : gdf.EconLoc, hasAtmo : bool ) bool
@@ -42,7 +41,6 @@ pub const IndType = enum( u8 )
         .GROUND_MINE => true,
         .REFINERY    => true,
         .FACTORY     => true,
-        .ASSEMBLY    => true,
 
         else => false,
       };
@@ -56,7 +54,6 @@ pub const IndType = enum( u8 )
 
         .REFINERY    => true,
         .FACTORY     => true,
-        .ASSEMBLY    => true,
 
         else => false,
       };
@@ -172,7 +169,6 @@ pub fn loadIndustryData() void
   indMetricData.set( .GROUND_MINE, .MASS,      15.0 );
   indMetricData.set( .REFINERY,    .MASS,      10.0 );
   indMetricData.set( .FACTORY,     .MASS,       5.0 );
-  indMetricData.set( .ASSEMBLY,    .MASS,       4.0 );
 
   indMetricData.set( .AGRONOMIC,   .AREA_COST, 25.0 );
   indMetricData.set( .HYDROPONIC,  .AREA_COST,  5.0 );
@@ -182,27 +178,24 @@ pub fn loadIndustryData() void
   indMetricData.set( .GROUND_MINE, .AREA_COST, 10.0 );
   indMetricData.set( .REFINERY,    .AREA_COST,  5.0 );
   indMetricData.set( .FACTORY,     .AREA_COST,  5.0 );
-  indMetricData.set( .ASSEMBLY,    .AREA_COST,  5.0 );
 
-  indMetricData.set( .AGRONOMIC,   .PART_COST, 1.0  );
-  indMetricData.set( .HYDROPONIC,  .PART_COST, 2.0  );
-  indMetricData.set( .WATER_PLANT, .PART_COST, 2.0  );
-  indMetricData.set( .SOLAR_PLANT, .PART_COST, 3.0  );
-  indMetricData.set( .PROBE_MINE,  .PART_COST, 1.0  );
-  indMetricData.set( .GROUND_MINE, .PART_COST, 2.0  );
-  indMetricData.set( .REFINERY,    .PART_COST, 3.0  );
-  indMetricData.set( .FACTORY,     .PART_COST, 4.0  );
-  indMetricData.set( .ASSEMBLY,    .PART_COST, 5.0  );
+  indMetricData.set( .AGRONOMIC,   .PART_COST,  1.0 );
+  indMetricData.set( .HYDROPONIC,  .PART_COST,  2.0 );
+  indMetricData.set( .WATER_PLANT, .PART_COST,  2.0 );
+  indMetricData.set( .SOLAR_PLANT, .PART_COST,  3.0 );
+  indMetricData.set( .PROBE_MINE,  .PART_COST,  1.0 );
+  indMetricData.set( .GROUND_MINE, .PART_COST,  2.0 );
+  indMetricData.set( .REFINERY,    .PART_COST,  3.0 );
+  indMetricData.set( .FACTORY,     .PART_COST,  4.0 );
 
-  indMetricData.set( .AGRONOMIC,   .POLLUTION, 1.0  );
-  indMetricData.set( .HYDROPONIC,  .POLLUTION, 0.0  );
-  indMetricData.set( .WATER_PLANT, .POLLUTION, 0.5  );
-  indMetricData.set( .SOLAR_PLANT, .POLLUTION, 0.0  );
-  indMetricData.set( .PROBE_MINE,  .POLLUTION, 1.0  );
-  indMetricData.set( .GROUND_MINE, .POLLUTION, 8.0  );
-  indMetricData.set( .REFINERY,    .POLLUTION, 8.0  );
-  indMetricData.set( .FACTORY,     .POLLUTION, 4.0  );
-  indMetricData.set( .ASSEMBLY,    .POLLUTION, 2.0  );
+  indMetricData.set( .AGRONOMIC,   .POLLUTION,  1.0 );
+  indMetricData.set( .HYDROPONIC,  .POLLUTION,  0.0 );
+  indMetricData.set( .WATER_PLANT, .POLLUTION,  0.5 );
+  indMetricData.set( .SOLAR_PLANT, .POLLUTION,  0.0 );
+  indMetricData.set( .PROBE_MINE,  .POLLUTION,  1.0 );
+  indMetricData.set( .GROUND_MINE, .POLLUTION,  8.0 );
+  indMetricData.set( .REFINERY,    .POLLUTION,  8.0 );
+  indMetricData.set( .FACTORY,     .POLLUTION,  4.0 );
 
 
   // ================================ RESOURCES ================================
@@ -239,9 +232,6 @@ pub fn loadIndustryData() void
   indResDeltaTable.set( .FACTORY,     .CONS, .POWER, 3  );
   indResDeltaTable.set( .FACTORY,     .CONS, .INGOT, 4  );
   indResDeltaTable.set( .FACTORY,     .PROD, .PART,  4  );
-
-  indResDeltaTable.set( .ASSEMBLY,    .CONS, .WORK,  20 );
-  indResDeltaTable.set( .ASSEMBLY,    .CONS, .POWER, 2  );
 }
 
 

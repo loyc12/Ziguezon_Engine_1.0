@@ -49,8 +49,11 @@ pub const Economy = struct
   sunshine  : f64 = 0.0,
   sunAccess : f32 = 1.0,
 
-  buildQueue  : ?BuildQueue = null,
   ecology     : ?Ecology    = null,
+
+  buildQueue  : ?BuildQueue = null,
+  buildDemand : f64 = 0.0,  // PART demand from construction queue this tick
+  buildBudget : f64 = 0.0,  // PART allocation granted by solver
 
   areaMetrics : gdf.ecnm_d.AreaMetricData = .{},
   popMetrics  : gdf.ecnm_d.PopMetricData  = .{},
@@ -190,7 +193,7 @@ pub const Economy = struct
   pub inline fn logResMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "$ Logging resources metrics :" );
-    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t/ Cap\t ( Access )\t[ Delta\t| Prod\tCons\t| Grow\tDecay\t| Demand ]" );
+    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t ( Access )\t[ Delta\t| Prod\tCons\t| Grow\tDecay\t| Demand ]" );
     def.qlog( .CONT, 0, @src(), "====================================================================================================" );
 
     inline for( 0..resTypeC )| r |
@@ -198,7 +201,6 @@ pub const Economy = struct
       const resType = ResType.fromIdx( r );
 
       const resCount  : u64 = @intFromFloat( self.resState.get( .BANK,     resType ));
-      const resCap    : u64 = @intFromFloat( self.resState.get( .LIMIT,    resType ));
       const resDelta  : i64 = @intFromFloat( self.resState.get( .DELTA,    resType ));
       const resProd   : u64 = @intFromFloat( self.resState.get( .GEN_PROD, resType ));
       const resCons   : u64 = @intFromFloat( self.resState.get( .GEN_CONS, resType ));
@@ -207,8 +209,8 @@ pub const Economy = struct
       const resReq    : u64 = @intFromFloat( self.resState.get( .MAX_DEM,  resType ));
       const resAccess : f32 = @floatCast(    self.resState.get( .GEN_ACS,  resType ));
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| +{d}\t-{d}\t| {d}\t ]",
-        .{ @tagName( resType ), resCount, resCap, resAccess, resDelta, resProd, resCons, resGrowth, resDecay, resReq });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| +{d}\t-{d}\t| {d}\t ]",
+        .{ @tagName( resType ), resCount, resAccess, resDelta, resProd, resCons, resGrowth, resDecay, resReq });
     }
   }
 
@@ -265,9 +267,10 @@ pub const Economy = struct
 
   pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
   {
-    self.infState.set( .BANK, .HOUSING, @floatFromInt( value ));
-    self.infState.set( .BANK, .HABITAT,                 0.0  );
-    self.infState.set( .BANK, .STORAGE, @floatFromInt( value ));
+    self.infState.set( .BANK, .HOUSING,  @floatFromInt( value ));
+    self.infState.set( .BANK, .HABITAT,                  0.0  );
+    self.infState.set( .BANK, .STORAGE,  @floatFromInt( value ));
+    self.infState.set( .BANK, .ASSEMBLY, @floatFromInt( value ));
 
     self.updateResCaps();
   }
@@ -347,7 +350,6 @@ pub const Economy = struct
     self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 200 ));
     self.indState.set( .BANK, .REFINERY,    @floatFromInt( value * 100 ));
     self.indState.set( .BANK, .FACTORY,     @floatFromInt( value * 50  ));
-    self.indState.set( .BANK, .ASSEMBLY,    @floatFromInt( value * 25  ));
   }
 
   pub inline fn logIndMetrics( self : *const Economy ) void
@@ -413,7 +415,7 @@ pub const Economy = struct
     const popDelta  : i64 = @intFromFloat( self.popMetrics.get( .DELTA  ));
     const popAccess : f64 =                self.popMetrics.get( .ACTIVITY );
 
-    def.qlog( .INFO, 0, @src(), "& Logging population metrics : " );
+    def.qlog( .INFO, 0, @src(), "$ Logging population metrics : " );
     def.log(  .CONT, 0, @src(), "Human\t: {d}\t/ {d}\t[ {d} ]\t( {d:.3} )", .{ popCount, self.getPopCap(), popDelta, popAccess });
   }
 
@@ -541,7 +543,7 @@ pub const Economy = struct
 
   // ================================ CONSTRUCTION ================================
 
-pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
+pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumeParts : bool ) f64
   {
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
@@ -549,22 +551,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
       return 0;
     }
 
-    const availParts  = self.resState.get( .BANK, .PART );
-    const partCost    = c.getPartCost();
-    const areaCost    = c.getAreaCost();
-
-    var builtAmount = amount;
-
-    if( availParts < partCost )
-    {
-    //def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
-      return 0;
-    }
-    if( availParts < builtAmount * partCost )
-    {
-    //def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
-      builtAmount = availParts / partCost;
-    }
+    const areaCost   = c.getAreaCost();
+    var  builtAmount = @floor( amount );
 
     if( !std.meta.eql( c, .{ .inf = .HABITAT }))
     {
@@ -572,7 +560,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
       if( areaAvail < areaCost )
       {
-      //def.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
+      // def.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
         return 0;
       }
       if( areaAvail < builtAmount * areaCost )
@@ -582,13 +570,31 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
       }
     }
 
+    if( consumeParts )
+    {
+      const availParts  = self.resState.get( .BANK, .PART );
+      const partCost    = c.getPartCost();
+
+      if( availParts < partCost )
+      {
+      //def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
+        return 0;
+      }
+      if( availParts < builtAmount * partCost )
+      {
+      //def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
+        builtAmount = availParts / partCost;
+      }
+
+      builtAmount     = @floor( builtAmount            );
+      const totalCost = @ceil(  builtAmount * partCost );
+
+      // Deduct parts
+      self.resState.sub( .BANK,     .PART, totalCost );
+      self.resState.add( .GEN_CONS, .PART, totalCost );
+    }
+
     builtAmount = @floor( builtAmount );
-
-    const totalCost = @ceil( builtAmount * partCost );
-
-    // Deduct parts
-    self.resState.sub( .BANK,     .PART, totalCost );
-    self.resState.add( .GEN_CONS, .PART, totalCost );
 
     switch( c )
     {
@@ -618,18 +624,19 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   pub inline fn logAllMetrics( self : *const Economy ) void
   {
+
+    self.logResMetrics();
+    self.logInfMetrics();
+    self.logIndMetrics();
+  //self.logTravelMetrics_TERRA();
+    self.logPopMetrics();
+
     def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
     def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}",          .{ self.stepCount });
     def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
     def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
-
-    self.logPopMetrics();
-    self.logResMetrics();
-    self.logInfMetrics();
-    self.logIndMetrics();
-  //self.logTravelMetrics_TERRA();
   }
 
   // TODO : generalise this code
@@ -728,6 +735,23 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     }
   }
 
+  inline fn calcBuildDemand( self : *Economy ) void
+  {
+    if( self.buildQueue != null )
+    {
+      const assemblyCount = self.infState.get( .BANK, .ASSEMBLY );
+      const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
+      const assemblyCap   = @ceil( assemblyCount * assemblyRate );
+
+      // Demand is what the queue needs, but capped by what assemblies can process
+      self.buildDemand = @min( self.buildQueue.?.getTotalPartCost(), assemblyCap );
+    }
+    else
+    {
+      self.buildDemand = 0.0;
+    }
+  }
+
   inline fn tickBuildQueue( self : *Economy ) void
   {
     if( self.buildQueue != null )
@@ -742,6 +766,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   inline fn updateInfUsage( self : *Economy ) void
   {
+    // ASSEMBLY
+    // NOTE : updated by econBuilder
+
     // HOUSING
     const popCount : f64 = @floatFromInt( self.getPopCount() );
     const popCap   : f64 = @floatFromInt( self.getPopCap()   );
@@ -777,7 +804,11 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
-      if( self.infState.get( .USE_LVL, .HOUSING ) > 0.8 )
+      if( self.infState.get( .USE_LVL, .ASSEMBLY ) > 0.95 )
+      {
+        _ = self.buildQueue.?.addEntry( .{ .inf = .ASSEMBLY }, 2 );
+      }
+      if( self.infState.get( .USE_LVL, .HOUSING ) > 0.95 )
       {
         _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING }, 2 );
       }
@@ -787,7 +818,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
         _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT }, 2 );
       }
 
-      if( self.infState.get( .USE_LVL, .STORAGE ) > 0.8 )
+      if( self.infState.get( .USE_LVL, .STORAGE ) > 0.95 )
       {
         _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE }, 2 );
       }
@@ -824,14 +855,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
         {
           _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY }, 6 );
         }
-
         if( self.resState.get( .GEN_ACS, .INGOT ) > 1.0 )
         {
           _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY }, 4 );
-        }
-        else
-        {
-          _ = self.buildQueue.?.addEntry( .{ .ind = .ASSEMBLY }, 2 );
         }
       }
     }
@@ -856,6 +882,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     self.updateAreas();
 
     self.tickEcology();
+    self.calcBuildDemand();
     ecnSlvr.resolveEcon( self );
     self.tickBuildQueue();
 

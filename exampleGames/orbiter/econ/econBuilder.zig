@@ -32,7 +32,7 @@ pub const BuildEntry = struct
 
   pub inline fn getRemainingPartCost( self : *const BuildEntry ) f64
   {
-    const count : f64 = @floatFromInt( self.buildCount );
+    const  count : f64 = @floatFromInt( self.buildCount );
     return count * self.getUnitPartCost();
   }
 
@@ -49,10 +49,10 @@ pub const BuildEntry = struct
 
     if( availParts > count * unitPartCost )
     {
-      return count;
+      return @floor( count );
     }
 
-    return( availParts / unitPartCost );
+    return @floor( availParts / unitPartCost );
   }
 };
 
@@ -156,17 +156,17 @@ pub const BuildQueue = struct
 
   pub fn update( self : *BuildQueue, econ : *ecn.Economy ) void
   {
-    econ.resState.add( .MAX_DEM, .PART, self.getTotalPartCost() );
-
     if( self.entryCount > 0 )
     {
       var entriesClosed : u64 = 0;
 
-      const assemblyCount = econ.indState.get( .BANK, .ASSEMBLY );
+      const assemblyCount = econ.infState.get( .BANK, .ASSEMBLY );
+      const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
+      const assemblyCap   = @ceil( assemblyCount * assemblyRate );
 
-      var availParts  = econ.indState.get( .ACT_LVL, .ASSEMBLY );
-          availParts *= assemblyCount;
-          availParts *= ASSEMBLY_EFFICIENCY;
+      const availParts = @min( assemblyCap, econ.buildBudget );
+      var  remainParts = availParts;
+
 
       for( 0..self.entryCount )| idx |
       {
@@ -175,29 +175,37 @@ pub const BuildQueue = struct
         var unitsBuilt : f64 = 0.0;
 
         const unitPartCost = entry.construct.getPartCost();
-        const unitsToBuild = entry.calcBuildableAmount( availParts );
+        const unitsToBuild = entry.calcBuildableAmount( remainParts );
 
-        if( unitsToBuild > 0 )
+        if( unitsToBuild > def.EPS )
         {
-          unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild );
+          unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild, false );
 
           entry.buildCount -= @intFromFloat( unitsBuilt );
-          availParts       -= unitsBuilt * unitPartCost;
+          remainParts      -= unitsBuilt * unitPartCost;
+        }
 
-          // Failed to close the entry : likely cannot build anything more
-          if( !entry.isEntryClosed() )
-          {
-            def.qlog( .INFO, 0, @src(), "@ Could not close build queue" );
-            break;
-          }
+        // Failed to close the entry : likely cannot build anything more
+        if( !entry.isEntryClosed() )
+        {
+          def.qlog( .DEBUG, 0, @src(), "@ Could not close build queue" );
+          break;
         }
 
         entriesClosed += 1;
-
-        //if( unitsToBuild > unitsBuilt ) break; // Encountered a building restriction ( cannot build any more )
-        //if( availParts < unitPartCost ) break; // Used all available parts ( cannot build any more )
-
       }
+
+      // Update assembly usage metric
+      if( assemblyCap > def.EPS )
+      {
+        const partsUsed = availParts - remainParts;
+        econ.infState.set( .USE_LVL, .ASSEMBLY, partsUsed / assemblyCap );
+      }
+      else
+      {
+        econ.infState.set( .USE_LVL, .ASSEMBLY, 0.0 );
+      }
+
       self.removeEntryAmount( entriesClosed );
     }
     return;

@@ -14,8 +14,9 @@ pub const InfType = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
+  ASSEMBLY,     // Increases max building rate in PARTs per tick
   HOUSING,      // Increases population cap
-  HABITAT,      // Increase area of pressurized locations
+  HABITAT,      // Increases area of pressurized locations
   STORAGE,      // Grants cargo storage capacity
 //BATTERY,      // Grants energy storage capacity
 
@@ -42,26 +43,28 @@ pub const InfType = enum( u8 )
     {
       return switch( self )
       {
-        .HOUSING => true,
-        .HABITAT => true,
+        .ASSEMBLY => true,
+        .HOUSING  => true,
+        .HABITAT  => true,
 
-        .STORAGE => true,
-      //.BATTERY => true,POLLUTION,
+        .STORAGE  => true,
+      //.BATTERY  => true,POLLUTION,
 
-      //else     => false,
+      //else      => false,
       };
     }
     else // .ORBIT or .L1-5
     {
       return switch( self )
       {
-        .HOUSING => true,
-        .HABITAT => true,
+        .ASSEMBLY => true,
+        .HOUSING  => true,
+        .HABITAT  => true,
 
-        .STORAGE => true,
-      //.BATTERY => true,
+        .STORAGE  => true,
+      //.BATTERY  => true,
 
-      //else     => false,
+      //else      => false,
       };
     }
   }
@@ -94,7 +97,6 @@ pub const InfMetricEnum = enum( u8 )
   MASS,
   AREA_COST,
   PART_COST,
-//CASH_COST,
   POLLUTION,
   CAPACITY,
 //POWER_SRC,
@@ -108,37 +110,42 @@ pub fn loadInfrastructureData() void
 
   // ================================ MASS ================================
 
-  infMetricData.set( .HOUSING, .MASS, 1.0 );
-  infMetricData.set( .HABITAT, .MASS, 3.0 );
-  infMetricData.set( .STORAGE, .MASS, 5.0 );
+  infMetricData.set( .ASSEMBLY, .MASS, 4.0 );
+  infMetricData.set( .HOUSING,  .MASS, 1.0 );
+  infMetricData.set( .HABITAT,  .MASS, 3.0 );
+  infMetricData.set( .STORAGE,  .MASS, 5.0 );
 
 
   // ================================ AREA COST ================================
 
-  infMetricData.set( .HOUSING, .AREA_COST,  1.0 );
-  infMetricData.set( .HABITAT, .AREA_COST,  0.0 ); // Provides area
-  infMetricData.set( .STORAGE, .AREA_COST,  4.0 );
+  infMetricData.set( .ASSEMBLY, .AREA_COST, 5.0 );
+  infMetricData.set( .HOUSING,  .AREA_COST, 1.0 );
+  infMetricData.set( .HABITAT,  .AREA_COST, 0.0 ); // Provides area via capacity
+  infMetricData.set( .STORAGE,  .AREA_COST, 4.0 );
 
 
   // ================================ PART COST ================================
 
-  infMetricData.set( .HOUSING, .PART_COST, 1.0 );
-  infMetricData.set( .HABITAT, .PART_COST, 3.0 );
-  infMetricData.set( .STORAGE, .PART_COST, 2.0 );
+  infMetricData.set( .ASSEMBLY, .PART_COST, 5.0 );
+  infMetricData.set( .HOUSING,  .PART_COST, 1.0 );
+  infMetricData.set( .HABITAT,  .PART_COST, 3.0 );
+  infMetricData.set( .STORAGE,  .PART_COST, 2.0 );
 
 
   // ================================ POLLUTION ================================
 
-  infMetricData.set( .HOUSING, .POLLUTION, 0.1 );
-  infMetricData.set( .HABITAT, .POLLUTION, 0.1 );
-  infMetricData.set( .STORAGE, .POLLUTION, 0.1 );
+  infMetricData.set( .ASSEMBLY, .POLLUTION, 1.0 );
+  infMetricData.set( .HOUSING,  .POLLUTION, 0.2 );
+  infMetricData.set( .HABITAT,  .POLLUTION, 0.1 );
+  infMetricData.set( .STORAGE,  .POLLUTION, 0.1 );
 
 
   // ================================ CAPACITY ================================
 
-  infMetricData.set( .HOUSING, .CAPACITY, 32.0 ); // Pop
-  infMetricData.set( .HABITAT, .CAPACITY, 16.0 ); // Area
-  infMetricData.set( .STORAGE, .CAPACITY, 16.0 ); // Resources
+  infMetricData.set( .ASSEMBLY, .CAPACITY,  1.0 ); // PARTs processed per tick
+  infMetricData.set( .HOUSING,  .CAPACITY, 32.0 ); // Pop housed
+  infMetricData.set( .HABITAT,  .CAPACITY, 16.0 ); // Area generated
+  infMetricData.set( .STORAGE,  .CAPACITY, 16.0 ); // Resources stored
 }
 
 
@@ -157,8 +164,8 @@ pub const InfStateEnum = enum( u8 )
   DECAY,   // Amount lost to building decay   last tick
   BUILT,   // Amount gained from construction last tick
 
-  EXPENSE, // Amount of money spent by the gov  to maintain the infrastructure last tick
-  REVENUE, // Amount of money gained by the gov from taxing the infrastructure last tick
+  EXPENSE, // Amount of money used for maintaining the infrastructure last tick
+  REVENUE, // Amount of money gained from running  the infrastructure last tick
 
   USE_LVL, // How much of the available infrastructure was used last tick
 };

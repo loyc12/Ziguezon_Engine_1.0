@@ -39,9 +39,10 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
   solver.calcPopMaxDelta();  // Computes maximal possible population prod and cons
   solver.calcIndMaxDelta();  // Computes maximal possible industrial prod and cons
 
-  solver.calcGenResAccess(); // Computes expected agregated  resource access
+  solver.calcGenResAccess(); // Computes expected agregated resource access
   solver.calcPopResAccess(); // Computes expected population resource access
   solver.calcIndResAccess(); // Computes expected industrial resource access
+  solver.calcInfResAccess(); // Computes expected construction resource access
 
   solver.calcPopActivity();  // Computes final population activity ratio
   solver.calcIndActivity();  // Computes final industrial activity ratio
@@ -51,6 +52,7 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
 
   solver.calcPopResCons();   // Computes resource cons from population based on popCount
   solver.calcIndResCons();   // Computes resource cons from industry based on activity
+  solver.calcInfResCons();   // Computes resource cons from construction and infrastructure maintenance
   solver.calcNatResCons();   // Decays unsued resources left based on individualized rates ( 100% for WORK )
   solver.applyGenResCons();  // Applies all resource consumption to economy
 
@@ -88,6 +90,7 @@ const EconSolver = struct
 
   maxPopResAccess  : f64 = 1.0,
   maxIndResAccess  : f64 = 1.0,
+  maxInfResAccess  : f64 = 1.0,
 
   maxPopActivity   : f64 = 1.0,
   maxIndActivity   : f64 = 1.0,
@@ -125,6 +128,12 @@ const EconSolver = struct
     self.resFlowData.fillWith( 0.0 );
     self.indActivity.fillWith( 0.0 );
     self.indFlowData.fillWith( 0.0 );
+
+    if( self.econ.buildDemand > def.EPS )
+    {
+      self.resFlowData.set( .INF, .MAX_CONS, .PART, self.econ.buildDemand );
+      self.resFlowData.add( .GEN, .MAX_CONS, .PART, self.econ.buildDemand );
+    }
 
     self.econ.resetCountMetrics();
   }
@@ -198,33 +207,32 @@ const EconSolver = struct
   }
 
 
-
   fn calcGenResAccess( self : *EconSolver ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ LOGGIN GEN RES ACCESS :" );
+    def.qlog( .INFO, 0, @src(), "$ LOGGING GEN RES ACCESS :" );
 
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
 
       const supply = self.resStockData.get( resType ); // Previous week's resulting bank supply
-      const demand = self.resFlowData.get( .GEN, .MAX_CONS, resType );
+      const genDem = self.resFlowData.get( .GEN, .MAX_CONS, resType );
 
-      var access : f64 = self.maxPopResAccess;
+      var access : f64 = 0.0;
 
-      if( demand > def.EPS )
+      if( genDem > def.EPS )
       {
-        access = @min( self.maxPopResAccess, supply / demand );
+        access = supply / genDem;
       }
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resType ), supply, demand, access });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resType ), supply, genDem, access });
       self.resFlowData.set( .GEN, .ACCESS, resType, access );
     }
   }
 
   fn calcPopResAccess( self : *EconSolver ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ LOGGIN POP RES ACCESS :" );
+    def.qlog( .INFO, 0, @src(), "$ LOGGING POP RES ACCESS :" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -253,7 +261,7 @@ const EconSolver = struct
 
   fn calcIndResAccess( self : *EconSolver ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ LOGGIN IND RES ACCESS :" );
+    def.qlog( .INFO, 0, @src(), "$ LOGGING IND RES ACCESS :" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -263,7 +271,7 @@ const EconSolver = struct
       const popDem = self.resFlowData.get( .POP, .MAX_CONS, resType );
       const indDem = self.resFlowData.get( .IND, .MAX_CONS, resType );
 
-      // Pop claims first — industry gets the remainder
+      // Pop gets first dibs, industry gets whatever is left
       const popClaim  = @min( supply, popDem );
       const remainder = @max( 0.0, supply - popClaim );
 
@@ -282,6 +290,42 @@ const EconSolver = struct
       }
 
       self.resFlowData.set( .IND, .ACCESS, resType, access );
+    }
+  }
+
+  fn calcInfResAccess( self : *EconSolver ) void
+  {
+    def.qlog( .INFO, 0, @src(), "$ LOGGING INF RES ACCESS :" );
+
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resType = ResType.fromIdx( r );
+
+      const supply  = self.resStockData.get( resType );
+      const popDem  = self.resFlowData.get( .POP, .MAX_CONS, resType );
+      const indDem  = self.resFlowData.get( .IND, .MAX_CONS, resType );
+      const infDem  = self.resFlowData.get( .INF, .MAX_CONS, resType );
+
+      const popClaim  = @min( supply, popDem );
+      const indClaim  = @min( @max( 0.0, supply - popClaim ), indDem );
+      const remainder = @max( 0.0, supply - popClaim - indClaim );
+
+      var access : f64 = self.maxInfResAccess;
+
+      if( infDem > def.EPS )
+      {
+        access = @min( self.maxInfResAccess, remainder / infDem );
+
+        def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resType ), supply, indDem, access });
+
+        if( access < 1.0 - def.EPS )
+        {
+          def.log( .CONT, 0, @src(), "@ {s} shortage in infrastructure", .{ @tagName( resType )});
+        }
+      }
+
+      self.resFlowData.set( .INF, .ACCESS, resType, access );
     }
   }
 
@@ -304,7 +348,7 @@ const EconSolver = struct
     //def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}", .{ @tagName( resType ), activity });
     }
 
-    self.popActivity = activity;
+    self.popActivity = activity; // NOTE: Should only scale pop prod, not cons
   }
 
   fn calcIndActivity( self : *EconSolver ) void
@@ -360,11 +404,13 @@ const EconSolver = struct
   {
     inline for( 0..resTypeC )| r |
     {
-      const resType     = ResType.fromIdx( r );
-      const realPopCons = self.popActivity * self.resFlowData.get( .POP, .MAX_CONS, resType );
+      const resType      = ResType.fromIdx( r );
+      const popResAccess = @min( 1.0, self.resFlowData.get(     .POP, .ACCESS,   resType ));
+      const popMaxCons   = self.resFlowData.get( .POP, .MAX_CONS, resType );
+      const popResConst = popResAccess * popMaxCons;
 
-      self.resFlowData.set( .POP, .REAL_CONS, resType, realPopCons );
-      self.resFlowData.add( .GEN, .REAL_CONS, resType, realPopCons );
+      self.resFlowData.set( .POP, .REAL_CONS, resType, popResConst );
+      self.resFlowData.add( .GEN, .REAL_CONS, resType, popResConst );
     }
   }
 
@@ -390,17 +436,38 @@ const EconSolver = struct
     }
   }
 
+  fn calcInfResCons( self : *EconSolver ) void
+  {
+    inline for( 0..resTypeC )| r |
+    {
+      const resType    = ResType.fromIdx( r );
+      const infAccess  = self.resFlowData.get( .INF, .ACCESS,   resType );
+      const infMaxCons = self.resFlowData.get( .INF, .MAX_CONS, resType );
+
+      if( infMaxCons > def.EPS )
+      {
+        const realInfCons = infAccess * infMaxCons;
+
+        self.resFlowData.set( .INF, .REAL_CONS, resType, realInfCons );
+        self.resFlowData.add( .GEN, .REAL_CONS, resType, realInfCons );
+      }
+    }
+  }
+
   fn calcNatResCons( self : *EconSolver ) void
   {
     inline for( 0..resTypeC )| r |
     {
-      const resType   = ResType.fromIdx( r );
-      const resCount  = self.resStockData.get( resType );
-      const popCons   = self.resFlowData.get( .POP, .REAL_CONS, resType );
-      const indCons   = self.resFlowData.get( .IND, .REAL_CONS, resType );
+      const resType  = ResType.fromIdx( r );
+      const resCount = self.resStockData.get( resType );
+
+      const popCons  = self.resFlowData.get( .POP, .REAL_CONS, resType );
+      const indCons  = self.resFlowData.get( .IND, .REAL_CONS, resType );
+      const infCons  = self.resFlowData.get( .INF, .REAL_CONS, resType );
+      const totCons  = popCons + indCons + infCons;
 
       // Decay applies to what remains AFTER pop and ind consumption
-      const remainder = @max( 0.0, resCount - ( popCons + indCons ));
+      const remainder = @max( 0.0, resCount - totCons ); //
 
       if( remainder > def.EPS and resCount > def.EPS  )
       {
@@ -693,6 +760,9 @@ const EconSolver = struct
     econ.popMetrics.set( .ACTIVITY, self.popActivity  );
     econ.popMetrics.set( .COUNT,    self.nextPopCount );
     econ.popMetrics.set( .DELTA,    self.nextPopCount - self.prevPopCount );
+
+    self.econ.buildBudget = self.resFlowData.get( .INF, .REAL_CONS, .PART );
+
 
     inline for( 0..resTypeC )| r |
     {

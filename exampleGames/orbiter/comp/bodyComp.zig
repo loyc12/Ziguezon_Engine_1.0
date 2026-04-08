@@ -162,7 +162,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     if( econ.isActive ) // TODO : Activate locs when player build infra there
     {
       econ.debugSetResCounts( value * 5000  );
-      econ.debugSetInfCounts( value * 2500  );
+      econ.debugSetInfCounts( value * 2000  );
       econ.debugSetIndCounts( value         );
       econ.addPopCount(       value * 50000 );
     }

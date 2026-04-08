@@ -88,15 +88,15 @@ pub fn loadResourceData() void
 
   // ================================ DECAY RATE ================================
 
-  resMetricData.set( .WORK,  .DECAY_RATE, 1.00 ); // NOTE : DO NOT CONFUSE WITH getPerPopDelta() VALUE
-                                                  //        Imagine wasting time on that bug... couldn't be me frfrf
+  resMetricData.set( .WORK,  .DECAY_RATE, 1.00 );
+
   resMetricData.set( .FOOD,  .DECAY_RATE, 0.05 );
   resMetricData.set( .WATER, .DECAY_RATE, 0.02 );
-  resMetricData.set( .POWER, .DECAY_RATE, 0.01 );
+  resMetricData.set( .POWER, .DECAY_RATE, 0.05 );
 
   resMetricData.set( .ORE,   .DECAY_RATE, 0.01 );
-  resMetricData.set( .INGOT, .DECAY_RATE, 0.02 );
-  resMetricData.set( .PART,  .DECAY_RATE, 0.03 );
+  resMetricData.set( .INGOT, .DECAY_RATE, 0.01 );
+  resMetricData.set( .PART,  .DECAY_RATE, 0.01 );
 
 
   // ================================ GROWTH RATE ================================
@@ -108,11 +108,12 @@ pub fn loadResourceData() void
 
   // ================================ POP CONS / PROD ================================
 
-  resMetricData.set( .WORK,  .POP_PROD, 1.000 );
+  resMetricData.set( .WORK,  .POP_PROD, 1.0000 );
 
-  resMetricData.set( .FOOD,  .POP_CONS, 0.010 );
-  resMetricData.set( .WATER, .POP_CONS, 0.005 );
-  resMetricData.set( .POWER, .POP_CONS, 0.001 );
+  resMetricData.set( .FOOD,  .POP_CONS, 0.0120 );
+  resMetricData.set( .WATER, .POP_CONS, 0.0050 );
+  resMetricData.set( .POWER, .POP_CONS, 0.0020 );
+  resMetricData.set( .PART,  .POP_CONS, 0.0001 );
 
   // ================================ PRICES ================================
 
