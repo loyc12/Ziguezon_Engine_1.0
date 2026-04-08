@@ -45,7 +45,7 @@ pub const Economy = struct
   isActive  : bool = false,
   hasAtmo   : bool,
 
-  stepCount  : u64 = 0,
+  stepCount : u64 = 0,
   sunshine  : f64 = 0.0,
   sunAccess : f32 = 1.0,
 
@@ -187,9 +187,9 @@ pub const Economy = struct
     }
   }
 
-  pub inline fn logResCounts( self : *const Economy ) void
+  pub inline fn logResMetrics( self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging resources :" );
+    def.qlog( .INFO, 0, @src(), "$ Logging resources metrics :" );
     def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t/ Cap\t ( Access )\t[ Delta\t| Prod\tCons\t| Grow\tDecay\t| Demand ]" );
     def.qlog( .CONT, 0, @src(), "====================================================================================================" );
 
@@ -272,9 +272,9 @@ pub const Economy = struct
     self.updateResCaps();
   }
 
-  pub inline fn logInfCounts( self : *const Economy ) void
+  pub inline fn logInfMetrics( self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging infrastructure :" );
+    def.qlog( .INFO, 0, @src(), "$ Logging infrastructure metrics :" );
 
     inline for( 0..infTypeC )| f |
     {
@@ -350,9 +350,9 @@ pub const Economy = struct
     self.indState.set( .BANK, .ASSEMBLY,    @floatFromInt( value * 25  ));
   }
 
-  pub inline fn logIndCounts( self : *const Economy ) void
+  pub inline fn logIndMetrics( self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging industry :" );
+    def.qlog( .INFO, 0, @src(), "$ Logging industrial metrics :" );
 
     inline for( 0..indTypeC )| d |
     {
@@ -407,13 +407,14 @@ pub const Economy = struct
   }
 
 
-  pub fn logPopCount( self : *const Economy ) void
+  pub fn logPopMetrics( self : *const Economy ) void
   {
     const popCount  : u64 = @intFromFloat( self.popMetrics.get( .COUNT  ));
     const popDelta  : i64 = @intFromFloat( self.popMetrics.get( .DELTA  ));
     const popAccess : f64 =                self.popMetrics.get( .ACTIVITY );
 
-    def.log( .INFO, 0, @src(), "Population\t: {d}\t/ {d}\t[ {d} ]\t( {d:.3} )", .{ popCount, self.getPopCap(), popDelta, popAccess });
+    def.qlog( .INFO, 0, @src(), "& Logging population metrics : " );
+    def.log(  .CONT, 0, @src(), "Human\t: {d}\t/ {d}\t[ {d} ]\t( {d:.3} )", .{ popCount, self.getPopCap(), popDelta, popAccess });
   }
 
 
@@ -615,7 +616,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   // ================================ UPDATING ================================
 
-  pub inline fn logMetrics( self : *const Economy ) void
+  pub inline fn logAllMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
     def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}",          .{ self.stepCount });
@@ -623,12 +624,18 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
     def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
+
+    self.logPopMetrics();
+    self.logResMetrics();
+    self.logInfMetrics();
+    self.logIndMetrics();
+  //self.logTravelMetrics_TERRA();
   }
 
   // TODO : generalise this code
-  pub inline fn logTravelCostsTERRA( self : *const Economy ) void
+  pub inline fn logTravelMetrics_TERRA( self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Trade fuel / time costs from Earth to :" );
+    def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) :" );
 
     inline for( 0..gdf.BodyName.count )| b |
     {
@@ -701,7 +708,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
       self.indState.set( .REVENUE,  ind, 0.0 );
       self.indState.set( .PROFIT,   ind, 0.0 );
 
-    //self.indState.set( .ACT_TRGT, ind, 0.0 ); // NOTE : DO NOT AERO OUT : Cross tick signal
+    //self.indState.set( .ACT_TRGT, ind, 0.0 ); // NOTE : DO NOT ZERO OUT : Cross-tick signal
       self.indState.set( .ACT_LVL,  ind, 0.0 );
     }
   }
@@ -857,11 +864,6 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     // NOTE : DEBUG SECTION
     self.debugAutoBuild();
 
-  //self.logPopCount();
-  //self.logResCounts();
-  //self.logInfCounts();
-  //self.logIndCounts();
-  //self.logTravelCostsTERRA();
-    self.logMetrics();
+    self.logAllMetrics();
   }
 };

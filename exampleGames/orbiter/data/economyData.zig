@@ -109,6 +109,10 @@ pub const PopMetricEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   COUNT,    // Total amount of population last tick
-  DELTA,    // Change sin population last tick
+  DELTA,    // Changes in population last tick
+
+  BIRTH,
+  DEATH,
+
   ACTIVITY, // Population's access to demanded goods last tick
 };

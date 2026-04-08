@@ -185,7 +185,11 @@ pub const BuildQueue = struct
           availParts       -= unitsBuilt * unitPartCost;
 
           // Failed to close the entry : likely cannot build anything more
-          if( !entry.isEntryClosed() ){ break; }
+          if( !entry.isEntryClosed() )
+          {
+            def.qlog( .INFO, 0, @src(), "@ Could not close build queue" );
+            break;
+          }
         }
 
         entriesClosed += 1;

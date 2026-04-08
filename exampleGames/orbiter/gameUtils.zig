@@ -255,7 +255,7 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
 
   for( 0..stepCount )| _ |
   {
-    def.qlog( .DEBUG, 0, @src(), "Ticking all econs once" );
+    def.qlog( .DEBUG, 0, @src(), "==== Ticking all econs once ====" );
 
     inline for( 1..nttArr.len )| idx |
     {
@@ -276,7 +276,7 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
     // Update travel table from the fresh orbital data generated in tickAllEcons()
     gdf.trfSlvr.updateTravelTable();
   }
-  def.log( .DEBUG, 0, @src(), "Ticked global economy {d} times", .{ stepCount });
+  def.log( .DEBUG, 0, @src(), "Ticked global economy {d} time(s)", .{ stepCount });
 }
 
 pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
