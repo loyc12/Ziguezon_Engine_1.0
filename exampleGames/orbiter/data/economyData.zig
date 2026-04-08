@@ -53,16 +53,18 @@ pub const IndFlowData  = def.GenDataCube( f64, IndType, FlowPhaseEnum, ResType )
 // NOTE : individual industry's max activity level
 pub const IndActivityData = def.GenDataLine( f64, IndType );
 
+pub const IndResAccessData = def.GenDataGrid( f64, IndType, ResType );
+
 
 pub const FlowAgentEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  NAT, // Natural processes     ( decay, growth, disasters         )
-  GEN, // Sum of non-NAT values ( to avoid it being equal to DELTA )
   POP, // Population            ( work prod, food/water/power cons )
   IND, // Industry aggregate    ( all industrial prod/cons         )
-//COM, // Commerce / trade      ( imports/exports — stub for now   )
+  NAT, // Natural processes     ( decay, growth, disasters         )
+  GEN, // Sum of non-NAT values ( to avoid it being equal to DELTA )
+//COM, // Commerce / trade      ( imports/exports : stub for now   )
 };
 
 pub const FlowPhaseEnum = enum( u8 )
@@ -72,32 +74,11 @@ pub const FlowPhaseEnum = enum( u8 )
   MAX_PROD,  // Theoretical maximum production    ( before scarcity )
   MAX_CONS,  // Theoretical maximum consumption   ( before scarcity )
 
-//PRED_PROD, // Predicted maximum production      ( after control levers applied ) ???
-//PRED_CONS, // Predicted maximum consumption     ( after control levers applied ) ???
-
   REAL_PROD, // Realized production               ( after activity / access applied )
   REAL_CONS, // Realized consumption              ( after activity / access applied )
+
+  ACCESS,    // Resource demand satisfaction rate
 };
-
-
-// ================================ RESOURCE ACCESS GRID ================================
-// NOTE : used in EconSolver
-
-pub const GenResAccessData = def.GenDataGrid( f64, AccessAgentEnum, ResType );
-pub const IndResAccessData = def.GenDataGrid( f64, IndType,         ResType );
-
-pub const AccessAgentEnum = enum( u8 )
-{
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  POP_C, // Absolute amount claimed by pop
-  IND_A, // Absolute amount remaining for industry after pop claim
-
-  POP, // Population access ratio (computed first, has priority)
-  IND, // Industry aggregate access ratio (computed on remainder)
-  GEN, // General / combined access ratio
-};
-
 
 
 // ================================ AREA METRIC ARRAY ================================
@@ -127,7 +108,7 @@ pub const PopMetricEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  COUNT,  // Total amount of population last tick
-  DELTA,  // Change sin population last tick
-  ACCESS, // Population's access to demanded goods last tick
+  COUNT,    // Total amount of population last tick
+  DELTA,    // Change sin population last tick
+  ACTIVITY, // Population's access to demanded goods last tick
 };

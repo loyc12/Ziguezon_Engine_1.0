@@ -170,6 +170,8 @@ pub const ResStateEnum = enum( u8 )
   TRD_EXP,  // Total exports last tick
   TRD_IMP,  // Total imports last tick
 
-  SAT_LVL,  // Demand satisfaction rates from last tick
+  GEN_ACS,  // Agregated  resource access rates from last tick
+  POP_ACS,  // Population resource access rates from last tick
+  IND_ACS,  // Industrial resource access rates from last tick
 };
 

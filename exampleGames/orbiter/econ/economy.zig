@@ -105,8 +105,19 @@ pub const Economy = struct
 
     inline for( 0..resTypeC )| r |
     {
-      self.resState.set( .LIMIT, ResType.fromIdx( r ), MIN_RES_CAP );
+      const resType = ResType.fromIdx( r );
+
+      self.resState.set( .LIMIT, resType, MIN_RES_CAP );
+      self.resState.set( .PRICE, resType, resType.getMetric_f64( .PRICE_BASE ));
     }
+
+    inline for( 0..indTypeC )| d |
+    {
+      const indType = IndType.fromIdx( d );
+
+      self.indState.set( .ACT_TRGT, indType, 1.0 );
+    }
+
 
     self.buildQueue = BuildQueue.init();
     self.updateAreas();
@@ -194,7 +205,7 @@ pub const Economy = struct
       const resGrowth : u64 = @intFromFloat( self.resState.get( .GROWTH,   resType ));
       const resDecay  : u64 = @intFromFloat( self.resState.get( .DECAY,    resType ));
       const resReq    : u64 = @intFromFloat( self.resState.get( .MAX_DEM,  resType ));
-      const resAccess : f32 = @floatCast(    self.resState.get( .SAT_LVL,  resType ));
+      const resAccess : f32 = @floatCast(    self.resState.get( .GEN_ACS,  resType ));
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d}\t/ {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| +{d}\t-{d}\t| {d}\t ]",
         .{ @tagName( resType ), resCount, resCap, resAccess, resDelta, resProd, resCons, resGrowth, resDecay, resReq });
@@ -400,7 +411,7 @@ pub const Economy = struct
   {
     const popCount  : u64 = @intFromFloat( self.popMetrics.get( .COUNT  ));
     const popDelta  : i64 = @intFromFloat( self.popMetrics.get( .DELTA  ));
-    const popAccess : f64 =                self.popMetrics.get( .ACCESS );
+    const popAccess : f64 =                self.popMetrics.get( .ACTIVITY );
 
     def.log( .INFO, 0, @src(), "Population\t: {d}\t/ {d}\t[ {d} ]\t( {d:.3} )", .{ popCount, self.getPopCap(), popDelta, popAccess });
   }
@@ -606,7 +617,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   pub inline fn logMetrics( self : *const Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "Logging general metrics" );
+    def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
     def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}",          .{ self.stepCount });
     def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
     def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
@@ -637,10 +648,12 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
   pub inline fn resetCountMetrics( self : *Economy ) void
   {
-    self.popMetrics.set( .DELTA, 0.0 );
+    self.popMetrics.set( .DELTA,    0.0 );
+    self.popMetrics.set( .ACTIVITY, 0.0 );
 
     self.avgIndActivity = 0.0;
     self.avgResAccess   = 0.0;
+
 
     inline for( 0..resTypeC )| r |
     {
@@ -657,7 +670,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
       self.resState.set( .GEN_PROD, res, 0.0 );
       self.resState.set( .GEN_CONS, res, 0.0 );
 
-      self.resState.set( .SAT_LVL,  res, 0.0 );
+      self.resState.set( .GEN_ACS,  res, 0.0 );
+      self.resState.set( .POP_ACS,  res, 0.0 );
+      self.resState.set( .IND_ACS,  res, 0.0 );
     }
     inline for( 0..infTypeC )| f |
     {
@@ -665,8 +680,11 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
 
       self.infState.set( .DELTA,   inf, 0.0 );
 
-      self.infState.set( .BUILT,   inf, 0.0 );
       self.infState.set( .DECAY,   inf, 0.0 );
+      self.infState.set( .BUILT,   inf, 0.0 );
+
+      self.infState.set( .EXPENSE, inf, 0.0 );
+      self.infState.set( .REVENUE, inf, 0.0 );
 
       self.infState.set( .USE_LVL, inf, 0.0 );
     }
@@ -674,12 +692,17 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
     {
       const ind = IndType.fromIdx( d );
 
-      self.indState.set( .DELTA,   ind, 0.0 );
+      self.indState.set( .DELTA,    ind, 0.0 );
 
-      self.indState.set( .BUILT,   ind, 0.0 );
-      self.indState.set( .DECAY,   ind, 0.0 );
+      self.indState.set( .DECAY,    ind, 0.0 );
+      self.indState.set( .BUILT,    ind, 0.0 );
 
-      self.indState.set( .ACT_LVL, ind, 0.0 );
+      self.indState.set( .EXPENSE,  ind, 0.0 );
+      self.indState.set( .REVENUE,  ind, 0.0 );
+      self.indState.set( .PROFIT,   ind, 0.0 );
+
+    //self.indState.set( .ACT_TRGT, ind, 0.0 ); // NOTE : DO NOT AERO OUT : Cross tick signal
+      self.indState.set( .ACT_LVL,  ind, 0.0 );
     }
   }
 
@@ -762,9 +785,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
         _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE }, 2 );
       }
 
-      if( self.resState.get( .SAT_LVL, .FOOD ) < 1.2 )
+      if( self.resState.get( .GEN_ACS, .FOOD ) < 1.2 )
       {
-        if( self.resState.get( .SAT_LVL, .POWER ) < 1.6 and self.resState.get( .SAT_LVL, .WATER ) > 1.2 )
+        if( self.resState.get( .GEN_ACS, .POWER ) < 1.6 and self.resState.get( .GEN_ACS, .WATER ) > 1.2 )
         {
           _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 2 );
         }
@@ -774,19 +797,19 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
         }
       }
 
-      if( self.resState.get( .SAT_LVL, .WATER ) < 1.2 )
+      if( self.resState.get( .GEN_ACS, .WATER ) < 1.2 )
       {
         _ = self.buildQueue.?.addEntry( .{ .ind = .WATER_PLANT }, 2 );
       }
 
-      if( self.resState.get( .SAT_LVL, .POWER ) < 1.5 )
+      if( self.resState.get( .GEN_ACS, .POWER ) < 1.5 )
       {
         _ = self.buildQueue.?.addEntry( .{ .ind = .SOLAR_PLANT }, 4 );
       }
 
-      if( self.resState.get( .SAT_LVL, .WORK ) > 0.98 )
+      if( self.resState.get( .GEN_ACS, .WORK ) > 0.98 )
       {
-        if( self.resState.get( .SAT_LVL, .ORE ) < 1.0 )
+        if( self.resState.get( .GEN_ACS, .ORE ) < 1.0 )
         {
           _ = self.buildQueue.?.addEntry( .{ .ind = .GROUND_MINE }, 8 );
         }
@@ -795,7 +818,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) f64
           _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY }, 6 );
         }
 
-        if( self.resState.get( .SAT_LVL, .INGOT ) > 1.0 )
+        if( self.resState.get( .GEN_ACS, .INGOT ) > 1.0 )
         {
           _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY }, 4 );
         }
