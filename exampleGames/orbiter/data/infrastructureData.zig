@@ -126,7 +126,7 @@ pub fn loadInfrastructureData() void
 
   // ================================ PART COST ================================
 
-  infMetricData.set( .ASSEMBLY, .PART_COST, 10.0 );
+  infMetricData.set( .ASSEMBLY, .PART_COST,  5.0 );
   infMetricData.set( .HOUSING,  .PART_COST,  2.0 );
   infMetricData.set( .HABITAT,  .PART_COST, 10.0 );
   infMetricData.set( .STORAGE,  .PART_COST,  1.0 );
@@ -143,9 +143,9 @@ pub fn loadInfrastructureData() void
   // ================================ CAPACITY ================================
 
   infMetricData.set( .ASSEMBLY, .CAPACITY,  1.0 ); // PARTs processed per tick
-  infMetricData.set( .HOUSING,  .CAPACITY, 32.0 ); // Pop housed
+  infMetricData.set( .HOUSING,  .CAPACITY, 32.0 ); // Pop housed / WORK "stored"
   infMetricData.set( .HABITAT,  .CAPACITY, 16.0 ); // Area generated
-  infMetricData.set( .STORAGE,  .CAPACITY, 16.0 ); // Resources stored
+  infMetricData.set( .STORAGE,  .CAPACITY, 16.0 ); // Non-WORK resources stored
 }
 
 

@@ -131,6 +131,15 @@ pub const Economy = struct
     }
   }
 
+  // Setups the economy needed to support value * 10k pop
+  pub inline fn debugSetEconStartState( self : *Economy, value : u64 ) void
+  {
+    self.debugSetIndCounts( value );
+    self.debugSetInfCounts( value );
+    self.debugSetResCounts( value );
+    self.setPopCount( value * 10_000 );
+  }
+
 
   // ================================ RESSOURCES ================================
 
@@ -142,7 +151,9 @@ pub const Economy = struct
       const infType = resType.getInfStore();
 
       const infCount = self.infState.get( .BANK, infType );
-      const capacity = infType.getMetric_f64( .CAPACITY );
+      var  capacity = infType.getMetric_f64( .CAPACITY );
+
+      if( resType == .WORK ){ capacity *= 2.0; } // Making sure there is more than enough storage for WORK ( twice the pop storage )
 
       self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity ));
     }
@@ -186,7 +197,12 @@ pub const Economy = struct
   {
     inline for( 0..resTypeC )| r |
     {
-      self.resState.set( .BANK, ResType.fromIdx( r ), @floatFromInt( value ));
+      const resType = ResType.fromIdx( r );
+
+      var amount : u64 = 1_000;
+      if( resType == .WORK ){ amount *= 10; }
+
+      self.resState.set( .BANK, resType, @floatFromInt( value * amount ));
     }
   }
 
@@ -267,10 +283,10 @@ pub const Economy = struct
 
   pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
   {
-    self.infState.set( .BANK, .HOUSING,  @floatFromInt( value ));
-    self.infState.set( .BANK, .HABITAT,                  0.0  );
-    self.infState.set( .BANK, .STORAGE,  @floatFromInt( value ));
-    self.infState.set( .BANK, .ASSEMBLY, @floatFromInt( value ));
+    self.infState.set( .BANK, .HOUSING,  @floatFromInt( value * 320 ));
+    self.infState.set( .BANK, .HABITAT,                           0  );
+    self.infState.set( .BANK, .STORAGE,  @floatFromInt( value *  40 ));
+    self.infState.set( .BANK, .ASSEMBLY, @floatFromInt( value *  40 ));
 
     self.updateResCaps();
   }
@@ -341,15 +357,17 @@ pub const Economy = struct
 
   pub inline fn debugSetIndCounts( self : *Economy, value : u64 ) void
   {
-    self.indState.set( .BANK, .AGRONOMIC,   @floatFromInt( value * 25  ));
-    self.indState.set( .BANK, .HYDROPONIC,  @floatFromInt( value * 25  ));
-    self.indState.set( .BANK, .WATER_PLANT, @floatFromInt( value * 25  ));
-    self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 25  ));
+    self.indState.set( .BANK, .AGRONOMIC,   @floatFromInt( value * 10 ));
+    self.indState.set( .BANK, .HYDROPONIC,  @floatFromInt( value * 10 ));
+    self.indState.set( .BANK, .WATER_PLANT, @floatFromInt( value * 10 ));
+    self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 10 ));
+    self.indState.set( .BANK, .POWER_PLANT, @floatFromInt( value * 10 ));
 
-    self.indState.set( .BANK, .PROBE_MINE,                         0    );
-    self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 100 ));
-    self.indState.set( .BANK, .REFINERY,    @floatFromInt( value * 100 ));
-    self.indState.set( .BANK, .FACTORY,     @floatFromInt( value * 100 ));
+    self.indState.set( .BANK, .REFINERY,    @floatFromInt( value *  5 ));
+    self.indState.set( .BANK, .PROBE_MINE,                          0  );
+    self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 10 ));
+    self.indState.set( .BANK, .FOUNDRY,     @floatFromInt( value * 10 ));
+    self.indState.set( .BANK, .FACTORY,     @floatFromInt( value * 10 ));
   }
 
   pub inline fn logIndMetrics( self : *const Economy ) void
@@ -790,10 +808,13 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     {
       const resType = ResType.fromIdx( r );
 
-      const resCount : f64 = @floatFromInt( self.getResCount( resType ));
-      const resCap   : f64 = @floatFromInt( self.getResCap(   resType ));
+      if( resType != .WORK ) // TODO : update once multiple storage types exist
+      {
+        const resCount : f64 = @floatFromInt( self.getResCount( resType ));
+        const resCap   : f64 = @floatFromInt( self.getResCap(   resType ));
 
-      maxStorageUsage = @max( maxStorageUsage, resCount / resCap );
+        maxStorageUsage = @max( maxStorageUsage, resCount / resCap );
+      }
     }
 
     self.infState.set( .USE_LVL, .STORAGE, maxStorageUsage );
@@ -862,19 +883,27 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     }
   }
 
-  const AUTO_BUILD_AMOUNT_PER_TICK : u64 = 5;
+  const AUTO_BUILD_SUPPLY_LIMIT : f64 = 100.0;
 
   pub fn debugAutoBuild2( self : *Economy ) void
   {
+    const popCount   : f64 = self.popMetrics.get( .COUNT );
+
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
       for( 0..infTypeC )| f |
       {
-        const infType = InfType.fromIdx( f );
+        const infType       = InfType.fromIdx( f );
+        const useLvl  : f64 = self.infState.get( .USE_LVL, infType );
+        const useTrsh : f64 = 0.75; // 0.0 - 1.0
 
-        if( self.infState.get( .USE_LVL, infType ) > 0.9 )
+        // Scale build amount: at ACT_TRGT 0.75 build 0, at 1.0 build full amount
+        if( useLvl > useTrsh )
         {
-          _ = self.buildQueue.?.addEntry( .{ .inf = infType }, AUTO_BUILD_AMOUNT_PER_TICK );
+          const scale  : f64 = @min( 2.0, ( useLvl - useTrsh) / ( 1.0 - useTrsh )); // 0.0 to 1.0
+          const amount : f64 = scale * popCount / 10_000;
+
+          _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( @ceil( amount )));
         }
       }
 
@@ -882,9 +911,34 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
       {
         const indType = IndType.fromIdx( d );
 
-        if( self.indState.get( .ACT_LVL, indType ) > 0.8 )
+        if( indType.canBeBuiltIn( self.location, self.hasAtmo ))
         {
-          _ = self.buildQueue.?.addEntry( .{ .ind = indType }, AUTO_BUILD_AMOUNT_PER_TICK );
+          const actTrgt : f64 = self.indState.get( .ACT_TRGT, indType );
+          const actTrsh : f64 = 0.75; // 0.0 - 1.0
+
+          // Check if this industry's output is already oversupplied
+          var outputOversupplied = false; // NOTE : this feels very artificial as a limit
+
+          inline for( 0..resTypeC )| r |
+          {
+            const resType = ResType.fromIdx( r );
+            const prod    = indType.getResProd_f64( resType );
+
+            if( prod > def.EPS )
+            {
+              const access = self.resState.get( .GEN_ACS, resType );
+              if( access > AUTO_BUILD_SUPPLY_LIMIT ) outputOversupplied = true;
+            }
+          }
+
+          // Scale build amount: at ACT_TRGT 0.75 build 0, at 1.0 build full amount
+          if( actTrgt > actTrsh and !outputOversupplied )
+          {
+            const scale  : f64 = @min( 2.0, ( actTrgt - actTrsh ) / ( 1.0 - actTrsh )); // 0.0 to 1.0
+            const amount : f64 = scale * popCount / 10_000;
+
+            _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( @ceil( amount )));
+          }
         }
       }
     }

@@ -567,7 +567,7 @@ const EconSolver = struct
 
   fn updatedResPrice( self : *EconSolver ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ Logging resource prices :" );
+    def.qlog( .INFO, 0, @src(), "$ LOGGING RES PRICES :" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -578,9 +578,8 @@ const EconSolver = struct
 
       // Flow-based: compare this tick's production vs this tick's consumption demand
       const realDemand = self.resFlowData.get( .GEN, .REAL_CONS, resType ); // NOTE : EXCLUDES NATURAL DECAY
-      const realSupply = self.resStockData.get( resType );
-                    // + self.resFlowData.get( .GEN, .REAL_PROD, resType )
-                    // + self.resFlowData.get( .NAT, .REAL_PROD, resType );
+      const realSupply = self.resFlowData.get( .GEN, .REAL_PROD, resType )
+                       + self.resFlowData.get( .NAT, .REAL_PROD, resType );
 
       const ceil : f64 = MAX_SCARC_RATIO; // Scarcity ceiling
       var  ratio : f64 =   0.0;
@@ -588,34 +587,35 @@ const EconSolver = struct
       if(      realSupply > def.EPS ){ ratio = @min( ceil, realDemand / realSupply ); }
       else if( realDemand > def.EPS ){ ratio = ceil; }
 
-      const oldPrice = self.econ.resState.get( .PRICE, resType );
       const rawPrice = basePrice * @max( MIN_PRICE_FACTOR, def.pow( f64, ratio, elasticity ));
-
+      const oldPrice = self.econ.resState.get( .PRICE, resType );
       const newPrice = def.lerp(  oldPrice, rawPrice, dampening ); // Lerp smoothing
-      const delta    = newPrice - oldPrice;
+      const dltPrice = newPrice - oldPrice;
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}\t| {d:.6}\t {d:.6}\t| {d:.6}", .{ @tagName( resType ), basePrice, oldPrice, newPrice, delta });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}\t| {d:.6}\t {d:.6}\t| {d:.6}", .{ @tagName( resType ), basePrice, oldPrice, newPrice, dltPrice });
 
       self.econ.resState.set( .PRICE,   resType, newPrice );
-      self.econ.resState.set( .PRICE_D, resType, delta    );
+      self.econ.resState.set( .PRICE_D, resType, dltPrice );
     }
   }
 
 //fn updatePopProfit( self : *EconSolver ) void
+
+//fn updateInfProfit( self : *EconSolver ) void
 
 
   const PROFITABILITY_FLOOR : f64 = -2.5;
 
   fn updateIndProfit( self : *EconSolver ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ Logging industrial profitability :" );
+    def.qlog( .INFO, 0, @src(), "$ LOGGING IND PROFITS :" );
 
     inline for( 0..indTypeC )| d |
     {
       const indType  = IndType.fromIdx( d );
       const indCount = self.econ.indState.get( .BANK, indType );
 
-      if( indCount > def.EPS )
+      if( indType.canBeBuiltIn( self.econ.location, self.econ.hasAtmo ))
       {
         var revenue : f64 = 0.0;
         var expense : f64 = 0.0;
@@ -641,22 +641,33 @@ const EconSolver = struct
         else if( expense > def.EPS ){ margin =       floor; }
 
         // large profits will tend to 1.0, large losses will tend to 0.0
-        const activityTarget = self.maxIndActivity * def.sigmoid( margin, 4.0 ); // NOTE : lower K for smoother transitioning
+        const activityTarget = self.maxIndActivity * def.sigmoid( margin, 8.0 ); // NOTE : lower K for smoother transitioning
 
-        def.log( .CONT, 0, @src(), "{s}\t: {d:.6}\t-{d:.6}\t| {d:.6}\t{d:.6}", .{ @tagName( indType ), revenue, expense, margin, activityTarget });
+        self.econ.indState.set( .ACT_TRGT, indType, activityTarget );
 
-        self.econ.indState.set( .EXPENSE,  indType, expense * indCount );
-        self.econ.indState.set( .REVENUE,  indType, revenue * indCount );
-        self.econ.indState.set( .PROFIT,   indType, profit  * indCount );
-        self.econ.indState.set( .ACT_TRGT, indType, activityTarget     );
+        if( indCount > def.EPS )
+        {
+          def.log( .CONT, 0, @src(), "{s}\t: {d:.6}\t-{d:.6}\t| {d:.6}\t{d:.6}", .{ @tagName( indType ), revenue, expense, margin, activityTarget });
+
+          self.econ.indState.set( .EXPENSE,  indType, expense * indCount );
+          self.econ.indState.set( .REVENUE,  indType, revenue * indCount );
+          self.econ.indState.set( .PROFIT,   indType, profit  * indCount );
+        }
+        else
+        {
+          self.econ.indState.set( .EXPENSE,  indType, 0.0 );
+          self.econ.indState.set( .REVENUE,  indType, 0.0 );
+          self.econ.indState.set( .PROFIT,   indType, 0.0 );
+        }
       }
       else
       {
+        self.econ.indState.set( .ACT_TRGT, indType, 0.0 );
         self.econ.indState.set( .EXPENSE,  indType, 0.0 );
         self.econ.indState.set( .REVENUE,  indType, 0.0 );
         self.econ.indState.set( .PROFIT,   indType, 0.0 );
-        self.econ.indState.set( .ACT_TRGT, indType, 0.0 );
       }
+
     }
   }
 
@@ -744,11 +755,11 @@ const EconSolver = struct
 
     self.nextPopCount = def.clmp( self.prevPopCount + self.popBirths - self.popDeaths, 0.0, popCap );
 
-    def.log( .INFO, 0, @src(), "Pop access   : F {d:.4}\tW {d:.4}\tP {d:.4}", .{ foodAccess, waterAccess, powerAccess });
-    def.log( .CONT, 0, @src(), "Res Modifier : {d:.8}", .{ resModifier   });
-    def.log( .CONT, 0, @src(), "Job modifier : {d:.8}", .{ jobModifier   });
-    def.log( .CONT, 0, @src(), "Mortality    : {d:.8}", .{ mortalityRate });
-    def.log( .CONT, 0, @src(), "Natality     : {d:.8}", .{ natalityRate  });
+    def.qlog( .INFO, 0, @src(), "$ LOGGING POP FACTORS :" );
+    def.log(  .CONT, 0, @src(), "Pop access : F {d:.4}\tW {d:.4}\tP {d:.4}", .{ foodAccess, waterAccess, powerAccess });
+    def.log(  .CONT, 0, @src(), "Res & Job Modifiers : {d:.8}\t{d:.8}",      .{ resModifier,       jobModifier       });
+    def.log(  .CONT, 0, @src(), "Death & Birth Rates : {d:.8}\t{d:.8}",      .{ mortalityRate,     natalityRate      });
+    def.log(  .CONT, 0, @src(), "Prev & Next Pop     : {d:.0}\t{d:.0}",      .{ self.prevPopCount, self.nextPopCount });
   }
 
 //fn applyIndDelta( self : *EconSolver ) void

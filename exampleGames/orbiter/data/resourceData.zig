@@ -12,7 +12,7 @@ pub const ResType = enum( u8 )
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
   WORK, // Each pop generate N work per cycle
-//FUEL,
+  FUEL,
 //FLOP, // Computation
 
   FOOD,
@@ -26,9 +26,11 @@ pub const ResType = enum( u8 )
 
   pub inline fn getInfStore( self : ResType ) InfType // TODO : move to data array
   {
-    _ = self;
-
-    return .STORAGE; // TODO : update once multiple storage types exist
+    return switch( self )
+    {
+      .WORK => .HOUSING,
+      else  => .STORAGE, // TODO : update once multiple storage types exist
+    };
   }
 
   pub fn getMetric_f32( self : ResType, metric : ResMetricEnum ) f32
@@ -77,7 +79,10 @@ pub fn loadResourceData() void
 
   // ================================ MASS ================================
 
-  resMetricData.set( .FOOD,  .MASS, 1.0 );
+  resMetricData.set( .WORK,  .MASS, 0.0 );
+  resMetricData.set( .FUEL,  .MASS, 2.0 );
+
+  resMetricData.set( .FOOD,  .MASS, 2.0 );
   resMetricData.set( .WATER, .MASS, 2.0 );
   resMetricData.set( .POWER, .MASS, 0.0 );
 
@@ -89,9 +94,10 @@ pub fn loadResourceData() void
   // ================================ DECAY RATE ================================
 
   resMetricData.set( .WORK,  .DECAY_RATE, 1.00 );
+  resMetricData.set( .FUEL,  .DECAY_RATE, 0.03 );
 
   resMetricData.set( .FOOD,  .DECAY_RATE, 0.05 );
-  resMetricData.set( .WATER, .DECAY_RATE, 0.02 );
+  resMetricData.set( .WATER, .DECAY_RATE, 0.03 );
   resMetricData.set( .POWER, .DECAY_RATE, 0.05 );
 
   resMetricData.set( .ORE,   .DECAY_RATE, 0.01 );
@@ -101,6 +107,7 @@ pub fn loadResourceData() void
 
   // ================================ GROWTH RATE ================================
 
+  // TODO : deprecate ?
   resMetricData.set( .FOOD,  .GROWTH_RATE, 150.0 );
   resMetricData.set( .WATER, .GROWTH_RATE, 200.0 );
   resMetricData.set( .POWER, .GROWTH_RATE, 100.0 );
@@ -108,35 +115,46 @@ pub fn loadResourceData() void
 
   // ================================ POP CONS / PROD ================================
 
-  resMetricData.set( .WORK,  .POP_PROD, 1.000 );
+  resMetricData.set( .WORK,  .POP_PROD, 0.500 );
 
-  resMetricData.set( .FOOD,  .POP_CONS, 0.0150 );
+  resMetricData.set( .FOOD,  .POP_CONS, 0.0200 );
   resMetricData.set( .WATER, .POP_CONS, 0.0100 );
   resMetricData.set( .POWER, .POP_CONS, 0.0050 );
   resMetricData.set( .PART,  .POP_CONS, 0.0001 );
 
   // ================================ PRICES ================================
 
-  resMetricData.set( .WORK,  .PRICE_BASE, 0.01 );
-  resMetricData.set( .FOOD,  .PRICE_BASE, 0.05 );
-  resMetricData.set( .WATER, .PRICE_BASE, 0.04 );
-  resMetricData.set( .POWER, .PRICE_BASE, 0.03 );
-  resMetricData.set( .ORE,   .PRICE_BASE, 0.20 );
-  resMetricData.set( .INGOT, .PRICE_BASE, 0.15 );
-  resMetricData.set( .PART,  .PRICE_BASE, 0.20 );
+  resMetricData.set( .WORK,  .PRICE_BASE, 0.005 );
+  resMetricData.set( .FUEL,  .PRICE_BASE, 0.030 );
 
-  resMetricData.set( .WORK,  .PRICE_ELAS, 0.50 );
-  resMetricData.set( .FOOD,  .PRICE_ELAS, 0.50 );
-  resMetricData.set( .WATER, .PRICE_ELAS, 0.50 );
-  resMetricData.set( .POWER, .PRICE_ELAS, 0.50 );
-  resMetricData.set( .ORE,   .PRICE_ELAS, 0.50 );
-  resMetricData.set( .INGOT, .PRICE_ELAS, 0.50 );
-  resMetricData.set( .PART,  .PRICE_ELAS, 0.50 );
+  resMetricData.set( .FOOD,  .PRICE_BASE, 0.010 );
+  resMetricData.set( .WATER, .PRICE_BASE, 0.002 );
+  resMetricData.set( .POWER, .PRICE_BASE, 0.005 );
+
+  resMetricData.set( .ORE,   .PRICE_BASE, 0.020 );
+  resMetricData.set( .INGOT, .PRICE_BASE, 0.050 );
+  resMetricData.set( .PART,  .PRICE_BASE, 0.100 );
+
+
+  resMetricData.set( .WORK,  .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .FUEL,  .PRICE_ELAS, def.PHI - 1.0 );
+
+  resMetricData.set( .FOOD,  .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .WATER, .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .POWER, .PRICE_ELAS, def.PHI - 1.0 );
+
+  resMetricData.set( .ORE,   .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .INGOT, .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .PART,  .PRICE_ELAS, def.PHI - 1.0 );
+
 
   resMetricData.set( .WORK,  .PRICE_DAMP, 0.20 );
+  resMetricData.set( .FUEL,  .PRICE_DAMP, 0.20 );
+
   resMetricData.set( .FOOD,  .PRICE_DAMP, 0.20 );
   resMetricData.set( .WATER, .PRICE_DAMP, 0.20 );
   resMetricData.set( .POWER, .PRICE_DAMP, 0.20 );
+
   resMetricData.set( .ORE,   .PRICE_DAMP, 0.20 );
   resMetricData.set( .INGOT, .PRICE_DAMP, 0.20 );
   resMetricData.set( .PART,  .PRICE_DAMP, 0.20 );

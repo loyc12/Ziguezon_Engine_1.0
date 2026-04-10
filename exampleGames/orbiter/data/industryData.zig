@@ -15,15 +15,16 @@ pub const IndType = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
-  AGRONOMIC,    // Generate food   ( solar powered )
-  HYDROPONIC,   // Generate food   ( grid powered )
-  WATER_PLANT,  // Generate water  ( grid powered )
-  SOLAR_PLANT,  // Generate energy ( solar powered )
-//POWER_PLANT,  // Generate energy ( fission / fusion )
+  AGRONOMIC,    // Generates food   ( solar powered )
+  HYDROPONIC,   // Generates food   ( grid powered )
+  WATER_PLANT,  // Generates water  ( grid powered )
+  SOLAR_PLANT,  // Generates energy ( solar powered )
+  POWER_PLANT,  // Generates energy ( fusion powered )
 
+  REFINERY,     // Refines fusion fuels / propellant
   PROBE_MINE,   // Extracts raw materials ( autonomous but restricted to asteroids )
   GROUND_MINE,  // Extracts raw materials
-  REFINERY,     // Refines  raw materials
+  FOUNDRY,      // Moulds ingots
   FACTORY,      // Create parts from refined materials
 
 
@@ -37,12 +38,13 @@ pub const IndType = enum( u8 )
         .HYDROPONIC  => true,
         .WATER_PLANT => true,
         .SOLAR_PLANT => true,
+        .POWER_PLANT => true,
 
-        .GROUND_MINE => true,
         .REFINERY    => true,
+        .PROBE_MINE  => !hasAtmo,
+        .GROUND_MINE => true,
+        .FOUNDRY     => true,
         .FACTORY     => true,
-
-        else => false,
       };
     }
     else // .ORBIT or .L1-5
@@ -51,8 +53,10 @@ pub const IndType = enum( u8 )
       {
         .HYDROPONIC  => true,
         .SOLAR_PLANT => true,
+        .POWER_PLANT => true,
 
         .REFINERY    => true,
+        .FOUNDRY     => true,
         .FACTORY     => true,
 
         else => false,
@@ -133,12 +137,10 @@ pub var indMetricData : def.GenDataGrid( f64, IndType, IndMetricEnum ) = .{};
 pub const IndMetricEnum = enum( u8 )
 {
   MASS,
-
   AREA_COST,
   PART_COST,
+//MAINT_RATE, // TODO : IMPLEMENT ME
   POLLUTION,
-
-//POWER_SRC,
 };
 
 
@@ -156,83 +158,115 @@ pub const ResActionEnum = enum( u8 )
 
 pub fn loadIndustryData() void
 {
-  indMetricData.fillWith(   0.0 );
+  indMetricData.fillWith(    0.0 );
   indResDeltaTable.fillWith( 0.0 );
 
-  // ================================ METRICS ================================
+
+  // ================================ MASS ================================
 
   indMetricData.set( .AGRONOMIC,   .MASS,       1.0 );
   indMetricData.set( .HYDROPONIC,  .MASS,       3.0 );
   indMetricData.set( .WATER_PLANT, .MASS,       5.0 );
   indMetricData.set( .SOLAR_PLANT, .MASS,       2.0 );
+  indMetricData.set( .POWER_PLANT, .MASS,       5.0 );
+
+  indMetricData.set( .REFINERY,    .MASS,       5.0 );
   indMetricData.set( .PROBE_MINE,  .MASS,       3.0 );
   indMetricData.set( .GROUND_MINE, .MASS,      15.0 );
-  indMetricData.set( .REFINERY,    .MASS,      10.0 );
+  indMetricData.set( .FOUNDRY,     .MASS,      10.0 );
   indMetricData.set( .FACTORY,     .MASS,       5.0 );
+
+
+  // ================================ AREA COST ================================
 
   indMetricData.set( .AGRONOMIC,   .AREA_COST, 25.0 );
   indMetricData.set( .HYDROPONIC,  .AREA_COST,  5.0 );
   indMetricData.set( .WATER_PLANT, .AREA_COST,  3.0 );
   indMetricData.set( .SOLAR_PLANT, .AREA_COST, 15.0 );
+  indMetricData.set( .POWER_PLANT, .AREA_COST,  2.0 );
+
+  indMetricData.set( .REFINERY,    .AREA_COST,  3.0 );
   indMetricData.set( .PROBE_MINE,  .AREA_COST,  1.0 );
   indMetricData.set( .GROUND_MINE, .AREA_COST, 10.0 );
-  indMetricData.set( .REFINERY,    .AREA_COST,  5.0 );
+  indMetricData.set( .FOUNDRY,     .AREA_COST,  5.0 );
   indMetricData.set( .FACTORY,     .AREA_COST,  5.0 );
+
+
+  // ================================ PART COST ================================
 
   indMetricData.set( .AGRONOMIC,   .PART_COST,   5.0 );
   indMetricData.set( .HYDROPONIC,  .PART_COST,  10.0 );
-  indMetricData.set( .WATER_PLANT, .PART_COST,  15.0 );
-  indMetricData.set( .SOLAR_PLANT, .PART_COST,  20.0 );
+  indMetricData.set( .WATER_PLANT, .PART_COST,  20.0 );
+  indMetricData.set( .SOLAR_PLANT, .PART_COST,  15.0 );
+  indMetricData.set( .POWER_PLANT, .PART_COST,  20.0 );
+
+  indMetricData.set( .REFINERY,    .PART_COST,  25.0 );
   indMetricData.set( .PROBE_MINE,  .PART_COST,   5.0 );
   indMetricData.set( .GROUND_MINE, .PART_COST,  30.0 );
-  indMetricData.set( .REFINERY,    .PART_COST,  25.0 );
-  indMetricData.set( .FACTORY,     .PART_COST,  20.0 );
+  indMetricData.set( .FOUNDRY,     .PART_COST,  20.0 );
+  indMetricData.set( .FACTORY,     .PART_COST,  30.0 );
 
-  indMetricData.set( .AGRONOMIC,   .POLLUTION,  1.0 );
+
+  // ================================ POLLUTION ================================
+
+  indMetricData.set( .AGRONOMIC,   .POLLUTION,  2.0 );
   indMetricData.set( .HYDROPONIC,  .POLLUTION,  0.0 );
   indMetricData.set( .WATER_PLANT, .POLLUTION,  0.5 );
   indMetricData.set( .SOLAR_PLANT, .POLLUTION,  0.0 );
+  indMetricData.set( .POWER_PLANT, .POLLUTION,  0.5 );
+
+  indMetricData.set( .REFINERY,    .POLLUTION,  0.5 );
   indMetricData.set( .PROBE_MINE,  .POLLUTION,  1.0 );
   indMetricData.set( .GROUND_MINE, .POLLUTION,  8.0 );
-  indMetricData.set( .REFINERY,    .POLLUTION,  8.0 );
-  indMetricData.set( .FACTORY,     .POLLUTION,  4.0 );
+  indMetricData.set( .FOUNDRY,     .POLLUTION,  8.0 );
+  indMetricData.set( .FACTORY,     .POLLUTION,  2.0 );
 
 
   // ================================ RESOURCES ================================
 
-  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WORK,   25 );
-  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WATER,  10 );
-  indResDeltaTable.set( .AGRONOMIC,   .PROD, .FOOD,   25 );
+  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WORK,  20 );
+  indResDeltaTable.set( .AGRONOMIC,   .CONS, .WATER,  5 );
+  indResDeltaTable.set( .AGRONOMIC,   .PROD, .FOOD,  15 ); // NOTE : take into acount day/night efficiency loss on GROUND
 
-  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WORK,   25 );
-  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WATER,   5 );
-  indResDeltaTable.set( .HYDROPONIC,  .CONS, .POWER,   5 );
-  indResDeltaTable.set( .HYDROPONIC,  .PROD, .FOOD,   25 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WORK,  25 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .WATER,  3 );
+  indResDeltaTable.set( .HYDROPONIC,  .CONS, .POWER,  4 );
+  indResDeltaTable.set( .HYDROPONIC,  .PROD, .FOOD,  20 );
 
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,   25 );
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER,  20 );
-  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 100 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,   5 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER,  4 );
+  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 40 );
 
-  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,   25 );
-  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WATER,   2 );
-  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 100 ); // NOTE : take into acount day/night effciciency loss on GROUND
+  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,  10 );
+  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WATER,  2 );
+  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 20 ); // NOTE : take into acount day/night efficiency loss on GROUND
 
-  indResDeltaTable.set( .PROBE_MINE,  .PROD, .ORE,     1 );
+  indResDeltaTable.set( .POWER_PLANT, .CONS, .WORK,  10 );
+  indResDeltaTable.set( .POWER_PLANT, .CONS, .WATER,  1 );
+  indResDeltaTable.set( .POWER_PLANT, .CONS, .FUEL ,  1 );
+  indResDeltaTable.set( .POWER_PLANT, .PROD, .POWER, 30 );
 
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,  100 );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER,  15 );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER,  25 );
-  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,    10 );
 
-  indResDeltaTable.set( .REFINERY,    .CONS, .WORK,  100 );
-  indResDeltaTable.set( .REFINERY,    .CONS, .POWER,  25 );
-  indResDeltaTable.set( .REFINERY,    .CONS, .ORE,    15 );
-  indResDeltaTable.set( .REFINERY,    .PROD, .INGOT,  10 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .WORK,  20 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .WATER, 10 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .POWER, 10 );
+  indResDeltaTable.set( .REFINERY,    .PROD, .FUEL,   8 );
 
-  indResDeltaTable.set( .FACTORY,     .CONS, .WORK,  100 );
-  indResDeltaTable.set( .FACTORY,     .CONS, .POWER,  10 );
-  indResDeltaTable.set( .FACTORY,     .CONS, .INGOT,  15 );
-  indResDeltaTable.set( .FACTORY,     .PROD, .PART,   10 );
+  indResDeltaTable.set( .PROBE_MINE,  .PROD, .ORE,    1 );
+
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,  20 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER,  3 );
+  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,    8 );
+
+  indResDeltaTable.set( .FOUNDRY,     .CONS, .WORK,  20 );
+  indResDeltaTable.set( .FOUNDRY,     .CONS, .POWER,  3 );
+  indResDeltaTable.set( .FOUNDRY,     .CONS, .ORE,    8 );
+  indResDeltaTable.set( .FOUNDRY,     .PROD, .INGOT,  8 );
+
+  indResDeltaTable.set( .FACTORY,     .CONS, .WORK,  20 );
+  indResDeltaTable.set( .FACTORY,     .CONS, .POWER,  1 );
+  indResDeltaTable.set( .FACTORY,     .CONS, .INGOT,  4 );
+  indResDeltaTable.set( .FACTORY,     .PROD, .PART,   4 );
 }
 
 
