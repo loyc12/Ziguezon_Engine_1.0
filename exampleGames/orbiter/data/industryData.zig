@@ -207,17 +207,17 @@ pub fn loadIndustryData() void
   indMetricData.set( .FACTORY,     .PART_COST,  30.0 );
 
 
-  indMetricData.set( .AGRONOMIC,   .MAINT_RATE, 0.0001 );
-  indMetricData.set( .HYDROPONIC,  .MAINT_RATE, 0.0001 );
-  indMetricData.set( .WATER_PLANT, .MAINT_RATE, 0.0002 );
-  indMetricData.set( .SOLAR_PLANT, .MAINT_RATE, 0.0001 );
-  indMetricData.set( .POWER_PLANT, .MAINT_RATE, 0.0002 );
+  indMetricData.set( .AGRONOMIC,   .MAINT_RATE, 0.001 );
+  indMetricData.set( .HYDROPONIC,  .MAINT_RATE, 0.003 );
+  indMetricData.set( .WATER_PLANT, .MAINT_RATE, 0.005 );
+  indMetricData.set( .SOLAR_PLANT, .MAINT_RATE, 0.003 );
+  indMetricData.set( .POWER_PLANT, .MAINT_RATE, 0.008 );
 
-  indMetricData.set( .REFINERY,    .MAINT_RATE, 0.0002 );
-  indMetricData.set( .PROBE_MINE,  .MAINT_RATE, 0.0000 );
-  indMetricData.set( .GROUND_MINE, .MAINT_RATE, 0.0003 );
-  indMetricData.set( .FOUNDRY,     .MAINT_RATE, 0.0003 );
-  indMetricData.set( .FACTORY,     .MAINT_RATE, 0.0003 );
+  indMetricData.set( .REFINERY,    .MAINT_RATE, 0.006 );
+  indMetricData.set( .PROBE_MINE,  .MAINT_RATE, 0.000 );
+  indMetricData.set( .GROUND_MINE, .MAINT_RATE, 0.012 );
+  indMetricData.set( .FOUNDRY,     .MAINT_RATE, 0.010 );
+  indMetricData.set( .FACTORY,     .MAINT_RATE, 0.008 );
 
 
   // ================================ POLLUTION ================================
@@ -303,7 +303,6 @@ pub const IndStateEnum = enum( u8 )
 
   PROFIT,   // Revenues - Costs
   CAPITAL,  // Stored profits from previous ticks ( decays )
-  INFLAT_R,   // Rate of depreciation of accumulated capital // NOTE : should be very low by default
 
   ACT_TRGT, // How active this industry wanted to be   last tick
   ACT_LVL,  // How active this industry ended up being last tick

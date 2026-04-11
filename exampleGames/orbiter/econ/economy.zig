@@ -61,6 +61,7 @@ pub const Economy = struct
   infState    : gdf.nfrs_d.InfStateData   = .{},
   indState    : gdf.ndst_d.IndStateData   = .{},
 
+  inflationRate  : f64 = 1.0, // TODO : update this bse on growth/decay of economy
   avgIndActivity : f64 = 0.0,
   avgResAccess   : f64 = 0.0,
 
@@ -738,7 +739,6 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     }
   }
 
-
   inline fn tickEcology( self : *Economy ) void
   {
     if( !self.hasEcology() ){ return; }
@@ -750,6 +750,20 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     else
     {
       def.qlog( .WARN, 0, @src(), "Cannot tick ecology : uninitialized" );
+    }
+  }
+
+  inline fn applyInflation( self : *Economy ) void
+  {
+    inline for( 0..indTypeC )| d |
+    {
+      const indType = IndType.fromIdx( d );
+      const baseCapital = self.indState.get( .CAPITAL, indType );
+
+      if( baseCapital > def.EPS )
+      {
+        self.indState.sub( .CAPITAL, indType, baseCapital * self.inflationRate );
+      }
     }
   }
 
@@ -962,8 +976,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
   {
     self.updateResCaps();
     self.updateAreas();
-
     self.tickEcology();
+    self.applyInflation();
     self.calcBuildDemand();
     ecnSlvr.resolveEcon( self );
     self.tickBuildQueue();

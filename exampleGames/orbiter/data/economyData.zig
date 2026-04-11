@@ -61,7 +61,7 @@ pub const FlowAgentEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   POP, // Population       ( work prod, food/water/power cons )
-//MNT, // Maintenance      ( building maintenance cons        ) : stub for now
+  MNT, // Maintenance      ( building maintenance cons        ) : stub for now
   IND, // Industry         ( all industrial prod/cons         )
   BLD, // Building         ( construction, selloffs           )
 //COM, // Commerce / trade ( imports, exports                 ) : stub for now

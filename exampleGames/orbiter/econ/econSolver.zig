@@ -37,13 +37,13 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
 // ================ PRECALC PHASE ================
 
   solver.calcPopMaxDelta();  // Computes maximal possible population   prod and cons
-//solver.calcMntMaxCons();   // Computes maximal possible maintenance  consumption
+  solver.calcMntMaxDelta();   // Computes maximal possible maintenance  consumption
   solver.calcIndMaxDelta();  // Computes maximal possible industrial   prod and cons
   solver.calcBldMaxDelta();  // Computes maximal possible construction prod and cons
 
   solver.calcGenResAccess(); // Computes expected agregated    resource access
   solver.calcPopResAccess(); // Computes expected population   resource access
-//solver.calcMntResAccess(); // Computes expected maintenance  resource access
+  solver.calcMntResAccess(); // Computes expected maintenance  resource access
   solver.calcIndResAccess(); // Computes expected industrial   resource access
   solver.calcBldResAccess(); // Computes expected construction resource access
 
@@ -54,7 +54,7 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
 // ================ CONSUMPTION PHASE ================
 
   solver.calcPopResCons();   // Computes resource cons from population based on popCount
-//solver.calcMntResCons();   // Computes resource cons from maintenance
+  solver.calcMntResCons();   // Computes resource cons from maintenance
   solver.calcIndResCons();   // Computes resource cons from industry based on activity
   solver.calcBldResCons();   // Computes resource cons from construction
 //solver.calcComResCons();   // Computes resource cons from exports
@@ -97,9 +97,12 @@ const EconSolver = struct
   sunshineModifier : f32 = 1.0,
   natureModifier   : f32 = 1.0,
 
+  defGenResAccess  : f64 = 1.0,
   maxPopResAccess  : f64 = 1.0,
+  maxMntResAccess  : f64 = 1.0,
   maxIndResAccess  : f64 = 1.0,
   maxBldResAccess  : f64 = 1.0,
+  maxComResAccess  : f64 = 1.0,
 
   maxPopActivity   : f64 = 1.0,
   maxIndActivity   : f64 = 1.0,
@@ -117,12 +120,9 @@ const EconSolver = struct
 
   prevResStock : ecnm_d.ResStockData = .{},
   nextResStock : ecnm_d.ResStockData = .{},
-
   allocatedRes : ecnm_d.ResStockData = .{},
-//prodResCount : ecnm_d.ResStockData = .{},
 
-
-  resFlowData  : ecnm_d.ResFlowData     = .{}, // Agregated industry
+  resFlowData  : ecnm_d.ResFlowData     = .{}, // Aggregated industry
   indFlowData  : ecnm_d.IndFlowData     = .{}, // Per industry
   indActivity  : ecnm_d.IndActivityData = .{}, // Per industry
 
@@ -262,7 +262,7 @@ const EconSolver = struct
       const supply = self.prevResStock.get( resType );
       const genDem = self.resFlowData.get( .GEN, .MAX_CONS, resType );
 
-      var access : f64 = 1.0;
+      var access : f64 = self.defGenResAccess;
 
       if( genDem > def.EPS )
       {
@@ -298,7 +298,7 @@ const EconSolver = struct
 
       if( popDem > def.EPS )
       {
-        access = @min( self.maxPopResAccess, remain / popDem );
+        access = @min( access, remain / popDem );
 
         def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resType ), remain, popDem, access });
 
@@ -333,13 +333,13 @@ const EconSolver = struct
 
     if( mntDem > def.EPS )
     {
-      access = @min( self.maxMntResAccess, remain / mntDem );
+      access = @min( access, remain / mntDem );
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( .PART ), remain, mntDem, access });
 
       if( access < 1.0 - def.EPS )
       {
-        def.log( .CONT, 0, @src(), "@ {s} shortage for mainenance", .{ @tagName( .PART )});
+        def.log( .CONT, 0, @src(), "@ {s} shortage for maintenance", .{ @tagName( .PART )});
       }
     }
 
@@ -370,7 +370,7 @@ const EconSolver = struct
 
       if( indDem > def.EPS )
       {
-        access = @min( self.maxIndResAccess, remain / indDem );
+        access = @min( access, remain / indDem );
 
         def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resType ), remain, indDem, access });
 
@@ -405,7 +405,7 @@ const EconSolver = struct
 
     if( bldDem > def.EPS )
     {
-      access = @min( self.maxBldResAccess, remain / bldDem );
+      access = @min( access, remain / bldDem );
 
       def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( .PART ), remain, bldDem, access });
 
@@ -507,14 +507,14 @@ const EconSolver = struct
   // NOTE : Uses PARTs only ( for now )
   fn calcMntResCons( self : *EconSolver ) void
   {
-    const mntAccess  = self.resFlowData.get( .BLD, .ACCESS,   .PART );
-    const mntMaxCons = self.resFlowData.get( .BLD, .MAX_CONS, .PART );
+    const mntAccess  = self.resFlowData.get( .MNT, .ACCESS,   .PART );
+    const mntMaxCons = self.resFlowData.get( .MNT, .MAX_CONS, .PART );
 
     if( mntMaxCons > def.EPS )
     {
       const realMntCons = mntAccess * mntMaxCons;
 
-      self.resFlowData.set( .BLD, .REAL_CONS, .PART, realMntCons );
+      self.resFlowData.set( .MNT, .REAL_CONS, .PART, realMntCons );
       self.resFlowData.add( .GEN, .REAL_CONS, .PART, realMntCons );
     }
 
@@ -753,9 +753,12 @@ const EconSolver = struct
         {
           def.log( .CONT, 0, @src(), "{s}\t: {d:.6}\t-{d:.6}\t| {d:.6}\t{d:.6}", .{ @tagName( indType ), revenue, expense, margin, activityTarget });
 
+          const totalProfits = profit * indCount;
+
           self.econ.indState.set( .EXPENSE,  indType, expense * indCount );
           self.econ.indState.set( .REVENUE,  indType, revenue * indCount );
-          self.econ.indState.set( .PROFIT,   indType, profit  * indCount );
+          self.econ.indState.set( .PROFIT,   indType, totalProfits );
+          self.econ.indState.add( .CAPITAL,  indType, totalProfits );
         }
         else
         {
@@ -771,7 +774,6 @@ const EconSolver = struct
         self.econ.indState.set( .REVENUE,  indType, 0.0 );
         self.econ.indState.set( .PROFIT,   indType, 0.0 );
       }
-
     }
   }
 
@@ -781,10 +783,8 @@ const EconSolver = struct
 // ================================ ECON UPDATE PHASE ================================
 
 
-// Pop growth factor ( ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1.0
+// Pop growth / decay factors ( growth ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1
   const WEEKLY_POP_GROWTH     : f64 = 0.0003;   // TODO : update based on econTickLen
-
-  // Pop decay factors
   const WEEKLY_PARCH_RATE     : f64 = 0.08;
   const WEEKLY_STARVE_RATE    : f64 = 0.03;
   const WEEKLY_FREEZE_RATE    : f64 = 0.01;
