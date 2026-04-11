@@ -60,12 +60,14 @@ pub const FlowAgentEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  POP, // Population                ( work prod, food/water/power cons    )
-  IND, // Industry aggregate        ( all industrial prod/cons            )
-  INF, // Infrastructure Aggr.      ( construction, maintenance, selloffs )
-//COM, // Commerce / trade          ( imports, exports                    ) : stub for now
-  GEN, // Sum of all non-NAT values ( to avoid it being equal to DELTA )
-  NAT, // Natural processes         ( decay, growth, disasters            ) : NOT INCLUDED IN GEN
+  POP, // Population       ( work prod, food/water/power cons )
+//MNT, // Maintenance      ( building maintenance cons        ) : stub for now
+  IND, // Industry         ( all industrial prod/cons         )
+  BLD, // Building         ( construction, selloffs           )
+//COM, // Commerce / trade ( imports, exports                 ) : stub for now
+
+  GEN, // Sum of previous  ( to avoid counting decay as usage )
+  NAT, // Decay / Growth   ( decay, growth, disasters         ) NOTE : NOT COUNTED AS ECONOMIC ACTION
 };
 
 pub const FlowPhaseEnum = enum( u8 )

@@ -139,7 +139,7 @@ pub const IndMetricEnum = enum( u8 )
   MASS,
   AREA_COST,
   PART_COST,
-//MAINT_RATE, // TODO : IMPLEMENT ME
+  MAINT_RATE,
   POLLUTION,
 };
 
@@ -205,6 +205,19 @@ pub fn loadIndustryData() void
   indMetricData.set( .GROUND_MINE, .PART_COST,  30.0 );
   indMetricData.set( .FOUNDRY,     .PART_COST,  20.0 );
   indMetricData.set( .FACTORY,     .PART_COST,  30.0 );
+
+
+  indMetricData.set( .AGRONOMIC,   .MAINT_RATE, 0.0001 );
+  indMetricData.set( .HYDROPONIC,  .MAINT_RATE, 0.0001 );
+  indMetricData.set( .WATER_PLANT, .MAINT_RATE, 0.0002 );
+  indMetricData.set( .SOLAR_PLANT, .MAINT_RATE, 0.0001 );
+  indMetricData.set( .POWER_PLANT, .MAINT_RATE, 0.0002 );
+
+  indMetricData.set( .REFINERY,    .MAINT_RATE, 0.0002 );
+  indMetricData.set( .PROBE_MINE,  .MAINT_RATE, 0.0000 );
+  indMetricData.set( .GROUND_MINE, .MAINT_RATE, 0.0003 );
+  indMetricData.set( .FOUNDRY,     .MAINT_RATE, 0.0003 );
+  indMetricData.set( .FACTORY,     .MAINT_RATE, 0.0003 );
 
 
   // ================================ POLLUTION ================================

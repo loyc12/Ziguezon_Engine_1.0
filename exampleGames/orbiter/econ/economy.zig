@@ -209,7 +209,7 @@ pub const Economy = struct
   pub inline fn logResMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "$ Logging resources metrics :" );
-    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t ( Access )\t[ Delta\t| Prod\tCons\t| Grow\tDecay\t| Demand ]" );
+    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t ( Access )\t[ Delta\t| Prod\tCons\t| Decay\t| Demand ]" );
     def.qlog( .CONT, 0, @src(), "====================================================================================================" );
 
     inline for( 0..resTypeC )| r |
@@ -220,13 +220,13 @@ pub const Economy = struct
       const resDelta  : i64 = @intFromFloat( self.resState.get( .DELTA,    resType ));
       const resProd   : u64 = @intFromFloat( self.resState.get( .GEN_PROD, resType ));
       const resCons   : u64 = @intFromFloat( self.resState.get( .GEN_CONS, resType ));
-      const resGrowth : u64 = @intFromFloat( self.resState.get( .GROWTH,   resType ));
+   //const resGrowth : u64 = @intFromFloat( self.resState.get( .GROWTH,   resType ));
       const resDecay  : u64 = @intFromFloat( self.resState.get( .DECAY,    resType ));
       const resReq    : u64 = @intFromFloat( self.resState.get( .MAX_DEM,  resType ));
       const resAccess : f32 = @floatCast(    self.resState.get( .GEN_ACS,  resType ));
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| +{d}\t-{d}\t| {d}\t ]",
-        .{ @tagName( resType ), resCount, resAccess, resDelta, resProd, resCons, resGrowth, resDecay, resReq });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| -{d}\t| {d}\t ]",
+        .{ @tagName( resType ), resCount, resAccess, resDelta, resProd, resCons, resDecay, resReq });
     }
   }
 

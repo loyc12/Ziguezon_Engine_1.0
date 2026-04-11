@@ -97,6 +97,7 @@ pub const InfMetricEnum = enum( u8 )
   MASS,
   AREA_COST,
   PART_COST,
+  MAINT_RATE,
   POLLUTION,
   CAPACITY,
 //POWER_SRC,
@@ -130,6 +131,11 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .HOUSING,  .PART_COST,  2.0 );
   infMetricData.set( .HABITAT,  .PART_COST, 10.0 );
   infMetricData.set( .STORAGE,  .PART_COST,  1.0 );
+
+  infMetricData.set( .ASSEMBLY, .MAINT_RATE, 0.0001 );
+  infMetricData.set( .HOUSING,  .MAINT_RATE, 0.0002 );
+  infMetricData.set( .HABITAT,  .MAINT_RATE, 0.0001 );
+  infMetricData.set( .STORAGE,  .MAINT_RATE, 0.0001 );
 
 
   // ================================ POLLUTION ================================
