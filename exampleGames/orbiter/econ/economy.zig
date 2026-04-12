@@ -66,6 +66,7 @@ pub const Economy = struct
   inflationRate : f64 = 1.0, // TODO : update this bse on growth/decay of economy
 
   avgPopFulfilment : f64 = 0.0,
+  avgInfUsage      : f64 = 0.0,
   avgIndActivity   : f64 = 0.0,
   avgResAccess     : f64 = 0.0,
 
@@ -137,7 +138,7 @@ pub const Economy = struct
   }
 
   // Setups the economy needed to support value * 10k pop
-  pub inline fn debugSetEconStartState( self : *Economy, value : u64 ) void
+  pub inline fn debugSetEconState( self : *Economy, value : u64 ) void
   {
     self.setPopCount( .HUMAN, value * 10_000 );
     self.debugSetIndCounts( value );
@@ -302,11 +303,12 @@ pub const Economy = struct
     {
       const infType = InfType.fromIdx( f );
 
-      const infCount : f64 = self.infState.get( .COUNT, infType );
-      const infDelta : f64 = self.infState.get( .DELTA, infType );
+      const infCount : f64 = self.infState.get( .COUNT,   infType );
+      const infDelta : f64 = self.infState.get( .DELTA,   infType );
+      const infUse   : f64 = self.infState.get( .USE_LVL, infType ) * 100.0;
       const infBonus : f64 = infCount * infType.getMetric_f64( .CAPACITY );
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t +{d:.0}\t) [ {d:.0} ]", .{ @tagName( infType ), infCount, infBonus, infDelta });
+      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t( +{d:.0}\t) [ {d:.0} ] \t{d:.1}%", .{ @tagName( infType ), infCount, infBonus, infDelta, infUse });
     }
   }
 
@@ -606,8 +608,8 @@ pub const Economy = struct
     }
     else
     {
-      def.log( .WARN, 0, @src(), "Negative available area in location of type {s} : using {d} / {d}", .{ @tagName( self.location ), areaUsed, areaCap });
-      self.areaMetrics.set( .AVAIL, 0.0 );
+      def.log( .WARN, 0, @src(), "Negative available area in location of type {s} : using {d:.2} / {d:.2}", .{ @tagName( self.location ), areaUsed, areaCap });
+      self.areaMetrics.zero( .AVAIL );
     }
   }
 
@@ -697,18 +699,26 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
   pub inline fn logAllMetrics( self : *const Economy ) void
   {
 
-    self.logResMetrics();
+  //self.logResMetrics();
     self.logInfMetrics();
-    self.logIndMetrics();
+  //self.logIndMetrics();
   //self.logTravelMetrics_TERRA();
     self.logPopMetrics();
 
+    const areaUsed = self.areaMetrics.get( .USED );
+    const areaCap  = self.areaMetrics.get( .CAP  );
+
     def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
-    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}",          .{ self.stepCount });
-    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}",          .{ self.sunAccess });
-    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}",          .{ self.getEcoFactor() });
-    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0}", .{ self.areaMetrics.get( .USED ), self.areaMetrics.get( .CAP ) });
-    def.log(  .CONT, 0, @src(), "Build queue  : {d}",             .{ self.buildQueue.?.getEntryCount() });
+    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
+    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}", .{ self.sunAccess });
+    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}", .{ self.getEcoFactor() });
+
+    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
+
+    if( self.buildQueue != null )
+    {
+      def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} )", .{ self.buildQueue.?.getEntryCount(), self.buildQueue.?.getTotalBuildCount() });
+    }
   }
 
   // TODO : generalise this code
@@ -732,83 +742,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     }
   }
 
-  pub inline fn resetCountMetrics( self : *Economy ) void
-  {
-    self.avgPopFulfilment = 0.0;
-    self.avgIndActivity   = 0.0;
-    self.avgResAccess     = 0.0;
-
-
-    inline for( 0..resTypeC )| r |
-    {
-      const res = ResType.fromIdx( r );
-
-      self.resState.set( .DELTA,    res, 0.0 );
-      self.resState.set( .PRICE_D,  res, 0.0 );
-
-      self.resState.set( .DECAY,    res, 0.0 );
-      self.resState.set( .GROWTH,   res, 0.0 );
-
-      self.resState.set( .MAX_SUP,  res, 0.0 );
-      self.resState.set( .MAX_DEM,  res, 0.0 );
-
-      self.resState.set( .GEN_PROD, res, 0.0 );
-      self.resState.set( .GEN_CONS, res, 0.0 );
-
-      self.resState.set( .TRD_EXP,  res, 0.0 );
-      self.resState.set( .TRD_IMP,  res, 0.0 );
-
-      self.resState.set( .GEN_ACS,  res, 0.0 );
-      self.resState.set( .POP_ACS,  res, 0.0 );
-      self.resState.set( .IND_ACS,  res, 0.0 );
-    }
-    inline for( 0..popTypeC )| p |
-    {
-      const pop = PopType.fromIdx( p );
-
-      self.popState.set( .DELTA,   pop, 0.0 );
-
-      self.popState.set( .DEATH,   pop, 0.0 );
-      self.popState.set( .BIRTH,   pop, 0.0 );
-
-      self.popState.set( .EXPENSE, pop, 0.0 );
-      self.popState.set( .REVENUE, pop, 0.0 );
-
-      self.popState.set( .FLM_LVL, pop, 0.0 );
-    }
-    inline for( 0..infTypeC )| f |
-    {
-      const inf = InfType.fromIdx( f );
-
-      self.infState.set( .DELTA,   inf, 0.0 );
-
-      self.infState.set( .DECAY,   inf, 0.0 );
-      self.infState.set( .BUILT,   inf, 0.0 );
-
-      self.infState.set( .EXPENSE, inf, 0.0 );
-      self.infState.set( .REVENUE, inf, 0.0 );
-
-      self.infState.set( .USE_LVL, inf, 0.0 );
-    }
-    inline for( 0..indTypeC )| d |
-    {
-      const ind = IndType.fromIdx( d );
-
-      self.indState.set( .DELTA,    ind, 0.0 );
-
-      self.indState.set( .DECAY,    ind, 0.0 );
-      self.indState.set( .BUILT,    ind, 0.0 );
-
-      self.indState.set( .EXPENSE,  ind, 0.0 );
-      self.indState.set( .REVENUE,  ind, 0.0 );
-      self.indState.set( .PROFIT,   ind, 0.0 );
-
-    //self.indState.set( .ACT_TRGT, ind, 0.0 ); // NOTE : DO NOT ZERO OUT : Cross-tick signal
-      self.indState.set( .ACT_LVL,  ind, 0.0 );
-    }
-  }
-
-  inline fn tickEcology( self : *Economy ) void
+  inline fn updateEcology( self : *Economy ) void
   {
     if( !self.hasEcology() ){ return; }
 
@@ -833,6 +767,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
       {
         self.indState.sub( .CAPITAL, indType, baseCapital * self.inflationRate );
       }
+
+      // TODO : also apply inflation to inf, pop and gov
     }
   }
 
@@ -855,6 +791,23 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
   inline fn tickBuildQueue( self : *Economy ) void
   {
+    inline for( 0..infTypeC )| f |
+    {
+      const infType = InfType.fromIdx( f );
+
+      self.infState.zero( .DELTA, infType );
+      self.infState.zero( .BUILT, infType );
+      self.infState.zero( .DECAY, infType );
+    }
+    inline for( 0..indTypeC )| d |
+    {
+      const indType = IndType.fromIdx( d );
+
+      self.indState.zero( .DELTA, indType );
+      self.indState.zero( .BUILT, indType );
+      self.indState.zero( .DECAY, indType );
+    }
+
     if( self.buildQueue != null )
     {
       self.buildQueue.?.update( self );
@@ -870,6 +823,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     // ASSEMBLY
     // NOTE : updated by econBuilder
 
+
     // HOUSING
     const popCount : f64 = @floatFromInt( self.getTotalPopCount() );
     const popCap   : f64 = @floatFromInt( self.getTotalPopCap()   );
@@ -879,13 +833,38 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
     // HABITAT
     const areaUsed : f64 = self.areaMetrics.get( .USED );
-    const areaCap  : f64 = self.areaMetrics.get( .CAP  );
+    var   habUse   : f64 = 0.0;
 
-    self.infState.set( .USE_LVL, .HABITAT, areaUsed / areaCap );
 
+    if( self.location != .GROUND or !self.hasAtmo )
+    {
+      // Non-ground or no-atmo : all area IS habitat area, use areaCap as fallback
+      const areaCap : f64 = self.areaMetrics.get( .CAP  );
+
+      if( areaCap > def.EPS )
+      {
+        habUse = @min( 1.0, areaUsed / areaCap );
+      }
+    }
+    else
+    {
+      // Ground with Atmo : account for non-habitat area
+      const habitatArea : f64 = self.getHabitatArea();
+
+      if( habitatArea > def.EPS )
+      {
+        const landArea : f64 = self.areaMetrics.get( .LAND );
+
+        // How much of the used area exceeds what free land provides?
+        const areaOnHabitat = @max( 0.0, areaUsed - landArea );
+
+        habUse = areaOnHabitat / habitatArea;
+      }
+    }
+    self.infState.set( .USE_LVL, .HABITAT, habUse );
 
     // STORAGE
-    var maxStorageUsage : f64 = 0.0;
+    var maxStoreUse : f64 = 0.0;
 
     inline for( 0..resTypeC )| r |
     {
@@ -896,79 +875,30 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
         const resCount : f64 = @floatFromInt( self.getResCount( resType ));
         const resCap   : f64 = @floatFromInt( self.getResCap(   resType ));
 
-        maxStorageUsage = @max( maxStorageUsage, resCount / resCap );
+        maxStoreUse = @max( maxStoreUse, resCount / resCap );
       }
     }
+    self.infState.set( .USE_LVL, .STORAGE, maxStoreUse );
 
-    self.infState.set( .USE_LVL, .STORAGE, maxStorageUsage );
-  }
 
-  pub fn debugAutoBuild1( self : *Economy ) void
-  {
-    if( self.buildQueue.?.getEntryCount() < 32 )
+    // AVERAGING RATES
+    self.avgInfUsage = 0.0;
+
+    inline for( 0..infTypeC )| f |
     {
-      if( self.infState.get( .USE_LVL, .ASSEMBLY ) > 0.95 )
-      {
-        _ = self.buildQueue.?.addEntry( .{ .inf = .ASSEMBLY }, 2 );
-      }
-      if( self.infState.get( .USE_LVL, .HOUSING ) > 0.95 )
-      {
-        _ = self.buildQueue.?.addEntry( .{ .inf = .HOUSING }, 2 );
-      }
+      const infType = InfType.fromIdx( f );
 
-      if( self.infState.get( .USE_LVL, .HABITAT ) > 0.95 )
-      {
-        _ = self.buildQueue.?.addEntry( .{ .inf = .HABITAT }, 2 );
-      }
-
-      if( self.infState.get( .USE_LVL, .STORAGE ) > 0.95 )
-      {
-        _ = self.buildQueue.?.addEntry( .{ .inf = .STORAGE }, 2 );
-      }
-
-      if( self.resState.get( .GEN_ACS, .FOOD ) < 1.2 )
-      {
-        if( self.resState.get( .GEN_ACS, .POWER ) < 1.6 and self.resState.get( .GEN_ACS, .WATER ) > 1.2 )
-        {
-          _ = self.buildQueue.?.addEntry( .{ .ind = .AGRONOMIC   }, 2 );
-        }
-        else
-        {
-          _ = self.buildQueue.?.addEntry( .{ .ind = .HYDROPONIC  }, 2 );
-        }
-      }
-
-      if( self.resState.get( .GEN_ACS, .WATER ) < 1.2 )
-      {
-        _ = self.buildQueue.?.addEntry( .{ .ind = .WATER_PLANT }, 2 );
-      }
-
-      if( self.resState.get( .GEN_ACS, .POWER ) < 1.5 )
-      {
-        _ = self.buildQueue.?.addEntry( .{ .ind = .SOLAR_PLANT }, 4 );
-      }
-
-      if( self.resState.get( .GEN_ACS, .WORK ) > 0.98 )
-      {
-        if( self.resState.get( .GEN_ACS, .ORE ) < 1.0 )
-        {
-          _ = self.buildQueue.?.addEntry( .{ .ind = .GROUND_MINE }, 8 );
-        }
-        else
-        {
-          _ = self.buildQueue.?.addEntry( .{ .ind = .REFINERY }, 6 );
-        }
-        if( self.resState.get( .GEN_ACS, .INGOT ) > 1.0 )
-        {
-          _ = self.buildQueue.?.addEntry( .{ .ind = .FACTORY }, 4 );
-        }
-      }
+      // Accumulates average infrastructure usage rate
+      self.avgInfUsage += self.infState.get( .USE_LVL, infType );
     }
+
+    self.avgInfUsage /= @floatFromInt( infTypeC );
   }
+
 
   const AUTO_BUILD_SUPPLY_LIMIT : f64 = 42.0;
 
-  pub fn debugAutoBuild2( self : *Economy ) void
+  pub fn debugAutoBuild( self : *Economy ) void
   {
     const popCount : f64 = self.popState.get( .COUNT, .HUMAN );
 
@@ -1043,21 +973,21 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
   pub fn tickEcon( self : *Economy ) void
   {
+    // Metric updating
     self.updateResCaps();
     self.updatePopCaps();
     self.updateAreas();
+    self.updateInfUsage(); // Depends on Area, tickBuildQueue()
+    self.updateEcology();  // Depends on infUsage
 
-    self.tickEcology();
+    // Economic tick
     self.applyInflation();
     self.calcBuildDemand();
     ecnSlvr.resolveEcon( self );
     self.tickBuildQueue();
 
-    self.updateInfUsage();
-
-    // NOTE : DEBUG SECTION
-    self.debugAutoBuild2();
-
+    // Debug Actions
+    self.debugAutoBuild();
     self.logAllMetrics();
   }
 };

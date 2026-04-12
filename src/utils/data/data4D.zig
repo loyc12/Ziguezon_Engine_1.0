@@ -44,6 +44,10 @@ pub fn GenDataMatrix4( comptime DataType : type, comptime Enum1 : type, comptime
       }}}}
     }
 
+    pub inline fn zero( self : *SelfType, e1 : Enum1, e2 : Enum2, e3 : Enum3, e4 : Enum4 ) void
+    {
+      self.data[ @intFromEnum( e1 )][ @intFromEnum( e2 )][ @intFromEnum( e3 )][ @intFromEnum( e4 )] = 0;
+    }
     pub inline fn set( self : *SelfType, e1 : Enum1, e2 : Enum2, e3 : Enum3, e4 : Enum4, value : DataType ) void
     {
       self.data[ @intFromEnum( e1 )][ @intFromEnum( e2 )][ @intFromEnum( e3 )][ @intFromEnum( e4 )] = value;

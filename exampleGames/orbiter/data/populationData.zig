@@ -119,7 +119,7 @@ pub fn loadPopulationData() void
 
   popMetricData.set( .HUMAN, .MASS,      0.0001 );
   popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 );
-  popMetricData.set( .HUMAN, .POLLUTION, 0.0100 );
+  popMetricData.set( .HUMAN, .POLLUTION, 0.1000 );
 
 
   // ================================ RESOURCES ================================

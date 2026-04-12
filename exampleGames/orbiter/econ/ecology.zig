@@ -23,19 +23,16 @@ const indTypeC  = IndType.count;
 
 
 // Tune this to control how steeply pollution rises
-const POLLUTION_PER_POP : f64 = 1.0;
-const NATURAL_CAPACITY  : f64 = 0.0; // NOTE : Activate if polution is too harsh
-const POLLUTION_SCALE   : f64 = 1.0; // shifts the midpoint ( higher = saturates sooner )
+const NATURAL_CAPACITY   : f64 = 0.001; // Quantity of polution each unit area can absorbe for free // NOTE : increase if pollution is too harsh
+const POLLUTION_MIDPOINT : f64 = 1.000; // rawRatio at which pollution == 0.5
 
 // Tune these to control how harshly each factor penalises the eco factor
-const DEV_WEIGHT  : f64 = 0.6; // ecumenopolis alone can reduce ecoFactor to 0.4
-const POLL_WEIGHT : f64 = 0.9; // full pollution alone can reduce ecoFactor to 0.1
+const DEV_WEIGHT  : f64 = 0.6; // full development alone can reduce ecoFactor to 1.0 - val
+const POLL_WEIGHT : f64 = 0.9; // full pollution   alone can reduce ecoFactor to 1.0 - val
 
 
 pub const EcoState = struct
 {
-  pollutionPerPop : f64 = POLLUTION_PER_POP,
-
   surfaceArea : f64,
   development : f64 = 0.0,
   pollution   : f64 = 0.0,
@@ -60,9 +57,10 @@ pub const EcoState = struct
   pub inline fn logEco( self : *EcoState ) void
   {
     def.qlog( .INFO, 0, @src(), "Loggin ecology :" );
-    def.log(  .CONT, 0, @src(), "Development\t: {d:.8}", .{ self.development });
-    def.log(  .CONT, 0, @src(), "Pollution  \t: {d:.8}", .{ self.pollution   });
-    def.log(  .CONT, 0, @src(), "Eco Factor \t: {d:.8}", .{ self.ecoFactor   });
+    def.log(  .CONT, 0, @src(), "Development    : {d:.6}", .{ self.development });
+    def.log(  .CONT, 0, @src(), "Pollution      : {d:.6}", .{ self.pollution   });
+    def.log(  .CONT, 0, @src(), "Eco Factor     : {d:.6}", .{ self.ecoFactor   });
+    def.log(  .CONT, 0, @src(), "Eco Factor Sqr : {d:.6}", .{ self.ecoFactor * self.ecoFactor });
   }
 
   pub fn update( self : *EcoState, econ : *const ecn.Economy ) void
@@ -73,20 +71,17 @@ pub const EcoState = struct
   // Each factor independently penalises the eco factor multiplicatively.
   // Neither alone reaches 0 — both together approach it.
 
-  // 0.0 / 0.0  →  ecoFactor == 1.0  ( wilderness,   clean )
-  // 1.0 / 0.0  →  ecoFactor == 0.4  ( ecumenopolis, clean )
-  // 0.0 / 1.0  →  ecoFactor == 0.1  ( wilderness,   toxic )
-  // 1.0 / 1.0  →  ecoFactor == 0.04 ( ecumenopolis, toxic )
-
     const devPenalty  = 1.0 - ( self.development * DEV_WEIGHT  );
     const pollPenalty = 1.0 - ( self.pollution   * POLL_WEIGHT );
 
-    self.ecoFactor = devPenalty * pollPenalty;
+    const ecoFloor = ( 1.0 - DEV_WEIGHT ) * ( 1.0 - POLL_WEIGHT );
+    const ecoRange =   1.0 - ecoFloor;
+
+    self.ecoFactor = (( devPenalty * pollPenalty ) - ecoFloor ) / ecoRange;
 
     self.ecoFactor = def.clmp( self.ecoFactor, def.EPS, 1.0 - def.EPS );
 
     self.logEco();
-
   }
 
   inline fn calcDevelopment( self : *EcoState, econ : *const ecn.Economy ) void
@@ -110,6 +105,19 @@ pub const EcoState = struct
       pollutionAmount += tmp;
     }
 
+    // Inf pollution                       // TODO : add pollution reducing inf
+    for( 0..infTypeC )| f |
+    {
+      const infType = InfType.fromIdx( f );
+      const useRate = econ.infState.get( .USE_LVL, infType );
+
+      var tmp  = infType.getMetric_f64( .POLLUTION );
+          tmp *= econ.infState.get( .COUNT, infType );
+          tmp *= useRate;
+
+      pollutionAmount += tmp;
+    }
+
     // Ind pollution
     for( 0..indTypeC )| d |
     {
@@ -123,37 +131,15 @@ pub const EcoState = struct
       pollutionAmount += tmp;
     }
 
-    // Inf pollution                                  // TODO : add pollution reducting inf
-    for( 0..infTypeC )| f |
-    {
-      const infType = InfType.fromIdx( f );
-      const useRate = econ.infState.get( .USE_LVL, infType );
-
-      var tmp  = infType.getMetric_f64( .POLLUTION );
-          tmp *= econ.infState.get( .COUNT, infType );
-          tmp *= useRate;
-
-      pollutionAmount += tmp;
-    }
+    def.log( .CONT, 0, @src(), "Pollution COUNT : {d:.1}", .{ pollutionAmount });
 
     // rawRatio is always >= 0 after the @max clamp
     const rawRatio = @max( 0.0, ( pollutionAmount / self.surfaceArea ) - NATURAL_CAPACITY );
+    def.log( .CONT, 0, @src(), "Pollution RAW   : {d:.6}", .{ rawRatio });
 
-    // Log-space mapping : keeps pollution meaningful across several orders of magnitude
-    // log( 1 + x ) is used instead of log( x ) to avoid log(0) and keep output >= 0
+    // Saturating curve
+    self.pollution = rawRatio / ( rawRatio + POLLUTION_MIDPOINT );
 
-    // rawRatio == 0.0  →  logRatio == 0.000  →  pollution == 0.00
-    // rawRatio == 0.1  →  logRatio == 0.095  →  pollution ≈ 0.07
-    // rawRatio == 1.0  →  logRatio == 0.693  →  pollution ≈ 0.47
-    // rawRatio == 10.0 →  logRatio == 2.398  →  pollution ≈ 0.92
-    // rawRatio == 100  →  logRatio == 4.615  →  pollution ≈ 0.99
-
-
-    const logRatio = @log( 1.0 + rawRatio );
-
-    // Sigmoid on log-space input, remapped from [ 0.5, 1.0 ] to [ 0.0, 1.0 ]
-    self.pollution = def.sigmoid( -logRatio, POLLUTION_SCALE );
-    self.pollution = ( self.pollution - 0.5 ) * 2.0;
-    self.pollution = @max( 0.0, self.pollution );
+    def.log( .CONT, 0, @src(), "Pollution RATIO : {d:.6}", .{ self.pollution });
   }
 };

@@ -118,10 +118,10 @@ pub fn loadInfrastructureData() void
 
   // ================================ AREA COST ================================
 
-  infMetricData.set( .ASSEMBLY, .AREA_COST, 5.0 );
-  infMetricData.set( .HOUSING,  .AREA_COST, 1.0 );
+  infMetricData.set( .ASSEMBLY, .AREA_COST, 0.5 );
+  infMetricData.set( .HOUSING,  .AREA_COST, 0.1 );
   infMetricData.set( .HABITAT,  .AREA_COST, 0.0 ); // Provides area via capacity
-  infMetricData.set( .STORAGE,  .AREA_COST, 4.0 );
+  infMetricData.set( .STORAGE,  .AREA_COST, 0.4 );
 
 
   // ================================ PART COST ================================
@@ -139,10 +139,10 @@ pub fn loadInfrastructureData() void
 
   // ================================ POLLUTION ================================
 
-  infMetricData.set( .ASSEMBLY, .POLLUTION, 1.0 );
-  infMetricData.set( .HOUSING,  .POLLUTION, 0.2 );
-  infMetricData.set( .HABITAT,  .POLLUTION, 0.1 );
-  infMetricData.set( .STORAGE,  .POLLUTION, 0.1 );
+  infMetricData.set( .ASSEMBLY, .POLLUTION, 10.0 );
+  infMetricData.set( .HOUSING,  .POLLUTION,  5.0 );
+  infMetricData.set( .HABITAT,  .POLLUTION,  0.0 );
+  infMetricData.set( .STORAGE,  .POLLUTION,  1.0 );
 
 
   // ================================ CAPACITY ================================

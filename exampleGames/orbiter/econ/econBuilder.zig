@@ -5,10 +5,16 @@ const def = @import( "defs" );
 const gdf = @import( "../gameDefs.zig" );
 const ecn = gdf.ecn;
 
-const VesType = gdf.VesType;
-const ResType = gdf.ResType;
-const InfType = gdf.InfType;
-const IndType = gdf.IndType;
+const VesType  = gdf.VesType;
+const ResType  = gdf.ResType;
+const InfType  = gdf.InfType;
+const IndType  = gdf.IndType;
+
+const vesTypeC  = VesType.count;
+const resTypeC  = ResType.count;
+const infTypeC  = InfType.count;
+const indTypeC  = IndType.count;
+
 
 const cst = @import( "construct.zig" );
 
@@ -128,6 +134,19 @@ pub const BuildQueue = struct
       // Clear all entries
       self.entryCount = 0;
     }
+  }
+
+
+  pub inline fn getTotalBuildCount( self : *const BuildQueue ) u64
+  {
+    var total : u64 = 0;
+
+    for( self.entries )| e |
+    {
+      if( e.buildCount == 0 ){ return total; }
+      total += e.buildCount;
+    }
+    return total;
   }
 
   pub inline fn getEntryCount( self : *const BuildQueue ) u32

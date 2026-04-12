@@ -42,6 +42,10 @@ pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime 
       }}}
     }
 
+    pub inline fn zero( self : *SelfType, row : RowEnum, col : ColumnEnum, lay : LayerEnum ) void
+    {
+      self.data[ @intFromEnum( row )][ @intFromEnum( col )][ @intFromEnum( lay )] = 0;
+    }
     pub inline fn set( self : *SelfType, row : RowEnum, col : ColumnEnum, lay : LayerEnum, value : DataType ) void
     {
       self.data[ @intFromEnum( row )][ @intFromEnum( col )][ @intFromEnum( lay )] = value;

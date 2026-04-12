@@ -37,6 +37,10 @@ pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
       }
     }
 
+    pub inline fn zero( self : *SelfType, idx : IdxEnum ) void
+    {
+      self.data[ @intFromEnum( idx )] = 0;
+    }
     pub inline fn set( self : *SelfType, idx : IdxEnum, value : DataType ) void
     {
       self.data[ @intFromEnum( idx )] = value;

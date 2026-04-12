@@ -155,8 +155,6 @@ const EconSolver = struct
     self.resFlowData.fillWith( 0.0 );
     self.popFlowData.fillWith( 0.0 );
     self.indFlowData.fillWith( 0.0 );
-
-    self.econ.resetCountMetrics();
   }
 
 
@@ -319,7 +317,7 @@ const EconSolver = struct
       {
         access = @min( access, remain / popDem );
 
-        def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resType ), remain, popDem, access });
+        def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( resType ), remain, popDem, access * 100.0 });
 
         if( access < 1.0 - def.EPS )
         {
@@ -355,7 +353,7 @@ const EconSolver = struct
     {
       access = @min( access, remain / mntDem );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( .PART ), remain, mntDem, access });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( .PART ), remain, mntDem, access * 100.0 });
 
       if( access < 1.0 - def.EPS )
       {
@@ -392,7 +390,7 @@ const EconSolver = struct
       {
         access = @min( access, remain / indDem );
 
-        def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resType ), remain, indDem, access });
+        def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( resType ), remain, indDem, access * 100.0 });
 
         if( access < 1.0 - def.EPS )
         {
@@ -428,7 +426,7 @@ const EconSolver = struct
     {
       access = @min( access, remain / bldDem );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( .PART ), remain, bldDem, access });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( .PART ), remain, bldDem, access * 100.0 });
 
       if( access < 1.0 - def.EPS )
       {
@@ -687,7 +685,7 @@ const EconSolver = struct
 
       if( growthRate >= def.EPS )
       {
-        const factor = @max( 0.0, ecoFactor * ecoFactor * ecoFactor );
+        const factor = @max( 0.0, ecoFactor * ecoFactor );
         const realNatProd = @floor( factor * growthRate );
 
         self.resFlowData.set( .NAT, .REAL_PROD, resType, realNatProd );
@@ -730,7 +728,9 @@ const EconSolver = struct
       const newPrice = def.lerp(  oldPrice, rawPrice, dampening ); // Lerp smoothing
       const dltPrice = newPrice - oldPrice;
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}\t| {d:.6}\t {d:.6}\t| {d:.6}", .{ @tagName( resType ), basePrice, oldPrice, newPrice, dltPrice });
+      const resCount = self.nextResStock.get( resType );
+
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0} \t| {d:.6}\t| {d:.6}\t {d:.6}\t| {d:.6}", .{ @tagName( resType ), resCount, basePrice, oldPrice, newPrice, dltPrice });
 
       self.econ.resState.set( .PRICE,   resType, newPrice );
       self.econ.resState.set( .PRICE_D, resType, dltPrice );
@@ -745,6 +745,7 @@ const EconSolver = struct
 
 
   const PROFITABILITY_FLOOR : f64 = -2.5;
+  const MARGIN_OFFSET       : f64 = -0.0;
 
   fn updateIndFinances( self : *EconSolver ) void
   {
@@ -754,62 +755,87 @@ const EconSolver = struct
     inline for( 0..indTypeC )| d |
     {
       const indType  = IndType.fromIdx( d );
-      const indCount = econ.indState.get( .COUNT, indType );
+      var   indCount = econ.indState.get( .COUNT, indType );
+
+      const isPresent : bool = ( indCount > def.EPS );
+      if( !isPresent ){ indCount = 1.0; }
 
       if( indType.canBeBuiltIn( econ.location, econ.hasAtmo ))
       {
-        var revenue : f64 = 0.0;
         var expense : f64 = 0.0;
+        var revenue : f64 = 0.0;
+        var profit  : f64 = 0.0;
 
+        // Calculating revenues and expenses
         inline for( 0..resTypeC )| r |
         {
-          const resType = ResType.fromIdx( r );
-          const price   = econ.resState.get( .PRICE, resType );
+          const resType  = ResType.fromIdx( r );
+          const resPrice = econ.resState.get( .PRICE, resType );
 
-          const prodPerUnit = indType.getResProd_f64( resType );
-          const consPerUnit = indType.getResCons_f64( resType );
-
-          revenue += prodPerUnit * price;
-          expense += consPerUnit * price;
+          if( isPresent )
+          {
+            expense += resPrice * self.indFlowData.get( indType, .MAX_CONS, resType );
+            revenue += resPrice * self.indFlowData.get( indType, .MAX_PROD, resType );
+          }
+          else // Theoritical profitability calculations
+          {
+            expense += resPrice * indType.getResCons_f64( resType );
+            revenue += resPrice * indType.getResProd_f64( resType );
+          }
         }
 
-        const profit = revenue - expense;
+        const mntRate    = indType.getMetric_f64(  .MAINT_RATE );
+        const partCost   = indType.getMetric_f64(  .PART_COST  );
+        const partPrice  = self.econ.resState.get( .PRICE, .PART );
 
+        expense += indCount * partCost * mntRate * partPrice;
+
+
+        // Calculating margin and activity target
         const floor : f64 = PROFITABILITY_FLOOR;
         var  margin : f64 = 0.0;
+
+        profit = revenue - expense;
 
         if(      revenue > def.EPS ){ margin = @max( floor, ( revenue - expense ) / revenue ); }
         else if( expense > def.EPS ){ margin =       floor; }
 
-        // large profits will tend to 1.0, large losses will tend to 0.0
-        const activityTarget = self.maxIndActivity * def.sigmoid( margin, 8.0 ); // NOTE : lower K for smoother transitioning
+        const activityTarget = self.maxIndActivity * def.sigmoid( margin + MARGIN_OFFSET, 8.0 ); // NOTE : lower K for smoother transitioning
+        // NOTE : Large profits will tend to 1.0, large losses will tend to 0.0
 
+
+        // Updating econ metrics
         econ.indState.set( .ACT_TRGT, indType, activityTarget );
 
-        if( indCount > def.EPS )
+        const capital = econ.indState.get( .CAPITAL, indType );
+
+        if( isPresent )
         {
-          def.log( .CONT, 0, @src(), "{s}\t: {d:.6}\t-{d:.6}\t| {d:.6}\t{d:.6}", .{ @tagName( indType ), revenue, expense, margin, activityTarget });
+          // NOTE : Expense and revenues are logged per unit for ease of comparison, but stored as totals
+          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}\t{d:.4}%", .{ @tagName( indType ), indCount, capital, revenue / indCount, expense / indCount, margin, activityTarget * 100.0 });
 
-          const totalProfits = profit * indCount;
-
-          econ.indState.set( .EXPENSE,  indType, expense * indCount );
-          econ.indState.set( .REVENUE,  indType, revenue * indCount );
-          econ.indState.set( .PROFIT,   indType, totalProfits );
-          econ.indState.add( .CAPITAL,  indType, totalProfits );
+          econ.indState.set( .EXPENSE,  indType, expense );
+          econ.indState.set( .REVENUE,  indType, revenue );
+          econ.indState.set( .PROFIT,   indType, profit  );
+          econ.indState.set( .CAPITAL,  indType, profit + capital );
         }
         else
         {
-          econ.indState.set( .EXPENSE,  indType, 0.0 );
-          econ.indState.set( .REVENUE,  indType, 0.0 );
-          econ.indState.set( .PROFIT,   indType, 0.0 );
+          def.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.6}\t| N/A\t-N/A\t| {d:.6}\t{d:.6}%", .{ @tagName( indType ), capital, margin, activityTarget * 100.0 });
+
+          econ.indState.zero( .EXPENSE,  indType );
+          econ.indState.zero( .REVENUE,  indType );
+          econ.indState.zero( .PROFIT,   indType );
+          // TODO : transfer capital to gov if non-zero ( industry went insolvent )
         }
       }
       else
       {
-        econ.indState.set( .ACT_TRGT, indType, 0.0 );
-        econ.indState.set( .EXPENSE,  indType, 0.0 );
-        econ.indState.set( .REVENUE,  indType, 0.0 );
-        econ.indState.set( .PROFIT,   indType, 0.0 );
+        econ.indState.zero( .ACT_TRGT, indType );
+        econ.indState.zero( .EXPENSE,  indType );
+        econ.indState.zero( .REVENUE,  indType );
+        econ.indState.zero( .PROFIT,   indType );
+        econ.indState.zero( .CAPITAL,  indType );
       }
     }
   }
@@ -912,6 +938,11 @@ const EconSolver = struct
 
     self.econ.buildBudget = self.resFlowData.get( .BLD, .REAL_CONS, .PART );
 
+    econ.avgPopFulfilment = 0.0;
+  //econ.avgInfUsage      = 0.0;
+    econ.avgIndActivity   = 0.0;
+    econ.avgResAccess     = 0.0;
+
     inline for( 0..popTypeC )| p |
     {
       const popType = PopType.fromIdx( p );
@@ -929,11 +960,15 @@ const EconSolver = struct
 
       econ.popState.set( .FLM_LVL, popType, popFulfilment );
 
+      // Accumulates average population need fulfilment rate
       econ.avgPopFulfilment += popFulfilment;
     }
-  //inline for( 0..infTypeC )| f |
+  //inline for( 0..infTypeC )| f | // NOTE : done inecon.updateInfUsage()
   //{
   //  const infType = InfType.fromIdx( f );
+  //
+  //  // Accumulates average infrastructure usage rate
+  //  econ.avgInfUsage += PLACEHOLDER;
   //}
     inline for( 0..indTypeC )| d |
     {
@@ -942,7 +977,7 @@ const EconSolver = struct
 
       econ.indState.set( .ACT_LVL, indType, indActivity );
 
-      // Accumulate average industrial activity rate
+      // Accumulates average industrial activity rate
       econ.avgIndActivity += indActivity;
     }
 
@@ -969,11 +1004,12 @@ const EconSolver = struct
       econ.resState.set( .POP_ACS,  res, self.resFlowData.get( .POP, .ACCESS,    res ));
       econ.resState.set( .IND_ACS,  res, self.resFlowData.get( .IND, .ACCESS,    res ));
 
-      // Accumulate average resource access rate
+      // Accumulates average resource access rate
       econ.avgResAccess += self.resFlowData.get( .GEN, .ACCESS, res );
     }
 
     econ.avgPopFulfilment /= @floatFromInt( popTypeC );
+  //econ.avgInfUsage      /= @floatFromInt( infTypeC );
     econ.avgIndActivity   /= @floatFromInt( indTypeC );
     econ.avgResAccess     /= @floatFromInt( resTypeC );
   }

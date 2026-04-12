@@ -101,7 +101,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
       5  => // EARTH
       {
             initStellarBody( &orbitComp, &bodyComp, .TERRA,   1 );
-            bodyComp.debugSetEconVals( .GROUND, 100 ); // Setup a 1M pop econ
+            bodyComp.debugSetEconState( .GROUND, 800_000 ); // Setup a 8B pop econ
       },
       6  => initStellarBody( &orbitComp, &bodyComp, .LUNA,    5 ),
       7  => initStellarBody( &orbitComp, &bodyComp, .MARS,    1 ),

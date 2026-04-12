@@ -178,17 +178,17 @@ pub fn loadIndustryData() void
 
   // ================================ AREA COST ================================
 
-  indMetricData.set( .AGRONOMIC,   .AREA_COST, 25.0 );
-  indMetricData.set( .HYDROPONIC,  .AREA_COST,  5.0 );
-  indMetricData.set( .WATER_PLANT, .AREA_COST,  3.0 );
-  indMetricData.set( .SOLAR_PLANT, .AREA_COST, 15.0 );
-  indMetricData.set( .POWER_PLANT, .AREA_COST,  2.0 );
+  indMetricData.set( .AGRONOMIC,   .AREA_COST, 0.20 );
+  indMetricData.set( .HYDROPONIC,  .AREA_COST, 0.05 );
+  indMetricData.set( .WATER_PLANT, .AREA_COST, 0.04 );
+  indMetricData.set( .SOLAR_PLANT, .AREA_COST, 0.20 );
+  indMetricData.set( .POWER_PLANT, .AREA_COST, 0.02 );
 
-  indMetricData.set( .REFINERY,    .AREA_COST,  3.0 );
-  indMetricData.set( .PROBE_MINE,  .AREA_COST,  1.0 );
-  indMetricData.set( .GROUND_MINE, .AREA_COST, 10.0 );
-  indMetricData.set( .FOUNDRY,     .AREA_COST,  5.0 );
-  indMetricData.set( .FACTORY,     .AREA_COST,  5.0 );
+  indMetricData.set( .REFINERY,    .AREA_COST, 0.05 );
+  indMetricData.set( .PROBE_MINE,  .AREA_COST, 0.01 );
+  indMetricData.set( .GROUND_MINE, .AREA_COST, 0.20 );
+  indMetricData.set( .FOUNDRY,     .AREA_COST, 0.05 );
+  indMetricData.set( .FACTORY,     .AREA_COST, 0.05 );
 
 
   // ================================ PART COST ================================
@@ -221,17 +221,17 @@ pub fn loadIndustryData() void
 
   // ================================ POLLUTION ================================
 
-  indMetricData.set( .AGRONOMIC,   .POLLUTION,  2.0 );
-  indMetricData.set( .HYDROPONIC,  .POLLUTION,  0.0 );
-  indMetricData.set( .WATER_PLANT, .POLLUTION,  0.5 );
-  indMetricData.set( .SOLAR_PLANT, .POLLUTION,  0.0 );
-  indMetricData.set( .POWER_PLANT, .POLLUTION,  0.5 );
+  indMetricData.set( .AGRONOMIC,   .POLLUTION,  20.0 );
+  indMetricData.set( .HYDROPONIC,  .POLLUTION,   1.0 );
+  indMetricData.set( .WATER_PLANT, .POLLUTION,   1.0 );
+  indMetricData.set( .SOLAR_PLANT, .POLLUTION,   0.0 );
+  indMetricData.set( .POWER_PLANT, .POLLUTION,  20.0 );
 
-  indMetricData.set( .REFINERY,    .POLLUTION,  0.5 );
-  indMetricData.set( .PROBE_MINE,  .POLLUTION,  1.0 );
-  indMetricData.set( .GROUND_MINE, .POLLUTION,  8.0 );
-  indMetricData.set( .FOUNDRY,     .POLLUTION,  8.0 );
-  indMetricData.set( .FACTORY,     .POLLUTION,  2.0 );
+  indMetricData.set( .REFINERY,    .POLLUTION,  20.0 );
+  indMetricData.set( .PROBE_MINE,  .POLLUTION,   0.0 );
+  indMetricData.set( .GROUND_MINE, .POLLUTION,  80.0 );
+  indMetricData.set( .FOUNDRY,     .POLLUTION,  60.0 );
+  indMetricData.set( .FACTORY,     .POLLUTION,  40.0 );
 
 
   // ================================ RESOURCES ================================
