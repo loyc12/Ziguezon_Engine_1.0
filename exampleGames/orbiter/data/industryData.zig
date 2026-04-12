@@ -245,7 +245,7 @@ pub fn loadIndustryData() void
   indResDeltaTable.set( .HYDROPONIC,  .CONS, .POWER,  4.0 );
   indResDeltaTable.set( .HYDROPONIC,  .PROD, .FOOD,  20.0 );
 
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,   5.0 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,  10.0 );
   indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER,  4.0 );
   indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 40.0 );
 
@@ -253,15 +253,15 @@ pub fn loadIndustryData() void
   indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WATER,  2.0 );
   indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 20.0 ); // NOTE : take into acount day/night efficiency loss on GROUND
 
-  indResDeltaTable.set( .POWER_PLANT, .CONS, .WORK,  10.0 );
+  indResDeltaTable.set( .POWER_PLANT, .CONS, .WORK,  20.0 );
   indResDeltaTable.set( .POWER_PLANT, .CONS, .WATER,  1.0 );
   indResDeltaTable.set( .POWER_PLANT, .CONS, .FUEL ,  1.0 );
-  indResDeltaTable.set( .POWER_PLANT, .PROD, .POWER, 30.0 );
+  indResDeltaTable.set( .POWER_PLANT, .PROD, .POWER, 40.0 );
 
 
   indResDeltaTable.set( .REFINERY,    .CONS, .WORK,  20.0 );
-  indResDeltaTable.set( .REFINERY,    .CONS, .WATER, 10.0 );
-  indResDeltaTable.set( .REFINERY,    .CONS, .POWER, 10.0 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .WATER,  8.0 );
+  indResDeltaTable.set( .REFINERY,    .CONS, .POWER,  8.0 );
   indResDeltaTable.set( .REFINERY,    .PROD, .FUEL,   8.0 );
 
   indResDeltaTable.set( .PROBE_MINE,  .PROD, .ORE,    1.0 );

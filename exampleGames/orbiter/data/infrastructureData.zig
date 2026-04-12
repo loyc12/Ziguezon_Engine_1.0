@@ -48,7 +48,7 @@ pub const InfType = enum( u8 )
         .HABITAT  => true,
 
         .STORAGE  => true,
-      //.BATTERY  => true,POLLUTION,
+      //.BATTERY  => true,
 
       //else      => false,
       };

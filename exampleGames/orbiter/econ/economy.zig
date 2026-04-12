@@ -966,7 +966,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     }
   }
 
-  const AUTO_BUILD_SUPPLY_LIMIT : f64 = 16.0;
+  const AUTO_BUILD_SUPPLY_LIMIT : f64 = 42.0;
 
   pub fn debugAutoBuild2( self : *Economy ) void
   {
