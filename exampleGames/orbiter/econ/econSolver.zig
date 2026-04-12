@@ -80,10 +80,13 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
 
 // ================ POST-CALC PHASE ================
 
-  solver.updatedResPrice(); // Update res prices from real supply and demand
-//solver.updatePopProfit();
-  solver.updateIndProfit(); // Update monetary metrics for each industry type
-//solver.updateGovProfit();
+  solver.updateResPrices();   // Update res prices from real supply and demand
+//solver.updatePopFinances();
+//solver.updateMntFinances();
+  solver.updateIndFinances(); // Update monetary metrics for each industry type
+//solver.updateComFinances();
+//solver.updateBldFinances();
+//solver.updateGovFinances();
 
 
 // ================ ECON UPDATE PHASE ================
@@ -694,13 +697,13 @@ const EconSolver = struct
   }
 
 
-// ================================ POST-CALC PHASE ================================
+// ================================ FINANCE PHASE ================================
 
 
   const MAX_SCARC_RATIO  : f64 = 100.0;
   const MIN_PRICE_FACTOR : f64 = 0.005;
 
-  fn updatedResPrice( self : *EconSolver ) void
+  fn updateResPrices( self : *EconSolver ) void
   {
     def.qlog( .INFO, 0, @src(), "$ LOGGING RES PRICES :" );
 
@@ -734,14 +737,16 @@ const EconSolver = struct
     }
   }
 
-//fn updatePopProfit( self : *EconSolver ) void
-
-//fn updateBldProfit( self : *EconSolver ) void
+//fn updatePopFinances( self : *EconSolver ) void
+//fn updateMntFinances( self : *EconSolver ) void
+//fn updateBldFinances( self : *EconSolver ) void
+//fn updateComFinances( self : *EconSolver ) void
+//fn updateGovFinances( self : *EconSolver ) void
 
 
   const PROFITABILITY_FLOOR : f64 = -2.5;
 
-  fn updateIndProfit( self : *EconSolver ) void
+  fn updateIndFinances( self : *EconSolver ) void
   {
     const econ = self.econ;
     def.qlog( .INFO, 0, @src(), "$ LOGGING IND PROFITS :" );
@@ -809,8 +814,9 @@ const EconSolver = struct
     }
   }
 
-//fn updateGovProfit( self : *EconSolver ) void
 
+
+// ================================ POST-CALC PHASE ================================
 
 // Pop growth / decay factors ( growth ~ x4.75 each century ) // TODO : change min growth of less than 1.0 to chance to grow by 1
   const WEEKLY_POP_GROWTH     : f64 = 0.0003;   // TODO : update based on econTickLen
