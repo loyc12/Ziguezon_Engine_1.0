@@ -11,7 +11,7 @@ pub const ResType = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
-  WORK, // Each pop generate N work per cycle
+  WORK,
   FUEL,
 //FLOP, // Computation
 
@@ -24,7 +24,7 @@ pub const ResType = enum( u8 )
   PART,
 
 
-  pub inline fn getInfStore( self : ResType ) InfType // TODO : move to data array
+  pub inline fn getInfStore( self : ResType ) InfType // TODO : move to data array ?
   {
     return switch( self )
     {
@@ -63,12 +63,12 @@ pub const ResMetricEnum = enum( u8 )
   DECAY_RATE,  // Natural decay  ( peremption )
   GROWTH_RATE, // Natural growth ( natural bounty)
 
-  POP_CONS, // Resource consumed per pop per cycle
-  POP_PROD, // Resource produced per pop per cycle
-
   PRICE_BASE, // Base cost per unit
   PRICE_ELAS, // Price variation elasticity exponent
   PRICE_DAMP, // Price updating lerp factor
+
+//POP_CONS, // Resource consumed per pop per cycle
+//POP_PROD, // Resource produced per pop per cycle
 };
 
 
@@ -115,12 +115,12 @@ pub fn loadResourceData() void
 
   // ================================ POP CONS / PROD ================================
 
-  resMetricData.set( .WORK,  .POP_PROD, 0.500 );
-
-  resMetricData.set( .FOOD,  .POP_CONS, 0.0200 );
-  resMetricData.set( .WATER, .POP_CONS, 0.0100 );
-  resMetricData.set( .POWER, .POP_CONS, 0.0050 );
-  resMetricData.set( .PART,  .POP_CONS, 0.0001 );
+//resMetricData.set( .WORK,  .POP_PROD, 0.5000 );
+//
+//resMetricData.set( .FOOD,  .POP_CONS, 0.0200 );
+//resMetricData.set( .WATER, .POP_CONS, 0.0100 );
+//resMetricData.set( .POWER, .POP_CONS, 0.0050 );
+//resMetricData.set( .PART,  .POP_CONS, 0.0001 );
 
   // ================================ PRICES ================================
 
@@ -170,15 +170,12 @@ pub const ResStateEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  BANK,     // Current stockpile
-  DELTA,    // Net total change last tick
+  COUNT,    // Current stockpile
   LIMIT,    // Current storage capacity
+  DELTA,    // Net total change last tick
 
   PRICE,    // Market price last tick
   PRICE_D,  // Price change last tick
-
-  DECAY,    // Amount lost to stock decay last tick
-  GROWTH,   // Amount gained from nature  last tick
 
   MAX_DEM,  // Maximum possible consumption last tick
   MAX_SUP,  // Maximum possible production  last tick
@@ -186,10 +183,13 @@ pub const ResStateEnum = enum( u8 )
   GEN_CONS, // Total applied consumption last tick
   GEN_PROD, // Total applied production  last tick
 
+  DECAY,    // Amount lost to stock decay last tick
+  GROWTH,   // Amount gained from nature  last tick
+
   TRD_EXP,  // Total exports last tick
   TRD_IMP,  // Total imports last tick
 
-  GEN_ACS,  // Agregated  resource access rates from last tick
+  GEN_ACS,  // Aggregated resource access rates from last tick
   POP_ACS,  // Population resource access rates from last tick
   IND_ACS,  // Industrial resource access rates from last tick
 };

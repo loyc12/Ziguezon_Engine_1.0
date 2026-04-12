@@ -83,12 +83,14 @@ pub const updateOrbitalDataEntry = trde_d.updateOrbitalDataEntry;
 pub const powr_d = @import( "data/powerData.zig"          );
 pub const vesl_d = @import( "data/vesselData.zig"         );
 pub const rsrc_d = @import( "data/resourceData.zig"       );
+pub const popl_d = @import( "data/populationData.zig"     );
 pub const nfrs_d = @import( "data/infrastructureData.zig" );
 pub const ndst_d = @import( "data/industryData.zig"       );
 
 pub const PowerSrc = powr_d.PowerSrc;
 pub const VesType  = vesl_d.VesType;
 pub const ResType  = rsrc_d.ResType;
+pub const PopType  = popl_d.PopType;
 pub const InfType  = nfrs_d.InfType;
 pub const IndType  = ndst_d.IndType;
 

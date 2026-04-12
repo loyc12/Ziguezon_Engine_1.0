@@ -20,12 +20,14 @@ const EconLoc  = gdf.EconLoc;
 const PowerSrc = gdf.PowerSrc;
 const VesType  = gdf.VesType;
 const ResType  = gdf.ResType;
+const PopType  = gdf.PopType;
 const InfType  = gdf.InfType;
 const IndType  = gdf.IndType;
 
 const powerSrcC = PowerSrc.count;
 const vesTypeC  = VesType.count;
 const resTypeC  = ResType.count;
+const popTypeC  = PopType.count;
 const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
@@ -49,21 +51,23 @@ pub const Economy = struct
   sunshine  : f64 = 0.0,
   sunAccess : f32 = 1.0,
 
-  ecology     : ?Ecology    = null,
+  ecology   : ?Ecology  = null,
 
   buildQueue  : ?BuildQueue = null,
   buildDemand : f64 = 0.0,  // PART demand from construction queue this tick
   buildBudget : f64 = 0.0,  // PART allocation granted by solver
 
   areaMetrics : gdf.ecnm_d.AreaMetricData = .{},
-  popMetrics  : gdf.ecnm_d.PopMetricData  = .{},
   resState    : gdf.rsrc_d.ResStateData   = .{},
+  popState    : gdf.popl_d.PopStateData   = .{},
   infState    : gdf.nfrs_d.InfStateData   = .{},
   indState    : gdf.ndst_d.IndStateData   = .{},
 
-  inflationRate  : f64 = 1.0, // TODO : update this bse on growth/decay of economy
-  avgIndActivity : f64 = 0.0,
-  avgResAccess   : f64 = 0.0,
+  inflationRate : f64 = 1.0, // TODO : update this bse on growth/decay of economy
+
+  avgPopFulfilment : f64 = 0.0,
+  avgIndActivity   : f64 = 0.0,
+  avgResAccess     : f64 = 0.0,
 
 
   pub inline fn newDeadEcon( loc : EconLoc ) Economy
@@ -99,8 +103,8 @@ pub const Economy = struct
     self.hasAtmo  = atmo;
 
     self.areaMetrics.fillWith( 0.0 );
-    self.popMetrics.fillWith(  0.0 );
     self.resState.fillWith(    0.0 );
+    self.popState.fillWith(    0.0 );
     self.infState.fillWith(    0.0 );
     self.indState.fillWith(    0.0 );
 
@@ -135,10 +139,10 @@ pub const Economy = struct
   // Setups the economy needed to support value * 10k pop
   pub inline fn debugSetEconStartState( self : *Economy, value : u64 ) void
   {
+    self.setPopCount( .HUMAN, value * 10_000 );
     self.debugSetIndCounts( value );
     self.debugSetInfCounts( value );
     self.debugSetResCounts( value );
-    self.setPopCount( value * 10_000 );
   }
 
 
@@ -151,10 +155,8 @@ pub const Economy = struct
       const resType = ResType.fromIdx( r );
       const infType = resType.getInfStore();
 
-      const infCount = self.infState.get( .BANK, infType );
-      var  capacity = infType.getMetric_f64( .CAPACITY );
-
-      if( resType == .WORK ){ capacity *= 2.0; } // Making sure there is more than enough storage for WORK ( twice the pop storage )
+      const infCount = self.infState.get( .COUNT, infType );
+      const capacity = infType.getMetric_f64( .CAPACITY );
 
       self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity ));
     }
@@ -163,29 +165,28 @@ pub const Economy = struct
   {
     return @intFromFloat( self.resState.get( .LIMIT, resType ));
   }
-
-
   pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
   {
-    return @intFromFloat( self.resState.get( .BANK, resType ));
+    return @intFromFloat( self.resState.get( .COUNT, resType ));
   }
+
   pub inline fn setResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
     const cap = self.getResCap( resType );
-    self.resState.set( .BANK, resType, @floatFromInt( @min( value, cap )));
+    self.resState.set( .COUNT, resType, @floatFromInt( @min( value, cap )));
   }
   pub inline fn addResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
     const cap     = self.getResCap(   resType );
     const current = self.getResCount( resType );
     const new_val = @min( value + current, cap );
-    self.resState.set( .BANK, resType, @floatFromInt( new_val ));
+    self.resState.set( .COUNT, resType, @floatFromInt( new_val ));
   }
   pub inline fn subResCount( self : *Economy, resType : ResType, value : u64 ) void
   {
     const current = self.getResCount( resType );
     const count   = @min( value, current );
-    self.resState.set( .BANK, resType, @floatFromInt( current - count ));
+    self.resState.set( .COUNT, resType, @floatFromInt( current - count ));
 
     if( value != count )
     {
@@ -203,30 +204,30 @@ pub const Economy = struct
       var amount : u64 = 1_000;
       if( resType == .WORK ){ amount *= 10; }
 
-      self.resState.set( .BANK, resType, @floatFromInt( value * amount ));
+      self.resState.set( .COUNT, resType, @floatFromInt( value * amount ));
     }
   }
 
   pub inline fn logResMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "$ Logging resources metrics :" );
-    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Bank\t ( Access )\t[ Delta\t| Prod\tCons\t| Decay\t| Demand ]" );
+    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Count\t ( Access )\t[ Delta\t| Prod\tCons\t| Decay\t| Demand ]" );
     def.qlog( .CONT, 0, @src(), "====================================================================================================" );
 
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
 
-      const resCount  : u64 = @intFromFloat( self.resState.get( .BANK,     resType ));
-      const resDelta  : i64 = @intFromFloat( self.resState.get( .DELTA,    resType ));
-      const resProd   : u64 = @intFromFloat( self.resState.get( .GEN_PROD, resType ));
-      const resCons   : u64 = @intFromFloat( self.resState.get( .GEN_CONS, resType ));
-   //const resGrowth : u64 = @intFromFloat( self.resState.get( .GROWTH,   resType ));
-      const resDecay  : u64 = @intFromFloat( self.resState.get( .DECAY,    resType ));
-      const resReq    : u64 = @intFromFloat( self.resState.get( .MAX_DEM,  resType ));
-      const resAccess : f32 = @floatCast(    self.resState.get( .GEN_ACS,  resType ));
+      const resCount  : f64 = self.resState.get( .COUNT,    resType );
+      const resDelta  : f64 = self.resState.get( .DELTA,    resType );
+      const resProd   : f64 = self.resState.get( .GEN_PROD, resType );
+      const resCons   : f64 = self.resState.get( .GEN_CONS, resType );
+    //const resGrowth : f64 = self.resState.get( .GROWTH,   resType );
+      const resDecay  : f64 = self.resState.get( .DECAY,    resType );
+      const resReq    : f64 = self.resState.get( .MAX_DEM,  resType );
+      const resAccess : f64 = self.resState.get( .GEN_ACS,  resType );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d}\t ( {d:.4} )\t[ {d}\t| +{d}\t-{d}\t| -{d}\t| {d}\t ]",
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t ( {d:.6} )\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t| -{d:.0}\t| {d:.0}\t ]",
         .{ @tagName( resType ), resCount, resAccess, resDelta, resProd, resCons, resDecay, resReq });
     }
   }
@@ -236,22 +237,22 @@ pub const Economy = struct
 
   pub inline fn getInfCount( self : *const Economy, infType : InfType ) u64
   {
-    return @intFromFloat( self.infState.get( .BANK, infType ));
+    return @intFromFloat( self.infState.get( .COUNT, infType ));
   }
   pub inline fn setInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
-    self.infState.set( .BANK, infType, @floatFromInt( value ));
+    self.infState.set( .COUNT, infType, @floatFromInt( value ));
   }
   pub inline fn addInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
     const current = self.getInfCount( infType );
-    self.infState.set( .BANK, infType, @floatFromInt( value + current ));
+    self.infState.set( .COUNT, infType, @floatFromInt( value + current ));
   }
   pub inline fn subInfCount( self : *Economy, infType : InfType, value : u64 ) void
   {
     const current = self.getInfCount( infType );
     const count   = @min( value, current );
-    self.infState.set( .BANK, infType, @floatFromInt( current - count ));
+    self.infState.set( .COUNT, infType, @floatFromInt( current - count ));
 
     if( value != count )
     {
@@ -284,12 +285,13 @@ pub const Economy = struct
 
   pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
   {
-    self.infState.set( .BANK, .HOUSING,  @floatFromInt( value * 320 ));
-    self.infState.set( .BANK, .HABITAT,                           0  );
-    self.infState.set( .BANK, .STORAGE,  @floatFromInt( value *  40 ));
-    self.infState.set( .BANK, .ASSEMBLY, @floatFromInt( value *  40 ));
+    self.infState.set( .COUNT, .HOUSING,  @floatFromInt( value * 320 ));
+    self.infState.set( .COUNT, .HABITAT,                           0  );
+    self.infState.set( .COUNT, .STORAGE,  @floatFromInt( value *  40 ));
+    self.infState.set( .COUNT, .ASSEMBLY, @floatFromInt( value *  40 ));
 
     self.updateResCaps();
+    self.updatePopCaps();
   }
 
   pub inline fn logInfMetrics( self : *const Economy ) void
@@ -298,12 +300,13 @@ pub const Economy = struct
 
     inline for( 0..infTypeC )| f |
     {
-      const infType  = InfType.fromIdx( f );
-      const infCount : u64 = @intFromFloat( self.infState.get( .BANK,  infType ));
-      const infDelta : i64 = @intFromFloat( self.infState.get( .DELTA, infType ));
-      const infBonus : u64 = infCount * infType.getMetric_u64( .CAPACITY );
+      const infType = InfType.fromIdx( f );
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d}\t +{d}\t) [ {d} ]", .{ @tagName( infType ), infCount, infBonus, infDelta });
+      const infCount : f64 = self.infState.get( .COUNT, infType );
+      const infDelta : f64 = self.infState.get( .DELTA, infType );
+      const infBonus : f64 = infCount * infType.getMetric_f64( .CAPACITY );
+
+      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t +{d:.0}\t) [ {d:.0} ]", .{ @tagName( infType ), infCount, infBonus, infDelta });
     }
   }
 
@@ -312,22 +315,22 @@ pub const Economy = struct
 
   pub inline fn getIndCount( self : *const Economy, indType : IndType ) u64
   {
-    return @intFromFloat( self.indState.get( .BANK, indType ));
+    return @intFromFloat( self.indState.get( .COUNT, indType ));
   }
   pub inline fn setIndCount( self : *Economy, indType : IndType, value : u64 ) void
   {
-    self.indState.set( .BANK, indType, @floatFromInt( value ));
+    self.indState.set( .COUNT, indType, @floatFromInt( value ));
   }
   pub inline fn addIndCount( self : *Economy, indType : IndType, value : u64 ) void
   {
     const current = self.getIndCount( indType );
-    self.indState.set( .BANK, indType, @floatFromInt( current + value ));
+    self.indState.set( .COUNT, indType, @floatFromInt( current + value ));
   }
   pub inline fn subIndCount( self : *Economy, indType : IndType, value : u64 ) void
   {
     const current = self.getIndCount( indType );
     const count   = @min( value, current );
-    self.indState.set( .BANK, indType, @floatFromInt( current - count ));
+    self.indState.set( .COUNT, indType, @floatFromInt( current - count ));
 
     if( value != count )
     {
@@ -358,17 +361,17 @@ pub const Economy = struct
 
   pub inline fn debugSetIndCounts( self : *Economy, value : u64 ) void
   {
-    self.indState.set( .BANK, .AGRONOMIC,   @floatFromInt( value * 10 ));
-    self.indState.set( .BANK, .HYDROPONIC,  @floatFromInt( value * 10 ));
-    self.indState.set( .BANK, .WATER_PLANT, @floatFromInt( value * 10 ));
-    self.indState.set( .BANK, .SOLAR_PLANT, @floatFromInt( value * 10 ));
-    self.indState.set( .BANK, .POWER_PLANT, @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .AGRONOMIC,   @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value * 10 ));
 
-    self.indState.set( .BANK, .REFINERY,    @floatFromInt( value *  5 ));
-    self.indState.set( .BANK, .PROBE_MINE,                          0  );
-    self.indState.set( .BANK, .GROUND_MINE, @floatFromInt( value * 10 ));
-    self.indState.set( .BANK, .FOUNDRY,     @floatFromInt( value * 10 ));
-    self.indState.set( .BANK, .FACTORY,     @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *  5 ));
+    self.indState.set( .COUNT, .PROBE_MINE,                          0  );
+    self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value * 10 ));
+    self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value * 10 ));
   }
 
   pub inline fn logIndMetrics( self : *const Economy ) void
@@ -377,65 +380,115 @@ pub const Economy = struct
 
     inline for( 0..indTypeC )| d |
     {
-      const indType  = IndType.fromIdx( d );
-      const indCount : u64 = @intFromFloat( self.indState.get( .BANK,    indType ));
-      const indDelta : i64 = @intFromFloat( self.indState.get( .DELTA,   indType ));
-      const indRatio : f64 =                self.indState.get( .ACT_LVL, indType );
+      const indType = IndType.fromIdx( d );
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d}\t( {d:.4} )\t[ {d} ]", .{ @tagName( indType ), indCount, indRatio, indDelta });
+      const indCount : f64 = self.indState.get( .COUNT,   indType );
+      const indDelta : f64 = self.indState.get( .DELTA,   indType );
+      const indRatio : f64 = self.indState.get( .ACT_LVL, indType );
+
+      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t( {d:.4} )\t[ {d:.0} ]", .{ @tagName( indType ), indCount, indRatio, indDelta });
     }
   }
 
 
   // ================================ POPULATION ================================
 
-  pub fn getPopCap( self : *const Economy ) u64
+  pub fn getTotalPopCap( self : *const Economy ) u64
   {
-    return self.getInfCount( .HOUSING ) * InfType.HOUSING.getMetric_u64( .CAPACITY );
-  }
+    var totalCap : u64 = 0;
 
-
-  pub inline fn getPopCount( self : *const Economy ) u64
-  {
-    return @intFromFloat( self.popMetrics.get( .COUNT ));
-  }
-  pub inline fn setPopCount( self : *Economy, value : u64 ) void
-  {
-    self.popMetrics.set( .COUNT, @floatFromInt( value ));
-  }
-  pub inline fn addPopCount( self : *Economy, value : u64 ) void
-  {
-    const cap     = self.getPopCap();
-    const current = self.getPopCount();
-    const new_val = @min( value + current, cap );
-
-    if( new_val == cap )
+    inline for( 0..popTypeC )| p |
     {
-      def.log( .WARN, 0, @src(), "@ Tried to add {d} pops to economy, but only had space for {d}", .{ value, new_val - current });
-    }
-    self.popMetrics.set( .COUNT, @floatFromInt( new_val ));
-  }
-  pub inline fn subPopCount( self : *Economy, value : u64 ) void
-  {
-    const current = self.getPopCount();
-    const count   = @min( value, current );
-    self.popMetrics.set( .COUNT, @floatFromInt( current - count ));
+      const popType = PopType.fromIdx( p );
 
-    if( value != count )
-    {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} pops from economy, but only had {d} left", .{ value, count });
+      totalCap += self.getPopCap( popType );
     }
+
+    return totalCap;
+  }
+  pub inline fn getTotalPopCount( self : *const Economy ) u64
+  {
+    var totalCount : u64 = 0;
+
+    inline for( 0..popTypeC )| p |
+    {
+      const popType = PopType.fromIdx( p );
+
+      totalCount += self.getPopCount( popType );
+    }
+
+    return totalCount;
+  }
+
+  pub fn updatePopCaps( self : *Economy ) void
+  {
+    inline for( 0..popTypeC )| r |
+    {
+      const popType = PopType.fromIdx( r );
+      const popCost = popType.getMetric_f64( .HSNG_COST );
+
+      const infType  = popType.getInfStore();
+      const capacity = infType.getMetric_f64( .CAPACITY );
+      const infCount = self.infState.get( .COUNT, infType );
+
+      self.popState.set( .LIMIT, popType, infCount * capacity / popCost );
+    }
+  }
+  pub inline fn getPopCap( self : *const Economy, popType : PopType ) u64
+  {
+    return @intFromFloat( self.popState.get( .LIMIT, popType ));
+  }
+  pub inline fn getPopCount( self : *const Economy, popType : PopType ) u64
+  {
+    return @intFromFloat( self.popState.get( .COUNT, popType ));
+  }
+
+  /// Ignores popCap
+  pub inline fn setPopCount( self : *Economy, popType : PopType, value : u64 ) void
+  {
+    self.popState.set( .COUNT, popType, @floatFromInt( value ));
+  }
+  pub inline fn addPopCount( self : *Economy, popType : PopType, value : u64 ) void
+  {
+    const cap      = self.getPopCap(   popType );
+    const oldCount = self.getPopCount( popType );
+    const newCount = @min( value +| oldCount, cap );
+
+    if( newCount - oldCount != value )
+    {
+      def.log( .WARN, 0, @src(), "@ Tried to add {d} pops to economy, but only had space for {d}", .{ value, newCount - oldCount });
+    }
+    self.setPopCount( popType, newCount );
+  }
+  pub inline fn subPopCount( self : *Economy, popType : PopType, value : u64 ) void
+  {
+    const oldCount = self.getPopCount( popType );
+    const newCount = @max( oldCount -| value, 0 ); // Writen like this for clarity
+
+    if( oldCount - newCount != value )
+    {
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} pops from economy, but only had {d} left", .{ value, oldCount - newCount });
+    }
+    self.setPopCount( popType, newCount );
   }
 
 
   pub fn logPopMetrics( self : *const Economy ) void
   {
-    const popCount  : u64 = @intFromFloat( self.popMetrics.get( .COUNT  ));
-    const popDelta  : i64 = @intFromFloat( self.popMetrics.get( .DELTA  ));
-    const popAccess : f64 =                self.popMetrics.get( .ACTIVITY );
-
     def.qlog( .INFO, 0, @src(), "$ Logging population metrics : " );
-    def.log(  .CONT, 0, @src(), "Human\t: {d}\t/ {d}\t[ {d} ]\t( {d:.3} )", .{ popCount, self.getPopCap(), popDelta, popAccess });
+
+    inline for( 0..popTypeC )| p |
+    {
+      const popType  = PopType.fromIdx( p );
+
+      const popCount  : f64 = self.popState.get( .COUNT,   popType );
+      const popCap    : f64 = self.popState.get( .LIMIT,   popType );
+      const popDelta  : f64 = self.popState.get( .DELTA,   popType );
+      const popAccess : f64 = self.popState.get( .FLM_LVL, popType );
+
+      def.log(  .CONT, 0, @src(), "{s}\t: {d:.0}\t/ {d:.0}\t[ {d:.0} ]\t( {d:.3} )", .{ @tagName( popType ), popCount, popCap, popDelta, popAccess });
+    }
+
   }
 
 
@@ -591,7 +644,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
     if( consumeParts )
     {
-      const availParts  = self.resState.get( .BANK, .PART );
+      const availParts  = self.resState.get( .COUNT, .PART );
       const partCost    = c.getPartCost();
 
       if( availParts < partCost )
@@ -609,7 +662,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
       const totalCost = @ceil(  builtAmount * partCost );
 
       // Deduct parts
-      self.resState.sub( .BANK,     .PART, totalCost );
+      self.resState.sub( .COUNT,     .PART, totalCost );
       self.resState.add( .GEN_CONS, .PART, totalCost );
     }
 
@@ -619,13 +672,13 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     {
       .inf => | infType |
       {
-        self.infState.add( .BANK,  infType, builtAmount );
+        self.infState.add( .COUNT,  infType, builtAmount );
         self.infState.add( .BUILT, infType, builtAmount );
         self.infState.add( .DELTA, infType, builtAmount );
       },
       .ind => | indType |
       {
-        self.indState.add( .BANK,  indType, builtAmount );
+        self.indState.add( .COUNT,  indType, builtAmount );
         self.indState.add( .BUILT, indType, builtAmount );
         self.indState.add( .DELTA, indType, builtAmount );
       },
@@ -681,11 +734,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
   pub inline fn resetCountMetrics( self : *Economy ) void
   {
-    self.popMetrics.set( .DELTA,    0.0 );
-    self.popMetrics.set( .ACTIVITY, 0.0 );
-
-    self.avgIndActivity = 0.0;
-    self.avgResAccess   = 0.0;
+    self.avgPopFulfilment = 0.0;
+    self.avgIndActivity   = 0.0;
+    self.avgResAccess     = 0.0;
 
 
     inline for( 0..resTypeC )| r |
@@ -693,6 +744,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
       const res = ResType.fromIdx( r );
 
       self.resState.set( .DELTA,    res, 0.0 );
+      self.resState.set( .PRICE_D,  res, 0.0 );
 
       self.resState.set( .DECAY,    res, 0.0 );
       self.resState.set( .GROWTH,   res, 0.0 );
@@ -703,9 +755,26 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
       self.resState.set( .GEN_PROD, res, 0.0 );
       self.resState.set( .GEN_CONS, res, 0.0 );
 
+      self.resState.set( .TRD_EXP,  res, 0.0 );
+      self.resState.set( .TRD_IMP,  res, 0.0 );
+
       self.resState.set( .GEN_ACS,  res, 0.0 );
       self.resState.set( .POP_ACS,  res, 0.0 );
       self.resState.set( .IND_ACS,  res, 0.0 );
+    }
+    inline for( 0..popTypeC )| p |
+    {
+      const pop = PopType.fromIdx( p );
+
+      self.popState.set( .DELTA,   pop, 0.0 );
+
+      self.popState.set( .DEATH,   pop, 0.0 );
+      self.popState.set( .BIRTH,   pop, 0.0 );
+
+      self.popState.set( .EXPENSE, pop, 0.0 );
+      self.popState.set( .REVENUE, pop, 0.0 );
+
+      self.popState.set( .FLM_LVL, pop, 0.0 );
     }
     inline for( 0..infTypeC )| f |
     {
@@ -771,7 +840,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
   {
     if( self.buildQueue != null )
     {
-      const assemblyCount = self.infState.get( .BANK, .ASSEMBLY );
+      const assemblyCount = self.infState.get( .COUNT, .ASSEMBLY );
       const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
       const assemblyCap   = @ceil( assemblyCount * assemblyRate );
 
@@ -802,8 +871,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     // NOTE : updated by econBuilder
 
     // HOUSING
-    const popCount : f64 = @floatFromInt( self.getPopCount() );
-    const popCap   : f64 = @floatFromInt( self.getPopCap()   );
+    const popCount : f64 = @floatFromInt( self.getTotalPopCount() );
+    const popCap   : f64 = @floatFromInt( self.getTotalPopCap()   );
 
     self.infState.set( .USE_LVL, .HOUSING, popCount / popCap );
 
@@ -897,11 +966,11 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     }
   }
 
-  const AUTO_BUILD_SUPPLY_LIMIT : f64 = 100.0;
+  const AUTO_BUILD_SUPPLY_LIMIT : f64 = 16.0;
 
   pub fn debugAutoBuild2( self : *Economy ) void
   {
-    const popCount   : f64 = self.popMetrics.get( .COUNT );
+    const popCount : f64 = self.popState.get( .COUNT, .HUMAN );
 
     if( self.buildQueue.?.getEntryCount() < 32 )
     {
@@ -975,7 +1044,9 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
   pub fn tickEcon( self : *Economy ) void
   {
     self.updateResCaps();
+    self.updatePopCaps();
     self.updateAreas();
+
     self.tickEcology();
     self.applyInflation();
     self.calcBuildDemand();

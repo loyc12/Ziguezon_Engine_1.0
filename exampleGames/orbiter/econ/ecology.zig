@@ -10,12 +10,14 @@ const ecn = gdf.ecn;
 const PowerSrc = gdf.PowerSrc;
 const VesType  = gdf.VesType;
 const ResType  = gdf.ResType;
+const PopType  = gdf.PopType;
 const InfType  = gdf.InfType;
 const IndType  = gdf.IndType;
 
 const powerSrcC = PowerSrc.count;
 const vesTypeC  = VesType.count;
 const resTypeC  = ResType.count;
+const popTypeC  = PopType.count;
 const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
@@ -35,7 +37,6 @@ pub const EcoState = struct
   pollutionPerPop : f64 = POLLUTION_PER_POP,
 
   surfaceArea : f64,
-  population  : f64 = 0.0,
   development : f64 = 0.0,
   pollution   : f64 = 0.0,
   ecoFactor   : f64 = 1.0,
@@ -96,38 +97,41 @@ pub const EcoState = struct
 
   inline fn calcPollution( self : *EcoState, econ : *const ecn.Economy ) void
   {
-    self.population = econ.popMetrics.get( .COUNT );
-
     var pollutionAmount : f64 = 0.0;
-    var averageActivity : f64 = 0.0;
 
     // Pop pollution
-    pollutionAmount += self.population * self.pollutionPerPop;
+    for( 0..popTypeC )| p |
+    {
+      const popType = PopType.fromIdx( p );
+
+      var tmp  = popType.getMetric_f64( .POLLUTION );
+          tmp *= econ.popState.get( .COUNT, popType );
+
+      pollutionAmount += tmp;
+    }
 
     // Ind pollution
     for( 0..indTypeC )| d |
     {
-      const activity = econ.indState.get( .ACT_LVL, IndType.fromIdx( d ));
       const indType  = IndType.fromIdx( d );
+      const activity = econ.indState.get( .ACT_LVL, indType );
 
       var tmp  = indType.getMetric_f64( .POLLUTION );
-          tmp *= econ.indState.get( .BANK, indType );
+          tmp *= econ.indState.get( .COUNT, indType );
           tmp *= activity;
 
       pollutionAmount += tmp;
-      averageActivity += activity;
     }
-
-    averageActivity /= indTypeC;
 
     // Inf pollution                                  // TODO : add pollution reducting inf
     for( 0..infTypeC )| f |
     {
       const infType = InfType.fromIdx( f );
+      const useRate = econ.infState.get( .USE_LVL, infType );
 
       var tmp  = infType.getMetric_f64( .POLLUTION );
-          tmp *= econ.infState.get( .BANK, infType );
-          tmp *= averageActivity;                     // TODO : used infrastruct usage rate instead
+          tmp *= econ.infState.get( .COUNT, infType );
+          tmp *= useRate;
 
       pollutionAmount += tmp;
     }

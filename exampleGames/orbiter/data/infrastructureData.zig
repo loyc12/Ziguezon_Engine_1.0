@@ -21,7 +21,7 @@ pub const InfType = enum( u8 )
 //BATTERY,      // Grants energy storage capacity
 
 //AMENITIES,    // Services population needs
-//EDUCATION,    // Generate research ( efficiency multiplier )
+//EDUCATION,    // Generate research
 //COMMERCE,     // Increase tax revenues ?
 
 //ROAD_NETWORK, // Grants cargo  transport capacity locally
@@ -71,11 +71,11 @@ pub const InfType = enum( u8 )
 
   pub fn getMetric_f32( self : InfType, metric : InfMetricEnum ) f32
   {
-    return infMetricData.get( self, metric );
+    return @floatCast( infMetricData.get( self, metric ));
   }
   pub fn getMetric_f64( self : InfType, metric : InfMetricEnum ) f64
   {
-    return @floatCast( infMetricData.get( self, metric ));
+    return infMetricData.get( self, metric );
   }
   pub fn getMetric_u32( self : InfType, metric : InfMetricEnum ) u32
   {
@@ -100,7 +100,6 @@ pub const InfMetricEnum = enum( u8 )
   MAINT_RATE,
   POLLUTION,
   CAPACITY,
-//POWER_SRC,
 };
 
 
@@ -164,7 +163,7 @@ pub const InfStateEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  BANK,    // Current infrastructure count
+  COUNT,   // Current infrastructure count
   DELTA,   // Net total change last tick
 
   DECAY,   // Amount lost to building decay   last tick
@@ -172,6 +171,8 @@ pub const InfStateEnum = enum( u8 )
 
   EXPENSE, // Amount of money used for maintaining the infrastructure last tick
   REVENUE, // Amount of money gained from running  the infrastructure last tick
+  PROFIT,  // Income - expense
+  SAVINGS, // Stored profits from previous ticks ( decays via inflation )
 
   USE_LVL, // How much of the available infrastructure was used last tick
 };

@@ -160,7 +160,7 @@ pub const BuildQueue = struct
     {
       var entriesClosed : u64 = 0;
 
-      const assemblyCount = econ.infState.get( .BANK, .ASSEMBLY );
+      const assemblyCount = econ.infState.get( .COUNT, .ASSEMBLY );
       const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
       const assemblyCap   = @ceil( assemblyCount * assemblyRate );
 

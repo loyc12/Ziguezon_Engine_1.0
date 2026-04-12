@@ -257,12 +257,14 @@ pub const ECON_TRAVEL_TABLE = &trde_d.econTravelTable;
     const powr_d = @import( "data/powerData.zig"          );
     const vesl_d = @import( "data/vesselData.zig"         );
     const rsrc_d = @import( "data/resourceData.zig"       );
+    const popl_d = @import( "data/populationData.zig"     );
     const nfrs_d = @import( "data/infrastructureData.zig" );
     const ndst_d = @import( "data/industryData.zig"       );
 
 pub const POWR_DATA = &powr_d.powerData;
 pub const VESL_DATA = &vesl_d.vesselData;
 pub const RSRC_DATA = &rsrc_d.resourceData;
+pub const POPL_DATA = &popl_d.populationData;
 pub const NFRS_DATA = &nfrs_d.infrastructureData;
 pub const NDST_DATA = &ndst_d.industryData;
 
@@ -274,6 +276,7 @@ pub fn loadStaticDataMatrices() void
   powr_d.loadPowerSrcData();
   vesl_d.loadVesselData();
   rsrc_d.loadResourceData();
+  popl_d.loadPopulationData();
   nfrs_d.loadInfrastructureData();
   ndst_d.loadIndustryData();
 }

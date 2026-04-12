@@ -6,6 +6,7 @@ const gdf = @import( "../gameDefs.zig"    );
 
 
 const ResType = gdf.ResType;
+const PopType = gdf.PopType;
 const InfType = gdf.InfType;
 const IndType = gdf.IndType;
 
@@ -47,13 +48,14 @@ pub const EconLoc = enum( u8 )
 pub const ResStockData = def.GenDataLine( f64, ResType );
 pub const ResFlowData  = def.GenDataCube( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
 
-// NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ] ( individualized to each industry independantly )
-pub const IndFlowData  = def.GenDataCube( f64, IndType, FlowPhaseEnum, ResType );
+// NOTE : de-agregated version of ResFlowData[ POP ][ phase ][ res ]
+pub const PopFlowData       = def.GenDataCube( f64, PopType, FlowPhaseEnum, ResType );
+pub const PopFulfilmentData = def.GenDataLine( f64, PopType );
 
-// NOTE : individual industry's max activity level
+// NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ]
+pub const IndFlowData     = def.GenDataCube( f64, IndType, FlowPhaseEnum, ResType );
 pub const IndActivityData = def.GenDataLine( f64, IndType );
 
-pub const IndResAccessData = def.GenDataGrid( f64, IndType, ResType );
 
 
 pub const FlowAgentEnum = enum( u8 )
@@ -80,7 +82,7 @@ pub const FlowPhaseEnum = enum( u8 )
   REAL_PROD, // Realized production               ( after activity / access applied )
   REAL_CONS, // Realized consumption              ( after activity / access applied )
 
-  ACCESS,    // Resource demand satisfaction rate
+  ACCESS,    // Demand satisfaction rate
 };
 
 
@@ -102,20 +104,20 @@ pub const AreaMetricEnum = enum( u8 )
 };
 
 
-// ================================ POPULATION METRIC ARRAY ================================
-// NOTE : used in Economy
-
-pub const PopMetricData = def.GenDataLine( f64, PopMetricEnum );
-
-pub const PopMetricEnum = enum( u8 )
-{
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  COUNT,    // Total amount of population last tick
-  DELTA,    // Changes in population last tick
-
-  BIRTH,
-  DEATH,
-
-  ACTIVITY, // Population's access to demanded goods last tick
-};
+//// ================================ POPULATION METRIC ARRAY ================================
+//// NOTE : used in Economy
+//
+//pub const PopMetricData = def.GenDataLine( f64, PopMetricEnum );
+//
+//pub const PopMetricEnum = enum( u8 )
+//{
+//  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+//
+//  COUNT,    // Total amount of population last tick
+//  DELTA,    // Changes in population last tick
+//
+//  BIRTH,
+//  DEATH,
+//
+//  ACTIVITY, // Population's access to demanded goods last tick
+//};
