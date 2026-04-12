@@ -39,7 +39,7 @@ inline fn initStar( bodyComp : *bdy.BodyComp, bodyName : BodyName ) void
   }
 }
 
-inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : BodyName, orbitedId : def.EntityId ) void
+fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : BodyName, orbitedId : def.EntityId ) void
 {
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
@@ -70,7 +70,29 @@ inline fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp,
 
   bodyComp.softInitAllEcons();
 
-  if( bodyName == .TERRA ){ bodyComp.quickInitEcon( .GROUND, true ); }
+  if( bodyName == .TERRA )
+  {
+    bodyComp.quickInitEcon( .GROUND, true );
+    bodyComp.debugSetEconState( .GROUND, 100_000 ); // Setup a 1B pop econ
+
+  }
+  if( gdf.G_FLAGS.STRESS_TEST )
+  {
+    inline for( 0..gdf.EconLoc.count )| l |
+    {
+      const loc = gdf.EconLoc.fromIdx( l );
+
+      if( bodyComp.bodyType.canHostEconLoc( loc ))
+      {
+        if( bodyName != .TERRA or loc != .GROUND )
+        {
+          bodyComp.quickInitEcon(     loc, true );
+          bodyComp.debugSetEconState( loc, @divFloor( gdf.G_FLAGS.DEFAULT_POP, 10_000 )); // Setup a 10K pop econ
+          bodyComp.getEcon( loc ).addInfCount( .HABITAT, @divFloor( gdf.G_FLAGS.DEFAULT_POP, 10 ));
+        }
+      }
+    }
+  }
 }
 
 
@@ -98,11 +120,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
       3  => initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 ),
       4  => initStellarBody( &orbitComp, &bodyComp, .VENUS,   1 ),
-      5  => // EARTH
-      {
-            initStellarBody( &orbitComp, &bodyComp, .TERRA,   1 );
-            bodyComp.debugSetEconState( .GROUND, 800_000 ); // Setup a 8B pop econ
-      },
+      5  => initStellarBody( &orbitComp, &bodyComp, .TERRA,   1 ),
       6  => initStellarBody( &orbitComp, &bodyComp, .LUNA,    5 ),
       7  => initStellarBody( &orbitComp, &bodyComp, .MARS,    1 ),
       8  => initStellarBody( &orbitComp, &bodyComp, .PHOBOS,  7 ),
@@ -257,6 +275,8 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
   {
     def.qlog( .DEBUG, 0, @src(), "==== Ticking all econs once ====" );
 
+    var econCount : u32 = 0;
+
     inline for( 1..nttArr.len )| idx |
     {
       const id    = nttArr[ idx ].id;
@@ -265,7 +285,7 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
 
       if( trans != null and body != null )
       {
-        body.?.tickAllEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
+        econCount += body.?.tickAllEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
       }
       else
       {
@@ -275,8 +295,10 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
 
     // Update travel table from the fresh orbital data generated in tickAllEcons()
     gdf.trfSlvr.updateTravelTable();
+
+    def.log( .DEBUG, 0, @src(), "Ticked {d} distinct economies", .{ econCount });
   }
-  def.log( .DEBUG, 0, @src(), "Ticked global economy {d} time(s)", .{ stepCount });
+  def.log( .DEBUG, 0, @src(), "==== Ticked global economy {d} time(s) ====", .{ stepCount });
 }
 
 pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void

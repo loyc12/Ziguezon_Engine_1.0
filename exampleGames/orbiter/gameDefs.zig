@@ -31,6 +31,7 @@ pub const BodyStore   = bdy.BodyComp.getStoreType();
 
 
 pub const G_CONSTS : GameConsts = .{};
+pub const G_FLAGS  : GameFlags  = .{};
 
 pub const GameConsts = struct
 {
@@ -56,6 +57,12 @@ pub const GameConsts = struct
 
   starId : def.EntityId = 1, // SUN
   homeId : def.EntityId = 5, // EARTH
+};
+
+pub const GameFlags = struct
+{
+  STRESS_TEST : bool = false,
+  DEFAULT_POP : f64  = 10_000,
 };
 
 

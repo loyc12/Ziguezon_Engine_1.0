@@ -721,7 +721,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     }
   }
 
-  // TODO : generalise this code
+  // TODO : generalize this function
   pub inline fn logTravelMetrics_TERRA( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) :" );

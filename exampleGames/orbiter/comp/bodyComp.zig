@@ -130,8 +130,11 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     }
   }
 
-  pub fn tickAllEcons( self : *BodyComp, orbiterPos : def.Vec2, orbiterVel : def.Vec2, starPos : def.Vec2 ) void
+  /// returns the number of econs ticked
+  pub fn tickAllEcons( self : *BodyComp, orbiterPos : def.Vec2, orbiterVel : def.Vec2, starPos : def.Vec2 ) u32
   {
+    var econCount : u32 = 0;
+
     for( 0..self.bodyType.getEconLocCount() )| i |
     {
       const loc  : gdf.EconLoc  = .fromIdx( i );
@@ -139,8 +142,12 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
       gdf.updateOrbitalDataEntry( self, loc, orbiterPos, orbiterVel, starPos );
 
-      _ = econ.tryTick( econ.sunshine ); // NOTE : econ sunshine updated in updateOrbitalDataEntry()
+      if( econ.tryTick( econ.sunshine )) // NOTE : econ sunshine updated in updateOrbitalDataEntry()
+      {
+        econCount += 1;
+      }
     }
+    return econCount;
   }
 
   pub fn logEcon( self : *const BodyComp, loc : gdf.EconLoc ) void
