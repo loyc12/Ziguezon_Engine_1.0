@@ -718,6 +718,14 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     //},
     }
 
+    // Update area metrics to prevent overshoot on successive calls
+    // TODO : VALIDATE
+    const builtArea = builtAmount * areaCost;
+    self.areaMetrics.add( .USED, builtArea );
+
+    const newAvail = self.areaMetrics.get( .CAP ) - self.areaMetrics.get( .USED );
+    self.areaMetrics.set( .AVAIL, @max( 0.0, newAvail ));
+
     return builtAmount;
   }
 
