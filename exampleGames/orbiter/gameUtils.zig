@@ -88,7 +88,6 @@ fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyNa
         {
           bodyComp.quickInitEcon(     loc, true );
           bodyComp.debugSetEconState( loc, @divFloor( gdf.G_FLAGS.DEFAULT_POP, 10_000 )); // Setup a 10K pop econ
-          bodyComp.getEcon( loc ).addInfCount( .HABITAT, @divFloor( gdf.G_FLAGS.DEFAULT_POP, 10 ));
         }
       }
     }

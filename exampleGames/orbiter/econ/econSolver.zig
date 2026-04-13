@@ -71,25 +71,26 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
 
   solver.calcPopResProd();  // Computes resource prod from population based on popCount
   solver.calcIndResProd();  // Computes resource prod from industry based on activity
-//solver.calcBldResCons();  // Computes resource prod from deconstruction ( selloffs )
-//solver.calcComResCons();  // Computes resource prod from imports
+//solver.calcBldResProd();  // Computes resource prod from deconstruction ( selloffs )
+//solver.calcComResProd();  // Computes resource prod from imports
 
   solver.applyGenResProd(); // Applies all resource production to economy
   solver.applyNatResProd(); // Adds free "wild" resources proportionally to ecology factor
 
 
-// ================ POST-CALC PHASE ================
+// ================ FINANCES PHASE ================
 
+  solver.clampResStocks();    // Clamps resource amounts to what their respective stores can handle
   solver.updateResPrices();   // Update res prices from real supply and demand
-//solver.updatePopFinances();
-//solver.updateMntFinances();
+
+  solver.updatePopFinances(); // Update monetary metrics for each population type
   solver.updateIndFinances(); // Update monetary metrics for each industry type
 //solver.updateComFinances();
 //solver.updateBldFinances();
 //solver.updateGovFinances();
 
 
-// ================ ECON UPDATE PHASE ================
+// ================ POST-CALC PHASE ================
 
   solver.calcPopDelta();    // Computes population delta based on access
 //solver.calcIndDelta();    // Computes industrial growth/decay based on profitability
@@ -595,6 +596,7 @@ const EconSolver = struct
     }
   }
 
+  /// Independent from GEN cons
   fn applyNatResCons( self : *EconSolver ) void
   {
     inline for( 0..resTypeC )| r |
@@ -616,6 +618,7 @@ const EconSolver = struct
 
 // ================================ PRODUCTION PHASE ================================
 
+  const POP_PROD_FLOOR : f64 = 0.2;
 
   fn calcPopResProd( self : *EconSolver ) void
   {
@@ -627,7 +630,8 @@ const EconSolver = struct
       inline for( 0..resTypeC )| r |
       {
         const resType     = ResType.fromIdx( r );
-        const realPopProd = popFulfilment * self.resFlowData.get( .POP, .MAX_PROD, resType );
+        const prodRate    = @max( popFulfilment, POP_PROD_FLOOR );
+        const realPopProd = prodRate * self.resFlowData.get( .POP, .MAX_PROD, resType );
 
         self.popFlowData.set( popType, .REAL_PROD, resType, realPopProd );
         self.resFlowData.add( .POP,    .REAL_PROD, resType, realPopProd );
@@ -674,6 +678,7 @@ const EconSolver = struct
     }
   }
 
+  /// Independent from GEN prod
   fn applyNatResProd( self : *EconSolver ) void
   {
     const ecoFactor = self.econ.getEcoFactor();
@@ -695,11 +700,118 @@ const EconSolver = struct
   }
 
 
-// ================================ FINANCE PHASE ================================
+// ================================ FINANCES PHASE ================================
 
+
+  fn clampResStocks( self : *EconSolver ) void      // TODO : save the wasted amounts as metrics
+  {
+    inline for( 0..resTypeC )| r |
+    {
+      const resType = ResType.fromIdx( r );
+
+      const resCap  = self.econ.resState.get( .LIMIT, resType );
+      const current = self.nextResStock.get( resType );
+
+      if( current > resCap )
+      {
+        // Clamp stock but do NOT adjust production metrics
+        // Industries consumed real inputs and produced real outputs — the overflow
+        // is a storage problem, not a production problem
+        // Prices will naturally suppress overproduction via supply > demand
+        self.nextResStock.set( resType, resCap );
+
+        def.log( .WARN, 0, @src(), "{s} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resType ), current, resCap, current - resCap });
+      }
+    }
+  }
+
+//  const resCap  = self.econ.resState.get( .LIMIT, resType );
+//  var   current = self.nextResStock.get( resType );
+//
+//  // Reduce nat production first
+//  if( current > resCap )
+//  {
+//    def.log( .WARN, 0, @src(), "{s} production would exceed resource cap : clamping NAT production", .{ @tagName( resType )});
+//
+//    const overflow  = current - resCap;
+//    const natProd   = self.resFlowData.get( .NAT, .REAL_PROD, resType );
+//    const delAmount = @min( overflow, natProd );
+//
+//    if( natProd > def.EPS )
+//    {
+//      self.resFlowData.sub( .NAT, .REAL_PROD, resType, delAmount );
+//      self.nextResStock.sub(                  resType, delAmount );
+//    }
+//  }
+//
+//  // Check if that solved the issue
+//  current = self.nextResStock.get( resType );
+//
+//  // Remove remaining overflow proportionally from all non-NAT producers
+//  // This ensures finances and prices only reflect resources that actually entered the economy
+//  if( current > resCap )
+//  {
+//    def.qlog( .CONT, 0, @src(), "still overflowing : clamping GEN production" );
+//
+//    // Clamps stocks even if that removes more than this's tick production amount
+//    // If this ever happens, it was most likely from a previous erroneous opperation ( ex : debugSet a stock value )
+//    // Overflow should never be greater than total production, as previous values should always have been capped anyways
+//    self.nextResStock.set( resType, resCap );
+//
+//    const genProd = self.resFlowData.get( .GEN, .REAL_PROD, resType );
+//
+//    if( genProd > def.EPS )
+//    {
+//      const overflow = current - resCap;
+//
+//      // How much of this tick's res prod is wasted
+//      const wasteFraction = @min( 1.0, overflow / genProd );
+//      const genWaste = genProd * wasteFraction;
+//
+//      self.resFlowData.sub( .GEN, .REAL_PROD, resType, genWaste );
+//
+//      // Reduce pop production
+//      inline for( 0..popTypeC )| p |
+//      {
+//        const popType = PopType.fromIdx( p );
+//        const popProd = self.popFlowData.get( popType, .REAL_PROD, resType );
+//
+//        if( popProd > def.EPS )
+//        {
+//          const popWaste = popProd * wasteFraction;
+//
+//          self.popFlowData.sub( popType, .REAL_PROD, resType, popWaste );
+//          self.resFlowData.sub( .POP,    .REAL_PROD, resType, popWaste );
+//        }
+//      }
+//
+//      // Reduce ind production
+//      inline for( 0..indTypeC )| d |
+//      {
+//        const indType = IndType.fromIdx( d );
+//        const indProd = self.indFlowData.get( indType, .REAL_PROD, resType );
+//
+//        if( indProd > def.EPS )
+//        {
+//          const indWaste = indProd * wasteFraction;
+//
+//          self.indFlowData.sub( indType, .REAL_PROD, resType, indWaste );
+//          self.resFlowData.sub( .IND,    .REAL_PROD, resType, indWaste );
+//        }
+//      }
+//
+//      // TODO : check all other possible non-NAT producers here
+//    }
+//  }
+//}
+//
+
+//fn updateBldFinances( self : *EconSolver ) void
+//fn updateComFinances( self : *EconSolver ) void
+//fn updateGovFinances( self : *EconSolver ) void
 
   const MAX_SCARC_RATIO  : f64 = 100.0;
-  const MIN_PRICE_FACTOR : f64 = 0.005;
+  const MIN_PRICE_FACTOR : f64 = 0.010;
 
   fn updateResPrices( self : *EconSolver ) void
   {
@@ -737,25 +849,103 @@ const EconSolver = struct
     }
   }
 
-//fn updatePopFinances( self : *EconSolver ) void
-//fn updateMntFinances( self : *EconSolver ) void
-//fn updateBldFinances( self : *EconSolver ) void
-//fn updateComFinances( self : *EconSolver ) void
-//fn updateGovFinances( self : *EconSolver ) void
+  const POP_MARGIN_FLOOR  : f64 = -2.5;
+
+  fn updatePopFinances( self : *EconSolver ) void
+  {
+    def.qlog( .INFO, 0, @src(), "$ LOGGING POP FINANCES :" );
+
+    const econ = self.econ;
+    inline for( 0..popTypeC )| p |
+    {
+      const popType = PopType.fromIdx( p );
+      var  popCount = econ.popState.get( .COUNT, popType );
+
+      const isPresent : bool = ( popCount > def.EPS );
+      if( !isPresent ){ popCount = 1.0; }
+
+      if( popCount > def.EPS )
+      {
+        var expense : f64 = 0.0;
+        var revenue : f64 = 0.0;
+        var profit  : f64 = 0.0;
+
+        // Calculating revenues and expenses
+        inline for( 0..resTypeC )| r |
+        {
+          const resType  = ResType.fromIdx( r );
+          const resPrice = econ.resState.get( .PRICE, resType );
+
+          if( isPresent )
+          {
+            expense += resPrice * self.popFlowData.get( popType, .REAL_CONS, resType );
+            revenue += resPrice * self.popFlowData.get( popType, .REAL_PROD, resType );
+          }
+          else // Theoritical profitability calculations
+          {
+            expense += resPrice * popType.getResCons_f64( resType );
+            revenue += resPrice * popType.getResProd_f64( resType );
+          }
+        }
+        profit = revenue - expense;
+
+        // TODO : add housing costs
+
+        // Calculating margin
+        const floor : f64 = POP_MARGIN_FLOOR;
+        var  margin : f64 = 0.0;
+
+        if(      revenue > def.EPS ){ margin = @max( floor, profit / revenue ); }
+        else if( expense > def.EPS ){ margin =       floor; }
 
 
-  const PROFITABILITY_FLOOR : f64 = -2.5;
-  const MARGIN_OFFSET       : f64 = -0.0;
+        // Updating econ metrics
+        econ.popState.set( .MARGIN, popType, margin );
+
+        const prevSavings = econ.popState.get( .SAVINGS, popType );
+
+        if( isPresent )
+        {
+          const nextSavings = prevSavings + profit;
+
+          // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
+          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}", .{ @tagName( popType ), popCount, nextSavings, revenue / popCount, expense / popCount, margin });
+
+          econ.popState.set( .EXPENSE,  popType, expense     );
+          econ.popState.set( .REVENUE,  popType, revenue     );
+          econ.popState.set( .PROFIT,   popType, profit      );
+          econ.popState.set( .SAVINGS,  popType, nextSavings );
+        }
+        else
+        {
+          def.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.1}\t| +N/A\t-N/A\t| {d:.4}", .{ @tagName( popType ), prevSavings, margin});
+
+          econ.popState.zero( .EXPENSE,  popType );
+          econ.popState.zero( .REVENUE,  popType );
+          econ.popState.zero( .PROFIT,   popType );
+
+          // TODO : transfer savings to gov if non-zero ( population died off )
+        }
+      }
+    }
+  }
+
+
+  // Minimum industry activity — prevents permanent shutdown death spiral
+  // Industries always "test" the market at this rate
+  const IND_MIN_ACT_TRGT  : f64 = 0.05;
+  const IND_MARGIN_FLOOR  : f64 = -2.5;
+  const IND_MARGIN_OFFSET : f64 = -0.0;
 
   fn updateIndFinances( self : *EconSolver ) void
   {
-    const econ = self.econ;
-    def.qlog( .INFO, 0, @src(), "$ LOGGING IND PROFITS :" );
+    def.qlog( .INFO, 0, @src(), "$ LOGGING IND FINANCES :" );
 
+    const econ = self.econ;
     inline for( 0..indTypeC )| d |
     {
-      const indType  = IndType.fromIdx( d );
-      var   indCount = econ.indState.get( .COUNT, indType );
+      const indType = IndType.fromIdx( d );
+      var  indCount = econ.indState.get( .COUNT, indType );
 
       const isPresent : bool = ( indCount > def.EPS );
       if( !isPresent ){ indCount = 1.0; }
@@ -774,8 +964,8 @@ const EconSolver = struct
 
           if( isPresent )
           {
-            expense += resPrice * self.indFlowData.get( indType, .MAX_CONS, resType );
-            revenue += resPrice * self.indFlowData.get( indType, .MAX_PROD, resType );
+            expense += resPrice * self.indFlowData.get( indType, .REAL_CONS, resType );
+            revenue += resPrice * self.indFlowData.get( indType, .REAL_PROD, resType );
           }
           else // Theoritical profitability calculations
           {
@@ -784,48 +974,52 @@ const EconSolver = struct
           }
         }
 
-        const mntRate    = indType.getMetric_f64(  .MAINT_RATE );
-        const partCost   = indType.getMetric_f64(  .PART_COST  );
+        // Calculating maintenance costs
+        const mntRate    = indType.getMetric_f64(  .MAINT_RATE   );
+        const partCost   = indType.getMetric_f64(  .PART_COST    );
         const partPrice  = self.econ.resState.get( .PRICE, .PART );
 
         expense += indCount * partCost * mntRate * partPrice;
+        profit   = revenue  - expense;
 
 
         // Calculating margin and activity target
-        const floor : f64 = PROFITABILITY_FLOOR;
+        const floor : f64 = IND_MARGIN_FLOOR;
         var  margin : f64 = 0.0;
 
-        profit = revenue - expense;
-
-        if(      revenue > def.EPS ){ margin = @max( floor, ( revenue - expense ) / revenue ); }
+        if(      revenue > def.EPS ){ margin = @max( floor, profit / revenue ); }
         else if( expense > def.EPS ){ margin =       floor; }
 
-        const activityTarget = self.maxIndActivity * def.sigmoid( margin + MARGIN_OFFSET, 8.0 ); // NOTE : lower K for smoother transitioning
-        // NOTE : Large profits will tend to 1.0, large losses will tend to 0.0
-
+        // Large profits will push target towards 1.0, large losses will push it towards 0.0
+        var activityTarget = self.maxIndActivity * def.sigmoid( margin + IND_MARGIN_OFFSET, 8.0 ); // NOTE : lower K for smoother transitioning
+            activityTarget = def.clmp( activityTarget, IND_MIN_ACT_TRGT, 1.00 );
 
         // Updating econ metrics
+        econ.indState.set( .MARGIN,   indType, margin         );
         econ.indState.set( .ACT_TRGT, indType, activityTarget );
 
-        const capital = econ.indState.get( .CAPITAL, indType );
+        const prevCapital = econ.indState.get( .CAPITAL, indType );
 
         if( isPresent )
         {
-          // NOTE : Expense and revenues are logged per unit for ease of comparison, but stored as totals
-          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}\t{d:.4}%", .{ @tagName( indType ), indCount, capital, revenue / indCount, expense / indCount, margin, activityTarget * 100.0 });
+          const nextCapital = prevCapital + profit;
 
-          econ.indState.set( .EXPENSE,  indType, expense );
-          econ.indState.set( .REVENUE,  indType, revenue );
-          econ.indState.set( .PROFIT,   indType, profit  );
-          econ.indState.set( .CAPITAL,  indType, profit + capital );
+          // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
+          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}\t{d:.4}%", .{ @tagName( indType ), indCount, nextCapital, revenue / indCount, expense / indCount, margin, activityTarget * 100.0 });
+
+          econ.indState.set( .EXPENSE,  indType, expense     );
+          econ.indState.set( .REVENUE,  indType, revenue     );
+          econ.indState.set( .PROFIT,   indType, profit      );
+          econ.indState.set( .CAPITAL,  indType, nextCapital );
         }
         else
         {
-          def.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.6}\t| N/A\t-N/A\t| {d:.6}\t{d:.6}%", .{ @tagName( indType ), capital, margin, activityTarget * 100.0 });
+          def.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.1}\t| +N/A\t-N/A\t| {d:.4}\t{d:.4}%", .{ @tagName( indType ), prevCapital, margin, activityTarget * 100.0 });
 
           econ.indState.zero( .EXPENSE,  indType );
           econ.indState.zero( .REVENUE,  indType );
           econ.indState.zero( .PROFIT,   indType );
+
           // TODO : transfer capital to gov if non-zero ( industry went insolvent )
         }
       }

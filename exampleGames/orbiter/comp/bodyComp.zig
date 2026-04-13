@@ -102,9 +102,9 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     {
       if( loc == .GROUND )
       {
-        if( self.name == .TERRA ){ econ.hardInit( loc, self.getSurfaceArea(), 0.6, true  ); } // TERRA is hardocded to have an atmosphere
-        else{                      econ.hardInit( loc, self.getSurfaceArea(), 0.1, false ); }
-      } else{                      econ.hardInit( loc, 1_000_000_000_000_000, 1.0, false ); }
+        if( self.name == .TERRA ){ econ.hardInit( loc, self.getSurfaceArea(), 0.60, true  ); } // TERRA is hardcoded to have an atmosphere
+        else{                      econ.hardInit( loc, self.getSurfaceArea(), 0.25, false ); }
+      } else{                      econ.hardInit( loc, 1_000_000_000_000_000, 1.00, false ); }
 
       econ.isActive = activate;
     }

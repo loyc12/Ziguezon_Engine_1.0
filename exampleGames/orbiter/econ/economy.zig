@@ -140,9 +140,9 @@ pub const Economy = struct
   // Setups the economy needed to support value * 10k pop
   pub inline fn debugSetEconState( self : *Economy, value : u64 ) void
   {
-    self.setPopCount( .HUMAN, value * 10_000 );
-    self.debugSetIndCounts( value );
     self.debugSetInfCounts( value );
+    self.debugSetIndCounts( value );
+    self.setPopCount( .HUMAN, value * 10_000 );
     self.debugSetResCounts( value );
   }
 
@@ -198,14 +198,16 @@ pub const Economy = struct
 
   pub inline fn debugSetResCounts(  self : *Economy, value : u64 ) void
   {
+    _ = value;
+
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
+      const resCap  = self.resState.get( .LIMIT, resType );
 
-      var amount : u64 = 1_000;
-      if( resType == .WORK ){ amount *= 10; }
-
-      self.resState.set( .COUNT, resType, @floatFromInt( value * amount ));
+    // Start at 20% of cap — leaves room for production without crashing prices
+      const amount = @ceil( resCap * 0.2 );
+      self.resState.set( .COUNT, resType, amount );
     }
   }
 
@@ -286,10 +288,13 @@ pub const Economy = struct
 
   pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
   {
-    self.infState.set( .COUNT, .HOUSING,  @floatFromInt( value * 320 ));
-    self.infState.set( .COUNT, .HABITAT,                           0  );
-    self.infState.set( .COUNT, .STORAGE,  @floatFromInt( value *  40 ));
-    self.infState.set( .COUNT, .ASSEMBLY, @floatFromInt( value *  40 ));
+    if( self.location != .GROUND or !self.hasAtmo )
+    {
+      self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value *  10 ));
+    }
+    self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 400 ));
+    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value * 100 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  30 ));
 
     self.updateResCaps();
     self.updatePopCaps();
@@ -363,17 +368,40 @@ pub const Economy = struct
 
   pub inline fn debugSetIndCounts( self : *Economy, value : u64 ) void
   {
-    self.indState.set( .COUNT, .AGRONOMIC,   @floatFromInt( value * 10 ));
-    self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value * 10 ));
-    self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value * 10 ));
-    self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 10 ));
-    self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value * 10 ));
+    if( self.hasAtmo )
+    {
+      self.indState.set( .COUNT, .AGRONOMIC,   @floatFromInt( value *  15 ));
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  20 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  15 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  10 ));
+      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *  10 ));
 
-    self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *  5 ));
-    self.indState.set( .COUNT, .PROBE_MINE,                          0  );
-    self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value * 10 ));
-    self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value * 10 ));
-    self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value * 10 ));
+      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *   5 ));
+      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *  12 ));
+      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *  10 ));
+      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *  10 ));
+    }
+    else if( self.location == .GROUND )
+    {
+      // Airless ground body (Moon, Mars without atmo, etc.)
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  32 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  25 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  20 ));
+      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *  10 ));
+
+      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *   5 ));
+      self.indState.set( .COUNT, .PROBE_MINE,  @floatFromInt( value *  60 ));
+      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *   6 ));
+      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *  12 ));
+      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *  12 ));
+    }
+    else // NOTE : would die without imports
+    {
+      // Orbital / Lagrange
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  30 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  30 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  30 ));
+    }
   }
 
   pub inline fn logIndMetrics( self : *const Economy ) void
@@ -897,12 +925,17 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
 
   const AUTO_BUILD_SUPPLY_LIMIT : f64 = 42.0;
+  const AUTO_BUILD_WORK_LIMIT   : f64 = 0.95;
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
     const popCount : f64 = self.popState.get( .COUNT, .HUMAN );
+    const workAccess : f64 = self.resState.get( .GEN_ACS, .WORK );
 
-    if( self.buildQueue.?.getEntryCount() < 32 )
+    // Don't build more industry if we can't staff what we have
+    if( workAccess < AUTO_BUILD_WORK_LIMIT  ) return;
+
+    if( self.buildQueue.?.getEntryCount() < 50 )
     {
       for( 0..infTypeC )| f |
       {
@@ -913,13 +946,16 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
         // Scale build amount: at ACT_TRGT 0.75 build 0, at 1.0 build full amount
         if( useLvl > useTrsh )
         {
-          const scale  : f64 = @min( 2.0, ( useLvl - useTrsh) / ( 1.0 - useTrsh )); // 0.0 to 1.0
-          const amount : f64 = scale * popCount / 10_000;
+          const scale     : f64 = @min( 1.0, ( useLvl - useTrsh) / ( 1.0 - useTrsh )); // 0.0 to 1.0
+          const maxAmount : f64 = popCount / 1_000;
 
-          _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( @ceil( amount )));
+          _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( @ceil( scale * maxAmount )));
         }
       }
+    }
 
+    if( self.buildQueue.?.getEntryCount() < 50 )
+    {
       for( 0..indTypeC )| d |
       {
         const indType = IndType.fromIdx( d );

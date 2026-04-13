@@ -23,8 +23,8 @@ const indTypeC  = IndType.count;
 
 
 // Tune this to control how steeply pollution rises
-const NATURAL_CAPACITY   : f64 = 0.001; // Quantity of polution each unit area can absorbe for free // NOTE : increase if pollution is too harsh
-const POLLUTION_MIDPOINT : f64 = 1.000; // rawRatio at which pollution == 0.5
+const NATURAL_CAPACITY   : f64 = 0.010; // Quantity of polution each unit area can absorbe for free // NOTE : increase if pollution is too harsh
+const POLLUTION_MIDPOINT : f64 = 2.000; // rawRatio at which pollution == 0.5
 
 // Tune these to control how harshly each factor penalises the eco factor
 const DEV_WEIGHT  : f64 = 0.6; // full development alone can reduce ecoFactor to 1.0 - val

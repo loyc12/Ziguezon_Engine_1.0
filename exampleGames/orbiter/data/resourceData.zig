@@ -136,28 +136,28 @@ pub fn loadResourceData() void
   resMetricData.set( .PART,  .PRICE_BASE, 0.100 );
 
 
-  resMetricData.set( .WORK,  .PRICE_ELAS, def.PHI - 1.0 );
-  resMetricData.set( .FUEL,  .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .WORK,  .PRICE_ELAS, 0.50 ); // Stable — labor market shouldn't oscillate wildly
+  resMetricData.set( .FUEL,  .PRICE_ELAS, 0.60 ); // Moderate — industrial commodity
 
-  resMetricData.set( .FOOD,  .PRICE_ELAS, def.PHI - 1.0 );
-  resMetricData.set( .WATER, .PRICE_ELAS, def.PHI - 1.0 );
-  resMetricData.set( .POWER, .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .FOOD,  .PRICE_ELAS, 0.80 ); // High — essential, price must spike during shortage
+  resMetricData.set( .WATER, .PRICE_ELAS, 0.80 ); // High — essential
+  resMetricData.set( .POWER, .PRICE_ELAS, 0.70 ); // High-moderate — essential but more substitutable
 
-  resMetricData.set( .ORE,   .PRICE_ELAS, def.PHI - 1.0 );
-  resMetricData.set( .INGOT, .PRICE_ELAS, def.PHI - 1.0 );
-  resMetricData.set( .PART,  .PRICE_ELAS, def.PHI - 1.0 );
+  resMetricData.set( .ORE,   .PRICE_ELAS, 0.50 ); // Low — bulk commodity, stable
+  resMetricData.set( .INGOT, .PRICE_ELAS, 0.60 ); // Low-moderate — processed commodity
+  resMetricData.set( .PART,  .PRICE_ELAS, 0.70 ); // Moderate — high-value, competed over by many consumers
 
 
-  resMetricData.set( .WORK,  .PRICE_DAMP, 0.20 );
-  resMetricData.set( .FUEL,  .PRICE_DAMP, 0.20 );
+  resMetricData.set( .WORK,  .PRICE_DAMP, 0.15 ); // Slow — labor market has inertia
+  resMetricData.set( .FUEL,  .PRICE_DAMP, 0.20 ); // Moderate
 
-  resMetricData.set( .FOOD,  .PRICE_DAMP, 0.20 );
-  resMetricData.set( .WATER, .PRICE_DAMP, 0.20 );
-  resMetricData.set( .POWER, .PRICE_DAMP, 0.20 );
+  resMetricData.set( .FOOD,  .PRICE_DAMP, 0.25 ); // Fast — perishable, must react quickly
+  resMetricData.set( .WATER, .PRICE_DAMP, 0.25 ); // Fast — essential
+  resMetricData.set( .POWER, .PRICE_DAMP, 0.20 ); // Moderate — grid has some buffer
 
-  resMetricData.set( .ORE,   .PRICE_DAMP, 0.20 );
-  resMetricData.set( .INGOT, .PRICE_DAMP, 0.20 );
-  resMetricData.set( .PART,  .PRICE_DAMP, 0.20 );
+  resMetricData.set( .ORE,   .PRICE_DAMP, 0.10 ); // Slow — stockpiles buffer shocks
+  resMetricData.set( .INGOT, .PRICE_DAMP, 0.15 ); // Slow
+  resMetricData.set( .PART,  .PRICE_DAMP, 0.20 ); // Moderate — high demand from multiple sectors
 }
 
 

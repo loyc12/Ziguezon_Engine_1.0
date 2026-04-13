@@ -63,8 +63,7 @@ pub const BuildEntry = struct
 };
 
 
-const BUILD_QUEUE_CAPACITY : usize = 64;
-const ASSEMBLY_EFFICIENCY  : f64   = 2.0; // Max amount of parts used per assembly per tick
+const BUILD_QUEUE_CAPACITY : usize = 255;
 
 pub const BuildQueue = struct
 {

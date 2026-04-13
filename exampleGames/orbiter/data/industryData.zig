@@ -300,6 +300,7 @@ pub const IndStateEnum = enum( u8 )
   EXPENSE,  // Amount of money spent by the owners to maintain and fuel the industry last tick
   REVENUE,  // Amount of money gained by the owners from selling the output products last tick
   PROFIT,   // Revenues - Expenses
+  MARGIN,   // Profits / Expense
   CAPITAL,  // Stored profits from previous ticks ( decays via inflation )
 
   ACT_TRGT, // How active this industry wanted to be   last tick

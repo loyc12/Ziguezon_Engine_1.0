@@ -118,7 +118,7 @@ pub fn loadPopulationData() void
   // ================================ METRICS ================================
 
   popMetricData.set( .HUMAN, .MASS,      0.0001 );
-  popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 );
+  popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 ); // Housing "space" neede for each pop
   popMetricData.set( .HUMAN, .POLLUTION, 0.1000 );
 
 
@@ -126,11 +126,11 @@ pub fn loadPopulationData() void
 
   popResDeltaTable.set( .HUMAN, .PROD, .WORK,  0.5000 );
 
-  popResDeltaTable.set( .HUMAN, .CONS, .FUEL,  0.0001 );
-  popResDeltaTable.set( .HUMAN, .CONS, .FOOD,  0.0200 );
-  popResDeltaTable.set( .HUMAN, .CONS, .WATER, 0.0100 );
-  popResDeltaTable.set( .HUMAN, .CONS, .POWER, 0.0050 );
-  popResDeltaTable.set( .HUMAN, .CONS, .PART,  0.0001 );
+  popResDeltaTable.set( .HUMAN, .CONS, .FUEL,  0.0010 );
+  popResDeltaTable.set( .HUMAN, .CONS, .FOOD,  0.0300 );
+  popResDeltaTable.set( .HUMAN, .CONS, .WATER, 0.0250 );
+  popResDeltaTable.set( .HUMAN, .CONS, .POWER, 0.0200 );
+  popResDeltaTable.set( .HUMAN, .CONS, .PART,  0.0010 );
 }
 
 
@@ -153,6 +153,7 @@ pub const PopStateEnum = enum( u8 )
   EXPENSE,  // Amount of money spent to fulfill their needs
   REVENUE,  // Amount of money gained by via WORK production
   PROFIT,   // Revenue - Expense
+  MARGIN,   // Profits / Expense
   SAVINGS,  // Stored profits from previous ticks ( decays via inflation )
 
   FLM_LVL,  // How fulfilled their needs ended up being last tick
