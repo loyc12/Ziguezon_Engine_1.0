@@ -194,27 +194,34 @@ const EconSolver = struct
     }
   }
 
+  const INF_MAINT_IDLE_FACTOR : f64 = 0.25;
+  const IND_MAINT_IDLE_FACTOR : f64 = 0.10;
+
   fn calcMntMaxDelta( self : *EconSolver ) void
   {
     var totalPartCons : f64 = 0;
 
     inline for( 0..infTypeC )| f |
     {
-      const infType  = InfType.fromIdx( f );
-      const infCount = self.econ.infState.get( .COUNT, infType );
-      const baseCost = infType.getMetric_f64(  .PART_COST  );
-      const mntRate  = infType.getMetric_f64(  .MAINT_RATE );
+      const infType     = InfType.fromIdx( f );
+      const infCount    = self.econ.infState.get( .COUNT, infType );
+      const baseCost    = infType.getMetric_f64(  .PART_COST  );
+      const mntRate     = infType.getMetric_f64(  .MAINT_RATE );
+      const scaling     = self.econ.infState.get( .USE_LVL, infType );
+      const maintFactor = def.lerp( INF_MAINT_IDLE_FACTOR, 1.0, scaling );
 
-      totalPartCons += infCount * baseCost * mntRate;
+      totalPartCons += infCount * baseCost * mntRate * maintFactor;
     }
     inline for( 0..indTypeC )| d |
     {
-      const indType  = IndType.fromIdx( d );
-      const indCount = self.econ.indState.get( .COUNT, indType );
-      const baseCost = indType.getMetric_f64(  .PART_COST  );
-      const mntRate  = indType.getMetric_f64( .MAINT_RATE );
+      const indType     = IndType.fromIdx( d );
+      const indCount    = self.econ.indState.get( .COUNT, indType );
+      const baseCost    = indType.getMetric_f64(  .PART_COST  );
+      const mntRate     = indType.getMetric_f64( .MAINT_RATE );
+      const scaling     = self.econ.indState.get( .ACT_TRGT, indType );
+      const maintFactor = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, scaling );
 
-      totalPartCons += indCount * baseCost * mntRate;
+      totalPartCons += indCount * baseCost * mntRate * maintFactor;
     }
 
     self.resFlowData.add( .MNT, .MAX_CONS, .PART, totalPartCons );
@@ -974,12 +981,16 @@ const EconSolver = struct
           }
         }
 
-        // Calculating maintenance costs
-        const mntRate    = indType.getMetric_f64(  .MAINT_RATE   );
-        const partCost   = indType.getMetric_f64(  .PART_COST    );
-        const partPrice  = self.econ.resState.get( .PRICE, .PART );
 
-        expense += indCount * partCost * mntRate * partPrice;
+        // Calculating maintenance costs
+        // NOTE : duplicated code ( calcMntMaxDelta ). buffer previous results instead
+        const partPrice   = self.econ.resState.get( .PRICE, .PART );
+        const baseCost    = indType.getMetric_f64(  .PART_COST    );
+        const mntRate     = indType.getMetric_f64(  .MAINT_RATE   );
+        const scaling     = self.indActivity.get( indType );
+        const maintFactor = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, scaling );
+
+        expense += indCount * baseCost * mntRate * partPrice * maintFactor;
         profit   = revenue  - expense;
 
 
