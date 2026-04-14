@@ -119,18 +119,23 @@ pub fn loadPopulationData() void
 
   popMetricData.set( .HUMAN, .MASS,      0.0001 );
   popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 ); // Housing "space" neede for each pop
-  popMetricData.set( .HUMAN, .POLLUTION, 0.1000 );
+  popMetricData.set( .HUMAN, .POLLUTION, 0.0500 ); // ~2.6 tCO2e/yr first-world all-electric
 
 
   // ================================ RESOURCES ================================
+  // NOTE : Per week. Units in gameDefs.zig
 
-  popResDeltaTable.set( .HUMAN, .PROD, .WORK,  0.5000 );
+  popResDeltaTable.set( .HUMAN, .PROD, .WORK,  0.200 ); // 0.45 prod - 0.25 cons
 
-  popResDeltaTable.set( .HUMAN, .CONS, .FUEL,  0.0010 );
-  popResDeltaTable.set( .HUMAN, .CONS, .FOOD,  0.0300 );
-  popResDeltaTable.set( .HUMAN, .CONS, .WATER, 0.0250 );
-  popResDeltaTable.set( .HUMAN, .CONS, .POWER, 0.0200 );
-  popResDeltaTable.set( .HUMAN, .CONS, .PART,  0.0010 );
+//popResDeltaTable.set( .HUMAN, .CONS, .FUEL,  0.000 ); // All transport is electric
+  popResDeltaTable.set( .HUMAN, .CONS, .FOOD,  0.015 );
+  popResDeltaTable.set( .HUMAN, .CONS, .WATER, 0.800 ); // 0.7 base + 0.1 for electric transport
+  popResDeltaTable.set( .HUMAN, .CONS, .POWER, 0.600 );
+  popResDeltaTable.set( .HUMAN, .CONS, .PART,  0.003 );
+
+  // NOTE : Temp replacement for all tertiary industries, to serve as WORK sink
+  // TODO : Remove WORK consumption once ammenities and co. are a thing
+//popResDeltaTable.set( .HUMAN, .CONS, .WORK,  0.300 );  // Each person "consumes" 0.3 ww of services
 }
 
 

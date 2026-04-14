@@ -20,15 +20,26 @@ pub const BodyStore   = bdy.BodyComp.getStoreType();
 
 // ================ UNITS AND CONSTANTS ================
 
-// Mass     : Gigaton   ( Gt ) = 1e12 kg ( 1_000_000_000_000 )
-// Distance : Kilometer ( km ) = 1_000 m
-// Time     : Day       ( Dy ) = 86_400 s
-// Density  : Gt/km³           = g/cm³
+// ======== Astronomical / geological units ========
 
+// Mass      : Gigaton      ( Gt  ) = 1e12 kg ( 1_000_000_000_000 )
+// Distance  : Kilometer    ( km  ) = 1_000 m
+// Area      : Squared km   ( km2 ) = 1_000_000 m2
+// Time      : Day          ( Dy  ) = 86_400 s
+// Density   : Gt/km³               = g/cm³
+// Pollution : tons of CO@ ( tCO2 ) ( equivalence of effect )
+
+
+// ======== Resource units ========
+
+// DEFAULT   : Metric Ton     ( t   ) = 1_000 kg
+// WORK      : Workweek       ( Ww  ) = 40 h
+// POWER     : Megawatt-hour  ( MWh ) = 1_000_000 Wh
+
+// NOTE : 1 kg of FOOD  represents about 1 kcal
+// NOTE : 1 kg of WATER represents exactly 1_000 L
 
 // ================================ ENGINE & GAME SETTINGS ================================
-
-
 
 pub const G_CONSTS : GameConsts = .{};
 pub const G_FLAGS  : GameFlags  = .{};
@@ -62,7 +73,7 @@ pub const GameConsts = struct
 pub const GameFlags = struct
 {
   STRESS_TEST : bool = false,
-  DEFAULT_POP : f64  = 10_000,
+  DEFAULT_POP : u64  = 100_000,
 };
 
 

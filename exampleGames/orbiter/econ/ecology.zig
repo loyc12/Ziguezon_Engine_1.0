@@ -23,12 +23,14 @@ const indTypeC  = IndType.count;
 
 
 // Tune this to control how steeply pollution rises
-const NATURAL_CAPACITY   : f64 = 0.010; // Quantity of polution each unit area can absorbe for free // NOTE : increase if pollution is too harsh
-const POLLUTION_MIDPOINT : f64 = 2.000; // rawRatio at which pollution == 0.5
+const NATURAL_CAPACITY   : f64 = 0.2; // Quantity of polution each unit area can absorbe for free // NOTE : increase if pollution is too harsh
+const POLLUTION_MIDPOINT : f64 = 2.0; // rawRatio at which pollution == 0.5
 
 // Tune these to control how harshly each factor penalises the eco factor
-const DEV_WEIGHT  : f64 = 0.6; // full development alone can reduce ecoFactor to 1.0 - val
+const DEV_WEIGHT  : f64 = 0.2; // full development alone can reduce ecoFactor to 1.0 - val
 const POLL_WEIGHT : f64 = 0.9; // full pollution   alone can reduce ecoFactor to 1.0 - val
+
+const ECO_DAMPENING : f64 = 0.02;
 
 
 pub const EcoState = struct
@@ -36,6 +38,7 @@ pub const EcoState = struct
   surfaceArea : f64,
   development : f64 = 0.0,
   pollution   : f64 = 0.0,
+  ecoTarget   : f64 = 1.0,
   ecoFactor   : f64 = 1.0,
 
 
@@ -51,6 +54,8 @@ pub const EcoState = struct
 
     eco.update( econ );
 
+    eco.ecoFactor = eco.ecoTarget;
+
     return eco;
   }
 
@@ -60,7 +65,7 @@ pub const EcoState = struct
     def.log(  .CONT, 0, @src(), "Development    : {d:.6}", .{ self.development });
     def.log(  .CONT, 0, @src(), "Pollution      : {d:.6}", .{ self.pollution   });
     def.log(  .CONT, 0, @src(), "Eco Factor     : {d:.6}", .{ self.ecoFactor   });
-    def.log(  .CONT, 0, @src(), "Eco Factor Sqr : {d:.6}", .{ self.ecoFactor * self.ecoFactor });
+    def.log(  .CONT, 0, @src(), "Eco Target     : {d:.6}", .{ self.ecoTarget   });
   }
 
   pub fn update( self : *EcoState, econ : *const ecn.Economy ) void
@@ -69,7 +74,7 @@ pub const EcoState = struct
     self.calcPollution(   econ );
 
   // Each factor independently penalises the eco factor multiplicatively.
-  // Neither alone reaches 0 — both together approach it.
+  // Neither alone reaches 0 - both together approach it.
 
     const devPenalty  = 1.0 - ( self.development * DEV_WEIGHT  );
     const pollPenalty = 1.0 - ( self.pollution   * POLL_WEIGHT );
@@ -77,9 +82,10 @@ pub const EcoState = struct
     const ecoFloor = ( 1.0 - DEV_WEIGHT ) * ( 1.0 - POLL_WEIGHT );
     const ecoRange =   1.0 - ecoFloor;
 
-    self.ecoFactor = (( devPenalty * pollPenalty ) - ecoFloor ) / ecoRange;
+    self.ecoTarget = (( devPenalty * pollPenalty ) - ecoFloor ) / ecoRange;
+    self.ecoTarget = def.clmp( self.ecoTarget, def.EPS, 1.0 - def.EPS );
 
-    self.ecoFactor = def.clmp( self.ecoFactor, def.EPS, 1.0 - def.EPS );
+    self.ecoFactor = def.lerp( self.ecoFactor, self.ecoTarget, ECO_DAMPENING );
 
     self.logEco();
   }

@@ -109,48 +109,63 @@ pub fn loadInfrastructureData() void
 
 
   // ================================ MASS ================================
+  // Unit : Gt ( 1e12 kg ). A housing block ~10,000 t = 1e-8 Gt
+  // These are intentionally tiny in Gt - they represent single facilities
 
-  infMetricData.set( .ASSEMBLY, .MASS, 4.0 );
-  infMetricData.set( .HOUSING,  .MASS, 1.0 );
-  infMetricData.set( .HABITAT,  .MASS, 3.0 );
-  infMetricData.set( .STORAGE,  .MASS, 5.0 );
+  infMetricData.set( .ASSEMBLY, .MASS, 0.000_000_020 ); // ~20,000 t - heavy industrial yard
+  infMetricData.set( .HOUSING,  .MASS, 0.000_000_010 ); // ~10,000 t - concrete residential bloc
+  infMetricData.set( .HABITAT,  .MASS, 0.000_000_050 ); // ~50,000 t - pressurized dome structur
+  infMetricData.set( .STORAGE,  .MASS, 0.000_000_015 ); // ~15,000 t - warehouse complex
 
 
   // ================================ AREA COST ================================
+  // Unit : km². 1 hectare = 0.01 km²
 
-  infMetricData.set( .ASSEMBLY, .AREA_COST, 0.5 );
-  infMetricData.set( .HOUSING,  .AREA_COST, 0.1 );
-  infMetricData.set( .HABITAT,  .AREA_COST, 0.0 ); // Provides area via capacity
-  infMetricData.set( .STORAGE,  .AREA_COST, 0.4 );
+  infMetricData.set( .ASSEMBLY, .AREA_COST, 0.10 ); // 10 ha - Construction yard / fabrication workshop
+  infMetricData.set( .HOUSING,  .AREA_COST, 0.02 ); //  2 ha - Residential block ( 100 pop → 5000/km² )
+  infMetricData.set( .HABITAT,  .AREA_COST, 0.00 ); //  0 ha - Pressurized dome (provides area, not uses it)
+  infMetricData.set( .STORAGE,  .AREA_COST, 0.05 ); //  5 ha - Warehouse/depot complex
 
 
   // ================================ PART COST ================================
+  // Unit : t of manufactured parts needed to construct one unit
+  // A residential block: ~2,000 t of steel/concrete/components
+  // An assembly yard: ~5,000 t of heavy machinery + structures
 
-  infMetricData.set( .ASSEMBLY, .PART_COST,  5.0 );
-  infMetricData.set( .HOUSING,  .PART_COST,  2.0 );
-  infMetricData.set( .HABITAT,  .PART_COST,  3.0 );
-  infMetricData.set( .STORAGE,  .PART_COST,  1.0 );
+  infMetricData.set( .ASSEMBLY, .PART_COST,  5000.0 ); // Heavy machinery, cranes, fabrication tools
+  infMetricData.set( .HOUSING,  .PART_COST,  2000.0 ); // Concrete, steel, wiring, plumbing
+  infMetricData.set( .HABITAT,  .PART_COST, 50000.0 ); // Massive pressurized structure
+  infMetricData.set( .STORAGE,  .PART_COST,  3000.0 ); // Shelving, climate control, structures
 
-  infMetricData.set( .ASSEMBLY, .MAINT_RATE, 0.005 );
-  infMetricData.set( .HOUSING,  .MAINT_RATE, 0.002 );
-  infMetricData.set( .HABITAT,  .MAINT_RATE, 0.003 );
-  infMetricData.set( .STORAGE,  .MAINT_RATE, 0.001 );
+
+  // ================================ MAINT RATE ================================
+  // Fraction of PART_COST consumed as PART per tick (week) for upkeep
+  // Real buildings: ~1-3% of construction cost per YEAR for maintenance
+  // Per week: annual_rate / 52
+  // 2% annual = 0.02 / 52 ≈ 0.000385
+
+  infMetricData.set( .ASSEMBLY, .MAINT_RATE, 0.0006 );  // ~3% annual — heavy wear on equipment
+  infMetricData.set( .HOUSING,  .MAINT_RATE, 0.0003 );  // ~1.5% annual — residential is low-maintenance
+  infMetricData.set( .HABITAT,  .MAINT_RATE, 0.0008 );  // ~4% annual — pressure vessels need constant upkee
+  infMetricData.set( .STORAGE,  .MAINT_RATE, 0.0004 );  // ~2% annual
 
 
   // ================================ POLLUTION ================================
+  // Units: abstract pollution points per unit per tick at full usage
+  // Will be recalibrated after industry pollution is set
 
-  infMetricData.set( .ASSEMBLY, .POLLUTION, 8.0 );
-  infMetricData.set( .HOUSING,  .POLLUTION, 4.0 );
-  infMetricData.set( .HABITAT,  .POLLUTION, 0.0 );
-  infMetricData.set( .STORAGE,  .POLLUTION, 1.0 );
+  infMetricData.set( .ASSEMBLY, .POLLUTION, 8.0 );  // Dust, noise, material waste
+  infMetricData.set( .HOUSING,  .POLLUTION, 0.5 );  // Sewage, waste, minor emissions
+  infMetricData.set( .HABITAT,  .POLLUTION, 0.0 );  // Sealed system
+  infMetricData.set( .STORAGE,  .POLLUTION, 0.2 );  // Minimal — some runoff
 
 
   // ================================ CAPACITY ================================
 
-  infMetricData.set( .ASSEMBLY, .CAPACITY,  1.0 ); // PARTs processed per tick
-  infMetricData.set( .HOUSING,  .CAPACITY, 32.0 ); // Pop housed / WORK "stored"
-  infMetricData.set( .HABITAT,  .CAPACITY, 32.0 ); // Area generated
-  infMetricData.set( .STORAGE,  .CAPACITY, 32.0 ); // Non-WORK resources stored
+  infMetricData.set( .ASSEMBLY, .CAPACITY,   50.0 ); // 50 t of PARTs processed per tick (week)
+  infMetricData.set( .HOUSING,  .CAPACITY,  100.0 ); // 100 people housed per unit
+  infMetricData.set( .HABITAT,  .CAPACITY,    1.0 ); // 1 km2 of pressurized area per unit
+  infMetricData.set( .STORAGE,  .CAPACITY, 5000.0 ); // 5,000 t of resources stored per unit
 }
 
 

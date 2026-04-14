@@ -73,7 +73,7 @@ fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyNa
   if( bodyName == .TERRA )
   {
     bodyComp.quickInitEcon( .GROUND, true );
-    bodyComp.debugSetEconState( .GROUND, 100_000 ); // Setup a 1B pop econ
+    bodyComp.debugSetEconState( .GROUND, 10_000 ); // Setup a 1B pop econ
 
   }
   if( gdf.G_FLAGS.STRESS_TEST )
@@ -87,7 +87,7 @@ fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyNa
         if( bodyName != .TERRA or loc != .GROUND )
         {
           bodyComp.quickInitEcon(     loc, true );
-          bodyComp.debugSetEconState( loc, @divFloor( gdf.G_FLAGS.DEFAULT_POP, 10_000 )); // Setup a 10K pop econ
+          bodyComp.debugSetEconState( loc, 1    ); // Setup a 100K pop econ
         }
       }
     }

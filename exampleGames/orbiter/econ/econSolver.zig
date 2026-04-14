@@ -697,8 +697,7 @@ const EconSolver = struct
 
       if( growthRate >= def.EPS )
       {
-        const factor = @max( 0.0, ecoFactor * ecoFactor );
-        const realNatProd = @floor( factor * growthRate );
+        const realNatProd = @floor( ecoFactor * growthRate );
 
         self.resFlowData.set( .NAT, .REAL_PROD, resType, realNatProd );
         self.nextResStock.add(                  resType, realNatProd );
@@ -722,7 +721,7 @@ const EconSolver = struct
       if( current > resCap )
       {
         // Clamp stock but do NOT adjust production metrics
-        // Industries consumed real inputs and produced real outputs — the overflow
+        // Industries consumed real inputs and produced real outputs - the overflow
         // is a storage problem, not a production problem
         // Prices will naturally suppress overproduction via supply > demand
         self.nextResStock.set( resType, resCap );
@@ -938,7 +937,7 @@ const EconSolver = struct
   }
 
 
-  // Minimum industry activity — prevents permanent shutdown death spiral
+  // Minimum industry activity - prevents permanent shutdown death spiral
   // Industries always "test" the market at this rate
   const IND_MIN_ACT_TRGT  : f64 = 0.05;
   const IND_MARGIN_FLOOR  : f64 = -2.5;

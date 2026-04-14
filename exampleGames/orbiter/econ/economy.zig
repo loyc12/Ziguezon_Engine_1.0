@@ -32,9 +32,9 @@ const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
 
-const MIN_RES_CAP           = 100.0;
-const MAX_SUN_ACCESS_CAP    =   1.0;
-const SUN_SHORTAGE_EXPONENT =   2.0;
+const MIN_RES_CAP           = 1000.0;
+const MAX_SUN_ACCESS_CAP    =    1.0;
+const SUN_SHORTAGE_EXPONENT =    2.0;
 
 
 pub const Economy = struct
@@ -142,7 +142,7 @@ pub const Economy = struct
   {
     self.debugSetInfCounts( value );
     self.debugSetIndCounts( value );
-    self.setPopCount( .HUMAN, value * 10_000 );
+    self.setPopCount( .HUMAN, value * gdf.G_FLAGS.DEFAULT_POP );
     self.debugSetResCounts( value );
   }
 
@@ -156,10 +156,19 @@ pub const Economy = struct
       const resType = ResType.fromIdx( r );
       const infType = resType.getInfStore();
 
-      const infCount = self.infState.get( .COUNT, infType );
-      const capacity = infType.getMetric_f64( .CAPACITY );
+      const infCount  = self.infState.get( .COUNT, infType );
+      const capacity  = infType.getMetric_f64( .CAPACITY );
+      const storeRate = resType.getMetric_f64( .STORE_RATE );
 
-      self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity ));
+      if( storeRate > def.EPS )
+      {
+        self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity / storeRate ));
+      }
+      else
+      {
+        // Infinite storage ( or resource doesn't need storage )
+        self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity / def.EPS ));
+      }
     }
   }
   pub inline fn getResCap( self : *const Economy, resType : ResType ) u64
@@ -205,8 +214,10 @@ pub const Economy = struct
       const resType = ResType.fromIdx( r );
       const resCap  = self.resState.get( .LIMIT, resType );
 
-    // Start at 20% of cap — leaves room for production without crashing prices
-      const amount = @ceil( resCap * 0.2 );
+    // Start at 20% of cap - leaves room for production without crashing prices
+      var amount = @ceil( resCap * 0.2 );
+      if( resType == .WORK ){ amount *= 5.0; }
+
       self.resState.set( .COUNT, resType, amount );
     }
   }
@@ -290,11 +301,11 @@ pub const Economy = struct
   {
     if( self.location != .GROUND or !self.hasAtmo )
     {
-      self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value *  10 ));
+      self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1000 )); // TODO : RECOMPUTE AND VALIDATE
     }
-    self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 400 ));
-    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value * 100 ));
-    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  30 ));
+    self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
+    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  200 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *   50 ));
 
     self.updateResCaps();
     self.updatePopCaps();
@@ -370,37 +381,37 @@ pub const Economy = struct
   {
     if( self.hasAtmo )
     {
-      self.indState.set( .COUNT, .AGRONOMIC,   @floatFromInt( value *  15 ));
-      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  20 ));
-      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  15 ));
-      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  10 ));
-      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *  10 ));
+      self.indState.set( .COUNT, .AGRONOMIC,   @floatFromInt( value *  24 ));
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *   6 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *   2 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  15 ));
+      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *   1 ));
 
-      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *   5 ));
-      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *  12 ));
-      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *  10 ));
-      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *  10 ));
+      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *   1 ));
+      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *   4 ));
+      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *   2 ));
+      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *   2 ));
     }
     else if( self.location == .GROUND )
     {
       // Airless ground body (Moon, Mars without atmo, etc.)
-      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  32 ));
-      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  25 ));
-      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  20 ));
-      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *  10 ));
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value * 30 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  3 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 15 ));
+      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *  1 ));
 
-      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *   5 ));
-      self.indState.set( .COUNT, .PROBE_MINE,  @floatFromInt( value *  60 ));
-      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *   6 ));
-      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *  12 ));
-      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *  12 ));
+      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *  1 ));
+      self.indState.set( .COUNT, .PROBE_MINE,  @floatFromInt( value * 50 ));
+      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *  2 ));
+      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *  2 ));
+      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *  2 ));
     }
     else // NOTE : would die without imports
     {
       // Orbital / Lagrange
       self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  30 ));
-      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  30 ));
-      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  30 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *   3 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  20 ));
     }
   }
 
@@ -674,8 +685,8 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
     if( consumeParts )
     {
-      const availParts  = self.resState.get( .COUNT, .PART );
-      const partCost    = c.getPartCost();
+      const availParts = self.resState.get( .COUNT, .PART );
+      const partCost   = c.getPartCost();
 
       if( availParts < partCost )
       {
@@ -692,7 +703,7 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
       const totalCost = @ceil(  builtAmount * partCost );
 
       // Deduct parts
-      self.resState.sub( .COUNT,     .PART, totalCost );
+      self.resState.sub( .COUNT,    .PART, totalCost );
       self.resState.add( .GEN_CONS, .PART, totalCost );
     }
 
@@ -702,13 +713,13 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
     {
       .inf => | infType |
       {
-        self.infState.add( .COUNT,  infType, builtAmount );
+        self.infState.add( .COUNT, infType, builtAmount );
         self.infState.add( .BUILT, infType, builtAmount );
         self.infState.add( .DELTA, infType, builtAmount );
       },
       .ind => | indType |
       {
-        self.indState.add( .COUNT,  indType, builtAmount );
+        self.indState.add( .COUNT, indType, builtAmount );
         self.indState.add( .BUILT, indType, builtAmount );
         self.indState.add( .DELTA, indType, builtAmount );
       },
@@ -959,6 +970,32 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
           _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( @ceil( scale * maxAmount )));
         }
+        // NOTE : CLAUDE'S SUGGESTION
+      //if( useLvl > useTrsh )
+      //{
+      //  const areaCost = infType.getMetric_f64( .AREA_COST );
+      //  const areaAvail = self.areaMetrics.get( .AVAIL );
+
+      //  // Skip if no area left (unless it's HABITAT which doesn't cost area)
+      //  if( areaCost > def.EPS and areaAvail < areaCost ){ continue; }
+
+      //  const scale     : f64 = @min( 1.0, ( useLvl - useTrsh) / ( 1.0 - useTrsh ));
+      //  const maxAmount : f64 = popCount / 1_000;
+
+      //  var finalAmount = @ceil( scale * maxAmount );
+
+      //  // Cap by available area
+      //  if( areaCost > def.EPS )
+      //  {
+      //    const areaLimited = @floor( areaAvail / areaCost );
+      //    finalAmount = @min( finalAmount, areaLimited );
+      //  }
+
+      //  if( finalAmount > 0 )
+      //  {
+      //    _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( finalAmount ));
+      //  }
+      //}
       }
     }
 
@@ -997,6 +1034,36 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
             _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( @ceil( amount )));
           }
         }
+      // NOTE : CLAUDE'S SUGGESTION
+      //if( indType.canBeBuiltIn( self.location, self.hasAtmo ))
+      //{
+      //  const actTarget : f64 = self.indState.get( .ACT_TRGT, indType );
+      //  const actTrsh   : f64 = 0.80;
+
+      //  if( actTarget > actTrsh )
+      //  {
+      //    const areaCost  = indType.getMetric_f64( .AREA_COST );
+      //    const areaAvail = self.areaMetrics.get( .AVAIL );
+
+      //    if( areaCost > def.EPS and areaAvail < areaCost ){ continue; }
+
+      //    const scale     : f64 = @min( 1.0, ( actTarget - actTrsh ) / ( 1.0 - actTrsh ));
+      //    const maxAmount : f64 = popCount / 10_000;
+
+      //    var finalAmount = @ceil( scale * maxAmount );
+
+      //    if( areaCost > def.EPS )
+      //    {
+      //      const areaLimited = @floor( areaAvail / areaCost );
+      //      finalAmount = @min( finalAmount, areaLimited );
+      //    }
+
+      //    if( finalAmount > 0 )
+      //    {
+      //      _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( finalAmount ));
+      //    }
+      //  }
+      //}
       }
     }
   }
