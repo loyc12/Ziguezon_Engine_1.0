@@ -23,8 +23,9 @@ const Construct = cst.Construct;
 
 pub const BuildEntry = struct
 {
-  construct  : Construct = .{ .inf = InfType.HOUSING },
-  buildCount : u64 = 0,
+  construct    : Construct = .{ .inf = InfType.HOUSING },
+  buildCount   : u64 = 0,
+  partProgress : u64 = 0,
 
   pub inline fn isEntryClosed( self : *const BuildEntry ) bool
   {
@@ -36,16 +37,10 @@ pub const BuildEntry = struct
     return self.construct.getPartCost();
   }
 
-  pub inline fn getRemainingPartCost( self : *const BuildEntry ) f64
-  {
-    const  count : f64 = @floatFromInt( self.buildCount );
-    return count * self.getUnitPartCost();
-  }
-
   pub inline fn getTotalPartCost( self : *const BuildEntry ) f64
   {
     const  count : f64 = @floatFromInt( self.buildCount );
-    return count * self.construct.getPartCost();
+    return count * self.getUnitPartCost();
   }
 
   pub fn calcBuildableAmount( self : *BuildEntry, availParts : f64 ) f64
@@ -192,8 +187,10 @@ pub const BuildQueue = struct
       for( 0..self.entryCount )| idx |
       {
         var entry = &self.entries[ idx ];
-
         var unitsBuilt : u64 = 0;
+
+        remainParts += @floatFromInt( entry.partProgress );
+        entry.partProgress = 0;
 
         const unitPartCost = entry.construct.getPartCost();
         const unitsToBuild = entry.calcBuildableAmount( remainParts );
@@ -212,7 +209,8 @@ pub const BuildQueue = struct
         // Failed to close the entry : likely cannot build anything more
         if( !entry.isEntryClosed() )
         {
-          def.qlog( .DEBUG, 0, @src(), "@ Could not close build queue" );
+          def.log( .DEBUG, 0, @src(), "@ Could not close build queue : stashed remaining {d} parts", .{ remainParts });
+          entry.partProgress += @intFromFloat( remainParts );
           break;
         }
 
@@ -233,7 +231,7 @@ pub const BuildQueue = struct
       self.removeEntryAmount( entriesClosed );
     }
 
-    if( self.getEntryCount() == 0 )
+    if( self.entryCount == 0 )
     {
       def.qlog( .DEBUG, 0, @src(), "$ Succesfully closed build queue" );
     }

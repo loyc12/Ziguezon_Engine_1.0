@@ -694,7 +694,7 @@ const EconSolver = struct
 
     if( bldMaxCons > def.EPS )
     {
-      const realBldCons = bldAccess * bldMaxCons;
+      const realBldCons = @floor( bldAccess * bldMaxCons );
 
       self.resFlowData.set( .BLD, .REAL_CONS, .PART, realBldCons );
       self.resFlowData.add( .GEN, .REAL_CONS, .PART, realBldCons );
@@ -1126,7 +1126,7 @@ const EconSolver = struct
 
             if( access < 1.0 )
             {
-              def.log( .WARN, 0, @src(), "@ {s} pops are experiencing {s} shortages !", .{ @tagName( popType ), @tagName( resType ) });
+              def.log( .CONT, 0, @src(), "@ {s} pops are experiencing {s} shortages !", .{ @tagName( popType ), @tagName( resType ) });
 
               maxDeathRate = @max( maxDeathRate, mortRate * def.pow( f64, 1.0 - access, RES_MODIFIER_EXPONENT ));
             }

@@ -186,8 +186,8 @@ pub const Economy = struct
       self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1000 )); // TODO : RECOMPUTE AND VALIDATE
     }
     self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value * 1000 ));
     self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  200 ));
-    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  200 ));
 
     self.updateResCaps();
     self.updatePopCaps();
@@ -976,9 +976,8 @@ pub const Economy = struct
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
-    const popCount : f64 = self.popState.get( .COUNT, .HUMAN );
-    const workAccess : f64 = self.resState.get( .GEN_ACS, .WORK );
-
+    const popCount   : f64 = self.popState.get( .COUNT, .HUMAN );
+  //const workAccess : f64 = self.resState.get( .GEN_ACS, .WORK );
 
     if( self.buildQueue.?.getEntryCount() < AUTO_BUILD_QUEUE_LIMIT )
     {
@@ -1020,7 +1019,7 @@ pub const Economy = struct
       // ======== INDUSTRY ========
 
       // Don't expand industry if we can't staff what we already have
-      if( workAccess < AUTO_BUILD_WORK_LIMIT  ) return;
+      //if( workAccess < AUTO_BUILD_WORK_LIMIT ) return;
 
       for( 0..indTypeC )| d |
       {
@@ -1029,7 +1028,6 @@ pub const Economy = struct
         if( indType.canBeBuiltIn( self.location, self.hasAtmo ))
         {
           const actTrgt : f64 = self.indState.get( .ACT_TRGT, indType );
-
 
           // Scale build amount : at THRESH build 0, at 1.0+ build full amount
           if( actTrgt > AUTO_BUILD_IND_THRESH )
