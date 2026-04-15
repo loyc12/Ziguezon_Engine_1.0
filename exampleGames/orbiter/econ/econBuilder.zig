@@ -226,6 +226,12 @@ pub const BuildQueue = struct
 
       self.removeEntryAmount( entriesClosed );
     }
+
+    if( self.getEntryCount() == 0 )
+    {
+      def.qlog( .DEBUG, 0, @src(), "$ Succesfully closed build queue" );
+    }
+
     return;
   }
 };

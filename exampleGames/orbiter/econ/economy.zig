@@ -32,9 +32,9 @@ const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
 
-const MIN_RES_CAP           = 1000.0;
-const MAX_SUN_ACCESS_CAP    =    1.0;
-const SUN_SHORTAGE_EXPONENT =    2.0;
+const MIN_RES_CAP           = 10000.0;
+const MAX_SUN_ACCESS_CAP    =     1.0;
+const SUN_SHORTAGE_EXPONENT =     2.0;
 
 
 pub const Economy = struct
@@ -70,6 +70,8 @@ pub const Economy = struct
   avgIndActivity   : f64 = 0.0,
   avgResAccess     : f64 = 0.0,
 
+
+  // ================================ INIT ================================
 
   pub inline fn newDeadEcon( loc : EconLoc ) Economy
   {
@@ -137,73 +139,22 @@ pub const Economy = struct
     }
   }
 
+
+  // ================================ DEBUG INIT ================================
+
   // Setups the economy needed to support value * 10k pop
   pub inline fn debugSetEconState( self : *Economy, value : u64 ) void
   {
     self.debugSetInfCounts( value );
     self.debugSetIndCounts( value );
-    self.setPopCount( .HUMAN, value * gdf.G_FLAGS.DEFAULT_POP );
     self.debugSetResCounts( value );
+    self.debugSetPopCounts( value );
   }
 
-
-  // ================================ RESSOURCES ================================
-
-  pub fn updateResCaps( self : *Economy ) void
+  pub inline fn debugSetPopCounts(  self : *Economy, value : u64 ) void
   {
-    inline for( 0..resTypeC )| r |
-    {
-      const resType = ResType.fromIdx( r );
-      const infType = resType.getInfStore();
-
-      const infCount  = self.infState.get( .COUNT, infType );
-      const capacity  = infType.getMetric_f64( .CAPACITY );
-      const storeRate = resType.getMetric_f64( .STORE_RATE );
-
-      if( storeRate > def.EPS )
-      {
-        self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity / storeRate ));
-      }
-      else
-      {
-        // Infinite storage ( or resource doesn't need storage )
-        self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity / def.EPS ));
-      }
-    }
+    self.setPopCount( .HUMAN, value * gdf.G_FLAGS.DEFAULT_POP );
   }
-  pub inline fn getResCap( self : *const Economy, resType : ResType ) u64
-  {
-    return @intFromFloat( self.resState.get( .LIMIT, resType ));
-  }
-  pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
-  {
-    return @intFromFloat( self.resState.get( .COUNT, resType ));
-  }
-
-  pub inline fn setResCount( self : *Economy, resType : ResType, value : u64 ) void
-  {
-    const cap = self.getResCap( resType );
-    self.resState.set( .COUNT, resType, @floatFromInt( @min( value, cap )));
-  }
-  pub inline fn addResCount( self : *Economy, resType : ResType, value : u64 ) void
-  {
-    const cap     = self.getResCap(   resType );
-    const current = self.getResCount( resType );
-    const new_val = @min( value + current, cap );
-    self.resState.set( .COUNT, resType, @floatFromInt( new_val ));
-  }
-  pub inline fn subResCount( self : *Economy, resType : ResType, value : u64 ) void
-  {
-    const current = self.getResCount( resType );
-    const count   = @min( value, current );
-    self.resState.set( .COUNT, resType, @floatFromInt( current - count ));
-
-    if( value != count )
-    {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} res of type {s} from economy, but only had {d} left", .{ value, @tagName( resType ), count });
-    }
-  }
-
 
   pub inline fn debugSetResCounts(  self : *Economy, value : u64 ) void
   {
@@ -221,161 +172,6 @@ pub const Economy = struct
       self.resState.set( .COUNT, resType, amount );
     }
   }
-
-  pub inline fn logResMetrics( self : *const Economy ) void
-  {
-    def.qlog( .INFO, 0, @src(), "$ Logging resources metrics :" );
-    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Count\t ( Access )\t[ Delta\t| Prod\tCons\t| Decay\t| Demand ]" );
-    def.qlog( .CONT, 0, @src(), "====================================================================================================" );
-
-    inline for( 0..resTypeC )| r |
-    {
-      const resType = ResType.fromIdx( r );
-
-      const resCount  : f64 = self.resState.get( .COUNT,    resType );
-      const resDelta  : f64 = self.resState.get( .DELTA,    resType );
-      const resProd   : f64 = self.resState.get( .GEN_PROD, resType );
-      const resCons   : f64 = self.resState.get( .GEN_CONS, resType );
-    //const resGrowth : f64 = self.resState.get( .GROWTH,   resType );
-      const resDecay  : f64 = self.resState.get( .DECAY,    resType );
-      const resReq    : f64 = self.resState.get( .MAX_DEM,  resType );
-      const resAccess : f64 = self.resState.get( .GEN_ACS,  resType );
-
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t ( {d:.6} )\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t| -{d:.0}\t| {d:.0}\t ]",
-        .{ @tagName( resType ), resCount, resAccess, resDelta, resProd, resCons, resDecay, resReq });
-    }
-  }
-
-
-  // ================================ INFRASTRUCTURE ================================
-
-  pub inline fn getInfCount( self : *const Economy, infType : InfType ) u64
-  {
-    return @intFromFloat( self.infState.get( .COUNT, infType ));
-  }
-  pub inline fn setInfCount( self : *Economy, infType : InfType, value : u64 ) void
-  {
-    self.infState.set( .COUNT, infType, @floatFromInt( value ));
-  }
-  pub inline fn addInfCount( self : *Economy, infType : InfType, value : u64 ) void
-  {
-    const current = self.getInfCount( infType );
-    self.infState.set( .COUNT, infType, @floatFromInt( value + current ));
-  }
-  pub inline fn subInfCount( self : *Economy, infType : InfType, value : u64 ) void
-  {
-    const current = self.getInfCount( infType );
-    const count   = @min( value, current );
-    self.infState.set( .COUNT, infType, @floatFromInt( current - count ));
-
-    if( value != count )
-    {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} inf of type {s} from economy, but only had {d} left", .{ value, @tagName( infType ), count });
-    }
-  }
-
-
-  pub fn canBuildInf( self : *const Economy, infType : InfType, count : u64 ) bool
-  {
-    if( !InfType.canBeBuiltIn( infType, self.location, self.hasAtmo ))
-    {
-      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
-      return false;
-    }
-
-    if( infType == .HABITAT ){ return true; }
-
-    const neededArea = infType.getAreaCost() * count;
-    const areaAvail  = self.areaMetrics.get( .AVAIL );
-
-    if( areaAvail < neededArea )
-    {
-      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
-      return false;
-    }
-    return true;
-  }
-
-
-  pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
-  {
-    if( self.location != .GROUND or !self.hasAtmo )
-    {
-      self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1000 )); // TODO : RECOMPUTE AND VALIDATE
-    }
-    self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
-    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  200 ));
-    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *   50 ));
-
-    self.updateResCaps();
-    self.updatePopCaps();
-  }
-
-  pub inline fn logInfMetrics( self : *const Economy ) void
-  {
-    def.qlog( .INFO, 0, @src(), "$ Logging infrastructure metrics :" );
-
-    inline for( 0..infTypeC )| f |
-    {
-      const infType = InfType.fromIdx( f );
-
-      const infCount : f64 = self.infState.get( .COUNT,   infType );
-      const infDelta : f64 = self.infState.get( .DELTA,   infType );
-      const infUse   : f64 = self.infState.get( .USE_LVL, infType ) * 100.0;
-      const infBonus : f64 = infCount * infType.getMetric_f64( .CAPACITY );
-
-      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t( +{d:.0}\t) [ {d:.0} ] \t{d:.1}%", .{ @tagName( infType ), infCount, infBonus, infDelta, infUse });
-    }
-  }
-
-
-  // ================================ INDUSTRY ================================
-
-  pub inline fn getIndCount( self : *const Economy, indType : IndType ) u64
-  {
-    return @intFromFloat( self.indState.get( .COUNT, indType ));
-  }
-  pub inline fn setIndCount( self : *Economy, indType : IndType, value : u64 ) void
-  {
-    self.indState.set( .COUNT, indType, @floatFromInt( value ));
-  }
-  pub inline fn addIndCount( self : *Economy, indType : IndType, value : u64 ) void
-  {
-    const current = self.getIndCount( indType );
-    self.indState.set( .COUNT, indType, @floatFromInt( current + value ));
-  }
-  pub inline fn subIndCount( self : *Economy, indType : IndType, value : u64 ) void
-  {
-    const current = self.getIndCount( indType );
-    const count   = @min( value, current );
-    self.indState.set( .COUNT, indType, @floatFromInt( current - count ));
-
-    if( value != count )
-    {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indType ), count });
-    }
-  }
-
-
-  pub fn canBuildInd( self : *const Economy, indType : IndType, count : u64 ) bool
-  {
-    if( !IndType.canBeBuiltIn( indType, self.location, self.hasAtmo ))
-    {
-      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {}", .{ @tagName( indType ), @tagName( self.location ) });
-      return false;
-    }
-
-    const neededArea = indType.getAreaCost() * count;
-    const areaAvail  = self.areaMetrics.get( .AVAIL );
-
-    if( areaAvail < neededArea )
-    {
-      def.log( .INFO, 0, @src(), "Not enough area : adjusting" );
-      return false;
-    }
-    return true;
-  }
-
 
   pub inline fn debugSetIndCounts( self : *Economy, value : u64 ) void
   {
@@ -415,6 +211,83 @@ pub const Economy = struct
     }
   }
 
+  pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
+  {
+    if( self.location != .GROUND or !self.hasAtmo )
+    {
+      self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1000 )); // TODO : RECOMPUTE AND VALIDATE
+    }
+    self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
+    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  200 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *   50 ));
+
+    self.updateResCaps();
+    self.updatePopCaps();
+  }
+
+
+  // ================================ DEBUG LOGS ================================
+
+
+  pub fn logPopMetrics( self : *const Economy ) void
+  {
+    def.qlog( .INFO, 0, @src(), "$ Logging population metrics : " );
+
+    inline for( 0..popTypeC )| p |
+    {
+      const popType  = PopType.fromIdx( p );
+
+      const popCount  : f64 = self.popState.get( .COUNT,   popType );
+      const popCap    : f64 = self.popState.get( .LIMIT,   popType );
+      const popDelta  : f64 = self.popState.get( .DELTA,   popType );
+      const popAccess : f64 = self.popState.get( .FLM_LVL, popType );
+
+      def.log(  .CONT, 0, @src(), "{s}\t: {d:.0}\t/ {d:.0}\t[ {d:.0} ]\t( {d:.3} )", .{ @tagName( popType ), popCount, popCap, popDelta, popAccess });
+    }
+
+  }
+
+  pub inline fn logResMetrics( self : *const Economy ) void
+  {
+    def.qlog( .INFO, 0, @src(), "$ Logging resources metrics :" );
+    def.qlog( .CONT, 0, @src(), "RESOURCE\t: Count\t ( Access )\t[ Delta\t| Prod\tCons\t| Decay\t| Demand ]" );
+    def.qlog( .CONT, 0, @src(), "====================================================================================================" );
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resType = ResType.fromIdx( r );
+
+      const resCount  : f64 = self.resState.get( .COUNT,    resType );
+      const resDelta  : f64 = self.resState.get( .DELTA,    resType );
+      const resProd   : f64 = self.resState.get( .GEN_PROD, resType );
+      const resCons   : f64 = self.resState.get( .GEN_CONS, resType );
+    //const resGrowth : f64 = self.resState.get( .GROWTH,   resType );
+      const resDecay  : f64 = self.resState.get( .DECAY,    resType );
+      const resReq    : f64 = self.resState.get( .MAX_DEM,  resType );
+      const resAccess : f64 = self.resState.get( .GEN_ACS,  resType );
+
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t ( {d:.6} )\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t| -{d:.0}\t| {d:.0}\t ]",
+        .{ @tagName( resType ), resCount, resAccess, resDelta, resProd, resCons, resDecay, resReq });
+    }
+  }
+
+  pub inline fn logInfMetrics( self : *const Economy ) void
+  {
+    def.qlog( .INFO, 0, @src(), "$ Logging infrastructure metrics :" );
+
+    inline for( 0..infTypeC )| f |
+    {
+      const infType = InfType.fromIdx( f );
+
+      const infCount : f64 = self.infState.get( .COUNT,   infType );
+      const infDelta : f64 = self.infState.get( .DELTA,   infType );
+      const infUse   : f64 = self.infState.get( .USE_LVL, infType ) * 100.0;
+      const infBonus : f64 = infCount * infType.getMetric_f64( .CAPACITY );
+
+      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t( +{d:.0}\t) [ {d:.0} ] \t{d:.1}%", .{ @tagName( infType ), infCount, infBonus, infDelta, infUse });
+    }
+  }
+
   pub inline fn logIndMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "$ Logging industrial metrics :" );
@@ -428,6 +301,52 @@ pub const Economy = struct
       const indRatio : f64 = self.indState.get( .ACT_LVL, indType );
 
       def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t( {d:.4} )\t[ {d:.0} ]", .{ @tagName( indType ), indCount, indRatio, indDelta });
+    }
+  }
+
+  pub inline fn logAllMetrics( self : *const Economy ) void
+  {
+
+    self.logResMetrics();
+    self.logInfMetrics();
+  //self.logIndMetrics();
+  //self.logTravelMetrics_TERRA();
+    self.logPopMetrics();
+
+    const areaUsed = self.areaMetrics.get( .USED );
+    const areaCap  = self.areaMetrics.get( .CAP  );
+
+    def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
+    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
+    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}", .{ self.sunAccess });
+    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}", .{ self.getEcoFactor() });
+
+    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
+
+    if( self.buildQueue != null )
+    {
+      def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} )", .{ self.buildQueue.?.getEntryCount(), self.buildQueue.?.getTotalBuildCount() });
+    }
+  }
+
+  // TODO : generalize this function
+  pub inline fn logTravelMetrics_TERRA( self : *const Economy ) void
+  {
+    def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) :" );
+
+    inline for( 0..gdf.BodyName.count )| b |
+    {
+      const body  = gdf.BodyName.fromIdx( b );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( body, self.location ) );
+
+      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( body ), table.deltaV, table.duration });
+    }
+    inline for( 0..EconLoc.count )| l |
+    {
+      const loc   = EconLoc.fromIdx( l );
+      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( .TERRA, loc ) );
+
+      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( loc ), table.deltaV, table.duration });
     }
   }
 
@@ -514,22 +433,117 @@ pub const Economy = struct
   }
 
 
-  pub fn logPopMetrics( self : *const Economy ) void
+  // ================================ RESSOURCES ================================
+
+  pub fn updateResCaps( self : *Economy ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ Logging population metrics : " );
-
-    inline for( 0..popTypeC )| p |
+    inline for( 0..resTypeC )| r |
     {
-      const popType  = PopType.fromIdx( p );
+      const resType = ResType.fromIdx( r );
+      const infType = resType.getInfStore();
 
-      const popCount  : f64 = self.popState.get( .COUNT,   popType );
-      const popCap    : f64 = self.popState.get( .LIMIT,   popType );
-      const popDelta  : f64 = self.popState.get( .DELTA,   popType );
-      const popAccess : f64 = self.popState.get( .FLM_LVL, popType );
+      const infCount  = self.infState.get( .COUNT, infType );
+      const capacity  = infType.getMetric_f64( .CAPACITY );
+      const storeRate = resType.getMetric_f64( .STORE_RATE );
 
-      def.log(  .CONT, 0, @src(), "{s}\t: {d:.0}\t/ {d:.0}\t[ {d:.0} ]\t( {d:.3} )", .{ @tagName( popType ), popCount, popCap, popDelta, popAccess });
+      if( storeRate > def.EPS )
+      {
+        self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity / storeRate ));
+      }
+      else
+      {
+        // Infinite storage ( or resource doesn't need storage )
+        self.resState.set( .LIMIT, resType, MIN_RES_CAP + ( infCount * capacity / def.EPS ));
+      }
     }
+  }
+  pub inline fn getResCap( self : *const Economy, resType : ResType ) u64
+  {
+    return @intFromFloat( self.resState.get( .LIMIT, resType ));
+  }
+  pub inline fn getResCount( self : *const Economy, resType : ResType ) u64
+  {
+    return @intFromFloat( self.resState.get( .COUNT, resType ));
+  }
 
+  pub inline fn setResCount( self : *Economy, resType : ResType, value : u64 ) void
+  {
+    const cap = self.getResCap( resType );
+    self.resState.set( .COUNT, resType, @floatFromInt( @min( value, cap )));
+  }
+  pub inline fn addResCount( self : *Economy, resType : ResType, value : u64 ) void
+  {
+    const cap     = self.getResCap(   resType );
+    const current = self.getResCount( resType );
+    const new_val = @min( value + current, cap );
+    self.resState.set( .COUNT, resType, @floatFromInt( new_val ));
+  }
+  pub inline fn subResCount( self : *Economy, resType : ResType, value : u64 ) void
+  {
+    const current = self.getResCount( resType );
+    const count   = @min( value, current );
+    self.resState.set( .COUNT, resType, @floatFromInt( current - count ));
+
+    if( value != count )
+    {
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} res of type {s} from economy, but only had {d} left", .{ value, @tagName( resType ), count });
+    }
+  }
+
+
+  // ================================ INFRASTRUCTURE ================================
+
+  pub inline fn getInfCount( self : *const Economy, infType : InfType ) u64
+  {
+    return @intFromFloat( self.infState.get( .COUNT, infType ));
+  }
+  pub inline fn setInfCount( self : *Economy, infType : InfType, value : u64 ) void
+  {
+    self.infState.set( .COUNT, infType, @floatFromInt( value ));
+  }
+  pub inline fn addInfCount( self : *Economy, infType : InfType, value : u64 ) void
+  {
+    const current = self.getInfCount( infType );
+    self.infState.set( .COUNT, infType, @floatFromInt( value + current ));
+  }
+  pub inline fn subInfCount( self : *Economy, infType : InfType, value : u64 ) void
+  {
+    const current = self.getInfCount( infType );
+    const count   = @min( value, current );
+    self.infState.set( .COUNT, infType, @floatFromInt( current - count ));
+
+    if( value != count )
+    {
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} inf of type {s} from economy, but only had {d} left", .{ value, @tagName( infType ), count });
+    }
+  }
+
+
+  // ================================ INDUSTRY ================================
+
+  pub inline fn getIndCount( self : *const Economy, indType : IndType ) u64
+  {
+    return @intFromFloat( self.indState.get( .COUNT, indType ));
+  }
+  pub inline fn setIndCount( self : *Economy, indType : IndType, value : u64 ) void
+  {
+    self.indState.set( .COUNT, indType, @floatFromInt( value ));
+  }
+  pub inline fn addIndCount( self : *Economy, indType : IndType, value : u64 ) void
+  {
+    const current = self.getIndCount( indType );
+    self.indState.set( .COUNT, indType, @floatFromInt( current + value ));
+  }
+  pub inline fn subIndCount( self : *Economy, indType : IndType, value : u64 ) void
+  {
+    const current = self.getIndCount( indType );
+    const count   = @min( value, current );
+    self.indState.set( .COUNT, indType, @floatFromInt( current - count ));
+
+    if( value != count )
+    {
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indType ), count });
+    }
   }
 
 
@@ -653,10 +667,50 @@ pub const Economy = struct
   }
 
 
-
   // ================================ CONSTRUCTION ================================
 
-pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumeParts : bool ) f64
+  pub fn canBuildInf( self : *const Economy, infType : InfType, count : u64 ) bool
+  {
+    if( !InfType.canBeBuiltIn( infType, self.location, self.hasAtmo ))
+    {
+      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {}", .{ @tagName( infType ), @tagName( self.location ) });
+      return false;
+    }
+
+    if( infType == .HABITAT ){ return true; }
+
+    const neededArea = infType.getAreaCost() * count;
+    const areaAvail  = self.areaMetrics.get( .AVAIL );
+
+    if( areaAvail < neededArea )
+    {
+      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {}. Needed : {d}", .{ @tagName( infType ), @tagName( self.location ), neededArea });
+      return false;
+    }
+    return true;
+  }
+
+  pub fn canBuildInd( self : *const Economy, indType : IndType, count : u64 ) bool
+  {
+    if( !IndType.canBeBuiltIn( indType, self.location, self.hasAtmo ))
+    {
+      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {}", .{ @tagName( indType ), @tagName( self.location ) });
+      return false;
+    }
+
+    const neededArea = indType.getAreaCost() * count;
+    const areaAvail  = self.areaMetrics.get( .AVAIL );
+
+    if( areaAvail < neededArea )
+    {
+      def.log( .INFO, 0, @src(), "Not enough area : adjusting" );
+      return false;
+    }
+    return true;
+  }
+
+
+  pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumeParts : bool ) f64
   {
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
@@ -742,52 +796,6 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
 
 
   // ================================ UPDATING ================================
-
-  pub inline fn logAllMetrics( self : *const Economy ) void
-  {
-
-  //self.logResMetrics();
-    self.logInfMetrics();
-  //self.logIndMetrics();
-  //self.logTravelMetrics_TERRA();
-    self.logPopMetrics();
-
-    const areaUsed = self.areaMetrics.get( .USED );
-    const areaCap  = self.areaMetrics.get( .CAP  );
-
-    def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
-    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
-    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}", .{ self.sunAccess });
-    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}", .{ self.getEcoFactor() });
-
-    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
-
-    if( self.buildQueue != null )
-    {
-      def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} )", .{ self.buildQueue.?.getEntryCount(), self.buildQueue.?.getTotalBuildCount() });
-    }
-  }
-
-  // TODO : generalize this function
-  pub inline fn logTravelMetrics_TERRA( self : *const Economy ) void
-  {
-    def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) :" );
-
-    inline for( 0..gdf.BodyName.count )| b |
-    {
-      const body  = gdf.BodyName.fromIdx( b );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( body, self.location ) );
-
-      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( body ), table.deltaV, table.duration });
-    }
-    inline for( 0..EconLoc.count )| l |
-    {
-      const loc   = EconLoc.fromIdx( l );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( .TERRA, loc ) );
-
-      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( loc ), table.deltaV, table.duration });
-    }
-  }
 
   inline fn updateEcology( self : *Economy ) void
   {
@@ -943,64 +951,66 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
   }
 
 
-  const AUTO_BUILD_SUPPLY_LIMIT : f64 = 42.0;
-  const AUTO_BUILD_WORK_LIMIT   : f64 = 0.95;
+  const AUTO_BUILD_MAX_SCALE    : f64 =  2.000; // Max build scale multiplier (0.0 at thresh, up to this at 100%+)
+  const AUTO_BUILD_QUEUE_LIMIT  : u32 =    128; // Max number of queued construction orders before ignoring autoBuild
+
+  const AUTO_BUILD_INF_THRESH   : f64 = 0.7500; // Infrastructure usage level above which new builds are triggered
+  const AUTO_BUILD_INF_FACTOR   : f64 = 0.0001; // Fraction of pop count to build per tick at full scale (inf)
+  const AUTO_BUILD_ASSEMBLY_F   : f64 = 0.0100; // Max ASSEMBLY count as a fraction of population count
+
+  const AUTO_BUILD_WORK_LIMIT   : f64 = 0.9000; // Min WORK supply/demand ratio required before expanding industry
+  const AUTO_BUILD_IND_THRESH   : f64 = 0.7500; // Industry activity target above which new builds are triggered
+  const AUTO_BUILD_IND_FACTOR   : f64 = 0.0001; // Fraction of pop count to build per tick at full scale (ind)
+  const AUTO_BUILD_ACCESS_LIMIT : f64 = 100.00; // Stored/demand ratio above which build amounts are dampened
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
     const popCount : f64 = self.popState.get( .COUNT, .HUMAN );
     const workAccess : f64 = self.resState.get( .GEN_ACS, .WORK );
 
-    // Don't build more industry if we can't staff what we have
-    if( workAccess < AUTO_BUILD_WORK_LIMIT  ) return;
 
-    if( self.buildQueue.?.getEntryCount() < 50 )
+    if( self.buildQueue.?.getEntryCount() < AUTO_BUILD_QUEUE_LIMIT )
     {
+      // ======== INFRASTRUCTURE ========
+
       for( 0..infTypeC )| f |
       {
         const infType       = InfType.fromIdx( f );
-        const useLvl  : f64 = self.infState.get( .USE_LVL, infType );
-        const useTrsh : f64 = 0.75; // 0.0 - 1.0
+        const useLvl : f64  = self.infState.get( .USE_LVL, infType );
 
-        // Scale build amount: at ACT_TRGT 0.75 build 0, at 1.0 build full amount
-        if( useLvl > useTrsh )
+
+        // Scale build amount : at THRESH build 0, at 1.0+ build full amount
+        if( useLvl > AUTO_BUILD_INF_THRESH )
         {
-          const scale     : f64 = @min( 1.0, ( useLvl - useTrsh) / ( 1.0 - useTrsh )); // 0.0 to 1.0
-          const maxAmount : f64 = popCount / 1_000;
+          // 0.0 to AUTO_BUILD_MAX_SCALE
+          const scale : f64 = @min( AUTO_BUILD_MAX_SCALE, ( useLvl - AUTO_BUILD_INF_THRESH ) / ( 1.0 - AUTO_BUILD_INF_THRESH ));
+          var  amount : f64 = scale * popCount * AUTO_BUILD_INF_FACTOR;
 
-          _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( @ceil( scale * maxAmount )));
+          // Clamp ASSEMBLY to a fraction of population to prevent self-reinforcing build spiral
+          if( infType == .ASSEMBLY )
+          {
+            const count : f64 = self.infState.get( .COUNT, .ASSEMBLY );
+            const cap   : f64 = popCount * AUTO_BUILD_ASSEMBLY_F;
+
+            amount = @min( amount, @max( 0.0, cap - count ));
+          }
+
+          // Building requested amount, if any
+          amount = @floor( amount );
+
+          if( amount > def.EPS )
+          {
+            _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( amount ));
+          }
         }
-        // NOTE : CLAUDE'S SUGGESTION
-      //if( useLvl > useTrsh )
-      //{
-      //  const areaCost = infType.getMetric_f64( .AREA_COST );
-      //  const areaAvail = self.areaMetrics.get( .AVAIL );
-
-      //  // Skip if no area left (unless it's HABITAT which doesn't cost area)
-      //  if( areaCost > def.EPS and areaAvail < areaCost ){ continue; }
-
-      //  const scale     : f64 = @min( 1.0, ( useLvl - useTrsh) / ( 1.0 - useTrsh ));
-      //  const maxAmount : f64 = popCount / 1_000;
-
-      //  var finalAmount = @ceil( scale * maxAmount );
-
-      //  // Cap by available area
-      //  if( areaCost > def.EPS )
-      //  {
-      //    const areaLimited = @floor( areaAvail / areaCost );
-      //    finalAmount = @min( finalAmount, areaLimited );
-      //  }
-
-      //  if( finalAmount > 0 )
-      //  {
-      //    _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( finalAmount ));
-      //  }
-      //}
       }
-    }
 
-    if( self.buildQueue.?.getEntryCount() < 50 )
-    {
+
+      // ======== INDUSTRY ========
+
+      // Don't expand industry if we can't staff what we already have
+      if( workAccess < AUTO_BUILD_WORK_LIMIT  ) return;
+
       for( 0..indTypeC )| d |
       {
         const indType = IndType.fromIdx( d );
@@ -1008,64 +1018,50 @@ pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumePar
         if( indType.canBeBuiltIn( self.location, self.hasAtmo ))
         {
           const actTrgt : f64 = self.indState.get( .ACT_TRGT, indType );
-          const actTrsh : f64 = 0.75; // 0.0 - 1.0
 
-          // Check if this industry's output is already oversupplied
-          var outputOversupplied = false; // NOTE : this feels very artificial as a limit
 
-          inline for( 0..resTypeC )| r |
+          // Scale build amount : at THRESH build 0, at 1.0+ build full amount
+          if( actTrgt > AUTO_BUILD_IND_THRESH )
           {
-            const resType = ResType.fromIdx( r );
-            const prod    = indType.getResProd_f64( resType );
+            // 0.0 to AUTO_BUILD_MAX_SCALE
+            const scale : f64 = @min( AUTO_BUILD_MAX_SCALE, ( actTrgt - AUTO_BUILD_IND_THRESH ) / ( 1.0 - AUTO_BUILD_IND_THRESH ));
+            var  amount : f64 = scale * popCount * AUTO_BUILD_IND_FACTOR;
 
-            if( prod > def.EPS )
+            // Dampen build amounts if any output resource is oversupplied
+            inline for( 0..resTypeC )| r |
             {
-              const access = self.resState.get( .GEN_ACS, resType );
-              if( access > AUTO_BUILD_SUPPLY_LIMIT ) outputOversupplied = true;
+              const resType = ResType.fromIdx( r );
+              const prod    = indType.getResProd_f64( resType );
+
+              if( prod > def.EPS )
+              {
+                const access = self.resState.get( .GEN_ACS, resType );
+
+                if( access > AUTO_BUILD_ACCESS_LIMIT )
+                {
+                  //const access_modifier = 1.0 / @max( def.EPS, access );
+                  //amount *= access_modifier;
+
+                  amount = 0;
+                }
+              }
+            }
+
+            // Building requested amount, if any
+            amount = @floor( amount );
+
+            if( amount > def.EPS )
+            {
+              _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( amount ));
             }
           }
-
-          // Scale build amount: at ACT_TRGT 0.75 build 0, at 1.0 build full amount
-          if( actTrgt > actTrsh and !outputOversupplied )
-          {
-            const scale  : f64 = @min( 2.0, ( actTrgt - actTrsh ) / ( 1.0 - actTrsh )); // 0.0 to 1.0
-            const amount : f64 = scale * popCount / 10_000;
-
-            _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( @ceil( amount )));
-          }
         }
-      // NOTE : CLAUDE'S SUGGESTION
-      //if( indType.canBeBuiltIn( self.location, self.hasAtmo ))
-      //{
-      //  const actTarget : f64 = self.indState.get( .ACT_TRGT, indType );
-      //  const actTrsh   : f64 = 0.80;
-
-      //  if( actTarget > actTrsh )
-      //  {
-      //    const areaCost  = indType.getMetric_f64( .AREA_COST );
-      //    const areaAvail = self.areaMetrics.get( .AVAIL );
-
-      //    if( areaCost > def.EPS and areaAvail < areaCost ){ continue; }
-
-      //    const scale     : f64 = @min( 1.0, ( actTarget - actTrsh ) / ( 1.0 - actTrsh ));
-      //    const maxAmount : f64 = popCount / 10_000;
-
-      //    var finalAmount = @ceil( scale * maxAmount );
-
-      //    if( areaCost > def.EPS )
-      //    {
-      //      const areaLimited = @floor( areaAvail / areaCost );
-      //      finalAmount = @min( finalAmount, areaLimited );
-      //    }
-
-      //    if( finalAmount > 0 )
-      //    {
-      //      _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( finalAmount ));
-      //    }
-      //  }
-      //}
       }
     }
+
+    // ======== VESSELS ========
+
+    // NOTE : TBA
   }
 
 

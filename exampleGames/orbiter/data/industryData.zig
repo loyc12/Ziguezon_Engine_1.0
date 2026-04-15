@@ -259,7 +259,7 @@ pub fn loadIndustryData() void
 
   indResDeltaTable.set( .AGRONOMIC, .CONS, .WORK,    55.0 );
   indResDeltaTable.set( .AGRONOMIC, .CONS, .WATER, 2500.0 );
-  indResDeltaTable.set( .AGRONOMIC, .PROD, .FOOD,   500.0 ); // NOTE: reduced by sunAccess and ecoFactor on GROUND
+  indResDeltaTable.set( .AGRONOMIC, .PROD, .FOOD,   500.0 ); // NOTE: reduced by sunAccess and ecoFactor
 
 
   // ---- HYDROPONIC ----
@@ -290,7 +290,7 @@ pub fn loadIndustryData() void
 
   indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,    20.0 );
   indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WATER,   50.0 );
-  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 3400.0 ); // NOTE: reduced by sunAccess on GROUND
+  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 3400.0 ); // NOTE: reduced by sunAccess
 
 
   // ---- POWER_PLANT ----
@@ -309,22 +309,26 @@ pub fn loadIndustryData() void
   // Produces fusion fuel from raw feedstock
   // Very power and water hungry
 
-  indResDeltaTable.set( .REFINERY, .CONS, .WORK,   135.0 );
-  indResDeltaTable.set( .REFINERY, .CONS, .WATER, 1000.0 );
-  indResDeltaTable.set( .REFINERY, .CONS, .POWER,  800.0 );
-  indResDeltaTable.set( .REFINERY, .PROD, .FUEL,    20.0 );
+  indResDeltaTable.set( .REFINERY, .CONS, .WORK,  135.0 );
+  indResDeltaTable.set( .REFINERY, .CONS, .WATER, 400.0 );
+  indResDeltaTable.set( .REFINERY, .CONS, .POWER, 500.0 );
+  indResDeltaTable.set( .REFINERY, .PROD, .FUEL,   50.0 );
 
 
   // ---- PROBE_MINE ----
   // Autonomous asteroid mining probe, 0 workers
+
   indResDeltaTable.set( .PROBE_MINE, .PROD, .ORE, 10.0 );
 
 
   // ---- GROUND_MINE ----
   // Large open-pit mine, ~650 total staff
   // Extracts ~5,000 t/week of usable ore from ~50,000 t of overburden
+  // Consumes water for dust suppression and ore washing
+
   indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,   290.0 );
   indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER,  300.0 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER, 1500.0 );
   indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,   5000.0 );
 
 

@@ -14,25 +14,29 @@ pub const InfType = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
-  ASSEMBLY,     // Increases max building rate in PARTs per tick
-  HOUSING,      // Increases population cap
   HABITAT,      // Increases area of pressurized locations
-  STORAGE,      // Grants cargo storage capacity
+
 //BATTERY,      // Grants energy storage capacity
+//TANKS,        // Grants fluid storage capacity
+  STORAGE,      // Grants cargo storage capacity
+  HOUSING,      // Increases population cap
 
 //AMENITIES,    // Services population needs
 //EDUCATION,    // Generate research
 //COMMERCE,     // Increase tax revenues ?
 
-//ROAD_NETWORK, // Grants cargo  transport capacity locally
 //POWER_GRID,   // Grants energy transport capacity locally
+//PIPE_NETWORK, // Grants fluid  transport capacity locally
+//ROAD_NETWORK, // Grants cargo  transport capacity locally
 
-//ELEVATOR,     // Grants cargo  transport capacity to and from orbit
 //POWER_BEAM,   // Grants energy transport capacity to and from orbit
+//ELEVATOR,     // Grants cargo  transport capacity to and from orbit
 
 //LAUNCHPAD,    // Grants docking capacity for vessels
 
-//DATA_CENTER,  // ???
+//DATA_CENTER,  // Creates Flops ?
+
+  ASSEMBLY,     // Increases max building rate in PARTs per tick
 
 
   pub inline fn canBeBuiltIn( self : InfType, loc : gdf.EconLoc, hasAtmo : bool ) bool
