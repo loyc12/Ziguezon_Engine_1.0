@@ -32,9 +32,9 @@ const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
 
-const MIN_RES_CAP           = 10000.0;
-const MAX_SUN_ACCESS_CAP    =     1.0;
-const SUN_SHORTAGE_EXPONENT =     2.0;
+const MIN_RES_CAP           = 10_000.0;
+const MAX_SUN_ACCESS_CAP    =      2.0;
+const SUN_SHORTAGE_EXPONENT =      2.0;
 
 
 pub const Economy = struct
@@ -49,7 +49,7 @@ pub const Economy = struct
 
   stepCount : u64 = 0,
   sunshine  : f64 = 0.0,
-  sunAccess : f32 = 1.0,
+  sunAccess : f32 = 0.5,
 
   ecology   : ?Ecology  = null,
 
@@ -149,6 +149,12 @@ pub const Economy = struct
     self.debugSetIndCounts( value );
     self.debugSetResCounts( value );
     self.debugSetPopCounts( value );
+
+    self.sunAccess = 0.5;
+
+    self.logAllMetrics();
+
+    ecnSlvr.testEconLogs( self );
   }
 
   pub inline fn debugSetPopCounts(  self : *Economy, value : u64 ) void
@@ -173,45 +179,7 @@ pub const Economy = struct
     }
   }
 
-  pub inline fn debugSetIndCounts( self : *Economy, value : u64 ) void
-  {
-    if( self.hasAtmo )
-    {
-      self.indState.set( .COUNT, .AGRONOMIC,   @floatFromInt( value *  24 ));
-      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *   6 ));
-      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *   2 ));
-      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  15 ));
-      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *   1 ));
-
-      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *   1 ));
-      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *   4 ));
-      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *   2 ));
-      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *   2 ));
-    }
-    else if( self.location == .GROUND )
-    {
-      // Airless ground body (Moon, Mars without atmo, etc.)
-      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value * 30 ));
-      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  3 ));
-      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 15 ));
-      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *  1 ));
-
-      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *  1 ));
-      self.indState.set( .COUNT, .PROBE_MINE,  @floatFromInt( value * 50 ));
-      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *  2 ));
-      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *  2 ));
-      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *  2 ));
-    }
-    else // NOTE : would die without imports
-    {
-      // Orbital / Lagrange
-      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  30 ));
-      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *   3 ));
-      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  20 ));
-    }
-  }
-
-  pub inline fn debugSetInfCounts(  self : *Economy, value : u64 ) void
+  pub inline fn debugSetInfCounts( self : *Economy, value : u64 ) void
   {
     if( self.location != .GROUND or !self.hasAtmo )
     {
@@ -219,16 +187,84 @@ pub const Economy = struct
     }
     self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
     self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  200 ));
-    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *   50 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  200 ));
 
     self.updateResCaps();
     self.updatePopCaps();
+    self.updateAreas();
+    self.updateInfUsage();
+    self.updateEcology();
+  }
+
+  pub inline fn debugSetIndCounts( self : *Economy, value : u64 ) void
+  {
+    if( self.hasAtmo )
+    {
+      self.indState.set( .COUNT, .AGRONOMIC,   @floatFromInt( value *  4 ));
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *  4 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *  4 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 20 ));
+      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *  4 ));
+
+      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *  1 ));
+      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value * 20 ));
+      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value * 20 ));
+      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value * 40 ));
+    }
+    else if( self.location == .GROUND )
+    {
+      // Airless ground body (Moon, Mars without atmo, etc.)
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value *   8 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value *   6 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value *  20 ));
+      self.indState.set( .COUNT, .POWER_PLANT, @floatFromInt( value *   4 ));
+
+      self.indState.set( .COUNT, .REFINERY,    @floatFromInt( value *   1 ));
+      self.indState.set( .COUNT, .PROBE_MINE,  @floatFromInt( value * 500 ));
+      self.indState.set( .COUNT, .GROUND_MINE, @floatFromInt( value *  18 ));
+      self.indState.set( .COUNT, .FOUNDRY,     @floatFromInt( value *  20 ));
+      self.indState.set( .COUNT, .FACTORY,     @floatFromInt( value *  40 ));
+    }
+    else // NOTE : Will collapse without imports
+    {
+      // Orbital / Lagrange
+      self.indState.set( .COUNT, .HYDROPONIC,  @floatFromInt( value * 10 ));
+      self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value * 10 ));
+      self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 50 ));
+    }
   }
 
 
   // ================================ DEBUG LOGS ================================
 
 
+  pub inline fn logAllMetrics( self : *const Economy ) void
+  {
+  //self.logResMetrics();
+    self.logInfMetrics();
+  //self.logIndMetrics();
+  //self.logTravelMetrics_TERRA();
+    if( self.ecology != null )
+    {
+      self.ecology.?.logEco();
+    }
+    self.logPopMetrics();
+
+    const areaUsed = self.areaMetrics.get( .USED );
+    const areaCap  = self.areaMetrics.get( .CAP  );
+
+    def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
+    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
+    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}", .{ self.sunAccess });
+    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
+
+
+    if( self.buildQueue != null )
+    {
+      const queue = self.buildQueue.?;
+      def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} ) {d}", .{ queue.getEntryCount(), queue.getTotalBuildCount(), queue.totUnitsBuilt });
+    }
+  }
   pub fn logPopMetrics( self : *const Economy ) void
   {
     def.qlog( .INFO, 0, @src(), "$ Logging population metrics : " );
@@ -301,31 +337,6 @@ pub const Economy = struct
       const indRatio : f64 = self.indState.get( .ACT_LVL, indType );
 
       def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t( {d:.4} )\t[ {d:.0} ]", .{ @tagName( indType ), indCount, indRatio, indDelta });
-    }
-  }
-
-  pub inline fn logAllMetrics( self : *const Economy ) void
-  {
-
-    self.logResMetrics();
-    self.logInfMetrics();
-  //self.logIndMetrics();
-  //self.logTravelMetrics_TERRA();
-    self.logPopMetrics();
-
-    const areaUsed = self.areaMetrics.get( .USED );
-    const areaCap  = self.areaMetrics.get( .CAP  );
-
-    def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
-    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
-    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}", .{ self.sunAccess });
-    def.log(  .CONT, 0, @src(), "Eco factor   : {d:.6}", .{ self.getEcoFactor() });
-
-    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
-
-    if( self.buildQueue != null )
-    {
-      def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} )", .{ self.buildQueue.?.getEntryCount(), self.buildQueue.?.getTotalBuildCount() });
     }
   }
 
@@ -710,7 +721,7 @@ pub const Economy = struct
   }
 
 
-  pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumeParts : bool ) f64
+  pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumeParts : bool ) u64
   {
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
@@ -791,7 +802,7 @@ pub const Economy = struct
     const newAvail = self.areaMetrics.get( .CAP ) - self.areaMetrics.get( .USED );
     self.areaMetrics.set( .AVAIL, @max( 0.0, newAvail ));
 
-    return builtAmount;
+    return @intFromFloat( builtAmount );
   }
 
 

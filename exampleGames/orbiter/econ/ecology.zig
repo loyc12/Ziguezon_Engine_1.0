@@ -59,7 +59,7 @@ pub const EcoState = struct
     return eco;
   }
 
-  pub inline fn logEco( self : *EcoState ) void
+  pub inline fn logEco( self : *const EcoState ) void
   {
     def.qlog( .INFO, 0, @src(), "Loggin ecology :" );
     def.log(  .CONT, 0, @src(), "Development    : {d:.6}", .{ self.development });
@@ -87,7 +87,6 @@ pub const EcoState = struct
 
     self.ecoFactor = def.lerp( self.ecoFactor, self.ecoTarget, ECO_DAMPENING );
 
-    self.logEco();
   }
 
   inline fn calcDevelopment( self : *EcoState, econ : *const ecn.Economy ) void
@@ -137,15 +136,10 @@ pub const EcoState = struct
       pollutionAmount += tmp;
     }
 
-    def.log( .CONT, 0, @src(), "Pollution COUNT : {d:.1}", .{ pollutionAmount });
-
     // rawRatio is always >= 0 after the @max clamp
     const rawRatio = @max( 0.0, ( pollutionAmount / self.surfaceArea ) - NATURAL_CAPACITY );
-    def.log( .CONT, 0, @src(), "Pollution RAW   : {d:.6}", .{ rawRatio });
 
     // Saturating curve
     self.pollution = rawRatio / ( rawRatio + POLLUTION_MIDPOINT );
-
-    def.log( .CONT, 0, @src(), "Pollution RATIO : {d:.6}", .{ self.pollution });
   }
 };

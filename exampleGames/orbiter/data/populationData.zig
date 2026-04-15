@@ -113,9 +113,9 @@ pub fn loadPopulationData() void
 
   // ================================ METRICS ================================
 
-  popMetricData.set( .HUMAN, .MASS,      0.06   ); // In tons ( 60 Kgs )
-  popMetricData.set( .HUMAN, .HSNG_COST, 1.00   ); // Housing "space" neede for each pop
-  popMetricData.set( .HUMAN, .POLLUTION, 0.05   ); // ~2.6 tCO2e/yr - first-world all-electric
+  popMetricData.set( .HUMAN, .MASS,      0.0600 ); // In tons ( 60 Kgs )
+  popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 ); // Housing "space" neede for each pop
+  popMetricData.set( .HUMAN, .POLLUTION, 0.0500 ); // ~2.6 tCO2e/yr - first-world all-electric
   popMetricData.set( .HUMAN, .NATALITY,  0.0003 ); // ~1.6% annual — colony growth rate
   popMetricData.set( .HUMAN, .FATALITY,  0.0001 ); // ~0.5% annual — advanced medicine, ~200yr life expectancy
 
@@ -124,13 +124,14 @@ pub fn loadPopulationData() void
   // ================================ RESOURCES ================================
   // NOTE : Per week. Units in gameDefs.zig
 
-  popResDeltaTable.set( .HUMAN, .PROD, .WORK,  0.300 ); // 0.45 prod - 0.15 cons
+  popResDeltaTable.set( .HUMAN, .PROD, .WORK,  0.350 ); // 0.45 prod - 0.10 cons
+//popResDeltaTable.set( .HUMAN, .CONS, .WORK,  0.450 ); // Average workweek
 //popResDeltaTable.set( .HUMAN, .CONS, .WORK,  0.300 ); // Services consumption
 
 //popResDeltaTable.set( .HUMAN, .CONS, .FUEL,  0.000 ); // All transport is electric
   popResDeltaTable.set( .HUMAN, .CONS, .FOOD,  0.015 );
-  popResDeltaTable.set( .HUMAN, .CONS, .WATER, 0.800 ); // 0.7 base + 0.1 for electric transport
-  popResDeltaTable.set( .HUMAN, .CONS, .POWER, 0.600 );
+  popResDeltaTable.set( .HUMAN, .CONS, .WATER, 0.500 );
+  popResDeltaTable.set( .HUMAN, .CONS, .POWER, 0.500 ); // 0.4 base + 0.1 for electric transport
   popResDeltaTable.set( .HUMAN, .CONS, .PART,  0.003 );
 
   // Mortality rates at ZERO access (per week)

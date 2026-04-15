@@ -69,6 +69,7 @@ pub const BuildQueue = struct
 {
   entries       : [ BUILD_QUEUE_CAPACITY ]BuildEntry = undefined,
   entryCount    : u64 = 0,
+  totUnitsBuilt : u64 = 0,
 
 
   pub fn init() BuildQueue
@@ -174,6 +175,8 @@ pub const BuildQueue = struct
 
   pub fn update( self : *BuildQueue, econ : *ecn.Economy ) void
   {
+    self.totUnitsBuilt = 0;
+
     if( self.entryCount > 0 )
     {
       var entriesClosed : u64 = 0;
@@ -190,7 +193,7 @@ pub const BuildQueue = struct
       {
         var entry = &self.entries[ idx ];
 
-        var unitsBuilt : f64 = 0.0;
+        var unitsBuilt : u64 = 0;
 
         const unitPartCost = entry.construct.getPartCost();
         const unitsToBuild = entry.calcBuildableAmount( remainParts );
@@ -198,10 +201,13 @@ pub const BuildQueue = struct
         if( unitsToBuild > def.EPS )
         {
           unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild, false );
+          const unitsBuilt_f : f64 = @floatFromInt( unitsBuilt );
 
-          entry.buildCount -= @intFromFloat( unitsBuilt );
-          remainParts      -= unitsBuilt * unitPartCost;
+          remainParts        -= unitsBuilt_f * unitPartCost;
+          entry.buildCount   -= unitsBuilt;
+          self.totUnitsBuilt += unitsBuilt;
         }
+
 
         // Failed to close the entry : likely cannot build anything more
         if( !entry.isEntryClosed() )

@@ -258,7 +258,7 @@ pub fn loadIndustryData() void
   // Consumes significant water for irrigation: ~2,500 t/week (50mm/week over 50 ha)
 
   indResDeltaTable.set( .AGRONOMIC, .CONS, .WORK,    55.0 );
-  indResDeltaTable.set( .AGRONOMIC, .CONS, .WATER, 2500.0 );
+  indResDeltaTable.set( .AGRONOMIC, .CONS, .WATER, 5000.0 );
   indResDeltaTable.set( .AGRONOMIC, .PROD, .FOOD,   500.0 ); // NOTE: reduced by sunAccess and ecoFactor
 
 
@@ -274,23 +274,23 @@ pub fn loadIndustryData() void
 
 
   // ---- WATER_PLANT ----
-  // Municipal desalination/treatment plant, ~120 total staff
+  // Municipal desalination/treatment plant, ~400 total staff
   // Produces ~50,000 m³/week (serves ~70,000 people at 0.7 t/person/week)
-  // Very power-intensive (3-4 kWh per m³ for desalination)
+  // Very power-intensive (5 kWh per m³ for desalination)
 
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,     55.0 );
+  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,    180.0 );
   indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER,   200.0 );
-  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 50000.0 );
+  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 40000.0 );
 
 
   // ---- SOLAR_PLANT ----
-  // 100 MW peak solar farm, ~45 total staff (technicians + grid management)
+  // 100 MW peak solar farm, ~90 total staff (technicians + grid management)
   // Produces ~100 MW × 168 h × 0.20 capacity factor = ~3,360 MWh/week
   // Needs water for panel washing: ~50 t/week
 
-  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,    20.0 );
+  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,    40.0 );
   indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WATER,   50.0 );
-  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 3400.0 ); // NOTE: reduced by sunAccess
+  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 3000.0 ); // NOTE: reduced by sunAccess
 
 
   // ---- POWER_PLANT ----
@@ -300,17 +300,17 @@ pub fn loadIndustryData() void
 
   indResDeltaTable.set( .POWER_PLANT, .CONS, .WORK,    200.0 );
   indResDeltaTable.set( .POWER_PLANT, .CONS, .WATER,   500.0 );
-  indResDeltaTable.set( .POWER_PLANT, .CONS, .FUEL,      5.0 );
-  indResDeltaTable.set( .POWER_PLANT, .PROD, .POWER, 71500.0 );
+  indResDeltaTable.set( .POWER_PLANT, .CONS, .FUEL,     10.0 );
+  indResDeltaTable.set( .POWER_PLANT, .PROD, .POWER, 20000.0 );
 
 
   // ---- REFINERY ----
-  // Fuel processing / isotope separation plant, ~300 total staff
+  // Fuel processing / isotope separation plant, ~350 total staff
   // Produces fusion fuel from raw feedstock
   // Very power and water hungry
 
-  indResDeltaTable.set( .REFINERY, .CONS, .WORK,  135.0 );
-  indResDeltaTable.set( .REFINERY, .CONS, .WATER, 400.0 );
+  indResDeltaTable.set( .REFINERY, .CONS, .WORK,  150.0 );
+  indResDeltaTable.set( .REFINERY, .CONS, .WATER, 200.0 );
   indResDeltaTable.set( .REFINERY, .CONS, .POWER, 500.0 );
   indResDeltaTable.set( .REFINERY, .PROD, .FUEL,   50.0 );
 
@@ -322,33 +322,33 @@ pub fn loadIndustryData() void
 
 
   // ---- GROUND_MINE ----
-  // Large open-pit mine, ~650 total staff
+  // Large open-pit mine, ~675 total staff
   // Extracts ~5,000 t/week of usable ore from ~50,000 t of overburden
   // Consumes water for dust suppression and ore washing
 
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,   290.0 );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER,  300.0 );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER, 1500.0 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,   300.0 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER, 1000.0 );
+  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER, 2500.0 );
   indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,   5000.0 );
 
 
   // ---- FOUNDRY ----
-  // Steel/aluminium smelter, ~450 total staff
+  // Steel/aluminium smelter, ~675 total staff
   // Converts ore to ingot at roughly 4:3 by mass (ore contains ~50-80% metal)
   // Very power-intensive (electric arc furnaces)
 
-  indResDeltaTable.set( .FOUNDRY, .CONS, .WORK,   200.0 );
+  indResDeltaTable.set( .FOUNDRY, .CONS, .WORK,   300.0 );
   indResDeltaTable.set( .FOUNDRY, .CONS, .POWER,  500.0 );
-  indResDeltaTable.set( .FOUNDRY, .CONS, .ORE,   4000.0 );
-  indResDeltaTable.set( .FOUNDRY, .PROD, .INGOT, 3000.0 );
+  indResDeltaTable.set( .FOUNDRY, .CONS, .ORE,   5000.0 );
+  indResDeltaTable.set( .FOUNDRY, .PROD, .INGOT, 4000.0 );
 
 
   // ---- FACTORY ----
-  // Large manufacturing plant, ~450 total staff
+  // Large manufacturing plant, ~675 total staff
   // Converts ingots to finished parts ( 75% yield, rest is scrap/waste )
   // Moderate power, high skill labor
 
-  indResDeltaTable.set( .FACTORY, .CONS, .WORK,   200.0 );
+  indResDeltaTable.set( .FACTORY, .CONS, .WORK,   300.0 );
   indResDeltaTable.set( .FACTORY, .CONS, .POWER,  200.0 );
   indResDeltaTable.set( .FACTORY, .CONS, .INGOT, 2000.0 );
   indResDeltaTable.set( .FACTORY, .PROD, .PART,  1500.0 );

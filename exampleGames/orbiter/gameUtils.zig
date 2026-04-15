@@ -104,7 +104,7 @@ pub fn initStellarSystem( ng : *def.Engine ) void
 
     const id = nttArr[ idx ].id;
 
-    def.log( .INFO, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
+    def.log( .TRACE, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
 
 
     // Non-sun component instanciation

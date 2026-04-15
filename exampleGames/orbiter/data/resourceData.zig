@@ -134,12 +134,12 @@ pub fn loadResourceData() void
   resMetricData.set( .FUEL,  .PRICE_BASE, 0.1000 );
 
   resMetricData.set( .FOOD,  .PRICE_BASE, 0.0200 );
-  resMetricData.set( .WATER, .PRICE_BASE, 0.0010 );
-  resMetricData.set( .POWER, .PRICE_BASE, 0.0030 );
+  resMetricData.set( .WATER, .PRICE_BASE, 0.0005 );
+  resMetricData.set( .POWER, .PRICE_BASE, 0.0010 );
 
-  resMetricData.set( .ORE,   .PRICE_BASE, 0.0200 );
-  resMetricData.set( .INGOT, .PRICE_BASE, 0.0400 );
-  resMetricData.set( .PART,  .PRICE_BASE, 0.0800 );
+  resMetricData.set( .ORE,   .PRICE_BASE, 0.0100 );
+  resMetricData.set( .INGOT, .PRICE_BASE, 0.0300 );
+  resMetricData.set( .PART,  .PRICE_BASE, 0.0900 );
 
 
   resMetricData.set( .WORK,  .PRICE_ELAS, 0.50 ); // Stable - labor market shouldn't oscillate wildly

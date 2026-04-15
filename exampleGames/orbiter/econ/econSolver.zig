@@ -33,7 +33,7 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
 {
   var solver : EconSolver = .{ .econ = econ };
 
-  solver.initBaseState();    // Zeroes out dataMatrices and resets econ metrics
+  solver.initBaseState();     // Zeroes out dataMatrices
 
 
 // ================ PRECALC PHASE ================
@@ -98,6 +98,100 @@ pub inline fn resolveEcon( econ : *ecn.Economy ) void
   solver.pushEconMetrics(); // Pastes leftover metrics into economy's fields
 }
 
+
+pub fn testEconLogs( econ : *ecn.Economy ) void
+{
+  var solver : EconSolver = .{ .econ = econ };
+
+  solver.initBaseState();
+
+  solver.calcPopMaxDelta();
+  solver.calcMntMaxDelta();
+  solver.calcIndMaxDelta();
+  solver.calcBldMaxDelta();
+
+
+  def.qlog( .INFO, 0, @src(), "$ TESTING ECON PROFITABILITY :" );
+
+  def.qlog( .INFO, 0, @src(), "# RES DELTA :" );
+
+  inline for( 0..resTypeC )| r |
+  {
+    const resType   = ResType.fromIdx( r );
+
+    const cons  = solver.resFlowData.get( .GEN, .MAX_CONS, resType );
+    const prod  = solver.resFlowData.get( .GEN, .MAX_PROD, resType );
+    const delta = prod - cons;
+
+    var ratio : f64 = 0.0;
+    if( prod > def.EPS ){ ratio = delta / prod; }
+
+    def.log( .CONT, 0, @src(), "{s}  \t| +{d:.0}\t-{d:.0}\t= {d:.0}\t( {d:.2}% )", .{ @tagName( resType ), prod, cons, delta, ratio * 100.0 });
+  }
+
+  def.qlog( .INFO, 0, @src(), "# POP PROFITABILITY :" );
+
+  inline for( 0..popTypeC )| p |
+  {
+    const popType  = PopType.fromIdx( p );
+    const popCount = econ.popState.get( .COUNT, popType );
+
+    var expense : f64 = 0.0;
+    var revenue : f64 = 0.0;
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resType  = ResType.fromIdx( r );
+      const resPrice = econ.resState.get( .PRICE, resType );
+
+      expense += resPrice * solver.popFlowData.get( popType, .MAX_CONS, resType );
+      revenue += resPrice * solver.popFlowData.get( popType, .MAX_PROD, resType );
+    }
+
+    const profit = revenue - expense;
+
+    var margin : f64 = 0.0;
+    if( revenue > def.EPS ){ margin = profit / revenue; }
+
+    def.log( .CONT, 0, @src(), "{s}\t : {d:.0}\t| +{d:.0}\t-{d:.0}\t= {d:.0}\t( {d:.2}% )", .{ @tagName( popType ), popCount, revenue, expense, profit, margin * 100.0 });
+  }
+
+  def.qlog( .INFO, 0, @src(), "# IND PROFITABILITY :" );
+
+  inline for( 0..indTypeC )| d |
+  {
+    const indType  = IndType.fromIdx( d );
+    const indCount = econ.indState.get( .COUNT, indType );
+
+    var expense : f64 = 0.0;
+    var revenue : f64 = 0.0;
+
+    inline for ( 0..resTypeC )| r |
+    {
+      const resType  = ResType.fromIdx(r);
+      const resPrice = econ.resState.get(.PRICE, resType);
+
+      expense += resPrice * solver.indFlowData.get( indType, .MAX_CONS, resType );
+      revenue += resPrice * solver.indFlowData.get( indType, .MAX_PROD, resType );
+    }
+
+    // Add maintenance cost
+    const partPrice = econ.resState.get( .PRICE, .PART   );
+    const baseCost  = indType.getMetric_f64( .PART_COST  );
+    const mntRate   = indType.getMetric_f64( .MAINT_RATE );
+    const mntCosts  = indCount * baseCost * mntRate * partPrice;
+
+    const profit = revenue - ( expense + mntCosts );
+
+    var margin : f64 = 0.0;
+    if( revenue > def.EPS ){ margin = profit / revenue; }
+
+    def.log( .CONT, 0, @src(), "{s}\t : {d:.0}\t| +{d:.0}\t-{d:.0}\t-{d:.0}\t= {d:.0}\t( {d:.2}% )", .{ @tagName( indType ), indCount, revenue, expense, mntCosts, profit, margin * 100.0 });
+  }
+}
+
+
+// ================ SOLVER STRUCT ================
 
 const EconSolver = struct
 {
@@ -543,7 +637,7 @@ const EconSolver = struct
       inline for( 0..resTypeC )| r |
       {
         const resType     = ResType.fromIdx( r );
-        const popAccess   = self.resFlowData.get( .POP, .ACCESS,   resType );
+        const popAccess   = self.resFlowData.get( .POP, .ACCESS, resType );
         const realPopCons = popAccess * self.popFlowData.get( popType, .MAX_CONS, resType );
 
         self.popFlowData.set( popType, .REAL_CONS, resType, realPopCons );
