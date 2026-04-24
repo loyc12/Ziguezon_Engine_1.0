@@ -876,10 +876,11 @@ const EconSolver = struct
       const newPrice = def.lerp(  oldPrice, rawPrice, dampening ); // Lerp dampening
       const dltPrice = newPrice - oldPrice;
       const dltPrcnt = 100.0 * dltPrice / oldPrice;
+      const offPrcnt = 100.0 * newPrice / basePrice;
 
       const resCount = self.nextResStock.get( resType );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0} \t| {d:.6}\t| {d:.6}\t {d:.6}\t| {d:.1}%", .{ @tagName( resType ), resCount, basePrice, oldPrice, newPrice, dltPrcnt });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0} \t| {d:.6}\t| {d:.6}\t{d:.6}\t| {d:.1}%  \tx {d:.1}%", .{ @tagName( resType ), resCount, basePrice, oldPrice, newPrice, dltPrcnt, offPrcnt });
 
       self.econ.resState.set( .PRICE,   resType, newPrice );
       self.econ.resState.set( .PRICE_D, resType, dltPrice );

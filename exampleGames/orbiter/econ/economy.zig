@@ -256,6 +256,7 @@ pub const Economy = struct
     def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
     def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
     def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}", .{ self.sunAccess });
+    def.log(  .CONT, 0, @src(), "Work access  : {d:.6}", .{ self.resState.get( .GEN_ACS, .WORK )});
     def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
 
 
@@ -962,17 +963,17 @@ pub const Economy = struct
   }
 
 
-  const AUTO_BUILD_MAX_SCALE    : f64 =  2.000; // Max build scale multiplier (0.0 at thresh, up to this at 100%+)
-  const AUTO_BUILD_QUEUE_LIMIT  : u32 =    128; // Max number of queued construction orders before ignoring autoBuild
+  const AUTO_BUILD_MAX_SCALE    : f64 = 2.0; // Max build scale multiplier (0.0 at thresh, up to this at 100%+)
+  const AUTO_BUILD_QUEUE_LIMIT  : u32 = 128; // Max number of queued construction orders before ignoring autoBuild
 
-  const AUTO_BUILD_INF_THRESH   : f64 = 0.7500; // Infrastructure usage level above which new builds are triggered
-  const AUTO_BUILD_INF_FACTOR   : f64 = 0.0001; // Fraction of pop count to build per tick at full scale (inf)
-  const AUTO_BUILD_ASSEMBLY_F   : f64 = 0.0100; // Max ASSEMBLY count as a fraction of population count
+  const AUTO_BUILD_INF_THRESH   : f64 = 0.75000; // Infrastructure usage level above which new builds are triggered
+  const AUTO_BUILD_INF_FACTOR   : f64 = 0.00001; // Fraction of pop count to build per tick at full scale (inf)
+  const AUTO_BUILD_ASSEMBLY_F   : f64 = 0.01000; // Max ASSEMBLY count as a fraction of population count
 
-  const AUTO_BUILD_WORK_LIMIT   : f64 = 0.9000; // Min WORK supply/demand ratio required before expanding industry
-  const AUTO_BUILD_IND_THRESH   : f64 = 0.7500; // Industry activity target above which new builds are triggered
-  const AUTO_BUILD_IND_FACTOR   : f64 = 0.0001; // Fraction of pop count to build per tick at full scale (ind)
-  const AUTO_BUILD_ACCESS_LIMIT : f64 = 100.00; // Stored/demand ratio above which build amounts are dampened
+  const AUTO_BUILD_WORK_THRESH  : f64 = 0.90000; // Min WORK supply/demand ratio required before expanding industry
+  const AUTO_BUILD_IND_THRESH   : f64 = 0.75000; // Industry activity target above which new builds are triggered
+  const AUTO_BUILD_IND_FACTOR   : f64 = 0.00001; // Fraction of pop count to build per tick at full scale (ind)
+  const AUTO_BUILD_ACCESS_LIMIT : f64 =    32.0; // Stored/demand ratio above which build amounts are dampened
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
@@ -1010,7 +1011,7 @@ pub const Economy = struct
 
           if( amount > def.EPS )
           {
-            _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( amount ));
+            _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( amount ), .REPLACE );
           }
         }
       }
@@ -1019,7 +1020,7 @@ pub const Economy = struct
       // ======== INDUSTRY ========
 
       // Don't expand industry if we can't staff what we already have
-      //if( workAccess < AUTO_BUILD_WORK_LIMIT ) return;
+      const workAcs = self.resState.get( .IND_ACS, .WORK );
 
       for( 0..indTypeC )| d |
       {
@@ -1027,14 +1028,21 @@ pub const Economy = struct
 
         if( indType.canBeBuiltIn( self.location, self.hasAtmo ))
         {
-          const actTrgt : f64 = self.indState.get( .ACT_TRGT, indType );
+          const actTrgt  : f64  = self.indState.get( .ACT_TRGT, indType );
+          const needWork : bool = ( indType.getResCons_f64( .WORK ) > def.EPS );
+          const canBuild : bool = ( !needWork or workAcs > AUTO_BUILD_WORK_THRESH );
+
 
           // Scale build amount : at THRESH build 0, at 1.0+ build full amount
-          if( actTrgt > AUTO_BUILD_IND_THRESH )
+          if( canBuild and actTrgt > AUTO_BUILD_IND_THRESH )
           {
             // 0.0 to AUTO_BUILD_MAX_SCALE
-            const scale : f64 = @min( AUTO_BUILD_MAX_SCALE, ( actTrgt - AUTO_BUILD_IND_THRESH ) / ( 1.0 - AUTO_BUILD_IND_THRESH ));
-            var  amount : f64 = scale * popCount * AUTO_BUILD_IND_FACTOR;
+            var scale : f64 = 1.0;
+                scale *= ( actTrgt - AUTO_BUILD_IND_THRESH  ) / ( 1.0 - AUTO_BUILD_IND_THRESH  );
+                scale *= ( workAcs - AUTO_BUILD_WORK_THRESH ) / ( 1.0 - AUTO_BUILD_WORK_THRESH );
+                scale  = @min( AUTO_BUILD_MAX_SCALE, scale );
+
+            var amount : f64 = scale * popCount * AUTO_BUILD_IND_FACTOR;
 
             // Dampen build amounts if any output resource is oversupplied
             inline for( 0..resTypeC )| r |
@@ -1061,7 +1069,7 @@ pub const Economy = struct
 
             if( amount > def.EPS )
             {
-              _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( amount ));
+              _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( amount ), .REPLACE);
             }
           }
         }

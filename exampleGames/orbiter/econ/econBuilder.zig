@@ -57,6 +57,12 @@ pub const BuildEntry = struct
   }
 };
 
+pub const EntryMode = enum( u8 )
+{
+  APPEND,
+  REPLACE,
+};
+
 
 const BUILD_QUEUE_CAPACITY : usize = 255;
 
@@ -83,15 +89,36 @@ pub const BuildQueue = struct
     return queue;
   }
 
-  pub fn addEntry( self : *BuildQueue, c : Construct, count : u64 ) bool
+  pub fn hasEntryForConstruct( self : *BuildQueue, c : Construct ) bool
+  {
+    for( self.entries )| e |{ if( std.meta.eql( c, e.construct ))
+    {
+      return true;
+    }}
+    return false;
+  }
+
+  pub fn addEntry( self : *BuildQueue, c : Construct, count : u64, mode : EntryMode ) bool
   {
     if( count == 0 ){ return false; }
 
-    // If construct same as last in list, increment amount to be built
-    if( self.entryCount > 0 and std.meta.eql( c, self.entries[ self.entryCount - 1 ].construct ))
+    // If construct already in list, set amount to be built based on mode
+    if( self.entryCount > 0 )
     {
-      self.entries[ self.entryCount - 1 ].buildCount += count;
-      return true;
+      for( 0..self.entryCount )| idx |
+      {
+        var e = &self.entries[ idx ];
+
+        if( std.meta.eql( c, e.construct ))
+        {
+          switch( mode )
+          {
+            .APPEND  => e.buildCount += count,
+            .REPLACE => e.buildCount  = count,
+          }
+          return true;
+        }
+      }
     }
 
     // If list is full, deny the build order
@@ -101,6 +128,7 @@ pub const BuildQueue = struct
       return false;
     }
 
+    // Add entry to the end of list
     self.entryCount += 1;
     self.entries[ self.entryCount - 1 ] = .{ .construct = c, .buildCount = count };
 
@@ -111,10 +139,10 @@ pub const BuildQueue = struct
   {
     if( amount == 0 ){ return; }
 
+    var idx : usize = 0;
+
     if( amount < self.entryCount )
     {
-      var idx : usize = 0;
-
       // Remove completed entries ( swap-remove from front to back )
       while( idx + amount < self.entryCount )
       {
@@ -123,11 +151,18 @@ pub const BuildQueue = struct
         idx += 1;
       }
       self.entryCount -= amount;
+
     }
-    else
+    else // Clear all entries
     {
-      // Clear all entries
       self.entryCount = 0;
+    }
+
+    // fill remaining slots with zeros
+    while( idx < BUILD_QUEUE_CAPACITY )
+    {
+      self.entries[ idx ].buildCount = 0;
+      idx += 1;
     }
   }
 
@@ -156,6 +191,7 @@ pub const BuildQueue = struct
   pub inline fn getTotalPartCost( self : *const BuildQueue ) f64
   {
     var total : f64 = 0;
+
     for( self.entries )| e |
     {
       if( e.buildCount != 0 )
@@ -186,31 +222,31 @@ pub const BuildQueue = struct
 
       for( 0..self.entryCount )| idx |
       {
-        var entry = &self.entries[ idx ];
+        var e = &self.entries[ idx ];
         var unitsBuilt : u64 = 0;
 
-        remainParts += @floatFromInt( entry.partProgress );
-        entry.partProgress = 0;
+        remainParts += @floatFromInt( e.partProgress );
+        e.partProgress = 0;
 
-        const unitPartCost = entry.construct.getPartCost();
-        const unitsToBuild = entry.calcBuildableAmount( remainParts );
+        const unitPartCost = e.construct.getPartCost();
+        const unitsToBuild = e.calcBuildableAmount( remainParts );
 
         if( unitsToBuild > def.EPS )
         {
-          unitsBuilt = econ.tryBuild( entry.construct, unitsToBuild, false );
+          unitsBuilt = econ.tryBuild( e.construct, unitsToBuild, false );
           const unitsBuilt_f : f64 = @floatFromInt( unitsBuilt );
 
           remainParts        -= unitsBuilt_f * unitPartCost;
-          entry.buildCount   -= unitsBuilt;
+          e.buildCount   -= unitsBuilt;
           self.totUnitsBuilt += unitsBuilt;
         }
 
 
         // Failed to close the entry : likely cannot build anything more
-        if( !entry.isEntryClosed() )
+        if( !e.isEntryClosed() )
         {
           def.log( .DEBUG, 0, @src(), "@ Could not close build queue : stashed remaining {d} parts", .{ remainParts });
-          entry.partProgress += @intFromFloat( remainParts );
+          e.partProgress += @intFromFloat( remainParts );
           break;
         }
 
