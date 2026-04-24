@@ -10,10 +10,10 @@ const ResType  = gdf.ResType;
 const InfType  = gdf.InfType;
 const IndType  = gdf.IndType;
 
-const vesTypeC  = VesType.count;
-const resTypeC  = ResType.count;
-const infTypeC  = InfType.count;
-const indTypeC  = IndType.count;
+const vesTypeC = VesType.count;
+const resTypeC = ResType.count;
+const infTypeC = InfType.count;
+const indTypeC = IndType.count;
 
 
 const cst = @import( "construct.zig" );
@@ -113,8 +113,8 @@ pub const BuildQueue = struct
         {
           switch( mode )
           {
-            .APPEND  => e.buildCount += count,
-            .REPLACE => e.buildCount  = count,
+            .APPEND  => e.buildCount +=       count,
+            .REPLACE => e.buildCount  = @max( count, e.buildCount ), // Prevents overriding player-requested entries
           }
           return true;
         }
@@ -274,4 +274,6 @@ pub const BuildQueue = struct
 
     return;
   }
+
+  // TODO : add a "log build queue" function
 };

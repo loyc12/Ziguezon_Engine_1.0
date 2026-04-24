@@ -966,13 +966,13 @@ pub const Economy = struct
   const AUTO_BUILD_MAX_SCALE    : f64 = 2.0; // Max build scale multiplier (0.0 at thresh, up to this at 100%+)
   const AUTO_BUILD_QUEUE_LIMIT  : u32 = 128; // Max number of queued construction orders before ignoring autoBuild
 
-  const AUTO_BUILD_INF_THRESH   : f64 = 0.75000; // Infrastructure usage level above which new builds are triggered
-  const AUTO_BUILD_INF_FACTOR   : f64 = 0.00001; // Fraction of pop count to build per tick at full scale (inf)
+  const AUTO_BUILD_INF_THRESH   : f64 = 0.80000; // Infrastructure usage level above which new builds are triggered
+  const AUTO_BUILD_INF_FACTOR   : f64 = 0.00005; // Fraction of pop count to build per tick at full scale (inf)
   const AUTO_BUILD_ASSEMBLY_F   : f64 = 0.01000; // Max ASSEMBLY count as a fraction of population count
 
   const AUTO_BUILD_WORK_THRESH  : f64 = 0.90000; // Min WORK supply/demand ratio required before expanding industry
-  const AUTO_BUILD_IND_THRESH   : f64 = 0.75000; // Industry activity target above which new builds are triggered
-  const AUTO_BUILD_IND_FACTOR   : f64 = 0.00001; // Fraction of pop count to build per tick at full scale (ind)
+  const AUTO_BUILD_IND_THRESH   : f64 = 0.80000; // Industry activity target above which new builds are triggered
+  const AUTO_BUILD_IND_FACTOR   : f64 = 0.00002; // Fraction of pop count to build per tick at full scale (ind)
   const AUTO_BUILD_ACCESS_LIMIT : f64 =    32.0; // Stored/demand ratio above which build amounts are dampened
 
   pub fn debugAutoBuild( self : *Economy ) void
@@ -1007,7 +1007,7 @@ pub const Economy = struct
           }
 
           // Building requested amount, if any
-          amount = @floor( amount );
+          amount = @ceil( amount );
 
           if( amount > def.EPS )
           {
@@ -1065,7 +1065,7 @@ pub const Economy = struct
             }
 
             // Building requested amount, if any
-            amount = @floor( amount );
+            amount = @ceil( amount );
 
             if( amount > def.EPS )
             {
