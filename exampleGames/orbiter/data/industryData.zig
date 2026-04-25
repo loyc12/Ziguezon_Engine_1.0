@@ -374,7 +374,7 @@ pub const IndStateEnum = enum( u8 )
   REVENUE,  // Amount of money gained by the owners from selling the output products last tick
   PROFIT,   // Revenues - Expenses
   MARGIN,   // Profits / Expense
-  CAPITAL,  // Stored profits from previous ticks ( decays via inflation )
+  SAVINGS,  // Stored profits from previous ticks ( decays via inflation )
 
   ACT_TRGT, // How active this industry wanted to be   last tick
   ACT_LVL,  // How active this industry ended up being last tick

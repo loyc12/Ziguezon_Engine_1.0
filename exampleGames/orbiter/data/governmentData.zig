@@ -54,7 +54,7 @@ pub const GovMonetaryEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  TREASURY,  // Accumulated capital
+  SAVINGS,   // Accumulated capital ( Tresury )
   NET_DELTA, // Revenues - Expenses ( negative = deficit )
 
 

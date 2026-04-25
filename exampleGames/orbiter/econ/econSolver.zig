@@ -887,7 +887,7 @@ const EconSolver = struct
     }
   }
 
-  const POP_MARGIN_FLOOR  : f64 = -2.5;
+  const POP_MARGIN_FLOOR : f64 = -2.5;
 
   fn updatePopFinances( self : *EconSolver ) void
   {
@@ -1040,7 +1040,7 @@ const EconSolver = struct
         econ.indState.set( .MARGIN,   indType, margin         );
         econ.indState.set( .ACT_TRGT, indType, activityTarget );
 
-        const prevCapital = econ.indState.get( .CAPITAL, indType );
+        const prevCapital = econ.indState.get( .SAVINGS, indType );
 
         if( isPresent )
         {
@@ -1052,7 +1052,7 @@ const EconSolver = struct
           econ.indState.set( .EXPENSE,  indType, expense     );
           econ.indState.set( .REVENUE,  indType, revenue     );
           econ.indState.set( .PROFIT,   indType, profit      );
-          econ.indState.set( .CAPITAL,  indType, nextCapital );
+          econ.indState.set( .SAVINGS,  indType, nextCapital );
         }
         else
         {
@@ -1071,7 +1071,7 @@ const EconSolver = struct
         econ.indState.zero( .EXPENSE,  indType );
         econ.indState.zero( .REVENUE,  indType );
         econ.indState.zero( .PROFIT,   indType );
-        econ.indState.zero( .CAPITAL,  indType );
+        econ.indState.zero( .SAVINGS,  indType );
       }
     }
   }

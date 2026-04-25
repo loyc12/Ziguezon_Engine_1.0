@@ -828,11 +828,11 @@ pub const Economy = struct
     inline for( 0..indTypeC )| d |
     {
       const indType = IndType.fromIdx( d );
-      const baseCapital = self.indState.get( .CAPITAL, indType );
+      const baseCapital = self.indState.get( .SAVINGS, indType );
 
       if( baseCapital > def.EPS )
       {
-        self.indState.sub( .CAPITAL, indType, baseCapital * self.inflationRate );
+        self.indState.sub( .SAVINGS, indType, baseCapital * self.inflationRate );
       }
 
       // TODO : also apply inflation to inf, pop and gov
@@ -963,17 +963,28 @@ pub const Economy = struct
   }
 
 
-  const AUTO_BUILD_MAX_SCALE    : f64 = 2.0; // Max build scale multiplier (0.0 at thresh, up to this at 100%+)
-  const AUTO_BUILD_QUEUE_LIMIT  : u32 = 128; // Max number of queued construction orders before ignoring autoBuild
+  const AUTO_DECAY_RES_FACTOR   : f64 = 0.75; // Fraction of build PART costs reimbursed on decay
+  const AUTO_BUILD_MAX_SCALE    : f64 = 2.00; // Max build scale multiplier ( 0.0 at thresh, this at 100%+ )
+  const AUTO_BUILD_QUEUE_LIMIT  : u32 =  128; // Max number of queued construction orders before ignoring autoBuild
 
-  const AUTO_BUILD_INF_THRESH   : f64 = 0.80000; // Infrastructure usage level above which new builds are triggered
+
+  const AUTO_BUILD_INF_THRESH   : f64 = 0.80000; // Infrastructure usage level above which it grows
   const AUTO_BUILD_INF_FACTOR   : f64 = 0.00005; // Fraction of pop count to build per tick at full scale (inf)
   const AUTO_BUILD_ASSEMBLY_F   : f64 = 0.01000; // Max ASSEMBLY count as a fraction of population count
 
+  const AUTO_DECAY_INF_THRESH   : f64 = 0.25000; // Infrastructure use rate bellow which it decays
+  const AUTO_DECAY_INF_FACTOR   : f64 = 0.00001; // Fraction of pop count to decay per tick at full scale (ind)
+  const AUTO_DECAY_ASSEMBLY_F   : f64 = 0.00025; // Min ASSEMBLY count as a fraction of population count
+
+
   const AUTO_BUILD_WORK_THRESH  : f64 = 0.90000; // Min WORK supply/demand ratio required before expanding industry
-  const AUTO_BUILD_IND_THRESH   : f64 = 0.80000; // Industry activity target above which new builds are triggered
+  const AUTO_BUILD_IND_THRESH   : f64 = 0.80000; // Industry activity target above which it grows
   const AUTO_BUILD_IND_FACTOR   : f64 = 0.00002; // Fraction of pop count to build per tick at full scale (ind)
   const AUTO_BUILD_ACCESS_LIMIT : f64 =    32.0; // Stored/demand ratio above which build amounts are dampened
+
+  const AUTO_DECAY_IND_THRESH   : f64 = 0.60000; // Industry activity target bellow which it decays
+  const AUTO_DECAY_IND_FACTOR   : f64 = 0.00001; // Fraction of pop count to decay per tick at full scale (ind)
+
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
@@ -982,6 +993,8 @@ pub const Economy = struct
 
     if( self.buildQueue.?.getEntryCount() < AUTO_BUILD_QUEUE_LIMIT )
     {
+      def.qlog( .INFO, 0, @src(), "Logging autoBuilds : ");
+
       // ======== INFRASTRUCTURE ========
 
       for( 0..infTypeC )| f |
@@ -990,12 +1003,14 @@ pub const Economy = struct
         const useLvl : f64  = self.infState.get( .USE_LVL, infType );
 
 
-        // Scale build amount : at THRESH build 0, at 1.0+ build full amount
         if( useLvl > AUTO_BUILD_INF_THRESH )
         {
-          // 0.0 to AUTO_BUILD_MAX_SCALE
-          const scale : f64 = @min( AUTO_BUILD_MAX_SCALE, ( useLvl - AUTO_BUILD_INF_THRESH ) / ( 1.0 - AUTO_BUILD_INF_THRESH ));
-          var  amount : f64 = scale * popCount * AUTO_BUILD_INF_FACTOR;
+          // Scale build amount : at THRESH build 0, at 1.0+ build full amount
+          var scale : f64 = 1.0;
+              scale *= ( useLvl - AUTO_BUILD_INF_THRESH ) / ( 1.0 - AUTO_BUILD_INF_THRESH );
+              scale  = @min( AUTO_BUILD_MAX_SCALE, scale );
+
+          var amount : f64 = scale * popCount * AUTO_BUILD_INF_FACTOR;
 
           // Clamp ASSEMBLY to a fraction of population to prevent self-reinforcing build spiral
           if( infType == .ASSEMBLY )
@@ -1006,12 +1021,55 @@ pub const Economy = struct
             amount = @min( amount, @max( 0.0, cap - count ));
           }
 
-          // Building requested amount, if any
           amount = @ceil( amount );
 
+          // Building requested amount, if any
           if( amount > def.EPS )
           {
+            def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( infType ) });
             _ = self.buildQueue.?.addEntry( .{ .inf = infType }, @intFromFloat( amount ), .REPLACE );
+          }
+        }
+        else if( useLvl < AUTO_DECAY_INF_THRESH )
+        {
+          // Scale decay amount : at THRESH decay 0, at 0.0 decay full amount
+          var scale : f64 = 1.0;
+              scale *= ( AUTO_DECAY_INF_THRESH - useLvl ) / AUTO_DECAY_INF_THRESH;
+              scale  = @max( 0, scale );
+
+          var amount : f64 = scale * popCount * AUTO_DECAY_INF_FACTOR;
+              amount = @ceil( amount );
+
+          // Clamp ASSEMBLY to a fraction of population to prevent total decay
+          if( infType == .ASSEMBLY )
+          {
+            amount *= 0.5; // Slow ASEEMBLY decay further
+
+            const count : f64 = self.infState.get( .COUNT, .ASSEMBLY );
+            const cap   : f64 = popCount * AUTO_BUILD_ASSEMBLY_F;
+
+            amount = @min( amount, @max( 0.0, cap - count ));
+          }
+
+          // Removing requested amount, if any
+          if( amount > def.EPS )
+          {
+            def.log( .CONT, 0, @src(), "@ Selling off {d:.0} {s}", .{ amount, @tagName( infType )});
+            const infDelta = @min( amount, self.infState.get( .COUNT, infType ));
+
+            self.infState.sub( .COUNT, infType, infDelta );
+            self.infState.sub( .DELTA, infType, infDelta );
+            self.infState.add( .DECAY, infType, infDelta );
+
+            const unitCost = infType.getMetric_f64( .PART_COST );
+            const partCost = @floor( infDelta * unitCost * AUTO_DECAY_RES_FACTOR );
+
+            self.resState.add( .COUNT, .PART, partCost );
+            self.resState.add( .DELTA, .PART, partCost );
+
+            const partPrice = self.resState.get( .PRICE, .PART );
+
+            self.infState.add( .SAVINGS, infType, partCost * partPrice );
           }
         }
       }
@@ -1019,7 +1077,6 @@ pub const Economy = struct
 
       // ======== INDUSTRY ========
 
-      // Don't expand industry if we can't staff what we already have
       const workAcs = self.resState.get( .IND_ACS, .WORK );
 
       for( 0..indTypeC )| d |
@@ -1028,15 +1085,15 @@ pub const Economy = struct
 
         if( indType.canBeBuiltIn( self.location, self.hasAtmo ))
         {
-          const actTrgt  : f64  = self.indState.get( .ACT_TRGT, indType );
+          const actTrgt : f64 = self.indState.get( .ACT_TRGT, indType );
+
+          // Don't expand industry if we can't staff what we already have
           const needWork : bool = ( indType.getResCons_f64( .WORK ) > def.EPS );
           const canBuild : bool = ( !needWork or workAcs > AUTO_BUILD_WORK_THRESH );
 
-
-          // Scale build amount : at THRESH build 0, at 1.0+ build full amount
           if( canBuild and actTrgt > AUTO_BUILD_IND_THRESH )
           {
-            // 0.0 to AUTO_BUILD_MAX_SCALE
+            // Scale build amount : at THRESH build 0, at 1.0+ build full amount
             var scale : f64 = 1.0;
                 scale *= ( actTrgt - AUTO_BUILD_IND_THRESH  ) / ( 1.0 - AUTO_BUILD_IND_THRESH  );
                 scale *= ( workAcs - AUTO_BUILD_WORK_THRESH ) / ( 1.0 - AUTO_BUILD_WORK_THRESH );
@@ -1064,12 +1121,45 @@ pub const Economy = struct
               }
             }
 
-            // Building requested amount, if any
             amount = @ceil( amount );
 
+            // Building requested amount, if any
             if( amount > def.EPS )
             {
-              _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( amount ), .REPLACE);
+              def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( indType ) });
+              _ = self.buildQueue.?.addEntry( .{ .ind = indType }, @intFromFloat( amount ), .REPLACE );
+              // Will need to make industry spend capital on building new buildings once actually built
+            }
+          }
+          else if( actTrgt < AUTO_DECAY_IND_THRESH )
+          {
+            // Scale decay amount : at THRESH decay 0, at 0.0 decay full amount
+            var scale : f64 = 1.0;
+                scale *= ( AUTO_DECAY_IND_THRESH - actTrgt ) / AUTO_DECAY_IND_THRESH;
+                scale  = @max( 0, scale );
+
+            var amount : f64 = scale * popCount * AUTO_DECAY_IND_FACTOR;
+                amount = @ceil( amount );
+
+            // Removing requested amount, if any
+            if( amount > def.EPS )
+            {
+              def.log( .CONT, 0, @src(), "@ Selling off {d:.0} {s}", .{ amount, @tagName( indType )});
+              const indDelta = @min( amount, self.indState.get( .COUNT, indType ));
+
+              self.indState.sub( .COUNT, indType, indDelta );
+              self.indState.sub( .DELTA, indType, indDelta );
+              self.indState.add( .DECAY, indType, indDelta );
+
+              const unitCost = indType.getMetric_f64( .PART_COST );
+              const partCost = @floor( indDelta * unitCost * AUTO_DECAY_RES_FACTOR );
+
+              self.resState.add( .COUNT, .PART, partCost );
+              self.resState.add( .DELTA, .PART, partCost );
+
+              const partPrice = self.resState.get( .PRICE, .PART );
+
+              self.indState.add( .SAVINGS, indType, partCost * partPrice );
             }
           }
         }
