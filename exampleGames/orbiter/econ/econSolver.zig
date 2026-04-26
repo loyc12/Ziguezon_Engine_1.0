@@ -866,7 +866,7 @@ const EconSolver = struct
                        + self.resFlowData.get( .NAT, .REAL_PROD, resType );
 
       const ceil : f64 = MAX_SCARC_RATIO; // Scarcity ceiling
-      var  ratio : f64 =   0.0;
+      var  ratio : f64 = 0.0;
 
       if(      realSupply > def.EPS ){ ratio = @min( ceil, realDemand / realSupply ); }
       else if( realDemand > def.EPS ){ ratio = ceil; }

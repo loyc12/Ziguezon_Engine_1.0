@@ -38,11 +38,12 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
 
   if( ng.isPaused() and def.ray.isKeyPressed( def.ray.KeyboardKey.o ))
   {
+    def.qlog( .INFO, 0, @src(), "$ Forcing tick to occur" );
     ng.forceTick();
   }
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ target.changeTargetBy(  1 ); }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ target.changeTargetBy( -1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.j ) or def.ray.isKeyPressed( def.ray.KeyboardKey.kp_subtract )){ target.changeTargetBy( -1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.k ) or def.ray.isKeyPressed( def.ray.KeyboardKey.kp_add      )){ target.changeTargetBy(  1 ); }
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.f ))
   {
     target.camFollow = !target.camFollow;
@@ -53,10 +54,10 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs(
     }
   }
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_multiply )){ times.changeSpeed(  1 ); }
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.kp_divide   )){ times.changeSpeed( -1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.u ) or def.ray.isKeyPressed( def.ray.KeyboardKey.kp_divide   )){ times.changeSpeed( -1 ); }
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.i ) or def.ray.isKeyPressed( def.ray.KeyboardKey.kp_multiply )){ times.changeSpeed(  1 ); }
 
-  if( def.ray.isKeyDown( def.ray.KeyboardKey.left_shift ))
+  if( def.ray.isKeyDown( def.ray.KeyboardKey.left_shift ) or def.ray.isKeyDown( def.ray.KeyboardKey.right_shift ))
   {
     const bodyStore : *gdf.BodyStore = @ptrCast( @alignCast( ng.componentRegistry.get( "bodyStore"  )));
 
