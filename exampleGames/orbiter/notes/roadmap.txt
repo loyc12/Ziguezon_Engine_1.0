@@ -1,0 +1,208 @@
+================ Orbiter Economy - Continuation Roadmap ================
+
+// NOTE : Last reset on April 27th, 2026
+
+Goals :
+  - Replace hardcoded debug autobuild with agent-driven decisions
+  - Add a Government layer with taxation, subsidies, and policy levers
+  - Add inter-economy trade riding on the existing travel table
+  - Keep the solver shape ( stepEcon's ordered phases ) intact ; new
+    behavior should slot in as new phase steps, not as ad-hoc patches
+
+Tiers must be done in order. Items inside a tier can be tackled
+in any order, though the listed order minimises rework.
+
+
+================ TIER 0 - PRE-WORK ================
+
+Small, isolated, unblocks everything else.
+
+  0.1 Trade field stubs ( Phase 1 #1 in todo ) - trivial
+      - Add to ResStateData : EXP_CAP, IMP_DEM, TRADE_BAL per ResType
+      - Zero-init in hardInit ; no behavior change yet
+
+  0.2 Mount GovMonetaryData on Economy - trivial
+      - Add `government : GovMonetaryData = .{}` field on Economy
+      - Add empty tickGov() called from tickEcon between phases
+      - No behavior yet ; just establishes the slot
+
+  0.3 Deduplicate maintenance cost calc - trivial
+      - Cache the ( count * baseCost * mntRate * maintFactor ) so it
+        can be reused by calcMntMaxDelta and updateIndFinances
+
+  0.4 Refactor current logic organization
+      - To ease upcoming expansion of economy logic
+      - To streamline conceptualization of resources and cause-effect flows
+      - Rename non-standard variable names, standardise DataMatrices vs simple Arrays useage, etc
+
+
+================ TIER 1 - AGENT REFACTOR ================
+
+Make industries and infrastructure responsible for their own
+growth/decay decisions, instead of debugAutoBuild on Economy.
+
+  1.1 Construct request provenance
+      - Add a `requester` ( ~Agent ) enum to BuildEntry : { POP, IND, INF, GOV, COM }
+      - Update BuildQueue.addEntry signature to take it
+      - Update tryBuild path to settle the bill against the right pot
+
+  1.2 Industry self-build / self-shrink
+      - For each IndType : decide each tick whether to enqueue / dequeue / liquidate
+        a build, based on ( SAVINGS, MARGIN, ACT_TRGT, workAccess, etc )
+      - Refactor the AUTO_BUILD_* constants into per-agent variables
+      - Buying parts costs SAVINGS at PART price ; queue caps growth speed
+      - Selling off ( decay ) at AUTO_DECAY_RES_FACTOR returns parts AND
+        credits SAVINGS at PART price
+
+  1.3 Infrastructure self-build / self-shrink
+      - Same shape as 1.2 but most infra has no SAVINGS of its own
+      - Two options ( validate later ) :
+        a : Infra is "public" - its decisions are driven by GOV ( Tier 2 )
+        b : Infra is "operator-owned"- add SAVINGS to InfStateData
+      - Most likely choice : (a) for HOUSING / HABITAT ( public goods ),
+        (b) for STORAGE / ASSEMBLY ( commercially run )
+
+  1.4 Population spending dynamics
+      - Pops already have SAVINGS, MARGIN ; consumption stays welfare-based
+        but expenses now also include housing rent ( -> infrastructure SAVINGS
+        if commercial, -> gov SAVINGS as TAX_LND if public )
+      - Births/deaths still welfare-driven ; SAVINGS gates migration ( Tier 4 )
+
+  1.5 Retire debugAutoBuild
+      - Once 1.2 + 1.3 are validated, deprecate debugAutoBuild from Economy
+      - Keep the constants but move them into agent-specific fields
+
+  1.X Additional ideas      // NOTE : review and integrate in plans
+      - Have build PARTS be comited on queue, not on construction
+      - Allow for multiple build resources to be used, depending on build
+      - Have ASSEMBLIES use WORK and ENERGY as well as build-dependent resources ( only PARTS for now )
+
+
+================ TIER 2 - GOVERNMENT ================
+
+Treasury, taxation, subsidies, and one initial policy levers to validate the loop.
+
+  2.1 Tax pass ( per tick, after updateIndFinances )
+      - TAX_POP : pop profit * popTaxRate -> Treasury
+      - TAX_IND : ind profit * indTaxRate -> Treasury
+      - TAX_LND : areaUsed by IND/INF * landTaxRate -> Treasury
+      - Update per-agent SAVINGS to subtract the tax
+      - Initialise rate grid to gentle defaults ( e.g. 5-15% )
+
+  2.2 Subsidy pass
+      - SUB_POP / SUB_IND offset MARGIN by a configured share of expense
+      - GRT_POP / GRT_IND inject SAVINGS to specific agents ( triggered, not per-tick )
+
+  2.3 Government construction
+      - SPEND_BLD lets gov enqueue its own BuildEntry ( requester = .GOV )
+      - Pays parts at PART price from Treasury SAVINGS
+      - Default policy : maintain HOUSING/HABITAT/ASSEMBLY
+        availability floor based on pop projections
+
+  2.4 Government decay handling
+      - When deficit > some window : raise tax rates or sell strategic reserves ( Phase 6 #5 )
+      - Stub for now ; just clamp Treasury SAVINGS >= some debt floor and log a warning
+
+  2.5 First player-facing policy lever
+      - One concrete lever ( e.g. tax rate slider per ResType ) wired
+        end-to-end so the loop is provably interactive
+      - Validates the data-grid format from governmentData.zig
+      - Other levers ride the same plumbing
+
+
+================ TIER 3 - INTER-ECONOMY TRADE ================
+
+Hooks into ECON_TRAVEL_TABLE which transferSolver already populates.
+
+  3.1 Trade signals
+      - Each economy populates EXP_CAP / IMP_DEM / pricePoint per ResType at end of tickEcon
+      - Surplus = max( 0, prod - cons - refill? ) -> EXP_CAP
+      - Deficit = max( 0, demand - prod ) -> IMP_DEM
+
+  3.2 Solar-system trade matching pass
+      - New top-level function ( not per-economy ) that runs between per-economy ticks
+      - For each ResType : sort exporters by ( price + travelCost ) ascending,
+        sort importers by ( price - travelCost ) descending
+      - Greedy match ; honour exporter EXP_CAP and importer IMP_DEM
+      - Travel cost = f( deltaV ) priced in PART or POWER
+      - Generate Trade objects : { res, count, fromEcon, toEcon, arriveTick }
+
+  3.3 In-flight cargo
+      - Departure economy locks resource on departure ( prevents double-spend )
+      - Trade objects sit in a global queue
+      - Each tick : decrement timer and check for arrivals
+      - Arrival economy adds resource to stock, credit exporter SAVINGS, debit importer SAVINGS
+
+  3.4 Tariffs ( gov hook )
+      - TAX_COM applied to inbound trade by importing government
+      - Deducted from importer at arrival ; credited to Treasury
+      - Embargoes = rate so high trade is uneconomical
+
+  3.5 Vessel-mediated transport
+      - Replace the abstract teleport in 3.3 with FREIGHTER vessels
+      - Vessels are built, consume parts/work, have finite stocks, cargo and pop capacity
+      - Stocks ( Fuel, Food, Water ) gate max transport duration
+      - EXP_CAP becomes ( freighter cap * trips per tick )
+      - This is a big task ; do only after 3.1-3.4 prove the design
+
+
+================ TIER 4 - DYNAMICS LAYER ================
+
+These can be parallelized across work sessions.
+
+  4.1 Economic expectations ( smoothing )
+      - Per ResType : exponential moving average of PRICE, DEMAND, SUPPLY
+      - Industries decide builds off EMA values, not instantaneous ones
+      - Reduces oscillation ; enables business cycles
+
+  4.2 Inflation driven by monetary mass
+      - inflationRate = f( total SAVINGS across all agents this tick vs. last tick )
+      - Replace / augments the hardcoded flat value used for "monetary decay over time"
+
+  4.3 Welfare & Employment based migration
+      - Pops flow between economies along trade routes
+      - Driven by ( welfare differential - travel cost )
+      - Capacity-limited by transport ( 3.5 ) ; treats pops as cargo with maintenance
+
+  4.4 Societal Simulation
+      - Add more complex society simulation aspects ( Think "Democracy 3"-lite )
+      - Would replace the singular access ( welfare ) metric
+      - Look out for performance costs ( could be as costly as economy itself )
+      - May tick less or more often than economies ( ex : once a month )
+
+
+================ TIER 5 - WORLD COLOUR ================
+
+Optional but high-impact for a "humanity in space" game feel.
+
+  5.1 Extraction depletion
+      - Per-economy deposit[res] ; mining yields scale by sqrt( deposit )
+      - Bodies become finite ; exploration matters
+
+  5.2 Disasters / shocks
+      - Solar flares ( pulse SUN_ACCESS ), pandemics ( pulse FATALITY ),
+        accidents ( wipe COUNT for one Inf/Ind type )
+      - Tests resilience ; gives gov reserves a job ( 2.4 )
+
+  5.3 Megaprojects
+      - Multi-economy capital projects ( O'Neill cylinders, Dyson swarm increment,
+        mass driver chain )
+      - Aggregate non-GROUND BuildQueue across contributors ; long lead times
+
+  5.4 Tech tree
+      - TECH ResType produced by R&D industry
+      - Spending TECH unlocks new InfType/IndType/VesType or shifts metrics
+      - Foundation for long-game progression
+
+
+
+
+================ SUGGESTED ADDITIONS ( fit the game well ) ================
+
+  - Deployable strategic reserves ( govt stockpile per ResType, smooths shocks )
+  - Black market ( trade that ignores tariffs at a price-and-risk premium )
+  - POP & WORK subtypes ( SCIENTIST, ENGINEER, COLONIST as PopType variants
+    that gate which industries can run at full activity )
+  - Long-haul transit hazards ( cargo loss probability scaling with deltaV )
+  - Reputation / trust per polity-pair that dampens trade volume independently of price
+  - Insurance / futures markets at very late game ( Tier 5 dynamics )

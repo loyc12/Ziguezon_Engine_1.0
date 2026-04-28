@@ -63,7 +63,7 @@ pub const Economy = struct
   infState    : gdf.nfrs_d.InfStateData   = .{},
   indState    : gdf.ndst_d.IndStateData   = .{},
 
-  inflationRate : f64 = 1.0, // TODO : update this bse on growth/decay of economy
+  inflationRate : f64 = 1.0, // TODO : update this based on growth/decay of economy
 
   avgPopFulfilment : f64 = 0.0,
   avgInfUsage      : f64 = 0.0,
@@ -1197,7 +1197,7 @@ pub const Economy = struct
     // Economic tick
     self.applyInflation();
     self.calcBuildDemand();
-    ecnSlvr.resolveEcon( self );
+    ecnSlvr.stepEcon( self );
     self.tickBuildQueue();
 
     // Debug Actions

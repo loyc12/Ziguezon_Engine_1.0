@@ -1,0 +1,155 @@
+================ Orbiter - Project Philosophy & Guidelines ================
+
+This document is a reference for design decisions, not a feature list. When
+in doubt about whether a mechanic, refactor, or feature belongs in Orbiter,
+read this and ask whether the proposal aligns with these principles.
+
+
+================ THE GAME ================
+
+Orbiter is a macro-economic simulation set in a solar system ( Ours by default ).
+The player guides humanity's first centuries of off-world expansion, from
+near-Earth orbit out to the outer planets. The unit of play is the economy,
+not the ship or the colony building, and time is mesured in days and years.
+
+The fantasy is "be the planning office of a young space-faring civilisation",
+not "command an empire". The player wins by enabling outcomes, not by
+clicking units.
+
+
+================ CORE PRINCIPLES ================
+
+
+  1 EMERGENCE OVER SCRIPTING
+
+    Outcomes should primarily arise from the interaction of simple rules, not
+    from scripted events. A famine should be the visible consequence of resource
+    allocation choices and price dynamics. If we can name the cause downstream
+    of player actions, we did it right.
+
+
+  2 PHYSICAL CAUSATION FIRST, MONEY SECOND
+
+    The economy is grounded in resource flows ( mass, energy, work ). Money
+    and prices are signals laid on top of physical flows ; they should only
+    change behavior through agent decisions, never replace the underlying
+    physical accounting. If we ever find ourselves clamping a stock for a
+    pricing reason, we have inverted the layers.
+
+
+  3 AGENT-LOCAL DECISIONS, GLOBAL CONSEQUENCES
+
+    Each economic agent ( pop, industry, infrastructure operator,
+    government, trader ) decides from its own state ( savings, margin,
+    access ) and only its own state. Aggregate behaviour is the sum of
+    local decisions. There is no oracle that "knows" the right answer for
+    the whole economy. The solver coordinates allocation, but it does
+    not strategise.
+
+
+  4 POLICY OVER MICROMANAGEMENT
+
+    The player acts on rates, weights, priorities, and projects, not on
+    individual buildings. The interface scales with the simulation : when
+    the player owns 20 economies, the same policy levers still work. New
+    mechanics must answer "what knob does the player turn ?" before they
+    ship.
+
+
+  5 COMPONENT-FIRST, STATE-EXPLICIT
+
+    Every persistent thing is a struct of plain data, accessed by typed
+    keys ( ResStateData, InfStateData, etc ). Behaviour lives in functions
+    that take those structs. No hidden mutable globals reachable from
+    simulation code. If we cannot serialise it, it probably should not exist.
+
+
+  6 MULTI-SCALE BY CONSTRUCTION
+
+    Mechanics must work the same whether you simulate one Mars colony or
+    200 economies across the system. Per-tick costs must be linear in the
+    number of agents ( or near-linear ). Aggregation ( variable tick rate,
+    background economies ) is a first-class feature, not a late optimisation.
+
+
+  7 RESEARCH-GRADE READABILITY
+
+    The simulation should be inspectable. Logs are first-class. Metrics
+    are accumulated even when no UI consumes them. Debug overlays should
+    show the same numbers the solver uses, not summaries of summaries.
+    If a balancing pass requires reading the source, something is wrong.
+
+
+  8 GAME-FEEL DOMINATES STRICT REALISM
+
+    Orbital mechanics, mass budgets, and biosphere rules are realistic
+    where realism creates interesting decisions and abstracted where it
+    creates bookkeeping. The deltaV table is real ; the freighter manifest
+    is not. Choose the version of reality that produces interesting choices.
+
+
+================ DESIGN HEURISTICS ================
+
+  - "Why does this exist ?" -- Every system must answer the question
+    "what does the player do differently because this exists ?". If the
+    only answer is "nothing, but it is realistic", cut it.
+
+  - "Could the player have predicted this ?" -- Outcomes should be
+    explicable from visible state. If a colony collapses, the player should
+    be able to walk back to the cause. Hidden randomness that flips
+    outcomes is forbidden ; transparent randomness that varies textures
+    is fine.
+
+  - "Does it scale ?" -- Before adding a per-tick computation, multiply by
+    1000 economies and ask if it still ticks. If the answer is no, it
+    needs optimization and aggregation.
+
+  - "Does it introduce a special case ?" -- Prefer mechanics that fit
+    inside an existing loop ( another ResType, another consumer class )
+    over mechanics that introduce a new top-level pass. The solver's
+    phase ordering is the project's spine.
+
+  - "Can a contributor read it cold ?" -- Names, comments, and structure
+    should be self-explanatory at the file level. Save cleverness for the
+    math ; the surface should be boring and readable.
+
+
+================ SCOPE BOUNDARIES ================
+
+  IN-SCOPE :
+
+    - Macro-economic dynamics across solar-system scales
+    - Resource flows : energy, work, parts, food, water, etc
+    - Population dynamics : welfare, births/deaths, migration
+    - Government : taxation, subsidies, public works, policy
+    - Trade : surplus / deficit matching by price and travel cost
+    - Money : capital accumulation / decay / depreciation / transactions
+    - Long-game : technology, megaprojects, societal simulation
+    - Player leverage : policies, rates, discretionary investments, state actions
+
+
+  OUT-OF-SCOPE ( explicitly ) :
+
+    - Direct unit control ( no fleet command, no individual ship orders )
+    - Combat as a primary loop ( shocks and disasters yes ; war as
+      gameplay no, or at least not until the game shipped out first )
+    - Real-time gameplay ( only orbital mechanics can be near real-time )
+
+
+================ COLLABORATION GUIDELINES ================
+
+  - When adding a feature, update todo.txt FIRST. The roadmap is the
+    contract ; the code follows it, not the other way round.
+
+  - Solver phases ( tickEcon, stepEcon ) are the spine. New behavior gets a new
+    phase function or extends an existing one ; do not bypass the phase ordering.
+
+  - Numbers in flight : keep f64 inside the solver. Round only when
+    publishing back to econ state ( e.g. floor / ceil at boundaries ).
+
+  - Logging is design documentation. Every phase should log enough that a balance
+    issue can be diagnosed from a single tick's logs without re-running the simulator.
+
+  - Debug-only code ( debugAutoBuild, debugSet*, testEconLogs ) lives next to the
+    real code but is clearly marked. It is allowed to violate the agent-locality
+    principle while the real version is being built. It must be replaced, not entrenched.

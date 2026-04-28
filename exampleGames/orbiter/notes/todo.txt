@@ -1,0 +1,193 @@
+Legend :
+  [x]   done
+  [~]   partial / scaffolded
+  [ ]   not started
+
+Sections are roughly ordered by foundation -> dynamics -> longterm
+Items inside a section are ordered by priority within that section
+
+================ Economic Integration Plan ================
+
+======== PHASE 1 - Foundations ========
+
+
+[ ] 1. Trade field stubs
+       - Per-ResType : exportCapacity, importDemand, tradeBalance on Economy
+       - Per-ResType : pricePoint exposed to other economies for matching
+       - Currently unused, but unblocks Phase 4 trade work
+
+[ ] 2. Government wiring
+       - Mount GovMonetaryData on Economy ( governmentData.zig already
+         defines the types but no instance lives on the economy )
+       - Add tickGov() stub between tickEcon() phases
+       - Treasury savings + per-tick NET_DELTA tracking
+
+
+
+======== PHASE 2 - Allocation & Population ========
+
+
+[~] 1. Priority-weighted allocation
+       - DONE  : per-class access paths ( calcPopResAccess / calcMntResAccess /
+                 calcIndResAccess / calcBldResAccess ), strict priority via
+                 allocatedRes book-keeping, POP -> MNT -> IND -> BLD order
+       - TODO  : replace strict priority with weights per consumer-class
+       - TODO  : expose those weights as policy levers ( see Phase 4 gov work )
+       - TODO  : confirm POP_PROD_FLOOR ( old "minWorkRate" hack ) can be
+                 removed once weighted allocation is validated
+
+[~] 2. Labor as weighted allocation
+       - DONE  : WORK is allocated through the same access pipeline as any
+                 other resource ( aggregate IND bucket )
+       - TODO  : per-industry WORK weights so industries compete for labor
+       - TODO  : industries that PRODUCE WORK ( automation ) — currently no
+                 industry has a positive WORK output
+
+[x] 3. Welfare-based population model
+       - DONE  : updatePopCount iterates every resType with popType mortRate;
+                 no hardcoded FOOD/WATER/POWER checks
+       - DONE  : composite jobAccess + minResAccess modifiers on natality
+
+[~] 4. Economic metrics dashboard
+       - DONE  : avgPopFulfilment, avgInfUsage, avgIndActivity, avgResAccess
+       - TODO  : GDP ( sum of real production * price per ResType )
+       - TODO  : scarcity index ( aggregate 1 - GEN access )
+       - TODO  : welfare composite ( weighted avg of pop access by mortRate )
+       - TODO  : per-tick history buffer for charting
+
+
+
+======== PHASE 3 - Signals & Depletion ========
+
+
+[x] 1. Resource price signals
+       - DONE  : updateResPrices with elasticity, dampening, scarcity ceiling
+                 and price floor; lerp toward equilibrium each tick
+       - DONE  : prices feed updatePopFinances / updateIndFinances and drive
+                 ACT_TRGT via sigmoid of margin
+
+[ ] 2. Extraction depletion
+       - Per-economy mineDeposit[res] and mineRate[res]
+       - GROUND_MINE / PROBE_MINE yields scale by remaining deposit
+       - Enables exploration value and per-body differentiation
+
+[~] 3. Infrastructure throughput constraints
+       - DONE  : USE_LVL tracked per InfType
+       - TODO  : USE_LVL above some threshold should degrade resource access
+                 for downstream consumers ( e.g. STORAGE saturation -> DECAY
+                 multiplier, future TRANSPORT -> intra-economy delivery cap )
+
+[~] 4. Capital depreciation
+       - DONE  : Maintenance demand computed in calcMntMaxDelta and consumed
+                 in calcMntResCons
+       - TODO  : Unpaid maintenance must DEGRADE buildings ( currently the
+                 TODO at end of calcMntResCons ) -> infState.add( .DECAY, ... )
+       - TODO  : Deduplicate maintenance cost calc ( duplicated between
+                 calcMntMaxDelta and updateIndFinances )
+
+
+
+======== PHASE 4 - Agent Refactor & Government ========
+
+
+[ ] 1. Agent-owned build/decay decisions
+       - Move debugAutoBuild out of Economy
+       - Industries decide whether to expand/contract from their own SAVINGS,
+         margin, and ACT_TRGT
+       - Infrastructure decisions remain "public" ( covered by gov, see #3 )
+       - BuildQueue gains a "requester" field ( who pays for the build )
+
+[ ] 2. Industry capital accumulation
+       - Industries spend SAVINGS on construction orders ( pay parts at PRICE )
+       - Bankrupt industries auto-decay ( SAVINGS goes very negative -> sell
+         off some COUNT for parts at AUTO_DECAY_RES_FACTOR like today )
+
+[ ] 3. Government taxation pass
+       - TAX_POP, TAX_IND on profit; TAX_RES VAT on traded resources;
+         TAX_LND on used area
+       - Each tax routes into Treasury SAVINGS via NET_DELTA accounting
+       - Honour the per-Pop/Ind/Res rate grids already defined in
+         governmentData.zig
+
+[ ] 4. Government subsidies & grants pass
+       - SUB_POP / SUB_IND offset realized expense
+       - GRT_POP / GRT_IND inject SAVINGS to specific agents
+       - SPEND_BLD : government places its own BuildQueue entries
+
+[ ] 5. Player-facing policy levers
+       - Per-EconLoc or per-economy: tax rates, subsidy rates, allocation
+         weight overrides, build priorities
+       - Sane defaults so a vanilla economy still runs without policy input
+
+
+
+======== PHASE 5 - Inter-Economy Trade ========
+
+
+[ ] 1. Trade demand/supply matching
+       - Each economy publishes ( pricePoint, exportCapacity ) per ResType
+         and ( pricePoint, importDemand )
+       - Solar-system pass matches surplus -> deficit by price differential,
+         minus travel cost from ECON_TRAVEL_TABLE ( already populated by
+         transferSolver )
+
+[ ] 2. Cargo in flight
+       - Trades produce in-flight parcels with arrival time = travel duration
+       - Departure economy : exportCapacity consumed, REVENUE booked
+       - Arrival economy   : resource added to stock at arrival tick
+
+[ ] 3. Vessel-mediated transport
+       - Replace abstract trade with actual freighter / mass-driver vessels
+       - Vessels are built like industry ( PART cost, WORK to operate )
+       - Vessel capacity bounds exportCapacity ; vessel turnaround bounds
+         throughput
+
+[ ] 4. Trade tariffs and embargoes
+       - TAX_COM and policy bits on import/export per resource per partner
+       - Foundation for diplomacy / multi-polity later
+
+
+
+======== PHASE 6 - Dynamics & Polish ========
+
+
+[x] 1. Investment signals from prices
+       - DONE  : actTrgt sigmoid-of-margin already drives debugAutoBuild
+
+[ ] 2. Economic expectations
+       - Smoothed moving-average of price and demand per ResType
+       - Industries plan capacity off the smoothed values to dampen oscillation
+
+[ ] 3. Variable tick rate / aggregation
+       - Coarse tick when populations cross thresholds
+       - Aggregate "background" economies whose state barely changes
+
+[ ] 4. Inflation drivers
+       - Drive inflationRate from growth/decay of total monetary mass
+       - Currently a constant 1.0 with a TODO
+
+[ ] 5. Strategic reserves
+       - Government stockpile per ResType, fed by tax-in-kind or SPEND_RES
+       - Smooths shocks ; can be released during shortages
+
+[ ] 6. Migration between economies
+       - Pop flows along trade routes ; driven by welfare differential
+       - Limited by transport capacity
+
+
+
+======== PHASE 7 - Long-term ========
+
+
+[ ] 1. Technology system
+       - Tech modifies indMetricData / indResDeltaTable / infMetricData
+       - Unlock new InfType / IndType / VesType
+       - R&D as an industry that consumes WORK and produces a TECH resource
+
+[ ] 2. Disasters and shocks
+       - Random or scripted events that wipe COUNTS or DEPOSITS
+       - Tests resilience of the welfare/trade systems
+
+[ ] 3. Megastructures
+       - Multi-tick, multi-economy capital projects
+       - Aggregate Build queue across contributing economies

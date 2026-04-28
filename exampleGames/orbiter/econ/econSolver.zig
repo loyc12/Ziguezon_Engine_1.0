@@ -29,7 +29,7 @@ const FlowPhase = ecnm_d.FlowPhaseEnum;
 
 
 
-pub inline fn resolveEcon( econ : *ecn.Economy ) void
+pub inline fn stepEcon( econ : *ecn.Economy ) void
 {
   var solver : EconSolver = .{ .econ = econ };
 
@@ -443,7 +443,7 @@ const EconSolver = struct
         }
       }
 
-      // NOTE : We do note use individualize access yet ( popFlowData )
+      // NOTE : We do not use individualize access yet ( popFlowData )
       self.resFlowData.set( .POP, .ACCESS, resType, access );
     }
   }
@@ -516,7 +516,7 @@ const EconSolver = struct
         }
       }
 
-      // NOTE : We do note use individualize access yet ( indFlowData )
+      // NOTE : We do not use individualize access yet ( indFlowData )
       self.resFlowData.set( .IND, .ACCESS, resType, access );
     }
   }
@@ -577,14 +577,14 @@ const EconSolver = struct
 
           if( maxCons > def.EPS )
           {
-            // NOTE : We do note use individualize access yet ( popFlowData )
+            // NOTE : We do not use individualize access yet ( popFlowData )
             fulfilment = @min( fulfilment, self.resFlowData.get( .POP, .ACCESS, resType ));
           }
         }
       }
     //def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}", .{ @tagName( resType ), activity });
 
-      self.popFulfilment.set( popType, fulfilment ); // NOTE: Should only scale pop prod, not cons
+      self.popFulfilment.set( popType, fulfilment ); // NOTE : Only scales pop prod, not cons
     }
   }
 
@@ -612,7 +612,7 @@ const EconSolver = struct
 
           if( maxCons > def.EPS )
           {
-            // NOTE : We do note use individualize access yet ( popFlowData )
+            // NOTE : We do not use individualize access yet ( popFlowData )
             activity = @min( activity, self.resFlowData.get( .IND, .ACCESS, resType ));
           }
         }
@@ -629,7 +629,7 @@ const EconSolver = struct
 
   fn calcPopResCons( self : *EconSolver ) void
   {
-    // NOTE : Pop consumption sues per-res POP access, not per-pop fulfilment rate
+    // NOTE : Pop consumption uses per-res POP access, not per-pop fulfilment rate
     inline for( 0..popTypeC )| p |
     {
       const popType = PopType.fromIdx( p );
@@ -796,25 +796,24 @@ const EconSolver = struct
   }
 
   /// Independent from GEN prod
-  /// NOTE : deprecated due to disutility
-  fn applyNatResProd( self : *EconSolver ) void
-  {
-    const ecoFactor = self.econ.getEcoFactor();
-
-    inline for( 0..resTypeC )| r |
-    {
-      const resType    = ResType.fromIdx( r );
-      const growthRate = resType.getMetric_f64( .GROWTH_RATE );
-
-      if( growthRate >= def.EPS )
-      {
-        const realNatProd = @floor( ecoFactor * growthRate );
-
-        self.resFlowData.set( .NAT, .REAL_PROD, resType, realNatProd );
-        self.nextResStock.add(                  resType, realNatProd );
-      }
-    }
-  }
+//fn applyNatResProd( self : *EconSolver ) void // NOTE : DEPRECATED due to disutility
+//{
+//  const ecoFactor = self.econ.getEcoFactor();
+//
+//  inline for( 0..resTypeC )| r |
+//  {
+//    const resType    = ResType.fromIdx( r );
+//    const growthRate = resType.getMetric_f64( .GROWTH_RATE );
+//
+//    if( growthRate >= def.EPS )
+//    {
+//      const realNatProd = @floor( ecoFactor * growthRate );
+//
+//      self.resFlowData.set( .NAT, .REAL_PROD, resType, realNatProd );
+//      self.nextResStock.add(                  resType, realNatProd );
+//    }
+//  }
+//}
 
 
 // ================================ FINANCES PHASE ================================
@@ -1212,7 +1211,7 @@ const EconSolver = struct
       // Accumulates average population need fulfilment rate
       econ.avgPopFulfilment += popFulfilment;
     }
-  //inline for( 0..infTypeC )| f | // NOTE : done inecon.updateInfUsage()
+  //inline for( 0..infTypeC )| f | // NOTE : done in econ.updateInfUsage()
   //{
   //  const infType = InfType.fromIdx( f );
   //
