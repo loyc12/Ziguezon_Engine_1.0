@@ -4,7 +4,7 @@ Legend :
   [ ]   not started
 
 Sections are roughly ordered by foundation -> dynamics -> longterm
-Items inside a section are ordered by priority within that section
+Items inside a section are ordered small-to-large when equal in priority
 
 ================ Economic Integration Plan ================
 
@@ -14,13 +14,21 @@ Items inside a section are ordered by priority within that section
 [ ] 1. Trade field stubs
        - Per-ResType : exportCapacity, importDemand, tradeBalance on Economy
        - Per-ResType : pricePoint exposed to other economies for matching
-       - Currently unused, but unblocks Phase 4 trade work
+       - Currently unused, but unblocks Phase 5 trade work
 
 [ ] 2. Government wiring
        - Mount GovMonetaryData on Economy ( governmentData.zig already
          defines the types but no instance lives on the economy )
        - Add tickGov() stub between tickEcon() phases
        - Treasury savings + per-tick NET_DELTA tracking
+
+[ ] 3. Solver / data-array refactor pass
+       - Migrate the "function-as-lookup" patterns ( resourceData.getInfStore,
+         populationData.getInfStore, industryData L69 etc ) to data arrays
+       - Generalize solver fields hardcoded to .HUMAN ( prevPopCount,
+         nextPopCount, popDeaths, popBirths in EconSolver ) before adding new
+         PopTypes
+       - Standardise DataMatrix vs Array usage where it has drifted
 
 
 
@@ -53,7 +61,10 @@ Items inside a section are ordered by priority within that section
        - TODO  : GDP ( sum of real production * price per ResType )
        - TODO  : scarcity index ( aggregate 1 - GEN access )
        - TODO  : welfare composite ( weighted avg of pop access by mortRate )
+       - TODO  : avgPopDeathRate, avgPopBirthRate ( see updatePopCount L1176 )
+       - TODO  : wasted-clamp amount per ResType ( see clampResStocks L823 )
        - TODO  : per-tick history buffer for charting
+       - TODO  : "log build queue" helper ( econBuilder L278 )
 
 
 
@@ -76,14 +87,19 @@ Items inside a section are ordered by priority within that section
        - TODO  : USE_LVL above some threshold should degrade resource access
                  for downstream consumers ( e.g. STORAGE saturation -> DECAY
                  multiplier, future TRANSPORT -> intra-economy delivery cap )
+       - TODO  : multiple storage types per ResType ( WATER / POWER / WORK
+                 currently share STORAGE - see "Temp fix" notes in
+                 resourceData.zig )
 
-[~] 4. Capital depreciation
+[~] 4. Capital depreciation & maintenance inputs
        - DONE  : Maintenance demand computed in calcMntMaxDelta and consumed
                  in calcMntResCons
-       - TODO  : Unpaid maintenance must DEGRADE buildings ( currently the
-                 TODO at end of calcMntResCons ) -> infState.add( .DECAY, ... )
+       - TODO  : Unpaid maintenance must DEGRADE buildings ( the TODO at end
+                 of calcMntResCons ) -> infState.add( .DECAY, ... )
        - TODO  : Deduplicate maintenance cost calc ( duplicated between
                  calcMntMaxDelta and updateIndFinances )
+       - TODO  : Maintenance should consume more than just PARTs
+                 ( WORK + multi-resource recipes - econSolver L58, L451 )
 
 
 
@@ -96,25 +112,35 @@ Items inside a section are ordered by priority within that section
          margin, and ACT_TRGT
        - Infrastructure decisions remain "public" ( covered by gov, see #3 )
        - BuildQueue gains a "requester" field ( who pays for the build )
+       - Replaces todo Phase 6 #1 ( investment signals from prices )
 
 [ ] 2. Industry capital accumulation
        - Industries spend SAVINGS on construction orders ( pay parts at PRICE )
        - Bankrupt industries auto-decay ( SAVINGS goes very negative -> sell
          off some COUNT for parts at AUTO_DECAY_RES_FACTOR like today )
 
-[ ] 3. Government taxation pass
+[ ] 3. EconLoc activation hook
+       - Currently inactive locations never become active outside debug paths
+       - When player ( or gov, or auto ) builds infra in an EconLoc, flip
+         isActive ( see bodyComp.zig L157, L169 )
+       - Requires a clear definition of "active enough" ( min infrastructure ?
+         min population ? )
+
+[ ] 4. Government taxation pass
        - TAX_POP, TAX_IND on profit; TAX_RES VAT on traded resources;
          TAX_LND on used area
+       - Inheritance / liquidation : SAVINGS of dead pops and insolvent
+         industries route to Treasury ( econSolver L965, L1065 )
        - Each tax routes into Treasury SAVINGS via NET_DELTA accounting
        - Honour the per-Pop/Ind/Res rate grids already defined in
          governmentData.zig
 
-[ ] 4. Government subsidies & grants pass
+[ ] 5. Government subsidies & grants pass
        - SUB_POP / SUB_IND offset realized expense
        - GRT_POP / GRT_IND inject SAVINGS to specific agents
        - SPEND_BLD : government places its own BuildQueue entries
 
-[ ] 5. Player-facing policy levers
+[ ] 6. Player-facing policy levers
        - Per-EconLoc or per-economy: tax rates, subsidy rates, allocation
          weight overrides, build priorities
        - Sane defaults so a vanilla economy still runs without policy input
@@ -136,58 +162,66 @@ Items inside a section are ordered by priority within that section
        - Departure economy : exportCapacity consumed, REVENUE booked
        - Arrival economy   : resource added to stock at arrival tick
 
-[ ] 3. Vessel-mediated transport
+[ ] 3. Trade tariffs
+       - TAX_COM and policy bits on import per resource
+
+[ ] 4. Vessel-mediated transport
        - Replace abstract trade with actual freighter / mass-driver vessels
        - Vessels are built like industry ( PART cost, WORK to operate )
        - Vessel capacity bounds exportCapacity ; vessel turnaround bounds
          throughput
-
-[ ] 4. Trade tariffs and embargoes
-       - TAX_COM and policy bits on import/export per resource per partner
-       - Foundation for diplomacy / multi-polity later
 
 
 
 ======== PHASE 6 - Dynamics & Polish ========
 
 
-[x] 1. Investment signals from prices
-       - DONE  : actTrgt sigmoid-of-margin already drives debugAutoBuild
-
-[ ] 2. Economic expectations
+[ ] 1. Economic expectations
        - Smoothed moving-average of price and demand per ResType
        - Industries plan capacity off the smoothed values to dampen oscillation
+
+[ ] 2. Inflation drivers
+       - Drive inflationRate from growth/decay of total monetary mass
+       - Apply inflation to inf, pop, AND gov SAVINGS ( currently only
+         industry - see economy.zig L838 )
+       - Currently a constant 1.0
 
 [ ] 3. Variable tick rate / aggregation
        - Coarse tick when populations cross thresholds
        - Aggregate "background" economies whose state barely changes
 
-[ ] 4. Inflation drivers
-       - Drive inflationRate from growth/decay of total monetary mass
-       - Currently a constant 1.0 with a TODO
-
-[ ] 5. Strategic reserves
+[ ] 4. Strategic reserves
        - Government stockpile per ResType, fed by tax-in-kind or SPEND_RES
        - Smooths shocks ; can be released during shortages
 
-[ ] 6. Migration between economies
+[ ] 5. Migration between economies
        - Pop flows along trade routes ; driven by welfare differential
-       - Limited by transport capacity
+       - Limited by transport capacity ( depends on Phase 5 #4 vessels )
 
 
 
 ======== PHASE 7 - Long-term ========
 
 
-[ ] 1. Technology system
+[ ] 1. Ecology depth
+       - Pollution-reducing infrastructure ( ecology.zig L113 )
+       - Tighter coupling between IND output and ecoFactor ( re-enable the
+         AGRONOMIC ecoFactor block currently commented out )
+
+[ ] 2. Technology system
        - Tech modifies indMetricData / indResDeltaTable / infMetricData
        - Unlock new InfType / IndType / VesType
        - R&D as an industry that consumes WORK and produces a TECH resource
+       - Implement STRUC ResType ( resourceData.zig L25 ) as an early tech
 
-[ ] 2. Disasters and shocks
+[ ] 3. Disasters and shocks
        - Random or scripted events that wipe COUNTS or DEPOSITS
        - Tests resilience of the welfare/trade systems
 
-[ ] 3. Megastructures
+[ ] 4. Megastructures
        - Multi-tick, multi-economy capital projects
        - Aggregate Build queue across contributing economies
+
+[ ] 5. Astrodynamics polish
+       - Precise L1-L5 Lagrange position / velocity ( tradeData.zig L67 )
+       - Body-type auto-assignment from mass / orbit ( bodyComp.zig L20 )

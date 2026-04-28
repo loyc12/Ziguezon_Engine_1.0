@@ -1,5 +1,3 @@
-================ Orbiter Economy - Continuation Roadmap ================
-
 // NOTE : Last reset on April 27th, 2026
 
 Goals :
@@ -9,13 +7,14 @@ Goals :
   - Keep the solver shape ( stepEcon's ordered phases ) intact ; new
     behavior should slot in as new phase steps, not as ad-hoc patches
 
-Tiers must be done in order. Items inside a tier can be tackled
-in any order, though the listed order minimises rework.
+Tiers must be done in order. Items inside a tier can be tackled in any
+order, though the listed order minimises rework. Within a tier, items
+are roughly small-to-large when no dependency forces an ordering.
 
 
 ================ TIER 0 - PRE-WORK ================
 
-Small, isolated, unblocks everything else.
+Small, isolated, unblock everything else
 
   0.1 Trade field stubs ( Phase 1 #1 in todo ) - trivial
       - Add to ResStateData : EXP_CAP, IMP_DEM, TRADE_BAL per ResType
@@ -30,10 +29,21 @@ Small, isolated, unblocks everything else.
       - Cache the ( count * baseCost * mntRate * maintFactor ) so it
         can be reused by calcMntMaxDelta and updateIndFinances
 
-  0.4 Refactor current logic organization
-      - To ease upcoming expansion of economy logic
-      - To streamline conceptualization of resources and cause-effect flows
-      - Rename non-standard variable names, standardise DataMatrices vs simple Arrays useage, etc
+  0.4 WORK-as-maintenance-input scaffolding - small
+      - Generalise the maintenance pass so it can demand WORK ( and
+        eventually any ResType ) on top of PARTs ( see econSolver L58,
+        L451 )
+      - Behavior gated behind data-table values that are 0 by default
+        until Phase 3 #4 enables them
+
+  0.5 Refactor current logic organization - large, parallel-friendly
+      - Migrate "function-as-lookup" patterns to data arrays
+        ( resourceData L28, populationData L22, industryData L69 )
+      - Generalise EconSolver fields hardcoded to .HUMAN
+        ( prevPopCount / nextPopCount / popDeaths / popBirths )
+      - Standardise DataMatrix vs Array usage where it has drifted
+      - Can run in parallel with later tiers.
+
 
 
 ================ TIER 1 - AGENT REFACTOR ================
@@ -58,7 +68,7 @@ growth/decay decisions, instead of debugAutoBuild on Economy.
       - Same shape as 1.2 but most infra has no SAVINGS of its own
       - Two options ( validate later ) :
         a : Infra is "public" - its decisions are driven by GOV ( Tier 2 )
-        b : Infra is "operator-owned"- add SAVINGS to InfStateData
+        b : Infra is "operator-owned" - add SAVINGS to InfStateData
       - Most likely choice : (a) for HOUSING / HABITAT ( public goods ),
         (b) for STORAGE / ASSEMBLY ( commercially run )
 
@@ -75,12 +85,13 @@ growth/decay decisions, instead of debugAutoBuild on Economy.
   1.X Additional ideas      // NOTE : review and integrate in plans
       - Have build PARTS be comited on queue, not on construction
       - Allow for multiple build resources to be used, depending on build
-      - Have ASSEMBLIES use WORK and ENERGY as well as build-dependent resources ( only PARTS for now )
+      - Have ASSEMBLIES use WORK and ENERGY as well as build-dependent resources
+        ( only PARTS for now )
 
 
 ================ TIER 2 - GOVERNMENT ================
 
-Treasury, taxation, subsidies, and one initial policy levers to validate the loop.
+Treasury, taxation, subsidies, and one initial policy lever to validate the loop.
 
   2.1 Tax pass ( per tick, after updateIndFinances )
       - TAX_POP : pop profit * popTaxRate -> Treasury
@@ -89,25 +100,42 @@ Treasury, taxation, subsidies, and one initial policy levers to validate the loo
       - Update per-agent SAVINGS to subtract the tax
       - Initialise rate grid to gentle defaults ( e.g. 5-15% )
 
-  2.2 Subsidy pass
+  2.2 Inheritance & liquidation
+      - When a pop type goes extinct : transfer its remaining SAVINGS to
+        Treasury ( econSolver L965 )
+      - When an industry goes insolvent : transfer remaining SAVINGS, and
+        scrap the buildings into PARTs ( econSolver L1065, L784 )
+      - These already have stub TODOs in updatePopFinances and
+        updateIndFinances ; fold them into Tier 2
+
+  2.3 Subsidy pass
       - SUB_POP / SUB_IND offset MARGIN by a configured share of expense
       - GRT_POP / GRT_IND inject SAVINGS to specific agents ( triggered, not per-tick )
 
-  2.3 Government construction
+  2.4 Government construction
       - SPEND_BLD lets gov enqueue its own BuildEntry ( requester = .GOV )
       - Pays parts at PART price from Treasury SAVINGS
       - Default policy : maintain HOUSING/HABITAT/ASSEMBLY
         availability floor based on pop projections
 
-  2.4 Government decay handling
-      - When deficit > some window : raise tax rates or sell strategic reserves ( Phase 6 #5 )
-      - Stub for now ; just clamp Treasury SAVINGS >= some debt floor and log a warning
+  2.5 EconLoc activation
+      - Inactive locations never tick today ( bodyComp.zig L157, L169 )
+      - Government ( or player ) action of building enough infrastructure
+        in a location flips isActive on
+      - Defines the "first colony on Mars" gameplay loop
 
-  2.5 First player-facing policy lever
+  2.6 Government decay handling
+      - When deficit > some window : raise tax rates or sell strategic
+        reserves ( Tier 4.4 )
+      - Stub for now ; just clamp Treasury SAVINGS >= some debt floor and
+        log a warning
+
+  2.7 First player-facing policy lever
       - One concrete lever ( e.g. tax rate slider per ResType ) wired
         end-to-end so the loop is provably interactive
       - Validates the data-grid format from governmentData.zig
       - Other levers ride the same plumbing
+
 
 
 ================ TIER 3 - INTER-ECONOMY TRADE ================
@@ -157,14 +185,21 @@ These can be parallelized across work sessions.
 
   4.2 Inflation driven by monetary mass
       - inflationRate = f( total SAVINGS across all agents this tick vs. last tick )
-      - Replace / augments the hardcoded flat value used for "monetary decay over time"
+      - Apply to inf / pop / gov savings, not just industry
+        ( economy.zig L838 currently iterates indState only )
+      - Replaces / augments the hardcoded flat 1.0
 
   4.3 Welfare & Employment based migration
       - Pops flow between economies along trade routes
       - Driven by ( welfare differential - travel cost )
       - Capacity-limited by transport ( 3.5 ) ; treats pops as cargo with maintenance
 
-  4.4 Societal Simulation
+  4.4 Strategic reserves
+      - Government stockpile per ResType, fed by tax-in-kind or SPEND_RES
+      - Smooths shocks ; released during shortages
+      - Gives 2.6 ( gov decay handling ) something concrete to do
+
+  4.5 Societal Simulation
       - Add more complex society simulation aspects ( Think "Democracy 3"-lite )
       - Would replace the singular access ( welfare ) metric
       - Look out for performance costs ( could be as costly as economy itself )
@@ -179,30 +214,35 @@ Optional but high-impact for a "humanity in space" game feel.
       - Per-economy deposit[res] ; mining yields scale by sqrt( deposit )
       - Bodies become finite ; exploration matters
 
-  5.2 Disasters / shocks
+  5.2 Ecological depth
+      - Pollution-reducing infrastructure ( ecology.zig L113 )
+      - Re-enable the AGRONOMIC ecoFactor coupling currently commented out
+        in calcIndMaxDelta
+
+  5.3 Disasters / shocks
       - Solar flares ( pulse SUN_ACCESS ), pandemics ( pulse FATALITY ),
         accidents ( wipe COUNT for one Inf/Ind type )
-      - Tests resilience ; gives gov reserves a job ( 2.4 )
+      - Tests resilience ; gives gov reserves ( 4.4 ) a job
 
-  5.3 Megaprojects
+  5.4 Megaprojects
       - Multi-economy capital projects ( O'Neill cylinders, Dyson swarm increment,
         mass driver chain )
       - Aggregate non-GROUND BuildQueue across contributors ; long lead times
 
-  5.4 Tech tree
+  5.6 Tech tree
       - TECH ResType produced by R&D industry
       - Spending TECH unlocks new InfType/IndType/VesType or shifts metrics
       - Foundation for long-game progression
-
+      - Pulls in STRUC ResType and other deferred types from resourceData.zig
 
 
 
 ================ SUGGESTED ADDITIONS ( fit the game well ) ================
 
-  - Deployable strategic reserves ( govt stockpile per ResType, smooths shocks )
   - Black market ( trade that ignores tariffs at a price-and-risk premium )
   - POP & WORK subtypes ( SCIENTIST, ENGINEER, COLONIST as PopType variants
     that gate which industries can run at full activity )
   - Long-haul transit hazards ( cargo loss probability scaling with deltaV )
   - Reputation / trust per polity-pair that dampens trade volume independently of price
-  - Insurance / futures markets at very late game ( Tier 5 dynamics )
+  - Insurance / futures markets at very late game ( Tier 4 dynamics )
+  - Astrodynamics polish ( precise L1-L5 positions, body-type auto-classification )
