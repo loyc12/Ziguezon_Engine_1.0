@@ -226,6 +226,8 @@ pub const StellarBodyType = enum( u8 )
 };
 
 
+// ================================ DATA INITIALIZATION ================================
+
 pub fn loadStellarData() void
 {
   const SBT = StellarBodyType;

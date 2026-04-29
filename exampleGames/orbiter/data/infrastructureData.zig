@@ -4,8 +4,8 @@ const def = @import( "defs" );
 const gbl = @import( "../gameGlobals.zig" );
 const gdf = @import( "../gameDefs.zig"    );
 
-//const PowerSrc = @import( "powerData.zig"       ).PowerSrc;
-
+//const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
+const ResType  = @import( "resourceData.zig" ).ResType;
 
 pub const InfType = enum( u8 )
 {
@@ -92,7 +92,8 @@ pub const InfType = enum( u8 )
 };
 
 
-// ================================ INFRASTRUCTURE METRICS GRID ================================
+// ================================ INFRASTRUCTURE BASE METRICS GRID ================================
+// NOTE : Mostly-static per-infrastructure values
 
 pub var infMetricData : def.GenDataGrid( f64, InfType, InfMetricEnum ) = .{};
 
@@ -106,6 +107,43 @@ pub const InfMetricEnum = enum( u8 )
   CAPACITY,
 };
 
+// ================================ INFRASTRUCTURE RES METRICS GRID ================================
+// NOTE : Mostly-static per-infrastructure & resource values
+
+//pub var indResMetricTable : def.GenDataCube( f64, InfType, IndResMetricEnum, ResType ) = .{};
+//
+//pub const IndResMetricEnum = enum( u8 )
+//{
+//  COST,  // TODO : Check if moving construciton costs here would be best ?
+//  MAINT, // TODO : Check if moving maintenance  costs here would be best ?
+//};
+
+
+// ================================ INFRASTRUCTURE STATE ENUM ================================
+// NOTE : used in Economy to store local mutable values
+
+pub const InfStateData = def.GenDataGrid( f64, InfStateEnum, InfType );
+
+pub const InfStateEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  COUNT,   // Current infrastructure count
+  DELTA,   // Net total change last tick
+
+  DECAY,   // Amount lost to building decay   last tick
+  BUILT,   // Amount gained from construction last tick
+
+  EXPENSE, // Amount of money used for maintaining the infrastructure last tick
+  REVENUE, // Amount of money gained from running  the infrastructure last tick
+  PROFIT,  // Income - expense
+  SAVINGS, // Stored profits from previous ticks ( decays via inflation )
+
+  USE_LVL, // How much of the available infrastructure was used last tick
+};
+
+
+// ================================ DATA INITIALIZATION ================================
 
 pub fn loadInfrastructureData() void
 {
@@ -169,27 +207,3 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .HABITAT,  .CAPACITY,    1.0 ); // 1 km2 of pressurized area per unit
   infMetricData.set( .STORAGE,  .CAPACITY, 5000.0 ); // 5,000 t of resources stored per unit
 }
-
-
-// ================================ INFRASTRUCTURE STATE ENUM ================================
-// NOTE : used in Economy to store local quantities and metrics
-
-pub const InfStateData = def.GenDataGrid( f64, InfStateEnum, InfType );
-
-pub const InfStateEnum = enum( u8 )
-{
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  COUNT,   // Current infrastructure count
-  DELTA,   // Net total change last tick
-
-  DECAY,   // Amount lost to building decay   last tick
-  BUILT,   // Amount gained from construction last tick
-
-  EXPENSE, // Amount of money used for maintaining the infrastructure last tick
-  REVENUE, // Amount of money gained from running  the infrastructure last tick
-  PROFIT,  // Income - expense
-  SAVINGS, // Stored profits from previous ticks ( decays via inflation )
-
-  USE_LVL, // How much of the available infrastructure was used last tick
-};

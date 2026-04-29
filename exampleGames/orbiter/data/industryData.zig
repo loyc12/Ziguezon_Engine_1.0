@@ -95,41 +95,42 @@ pub const IndType = enum( u8 )
 
   pub fn getResCons_f32( self : IndType, resType : ResType ) f32
   {
-    return @floatCast( indResDeltaTable.get( self, .CONS, resType ));
+    return @floatCast( indResMetricTable.get( self, .CONS, resType ));
   }
   pub fn getResCons_f64( self : IndType, resType : ResType ) f64
   {
-    return indResDeltaTable.get( self, .CONS, resType );
+    return indResMetricTable.get( self, .CONS, resType );
   }
   pub fn getResCons_u32( self : IndType, resType : ResType ) u32
   {
-    return @intFromFloat( indResDeltaTable.get( self, .CONS, resType ));
+    return @intFromFloat( indResMetricTable.get( self, .CONS, resType ));
   }
   pub fn getResCons_u64( self : IndType, resType : ResType ) u64
   {
-    return @intFromFloat( indResDeltaTable.get( self, .CONS, resType ));
+    return @intFromFloat( indResMetricTable.get( self, .CONS, resType ));
   }
 
   pub fn getResProd_f32( self : IndType, resType : ResType ) f32
   {
-    return @floatCast( indResDeltaTable.get( self, .PROD, resType ));
+    return @floatCast( indResMetricTable.get( self, .PROD, resType ));
   }
   pub fn getResProd_f64( self : IndType, resType : ResType ) f64
   {
-    return indResDeltaTable.get( self, .PROD, resType );
+    return indResMetricTable.get( self, .PROD, resType );
   }
   pub fn getResProd_u32( self : IndType, resType : ResType ) u32
   {
-    return @intFromFloat( indResDeltaTable.get( self, .PROD, resType ));
+    return @intFromFloat( indResMetricTable.get( self, .PROD, resType ));
   }
   pub fn getResProd_u64( self : IndType, resType : ResType ) u64
   {
-    return @intFromFloat( indResDeltaTable.get( self, .PROD, resType ));
+    return @intFromFloat( indResMetricTable.get( self, .PROD, resType ));
   }
 };
 
 
-// ================================ INDUSTRY METRICS GRID ================================
+// ================================ INDUSTRY BASE METRICS GRID ================================
+// NOTE : Mostly-static per-industry values
 
 pub var indMetricData : def.GenDataGrid( f64, IndType, IndMetricEnum ) = .{};
 
@@ -143,22 +144,53 @@ pub const IndMetricEnum = enum( u8 )
 };
 
 
-// ================================ INDUSTRY CONS / PROD GRID ================================
+// ================================ INDUSTRY RES METRICS GRID ================================
+// NOTE : Mostly-static per-industry & resource values
 
-// Resource consumption / production per industry ( u64 )
-pub var indResDeltaTable : def.GenDataCube( f64, IndType, ResActionEnum, ResType ) = .{};
+pub var indResMetricTable : def.GenDataCube( f64, IndType, IndResMetricEnum, ResType ) = .{};
 
-pub const ResActionEnum = enum( u8 )
+pub const IndResMetricEnum = enum( u8 )
 {
-  CONS,
-  PROD,
+  CONS,  // Base consumption per pop
+  PROD,  // Base produciton  per pop
+
+//COST,  // TODO : Check if moving construciton costs here would be best ?
+//MAINT, // TODO : Check if moving maintenance  costs here would be best ?
 };
 
+
+// ================================ INDUSTRY STATE GRID ================================
+// NOTE : used in Economy to store local mutable values
+
+pub const IndStateData = def.GenDataGrid( f64, IndStateEnum, IndType );
+
+pub const IndStateEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  COUNT,    // Current industry count
+  DELTA,    // Net total change last tick
+
+  DECAY,    // Amount lost to building decay   last tick
+  BUILT,    // Amount gained from construction last tick
+
+  EXPENSE,  // Amount of money spent by the owners to maintain and fuel the industry last tick
+  REVENUE,  // Amount of money gained by the owners from selling the output products last tick
+  PROFIT,   // Revenues - Expenses
+  MARGIN,   // Profits / Expense
+  SAVINGS,  // Stored profits from previous ticks ( decays via inflation )
+
+  ACT_TRGT, // How active this industry wanted to be   last tick
+  ACT_LVL,  // How active this industry ended up being last tick
+};
+
+
+// ================================ DATA INITIALIZATION ================================
 
 pub fn loadIndustryData() void
 {
   indMetricData.fillWith(    0.0 );
-  indResDeltaTable.fillWith( 0.0 );
+  indResMetricTable.fillWith( 0.0 );
 
 
   // ================================ MASS ================================
@@ -257,9 +289,9 @@ pub fn loadIndustryData() void
   // Produces ~500 t of grain/produce per week (50 ha × 10 t/ha harvest, amortised weekly)
   // Consumes significant water for irrigation: ~2,500 t/week (50mm/week over 50 ha)
 
-  indResDeltaTable.set( .AGRONOMIC, .CONS, .WORK,    55.0 );
-  indResDeltaTable.set( .AGRONOMIC, .CONS, .WATER, 5000.0 );
-  indResDeltaTable.set( .AGRONOMIC, .PROD, .FOOD,   500.0 ); // NOTE: reduced by sunAccess and ecoFactor
+  indResMetricTable.set( .AGRONOMIC, .CONS, .WORK,    55.0 );
+  indResMetricTable.set( .AGRONOMIC, .CONS, .WATER, 5000.0 );
+  indResMetricTable.set( .AGRONOMIC, .PROD, .FOOD,   500.0 ); // NOTE: reduced by sunAccess and ecoFactor
 
 
   // ---- HYDROPONIC ----
@@ -267,10 +299,10 @@ pub fn loadIndustryData() void
   // Very water-efficient (~90% recirculation), but power-hungry (LEDs)
   // Higher yield per area but lower total output than a 50ha farm
 
-  indResDeltaTable.set( .HYDROPONIC, .CONS, .WORK,   90.0 );
-  indResDeltaTable.set( .HYDROPONIC, .CONS, .WATER, 200.0 );
-  indResDeltaTable.set( .HYDROPONIC, .CONS, .POWER, 500.0 );
-  indResDeltaTable.set( .HYDROPONIC, .PROD, .FOOD,  300.0 ); // NOTE : Less total output but no sunAccess/ecoFactor dependency
+  indResMetricTable.set( .HYDROPONIC, .CONS, .WORK,   90.0 );
+  indResMetricTable.set( .HYDROPONIC, .CONS, .WATER, 200.0 );
+  indResMetricTable.set( .HYDROPONIC, .CONS, .POWER, 500.0 );
+  indResMetricTable.set( .HYDROPONIC, .PROD, .FOOD,  300.0 ); // NOTE : Less total output but no sunAccess/ecoFactor dependency
 
 
   // ---- WATER_PLANT ----
@@ -278,9 +310,9 @@ pub fn loadIndustryData() void
   // Produces ~50,000 m³/week (serves ~70,000 people at 0.7 t/person/week)
   // Very power-intensive (5 kWh per m³ for desalination)
 
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .WORK,    180.0 );
-  indResDeltaTable.set( .WATER_PLANT, .CONS, .POWER,   200.0 );
-  indResDeltaTable.set( .WATER_PLANT, .PROD, .WATER, 40000.0 );
+  indResMetricTable.set( .WATER_PLANT, .CONS, .WORK,    180.0 );
+  indResMetricTable.set( .WATER_PLANT, .CONS, .POWER,   200.0 );
+  indResMetricTable.set( .WATER_PLANT, .PROD, .WATER, 40000.0 );
 
 
   // ---- SOLAR_PLANT ----
@@ -288,9 +320,9 @@ pub fn loadIndustryData() void
   // Produces ~100 MW × 168 h × 0.20 capacity factor = ~3,360 MWh/week
   // Needs water for panel washing: ~50 t/week
 
-  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WORK,    40.0 );
-  indResDeltaTable.set( .SOLAR_PLANT, .CONS, .WATER,   50.0 );
-  indResDeltaTable.set( .SOLAR_PLANT, .PROD, .POWER, 3000.0 ); // NOTE: reduced by sunAccess
+  indResMetricTable.set( .SOLAR_PLANT, .CONS, .WORK,    40.0 );
+  indResMetricTable.set( .SOLAR_PLANT, .CONS, .WATER,   50.0 );
+  indResMetricTable.set( .SOLAR_PLANT, .PROD, .POWER, 3000.0 ); // NOTE: reduced by sunAccess
 
 
   // ---- POWER_PLANT ----
@@ -298,10 +330,10 @@ pub fn loadIndustryData() void
   // Produces 500 MW × 168 h × 0.85 capacity factor = ~71,400 MWh/week
   // Consumes deuterium/tritium (FUEL) and cooling water
 
-  indResDeltaTable.set( .POWER_PLANT, .CONS, .WORK,    200.0 );
-  indResDeltaTable.set( .POWER_PLANT, .CONS, .WATER,   500.0 );
-  indResDeltaTable.set( .POWER_PLANT, .CONS, .FUEL,     10.0 );
-  indResDeltaTable.set( .POWER_PLANT, .PROD, .POWER, 20000.0 );
+  indResMetricTable.set( .POWER_PLANT, .CONS, .WORK,    200.0 );
+  indResMetricTable.set( .POWER_PLANT, .CONS, .WATER,   500.0 );
+  indResMetricTable.set( .POWER_PLANT, .CONS, .FUEL,     10.0 );
+  indResMetricTable.set( .POWER_PLANT, .PROD, .POWER, 20000.0 );
 
 
   // ---- REFINERY ----
@@ -309,16 +341,16 @@ pub fn loadIndustryData() void
   // Produces fusion fuel from raw feedstock
   // Very power and water hungry
 
-  indResDeltaTable.set( .REFINERY, .CONS, .WORK,  150.0 );
-  indResDeltaTable.set( .REFINERY, .CONS, .WATER, 200.0 );
-  indResDeltaTable.set( .REFINERY, .CONS, .POWER, 500.0 );
-  indResDeltaTable.set( .REFINERY, .PROD, .FUEL,   50.0 );
+  indResMetricTable.set( .REFINERY, .CONS, .WORK,  150.0 );
+  indResMetricTable.set( .REFINERY, .CONS, .WATER, 200.0 );
+  indResMetricTable.set( .REFINERY, .CONS, .POWER, 500.0 );
+  indResMetricTable.set( .REFINERY, .PROD, .FUEL,   50.0 );
 
 
   // ---- PROBE_MINE ----
   // Autonomous asteroid mining probe, 0 workers
 
-  indResDeltaTable.set( .PROBE_MINE, .PROD, .ORE, 10.0 );
+  indResMetricTable.set( .PROBE_MINE, .PROD, .ORE, 10.0 );
 
 
   // ---- GROUND_MINE ----
@@ -326,10 +358,10 @@ pub fn loadIndustryData() void
   // Extracts ~5,000 t/week of usable ore from ~50,000 t of overburden
   // Consumes water for dust suppression and ore washing
 
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WORK,   300.0 );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .POWER, 1000.0 );
-  indResDeltaTable.set( .GROUND_MINE, .CONS, .WATER, 2500.0 );
-  indResDeltaTable.set( .GROUND_MINE, .PROD, .ORE,   5000.0 );
+  indResMetricTable.set( .GROUND_MINE, .CONS, .WORK,   300.0 );
+  indResMetricTable.set( .GROUND_MINE, .CONS, .POWER, 1000.0 );
+  indResMetricTable.set( .GROUND_MINE, .CONS, .WATER, 2500.0 );
+  indResMetricTable.set( .GROUND_MINE, .PROD, .ORE,   5000.0 );
 
 
   // ---- FOUNDRY ----
@@ -337,10 +369,10 @@ pub fn loadIndustryData() void
   // Converts ore to ingot at roughly 4:3 by mass (ore contains ~50-80% metal)
   // Very power-intensive (electric arc furnaces)
 
-  indResDeltaTable.set( .FOUNDRY, .CONS, .WORK,   300.0 );
-  indResDeltaTable.set( .FOUNDRY, .CONS, .POWER,  500.0 );
-  indResDeltaTable.set( .FOUNDRY, .CONS, .ORE,   5000.0 );
-  indResDeltaTable.set( .FOUNDRY, .PROD, .INGOT, 4000.0 );
+  indResMetricTable.set( .FOUNDRY, .CONS, .WORK,   300.0 );
+  indResMetricTable.set( .FOUNDRY, .CONS, .POWER,  500.0 );
+  indResMetricTable.set( .FOUNDRY, .CONS, .ORE,   5000.0 );
+  indResMetricTable.set( .FOUNDRY, .PROD, .INGOT, 4000.0 );
 
 
   // ---- FACTORY ----
@@ -348,35 +380,8 @@ pub fn loadIndustryData() void
   // Converts ingots to finished parts ( 75% yield, rest is scrap/waste )
   // Moderate power, high skill labor
 
-  indResDeltaTable.set( .FACTORY, .CONS, .WORK,   300.0 );
-  indResDeltaTable.set( .FACTORY, .CONS, .POWER,  200.0 );
-  indResDeltaTable.set( .FACTORY, .CONS, .INGOT, 2000.0 );
-  indResDeltaTable.set( .FACTORY, .PROD, .PART,  1500.0 );
+  indResMetricTable.set( .FACTORY, .CONS, .WORK,   300.0 );
+  indResMetricTable.set( .FACTORY, .CONS, .POWER,  200.0 );
+  indResMetricTable.set( .FACTORY, .CONS, .INGOT, 2000.0 );
+  indResMetricTable.set( .FACTORY, .PROD, .PART,  1500.0 );
 }
-
-
-// ================================ INDUSTRY STATE GRID ================================
-// NOTE : used in Economy to store local quantities and metrics
-
-pub const IndStateData = def.GenDataGrid( f64, IndStateEnum, IndType );
-
-pub const IndStateEnum = enum( u8 )
-{
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  COUNT,    // Current industry count
-  DELTA,    // Net total change last tick
-
-  DECAY,    // Amount lost to building decay   last tick
-  BUILT,    // Amount gained from construction last tick
-
-  EXPENSE,  // Amount of money spent by the owners to maintain and fuel the industry last tick
-  REVENUE,  // Amount of money gained by the owners from selling the output products last tick
-  PROFIT,   // Revenues - Expenses
-  MARGIN,   // Profits / Expense
-  SAVINGS,  // Stored profits from previous ticks ( decays via inflation )
-
-  ACT_TRGT, // How active this industry wanted to be   last tick
-  ACT_LVL,  // How active this industry ended up being last tick
-};
-

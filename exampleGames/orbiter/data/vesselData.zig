@@ -46,6 +46,8 @@ pub const VesMetricEnum = enum( u8 )
 };
 
 
+// ================================ DATA INITIALIZATION ================================
+
 pub fn loadVesselData() void
 {
   vesMetricData.fillWith( 0.0 );

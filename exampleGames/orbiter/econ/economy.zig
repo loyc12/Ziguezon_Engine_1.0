@@ -57,11 +57,11 @@ pub const Economy = struct
   buildDemand : f64 = 0.0,  // PART demand from construction queue this tick
   buildBudget : f64 = 0.0,  // PART allocation granted by solver
 
-  areaMetrics : gdf.ecnm_d.AreaMetricData = .{},
-  resState    : gdf.rsrc_d.ResStateData   = .{},
-  popState    : gdf.popl_d.PopStateData   = .{},
-  infState    : gdf.nfrs_d.InfStateData   = .{},
-  indState    : gdf.ndst_d.IndStateData   = .{},
+  areaData : gdf.ecnm_d.EconAreaData = .{},
+  resState : gdf.rsrc_d.ResStateData = .{},
+  popState : gdf.popl_d.PopStateData = .{},
+  infState : gdf.nfrs_d.InfStateData = .{},
+  indState : gdf.ndst_d.IndStateData = .{},
 
   inflationRate : f64 = 1.0, // TODO : update this based on growth/decay of economy
 
@@ -105,14 +105,14 @@ pub const Economy = struct
 
     self.hasAtmo  = atmo;
 
-    self.areaMetrics.fillWith( 0.0 );
+    self.areaData.fillWith( 0.0 );
     self.resState.fillWith(    0.0 );
     self.popState.fillWith(    0.0 );
     self.infState.fillWith(    0.0 );
     self.indState.fillWith(    0.0 );
 
-    self.areaMetrics.set( .BODY,  area      );
-    self.areaMetrics.set( .INHAB, landCover );
+    self.areaData.set( .BODY,  area      );
+    self.areaData.set( .INHAB, landCover );
 
     inline for( 0..resTypeC )| r |
     {
@@ -250,8 +250,8 @@ pub const Economy = struct
     }
     self.logPopMetrics();
 
-    const areaUsed = self.areaMetrics.get( .USED );
-    const areaCap  = self.areaMetrics.get( .CAP  );
+    const areaUsed = self.areaData.get( .USED );
+    const areaCap  = self.areaData.get( .CAP  );
 
     def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
     def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
@@ -571,8 +571,8 @@ pub const Economy = struct
     {
       .GROUND =>
       {
-        const developedArea = self.areaMetrics.get( .USED );
-        const surfaceArea   = self.areaMetrics.get( .BODY );
+        const developedArea = self.areaData.get( .USED );
+        const surfaceArea   = self.areaData.get( .BODY );
 
         const overgroundRatio = surfaceArea / developedArea;
 
@@ -627,21 +627,21 @@ pub const Economy = struct
   pub fn updateAreas( self : *Economy ) void
   {
     const habitatArea = self.getHabitatArea();
-    const bodyArea    = self.areaMetrics.get( .BODY  );
-    const inhabRatio  = self.areaMetrics.get( .INHAB );
+    const bodyArea    = self.areaData.get( .BODY  );
+    const inhabRatio  = self.areaData.get( .INHAB );
 
     // Compute LAND
     const landArea = bodyArea * inhabRatio;
-    self.areaMetrics.set( .LAND, landArea );
+    self.areaData.set( .LAND, landArea );
 
     // Compute CAP
     if( self.location == .GROUND and self.hasAtmo )
     {
-      self.areaMetrics.set( .CAP, habitatArea + landArea );
+      self.areaData.set( .CAP, habitatArea + landArea );
     }
     else
     {
-      self.areaMetrics.set( .CAP, habitatArea );
+      self.areaData.set( .CAP, habitatArea );
     }
 
     // Compute USED
@@ -662,19 +662,19 @@ pub const Economy = struct
       areaUsed += indCount * indType.getMetric_f64( .AREA_COST );
     }
 
-    self.areaMetrics.set( .USED, areaUsed );
+    self.areaData.set( .USED, areaUsed );
 
     // Compute AVAIL
-    const areaCap = self.areaMetrics.get( .CAP );
+    const areaCap = self.areaData.get( .CAP );
 
     if( areaCap > areaUsed )
     {
-      self.areaMetrics.set( .AVAIL, areaCap - areaUsed );
+      self.areaData.set( .AVAIL, areaCap - areaUsed );
     }
     else
     {
       def.log( .WARN, 0, @src(), "Negative available area in location of type {s} : using {d:.2} / {d:.2}", .{ @tagName( self.location ), areaUsed, areaCap });
-      self.areaMetrics.zero( .AVAIL );
+      self.areaData.zero( .AVAIL );
     }
   }
 
@@ -692,7 +692,7 @@ pub const Economy = struct
     if( infType == .HABITAT ){ return true; }
 
     const neededArea = infType.getAreaCost() * count;
-    const areaAvail  = self.areaMetrics.get( .AVAIL );
+    const areaAvail  = self.areaData.get( .AVAIL );
 
     if( areaAvail < neededArea )
     {
@@ -711,7 +711,7 @@ pub const Economy = struct
     }
 
     const neededArea = indType.getAreaCost() * count;
-    const areaAvail  = self.areaMetrics.get( .AVAIL );
+    const areaAvail  = self.areaData.get( .AVAIL );
 
     if( areaAvail < neededArea )
     {
@@ -735,7 +735,7 @@ pub const Economy = struct
 
     if( !std.meta.eql( c, .{ .inf = .HABITAT }))
     {
-      const areaAvail = self.areaMetrics.get( .AVAIL );
+      const areaAvail = self.areaData.get( .AVAIL );
 
       if( areaAvail < areaCost )
       {
@@ -798,10 +798,10 @@ pub const Economy = struct
     // Update area metrics to prevent overshoot on successive calls
     // TODO : VALIDATE
     const builtArea = builtAmount * areaCost;
-    self.areaMetrics.add( .USED, builtArea );
+    self.areaData.add( .USED, builtArea );
 
-    const newAvail = self.areaMetrics.get( .CAP ) - self.areaMetrics.get( .USED );
-    self.areaMetrics.set( .AVAIL, @max( 0.0, newAvail ));
+    const newAvail = self.areaData.get( .CAP ) - self.areaData.get( .USED );
+    self.areaData.set( .AVAIL, @max( 0.0, newAvail ));
 
     return @intFromFloat( builtAmount );
   }
@@ -899,14 +899,14 @@ pub const Economy = struct
 
 
     // HABITAT
-    const areaUsed : f64 = self.areaMetrics.get( .USED );
+    const areaUsed : f64 = self.areaData.get( .USED );
     var   habUse   : f64 = 0.0;
 
 
     if( self.location != .GROUND or !self.hasAtmo )
     {
       // Non-ground or no-atmo : all area IS habitat area, use areaCap as fallback
-      const areaCap : f64 = self.areaMetrics.get( .CAP  );
+      const areaCap : f64 = self.areaData.get( .CAP  );
 
       if( areaCap > def.EPS )
       {
@@ -920,7 +920,7 @@ pub const Economy = struct
 
       if( habitatArea > def.EPS )
       {
-        const landArea : f64 = self.areaMetrics.get( .LAND );
+        const landArea : f64 = self.areaData.get( .LAND );
 
         // How much of the used area exceeds what free land provides?
         const areaOnHabitat = @max( 0.0, areaUsed - landArea );

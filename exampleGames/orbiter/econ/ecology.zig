@@ -50,7 +50,7 @@ pub const EcoState = struct
       return null;
     }
 
-    var eco : EcoState = .{ .surfaceArea = econ.areaMetrics.get( .CAP )};
+    var eco : EcoState = .{ .surfaceArea = econ.areaData.get( .CAP )};
 
     eco.update( econ );
 
@@ -92,7 +92,7 @@ pub const EcoState = struct
   inline fn calcDevelopment( self : *EcoState, econ : *const ecn.Economy ) void
   {
     // [ 0.0, 1.0 ]
-    self.development = @min( 1.0, econ.areaMetrics.get( .USED ) / self.surfaceArea );
+    self.development = @min( 1.0, econ.areaData.get( .USED ) / self.surfaceArea );
   }
 
   inline fn calcPollution( self : *EcoState, econ : *const ecn.Economy ) void

@@ -43,55 +43,57 @@ pub const EconLoc = enum( u8 )
 
 
 // ================================ RESOURCE FLOW MATRIX ================================
-// NOTE : used in EconSolver
+// NOTE : used in EconSolver ( aka temporary data storage )
 
-pub const ResStockData = def.GenDataLine( f64, ResType );
-pub const ResFlowData  = def.GenDataCube( f64, FlowAgentEnum, FlowPhaseEnum, ResType );
+pub const ResStockData      = def.GenDataLine( f64, ResType );
+pub const ResFlowData       = def.GenDataCube( f64, EconAgentEnum, EconFlowPhaseEnum, ResType );
 
 // NOTE : de-agregated version of ResFlowData[ POP ][ phase ][ res ]
-pub const PopFlowData       = def.GenDataCube( f64, PopType, FlowPhaseEnum, ResType );
+pub const PopResFlowData    = def.GenDataCube( f64, PopType, EconFlowPhaseEnum, ResType );
 pub const PopFulfilmentData = def.GenDataLine( f64, PopType );
 
 // NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ]
-pub const IndFlowData     = def.GenDataCube( f64, IndType, FlowPhaseEnum, ResType );
-pub const IndActivityData = def.GenDataLine( f64, IndType );
+pub const IndResFlowData    = def.GenDataCube( f64, IndType, EconFlowPhaseEnum, ResType );
+pub const IndActivityData   = def.GenDataLine( f64, IndType );
 
 
 
-pub const FlowAgentEnum = enum( u8 )
+pub const EconAgentEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  POP, // Population       ( work prod, food/water/power cons )
-  MNT, // Maintenance      ( building maintenance cons        )
-  IND, // Industry         ( all industrial prod/cons         )
-  BLD, // Building         ( construction, selloffs           )
-  COM, // Commerce / trade ( imports, exports                 ) : stub for now
+  POP, // Population       ( all population prod/cons  )
+  MNT, // Maintenance      ( building maintenance cons )
+  IND, // Industry         ( all industrial prod/cons  )
+  BLD, // Building         ( construction, selloffs    )
+  COM, // Commerce / trade ( imports, exports          ) : stub for now
 
   GEN, // Sum of previous  ( to avoid counting decay as usage )
-  NAT, // Decay / Growth   ( decay, growth, disasters         ) NOTE : NOT COUNTED AS ECONOMIC ACTION
+
+  NAT, // Decay / Growth   ( decay, growth, disasters )
+  // NOTE : NAT IS NOT AN ECONOMIC ACTION ( NO CASH TRANSACTION & NO IMPACT ON PRICES )
 };
 
-pub const FlowPhaseEnum = enum( u8 )
+pub const EconFlowPhaseEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  MAX_PROD,  // Theoretical maximum production    ( before scarcity )
-  MAX_CONS,  // Theoretical maximum consumption   ( before scarcity )
+  MAX_PROD,  // Theoretical maximum production  ( before scarcity )
+  MAX_CONS,  // Theoretical maximum consumption ( before scarcity )
 
-  REAL_PROD, // Realized production               ( after activity / access applied )
-  REAL_CONS, // Realized consumption              ( after activity / access applied )
+  AVG_ACS,   // Demand satisfaction rate ( aka 1.0 - scarcity )
 
-  ACCESS,    // Demand satisfaction rate
+  REAL_PROD, // Realized production  ( after activity & scarcity applied )
+  REAL_CONS, // Realized consumption ( after activity & scarcity applied )
 };
 
 
 // ================================ AREA METRIC ARRAY ================================
 // NOTE : used in Economy
 
-pub const AreaMetricData = def.GenDataLine( f64, AreaMetricEnum );
+pub const EconAreaData = def.GenDataLine( f64, EconAreaEnum );
 
-pub const AreaMetricEnum = enum( u8 )
+pub const EconAreaEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -102,22 +104,3 @@ pub const AreaMetricEnum = enum( u8 )
   AVAIL, // MAX - USED                        : Total unused
   USED,  // sum of all area spent             : INF + IND
 };
-
-
-//// ================================ POPULATION METRIC ARRAY ================================
-//// NOTE : used in Economy
-//
-//pub const PopMetricData = def.GenDataLine( f64, PopMetricEnum );
-//
-//pub const PopMetricEnum = enum( u8 )
-//{
-//  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-//
-//  COUNT,    // Total amount of population last tick
-//  DELTA,    // Changes in population last tick
-//
-//  BIRTH,
-//  DEATH,
-//
-//  ACTIVITY, // Population's access to demanded goods last tick
-//};

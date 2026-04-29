@@ -54,6 +54,7 @@ pub const ResType = enum( u8 )
 
 
 // ================================ RESOURCE METRICS GRID ================================
+// NOTE : Mostly-static per-resource values
 
 pub var resMetricData : def.GenDataGrid( f64, ResType, ResMetricEnum ) = .{};
 
@@ -62,7 +63,7 @@ pub const ResMetricEnum = enum( u8 )
   MASS,
 
   DECAY_RATE,  // Natural decay  ( peremption )
-  GROWTH_RATE, // Natural growth ( natural bounty)
+  GROWTH_RATE, // Natural growth ( natural bounty ) // NOTE : deprecated for now : no natural growth occurs
   STORE_RATE,  // Units of space taken per res in their respective InfStore
 
   PRICE_BASE,  // Base cost per unit
@@ -70,6 +71,42 @@ pub const ResMetricEnum = enum( u8 )
   PRICE_DAMP,  // Price updating lerp factor
 };
 
+
+// ================================ RESOURCE STATE GRID ================================
+// NOTE : used in Economy to store local mutable values
+
+pub const ResStateData = def.GenDataGrid( f64, ResStateEnum, ResType );
+
+pub const ResStateEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  COUNT,    // Current stockpile
+  LIMIT,    // Current storage capacity
+  DELTA,    // Net total change last tick
+
+  PRICE,    // Market price last tick
+  PRICE_D,  // Price change last tick
+
+  MAX_DEM,  // Maximum possible consumption last tick
+  MAX_SUP,  // Maximum possible production  last tick
+
+  GEN_CONS, // Total applied consumption last tick
+  GEN_PROD, // Total applied production  last tick
+
+  DECAY,    // Amount lost to stock decay last tick
+  GROWTH,   // Amount gained from nature  last tick
+
+  TRD_EXP,  // Total exports last tick
+  TRD_IMP,  // Total imports last tick
+
+  GEN_ACS,  // Aggregated resource access rates from last tick
+  POP_ACS,  // Population resource access rates from last tick
+  IND_ACS,  // Industrial resource access rates from last tick
+};
+
+
+// ================================ DATA INITIALIZATION ================================
 
 pub fn loadResourceData() void
 {
@@ -105,8 +142,8 @@ pub fn loadResourceData() void
 
 
   // ================================ GROWTH RATE ================================
+  // NOTE : deprecated for now : no natural growth occurs
 
-  // TODO : deprecate ? ( kinda pointless with the current economy scale and more stable implementation )
   resMetricData.set( .FOOD,  .GROWTH_RATE, 150.0 );
   resMetricData.set( .WATER, .GROWTH_RATE, 200.0 );
   resMetricData.set( .POWER, .GROWTH_RATE, 100.0 );
@@ -166,37 +203,4 @@ pub fn loadResourceData() void
   resMetricData.set( .PART,  .PRICE_DAMP, 0.20 ); // Moderate - high demand from multiple sectors
 }
 
-
-// ================================ RESOURCE STATE GRID ================================
-// NOTE : used in Economy to store local quantities and metrics
-
-pub const ResStateData = def.GenDataGrid( f64, ResStateEnum, ResType );
-
-pub const ResStateEnum = enum( u8 )
-{
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  COUNT,    // Current stockpile
-  LIMIT,    // Current storage capacity
-  DELTA,    // Net total change last tick
-
-  PRICE,    // Market price last tick
-  PRICE_D,  // Price change last tick
-
-  MAX_DEM,  // Maximum possible consumption last tick
-  MAX_SUP,  // Maximum possible production  last tick
-
-  GEN_CONS, // Total applied consumption last tick
-  GEN_PROD, // Total applied production  last tick
-
-  DECAY,    // Amount lost to stock decay last tick
-  GROWTH,   // Amount gained from nature  last tick
-
-  TRD_EXP,  // Total exports last tick
-  TRD_IMP,  // Total imports last tick
-
-  GEN_ACS,  // Aggregated resource access rates from last tick
-  POP_ACS,  // Population resource access rates from last tick
-  IND_ACS,  // Industrial resource access rates from last tick
-};
 

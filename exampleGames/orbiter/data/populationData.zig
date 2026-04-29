@@ -51,34 +51,35 @@ pub const PopType = enum( u8 )
 
   pub fn getResCons_f32( self : PopType, resType : ResType ) f32
   {
-    return @floatCast( popResDeltaTable.get( self, .CONS, resType ));
+    return @floatCast( popResMetricTable.get( self, .CONS, resType ));
   }
   pub fn getResCons_f64( self : PopType, resType : ResType ) f64
   {
-    return popResDeltaTable.get( self, .CONS, resType );
+    return popResMetricTable.get( self, .CONS, resType );
   }
 
   pub fn getResProd_f32( self : PopType, resType : ResType ) f32
   {
-    return @floatCast( popResDeltaTable.get( self, .PROD, resType ));
+    return @floatCast( popResMetricTable.get( self, .PROD, resType ));
   }
   pub fn getResProd_f64( self : PopType, resType : ResType ) f64
   {
-    return popResDeltaTable.get( self, .PROD, resType );
+    return popResMetricTable.get( self, .PROD, resType );
   }
 
   pub fn getResMort_f32( self : PopType, resType : ResType ) f32
   {
-    return @floatCast( popResDeltaTable.get( self, .MORT, resType ));
+    return @floatCast( popResMetricTable.get( self, .MORT, resType ));
   }
   pub fn getResMort_f64( self : PopType, resType : ResType ) f64
   {
-    return popResDeltaTable.get( self, .MORT, resType );
+    return popResMetricTable.get( self, .MORT, resType );
   }
 };
 
 
-// ================================ POPULATION METRICS GRID ================================
+// ================================ POPULATION BASE METRICS GRID ================================
+// NOTE : Mostly-static per-population values
 
 pub var popMetricData : def.GenDataGrid( f64, PopType, PopMetricEnum ) = .{};
 
@@ -92,58 +93,22 @@ pub const PopMetricEnum = enum( u8 )
 };
 
 
-// ================================ POPULATION CONS / PROD GRID ================================
+// ================================ POPULATION RES METRICS GRID ================================
+// NOTE : Mostly-static per-population & resource values
 
-// Resource consumption / production per population ( u64 )
-pub var popResDeltaTable : def.GenDataCube( f64, PopType, ResActionEnum, ResType ) = .{};
+pub var popResMetricTable : def.GenDataCube( f64, PopType, PopResMetricEnum, ResType ) = .{};
 
-pub const ResActionEnum = enum( u8 )
+pub const PopResMetricEnum = enum( u8 )
 {
-  CONS,
-  PROD,
+  CONS, // Base consumption per pop
+  PROD, // Base produciton  per pop
+
   MORT, // Additional mortality rate per week at ZERO access to this resource
 };
 
 
-pub fn loadPopulationData() void
-{
-  popMetricData.fillWith(    0.0 );
-  popResDeltaTable.fillWith( 0.0 );
-
-
-  // ================================ METRICS ================================
-
-  popMetricData.set( .HUMAN, .MASS,      0.0600 ); // In tons ( 60 Kgs )
-  popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 ); // Housing "space" neede for each pop
-  popMetricData.set( .HUMAN, .POLLUTION, 0.0500 ); // ~2.6 tCO2e/yr - first-world all-electric
-  popMetricData.set( .HUMAN, .NATALITY,  0.0003 ); // ~1.6% annual — colony growth rate
-  popMetricData.set( .HUMAN, .FATALITY,  0.0001 ); // ~0.5% annual — advanced medicine, ~200yr life expectancy
-
-
-
-  // ================================ RESOURCES ================================
-  // NOTE : Per week. Units in gameDefs.zig
-
-  popResDeltaTable.set( .HUMAN, .PROD, .WORK,  0.350 ); // 0.45 prod - 0.10 cons
-//popResDeltaTable.set( .HUMAN, .CONS, .WORK,  0.450 ); // Average workweek
-//popResDeltaTable.set( .HUMAN, .CONS, .WORK,  0.300 ); // Services consumption
-
-//popResDeltaTable.set( .HUMAN, .CONS, .FUEL,  0.000 ); // All transport is electric
-  popResDeltaTable.set( .HUMAN, .CONS, .FOOD,  0.015 );
-  popResDeltaTable.set( .HUMAN, .CONS, .WATER, 0.500 );
-  popResDeltaTable.set( .HUMAN, .CONS, .POWER, 0.500 ); // 0.4 base + 0.1 for electric transport
-  popResDeltaTable.set( .HUMAN, .CONS, .PART,  0.003 );
-
-  // Mortality rates at ZERO access (per week)
-  // Scaled by (1 - access)^exponent for partial shortages
-  popResDeltaTable.set( .HUMAN, .MORT, .WATER, 0.0200 ); // Dehydration — lethal in days, mass death in 1-2 weeks
-  popResDeltaTable.set( .HUMAN, .MORT, .FOOD,  0.0100 ); // Starvation  — serious in 3 weeks, mass death in 4-8 weeks
-  popResDeltaTable.set( .HUMAN, .MORT, .POWER, 0.0005 ); // Exposure    — environment dependent, slow killer
-}
-
-
 // ================================ POPULATION STATE GRID ================================
-// NOTE : used in Economy to store local quantities and metrics
+// NOTE : used in Economy to store local mutable values
 
 pub const PopStateData = def.GenDataGrid( f64, PopStateEnum, PopType );
 
@@ -166,4 +131,44 @@ pub const PopStateEnum = enum( u8 )
 
   FLM_LVL,  // How fulfilled their needs ended up being last tick
 };
+
+
+// ================================ DATA INITIALIZATION ================================
+
+pub fn loadPopulationData() void
+{
+  popMetricData.fillWith(     0.0 );
+  popResMetricTable.fillWith( 0.0 );
+
+
+  // ================================ BASE METRICS ================================
+
+  popMetricData.set( .HUMAN, .MASS,      0.0600 ); // In tons ( 60 Kgs )
+  popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 ); // Housing "space" neede for each pop
+  popMetricData.set( .HUMAN, .POLLUTION, 0.0500 ); // ~2.6 tCO2e/yr - first-world all-electric
+  popMetricData.set( .HUMAN, .NATALITY,  0.0003 ); // ~1.6% annual — colony growth rate
+  popMetricData.set( .HUMAN, .FATALITY,  0.0001 ); // ~0.5% annual — advanced medicine, ~200yr life expectancy
+
+
+
+  // ================================ RESOURCE METRICS ================================
+  // NOTE : Per week. Units in gameDefs.zig
+
+  popResMetricTable.set( .HUMAN, .PROD, .WORK,  0.350 ); // 0.45 prod - 0.10 cons
+//popResMetricTable.set( .HUMAN, .CONS, .WORK,  0.450 ); // Average workweek
+//popResMetricTable.set( .HUMAN, .CONS, .WORK,  0.200 ); // Services consumption
+
+//popResMetricTable.set( .HUMAN, .CONS, .FUEL,  0.000 ); // All transport is electric
+  popResMetricTable.set( .HUMAN, .CONS, .FOOD,  0.015 );
+  popResMetricTable.set( .HUMAN, .CONS, .WATER, 0.500 );
+  popResMetricTable.set( .HUMAN, .CONS, .POWER, 0.500 ); // 0.4 base + 0.1 for electric transport
+  popResMetricTable.set( .HUMAN, .CONS, .PART,  0.003 );
+
+  // Mortality rates at ZERO access (per week)
+  // Scaled by (1 - access)^exponent for partial shortages
+  popResMetricTable.set( .HUMAN, .MORT, .WATER, 0.0200 ); // Dehydration — lethal in days, mass death in 1-2 weeks
+  popResMetricTable.set( .HUMAN, .MORT, .FOOD,  0.0100 ); // Starvation  — serious in 3 weeks, mass death in 4-8 weeks
+  popResMetricTable.set( .HUMAN, .MORT, .POWER, 0.0005 ); // Exposure    — environment dependent, slow killer
+}
+
 

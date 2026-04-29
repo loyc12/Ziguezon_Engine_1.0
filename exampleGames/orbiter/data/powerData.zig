@@ -11,8 +11,8 @@ pub const PowerSrc = enum( u8 )
 
   GRID,
   SOLAR,   // Efficiency divided by two on GROUND due to nighttime
-//NUCLEAR,
-//BEAM,
+//FUELED,
+//BEAMED,
 
 
   pub fn getMetric_f32( self : PowerSrc, metric : PowerMetricEnum ) f32
@@ -41,6 +41,8 @@ pub const PowerMetricEnum = enum( u8 )
   DUMMY,
 };
 
+
+// ================================ DATA INITIALIZATION ================================
 
 pub fn loadPowerSrcData() void
 {
