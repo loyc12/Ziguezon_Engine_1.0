@@ -89,6 +89,23 @@ pub const InfType = enum( u8 )
   {
     return @intFromFloat( infMetricData.get( self, metric ));
   }
+
+  pub fn getResMetric_f32( self : InfType, metric : InfResMetricEnum, resType : ResType ) f32
+  {
+    return @floatCast( infResMetricTable.get( self, metric, resType ));
+  }
+  pub fn getResMetric_f64( self : InfType, metric : InfResMetricEnum, resType : ResType ) f64
+  {
+    return infResMetricTable.get( self, metric, resType );
+  }
+  pub fn getResMetric_u32( self : InfType, metric : InfResMetricEnum, resType : ResType ) u32
+  {
+    return @intFromFloat( infResMetricTable.get( self, metric, resType ));
+  }
+  pub fn getResMetric_u64( self : InfType, metric : InfResMetricEnum, resType : ResType ) u64
+  {
+    return @intFromFloat( infResMetricTable.get( self, metric, resType ));
+  }
 };
 
 
@@ -99,10 +116,11 @@ pub var infMetricData : def.GenDataGrid( f64, InfType, InfMetricEnum ) = .{};
 
 pub const InfMetricEnum = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   MASS,
   AREA_COST,
-  PART_COST,
-  MAINT_RATE,
+  BLD_COST,
   POLLUTION,
   CAPACITY,
 };
@@ -110,13 +128,17 @@ pub const InfMetricEnum = enum( u8 )
 // ================================ INFRASTRUCTURE RES METRICS GRID ================================
 // NOTE : Mostly-static per-infrastructure & resource values
 
-//pub var indResMetricTable : def.GenDataCube( f64, InfType, IndResMetricEnum, ResType ) = .{};
-//
-//pub const IndResMetricEnum = enum( u8 )
-//{
-//  COST,  // TODO : Check if moving construciton costs here would be best ?
-//  MAINT, // TODO : Check if moving maintenance  costs here would be best ?
-//};
+pub var infResMetricTable : def.GenDataCube( f64, InfType, InfResMetricEnum, ResType ) = .{};
+
+pub const InfResMetricEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  CONS,  // Base resource consumption ( * USE_LVL ) // NOTE : USE ME
+
+  BUILD, // One-time construction costs
+  MAINT, // Continual maintenance costs
+};
 
 
 // ================================ INFRASTRUCTURE STATE ENUM ================================
@@ -169,27 +191,6 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .STORAGE,  .AREA_COST, 0.05 ); //  5 ha - Warehouse/depot complex
 
 
-  // ================================ PART COST ================================
-  // Unit : t of manufactured parts needed to construct one unit
-  // A residential block: ~2,000 t of steel/concrete/components
-  // An assembly yard: ~5,000 t of heavy machinery + structures
-
-  infMetricData.set( .ASSEMBLY, .PART_COST, 10000.0 ); // Heavy machinery, cranes, fabrication tools
-  infMetricData.set( .HOUSING,  .PART_COST,  2000.0 ); // Concrete, steel, wiring, plumbing
-  infMetricData.set( .HABITAT,  .PART_COST, 50000.0 ); // Massive pressurized structure
-  infMetricData.set( .STORAGE,  .PART_COST,  3000.0 ); // Shelving, climate control, structures
-
-
-  // ================================ MAINT RATE ================================
-  // Fraction of PART_COST consumed as PART per week for upkeep
-  // Real buildings: ~1-3% of construction cost per YEAR for maintenance
-
-  infMetricData.set( .ASSEMBLY, .MAINT_RATE, 0.0006 );  // ~3% annual — heavy wear on equipment
-  infMetricData.set( .HOUSING,  .MAINT_RATE, 0.0003 );  // ~1.5% annual — residential is low-maintenance
-  infMetricData.set( .HABITAT,  .MAINT_RATE, 0.0008 );  // ~4% annual — pressure vessels need constant upkee
-  infMetricData.set( .STORAGE,  .MAINT_RATE, 0.0004 );  // ~2% annual
-
-
   // ================================ POLLUTION ================================
   // Units: abstract pollution points per unit per tick at full usage
   // Will be recalibrated after industry pollution is set
@@ -206,4 +207,28 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .HOUSING,  .CAPACITY,  100.0 ); // 100 people housed per unit
   infMetricData.set( .HABITAT,  .CAPACITY,    1.0 ); // 1 km2 of pressurized area per unit
   infMetricData.set( .STORAGE,  .CAPACITY, 5000.0 ); // 5,000 t of resources stored per unit
+
+
+  // TODO : move away from PARTS only construction and maintenance
+
+  // ================================ PART COST ================================
+  // Unit : t of manufactured parts needed to construct one unit
+  // A residential block: ~2,000 t of steel/concrete/components
+  // An assembly yard: ~5,000 t of heavy machinery + structures
+
+  infResMetricTable.set( .ASSEMBLY, .BUILD, .PART, 10000.0 ); // Heavy machinery, cranes, fabrication tools
+  infResMetricTable.set( .HOUSING,  .BUILD, .PART,  2000.0 ); // Concrete, steel, wiring, plumbing
+  infResMetricTable.set( .HABITAT,  .BUILD, .PART, 50000.0 ); // Massive pressurized structure
+  infResMetricTable.set( .STORAGE,  .BUILD, .PART,  3000.0 ); // Shelving, climate control, structures
+
+
+  // ================================ MAINT RATE ================================
+  // Fraction of PART_COST consumed as PART per week for upkeep
+  // Real buildings: ~1-3% of construction cost per YEAR for maintenance
+
+  infResMetricTable.set( .ASSEMBLY, .MAINT, .PART, 10000.0 * 0.0006 );  // ~3% annual — heavy wear on equipment
+  infResMetricTable.set( .HOUSING,  .MAINT, .PART,  2000.0 * 0.0003 );  // ~1.5% annual — residential is low-maintenance
+  infResMetricTable.set( .HABITAT,  .MAINT, .PART, 50000.0 * 0.0008 );  // ~4% annual — pressure vessels need constant upkee
+  infResMetricTable.set( .STORAGE,  .MAINT, .PART,  3000.0 * 0.0004 );  // ~2% annual
+
 }

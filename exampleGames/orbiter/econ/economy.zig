@@ -1061,7 +1061,7 @@ pub const Economy = struct
             self.infState.sub( .DELTA, infType, infDelta );
             self.infState.add( .DECAY, infType, infDelta );
 
-            const unitCost = infType.getMetric_f64( .PART_COST );
+            const unitCost = infType.getResMetric_f64( .BUILD, .PART );
             const partCost = @floor( infDelta * unitCost * AUTO_DECAY_RES_FACTOR );
 
             self.resState.add( .COUNT, .PART, partCost );
@@ -1088,7 +1088,7 @@ pub const Economy = struct
           const actTrgt : f64 = self.indState.get( .ACT_TRGT, indType );
 
           // Don't expand industry if we can't staff what we already have
-          const needWork : bool = ( indType.getResCons_f64( .WORK ) > def.EPS );
+          const needWork : bool = ( indType.getResMetric_f64( .CONS, .WORK ) > def.EPS );
           const canBuild : bool = ( !needWork or workAcs > AUTO_BUILD_WORK_THRESH );
 
           if( canBuild and actTrgt > AUTO_BUILD_IND_THRESH )
@@ -1105,7 +1105,7 @@ pub const Economy = struct
             inline for( 0..resTypeC )| r |
             {
               const resType = ResType.fromIdx( r );
-              const prod    = indType.getResProd_f64( resType );
+              const prod    = indType.getResMetric_f64( .PROD, resType );
 
               if( prod > def.EPS )
               {
@@ -1151,7 +1151,7 @@ pub const Economy = struct
               self.indState.sub( .DELTA, indType, indDelta );
               self.indState.add( .DECAY, indType, indDelta );
 
-              const unitCost = indType.getMetric_f64( .PART_COST );
+              const unitCost = indType.getResMetric_f64( .BUILD, .PART );
               const partCost = @floor( indDelta * unitCost * AUTO_DECAY_RES_FACTOR );
 
               self.resState.add( .COUNT, .PART, partCost );

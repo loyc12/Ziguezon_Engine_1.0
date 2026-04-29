@@ -196,8 +196,8 @@ const EconSolver = struct
       {
         const resType = ResType.fromIdx( r );
 
-        const maxCons = popCount * popType.getResCons_f64( resType );
-        const maxProd = popCount * popType.getResProd_f64( resType );
+        const maxCons = popCount * popType.getResMetric_f64( .CONS, resType );
+        const maxProd = popCount * popType.getResMetric_f64( .PROD, resType );
 
       //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resType ), maxProd, maxCons });
 
@@ -225,24 +225,22 @@ const EconSolver = struct
     inline for( 0..infTypeC )| f |
     {
       const infType     = InfType.fromIdx( f );
-      const infCount    = self.econ.infState.get( .COUNT, infType );
-      const baseCost    = infType.getMetric_f64(  .PART_COST  );
-      const mntRate     = infType.getMetric_f64(  .MAINT_RATE );
-      const scaling     = self.econ.infState.get( .USE_LVL, infType );
+      const infCount    = self.econ.infState.get(   .COUNT,   infType );
+      const mntCost     = infType.getResMetric_f64( .MAINT,   .PART   );
+      const scaling     = self.econ.infState.get(   .USE_LVL, infType );
       const maintFactor = def.lerp( INF_MAINT_IDLE_FACTOR, 1.0, scaling );
 
-      totalPartCons += infCount * baseCost * mntRate * maintFactor;
+      totalPartCons += infCount * mntCost * maintFactor;
     }
     inline for( 0..indTypeC )| d |
     {
       const indType     = IndType.fromIdx( d );
-      const indCount    = self.econ.indState.get( .COUNT, indType );
-      const baseCost    = indType.getMetric_f64(  .PART_COST  );
-      const mntRate     = indType.getMetric_f64( .MAINT_RATE );
+      const indCount    = self.econ.indState.get(   .COUNT,  indType );
+      const mntCost     = indType.getResMetric_f64( .MAINT,  .PART   );
       const scaling     = self.econ.indState.get( .ACT_TRGT, indType );
       const maintFactor = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, scaling );
 
-      totalPartCons += indCount * baseCost * mntRate * maintFactor;
+      totalPartCons += indCount * mntCost * maintFactor;
     }
 
     self.resFlowData.add( .MNT, .MAX_CONS, .PART, totalPartCons );
@@ -271,8 +269,8 @@ const EconSolver = struct
       {
         const resType = ResType.fromIdx( r );
 
-        var maxCons = indCount * indType.getResCons_f64( resType );
-        var maxProd = indCount * indType.getResProd_f64( resType );
+        var maxCons = indCount * indType.getResMetric_f64( .CONS, resType );
+        var maxProd = indCount * indType.getResMetric_f64( .PROD, resType );
 
         // Adjust expected max prod based on sunlight
         if( indType.getPowerSrc() == .SOLAR )
@@ -847,8 +845,8 @@ const EconSolver = struct
           }
           else // Theoritical profitability calculations
           {
-            expense += resPrice * popType.getResCons_f64( resType );
-            revenue += resPrice * popType.getResProd_f64( resType );
+            expense += resPrice * popType.getResMetric_f64( .CONS, resType );
+            revenue += resPrice * popType.getResMetric_f64( .PROD, resType );
           }
         }
         profit = revenue - expense;
@@ -933,21 +931,20 @@ const EconSolver = struct
           }
           else // Theoritical profitability calculations
           {
-            expense += resPrice * indType.getResCons_f64( resType );
-            revenue += resPrice * indType.getResProd_f64( resType );
+            expense += resPrice * indType.getResMetric_f64( .CONS, resType );
+            revenue += resPrice * indType.getResMetric_f64( .PROD, resType );
           }
         }
 
 
         // Calculating maintenance costs
         // NOTE : duplicated code ( calcMntMaxDelta ). buffer previous results instead
-        const partPrice   = self.econ.resState.get( .PRICE, .PART );
-        const baseCost    = indType.getMetric_f64(  .PART_COST    );
-        const mntRate     = indType.getMetric_f64(  .MAINT_RATE   );
+        const partPrice   = self.econ.resState.get(   .PRICE, .PART );
+        const mntCost     = indType.getResMetric_f64( .MAINT, .PART );
         const scaling     = self.indActivity.get( indType );
         const maintFactor = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, scaling );
 
-        expense += indCount * baseCost * mntRate * partPrice * maintFactor;
+        expense += indCount * mntCost * partPrice * maintFactor;
         profit   = revenue  - expense;
 
 
@@ -1042,7 +1039,7 @@ const EconSolver = struct
         for( 0..resTypeC )| r |
         {
           const resType  = ResType.fromIdx( r );
-          const mortRate = popType.getResMort_f64( resType );
+          const mortRate = popType.getResMetric_f64( .MORT, resType );
 
           if( mortRate > def.EPS )
           {
@@ -1271,10 +1268,9 @@ pub fn testEconLogs( econ : *ecn.Economy ) void
     }
 
     // Add maintenance cost
-    const partPrice = econ.resState.get( .PRICE, .PART   );
-    const baseCost  = indType.getMetric_f64( .PART_COST  );
-    const mntRate   = indType.getMetric_f64( .MAINT_RATE );
-    const mntCosts  = indCount * baseCost * mntRate * partPrice;
+    const partPrice = econ.resState.get(        .PRICE, .PART );
+    const mntCost   = indType.getResMetric_f64( .MAINT, .PART );
+    const mntCosts  = indCount * mntCost * partPrice;
 
     const profit = revenue - ( expense + mntCosts );
 

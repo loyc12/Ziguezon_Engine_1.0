@@ -25,25 +25,45 @@ Small, isolated, unblock everything else
       - Add empty tickGov() called from tickEcon between phases
       - No behavior yet ; just establishes the slot
 
-  0.3 Deduplicate maintenance cost calc - trivial
-      - Cache the ( count * baseCost * mntRate * maintFactor ) so it
-        can be reused by calcMntMaxDelta and updateIndFinances
+  0.3 Construction & maintenance multi-resource refactor - large
+      - Add per-construct-family resource metric tables :
+          indResMetricsTable : ( IndType x IndResMetric x ResType )
+          infResMetricsTable : ( InfType x InfResMetric x ResType )
+        IndResMetric  : OP_CONS, OP_PROD, BLD_COST, MNT_RATE
+        InfResMetric  : OP_CONS,          BLD_COST, MNT_RATE
+        Pop keeps popResDeltaTable + ResActionEnum unchanged ( MORT is pop-specific )
+      - Drop IndMetricEnum.PART_COST / MAINT_RATE and the InfMetricEnum equivalents
+      - Drop the duplicate industryData.ResActionEnum + indResDeltaTable
+        ( merged into indResMetricsTable )
+      - Add BLD_EFFORT scalar to Ind/Inf metric enums : per-unit construction
+        effort, abstract units
+      - Generalise the four "// NOTE : Uses PARTs only" paths in econSolver
+        ( calcMntResAccess, calcMntResCons, calcBldResAccess, calcBldResCons )
+        to iterate all resources
+      - Repurpose ASSEMBLY : its CAPACITY now denotes construction effort per
+        tick ; ASSEMBLY itself gains OP_CONS for WORK and POWER
+      - New solver pre-pass : resolve ASSEMBLY's input access first, scale
+        realised capacity to match, book OP_CONS against realised ( not nominal )
+        capacity to prevent over-consumption
+      - New phase in stepEcon : ConstructionCapacity allocation, MNT first
+        then BLD queue
+      - Deduplicate the maintenance cost calc duplicated between calcMntMaxDelta
+        and updateIndFinances
+      - Behaviour preserved through migration : pre-tuning, only PART columns
+        are nonzero, simulator runs identically. Multi-resource columns ( WORK
+        on ASSEMBLY, multi-res maintenance ) are tuned in at the end of the
+        pass once plumbing is validated.
+      - BuildQueue is touched minimally : reads costs from the new tables but
+        keeps its array-based shape and PART-only deduction. The queue rework
+        is Tier 1.1.
 
-  0.4 WORK-as-maintenance-input scaffolding - small
-      - Generalise the maintenance pass so it can demand WORK ( and
-        eventually any ResType ) on top of PARTs ( see econSolver L58,
-        L451 )
-      - Behavior gated behind data-table values that are 0 by default
-        until Phase 3 #4 enables them
-
-  0.5 Refactor current logic organization - large, parallel-friendly
+  0.4 Refactor current logic organization - large, parallel-friendly
       - Migrate "function-as-lookup" patterns to data arrays
         ( resourceData L28, populationData L22, industryData L69 )
       - Generalise EconSolver fields hardcoded to .HUMAN
         ( prevPopCount / nextPopCount / popDeaths / popBirths )
       - Standardise DataMatrix vs Array usage where it has drifted
-      - Can run in parallel with later tiers.
-
+      - Can run in parallel with later tiers
 
 
 ================ TIER 1 - AGENT REFACTOR ================
@@ -51,26 +71,45 @@ Small, isolated, unblock everything else
 Make industries and infrastructure responsible for their own
 growth/decay decisions, instead of debugAutoBuild on Economy.
 
-  1.1 Construct request provenance
-      - Add a `requester` ( ~Agent ) enum to BuildEntry : { POP, IND, INF, GOV, COM }
-      - Update BuildQueue.addEntry signature to take it
-      - Update tryBuild path to settle the bill against the right pot
+  1.1 BuildQueue rework : true queue, reservation, requester, parallel processing
+      - Replace fixed-array with a proper queue data structure ; removes the
+        swap-remove dance in removeEntryAmount
+      - Add `requester : Agent` to BuildEntry ( POP, IND, INF, GOV, COM valid )
+      - Resources locked at order time, with FRACTIONAL reservation : if the
+        requester cannot afford the full bundle, lock what is affordable and
+        let the entry accumulate funding over subsequent ticks. Drives steady
+        demand instead of spikes ; supports financing builds over many steps
+        in low-access economies
+      - BuildEntry gains : reservedRes : ResStockData, outstandingUnits : u64,
+        effortRemaining : f64
+      - BuildQueue caches totalReservedRes for O(1) reads in calcBldMaxDelta ;
+        updated incrementally on add / partial-reserve / unit-complete / cancel
+      - Parallel processing per tick : GOV-requested entries get capacity
+        first, remaining capacity distributed across non-GOV entries
+        ( allocation policy itself a future player lever )
+      - Financial transaction settled at order-time prices for the locked
+        portion ; cancellation refunds locked-but-unbuilt resources
+      - tryBuild loses its consumeParts branch ; queue handles all resource
+        deduction
+      - Hook for agent-driven order cancellation ( picked up by 1.2 )
 
   1.2 Industry self-build / self-shrink
       - For each IndType : decide each tick whether to enqueue / dequeue / liquidate
         a build, based on ( SAVINGS, MARGIN, ACT_TRGT, workAccess, etc )
       - Refactor the AUTO_BUILD_* constants into per-agent variables
-      - Buying parts costs SAVINGS at PART price ; queue caps growth speed
+      - Buying parts at order time costs SAVINGS at current prices ; effort
+        cap throttles realisation, not affordability
       - Selling off ( decay ) at AUTO_DECAY_RES_FACTOR returns parts AND
         credits SAVINGS at PART price
+      - Agents may cancel pending build orders if SAVINGS / MARGIN deteriorate
+        ( frees locked resources back to operations )
 
   1.3 Infrastructure self-build / self-shrink
       - Same shape as 1.2 but most infra has no SAVINGS of its own
       - Two options ( validate later ) :
-        a : Infra is "public" - its decisions are driven by GOV ( Tier 2 )
+        a : Infra is "public" - decisions driven by GOV ( Tier 2 )
         b : Infra is "operator-owned" - add SAVINGS to InfStateData
-      - Most likely choice : (a) for HOUSING / HABITAT ( public goods ),
-        (b) for STORAGE / ASSEMBLY ( commercially run )
+      - Most likely : (a) for HOUSING / HABITAT, (b) for STORAGE / ASSEMBLY
 
   1.4 Population spending dynamics
       - Pops already have SAVINGS, MARGIN ; consumption stays welfare-based
@@ -79,14 +118,8 @@ growth/decay decisions, instead of debugAutoBuild on Economy.
       - Births/deaths still welfare-driven ; SAVINGS gates migration ( Tier 4 )
 
   1.5 Retire debugAutoBuild
-      - Once 1.2 + 1.3 are validated, deprecate debugAutoBuild from Economy
-      - Keep the constants but move them into agent-specific fields
-
-  1.X Additional ideas      // NOTE : review and integrate in plans
-      - Have build PARTS be comited on queue, not on construction
-      - Allow for multiple build resources to be used, depending on build
-      - Have ASSEMBLIES use WORK and ENERGY as well as build-dependent resources
-        ( only PARTS for now )
+      - Once 1.1 + 1.2 + 1.3 are validated, deprecate debugAutoBuild
+      - Move the AUTO_BUILD_* constants into agent-specific fields
 
 
 ================ TIER 2 - GOVERNMENT ================
@@ -224,7 +257,17 @@ Optional but high-impact for a "humanity in space" game feel.
         accidents ( wipe COUNT for one Inf/Ind type )
       - Tests resilience ; gives gov reserves ( 4.4 ) a job
 
-  5.4 Megaprojects
+  5.4 Pre-settlement automated infrastructure
+      - Generalises the current PROBE_MINE pattern : autonomous constructs
+        that do not require pop-WORK to operate or maintain
+      - Self-sustaining in a closed economy of ORE / future base resources
+        ( ICE, REGOLITH, distinct minerals, etc ) plus sunlight
+      - Enables true bootstrapping of new EconLocs without pre-existing pops
+      - Depends on 0.3 ( multi-resource construction ) being stable
+      - Defines the "first robotic foothold on Mars" gameplay loop ;
+        complements 2.5 EconLoc activation
+
+  5.5 Megaprojects
       - Multi-economy capital projects ( O'Neill cylinders, Dyson swarm increment,
         mass driver chain )
       - Aggregate non-GROUND BuildQueue across contributors ; long lead times

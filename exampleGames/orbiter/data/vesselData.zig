@@ -39,7 +39,7 @@ pub const VesMetricEnum = enum( u8 )
 {
   MASS,
   PART_COST,
-//CASH_COST,
+  BLD_COST,
   CAPACITY,
   CREW_COUNT,
 //POWER_SRC,

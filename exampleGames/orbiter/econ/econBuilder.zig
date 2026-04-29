@@ -21,6 +21,13 @@ const cst = @import( "construct.zig" );
 const Construct = cst.Construct;
 
 
+// NOTE : will require large refactor to handle new metrics
+// - requester Agent
+// - resource prealocation
+// - partial ordering
+// - build in parrallel instead of sequentially
+// - gov order prioritization
+
 pub const BuildEntry = struct
 {
   construct    : Construct = .{ .inf = InfType.HOUSING },

@@ -93,38 +93,21 @@ pub const IndType = enum( u8 )
     return @intFromFloat( indMetricData.get( self, metric ));
   }
 
-  pub fn getResCons_f32( self : IndType, resType : ResType ) f32
+  pub fn getResMetric_f32( self : IndType, metric : IndResMetricEnum, resType : ResType ) f32
   {
-    return @floatCast( indResMetricTable.get( self, .CONS, resType ));
+    return @floatCast( indResMetricTable.get( self, metric, resType ));
   }
-  pub fn getResCons_f64( self : IndType, resType : ResType ) f64
+  pub fn getResMetric_f64( self : IndType, metric : IndResMetricEnum, resType : ResType ) f64
   {
-    return indResMetricTable.get( self, .CONS, resType );
+    return indResMetricTable.get( self, metric, resType );
   }
-  pub fn getResCons_u32( self : IndType, resType : ResType ) u32
+  pub fn getResMetric_u32( self : IndType, metric : IndResMetricEnum, resType : ResType ) u32
   {
-    return @intFromFloat( indResMetricTable.get( self, .CONS, resType ));
+    return @intFromFloat( indResMetricTable.get( self, metric, resType ));
   }
-  pub fn getResCons_u64( self : IndType, resType : ResType ) u64
+  pub fn getResMetric_u64( self : IndType, metric : IndResMetricEnum, resType : ResType ) u64
   {
-    return @intFromFloat( indResMetricTable.get( self, .CONS, resType ));
-  }
-
-  pub fn getResProd_f32( self : IndType, resType : ResType ) f32
-  {
-    return @floatCast( indResMetricTable.get( self, .PROD, resType ));
-  }
-  pub fn getResProd_f64( self : IndType, resType : ResType ) f64
-  {
-    return indResMetricTable.get( self, .PROD, resType );
-  }
-  pub fn getResProd_u32( self : IndType, resType : ResType ) u32
-  {
-    return @intFromFloat( indResMetricTable.get( self, .PROD, resType ));
-  }
-  pub fn getResProd_u64( self : IndType, resType : ResType ) u64
-  {
-    return @intFromFloat( indResMetricTable.get( self, .PROD, resType ));
+    return @intFromFloat( indResMetricTable.get( self, metric, resType ));
   }
 };
 
@@ -136,11 +119,14 @@ pub var indMetricData : def.GenDataGrid( f64, IndType, IndMetricEnum ) = .{};
 
 pub const IndMetricEnum = enum( u8 )
 {
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
   MASS,
   AREA_COST,
-  PART_COST,
-  MAINT_RATE,
+  BLD_COST,
   POLLUTION,
+//PART_COST,
+//MAINT_RATE,
 };
 
 
@@ -151,11 +137,13 @@ pub var indResMetricTable : def.GenDataCube( f64, IndType, IndResMetricEnum, Res
 
 pub const IndResMetricEnum = enum( u8 )
 {
-  CONS,  // Base res consumption per pop
-  PROD,  // Base res produciton  per pop
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-//COST,  // TODO : Check if moving construciton costs here would be best ?
-//MAINT, // TODO : Check if moving maintenance  costs here would be best ?
+  CONS,  // Base resource consumption ( * ACT_LVL )
+  PROD,  // Base resource produciton  ( * ACT_LVL )
+
+  BUILD, // One-time construction costs
+  MAINT, // Continual maintenance costs
 };
 
 
@@ -224,41 +212,6 @@ pub fn loadIndustryData() void
   indMetricData.set( .GROUND_MINE, .AREA_COST, 0.50 ); // 50 ha — open pit + tailings + processing
   indMetricData.set( .FOUNDRY,     .AREA_COST, 0.20 ); // 20 ha — smelter + slag yards + cooling
   indMetricData.set( .FACTORY,     .AREA_COST, 0.15 ); // 15 ha — assembly halls + logistics yard
-
-
-  // ================================ PART COST ================================
-  // Unit : t of manufactured parts to construct one facility
-  // Real-world: a large factory costs ~$500M–2B; at ~$2000/t for manufactured goods ≈ 250k–1M t
-  // We use the lower end since PART represents high-value components
-
-  indMetricData.set( .AGRONOMIC,   .PART_COST,   500.0 );  // Tractors, irrigation, barns — relatively cheap
-  indMetricData.set( .HYDROPONIC,  .PART_COST,  8000.0 );  // LED arrays, climate systems, grow racks
-  indMetricData.set( .WATER_PLANT, .PART_COST, 10000.0 );  // Membranes, pumps, piping
-  indMetricData.set( .SOLAR_PLANT, .PART_COST,  5000.0 );  // Panels, inverters, mounting — mass-produced
-  indMetricData.set( .POWER_PLANT, .PART_COST, 80000.0 );  // Fusion containment, superconductors, turbines
-
-  indMetricData.set( .REFINERY,    .PART_COST, 20000.0 );  // Distillation columns, centrifuges, tanks
-  indMetricData.set( .PROBE_MINE,  .PART_COST,  1000.0 );  // Small autonomous spacecraft
-  indMetricData.set( .GROUND_MINE, .PART_COST, 15000.0 );  // Excavators, conveyors, crushers
-  indMetricData.set( .FOUNDRY,     .PART_COST, 25000.0 );  // Blast furnaces, rolling mills
-  indMetricData.set( .FACTORY,     .PART_COST, 20000.0 );  // Assembly lines, CNC machines, robotics
-
-
-  // ================================ MAINT RATE ================================
-  // Fraction of PART_COST consumed as PART per week
-  // annual_rate / 52. Farms ~2%, heavy industry ~4-6%, high-tech ~3%
-
-  indMetricData.set( .AGRONOMIC,   .MAINT_RATE, 0.0004 ); // ~2% annual — simple equipment
-  indMetricData.set( .HYDROPONIC,  .MAINT_RATE, 0.0006 ); // ~3% annual — LEDs, pumps wear out
-  indMetricData.set( .WATER_PLANT, .MAINT_RATE, 0.0006 ); // ~3% annual — membrane replacement
-  indMetricData.set( .SOLAR_PLANT, .MAINT_RATE, 0.0004 ); // ~2% annual — panels are low-maintenance
-  indMetricData.set( .POWER_PLANT, .MAINT_RATE, 0.0008 ); // ~4% annual — high-tech, critical systems
-
-  indMetricData.set( .REFINERY,    .MAINT_RATE, 0.0008 ); // ~4% annual — corrosive environment
-  indMetricData.set( .PROBE_MINE,  .MAINT_RATE, 0.0000 ); // Needs to be fully autonomous
-  indMetricData.set( .GROUND_MINE, .MAINT_RATE, 0.0010 ); // ~5% annual — extreme wear on equipment
-  indMetricData.set( .FOUNDRY,     .MAINT_RATE, 0.0010 ); // ~5% annual — thermal cycling, slag damage
-  indMetricData.set( .FACTORY,     .MAINT_RATE, 0.0008 ); // ~4% annual — tooling wear, robotics upkeep
 
 
   // ================================ POLLUTION ================================
@@ -384,4 +337,41 @@ pub fn loadIndustryData() void
   indResMetricTable.set( .FACTORY, .CONS, .POWER,  200.0 );
   indResMetricTable.set( .FACTORY, .CONS, .INGOT, 2000.0 );
   indResMetricTable.set( .FACTORY, .PROD, .PART,  1500.0 );
+
+
+  // TODO : move away from PARTS only construction and maintenance
+
+  // ================================ PART COST ================================
+  // Unit : t of manufactured parts to construct one facility
+  // Real-world: a large factory costs ~$500M–2B; at ~$2000/t for manufactured goods ≈ 250k–1M t
+  // We use the lower end since PART represents high-value components
+
+  indResMetricTable.set( .AGRONOMIC,   .BUILD, .PART,   500.0 );  // Tractors, irrigation, barns — relatively cheap
+  indResMetricTable.set( .HYDROPONIC,  .BUILD, .PART,  8000.0 );  // LED arrays, climate systems, grow racks
+  indResMetricTable.set( .WATER_PLANT, .BUILD, .PART, 10000.0 );  // Membranes, pumps, piping
+  indResMetricTable.set( .SOLAR_PLANT, .BUILD, .PART,  5000.0 );  // Panels, inverters, mounting — mass-produced
+  indResMetricTable.set( .POWER_PLANT, .BUILD, .PART, 80000.0 );  // Fusion containment, superconductors, turbines
+
+  indResMetricTable.set( .REFINERY,    .BUILD, .PART, 20000.0 );  // Distillation columns, centrifuges, tanks
+  indResMetricTable.set( .PROBE_MINE,  .BUILD, .PART,  1000.0 );  // Small autonomous spacecraft
+  indResMetricTable.set( .GROUND_MINE, .BUILD, .PART, 15000.0 );  // Excavators, conveyors, crushers
+  indResMetricTable.set( .FOUNDRY,     .BUILD, .PART, 25000.0 );  // Blast furnaces, rolling mills
+  indResMetricTable.set( .FACTORY,     .BUILD, .PART, 20000.0 );  // Assembly lines, CNC machines, robotics
+
+
+  // ================================ MAINT RATE ================================
+  // Fraction of PART_COST consumed as PART per week
+  // annual_rate / 52. Farms ~2%, heavy industry ~4-6%, high-tech ~3%
+
+  indResMetricTable.set( .AGRONOMIC,   .MAINT, .PART,   500.0 * 0.0004 ); // ~2% annual — simple equipment
+  indResMetricTable.set( .HYDROPONIC,  .MAINT, .PART,  8000.0 * 0.0006 ); // ~3% annual — LEDs, pumps wear out
+  indResMetricTable.set( .WATER_PLANT, .MAINT, .PART, 10000.0 * 0.0006 ); // ~3% annual — membrane replacement
+  indResMetricTable.set( .SOLAR_PLANT, .MAINT, .PART,  5000.0 * 0.0004 ); // ~2% annual — panels are low-maintenance
+  indResMetricTable.set( .POWER_PLANT, .MAINT, .PART, 80000.0 * 0.0008 ); // ~4% annual — high-tech, critical systems
+
+  indResMetricTable.set( .REFINERY,    .MAINT, .PART, 20000.0 * 0.0008 ); // ~4% annual — corrosive environment
+  indResMetricTable.set( .PROBE_MINE,  .MAINT, .PART,  1000.0 * 0.0000 ); // Needs to be fully autonomous
+  indResMetricTable.set( .GROUND_MINE, .MAINT, .PART, 15000.0 * 0.0010 ); // ~5% annual — extreme wear on equipment
+  indResMetricTable.set( .FOUNDRY,     .MAINT, .PART, 25000.0 * 0.0010 ); // ~5% annual — thermal cycling, slag damage
+  indResMetricTable.set( .FACTORY,     .MAINT, .PART, 20000.0 * 0.0008 ); // ~4% annual — tooling wear, robotics upkeep
 }

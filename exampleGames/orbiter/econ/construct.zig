@@ -51,9 +51,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | vesType | vesType.getMetric_f64( .PART_COST ),
-      .inf => | infType | infType.getMetric_f64( .PART_COST ),
-      .ind => | indType | indType.getMetric_f64( .PART_COST ),
+    //.ves => | vesType | vesType.getResMetric_f64( .BUILD, .PART ),
+      .inf => | infType | infType.getResMetric_f64( .BUILD, .PART ),
+      .ind => | indType | indType.getResMetric_f64( .BUILD, .PART ),
     };
   }
 

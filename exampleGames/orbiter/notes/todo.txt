@@ -52,10 +52,11 @@ Items inside a section are ordered small-to-large when equal in priority
        - TODO  : industries that PRODUCE WORK ( automation ) — currently no
                  industry has a positive WORK output
 
-[x] 3. Welfare-based population model
+[~] 3. Welfare-based population model
        - DONE  : updatePopCount iterates every resType with popType mortRate;
                  no hardcoded FOOD/WATER/POWER checks
        - DONE  : composite jobAccess + minResAccess modifiers on natality
+       - TODO  : Review welfare system to take more than just res into account
 
 [~] 4. Economic metrics dashboard
        - DONE  : avgPopFulfilment, avgInfUsage, avgIndActivity, avgResAccess
@@ -95,12 +96,17 @@ Items inside a section are ordered small-to-large when equal in priority
 [~] 4. Capital depreciation & maintenance inputs
        - DONE  : Maintenance demand computed in calcMntMaxDelta and consumed
                  in calcMntResCons
+       - DONE  : Maintenance ( and construction ) generalised to multi-resource
+                 via indResMetricsTable / infResMetricsTable cubes ; PART_COST
+                 and MAINT_RATE scalars retired ( see roadmap Tier 0.3 )
+       - TODO  : Fill in relevant resource costs columns for BUILD and MAINT ( Ind, Inf )
+       - TODO  : Deduplicated maintenance cost calc between calcMntMaxDelta
+                 and updateIndFinances
+       - TODO  : ASSEMBLY now consumes WORK and POWER to operate ; CAPACITY
+                 denominated in construction-effort units, realised capacity
+                 scaled by ASSEMBLY's own input access
        - TODO  : Unpaid maintenance must DEGRADE buildings ( the TODO at end
                  of calcMntResCons ) -> infState.add( .DECAY, ... )
-       - TODO  : Deduplicate maintenance cost calc ( duplicated between
-                 calcMntMaxDelta and updateIndFinances )
-       - TODO  : Maintenance should consume more than just PARTs
-                 ( WORK + multi-resource recipes - econSolver L58, L451 )
 
 
 
@@ -226,3 +232,9 @@ Items inside a section are ordered small-to-large when equal in priority
 [ ] 5. Astrodynamics polish
        - Precise L1-L5 Lagrange position / velocity ( tradeData.zig L67 )
        - Body-type auto-assignment from mass / orbit ( bodyComp.zig L20 )
+
+[ ] 6. Pre-settlement automated infrastructure
+       - Generalise PROBE_MINE pattern : autonomous, no pop-WORK requirement
+       - Self-sustaining on ORE / future base resources + sunlight
+       - Bootstraps fresh EconLocs without pre-existing pops
+       - Depends on 0.3 multi-resource construction
