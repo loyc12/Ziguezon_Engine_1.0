@@ -30,6 +30,8 @@ Items inside a section are ordered small-to-large when equal in priority
          nextPopCount, popDeaths, popBirths in EconSolver ) before adding new
          PopTypes
        - Standardise DataMatrix vs Array usage where it has drifted
+         ( indResMetricsTable already consolidates ind resource flows --
+         see Phase 3 #4 )
 
 
 
@@ -93,18 +95,30 @@ Items inside a section are ordered small-to-large when equal in priority
                  currently share STORAGE - see "Temp fix" notes in
                  resourceData.zig )
 
-[~] 4. Capital depreciation & maintenance inputs
+[~] 4. Capital depreciation & multi-resource construction    // construction refactor pass A
        - DONE  : Maintenance demand computed in calcMntMaxDelta and consumed
                  in calcMntResCons
-       - DONE  : Maintenance ( and construction ) generalised to multi-resource
-                 via indResMetricsTable / infResMetricsTable cubes ; PART_COST
-                 and MAINT_RATE scalars retired ( see roadmap Tier 0.3 )
-       - TODO  : Fill in relevant resource costs columns for BUILD and MAINT ( Ind, Inf )
-       - TODO  : Deduplicated maintenance cost calc between calcMntMaxDelta
-                 and updateIndFinances
-       - TODO  : ASSEMBLY now consumes WORK and POWER to operate ; CAPACITY
-                 denominated in construction-effort units, realised capacity
-                 scaled by ASSEMBLY's own input access
+       - DONE  : indResMetricsTable / infResMetricsTable cubes added
+                 ( IndResMetric : CONS, PROD, BUILD, MAINT ;
+                   InfResMetric : CONS,       BUILD, MAINT )
+       - DONE  : PART_COST and MAINT_RATE scalars retired ; old indResDeltaTable
+                 + duplicate ResActionEnum merged into indResMetricsTable
+       - DONE  : MNT/BLD solver paths now read from the cubes ( still PART-only
+                 at runtime since multi-resource columns are zero pre-tuning )
+       - TODO  : Deduplicate maintenance cost calc ( duplicated between
+                 calcMntMaxDelta L218 and updateIndFinances L1015 -- already
+                 flagged with a "duplicated code" NOTE in source )
+       - TODO  : Add BLD_COST scalar to Ind/InfMetricEnum ( per-unit abstract
+                 construction effort ) ; repurpose ASSEMBLY.CAPACITY from
+                 PART/tick throttle to construction-effort/tick
+       - TODO  : ASSEMBLY pre-resolve sub-pass : resolve ASSEMBLY's own
+                 WORK/POWER access first, scale realised capacity to match,
+                 book OP_CONS against realised ( not nominal ) capacity to
+                 prevent over-consumption
+       - TODO  : ConstructionCapacity allocation phase in stepEcon : MNT
+                 first, BLD queue second
+       - TODO  : Tune in non-zero columns -- ASSEMBLY CONS[ WORK/POWER ] ,
+                 maintenance multi-resource recipes, optional BUILD[ WORK ]
        - TODO  : Unpaid maintenance must DEGRADE buildings ( the TODO at end
                  of calcMntResCons ) -> infState.add( .DECAY, ... )
 
@@ -113,13 +127,34 @@ Items inside a section are ordered small-to-large when equal in priority
 ======== PHASE 4 - Agent Refactor & Government ========
 
 
-[ ] 1. Agent-owned build/decay decisions
-       - Move debugAutoBuild out of Economy
-       - Industries decide whether to expand/contract from their own SAVINGS,
-         margin, and ACT_TRGT
-       - Infrastructure decisions remain "public" ( covered by gov, see #3 )
-       - BuildQueue gains a "requester" field ( who pays for the build )
-       - Replaces todo Phase 6 #1 ( investment signals from prices )
+[ ] 1. BuildQueue rework + agent-owned build decisions    // construction refactor pass B
+       - Replace BuildQueue's fixed-array shape with a proper queue data
+         structure ( current array-with-shift in removeEntryAmount makes
+         large-scale extensions error-prone )
+       - Add `requester : Agent` to BuildEntry ( POP, IND, INF, GOV, COM
+         valid as requesters ; MNT/BLD/GEN/NAT not )
+       - Reservation at order time, with FRACTIONAL support : if the requester
+         cannot afford the full bundle, lock what is affordable and let the
+         entry accumulate funding over subsequent ticks ; smooths demand
+         instead of producing spikes
+       - BuildEntry gains : reservedRes, outstandingUnits, effortRemaining
+       - BuildQueue caches totalReservedRes for O(1) reads in calcBldMaxDelta
+         ( updated incrementally on add / partial-reserve / unit-complete /
+         cancel )
+       - Parallel processing per tick : GOV-requested entries get capacity
+         first, remaining capacity distributed across non-GOV entries
+         ( allocation policy itself a future player-facing lever )
+       - Financial transaction settled at order-time prices for the locked
+         portion ; cancellation refunds locked-but-unbuilt resources
+       - tryBuild loses its consumeParts branch ; the queue handles all
+         resource deduction
+       - Industries decide whether to enqueue / dequeue / liquidate from their
+         own SAVINGS, MARGIN, ACT_TRGT, workAccess
+       - Refactor the AUTO_BUILD_* constants into per-agent variables
+       - Hook for agent-driven order cancellation when SAVINGS / MARGIN
+         deteriorate ( frees locked resources back to operations )
+       - Infrastructure decisions remain "public" ( covered by gov, see #5 )
+       - Replaces the role of debugAutoBuild ( retired in #5 below )
 
 [ ] 2. Industry capital accumulation
        - Industries spend SAVINGS on construction orders ( pay parts at PRICE )
@@ -145,7 +180,10 @@ Items inside a section are ordered small-to-large when equal in priority
 [ ] 5. Government subsidies & grants pass
        - SUB_POP / SUB_IND offset realized expense
        - GRT_POP / GRT_IND inject SAVINGS to specific agents
-       - SPEND_BLD : government places its own BuildQueue entries
+       - SPEND_BLD : government places its own BuildEntry ( requester = .GOV ,
+         picked up first by the parallel queue allocator from #1 )
+       - Retire debugAutoBuild from Economy ; move AUTO_BUILD_* constants
+         into agent-specific fields
 
 [ ] 6. Player-facing policy levers
        - Per-EconLoc or per-economy: tax rates, subsidy rates, allocation
@@ -174,7 +212,8 @@ Items inside a section are ordered small-to-large when equal in priority
 
 [ ] 4. Vessel-mediated transport
        - Replace abstract trade with actual freighter / mass-driver vessels
-       - Vessels are built like industry ( PART cost, WORK to operate )
+       - Vessels are built like industry ( resource bundle from a future
+         vesResMetricsTable when added, WORK to operate )
        - Vessel capacity bounds exportCapacity ; vessel turnaround bounds
          throughput
 
@@ -216,7 +255,7 @@ Items inside a section are ordered small-to-large when equal in priority
          AGRONOMIC ecoFactor block currently commented out )
 
 [ ] 2. Technology system
-       - Tech modifies ind(Res)MetricData / inf(Res)MetricData / etc
+       - Tech modifies indResMetricsTable / infResMetricsTable / etc
        - Unlock new InfType / IndType / VesType
        - R&D as an industry that consumes WORK and produces a TECH resource
        - Implement STRUC ResType ( resourceData.zig L25 ) as an early tech
@@ -234,7 +273,10 @@ Items inside a section are ordered small-to-large when equal in priority
        - Body-type auto-assignment from mass / orbit ( bodyComp.zig L20 )
 
 [ ] 6. Pre-settlement automated infrastructure
-       - Generalise PROBE_MINE pattern : autonomous, no pop-WORK requirement
-       - Self-sustaining on ORE / future base resources + sunlight
+       - Generalises the PROBE_MINE pattern : autonomous constructs that do
+         not require pop-WORK to operate or maintain
+       - Self-sustaining on ORE / future base resources ( ICE, REGOLITH,
+         distinct minerals ) plus sunlight
        - Bootstraps fresh EconLocs without pre-existing pops
-       - Depends on 0.3 multi-resource construction
+       - Depends on Phase 3 #4 multi-resource construction being stable
+       - Complements Phase 4 #3 EconLoc activation hook

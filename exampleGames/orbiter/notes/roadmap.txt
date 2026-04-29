@@ -289,3 +289,14 @@ Optional but high-impact for a "humanity in space" game feel.
   - Reputation / trust per polity-pair that dampens trade volume independently of price
   - Insurance / futures markets at very late game ( Tier 4 dynamics )
   - Astrodynamics polish ( precise L1-L5 positions, body-type auto-classification )
+
+  - Multithreaded / GPU economy ticks ( very long-term, may never ship )
+    Each Economy.tickEcon is per-econ local with no cross-econ side
+    effects ; the natural parallelism is "N economies in parallel" rather
+    than within a single solver. Prerequisites when picked up :
+    per-thread / per-worker EconSolver instances ( today's single global
+    is not thread-safe -- documented but currently fine because ticks are
+    serial ), trade matching remains a separate top-level pass between
+    per-econ batches, and the metric cubes ( indResMetricsTable etc. )
+    are already contiguous f64 arrays that would upload to GPU buffers
+    cleanly. Defer until a profiler says we need it.
