@@ -151,8 +151,8 @@ pub var indResMetricTable : def.GenDataCube( f64, IndType, IndResMetricEnum, Res
 
 pub const IndResMetricEnum = enum( u8 )
 {
-  CONS,  // Base consumption per pop
-  PROD,  // Base produciton  per pop
+  CONS,  // Base res consumption per pop
+  PROD,  // Base res produciton  per pop
 
 //COST,  // TODO : Check if moving construciton costs here would be best ?
 //MAINT, // TODO : Check if moving maintenance  costs here would be best ?

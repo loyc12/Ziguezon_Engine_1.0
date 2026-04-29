@@ -106,10 +106,10 @@ pub const Economy = struct
     self.hasAtmo  = atmo;
 
     self.areaData.fillWith( 0.0 );
-    self.resState.fillWith(    0.0 );
-    self.popState.fillWith(    0.0 );
-    self.infState.fillWith(    0.0 );
-    self.indState.fillWith(    0.0 );
+    self.resState.fillWith( 0.0 );
+    self.popState.fillWith( 0.0 );
+    self.infState.fillWith( 0.0 );
+    self.indState.fillWith( 0.0 );
 
     self.areaData.set( .BODY,  area      );
     self.areaData.set( .INHAB, landCover );

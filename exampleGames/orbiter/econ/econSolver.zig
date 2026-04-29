@@ -24,7 +24,7 @@ const indTypeC  = IndType.count;
 
 const ecnm_d = gdf.ecnm_d;
 
-
+// NOTE : This reused-memory patern will be an issue if we ever multi-thread processing
 var solver : EconSolver = .{ .econ = undefined };
 
 pub inline fn stepEcon( econ : *ecn.Economy ) void
@@ -96,14 +96,12 @@ pub inline fn stepEcon( econ : *ecn.Economy ) void
   solver.pushEconMetrics(); // Pastes leftover metrics into economy's fields
 }
 
+
 // ================================ SOLVER STRUCT ================================
 
 const EconSolver = struct
 {
-  // Global consumption-production throttles / multipliers
-  sunshineModifier : f32 = 1.0,
-  natureModifier   : f32 = 1.0,
-
+  // Global consumption-production throttles / multipliers ( generally static )
   defGenResAccess  : f64 = 1.0,
   maxPopResAccess  : f64 = 1.0,
   maxMntResAccess  : f64 = 1.0,
@@ -114,7 +112,7 @@ const EconSolver = struct
   maxPopActivity   : f64 = 1.0,
   maxIndActivity   : f64 = 1.0,
 
-  // Solver data
+  // Core solver data
   econ : *ecn.Economy,
 
   prevResStock : ecnm_d.ResStockData = .{},
@@ -132,34 +130,35 @@ const EconSolver = struct
   prevPopCount : f64 = 0.0,
   nextPopCount : f64 = 0.0,
 
-  popDeaths    : f64 = 0.0,
-  popBirths    : f64 = 0.0,
+  popDeaths : f64 = 0.0,
+  popBirths : f64 = 0.0,
 
 
   fn resetValues( self : *EconSolver ) void
   {
-    self.sunshineModifier = 1.0;
-    self.natureModifier   = 1.0;
-
     self.defGenResAccess = 1.0;
     self.maxPopResAccess = 1.0;
     self.maxMntResAccess = 1.0;
     self.maxIndResAccess = 1.0;
     self.maxBldResAccess = 1.0;
     self.maxComResAccess = 1.0;
+    self.maxPopActivity  = 1.0;
+    self.maxIndActivity  = 1.0;
 
-    self.maxPopActivity = 1.0;
-    self.maxIndActivity = 1.0;
-
-    self.resFlowData.fillWith( 0.0 );
+    self.resFlowData.fillWith(    0.0 );
     self.popResFlowData.fillWith( 0.0 );
     self.indResFlowData.fillWith( 0.0 );
 
+    self.popFulfilment.fillWith( 0.0 );
+    self.indActivity.fillWith(   0.0 );
+
     self.prevPopCount = 0.0;
     self.nextPopCount = 0.0;
-    self.popDeaths    = 0.0;
-    self.popBirths    = 0.0;
+
+    self.popDeaths = 0.0;
+    self.popBirths = 0.0;
   }
+
 
   fn initBaseState( self : *EconSolver, econ : *ecn.Economy ) void
   {
@@ -1196,6 +1195,7 @@ const EconSolver = struct
 
 pub fn testEconLogs( econ : *ecn.Economy ) void
 {
+  // NOTE : Uses non-global solver-instance to avoid corrupting the actual solver
   var tmpSolver : EconSolver = .{ .econ = undefined };
 
   tmpSolver.initBaseState( econ );

@@ -6,6 +6,7 @@ Legend :
 Sections are roughly ordered by foundation -> dynamics -> longterm
 Items inside a section are ordered small-to-large when equal in priority
 
+
 ================ Economic Integration Plan ================
 
 ======== PHASE 1 - Foundations ========
@@ -209,7 +210,7 @@ Items inside a section are ordered small-to-large when equal in priority
          AGRONOMIC ecoFactor block currently commented out )
 
 [ ] 2. Technology system
-       - Tech modifies indMetricData / indResDeltaTable / infMetricData
+       - Tech modifies ind(Res)MetricData / inf(Res)MetricData / etc
        - Unlock new InfType / IndType / VesType
        - R&D as an industry that consumes WORK and produces a TECH resource
        - Implement STRUC ResType ( resourceData.zig L25 ) as an early tech

@@ -100,10 +100,10 @@ pub var popResMetricTable : def.GenDataCube( f64, PopType, PopResMetricEnum, Res
 
 pub const PopResMetricEnum = enum( u8 )
 {
-  CONS, // Base consumption per pop
-  PROD, // Base produciton  per pop
+  CONS, // Base res consumption per pop
+  PROD, // Base res produciton  per pop
 
-  MORT, // Additional mortality rate per week at ZERO access to this resource
+  MORT, // Additional mortality rate per week at ZERO access to the specified resource
 };
 
 

@@ -68,9 +68,9 @@ pub const EconAgentEnum = enum( u8 )
   BLD, // Building         ( construction, selloffs    )
   COM, // Commerce / trade ( imports, exports          ) : stub for now
 
-  GEN, // Sum of previous  ( to avoid counting decay as usage )
+  GEN, // Sum of previous  ( avoid including NAT uses  )
 
-  NAT, // Decay / Growth   ( decay, growth, disasters )
+  NAT, // Decay / Growth   ( decay, growth, disasters  )
   // NOTE : NAT IS NOT AN ECONOMIC ACTION ( NO CASH TRANSACTION & NO IMPACT ON PRICES )
 };
 
