@@ -11,19 +11,13 @@ Items inside a section are ordered small-to-large when equal in priority
 
 ======== PHASE 1 - Foundations ========
 
-
-[ ] 1. Trade field stubs
-       - Per-ResType : exportCapacity, importDemand, tradeBalance on Economy
-       - Per-ResType : pricePoint exposed to other economies for matching
-       - Currently unused, but unblocks Phase 5 trade work
-
-[ ] 2. Government wiring
+[ ] 1. Government wiring
        - Mount GovMonetaryData on Economy ( governmentData.zig already
          defines the types but no instance lives on the economy )
        - Add tickGov() stub between tickEcon() phases
        - Treasury savings + per-tick NET_DELTA tracking
 
-[ ] 3. Solver / data-array refactor pass
+[ ] 2. Solver / data-array refactor pass
        - Migrate the "function-as-lookup" patterns ( resourceData.getInfStore,
          populationData.getInfStore, industryData L69 etc ) to data arrays
        - Generalize solver fields hardcoded to .HUMAN ( prevPopCount,
@@ -33,7 +27,7 @@ Items inside a section are ordered small-to-large when equal in priority
          ( indResMetricsTable already consolidates ind resource flows --
          see Phase 3 #4 )
 
-[ ] 4. State data trim + solver-pointer return from stepEcon
+[ ] 3. State data trim + solver-pointer return from stepEcon
        - Problem : XxxStateData matrices currently store many trivially
          derivable and debug-only fields. The solver computes the canonical
          versions in resFlowData / popResFlowData / indResFlowData, then
