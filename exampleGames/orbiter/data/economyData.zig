@@ -45,20 +45,20 @@ pub const EconLoc = enum( u8 )
 // ================================ RESOURCE FLOW MATRIX ================================
 // NOTE : used in EconSolver ( aka temporary data storage )
 
-pub const ResStockData      = def.GenDataLine( f64, ResType );
-pub const ResFlowData       = def.GenDataCube( f64, EconAgentEnum, EconFlowPhaseEnum, ResType );
+pub const ResStockData = def.GenDataLine( f64, ResType );
+pub const ResFlowData  = def.GenDataCube( f64, EconAgentGroupEnum, AgentResDeltaEnum, ResType );
 
 // NOTE : de-agregated version of ResFlowData[ POP ][ phase ][ res ]
-pub const PopResFlowData    = def.GenDataCube( f64, PopType, EconFlowPhaseEnum, ResType );
+pub const PopResFlowData    = def.GenDataCube( f64, PopType, AgentResDeltaEnum, ResType );
 pub const PopFulfilmentData = def.GenDataLine( f64, PopType );
 
 // NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ]
-pub const IndResFlowData    = def.GenDataCube( f64, IndType, EconFlowPhaseEnum, ResType );
-pub const IndActivityData   = def.GenDataLine( f64, IndType );
+pub const IndResFlowData  = def.GenDataCube( f64, IndType, AgentResDeltaEnum, ResType );
+pub const IndActivityData = def.GenDataLine( f64, IndType );
 
 
 
-pub const EconAgentEnum = enum( u8 )
+pub const EconAgentGroupEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -71,20 +71,22 @@ pub const EconAgentEnum = enum( u8 )
   GEN, // Sum of previous  ( avoid including NAT uses  )
 
   NAT, // Decay / Growth   ( decay, growth, disasters  )
-  // NOTE : NAT IS NOT AN ECONOMIC ACTION ( NO CASH TRANSACTION & NO IMPACT ON PRICES )
+  // NOTE : NAT HAS NO MONETARY IMPACT ( NO SUP/DEM, PRICE, NOR SAVINGS EFFECT )
 };
 
-pub const EconFlowPhaseEnum = enum( u8 )
+pub const AgentResDeltaEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  MAX_PROD,  // Theoretical maximum production  ( before scarcity )
-  MAX_CONS,  // Theoretical maximum consumption ( before scarcity )
+  MAX_PROD, // Theoretical maximum production  ( before scarcity )
+  MAX_CONS, // Theoretical maximum consumption ( before scarcity )
 
-  AVG_ACS,   // Demand satisfaction rate ( aka 1.0 - scarcity )
+  AVG_ACS,  // Demand satisfaction rate ( aka 1.0 - scarcity )
 
-  REAL_PROD, // Realized production  ( after activity & scarcity applied )
-  REAL_CONS, // Realized consumption ( after activity & scarcity applied )
+  FIN_PROD, // Realized production  ( after activity & scarcity applied )
+  FIN_CONS, // Realized consumption ( after activity & scarcity applied )
+
+  BALANCE,  // TODO : USE ME
 };
 
 
@@ -96,6 +98,7 @@ pub const EconAreaData = def.GenDataLine( f64, EconAreaEnum );
 pub const EconAreaEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
+//pub const maxPossibleArea : f64 = ...;
 
   BODY,  // Total body's surface area         : if on GROUND
   INHAB, // Proportion of inhabitable surface : 0.0 to 1.0

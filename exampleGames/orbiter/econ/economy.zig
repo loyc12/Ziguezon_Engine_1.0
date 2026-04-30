@@ -295,7 +295,7 @@ pub const Economy = struct
       const resType = ResType.fromIdx( r );
 
       const resCount  : f64 = self.resState.get( .COUNT,    resType );
-      const resDelta  : f64 = self.resState.get( .DELTA,    resType );
+      const resDelta  : f64 = self.resState.get( .COUNT_D,  resType );
       const resProd   : f64 = self.resState.get( .GEN_PROD, resType );
       const resCons   : f64 = self.resState.get( .GEN_CONS, resType );
     //const resGrowth : f64 = self.resState.get( .GROWTH,   resType );
@@ -864,7 +864,7 @@ pub const Economy = struct
 
       self.infState.zero( .DELTA, infType );
       self.infState.zero( .BUILT, infType );
-      self.infState.zero( .DECAY, infType );
+      self.infState.zero( .DESTR, infType );
     }
     inline for( 0..indTypeC )| d |
     {
@@ -872,7 +872,7 @@ pub const Economy = struct
 
       self.indState.zero( .DELTA, indType );
       self.indState.zero( .BUILT, indType );
-      self.indState.zero( .DECAY, indType );
+      self.indState.zero( .DESTR, indType );
     }
 
     if( self.buildQueue != null )
@@ -989,7 +989,6 @@ pub const Economy = struct
   pub fn debugAutoBuild( self : *Economy ) void
   {
     const popCount   : f64 = self.popState.get( .COUNT, .HUMAN );
-  //const workAccess : f64 = self.resState.get( .GEN_ACS, .WORK );
 
     if( self.buildQueue.?.getEntryCount() < AUTO_BUILD_QUEUE_LIMIT )
     {
@@ -1059,13 +1058,13 @@ pub const Economy = struct
 
             self.infState.sub( .COUNT, infType, infDelta );
             self.infState.sub( .DELTA, infType, infDelta );
-            self.infState.add( .DECAY, infType, infDelta );
+            self.infState.add( .DESTR, infType, infDelta );
 
             const unitCost = infType.getResMetric_f64( .BUILD, .PART );
             const partCost = @floor( infDelta * unitCost * AUTO_DECAY_RES_FACTOR );
 
             self.resState.add( .COUNT, .PART, partCost );
-            self.resState.add( .DELTA, .PART, partCost );
+            self.resState.add( .COUNT_D, .PART, partCost );
 
             const partPrice = self.resState.get( .PRICE, .PART );
 
@@ -1149,13 +1148,13 @@ pub const Economy = struct
 
               self.indState.sub( .COUNT, indType, indDelta );
               self.indState.sub( .DELTA, indType, indDelta );
-              self.indState.add( .DECAY, indType, indDelta );
+              self.indState.add( .DESTR, indType, indDelta );
 
               const unitCost = indType.getResMetric_f64( .BUILD, .PART );
               const partCost = @floor( indDelta * unitCost * AUTO_DECAY_RES_FACTOR );
 
               self.resState.add( .COUNT, .PART, partCost );
-              self.resState.add( .DELTA, .PART, partCost );
+              self.resState.add( .COUNT_D, .PART, partCost );
 
               const partPrice = self.resState.get( .PRICE, .PART );
 

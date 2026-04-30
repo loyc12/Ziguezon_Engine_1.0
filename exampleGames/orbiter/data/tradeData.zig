@@ -72,6 +72,7 @@ pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gdf.EconLoc, body
 
   var data : gdf.OrbitalData = .{};
 
+  // TODO : rework calculation to have more accurate values
   if( distSqr > def.EPS )
   {
     const dist    = @sqrt( distSqr );

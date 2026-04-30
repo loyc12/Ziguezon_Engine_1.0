@@ -94,6 +94,9 @@ pub inline fn stepEcon( econ : *ecn.Economy ) void
 //solver.updatePopCount();  // Computes industrial growth/decay based on profitability
 
   solver.pushEconMetrics(); // Pastes leftover metrics into economy's fields
+
+  // NOTE : Maybe we should return a pointer to solver, to be used ONLY in econ.tickEcon()
+  //        This could avoid having to store temporary values in econ, saving memory
 }
 
 
@@ -565,9 +568,9 @@ const EconSolver = struct
         const popAccess   = self.resFlowData.get( .POP, .AVG_ACS, resType );
         const realPopCons = popAccess * self.popResFlowData.get( popType, .MAX_CONS, resType );
 
-        self.popResFlowData.set( popType, .REAL_CONS, resType, realPopCons );
-        self.resFlowData.add( .POP,    .REAL_CONS, resType, realPopCons );
-        self.resFlowData.add( .GEN,    .REAL_CONS, resType, realPopCons );
+        self.popResFlowData.set( popType, .FIN_CONS, resType, realPopCons );
+        self.resFlowData.add( .POP,    .FIN_CONS, resType, realPopCons );
+        self.resFlowData.add( .GEN,    .FIN_CONS, resType, realPopCons );
       }
     }
   }
@@ -582,8 +585,8 @@ const EconSolver = struct
     {
       const realMntCons = mntAccess * mntMaxCons;
 
-      self.resFlowData.set( .MNT, .REAL_CONS, .PART, realMntCons );
-      self.resFlowData.add( .GEN, .REAL_CONS, .PART, realMntCons );
+      self.resFlowData.set( .MNT, .FIN_CONS, .PART, realMntCons );
+      self.resFlowData.add( .GEN, .FIN_CONS, .PART, realMntCons );
     }
 
     // TODO : do something when maintenanced is not fuly paid
@@ -603,9 +606,9 @@ const EconSolver = struct
           const resType     = ResType.fromIdx( r );
           const realIndCons = indActivity * self.indResFlowData.get( indType, .MAX_CONS, resType );
 
-          self.indResFlowData.set( indType, .REAL_CONS, resType, realIndCons );
-          self.resFlowData.add( .IND,    .REAL_CONS, resType, realIndCons );
-          self.resFlowData.add( .GEN,    .REAL_CONS, resType, realIndCons );
+          self.indResFlowData.set( indType, .FIN_CONS, resType, realIndCons );
+          self.resFlowData.add( .IND,    .FIN_CONS, resType, realIndCons );
+          self.resFlowData.add( .GEN,    .FIN_CONS, resType, realIndCons );
         }
       }
     }
@@ -621,8 +624,8 @@ const EconSolver = struct
     {
       const realBldCons = @floor( bldAccess * bldMaxCons );
 
-      self.resFlowData.set( .BLD, .REAL_CONS, .PART, realBldCons );
-      self.resFlowData.add( .GEN, .REAL_CONS, .PART, realBldCons );
+      self.resFlowData.set( .BLD, .FIN_CONS, .PART, realBldCons );
+      self.resFlowData.add( .GEN, .FIN_CONS, .PART, realBldCons );
     }
   }
 
@@ -632,7 +635,7 @@ const EconSolver = struct
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
-      const genCons = self.resFlowData.get( .GEN, .REAL_CONS, resType );
+      const genCons = self.resFlowData.get( .GEN, .FIN_CONS, resType );
 
       self.nextResStock.sub( resType, genCons );
     }
@@ -651,7 +654,7 @@ const EconSolver = struct
       {
         const realNatCons = @ceil( resCount * resType.getMetric_f64( .DECAY_RATE ));
 
-        self.resFlowData.set( .NAT, .REAL_CONS, resType, realNatCons );
+        self.resFlowData.set( .NAT, .FIN_CONS, resType, realNatCons );
         self.nextResStock.sub(                  resType, realNatCons );
       }
     }
@@ -675,9 +678,9 @@ const EconSolver = struct
         const prodRate    = @max( popFulfilment, POP_PROD_FLOOR );
         const realPopProd = prodRate * self.resFlowData.get( .POP, .MAX_PROD, resType );
 
-        self.popResFlowData.set( popType, .REAL_PROD, resType, realPopProd );
-        self.resFlowData.add( .POP,    .REAL_PROD, resType, realPopProd );
-        self.resFlowData.add( .GEN,    .REAL_PROD, resType, realPopProd );
+        self.popResFlowData.set( popType, .FIN_PROD, resType, realPopProd );
+        self.resFlowData.add( .POP,    .FIN_PROD, resType, realPopProd );
+        self.resFlowData.add( .GEN,    .FIN_PROD, resType, realPopProd );
       }
     }
   }
@@ -696,9 +699,9 @@ const EconSolver = struct
           const resType     = ResType.fromIdx( r );
           const realIndProd = indActivity * self.indResFlowData.get( indType, .MAX_PROD, resType );
 
-          self.indResFlowData.set( indType, .REAL_PROD, resType, realIndProd );
-          self.resFlowData.add( .IND,    .REAL_PROD, resType, realIndProd );
-          self.resFlowData.add( .GEN,    .REAL_PROD, resType, realIndProd );
+          self.indResFlowData.set( indType, .FIN_PROD, resType, realIndProd );
+          self.resFlowData.add( .IND,    .FIN_PROD, resType, realIndProd );
+          self.resFlowData.add( .GEN,    .FIN_PROD, resType, realIndProd );
         }
       }
     }
@@ -714,7 +717,7 @@ const EconSolver = struct
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
-      const genProd = self.resFlowData.get( .GEN, .REAL_PROD, resType );
+      const genProd = self.resFlowData.get( .GEN, .FIN_PROD, resType );
 
       self.nextResStock.add( resType, genProd );
     }
@@ -734,7 +737,7 @@ const EconSolver = struct
 //    {
 //      const realNatProd = @floor( ecoFactor * growthRate );
 //
-//      self.resFlowData.set( .NAT, .REAL_PROD, resType, realNatProd );
+//      self.resFlowData.set( .NAT, .FIN_PROD, resType, realNatProd );
 //      self.nextResStock.add(                  resType, realNatProd );
 //    }
 //  }
@@ -785,9 +788,9 @@ const EconSolver = struct
       const dampening  = resType.getMetric_f64( .PRICE_DAMP ); // Lerp factor (0 = no change, 1 = instant)
 
       // Flow-based: compare this tick's production vs this tick's consumption demand
-      const realDemand = self.resFlowData.get( .GEN, .REAL_CONS, resType ); // NOTE : EXCLUDES NATURAL DECAY
-      const realSupply = self.resFlowData.get( .GEN, .REAL_PROD, resType )
-                       + self.resFlowData.get( .NAT, .REAL_PROD, resType );
+      const realDemand = self.resFlowData.get( .GEN, .FIN_CONS, resType ); // NOTE : EXCLUDES NATURAL DECAY
+      const realSupply = self.resFlowData.get( .GEN, .FIN_PROD, resType )
+                       + self.resFlowData.get( .NAT, .FIN_PROD, resType );
 
       const ceil : f64 = MAX_SCARC_RATIO; // Scarcity ceiling
       var  ratio : f64 = 0.0;
@@ -840,8 +843,8 @@ const EconSolver = struct
 
           if( isPresent )
           {
-            expense += resPrice * self.popResFlowData.get( popType, .REAL_CONS, resType );
-            revenue += resPrice * self.popResFlowData.get( popType, .REAL_PROD, resType );
+            expense += resPrice * self.popResFlowData.get( popType, .FIN_CONS, resType );
+            revenue += resPrice * self.popResFlowData.get( popType, .FIN_PROD, resType );
           }
           else // Theoritical profitability calculations
           {
@@ -926,8 +929,8 @@ const EconSolver = struct
 
           if( isPresent )
           {
-            expense += resPrice * self.indResFlowData.get( indType, .REAL_CONS, resType );
-            revenue += resPrice * self.indResFlowData.get( indType, .REAL_PROD, resType );
+            expense += resPrice * self.indResFlowData.get( indType, .FIN_CONS, resType );
+            revenue += resPrice * self.indResFlowData.get( indType, .FIN_PROD, resType );
           }
           else // Theoritical profitability calculations
           {
@@ -1117,7 +1120,7 @@ const EconSolver = struct
   {
     const econ : *ecn.Economy = self.econ;
 
-    self.econ.buildBudget = self.resFlowData.get( .BLD, .REAL_CONS, .PART );
+    self.econ.buildBudget = self.resFlowData.get( .BLD, .FIN_CONS, .PART );
 
     econ.avgPopFulfilment = 0.0;
   //econ.avgInfUsage      = 0.0;
@@ -1161,16 +1164,16 @@ const EconSolver = struct
       const finalStock   = self.nextResStock.get( res );
 
       econ.resState.set( .COUNT,    res, @max( 0.0, finalStock ));
-      econ.resState.set( .DELTA,    res, finalStock - initialStock );
+      econ.resState.set( .COUNT_D,    res, finalStock - initialStock );
 
       econ.resState.set( .MAX_SUP,  res, self.resFlowData.get( .GEN, .MAX_PROD,  res ));
       econ.resState.set( .MAX_DEM,  res, self.resFlowData.get( .GEN, .MAX_CONS,  res ));
 
-      econ.resState.set( .GEN_PROD, res, self.resFlowData.get( .GEN, .REAL_PROD, res ));
-      econ.resState.set( .GEN_CONS, res, self.resFlowData.get( .GEN, .REAL_CONS, res ));
+      econ.resState.set( .GEN_PROD, res, self.resFlowData.get( .GEN, .FIN_PROD, res ));
+      econ.resState.set( .GEN_CONS, res, self.resFlowData.get( .GEN, .FIN_CONS, res ));
 
-      econ.resState.set( .DECAY,    res, self.resFlowData.get( .NAT, .REAL_CONS, res ));
-      econ.resState.set( .GROWTH,   res, self.resFlowData.get( .NAT, .REAL_PROD, res ));
+      econ.resState.set( .DECAY,    res, self.resFlowData.get( .NAT, .FIN_CONS, res ));
+      econ.resState.set( .GROWTH,   res, self.resFlowData.get( .NAT, .FIN_PROD, res ));
 
       econ.resState.set( .GEN_ACS,  res, self.resFlowData.get( .GEN, .AVG_ACS,    res ));
       econ.resState.set( .POP_ACS,  res, self.resFlowData.get( .POP, .AVG_ACS,    res ));

@@ -82,11 +82,20 @@ pub const ResStateEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   COUNT,    // Current stockpile
+  COUNT_D,  // Net total change last tick
+
   LIMIT,    // Current storage capacity
-  DELTA,    // Net total change last tick
+  LIMIT_D,  // TODO : USE ME
 
   PRICE,    // Market price last tick
   PRICE_D,  // Price change last tick
+
+
+  // NOTE : The values bellow mostly serve debug purposes
+
+  // TODO : Use resFlowData directly from econSolver instead :
+  //        Have stepEcon return a pointer to the solver instance
+  //        Give a more complete overview and avoids duplicating data
 
   MAX_DEM,  // Maximum possible consumption last tick
   MAX_SUP,  // Maximum possible production  last tick
@@ -95,7 +104,7 @@ pub const ResStateEnum = enum( u8 )
   GEN_PROD, // Total applied production  last tick
 
   DECAY,    // Amount lost to stock decay last tick
-  GROWTH,   // Amount gained from nature  last tick
+  GROWTH,   // Amount gained from nature  last tick // NOTE : deprecated for now : no natural growth occurs
 
   TRD_EXP,  // Total exports last tick
   TRD_IMP,  // Total imports last tick

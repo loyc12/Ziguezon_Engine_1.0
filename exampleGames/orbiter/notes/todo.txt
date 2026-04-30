@@ -33,6 +33,35 @@ Items inside a section are ordered small-to-large when equal in priority
          ( indResMetricsTable already consolidates ind resource flows --
          see Phase 3 #4 )
 
+[ ] 4. State data trim + solver-pointer return from stepEcon
+       - Problem : XxxStateData matrices currently store many trivially
+         derivable and debug-only fields. The solver computes the canonical
+         versions in resFlowData / popResFlowData / indResFlowData, then
+         pushEconMetrics duplicates them into econ.resState etc. for external
+         readers. This splits the source of truth, bloats per-econ memory,
+         and complicates future serialisation
+       - Have stepEcon return *const EconSolver ; pointer is valid ONLY until
+         the next stepEcon call ( document this lifetime contract on the
+         function ). External readers that want solver-internal values
+         during the same tick read them via the returned pointer instead of
+         from cached state
+       - ResStateEnum cuts : COUNT_D, LIMIT_D, MAX_DEM, MAX_SUP, GEN_CONS,
+         GEN_PROD, DECAY, GROWTH, GEN_ACS, POP_ACS, IND_ACS ( and TRD_EXP /
+         TRD_IMP -- they are stubs today, will be re-added by Phase 5 #1
+         when trade signals are actually populated )
+       - Rule of thumb : keep only what is consumed across tick boundaries
+         or across economies. Everything else is solver state
+       - Migrate debug logs : logResMetrics, logPopMetrics, logInfMetrics,
+         and logIndMetrics should move to econSolver
+       - debugAutoBuild's GEN_ACS / IND_ACS switch to reading from solver ptr
+       - Pairs with Phase 2 #4 per-tick history buffer : that buffer is the
+         persistent snapshot mechanism for charts ; per-econ state only
+         keeps genuinely persistent / cross-tick fields. Snapshot is taken
+         from the solver pointer at end-of-tick before it is invalidated
+       - Compatible with future multithreading ( roadmap SUGGESTED ADDITIONS )
+         since per-thread solver instances would each return their own
+         pointer to the calling thread's solver
+
 
 
 ======== PHASE 2 - Allocation & Population ========
