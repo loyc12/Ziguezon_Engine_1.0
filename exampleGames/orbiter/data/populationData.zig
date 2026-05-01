@@ -112,8 +112,6 @@ pub const PopStateEnum = enum( u8 )
 
   COUNT,    // Current population count
   LIMIT,    // Current housing capacity
-  DELTA,    // Net total change last tick // TODO : do not store, calc instead
-
   DEATH,    // Amount lost from death rates last tick
   BIRTH,    // Amount gained from birthrates last tick
 
@@ -121,9 +119,6 @@ pub const PopStateEnum = enum( u8 )
   EXPENSE,  // Amount of money spent to fulfill their needs
   REVENUE,  // Amount of money gained by via WORK production
   SAVINGS,  // Stored profits from previous ticks ( decays via inflation )
-
-  PROFIT,   // Revenues - Expenses // TODO : do not store, calc instead
-  MARGIN,   // Profits / Expense   // TODO : do not store, calc instead
 
   FLM_LVL,  // How fulfilled their needs ended up being last tick
 };

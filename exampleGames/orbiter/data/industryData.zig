@@ -157,17 +157,12 @@ pub const IndStateEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   COUNT,    // Current industry count
-  DELTA,    // Net total change last tick // TODO : do not store, calc instead
-
   DESTR,   // Amount lost from deconstruction last tick
   BUILT,   // Amount gained from construction last tick
 
   EXPENSE,  // Amount of money spent by the owners to maintain and fuel the industry last tick
   REVENUE,  // Amount of money gained by the owners from selling the output products last tick
   SAVINGS,  // Stored profits from previous ticks ( decays via inflation )
-
-  PROFIT,   // Revenues - Expenses // TODO : do not store, calc instead
-  MARGIN,   // Profits / Expense   // TODO : do not store, calc instead
 
   ACT_TRGT, // How active this industry wanted to be   last tick
   ACT_LVL,  // How active this industry ended up being last tick

@@ -151,8 +151,6 @@ pub const InfStateEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   COUNT,   // Current infrastructure count
-  DELTA,   // Net total change last tick // TODO : do not store, calc instead
-
   DESTR,   // Amount lost from deconstruction last tick
   BUILT,   // Amount gained from construction last tick
 
@@ -160,9 +158,6 @@ pub const InfStateEnum = enum( u8 )
   EXPENSE, // Amount of money used for maintaining the infrastructure last tick
   REVENUE, // Amount of money gained from running  the infrastructure last tick
   SAVINGS, // Stored profits from previous ticks ( decays via inflation )
-
-  PROFIT,  // Revenues - Expenses // TODO : do not store, calc instead
-  MARGIN,  // Profits / Expense   // TODO : do not store, calc instead
 
   USE_LVL, // How much of the available infrastructure was used last tick
 };

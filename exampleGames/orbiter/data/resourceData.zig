@@ -77,6 +77,7 @@ pub const ResMetricEnum = enum( u8 )
 
 pub const ResStateData = def.GenDataGrid( f64, ResStateEnum, ResType );
 
+// NOTE : _D vars for derivatives ( changes from last tick )
 pub const ResStateEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -90,28 +91,8 @@ pub const ResStateEnum = enum( u8 )
   PRICE,    // Market price last tick
   PRICE_D,  // Price change last tick
 
-
-  // NOTE : The values bellow mostly serve debug purposes
-
-  // TODO : Use resFlowData directly from econSolver instead :
-  //        Have stepEcon return a pointer to the solver instance
-  //        Give a more complete overview and avoids duplicating data
-
-  MAX_DEM,  // Maximum possible consumption last tick
-  MAX_SUP,  // Maximum possible production  last tick
-
-  GEN_CONS, // Total applied consumption last tick
-  GEN_PROD, // Total applied production  last tick
-
-  DECAY,    // Amount lost to stock decay last tick
-  GROWTH,   // Amount gained from nature  last tick // NOTE : deprecated for now : no natural growth occurs
-
-  TRD_EXP,  // Total exports last tick
-  TRD_IMP,  // Total imports last tick
-
-  GEN_ACS,  // Aggregated resource access rates from last tick
-  POP_ACS,  // Population resource access rates from last tick
-  IND_ACS,  // Industrial resource access rates from last tick
+  ACCESS,   // Access rate last tick
+  ACCESS_D, // Rate change last tick
 };
 
 

@@ -57,20 +57,20 @@ pub const IndResFlowData  = def.GenDataCube( f64, IndType, AgentResDeltaEnum, Re
 pub const IndActivityData = def.GenDataLine( f64, IndType );
 
 
-
 pub const EconAgentGroupEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  POP, // Population       ( all population prod/cons  )
-  MNT, // Maintenance      ( building maintenance cons )
-  IND, // Industry         ( all industrial prod/cons  )
-  BLD, // Building         ( construction, selloffs    )
-  COM, // Commerce / trade ( imports, exports          ) : stub for now
+  POP, // Population       ( all population prod/cons   )
+//INF, // Infrastructure   ( all industrial consumption )
+  IND, // Industry         ( all industrial prod/cons   )
 
-  GEN, // Sum of previous  ( avoid including NAT uses  )
+  MNT, // Maintenance      ( building maintenance   )
+  BLD, // Building         ( construction, selloffs )
+  COM, // Commerce / trade ( imports &  exports     )
 
-  NAT, // Decay / Growth   ( decay, growth, disasters  )
+  GEN, // Sum of previous  ( avoid including NAT uses )
+  NAT, // Decay / Growth   ( decay, growth, disasters )
   // NOTE : NAT HAS NO MONETARY IMPACT ( NO SUP/DEM, PRICE, NOR SAVINGS EFFECT )
 };
 
@@ -87,6 +87,20 @@ pub const AgentResDeltaEnum = enum( u8 )
   FIN_CONS, // Realized consumption ( after activity & scarcity applied )
 
   BALANCE,  // TODO : USE ME
+};
+
+
+// ================================ AGENT METRICS SUMARY MATRIX ================================
+// NOTE : used in Economy
+
+pub const AgentStateData = def.GenDataGrid( f64, EconAgentGroupEnum, AgentStateEnum );
+
+// NOTE : Data represent all "agents" of a given AgentGroup
+//        GEN  represent all groups combined
+pub const AgentStateEnum = enum( u8 )
+{
+  AVG_ACS,  // Average resource access rates
+  AVG_RATE, // Average activity/fulfilment/usage/etc rates
 };
 
 
