@@ -67,13 +67,6 @@ pub const Economy = struct
   agtState : gdf.ecnm_d.AgentStateData = .{},
   areaData : gdf.ecnm_d.EconAreaData   = .{},
 
-  inflationRate    : f64 = 1.0, // TODO : update this based on growth/decay of economy
-
-  //avgPopFulfilment : f64 = 0.0,
-  //avgInfUsage      : f64 = 0.0,
-  //avgIndActivity   : f64 = 0.0,
-  //avgResAccess     : f64 = 0.0,
-
 
   // ================================ INIT ================================
 
@@ -654,7 +647,7 @@ pub const Economy = struct
   }
 
 
-  pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64, consumeParts : bool ) u64
+  pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
   {
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
@@ -681,30 +674,31 @@ pub const Economy = struct
       }
     }
 
-    if( consumeParts ) // NOTE : Should not be used - Large building pipeline rewrite incoming
-    {
-      unreachable;
-    //const availParts = self.resState.get( .COUNT, .PART );
-    //const partCost   = c.getPartCost();
+  //if( consumeParts ) // NOTE : Dead code : ignore for now - Large building pipeline rewrite incoming
+  //{
+  //  unreachable; // NOTE : Keeps this commented out section as-is for now for future reference
 
-    //if( availParts < partCost )
-    //{
-    ////def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
-    //  return 0;
-    //}
-    //if( availParts < builtAmount * partCost )
-    //{
-    ////def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
-    //  builtAmount = availParts / partCost;
-    //}
+  //  const availParts = self.resState.get( .COUNT, .PART );
+  //  const partCost   = c.getPartCost();
 
-    //builtAmount     = @floor( builtAmount            );
-    //const totalCost = @ceil(  builtAmount * partCost );
+  //  if( availParts < partCost )
+  //  {
+  //  //def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
+  //    return 0;
+  //  }
+  //  if( availParts < builtAmount * partCost )
+  //  {
+  //  //def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
+  //    builtAmount = availParts / partCost;
+  //  }
 
-    //// Deduct parts
-    //self.resState.sub( .COUNT,    .PART, totalCost );
-    //self.resState.add( .GEN_CONS, .PART, totalCost );
-    }
+  //  builtAmount     = @floor( builtAmount            );
+  //  const totalCost = @ceil(  builtAmount * partCost );
+
+  //  // Deduct parts
+  //  self.resState.sub( .COUNT,    .PART, totalCost );
+  //  self.resState.add( .GEN_CONS, .PART, totalCost );
+  //}
 
     builtAmount = @floor( builtAmount );
 
@@ -1122,25 +1116,38 @@ pub const Economy = struct
     return true;
   }
 
-  pub fn tickEcon( self : *Economy ) void
+  inline fn preStepUpdates( self : *Economy ) void
   {
-    // Metric updating
-    self.updateResCaps();
-    self.updatePopCaps();
-    self.updateAreas();
-    self.updateInfUsage(); // Depends on Area, tickBuildQueue()
-    self.updateEcology();  // Depends on infUsage
+    // General Metrics
+    self.updateResCaps();  // Depends on infCount
+    self.updatePopCaps();  // Depends on infCount
+    self.updateAreas();    // Depends on infCount
+    self.updateInfUsage(); // Depends on Area, infCount, indCount
+    self.updateEcology();  // Depends on infUsage, indActivity
 
-    // Economic tick
-    self.applyInflation();
+    // Economic Metrics
+    self.applyInflation();  // TODO : IMPLEMENT THIS
     self.calcBuildDemand();
+  }
+
+  fn tickEcon( self : *Economy ) void
+  {
+
+    self.preStepUpdates();
+
     const solver = ecnSlvr.stepEcon( self );
-    self.tickBuildQueue();
-    self.tickLocalGov(); // TODO : IMPLEMENT THIS
+
+    self.postStepUpdates();
 
     // Debug Actions
     self.debugAutoBuild();
     self.logSpecialMetrics();
     solver.logAllMetrics();
+  }
+
+  inline fn postStepUpdates( self : *Economy ) void
+  {
+    self.tickBuildQueue();
+    self.tickLocalGov();   // TODO : IMPLEMENT THIS
   }
 };

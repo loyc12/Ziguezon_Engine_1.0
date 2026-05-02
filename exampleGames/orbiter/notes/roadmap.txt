@@ -29,8 +29,7 @@ are roughly small-to-large when no dependency forces an ordering.
         realised capacity to match, book CONS against realised ( not nominal )
         capacity to prevent over-consumption
       - New phase in stepEcon : ConstructionCapacity allocation, MNT first then BLD queue
-      - Deduplicate the maintenance cost calc duplicated between calcMntMaxDelta
-        and updateIndFinances
+      - Deduplicate the maintenance cost calc duplicated between calcMntMaxDelta and updateIndFinances
       - Behaviour preserved through migration : pre-tuning, only PART columns
         are nonzero, simulator runs identically. Multi-resource columns ( WORK
         on ASSEMBLY, multi-res maintenance ) are tuned in at the end of the

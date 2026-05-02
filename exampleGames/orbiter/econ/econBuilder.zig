@@ -243,7 +243,7 @@ pub const BuildQueue = struct
 
         if( unitsToBuild > def.EPS )
         {
-          unitsBuilt = econ.tryBuild( e.construct, unitsToBuild, false );
+          unitsBuilt = econ.tryBuild( e.construct, unitsToBuild );
           const unitsBuilt_f : f64 = @floatFromInt( unitsBuilt );
 
           remainParts        -= unitsBuilt_f * unitPartCost;

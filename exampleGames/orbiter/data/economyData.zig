@@ -42,84 +42,86 @@ pub const EconLoc = enum( u8 )
 };
 
 
-// ================================ RESOURCE FLOW MATRIX ================================
-// NOTE : used in EconSolver ( aka temporary data storage )
+// ================================ ECONOMIC AGENT ENUM ================================
+// Agent classification grouping - what kind of agent is this
+
+pub const AgentGroupEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
+
+  POP, // Population     ( PopType )
+  INF, // Infrastructure ( InfType )
+  IND, // Industrial     ( IndType )
+//COM, // Commercial     ( import, export, )
+//GOV, // Government     ( aka the player )
+//NAT, // Non-agent      ( disaster, decay, etc )
+};
+
+
+// ================================ FLOW ACTION ENUM ================================
+// Action verbs - what kind of flow lane this is
+
+pub const AgentFlowEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  OPR_PROD, OPR_CONS, // Maximum operational  res flow ( before clamping )
+  OPR_ACS,            // Resource demand satisfaction rate
+
+  MNT_CONS,           // Maximum maintenance  res cons ( before clamping )
+  MNT_ACS,            // Resource demand satisfaction rate
+
+  BLD_PROD, BLD_CONS, // Maximum construciton res flow ( before clamping )
+  BLD_ACS,            // Resource demand satisfaction rate
+
+  FIN_PROD, FIN_CONS, // Applied, final res flow ( clamped by ACCESS & ACTION rates )
+};
+
+
+
+
+// ================================ FLOW MATRICES ================================
 
 pub const ResStockData = def.GenDataLine( f64, ResType );
-pub const ResFlowData  = def.GenDataCube( f64, EconAgentGroupEnum, AgentResDeltaEnum, ResType );
 
-// NOTE : de-agregated version of ResFlowData[ POP ][ phase ][ res ]
-pub const PopResFlowData    = def.GenDataCube( f64, PopType, AgentResDeltaEnum, ResType );
-pub const PopFulfilmentData = def.GenDataLine( f64, PopType );
+// Per-action, per-resource
+pub const GenResFlowData = def.GenDataGrid( f64, AgentFlowEnum, ResType );
 
-// NOTE : de-agregated version of ResFlowData[ IND ][ phase ][ res ]
-pub const IndResFlowData  = def.GenDataCube( f64, IndType, AgentResDeltaEnum, ResType );
-pub const IndActivityData = def.GenDataLine( f64, IndType );
+// Per-agent, per-action, per-resource
+pub const GrpResFlowData = def.GenDataCube( f64, AgentGroupEnum, AgentFlowEnum, ResType );
+
+// Per-agent-subtype, per-resource ( disaggregation )
+pub const PopResFlowData = def.GenDataCube( f64, PopType, AgentFlowEnum, ResType );
+pub const InfResFlowData = def.GenDataCube( f64, InfType, AgentFlowEnum, ResType );
+pub const IndResFlowData = def.GenDataCube( f64, IndType, AgentFlowEnum, ResType );
 
 
-pub const EconAgentGroupEnum = enum( u8 )
+// ================================ AGENT AVERAGE METRIC ENUM ================================
+// NOTE : Used in economy to store only some of the solver's computed values
+
+// Long term storage for per-agent calculated info
+pub const AgentStateData = def.GenDataGrid( f64, AgentGroupEnum, AgentAveragesEnum );
+
+pub const AgentAveragesEnum = enum( u8 )
 {
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+  ACCESS, // Stores AVG_ACS from solver
 
-  POP, // Population       ( all population prod/cons )
-//INF, // Infrastructure   ( all infrastructure cons  )
-  IND, // Industry         ( all industrial prod/cons )
-
-  MNT, // Maintenance      ( maintenance costs        )
-  BLD, // Building         ( construction, selloffs   )
-  COM, // Commerce / trade ( imports & exports        )
-
-  GEN, // Sum of previous  ( avoid including NAT data )
-  NAT, // Decay / Growth   ( decay, growth, disasters )
-  // NOTE : NAT HAS NO MONETARY IMPACT ( NO SUP/DEM, PRICE, NOR SAVINGS EFFECT )
-};
-
-pub const AgentResDeltaEnum = enum( u8 )
-{
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  MAX_PROD, // Theoretical maximum production  ( before scarcity )
-  MAX_CONS, // Theoretical maximum consumption ( before scarcity )
-
-  AVG_ACS,  // Demand satisfaction rate ( aka 1.0 - scarcity )
-
-  FIN_PROD, // Realized production  ( after activity & scarcity applied )
-  FIN_CONS, // Realized consumption ( after activity & scarcity applied )
-
-  BALANCE,  // TODO : USE ME
-};
-
-
-// ================================ AGENT METRICS SUMARY MATRIX ================================
-// NOTE : used in Economy
-
-pub const AgentStateData = def.GenDataGrid( f64, EconAgentGroupEnum, AgentStateEnum );
-
-// NOTE : Data represent all "agents" of a given AgentGroup
-//        GEN  represent all groups combined
-pub const AgentStateEnum = enum( u8 )
-{
-  AVG_ACS, // Average resource access rate
-
-  AVG_ACT, // Average "action" rate
+  ACTION, // Stores AVG_ACT from solver
 
   // RATE BREAKDOWN :
   //
   // POP : FULFILMENT
   // INF : USAGE
   // IND : ACTIVITY
-  //
-  // MNT : ?
-  // BLD : ?
-  // COM : ?
-  //
-  // GEN : ?
-  // NAT : ?
+  // ...
 };
 
 
 // ================================ AREA METRIC ARRAY ================================
-// NOTE : used in Economy
+// NOTE : Used in economy to store area metrics
 
 pub const EconAreaData = def.GenDataLine( f64, EconAreaEnum );
 

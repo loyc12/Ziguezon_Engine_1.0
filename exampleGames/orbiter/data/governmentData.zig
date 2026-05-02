@@ -10,38 +10,38 @@ const PopType = gdf.PopType;
 const InfType = gdf.InfType;
 const IndType = gdf.IndType;
 
+// TODO : Review implementation FULLY before implementing - this is a draft, and likely has blindspots / overcomplexities
 
 // ================================ GOVERNMENT POLICY DATA ================================
 
-pub const GovGeneralPolicyRates = def.GenDataGrid( f64, EconAgentEnum, GovActionEnum );
+// Applies equaly to all Agent subtypess
+pub const GovGeneralPolicyRates = def.GenDataGrid( f64, TaxGroupEnum, TaxTypeEnum );
 
-pub const GovPerResPolicyRates  = def.GenDataGrid( f64, ResType, GovActionEnum );
-pub const GovPerPopPolicyRates  = def.GenDataGrid( f64, PopType, GovActionEnum );
-pub const GovPerInfPolicyRates  = def.GenDataGrid( f64, InfType, GovActionEnum );
-pub const GovPerIndPolicyRates  = def.GenDataGrid( f64, IndType, GovActionEnum );
+// Applies on top of gene
+pub const GovPerResPolicyRates  = def.GenDataGrid( f64, ResType, TaxTypeEnum );
+pub const GovPerPopPolicyRates  = def.GenDataGrid( f64, PopType, TaxTypeEnum );
+pub const GovPerInfPolicyRates  = def.GenDataGrid( f64, InfType, TaxTypeEnum );
+pub const GovPerIndPolicyRates  = def.GenDataGrid( f64, IndType, TaxTypeEnum );
 
-pub const EconAgentEnum = enum( u8 )
+
+pub const TaxGroupEnum = enum( u8 )
 {
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  // NOTE : Only for non-deaggregated agents
-
-  MNT, // Maintenance
-  BLD, // Construction
-  COM, // Import / Exports
+  // Applies to X
+  ALL, // Everyone equaly
+  POP, // Population     ( on top of ALL rates )
+  IND, // Infrastructure ( on top of ALL rates )
+  INF, // Industry       ( on top of ALL rates )
+  COM, // Commerce       ( on top of ALL rates )
 };
 
-pub const GovActionEnum = enum( u8 )
+pub const TaxTypeEnum = enum( u8 )
 {
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  TAXATION,  // Proportion of :
-  //            POP / INF / IND       => profit taxed
-  //            RES / MNT / BLD / COM => value taxed
-
-  SUBSIDIES, // Proportion of :
-  //            POP / INF / IND / MNT / BLD => raw expenses reimbursed
-  //            RES / COM                   => value refinanced ( net tax )
+  // Proportion of X taxed / subsidised
+  PROFIT, // Net profits
+  PROD,   // Value of produced resources ( operations + deconstruction income )
+  CONS,   // Value of consumed resources ( operations costs  )
+  MAINT,  // Value of bought resources ( maintenance costs )
+  BUILD,  // Value of bought resources ( building costs    )
 };
 
 
@@ -50,6 +50,8 @@ pub const GovActionEnum = enum( u8 )
 
 pub const GovMonetaryData = def.GenDataLine( f64, GovMonetaryEnum );
 
+
+// TODO : turn into struct with sub-Matrices instead
 pub const GovMonetaryEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
