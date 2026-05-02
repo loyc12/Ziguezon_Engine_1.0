@@ -53,6 +53,8 @@ pub const Economy = struct
 
   ecology   : ?Ecology  = null,
 
+  localGov : gdf.gvmt_d.GovMonetaryData = .{},
+
   buildQueue  : ?BuildQueue = null,
   buildDemand : f64 = 0.0,  // PART demand from construction queue this tick
   buildBudget : f64 = 0.0,  // PART allocation granted by solver
@@ -829,7 +831,6 @@ pub const Economy = struct
     const areaUsed : f64 = self.areaData.get( .USED );
     var   habUse   : f64 = 0.0;
 
-
     if( self.location != .GROUND or !self.hasAtmo )
     {
       // Non-ground or no-atmo : all area IS habitat area, use areaCap as fallback
@@ -856,6 +857,7 @@ pub const Economy = struct
       }
     }
     self.infState.set( .USE_LVL, .HABITAT, habUse );
+
 
     // STORAGE
     var maxStoreUse : f64 = 0.0;
@@ -890,10 +892,11 @@ pub const Economy = struct
   //self.agtState.set( .INF, .AVG_ACT, avgInfUsage );
   }
 
+// NOTE : Move these to per-construct values whenever possible
 
-  const AUTO_DECAY_RES_FACTOR   : f64 = 0.75; // Fraction of build PART costs reimbursed on decay
-  const AUTO_BUILD_MAX_SCALE    : f64 = 2.00; // Max build scale multiplier ( 0.0 at thresh, this at 100%+ )
-  const AUTO_BUILD_QUEUE_LIMIT  : u32 =  128; // Max number of queued construction orders before ignoring autoBuild
+  const AUTO_DECAY_RES_FACTOR   : f64 =    0.75; // Fraction of build PART costs reimbursed on decay
+  const AUTO_BUILD_MAX_SCALE    : f64 =    2.00; // Max build scale multiplier ( 0.0 at thresh, this at 100%+ )
+  const AUTO_BUILD_QUEUE_LIMIT  : u32 =     128; // Max number of queued construction orders before ignoring autoBuild
 
 
   const AUTO_BUILD_INF_THRESH   : f64 = 0.80000; // Infrastructure usage level above which it grows
@@ -913,6 +916,11 @@ pub const Economy = struct
   const AUTO_DECAY_IND_THRESH   : f64 = 0.60000; // Industry activity target bellow which it decays
   const AUTO_DECAY_IND_FACTOR   : f64 = 0.00001; // Fraction of pop count to decay per tick at full scale (ind)
 
+
+  pub fn tickLocalGov( self : *Economy ) void
+  {
+    _ = self; // TODO : IMPLEMENT ME
+  }
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
@@ -967,16 +975,18 @@ pub const Economy = struct
           var amount : f64 = scale * popCount * AUTO_DECAY_INF_FACTOR;
               amount = @ceil( amount );
 
-          // Clamp ASSEMBLY to a fraction of population to prevent total decay
+          // NOTE : Clamps ASSEMBLY to a fraction of population to prevent total decay
           if( infType == .ASSEMBLY )
           {
-            amount *= 0.5; // Slow ASEEMBLY decay further
+            amount *= 0.2; // NOTE : Slows ASSEMBLY decay even further
 
             const count : f64 = self.infState.get( .COUNT, .ASSEMBLY );
             const cap   : f64 = popCount * AUTO_BUILD_ASSEMBLY_F;
 
             amount = @min( amount, @max( 0.0, cap - count ));
           }
+
+          amount = @floor( @min( amount, self.infState.get( .COUNT, infType )));
 
           // Removing requested amount, if any
           if( amount > def.EPS )
@@ -1067,6 +1077,8 @@ pub const Economy = struct
             var amount : f64 = scale * popCount * AUTO_DECAY_IND_FACTOR;
                 amount = @ceil( amount );
 
+            amount = @floor( @min( amount, self.indState.get( .COUNT, indType )));
+
             // Removing requested amount, if any
             if( amount > def.EPS )
             {
@@ -1124,11 +1136,11 @@ pub const Economy = struct
     self.calcBuildDemand();
     const solver = ecnSlvr.stepEcon( self );
     self.tickBuildQueue();
+    self.tickLocalGov(); // TODO : IMPLEMENT THIS
 
     // Debug Actions
     self.debugAutoBuild();
     self.logSpecialMetrics();
-  //solver.logAllMetrics(); // NOTE : comment out for precise logs of the econ state
-    _ = solver;
+    solver.logAllMetrics();
   }
 };

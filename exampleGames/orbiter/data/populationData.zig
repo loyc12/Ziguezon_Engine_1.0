@@ -4,8 +4,8 @@ const def = @import( "defs" );
 const gbl = @import( "../gameGlobals.zig" );
 const gdf = @import( "../gameDefs.zig"    );
 
-const ResType  = @import( "resourceData.zig"       ).ResType;
-const InfType  = @import( "infrastructureData.zig" ).InfType;
+const ResType = @import( "resourceData.zig"       ).ResType;
+const InfType = @import( "infrastructureData.zig" ).InfType;
 
 
 pub const PopType = enum( u8 )
@@ -21,14 +21,11 @@ pub const PopType = enum( u8 )
 
   pub inline fn getInfStore( self : PopType ) InfType // TODO : move to data array ?
   {
-    _ = self;
-    return .HOUSING; // TODO : update once multiple pop types exist
-
-  //return switch( self )
-  //{
-  //  .HUMAN => .HOUSING,
-  //  else   => .HOUSING,
-  //};
+    return switch( self )
+    {
+      .HUMAN => .HOUSING,  // TODO : update once multiple pop types exist
+    //else   => .HOUSING,
+    };
   }
 
 

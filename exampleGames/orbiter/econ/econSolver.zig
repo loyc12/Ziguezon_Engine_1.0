@@ -1211,10 +1211,10 @@ pub const EconSolver = struct
 
   pub inline fn logAllMetrics( self : *const EconSolver ) void
   {
-    self.logResMetrics();
-    self.logIndMetrics();
+  //self.logResMetrics();
+  //self.logIndMetrics();
     self.logInfMetrics();
-    self.logPopMetrics();
+  //self.logPopMetrics();
   }
   pub fn logPopMetrics( self : *const EconSolver ) void
   {

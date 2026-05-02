@@ -118,11 +118,11 @@ pub const InfMetricEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  MASS,
-  AREA_COST,
-  BLD_COST,
-  POLLUTION,
-  CAPACITY,
+  MASS,      // Mass this infrastructure has
+  AREA_COST, // Area this infrastructure uses
+  BLD_COST,  // Total ASSEMBLY capacity required to complete build
+  POLLUTION, // Pollution generated at full useage // TODO : wire into system properly
+  CAPACITY,  // Respective scalar produced by a unit of this infrastructure
 };
 
 // ================================ INFRASTRUCTURE RES METRICS GRID ================================
@@ -189,8 +189,17 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .STORAGE,  .AREA_COST, 0.05 ); //  5 ha - Warehouse/depot complex
 
 
+  // ================================ BUILD COST ================================
+  // Unit : Abstract "building complexity"
+
+  infMetricData.set( .ASSEMBLY, .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .HOUSING,  .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .HABITAT,  .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .STORAGE,  .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
+
+
   // ================================ POLLUTION ================================
-  // Units: abstract pollution points per unit per tick at full usage
+  // Units : abstract pollution points per unit per tick at full usage
   // Will be recalibrated after industry pollution is set
 
   infMetricData.set( .ASSEMBLY, .POLLUTION, 16.0 );  // Dust, material waste
@@ -200,11 +209,13 @@ pub fn loadInfrastructureData() void
 
 
   // ================================ CAPACITY ================================
+  // Units : variable
+  // Respective scalar produced per infrastructure unit
 
-  infMetricData.set( .ASSEMBLY, .CAPACITY,  100.0 ); // 100 t of PARTs processed per week
-  infMetricData.set( .HOUSING,  .CAPACITY,  100.0 ); // 100 people housed per unit
-  infMetricData.set( .HABITAT,  .CAPACITY,    1.0 ); // 1 km2 of pressurized area per unit
-  infMetricData.set( .STORAGE,  .CAPACITY, 5000.0 ); // 5,000 t of resources stored per unit
+  infMetricData.set( .ASSEMBLY, .CAPACITY,  100.0 ); // 100 t of PARTs processed per week // TODO : Convert to Abstract "building complexity" units
+  infMetricData.set( .HOUSING,  .CAPACITY,  100.0 ); // 100 people housed
+  infMetricData.set( .HABITAT,  .CAPACITY,    1.0 ); // 1 km2 of pressurized area
+  infMetricData.set( .STORAGE,  .CAPACITY, 5000.0 ); // 5,000 t of resources stored
 
 
   // TODO : move away from PARTS only construction and maintenance

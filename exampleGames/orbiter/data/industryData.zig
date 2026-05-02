@@ -22,10 +22,11 @@ pub const IndType = enum( u8 )
   POWER_PLANT,  // Generates energy ( fusion powered )
 
   REFINERY,     // Refines fusion fuels / propellant
-  PROBE_MINE,   // Extracts raw materials ( autonomous but restricted to asteroids )
   GROUND_MINE,  // Extracts raw materials
   FOUNDRY,      // Moulds ingots
   FACTORY,      // Create parts from refined materials
+
+  PROBE_MINE,   // Extracts raw materials ( autonomous but restricted to asteroids )
 
 
   pub inline fn canBeBuiltIn( self : IndType, loc : gdf.EconLoc, hasAtmo : bool ) bool
@@ -41,10 +42,11 @@ pub const IndType = enum( u8 )
         .POWER_PLANT => true,
 
         .REFINERY    => true,
-        .PROBE_MINE  => !hasAtmo,
         .GROUND_MINE => true,
         .FOUNDRY     => true,
         .FACTORY     => true,
+
+        .PROBE_MINE  => !hasAtmo,
       };
     }
     else // .ORBIT or .L1-5
@@ -121,12 +123,10 @@ pub const IndMetricEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  MASS,
-  AREA_COST,
-  BLD_COST,
-  POLLUTION,
-//PART_COST,
-//MAINT_RATE,
+  MASS,      // Mass this industry has
+  AREA_COST, // Area this industry uses
+  BLD_COST,  // Total ASSEMBLY capacity required to complete build
+  POLLUTION, // Pollution generated at full activity
 };
 
 
@@ -173,7 +173,7 @@ pub const IndStateEnum = enum( u8 )
 
 pub fn loadIndustryData() void
 {
-  indMetricData.fillWith(    0.0 );
+  indMetricData.fillWith(     0.0 );
   indResMetricTable.fillWith( 0.0 );
 
 
@@ -188,10 +188,11 @@ pub fn loadIndustryData() void
   indMetricData.set( .POWER_PLANT, .MASS, 0.000_000_080 ); //   ~80,000 t — fusion reactor + containment
 
   indMetricData.set( .REFINERY,    .MASS, 0.000_000_050 ); //   ~50,000 t — processing columns, tanks
-  indMetricData.set( .PROBE_MINE,  .MASS, 0.000_000_001 ); //    ~1,000 t — autonomous spacecraft
   indMetricData.set( .GROUND_MINE, .MASS, 0.000_000_100 ); //  ~100,000 t — excavators, conveyors, processing
   indMetricData.set( .FOUNDRY,     .MASS, 0.000_000_060 ); //   ~60,000 t — furnaces, casting equipment
   indMetricData.set( .FACTORY,     .MASS, 0.000_000_040 ); //   ~40,000 t — assembly lines, tooling
+
+  indMetricData.set( .PROBE_MINE,  .MASS, 0.000_000_001 ); //    ~1,000 t — autonomous spacecraft
 
 
   // ================================ AREA COST ================================
@@ -204,10 +205,28 @@ pub fn loadIndustryData() void
   indMetricData.set( .POWER_PLANT, .AREA_COST, 0.03 ); //  3 ha — fusion plant, very compact per MW
 
   indMetricData.set( .REFINERY,    .AREA_COST, 0.10 ); // 10 ha — processing plant + tank farm
-  indMetricData.set( .PROBE_MINE,  .AREA_COST, 0.01 ); //  1 ha — launch pad / control station
   indMetricData.set( .GROUND_MINE, .AREA_COST, 0.50 ); // 50 ha — open pit + tailings + processing
   indMetricData.set( .FOUNDRY,     .AREA_COST, 0.20 ); // 20 ha — smelter + slag yards + cooling
   indMetricData.set( .FACTORY,     .AREA_COST, 0.15 ); // 15 ha — assembly halls + logistics yard
+
+  indMetricData.set( .PROBE_MINE,  .AREA_COST, 0.01 ); //  1 ha — launch pad / control station
+
+
+  // ================================ BUILD COST ================================
+  // Unit : Abstract "building complexity"
+
+  indMetricData.set( .AGRONOMIC,   .AREA_COST, 1.00 ); // 50 ha — large mechanized farm
+  indMetricData.set( .HYDROPONIC,  .AREA_COST, 1.00 ); //  5 ha — vertical, compact footprint
+  indMetricData.set( .WATER_PLANT, .AREA_COST, 1.00 ); //  5 ha — treatment plant + settling basins
+  indMetricData.set( .SOLAR_PLANT, .AREA_COST, 1.00 ); // 50 ha — 100 MW solar farm (~2 ha/MW)
+  indMetricData.set( .POWER_PLANT, .AREA_COST, 1.00 ); //  3 ha — fusion plant, very compact per MW
+
+  indMetricData.set( .REFINERY,    .AREA_COST, 1.00 ); // 10 ha — processing plant + tank farm
+  indMetricData.set( .GROUND_MINE, .AREA_COST, 1.00 ); // 50 ha — open pit + tailings + processing
+  indMetricData.set( .FOUNDRY,     .AREA_COST, 1.00 ); // 20 ha — smelter + slag yards + cooling
+  indMetricData.set( .FACTORY,     .AREA_COST, 1.00 ); // 15 ha — assembly halls + logistics yard
+
+  indMetricData.set( .PROBE_MINE,  .AREA_COST, 0.00 ); //  1 ha — launch pad / control station
 
 
   // ================================ POLLUTION ================================
@@ -222,10 +241,11 @@ pub fn loadIndustryData() void
   indMetricData.set( .POWER_PLANT, .POLLUTION,  8.0 ); // Thermal pollution, tritium traces
 
   indMetricData.set( .REFINERY,    .POLLUTION, 25.0 ); // VOCs, chemical waste, thermal
-  indMetricData.set( .PROBE_MINE,  .POLLUTION,  0.0 ); // Off-planet
   indMetricData.set( .GROUND_MINE, .POLLUTION, 50.0 ); // Tailings, acid drainage, dust
   indMetricData.set( .FOUNDRY,     .POLLUTION, 40.0 ); // Slag, thermal, heavy metal emissions
   indMetricData.set( .FACTORY,     .POLLUTION, 20.0 ); // Chemical waste, minor emissions
+
+  indMetricData.set( .PROBE_MINE,  .POLLUTION,  0.0 ); // Off-planet
 
 
   // ================================ RESOURCES ================================
@@ -296,12 +316,6 @@ pub fn loadIndustryData() void
   indResMetricTable.set( .REFINERY, .PROD, .FUEL,   50.0 );
 
 
-  // ---- PROBE_MINE ----
-  // Autonomous asteroid mining probe, 0 workers
-
-  indResMetricTable.set( .PROBE_MINE, .PROD, .ORE, 10.0 );
-
-
   // ---- GROUND_MINE ----
   // Large open-pit mine, ~675 total staff
   // Extracts ~5,000 t/week of usable ore from ~50,000 t of overburden
@@ -335,6 +349,12 @@ pub fn loadIndustryData() void
   indResMetricTable.set( .FACTORY, .PROD, .PART,  1500.0 );
 
 
+  // ---- PROBE_MINE ----
+  // Autonomous asteroid mining probe, 0 workers
+
+  indResMetricTable.set( .PROBE_MINE, .PROD, .ORE, 10.0 );
+
+
   // TODO : move away from PARTS only construction and maintenance
 
   // ================================ PART COST ================================
@@ -349,10 +369,11 @@ pub fn loadIndustryData() void
   indResMetricTable.set( .POWER_PLANT, .BUILD, .PART, 80000.0 );  // Fusion containment, superconductors, turbines
 
   indResMetricTable.set( .REFINERY,    .BUILD, .PART, 20000.0 );  // Distillation columns, centrifuges, tanks
-  indResMetricTable.set( .PROBE_MINE,  .BUILD, .PART,  1000.0 );  // Small autonomous spacecraft
   indResMetricTable.set( .GROUND_MINE, .BUILD, .PART, 15000.0 );  // Excavators, conveyors, crushers
   indResMetricTable.set( .FOUNDRY,     .BUILD, .PART, 25000.0 );  // Blast furnaces, rolling mills
   indResMetricTable.set( .FACTORY,     .BUILD, .PART, 20000.0 );  // Assembly lines, CNC machines, robotics
+
+  indResMetricTable.set( .PROBE_MINE,  .BUILD, .PART,  1000.0 );  // Small autonomous spacecraft
 
 
   // ================================ MAINT RATE ================================
@@ -366,8 +387,9 @@ pub fn loadIndustryData() void
   indResMetricTable.set( .POWER_PLANT, .MAINT, .PART, 80000.0 * 0.0008 ); // ~4% annual — high-tech, critical systems
 
   indResMetricTable.set( .REFINERY,    .MAINT, .PART, 20000.0 * 0.0008 ); // ~4% annual — corrosive environment
-  indResMetricTable.set( .PROBE_MINE,  .MAINT, .PART,  1000.0 * 0.0000 ); // Needs to be fully autonomous
   indResMetricTable.set( .GROUND_MINE, .MAINT, .PART, 15000.0 * 0.0010 ); // ~5% annual — extreme wear on equipment
   indResMetricTable.set( .FOUNDRY,     .MAINT, .PART, 25000.0 * 0.0010 ); // ~5% annual — thermal cycling, slag damage
   indResMetricTable.set( .FACTORY,     .MAINT, .PART, 20000.0 * 0.0008 ); // ~4% annual — tooling wear, robotics upkeep
+
+  indResMetricTable.set( .PROBE_MINE,  .MAINT, .PART, 0.0 ); // Needs to be fully autonomous. maybe use a "shelflife" countdown instead
 }

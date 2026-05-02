@@ -82,6 +82,7 @@ pub const GameFlags = struct
 
 pub const stlr_d = @import( "data/stellarData.zig" );
 pub const ecnm_d = @import( "data/economyData.zig" );
+pub const gvmt_d = @import( "data/governmentData.zig" );
 pub const trde_d = @import( "data/tradeData.zig"   );
 
 pub const EconLoc           = ecnm_d.EconLoc;

@@ -29,7 +29,7 @@ pub const EconLoc = enum( u8 )
 
   pub inline fn toLagrangeIdx( self : EconLoc ) u4
   {
-    return switch( self )
+    return comptime switch( self )
     {
       .L1  => 1,
       .L2  => 2,
@@ -69,7 +69,7 @@ pub const EconAgentGroupEnum = enum( u8 )
   BLD, // Building         ( construction, selloffs   )
   COM, // Commerce / trade ( imports & exports        )
 
-  GEN, // Sum of previous  ( avoid including NAT uses )
+  GEN, // Sum of previous  ( avoid including NAT data )
   NAT, // Decay / Growth   ( decay, growth, disasters )
   // NOTE : NAT HAS NO MONETARY IMPACT ( NO SUP/DEM, PRICE, NOR SAVINGS EFFECT )
 };

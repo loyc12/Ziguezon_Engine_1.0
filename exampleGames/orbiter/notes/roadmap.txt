@@ -14,29 +14,17 @@ are roughly small-to-large when no dependency forces an ordering.
 
 ================ TIER 0 - PRE-WORK ================
 
-Small, isolated, unblock everything else
-
-  0.1 Trade field stubs ( trivial )
-      - Add to ResStateData : EXP_CAP, IMP_DEM, TRADE_BAL per ResType
-      - Zero-init in hardInit ; no behavior change yet
-
-  0.2 Mount GovMonetaryData on Economy ( trivial )
-      - Add `government : GovMonetaryData = .{}` field on Economy
-      - Add empty tickGov() called from tickEcon between phases
-      - No behavior yet ; just establishes the slot
-
-  0.3 Construction & maintenance multi-resource refactor ( large )
+  0.1 Construction & maintenance multi-resource refactor ( large )
       - Add per-construct-family resource metric tables :
         - indResMetricsTable : ( IndType x IndResMetric x ResType )
         - infResMetricsTable : ( InfType x InfResMetric x ResType )
-        - IndResMetric : CONS, PROD, BLD_COST, MNT_COST
-        - InfResMetric : CONS,       BLD_COST, MNT_COST
+        - IndResMetric : CONS, PROD, BUILD, MAINT
+        - InfResMetric : CONS,       BUILD, MAINT
         - Pop keeps popResDeltaTable + ResActionEnum unchanged ( MORT is pop-specific )
       - Add BLD_COST scalar to Ind/Inf metric enums : per-unit construction "effort", abstract units
       - Generalise the four "// NOTE : Uses PARTs only" paths in econSolver
         ( calcMntResAccess, calcMntResCons, calcBldResAccess, calcBldResCons )
       - Repurpose ASSEMBLY : its CAPACITY now denotes max BLD_COST capacity per tick
-      - Make ASSEMBLY itself consume WORK and POWER when in use (?)
       - New solver pre-pass : resolve ASSEMBLY's input access first, scale
         realised capacity to match, book CONS against realised ( not nominal )
         capacity to prevent over-consumption
@@ -50,9 +38,9 @@ Small, isolated, unblock everything else
       - BuildQueue is touched minimally : reads costs from the new tables but keeps
         its array-based shape and PART-only deduction. The queue rework is Tier 1.1
 
-  0.4 Refactor current logic organization ( large, parallel-friendly )
+  0.2 Refactor current logic organization ( large, parallel-friendly )
       - Migrate "function-as-lookup" patterns to data arrays
-        ( resourceData L28, populationData L22, industryData L69 )
+        ( resourceData, populationData, industryData )
       - Generalise EconSolver fields hardcoded to .HUMAN
         ( prevPopCount / nextPopCount / popDeaths / popBirths )
       - Standardise DataMatrix vs Array usage where it has drifted
@@ -85,6 +73,7 @@ growth/decay decisions, instead of debugAutoBuild on Economy.
       - tryBuild loses its consumeParts branch ; queue handles all resource
         deduction
       - Hook for agent-driven order cancellation ( picked up by 1.2 )
+      - Make ASSEMBLY itself consume WORK and POWER when in use (?)
 
   1.2 Industry self-build / self-shrink
       - For each IndType : decide each tick whether to enqueue / dequeue / liquidate

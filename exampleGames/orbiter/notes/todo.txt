@@ -12,9 +12,6 @@ Items inside a section are ordered small-to-large when equal in priority
 ======== PHASE 1 - Foundations ========
 
 [ ] 1. Government wiring
-       - Mount GovMonetaryData on Economy ( governmentData.zig already
-         defines the types but no instance lives on the economy )
-       - Add tickGov() stub between tickEcon() phases
        - Treasury savings + per-tick NET_DELTA tracking
 
 [ ] 2. Solver / data-array refactor pass
@@ -47,10 +44,7 @@ Items inside a section are ordered small-to-large when equal in priority
                  to PRICE_D ( smoothed signal + per-tick derivative for UI /
                  charting ). ACCESS persists cross-tick to compute ACCESS_D ;
                  also read by debugAutoBuild
-       - TODO  : Uncomment solver.logAllMetrics() in tickEcon and drop the
-                 `_ = solver;` line -- the migrated log methods are currently
-                 defined but never invoked
-       - TODO  : tryBuild's `consumeParts` branch is now `unreachable` with
+       - NOTE  : tryBuild's `consumeParts` branch is now `unreachable` with
                  ~20 lines of commented-out body ; will be reworked by Phase 4 #1
        - Pairs with Phase 2 #4 per-tick history buffer : that buffer is the
          persistent snapshot mechanism for charts ; per-econ state only

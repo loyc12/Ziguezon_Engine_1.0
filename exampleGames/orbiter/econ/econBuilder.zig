@@ -25,6 +25,7 @@ const Construct = cst.Construct;
 // - requester Agent
 // - resource prealocation
 // - partial orders
+// - use CAPACITY on BUILD_COST instead of PART count
 // - build in parallel instead of sequentially
 // - gov order prioritization
 // - cancelation refunds

@@ -47,7 +47,17 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     };
   }
 
-  pub fn getPartCost( c : Construct ) f64
+  pub fn getBuildCost( c : Construct ) f64
+  {
+    return switch( c )
+    {
+    //.ves => | vesType | vesType.getMetric_f64( .BLD_COST ),
+      .inf => | infType | infType.getMetric_f64( .BLD_COST ),
+      .ind => | indType | indType.getMetric_f64( .BLD_COST ),
+    };
+  }
+
+  pub fn getPartCost( c : Construct ) f64 // TODO : Generalize for all res
   {
     return switch( c )
     {
@@ -71,7 +81,7 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves =>             true,
+    //.ves =>             vesType.canBeBuiltIn( loc, hasAtmo ),
       .inf => | infType | infType.canBeBuiltIn( loc, hasAtmo ),
       .ind => | indType | indType.canBeBuiltIn( loc, hasAtmo ),
     };
