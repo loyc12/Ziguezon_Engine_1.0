@@ -957,7 +957,7 @@ pub const EconSolver = struct
         var activityTarget = self.maxIndActivity * def.sigmoid( margin + IND_MARGIN_OFFSET, 8.0 ); // NOTE : lower K for smoother transitioning
             activityTarget = def.clmp( activityTarget, IND_MIN_ACT_TRGT, 1.00 );
 
-        econ.indState.set( .ACT_TRGT, indType, activityTarget );
+        econ.indState.set( .ACT_TRGT, indType, activityTarget ); // To be used next tick
 
         // Updating econ metrics
         const prevCapital = econ.indState.get( .SAVINGS, indType );
@@ -1009,6 +1009,10 @@ pub const EconSolver = struct
   {
     const jobAccess : f64 = @max( def.EPS, self.resFlowData.get( .GEN, .AVG_ACS, .WORK ));
 
+    var avgPopStarveRate : f64 = 0.0;
+    var avgPopDeathRate  : f64 = 0.0;
+    var avgPopBirthRate  : f64 = 0.0;
+
     inline for( 0..popTypeC )| p |
     {
       const popType  = PopType.fromIdx( p );
@@ -1023,10 +1027,10 @@ pub const EconSolver = struct
 
 
         // ================ MORTALITY ================
-        // Base fatality (natural causes) + resource shortage mortality
+        // Base fatality ( natural causes ) + starvation mortality
 
-        var maxDeathRate : f64 = 0.0;
-        var minResAccess : f64 = 1.0;
+        var maxStarveRate : f64 = 0.0;
+        var minResAccess  : f64 = 1.0;
 
         def.qlog( .CONT, 0, @src(), "Access rates  : " );
 
@@ -1046,33 +1050,41 @@ pub const EconSolver = struct
             {
               def.log( .CONT, 0, @src(), "@ {s} pops are experiencing {s} shortages !", .{ @tagName( popType ), @tagName( resType ) });
 
-              maxDeathRate = @max( maxDeathRate, mortRate * def.pow( f64, 1.0 - access, RES_MODIFIER_EXPONENT ));
+              maxStarveRate = @max( maxStarveRate, mortRate * def.pow( f64, 1.0 - access, RES_MODIFIER_EXPONENT ));
             }
           }
         }
+        const starved = @floor( popCount * maxStarveRate );
 
-        maxDeathRate += baseFatality;
+        avgPopStarveRate += maxStarveRate;
 
-        const deaths = @floor( popCount * maxDeathRate );
+        def.log( .CONT, 0, @src(), "Starve Rate  : {d:.6}", .{ maxStarveRate });
 
-        def.log( .CONT, 0, @src(), "Death Rates   : {d:.6}", .{ maxDeathRate });
+
+        const deathRate = baseFatality + maxStarveRate;
+        const deaths    = @floor( popCount * deathRate );
+
+        avgPopDeathRate += deathRate;
+
+        def.log( .CONT, 0, @src(), "Death Rate   : {d:.6}", .{ deathRate });
 
 
         // ================ NATALITY ================
         // Growth only occurs in the fraction of the population that has full resource access
         // Modified by resource abundance and job availability
 
-        const resModifier : f64 = @min( def.pow( f64,    minResAccess, 1.0 / RES_MODIFIER_EXPONENT ), MAX_RES_MODIFIER );
-        const jobModifier : f64 = @min( def.pow( f64, 1.0 / jobAccess, 1.0 / JOB_MODIFIER_EXPONENT ), MAX_JOB_MODIFIER );
+        const resModifier = @min( def.pow( f64,    minResAccess, 1.0 / RES_MODIFIER_EXPONENT ), MAX_RES_MODIFIER );
+        const jobModifier = @min( def.pow( f64, 1.0 / jobAccess, 1.0 / JOB_MODIFIER_EXPONENT ), MAX_JOB_MODIFIER );
 
-        const birthRate : f64 = baseNatality * resModifier * jobModifier;
+        const birthRate   = baseNatality * resModifier * jobModifier;
+        const birtherRate = 1.0 - deathRate;
+        const births      = @ceil( popCount * birtherRate * birthRate );
 
-        const births = @ceil( popCount * ( 1.0 - maxDeathRate ) * birthRate );
+        avgPopBirthRate += birthRate;
 
-
-        def.log( .CONT, 0, @src(), "Birth Rates   : {d:.6}", .{ birthRate });
-        def.log( .CONT, 0, @src(), "Res Modifiers : {d:.8}", .{ resModifier });
-        def.log( .CONT, 0, @src(), "Job Modifiers : {d:.8}", .{ jobModifier });
+        def.log( .CONT, 0, @src(), "Birth Rate   : {d:.6}", .{ birthRate });
+        def.log( .CONT, 0, @src(), "Res Modifier : {d:.8}", .{ resModifier });
+        def.log( .CONT, 0, @src(), "Job Modifier : {d:.8}", .{ jobModifier });
 
 
         // ================ POP DELTA ================
@@ -1084,21 +1096,19 @@ pub const EconSolver = struct
         def.log( .CONT, 0, @src(), "New Pop count : {d:.0}", .{ nextPop });
 
 
-        // Store per-type results for pushEconMetrics
-        self.econ.popState.set( .COUNT, popType, nextPop );
-        self.econ.popState.set( .DEATH, popType, deaths );
-        self.econ.popState.set( .BIRTH, popType, births );
-
-      // TODO : implement the following averages :
-
-      //self.econ.avgPopDeathRate += maxDeathRate;
-      //self.econ.avgPopBirthRate += maxDeathRate;
+        // Push pop metrics to econ
+        self.econ.popState.set( .COUNT,  popType, nextPop );
+        self.econ.popState.set( .STARVE, popType, starved );
+        self.econ.popState.set( .DEATH,  popType, deaths  );
+        self.econ.popState.set( .BIRTH,  popType, births  );
       }
     }
-  //self.econ.avgPopDeathRate /= @floatFromInt( popTypeC );
-  //self.econ.avgPopBirthRate /= @floatFromInt( popTypeC );
-  }
 
+    // TODO : Store these averages in econ
+    avgPopStarveRate /= @floatFromInt( popTypeC );
+    avgPopDeathRate  /= @floatFromInt( popTypeC );
+    avgPopBirthRate  /= @floatFromInt( popTypeC );
+  }
 
 //fn applyIndDelta( self : *EconSolver ) void
 // TODO : calc target industrial growth / decay based on profitability
@@ -1112,10 +1122,14 @@ pub const EconSolver = struct
 
     self.econ.buildBudget = self.resFlowData.get( .BLD, .FIN_CONS, .PART );
 
-  //var avgResAccess     : f64 = 0.0;
-    var avgPopFulfilment : f64 = 0.0;
-  //var avgInfUsage      : f64 = 0.0;
-    var avgIndActivity   : f64 = 0.0;
+
+  // ================ AGENT AVERAGE ACCESS RATE ================
+
+    var avgGenResAccess  : f64 = 0.0;
+    var avgPopResAccess  : f64 = 0.0;
+  //var avgInfResAccess  : f64 = 0.0;
+    var avgIndResAccess  : f64 = 0.0;
+
 
     inline for( 0..resTypeC )| r |
     {
@@ -1131,9 +1145,30 @@ pub const EconSolver = struct
       econ.resState.set( .ACCESS,    res, @max( 0.0, finalAcs  ));
       econ.resState.set( .ACCESS_D,  res, finalAcs - initialAcs );
 
-      // Accumulates average resource access rate
-    //avgResAccess += self.resFlowData.get( .GEN, .AVG_ACS, res );
+      avgGenResAccess += self.resFlowData.get( .GEN, .AVG_ACS, res );
+      avgPopResAccess += self.resFlowData.get( .POP, .AVG_ACS, res );
+    //avgInfResAccess += self.resFlowData.get( .INF, .AVG_ACS, res );
+      avgIndResAccess += self.resFlowData.get( .IND, .AVG_ACS, res );
     }
+
+
+    avgGenResAccess  /= @floatFromInt( resTypeC );
+    avgPopResAccess  /= @floatFromInt( popTypeC );
+  //avgInfResAccess  /= @floatFromInt( infTypeC );
+    avgIndResAccess  /= @floatFromInt( indTypeC );
+
+    econ.agtState.set( .GEN, .AVG_ACS, avgGenResAccess  );
+    econ.agtState.set( .POP, .AVG_ACS, avgPopResAccess  );
+  //econ.agtState.set( .INF, .AVG_ACS, avgInfResAccess  );
+    econ.agtState.set( .IND, .AVG_ACS, avgIndResAccess  );
+
+
+  // ================ AGENT AVERAGE "ACTION" RATE ================
+
+    var avgPopFulfilment : f64 = 0.0;
+  //var avgInfUsage      : f64 = 0.0;
+    var avgIndActivity   : f64 = 0.0;
+
 
     inline for( 0..popTypeC )| p |
     {
@@ -1143,14 +1178,12 @@ pub const EconSolver = struct
 
       econ.popState.set( .FLM_LVL, popType, popFulfilment );
 
-      // Accumulates average population need fulfilment rate
       avgPopFulfilment += popFulfilment;
     }
   //inline for( 0..infTypeC )| f | // NOTE : done in econ.updateInfUsage()
   //{
   //  const infType = InfType.fromIdx( f );
   //
-  //  // Accumulates average infrastructure usage rate
   //  avgInfUsage += PLACEHOLDER;
   //}
     inline for( 0..indTypeC )| d |
@@ -1160,20 +1193,17 @@ pub const EconSolver = struct
 
       econ.indState.set( .ACT_LVL, indType, indActivity );
 
-      // Accumulates average industrial activity rate
       avgIndActivity += indActivity;
     }
 
-  //avgResAccess     /= @floatFromInt( resTypeC );
+
     avgPopFulfilment /= @floatFromInt( popTypeC );
   //avgInfUsage      /= @floatFromInt( infTypeC );
     avgIndActivity   /= @floatFromInt( indTypeC );
 
-    econ.agtState.set( .POP, .AVG_RATE, avgPopFulfilment );
-  //econ.agtState.set( .INF, .AVG_RATE, avgInfUsage      );
-    econ.agtState.set( .IND, .AVG_RATE, avgIndActivity   );
-
-    // TODO : Update res access levels
+    econ.agtState.set( .POP, .AVG_ACT, avgPopFulfilment );
+  //econ.agtState.set( .INF, .AVG_ACT, avgInfUsage      );
+    econ.agtState.set( .IND, .AVG_ACT, avgIndActivity   );
   }
 
 

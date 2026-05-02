@@ -61,13 +61,13 @@ pub const EconAgentGroupEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  POP, // Population       ( all population prod/cons   )
-//INF, // Infrastructure   ( all industrial consumption )
-  IND, // Industry         ( all industrial prod/cons   )
+  POP, // Population       ( all population prod/cons )
+//INF, // Infrastructure   ( all infrastructure cons  )
+  IND, // Industry         ( all industrial prod/cons )
 
-  MNT, // Maintenance      ( building maintenance   )
-  BLD, // Building         ( construction, selloffs )
-  COM, // Commerce / trade ( imports &  exports     )
+  MNT, // Maintenance      ( maintenance costs        )
+  BLD, // Building         ( construction, selloffs   )
+  COM, // Commerce / trade ( imports & exports        )
 
   GEN, // Sum of previous  ( avoid including NAT uses )
   NAT, // Decay / Growth   ( decay, growth, disasters )
@@ -99,8 +99,22 @@ pub const AgentStateData = def.GenDataGrid( f64, EconAgentGroupEnum, AgentStateE
 //        GEN  represent all groups combined
 pub const AgentStateEnum = enum( u8 )
 {
-  AVG_ACS,  // Average resource access rates
-  AVG_RATE, // Average activity/fulfilment/usage/etc rates
+  AVG_ACS, // Average resource access rate
+
+  AVG_ACT, // Average "action" rate
+
+  // RATE BREAKDOWN :
+  //
+  // POP : FULFILMENT
+  // INF : USAGE
+  // IND : ACTIVITY
+  //
+  // MNT : ?
+  // BLD : ?
+  // COM : ?
+  //
+  // GEN : ?
+  // NAT : ?
 };
 
 

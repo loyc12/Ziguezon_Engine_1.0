@@ -875,18 +875,19 @@ pub const Economy = struct
     self.infState.set( .USE_LVL, .STORAGE, maxStoreUse );
 
 
-    // AVERAGING RATES
-    self.avgInfUsage = 0.0;
+  // TODO : Activate once INF is added as a real agent
+  //// AVERAGING USAGE RATES
+  //var avgInfUsage : f64 = 0.0;
 
-    inline for( 0..infTypeC )| f |
-    {
-      const infType = InfType.fromIdx( f );
+  //inline for( 0..infTypeC )| f |
+  //{
+  //  const infType = InfType.fromIdx( f );
+  //  avgInfUsage += self.infState.get( .USE_LVL, infType );
+  //}
 
-      // Accumulates average infrastructure usage rate
-      self.avgInfUsage += self.infState.get( .USE_LVL, infType );
-    }
+  //avgInfUsage /= @floatFromInt( infTypeC );
 
-    self.avgInfUsage /= @floatFromInt( infTypeC );
+  //self.agtState.set( .INF, .AVG_ACT, avgInfUsage );
   }
 
 

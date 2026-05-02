@@ -112,8 +112,10 @@ pub const PopStateEnum = enum( u8 )
 
   COUNT,    // Current population count
   LIMIT,    // Current housing capacity
-  DEATH,    // Amount lost from death rates last tick
-  BIRTH,    // Amount gained from birthrates last tick
+
+  STARVE,   // Amount lost from unatural deaths last tick
+  DEATH,    // Amount lost from all deaths last tick
+  BIRTH,    // Amount gained from births last tick
 
   // TODO : Hook in the monetary values bellow properly
   EXPENSE,  // Amount of money spent to fulfill their needs

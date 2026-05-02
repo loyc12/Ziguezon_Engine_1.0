@@ -51,16 +51,11 @@ Items inside a section are ordered small-to-large when equal in priority
                  `_ = solver;` line -- the migrated log methods are currently
                  defined but never invoked
        - TODO  : tryBuild's `consumeParts` branch is now `unreachable` with
-                 ~20 lines of commented-out body ; either delete the branch
-                 + parameter entirely, or leave a one-line scaffold note
-                 ( will be reworked by Phase 4 #1 anyway )
+                 ~20 lines of commented-out body ; will be reworked by Phase 4 #1
        - Pairs with Phase 2 #4 per-tick history buffer : that buffer is the
          persistent snapshot mechanism for charts ; per-econ state only
          keeps genuinely persistent / cross-tick fields. Snapshot is taken
          from the solver pointer at end-of-tick before it is invalidated
-       - Compatible with future multithreading ( roadmap SUGGESTED ADDITIONS )
-         since per-thread solver instances would each return their own
-         pointer to the calling thread's solver
 
 
 
