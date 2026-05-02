@@ -73,7 +73,7 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
     {
     //.ves => | vesType | vesType.getMetric_f64( .CAPACITY ),
       .inf => | infType | infType.getMetric_f64( .CAPACITY ),
-      .ind =>             0,
+      .ind => 0,
     };
   }
 
