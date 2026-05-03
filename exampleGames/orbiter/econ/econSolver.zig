@@ -281,6 +281,7 @@ pub const EconSolver = struct
   }
 
 
+  // TODO : Move IDLE_FACTOR to peing per-IndType/InfType
   const INF_MAINT_IDLE_FACTOR : f64 = 0.25;
   const IND_MAINT_IDLE_FACTOR : f64 = 0.10;
 
