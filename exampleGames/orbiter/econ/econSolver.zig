@@ -40,7 +40,7 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   solver.calcPopMaxFlow(); // Computes the maximal population prod and cons
 //solver.calcInfMaxFlow(); // Computes the maximal infrastr.  prod and cons
   solver.calcIndMaxFlow(); // Computes the maximal industrial prod and cons
-  solver.calcComMaxFlow(); // Computes the maximal commercial imp. and exp.
+//solver.calcComMaxFlow(); // Computes the maximal commercial imp. and exp.
 
 
   // TODO : Fold into POP/INF/IND, and generalise to account for all res
@@ -310,7 +310,7 @@ pub const EconSolver = struct
       {
         const indType  = IndType.fromIdx( d );
 
-        const factor   = self.econ.indState.get( .ACT_TRGT, indType );
+        const factor   = self.econ.indState.get( .ACT_LVL, indType );
         const scaling  = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, factor );
 
         const indCount = self.econ.indState.get(   .COUNT, indType );
@@ -327,14 +327,73 @@ pub const EconSolver = struct
   // TODO : Fold into POP/INF/IND, and generalise to account for all res
   fn calcBldMaxFlow( self : *EconSolver ) void
   {
-    if( self.econ.buildDemand > def.EPS )
-    {
-      const maxPartCost = self.econ.buildDemand;
+    if( self.econ.buildQueue == null ){ return; }
 
-    //self.grpResFlowData.set( indType, .BLD_CONS, .PART, maxPartCost );
-    //self.grpResFlowData.add( .IND,    .BLD_CONS, .PART, maxPartCost );
-      self.genResFlowData.add(          .BLD_CONS, .PART, maxPartCost );
+    const queue = &self.econ.buildQueue.?;
+
+    if( queue.entryCount == 0 ){ return; }
+
+    // Walk entries, attribute via construct for now
+    var rawTotal : f64 = 0.0;
+
+    for( 0..queue.entryCount )| idx |
+    {
+      const e = queue.entries[ idx ];
+      if( e.buildCount == 0 ){ break; }
+
+      const cost = @as( f64, @floatFromInt( e.buildCount )) * e.construct.getPartCost();
+      rawTotal += cost;
+
+      switch( e.construct )
+      {
+        .inf => | infType | {
+          self.infResFlowData.add( infType, .BLD_CONS, .PART, cost );
+          self.grpResFlowData.add( .INF,    .BLD_CONS, .PART, cost );
+        },
+        .ind => | indType | {
+          self.indResFlowData.add( indType, .BLD_CONS, .PART, cost );
+          self.grpResFlowData.add( .IND,    .BLD_CONS, .PART, cost );
+        },
+      }
     }
+
+    // Apply ASSEMBLY throughput cap (preserves old calcBuildDemand semantics)
+    const assemblyCount = self.econ.infState.get( .COUNT, .ASSEMBLY );
+    const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
+    const assemblyCap   = @floor( assemblyCount * assemblyRate );
+
+    const cap : f64 = @min( rawTotal, assemblyCap );
+    var scale : f64 = 1.0;
+
+    if( rawTotal > def.EPS )
+    {
+      scale = cap / rawTotal;
+    }
+
+    // Scale all per-agent rows by `scale` so they reflect throughput-capped demand
+    if( scale < 1.0 - def.EPS )
+    {
+      inline for( 0..infTypeC )| f |
+      {
+        const infType = InfType.fromIdx( f );
+        const maxCost = self.infResFlowData.get( infType, .BLD_CONS, .PART );
+        self.infResFlowData.set( infType, .BLD_CONS, .PART, @floor( maxCost * scale ) );
+      }
+      self.grpResFlowData.set( .INF, .BLD_CONS, .PART,
+      self.grpResFlowData.get( .INF, .BLD_CONS, .PART ) * scale );
+
+      inline for( 0..indTypeC )| d |
+      {
+        const indType = IndType.fromIdx( d );
+        const maxCost = self.indResFlowData.get( indType, .BLD_CONS, .PART );
+        self.indResFlowData.set( indType, .BLD_CONS, .PART, @floor( maxCost * scale ));
+      }
+
+      self.grpResFlowData.set( .IND, .BLD_CONS, .PART,
+      self.grpResFlowData.get( .IND, .BLD_CONS, .PART ) * scale );
+    }
+
+    self.genResFlowData.add( .BLD_CONS, .PART, cap );
   }
 
 
@@ -453,7 +512,7 @@ pub const EconSolver = struct
     def.qlog( .INFO, 0, @src(), "$ LOGGING MNT RES ACCESS :" );
 
     const stored = self.prevResStock.get( .PART );
-    const mntDem = self.grpResFlowData.get( .MNT, .OPR_CONS, .PART );
+    const mntDem = self.genResFlowData.get( .MNT_CONS, .PART );
 
     // Calculating unallocated resource count
     const taken  = self.allocatedRes.get( .PART );
@@ -490,15 +549,15 @@ pub const EconSolver = struct
     def.qlog( .INFO, 0, @src(), "$ LOGGING BLD RES ACCESS :" );
 
     const stored = self.prevResStock.get( .PART );
-    const bldDem = self.grpResFlowData.get( .BLD, .OPR_CONS, .PART );
+    const bldDem = self.genResFlowData.get( .BLD_CONS, .PART );
 
     // Calculating remaining resources
     const taken  = self.allocatedRes.get( .PART );
     const remain = @max( 0.0, stored - taken );
-    const indUse = @min( bldDem, remain );
+    const bldUse = @min( bldDem, remain );
 
     // Updating allocated resource use
-    self.allocatedRes.add( .PART, indUse );
+    self.allocatedRes.add( .PART, bldUse );
 
     // Calculating access
     var access : f64 = self.maxBldResAccess;
@@ -604,37 +663,31 @@ pub const EconSolver = struct
 
   fn calcPopResCons( self : *EconSolver ) void
   {
-    inline for( 0..popTypeC )| p |
+    for( 0..popTypeC )| p |
     {
       const popType = PopType.fromIdx( p );
-
-      // NOTE : Pop fulfilment rate does NOT affect consumption rates
 
       inline for( 0..resTypeC )| r |
       {
         const resType = ResType.fromIdx( r );
 
-        const oprAcs  = self.grpResFlowData.get( .POP,    .OPR_ACS,  resType );
+        // NOTE : Pop fulfilment rate does NOT affect consumption rates
+
+        const oprAcs  = self.grpResFlowData.get( .POP, .OPR_ACS, resType );
         const oprCons = self.popResFlowData.get( popType, .OPR_CONS, resType ) * oprAcs;
 
-        const mntAcs  = self.grpResFlowData.get( .POP,    .MNT_ACS,  resType );
-        const mntCons = self.popResFlowData.get( popType, .MNT_CONS, resType ) * mntAcs;
+        self.popResFlowData.set( popType, .OPR_CONS, resType, oprCons );
 
-        const bldAcs  = self.grpResFlowData.get( .POP,    .BLD_ACS,  resType );
-        const bldCons = self.popResFlowData.get( popType, .BLD_CONS, resType ) * bldAcs;
-
-        const totCons = oprCons + mntCons + bldCons;
-
-        self.popResFlowData.set( popType, .FIN_CONS, resType, totCons );
-        self.grpResFlowData.add( .POP,    .FIN_CONS, resType, totCons );
-        self.genResFlowData.add(          .FIN_CONS, resType, totCons );
+        self.popResFlowData.set( popType, .TOT_CONS, resType, oprCons );
+        self.grpResFlowData.add( .POP,    .TOT_CONS, resType, oprCons );
+        self.genResFlowData.add(          .TOT_CONS, resType, oprCons );
       }
     }
   }
 
   fn calcInfResCons( self : *EconSolver ) void
   {
-    inline for( 0..infTypeC )| d |
+    for( 0..infTypeC )| d |
     {
       const infType  = InfType.fromIdx( d );
       const infUsage = self.econ.infState.get( .USE_LVL, infType );
@@ -645,22 +698,25 @@ pub const EconSolver = struct
         {
           const resType = ResType.fromIdx( r );
 
+          // TODO : Scale consumption based on infUsage
+
           const oprAcs  = self.grpResFlowData.get( .INF,    .OPR_ACS,  resType );
-          const oprCons = self.infResFlowData.get( infType, .OPR_CONS, resType ) * oprAcs;
-
           const mntAcs  = self.grpResFlowData.get( .INF,    .MNT_ACS,  resType );
-          const mntCons = self.infResFlowData.get( infType, .MNT_CONS, resType ) * mntAcs;
-
           const bldAcs  = self.grpResFlowData.get( .INF,    .BLD_ACS,  resType );
+
+          const oprCons = self.infResFlowData.get( infType, .OPR_CONS, resType ) * oprAcs;
+          const mntCons = self.infResFlowData.get( infType, .MNT_CONS, resType ) * mntAcs;
           const bldCons = self.infResFlowData.get( infType, .BLD_CONS, resType ) * bldAcs;
 
           const totCons = oprCons + mntCons + bldCons;
 
-          // TODO : Scale consumption based on infUsage
+          self.infResFlowData.set( infType, .OPR_CONS, resType, oprCons );
+          self.infResFlowData.set( infType, .MNT_CONS, resType, mntCons );
+          self.infResFlowData.set( infType, .BLD_CONS, resType, bldCons );
 
-          self.infResFlowData.set( infType, .FIN_CONS, resType, totCons );
-          self.grpResFlowData.add( .INF,    .FIN_CONS, resType, totCons );
-          self.genResFlowData.add(          .FIN_CONS, resType, totCons );
+          self.infResFlowData.set( infType, .TOT_CONS, resType, totCons );
+          self.grpResFlowData.add( .INF,    .TOT_CONS, resType, totCons );
+          self.genResFlowData.add(          .TOT_CONS, resType, totCons );
         }
       }
     }
@@ -668,7 +724,7 @@ pub const EconSolver = struct
 
   fn calcIndResCons( self : *EconSolver ) void
   {
-    inline for( 0..indTypeC )| d |
+    for( 0..indTypeC )| d |
     {
       const indType     = IndType.fromIdx( d );
       const indActivity = self.econ.indState.get( .ACT_LVL, indType );
@@ -679,22 +735,22 @@ pub const EconSolver = struct
         {
           const resType = ResType.fromIdx( r );
 
-          const oprAcs  = self.grpResFlowData.get( .IND,    .OPR_ACS,  resType );
-          const oprCons = self.indResFlowData.get( indType, .OPR_CONS, resType ) * oprAcs;
-
           const mntAcs  = self.grpResFlowData.get( .IND,    .MNT_ACS,  resType );
-          const mntCons = self.indResFlowData.get( indType, .MNT_CONS, resType ) * mntAcs;
-
           const bldAcs  = self.grpResFlowData.get( .IND,    .BLD_ACS,  resType );
+
+          const oprCons = self.indResFlowData.get( indType, .OPR_CONS, resType ) * indActivity;
+          const mntCons = self.indResFlowData.get( indType, .MNT_CONS, resType ) * mntAcs;
           const bldCons = self.indResFlowData.get( indType, .BLD_CONS, resType ) * bldAcs;
 
           const totCons = oprCons + mntCons + bldCons;
 
-          // TODO : Scale consumption based on indActivity
+          self.indResFlowData.set( indType, .OPR_CONS, resType, oprCons );
+          self.indResFlowData.set( indType, .MNT_CONS, resType, mntCons );
+          self.indResFlowData.set( indType, .BLD_CONS, resType, bldCons );
 
-          self.indResFlowData.set( indType, .FIN_CONS, resType, totCons );
-          self.grpResFlowData.add( .IND,    .FIN_CONS, resType, totCons );
-          self.genResFlowData.add(          .FIN_CONS, resType, totCons );
+          self.indResFlowData.set( indType, .TOT_CONS, resType, totCons );
+          self.grpResFlowData.add( .IND,    .TOT_CONS, resType, totCons );
+          self.genResFlowData.add(          .TOT_CONS, resType, totCons );
         }
       }
     }
@@ -705,7 +761,7 @@ pub const EconSolver = struct
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
-      const genCons = self.genResFlowData.get( .FIN_CONS, resType );
+      const genCons = self.genResFlowData.get( .TOT_CONS, resType );
 
       self.nextResStock.sub( resType, genCons );
     }
@@ -747,27 +803,24 @@ pub const EconSolver = struct
       {
         const resType = ResType.fromIdx( r );
 
-        const oprAcs   = self.grpResFlowData.get( .POP, .OPR_ACS,  resType );
-        const prodRate = @max( oprAcs, POP_PROD_FLOOR ); // Even starving, pops can work a bit
+        const prodRate = @max( popFulfilment, POP_PROD_FLOOR ); // Even starving, pops can work a bit
         const oprProd  = self.popResFlowData.get( popType, .OPR_PROD, resType ) * prodRate;
 
-        // TODO : Scale production based on popFulfilment
-        _ = popFulfilment;
-
-        self.popResFlowData.set( popType, .FIN_PROD, resType, oprProd );
-        self.grpResFlowData.add( .POP,    .FIN_PROD, resType, oprProd );
-        self.genResFlowData.add(          .FIN_PROD, resType, oprProd );
+        self.popResFlowData.set( popType, .TOT_PROD, resType, oprProd );
+        self.grpResFlowData.add( .POP,    .TOT_PROD, resType, oprProd );
+        self.genResFlowData.add(          .TOT_PROD, resType, oprProd );
       }
     }
   }
 
-  // Inf will never produce resources
+  // NOTE : Inf will never produce resources
 
   fn calcIndResProd( self : *EconSolver ) void
   {
     inline for( 0..indTypeC )| d |
     {
       const indType     = IndType.fromIdx( d );
+
       const indActivity = self.econ.indState.get( .ACT_LVL, indType );
 
       if( indActivity > def.EPS )
@@ -775,15 +828,11 @@ pub const EconSolver = struct
         inline for( 0..resTypeC )| r |
         {
           const resType = ResType.fromIdx( r );
+          const oprProd = self.indResFlowData.get( indType, .OPR_PROD, resType ) * indActivity;
 
-          const oprAcs  = self.grpResFlowData.get( .IND,    .OPR_ACS,  resType );
-          const oprProd = self.indResFlowData.get( indType, .OPR_PROD, resType ) * oprAcs;
-
-          // TODO : Scale production based on indActivity
-
-          self.indResFlowData.set( indType, .FIN_PROD, resType, oprProd );
-          self.grpResFlowData.add( .IND,    .FIN_PROD, resType, oprProd );
-          self.genResFlowData.add(          .FIN_PROD, resType, oprProd );
+          self.indResFlowData.set( indType, .TOT_PROD, resType, oprProd );
+          self.grpResFlowData.add( .IND,    .TOT_PROD, resType, oprProd );
+          self.genResFlowData.add(          .TOT_PROD, resType, oprProd );
         }
       }
     }
@@ -794,7 +843,7 @@ pub const EconSolver = struct
     inline for( 0..resTypeC )| r |
     {
       const resType = ResType.fromIdx( r );
-      const genProd = self.genResFlowData.get( .FIN_PROD, resType );
+      const genProd = self.genResFlowData.get( .TOT_PROD, resType );
 
       self.nextResStock.add( resType, genProd );
     }
@@ -846,8 +895,8 @@ pub const EconSolver = struct
       const dampening  = resType.getMetric_f64( .PRICE_DAMP ); // Lerp factor (0 = no change, 1 = instant)
 
       // Flow-based: compare this tick's production vs this tick's consumption demand
-      const finDemand = self.genResFlowData.get( .FIN_CONS, resType ); // NOTE : EXCLUDES NATURAL DECAY
-      const finSupply = self.genResFlowData.get( .FIN_PROD, resType );
+      const finDemand = self.genResFlowData.get( .TOT_CONS, resType ); // NOTE : EXCLUDES NATURAL DECAY
+      const finSupply = self.genResFlowData.get( .TOT_PROD, resType );
 
       const ceil : f64 = MAX_SCARC_RATIO; // Scarcity ceiling
       var  ratio : f64 = 0.0;
@@ -858,6 +907,7 @@ pub const EconSolver = struct
       const rawPrice = basePrice * @max( MIN_PRICE_FACTOR, def.pow( f64, ratio, elasticity ));
       const oldPrice = self.econ.resState.get( .PRICE, resType );
       const newPrice = def.lerp(  oldPrice, rawPrice, dampening ); // Lerp dampening
+
       const dltPrice = newPrice - oldPrice;
       const dltPrcnt = 100.0 * dltPrice / oldPrice;
       const offPrcnt = 100.0 * newPrice / basePrice;
@@ -901,8 +951,8 @@ pub const EconSolver = struct
 
           if( isPresent )
           {
-            expense += resPrice * self.popResFlowData.get( popType, .FIN_CONS, resType );
-            revenue += resPrice * self.popResFlowData.get( popType, .FIN_PROD, resType );
+            expense += resPrice * self.popResFlowData.get( popType, .OPR_CONS, resType );
+            revenue += resPrice * self.popResFlowData.get( popType, .OPR_PROD, resType );
           }
           else // Theoritical profitability calculations
           {
@@ -910,6 +960,7 @@ pub const EconSolver = struct
             revenue += resPrice * popType.getResMetric_f64( .PROD, resType );
           }
         }
+
         profit = revenue - expense;
 
         // TODO : add housing costs
@@ -961,6 +1012,7 @@ pub const EconSolver = struct
   const IND_MIN_ACT_TRGT  : f64 = 0.05;
   const IND_MARGIN_FLOOR  : f64 = -2.5;
   const IND_MARGIN_OFFSET : f64 = -0.0;
+  const ACT_TRGT_FACTOR   : f64 =  8.0; // NOTE : lower for a smoother target transitioning
 
   fn updateIndFinances( self : *EconSolver ) void
   {
@@ -989,26 +1041,21 @@ pub const EconSolver = struct
 
           if( isPresent )
           {
-            expense += resPrice * self.indResFlowData.get( indType, .FIN_CONS, resType );
-            revenue += resPrice * self.indResFlowData.get( indType, .FIN_PROD, resType );
+            // NOTE : ignore build costs, as those are one-time payments from savings
+            expense += resPrice * self.indResFlowData.get( indType, .OPR_CONS, resType );
+            expense += resPrice * self.indResFlowData.get( indType, .MNT_CONS, resType );
+
+            revenue += resPrice * self.indResFlowData.get( indType, .TOT_PROD, resType );
           }
           else // Theoritical profitability calculations
           {
-            expense += resPrice * indType.getResMetric_f64( .CONS, resType );
-            revenue += resPrice * indType.getResMetric_f64( .PROD, resType );
+            expense += resPrice * indType.getResMetric_f64( .CONS,  resType );
+            expense += resPrice * indType.getResMetric_f64( .MAINT, resType );
+
+            revenue += resPrice * indType.getResMetric_f64( .PROD,  resType );
           }
         }
-
-
-        // Calculating maintenance costs
-        // NOTE : duplicated code ( calcMntMaxDelta ). buffer previous results instead
-        const partPrice   = self.econ.resState.get(   .PRICE, .PART );
-        const mntCost     = indType.getResMetric_f64( .MAINT, .PART );
-        const scaling     = self.indActivity.get( indType );
-        const maintFactor = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, scaling );
-
-        expense += indCount * mntCost * partPrice * maintFactor;
-        profit   = revenue  - expense;
+        profit = revenue - expense;
 
 
         // Calculating margin and activity target
@@ -1019,7 +1066,7 @@ pub const EconSolver = struct
         else if( expense > def.EPS ){ margin =       floor; }
 
         // Large profits will push target towards 1.0, large losses will push it towards 0.0
-        var activityTarget = self.maxIndActivity * def.sigmoid( margin + IND_MARGIN_OFFSET, 8.0 ); // NOTE : lower K for smoother transitioning
+        var activityTarget = self.maxIndActivity * def.sigmoid( margin + IND_MARGIN_OFFSET, ACT_TRGT_FACTOR );
             activityTarget = def.clmp( activityTarget, IND_MIN_ACT_TRGT, 1.00 );
 
         econ.indState.set( .ACT_TRGT, indType, activityTarget ); // To be used next tick
@@ -1177,12 +1224,17 @@ pub const EconSolver = struct
     avgPopBirthRate  /= @floatFromInt( popTypeC );
   }
 
-// fn updateInfCount( self : *EconSolver ) void
-
-// fn updateIndCount( self : *EconSolver ) void
-// TODO : calc target industrial growth / decay based on profitability
-// NOTE : remove capital from industry from growth costs
-// NOTE : inject capital into industry from decay selloffs
+  fn updateInfCount( self : *EconSolver ) void
+  {
+    _ = self; // TODO : IMPLEMENT ME
+  }
+  fn updateIndCount( self : *EconSolver ) void
+  {
+    _ = self; // TODO : IMPLEMENT ME
+  }
+// TODO : calc target  growth / decay based on profitability
+// NOTE : remove capital from growth costs
+// NOTE : inject capital from decay selloffs
 
 
 // ================================ ECON UPDATE PHASE ================================
@@ -1192,8 +1244,10 @@ pub const EconSolver = struct
   {
     const econ : *ecn.Economy = self.econ;
 
-    self.econ.buildBudget = self.grpResFlowData.get( .BLD, .FIN_CONS, .PART );
+    const bldDem = self.genResFlowData.get( .BLD_CONS, .PART );
+    const bldAcs = self.genResFlowData.get( .BLD_ACS,  .PART );
 
+    self.econ.buildBudget = @floor( bldDem * bldAcs );
 
   // ================ AGENT AVERAGE ACCESS RATE ================
 
@@ -1239,11 +1293,10 @@ pub const EconSolver = struct
   {
     const econ : *ecn.Economy = self.econ;
 
-
   // ================ AGENT AVERAGE "ACTION" RATE ================
 
     var avgPopFulfilment : f64 = 0.0;
-  //var avgInfUsage      : f64 = 0.0;
+    var avgInfUsage      : f64 = 0.0;
     var avgIndActivity   : f64 = 0.0;
 
 
@@ -1251,36 +1304,33 @@ pub const EconSolver = struct
     {
       const popType = PopType.fromIdx( p );
 
-      const popFulfilment = self.popFulfilment.get( popType );
-
-      econ.popState.set( .FLM_LVL, popType, popFulfilment );
-
-      avgPopFulfilment += popFulfilment;
+      avgPopFulfilment += self.econ.popState.get( .FLM_LVL, popType );
     }
-  //inline for( 0..infTypeC )| f | // NOTE : done in econ.updateInfUsage()
-  //{
-  //  const infType = InfType.fromIdx( f );
-  //
-  //  avgInfUsage += PLACEHOLDER;
-  //}
-    inline for( 0..indTypeC )| d |
-    {
-      const indType     = IndType.fromIdx( d );
-      const indActivity = self.indActivity.get( indType );
-
-      econ.indState.set( .ACT_LVL, indType, indActivity );
-
-      avgIndActivity += indActivity;
-    }
-
 
     avgPopFulfilment /= @floatFromInt( popTypeC );
-  //avgInfUsage      /= @floatFromInt( infTypeC );
-    avgIndActivity   /= @floatFromInt( indTypeC );
-
     econ.agtState.set( .POP, .ACTION, avgPopFulfilment );
-  //econ.agtState.set( .INF, .ACTION, avgInfUsage      );
-    econ.agtState.set( .IND, .ACTION, avgIndActivity   );
+
+
+    inline for( 0..infTypeC )| f |
+    {
+      const infType = InfType.fromIdx( f );
+
+      avgInfUsage += self.econ.infState.get( .USE_LVL, infType );
+    }
+
+    avgInfUsage /= @floatFromInt( infTypeC );
+    econ.agtState.set( .INF, .ACTION, avgInfUsage );
+
+
+    inline for( 0..indTypeC )| d |
+    {
+      const indType = IndType.fromIdx( d );
+
+      avgIndActivity += self.econ.indState.get( .ACT_LVL, indType );
+    }
+
+    avgIndActivity /= @floatFromInt( indTypeC );
+    econ.agtState.set( .IND, .ACTION, avgIndActivity );
   }
 
 
@@ -1292,10 +1342,10 @@ pub const EconSolver = struct
     // Comment and uncomment these subfunctions to select what to log
     // Most of these are show during steping anyways
 
-  //self.logResMetrics();
-  //self.logIndMetrics();
+    self.logResMetrics();
+    self.logIndMetrics();
     self.logInfMetrics();
-  //self.logPopMetrics();
+    self.logPopMetrics();
   }
 
   pub fn logPopMetrics( self : *const EconSolver ) void
@@ -1307,43 +1357,18 @@ pub const EconSolver = struct
     {
       const popType  = PopType.fromIdx( p );
 
-      const count   : f64 = self.econ.popState.get( .COUNT, popType );
-      const limit   : f64 = self.econ.popState.get( .LIMIT, popType );
+      const count   : f64 = self.econ.popState.get( .COUNT,  popType );
+      const limit   : f64 = self.econ.popState.get( .LIMIT,  popType );
 
-      const births  : f64 = self.popBirths;
-      const deaths  : f64 = self.popDeaths;
-      const starved : f64 = self.popStarved;
+      const births  : f64 = self.econ.popState.get( .BIRTH,  popType );
+      const deaths  : f64 = self.econ.popState.get( .DEATH,  popType );
+      const starved : f64 = self.econ.popState.get( .STARVE, popType );
       const delta   : f64 = births - deaths;
 
-      const flmLvl  : f64 = self.popFulfilment.get( popType ) * 100;
+      const flmLvl  : f64 = self.econ.popState.get( .FLM_LVL, popType ) * 100;
 
       def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t/ {d:.0}\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t( -{d:.0}\t)] {d:.3}%",
         .{ @tagName( popType ), count, limit, delta, births, deaths, starved, flmLvl });
-    }
-  }
-
-  pub inline fn logResMetrics( self : *const EconSolver ) void
-  {
-    def.qlog( .INFO, 0, @src(), "$ RESOURCE : Count / Capacity  [ Delta | Prod Cons Decay ]  Access rate  ( Price )" );
-    def.qlog( .CONT, 0, @src(), "==================================================================================" );
-
-    inline for( 0..resTypeC )| r |
-    {
-      const resType = ResType.fromIdx( r );
-
-      const count  : f64 = self.econ.resState.get( .COUNT, resType );
-      const limit  : f64 = self.econ.resState.get( .LIMIT, resType );
-      const price  : f64 = self.econ.resState.get( .PRICE, resType );
-
-      const prod   : f64 = self.genResFlowData.get(       .FIN_PROD, resType );
-      const cons   : f64 = self.genResFlowData.get(       .FIN_CONS, resType );
-    //const decay  : f64 = self.grpResFlowData.get( .NAT, .FIN_CONS, resType ); // TODO : Restore storing of decay
-      const delta  : f64 = prod - cons;
-
-      const avgAcs : f64 = self.genResFlowData.get( .OPR_ACS, resType ) * 100.0;
-
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t/ {d:.0}\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t-{d:.0}\t] {d:.2}%\t ( {d:.6} )",
-        .{ @tagName( resType ), count, limit, delta, prod, cons, -1.0, avgAcs, price });
     }
   }
 
@@ -1389,6 +1414,31 @@ pub const EconSolver = struct
 
       def.log( .CONT, 0, @src(), "{s}\t: {d:.0} \t[ {d:.0}\t] {d:.2}%\t/ {d:.2}%",
         .{ @tagName( indType ), count, delta, actLvl, actTarget });
+    }
+  }
+
+  pub inline fn logResMetrics( self : *const EconSolver ) void
+  {
+    def.qlog( .INFO, 0, @src(), "$ RESOURCE : Count / Capacity  [ Delta | Prod Cons Decay ]  Access rate  ( Price )" );
+    def.qlog( .CONT, 0, @src(), "==================================================================================" );
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resType = ResType.fromIdx( r );
+
+      const count  : f64 = self.econ.resState.get( .COUNT, resType );
+      const limit  : f64 = self.econ.resState.get( .LIMIT, resType );
+      const price  : f64 = self.econ.resState.get( .PRICE, resType );
+
+      const prod   : f64 = self.genResFlowData.get(       .TOT_PROD, resType );
+      const cons   : f64 = self.genResFlowData.get(       .TOT_CONS, resType );
+    //const decay  : f64 = self.grpResFlowData.get( .NAT, .FIN_CONS, resType ); // TODO : Restore storing of decay
+      const delta  : f64 = prod - cons;
+
+      const avgAcs : f64 = self.genResFlowData.get( .OPR_ACS, resType ) * 100.0;
+
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t/ {d:.0}\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t-{d:.0}\t] {d:.2}%\t ( {d:.6} )",
+        .{ @tagName( resType ), count, limit, delta, prod, cons, -1.0, avgAcs, price });
     }
   }
 };

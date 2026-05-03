@@ -77,7 +77,7 @@ pub const AgentFlowEnum = enum( u8 )
   BLD_PROD, BLD_CONS, // Maximum construciton res flow ( before clamping )
   BLD_ACS,            // Resource demand satisfaction rate
 
-  FIN_PROD, FIN_CONS, // Applied, final res flow ( clamped by ACCESS & ACTION rates )
+  TOT_PROD, TOT_CONS, // Applied, final res flow ( clamped by ACCESS & ACTION rates )
 };
 
 

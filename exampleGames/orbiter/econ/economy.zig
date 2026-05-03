@@ -56,7 +56,6 @@ pub const Economy = struct
   localGov : gdf.gvmt_d.GovMonetaryData = .{},
 
   buildQueue  : ?BuildQueue = null,
-  buildDemand : f64 = 0.0,  // PART demand from construction queue this tick
   buildBudget : f64 = 0.0,  // PART allocation granted by solver
 
   resState : gdf.rsrc_d.ResStateData = .{},
@@ -750,35 +749,7 @@ pub const Economy = struct
 
   inline fn applyInflation( self : *Economy ) void
   {
-    inline for( 0..indTypeC )| d |
-    {
-      const indType = IndType.fromIdx( d );
-      const baseCapital = self.indState.get( .SAVINGS, indType );
-
-      if( baseCapital > def.EPS )
-      {
-        self.indState.sub( .SAVINGS, indType, baseCapital * self.inflationRate );
-      }
-
-      // TODO : also apply inflation to inf, pop and gov
-    }
-  }
-
-  inline fn calcBuildDemand( self : *Economy ) void
-  {
-    if( self.buildQueue != null )
-    {
-      const assemblyCount = self.infState.get( .COUNT, .ASSEMBLY );
-      const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
-      const assemblyCap   = @ceil( assemblyCount * assemblyRate );
-
-      // Demand is what the queue needs, but capped by what assemblies can process
-      self.buildDemand = @min( self.buildQueue.?.getTotalPartCost(), assemblyCap );
-    }
-    else
-    {
-      self.buildDemand = 0.0;
-    }
+    _ = self; // TODO : IMPLEMENT ME
   }
 
   inline fn tickBuildQueue( self : *Economy ) void
@@ -1127,7 +1098,6 @@ pub const Economy = struct
 
     // Economic Metrics
     self.applyInflation();  // TODO : IMPLEMENT THIS
-    self.calcBuildDemand();
   }
 
   fn tickEcon( self : *Economy ) void
