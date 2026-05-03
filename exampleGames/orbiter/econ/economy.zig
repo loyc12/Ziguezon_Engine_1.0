@@ -185,7 +185,7 @@ pub const Economy = struct
     }
     self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
     self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value * 1000 ));
-    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  200 ));
+    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  100 ));
 
     self.updateResCaps();
     self.updatePopCaps();
@@ -869,7 +869,7 @@ pub const Economy = struct
   const AUTO_BUILD_ASSEMBLY_F   : f64 = 0.01000; // Max ASSEMBLY count as a fraction of population count
 
   const AUTO_DECAY_INF_THRESH   : f64 = 0.25000; // Infrastructure use rate bellow which it decays
-  const AUTO_DECAY_INF_FACTOR   : f64 = 0.00001; // Fraction of pop count to decay per tick at full scale (ind)
+  const AUTO_DECAY_INF_FACTOR   : f64 = 0.00002; // Fraction of pop count to decay per tick at full scale (ind)
   const AUTO_DECAY_ASSEMBLY_F   : f64 = 0.00025; // Min ASSEMBLY count as a fraction of population count
 
 
