@@ -1249,6 +1249,7 @@ pub const EconSolver = struct
 
     self.econ.buildBudget = @floor( bldDem * bldAcs );
 
+
   // ================ AGENT AVERAGE ACCESS RATE ================
 
     var avgGenResAccess  : f64 = 0.0;
@@ -1292,6 +1293,7 @@ pub const EconSolver = struct
   fn pushAgentMetrics( self : *EconSolver ) void
   {
     const econ : *ecn.Economy = self.econ;
+
 
   // ================ AGENT AVERAGE "ACTION" RATE ================
 
