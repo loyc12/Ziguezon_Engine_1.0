@@ -33,7 +33,7 @@ const Construct = cst.Construct;
 
 pub const BuildEntry = struct
 {
-  construct    : Construct = .{ .inf = InfType.HOUSING },
+  construct    : Construct = .{ .infT = InfType.HOUSING },
   buildCount   : u64 = 0,
   partProgress : u64 = 0,
 
@@ -91,7 +91,7 @@ pub const BuildQueue = struct
     {
       queue.entries[ i ] =
       .{
-        .construct  = .{ .inf = InfType.HABITAT },
+        .construct  = .{ .infT = InfType.HABITAT },
         .buildCount = 0,
       };
     }
@@ -247,7 +247,7 @@ pub const BuildQueue = struct
           const unitsBuilt_f : f64 = @floatFromInt( unitsBuilt );
 
           remainParts        -= unitsBuilt_f * unitPartCost;
-          e.buildCount   -= unitsBuilt;
+          e.buildCount       -= unitsBuilt;
           self.totUnitsBuilt += unitsBuilt;
         }
 

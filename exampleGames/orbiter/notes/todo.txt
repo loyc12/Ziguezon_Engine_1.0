@@ -47,6 +47,13 @@ rounding tolerance.
 
 
 
+================ MINOR BUGFIXES ================
+
+
+[ ] 1. Review ecology.ecoFactor initialization, as it always starts at zero
+       - this is despite use calling "eco.ecoFactor = eco.ecoTarget" in ecology.init()
+
+
 ================ HOUSEKEEPING ( quick wins, parallel-friendly ) ================
 
 
@@ -77,6 +84,10 @@ rounding tolerance.
        - Currently logged but not stored ; useful as a real signal
 
 [~] 7. Standardise DataMatrix vs Array usage where it has drifted
+
+[ ] 8. Validate econSolver's CONSUMPTION PHASE xxxResFlowData.set/add accounting
+       - looks suspicious in areas. makes ure we don't over or under acount resources
+       - Find a way to standardize logic to avoif confusion like this moving forward
 
 
 ================ TIER 1.1 STAGE A : STRUCTURAL REWORK ================

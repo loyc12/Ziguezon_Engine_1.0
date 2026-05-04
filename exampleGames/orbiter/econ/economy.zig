@@ -15,14 +15,14 @@ pub const Ecology    = eco.EcoState;
 const gbl = @import( "../gameGlobals.zig" );
 const gdf = @import( "../gameDefs.zig" );
 
-const EconLoc  = gdf.EconLoc;
+const EconLoc = gdf.EconLoc;
 
-const PowerSrc = gdf.PowerSrc;
-const VesType  = gdf.VesType;
-const ResType  = gdf.ResType;
-const PopType  = gdf.PopType;
-const InfType  = gdf.InfType;
-const IndType  = gdf.IndType;
+const PowerSrc  = gdf.PowerSrc;
+const VesType   = gdf.VesType;
+const ResType   = gdf.ResType;
+const PopType   = gdf.PopType;
+const InfType   = gdf.InfType;
+const IndType   = gdf.IndType;
 
 const powerSrcC = PowerSrc.count;
 const vesTypeC  = VesType.count;
@@ -230,6 +230,9 @@ pub const Economy = struct
       self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value * 10 ));
       self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 50 ));
     }
+
+    self.updateAreas();
+    self.updateEcology();
   }
 
 
@@ -323,42 +326,42 @@ pub const Economy = struct
       self.popState.set( .LIMIT, popT, infC * cap / popCost );
     }
   }
-  pub inline fn getPopCap( self : *const Economy, pop : PopType ) u64
+  pub inline fn getPopCap( self : *const Economy, popT : PopType ) u64
   {
-    return @intFromFloat( self.popState.get( .LIMIT, pop ));
+    return @intFromFloat( self.popState.get( .LIMIT, popT ));
   }
-  pub inline fn getPopCount( self : *const Economy, pop : PopType ) u64
+  pub inline fn getPopCount( self : *const Economy, popT : PopType ) u64
   {
-    return @intFromFloat( self.popState.get( .COUNT, pop ));
+    return @intFromFloat( self.popState.get( .COUNT, popT ));
   }
 
   /// Ignores popCap
-  pub inline fn setPopCount( self : *Economy, pop : PopType, value : u64 ) void
+  pub inline fn setPopCount( self : *Economy, popT : PopType, value : u64 ) void
   {
-    self.popState.set( .COUNT, pop, @floatFromInt( value ));
+    self.popState.set( .COUNT, popT, @floatFromInt( value ));
   }
-  pub inline fn addPopCount( self : *Economy, pop : PopType, value : u64 ) void
+  pub inline fn addPopCount( self : *Economy, popT : PopType, value : u64 ) void
   {
-    const cap      = self.getPopCap(   pop );
-    const oldCount = self.getPopCount( pop );
+    const cap      = self.getPopCap(   popT );
+    const oldCount = self.getPopCount( popT );
     const newCount = @min( value +| oldCount, cap );
 
     if( newCount - oldCount != value )
     {
       def.log( .WARN, 0, @src(), "@ Tried to add {d} pops to economy, but only had space for {d}", .{ value, newCount - oldCount });
     }
-    self.setPopCount( pop, newCount );
+    self.setPopCount( popT, newCount );
   }
-  pub inline fn subPopCount( self : *Economy, pop : PopType, value : u64 ) void
+  pub inline fn subPopCount( self : *Economy, popT : PopType, value : u64 ) void
   {
-    const oldCount = self.getPopCount( pop );
+    const oldCount = self.getPopCount( popT );
     const newCount = @max( oldCount -| value, 0 ); // Writen like this for clarity
 
     if( oldCount - newCount != value )
     {
       def.log( .WARN, 0, @src(), "@ Tried to remove {d} pops from economy, but only had {d} left", .{ value, oldCount - newCount });
     }
-    self.setPopCount( pop, newCount );
+    self.setPopCount( popT, newCount );
   }
 
 
@@ -371,9 +374,9 @@ pub const Economy = struct
       const resT = ResType.fromIdx( r );
       const infT = resT.getInfStore();
 
-      const infCount  = self.infState.get( .COUNT, infT );
-      const capacity  = infT.getMetric_f64( .CAPACITY   );
-      const storeRate = resT.getMetric_f64( .STORE_RATE );
+      const infCount  = self.infState.get(  .COUNT, infT );
+      const capacity  = infT.getMetric_f64( .CAPACITY    );
+      const storeRate = resT.getMetric_f64( .STORE_RATE  );
 
       const prevLimit : f64 = self.resState.get( .LIMIT, resT );
       var   nextLimit  : f64 = 0.0;
@@ -393,92 +396,92 @@ pub const Economy = struct
 
     }
   }
-  pub inline fn getResCap( self : *const Economy, res : ResType ) u64
+  pub inline fn getResCap( self : *const Economy, resT : ResType ) u64
   {
-    return @intFromFloat( self.resState.get( .LIMIT, res ));
+    return @intFromFloat( self.resState.get( .LIMIT, resT ));
   }
-  pub inline fn getResCount( self : *const Economy, res : ResType ) u64
+  pub inline fn getResCount( self : *const Economy, resT : ResType ) u64
   {
-    return @intFromFloat( self.resState.get( .COUNT, res ));
+    return @intFromFloat( self.resState.get( .COUNT, resT ));
   }
 
-  pub inline fn setResCount( self : *Economy, res : ResType, value : u64 ) void
+  pub inline fn setResCount( self : *Economy, resT : ResType, value : u64 ) void
   {
-    const cap = self.getResCap( res );
-    self.resState.set( .COUNT, res, @floatFromInt( @min( value, cap )));
+    const cap = self.getResCap( resT );
+    self.resState.set( .COUNT, resT, @floatFromInt( @min( value, cap )));
   }
-  pub inline fn addResCount( self : *Economy, res : ResType, value : u64 ) void
+  pub inline fn addResCount( self : *Economy, resT : ResType, value : u64 ) void
   {
-    const cap     = self.getResCap(   res );
-    const current = self.getResCount( res );
+    const cap     = self.getResCap(   resT );
+    const current = self.getResCount( resT );
     const new_val = @min( value + current, cap );
-    self.resState.set( .COUNT, res, @floatFromInt( new_val ));
+    self.resState.set( .COUNT, resT, @floatFromInt( new_val ));
   }
-  pub inline fn subResCount( self : *Economy, res : ResType, value : u64 ) void
+  pub inline fn subResCount( self : *Economy, resT : ResType, value : u64 ) void
   {
-    const current = self.getResCount( res );
+    const current = self.getResCount( resT );
     const count   = @min( value, current );
-    self.resState.set( .COUNT, res, @floatFromInt( current - count ));
+    self.resState.set( .COUNT, resT, @floatFromInt( current - count ));
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} res of type {s} from economy, but only had {d} left", .{ value, @tagName( res ), count });
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} resT of type {s} from economy, but only had {d} left", .{ value, @tagName( resT ), count });
     }
   }
 
 
   // ================================ INFRASTRUCTURE ================================
 
-  pub inline fn getInfCount( self : *const Economy, inf : InfType ) u64
+  pub inline fn getInfCount( self : *const Economy, infT : InfType ) u64
   {
-    return @intFromFloat( self.infState.get( .COUNT, inf ));
+    return @intFromFloat( self.infState.get( .COUNT, infT ));
   }
-  pub inline fn setInfCount( self : *Economy, inf : InfType, value : u64 ) void
+  pub inline fn setInfCount( self : *Economy, infT : InfType, value : u64 ) void
   {
-    self.infState.set( .COUNT, inf, @floatFromInt( value ));
+    self.infState.set( .COUNT, infT, @floatFromInt( value ));
   }
-  pub inline fn addInfCount( self : *Economy, inf : InfType, value : u64 ) void
+  pub inline fn addInfCount( self : *Economy, infT : InfType, value : u64 ) void
   {
-    const current = self.getInfCount( inf );
-    self.infState.set( .COUNT, inf, @floatFromInt( value + current ));
+    const current = self.getInfCount( infT );
+    self.infState.set( .COUNT, infT, @floatFromInt( value + current ));
   }
-  pub inline fn subInfCount( self : *Economy, inf : InfType, value : u64 ) void
+  pub inline fn subInfCount( self : *Economy, infT : InfType, value : u64 ) void
   {
-    const current = self.getInfCount( inf );
+    const current = self.getInfCount( infT );
     const count   = @min( value, current );
-    self.infState.set( .COUNT, inf, @floatFromInt( current - count ));
+    self.infState.set( .COUNT, infT, @floatFromInt( current - count ));
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} inf of type {s} from economy, but only had {d} left", .{ value, @tagName( inf ), count });
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} infT of type {s} from economy, but only had {d} left", .{ value, @tagName( infT ), count });
     }
   }
 
 
   // ================================ INDUSTRY ================================
 
-  pub inline fn getIndCount( self : *const Economy, ind : IndType ) u64
+  pub inline fn getIndCount( self : *const Economy, indT : IndType ) u64
   {
-    return @intFromFloat( self.indState.get( .COUNT, ind ));
+    return @intFromFloat( self.indState.get( .COUNT, indT ));
   }
-  pub inline fn setIndCount( self : *Economy, ind : IndType, value : u64 ) void
+  pub inline fn setIndCount( self : *Economy, indT : IndType, value : u64 ) void
   {
-    self.indState.set( .COUNT, ind, @floatFromInt( value ));
+    self.indState.set( .COUNT, indT, @floatFromInt( value ));
   }
-  pub inline fn addIndCount( self : *Economy, ind : IndType, value : u64 ) void
+  pub inline fn addIndCount( self : *Economy, indT : IndType, value : u64 ) void
   {
-    const current = self.getIndCount( ind );
-    self.indState.set( .COUNT, ind, @floatFromInt( current + value ));
+    const current = self.getIndCount( indT );
+    self.indState.set( .COUNT, indT, @floatFromInt( current + value ));
   }
-  pub inline fn subIndCount( self : *Economy, ind : IndType, value : u64 ) void
+  pub inline fn subIndCount( self : *Economy, indT : IndType, value : u64 ) void
   {
-    const current = self.getIndCount( ind );
+    const current = self.getIndCount( indT );
     const count   = @min( value, current );
-    self.indState.set( .COUNT, ind, @floatFromInt( current - count ));
+    self.indState.set( .COUNT, indT, @floatFromInt( current - count ));
 
     if( value != count )
     {
-      def.log( .WARN, 0, @src(), "@ Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( ind ), count });
+      def.log( .WARN, 0, @src(), "@ Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indT ), count });
     }
   }
 
@@ -605,36 +608,36 @@ pub const Economy = struct
 
   // ================================ CONSTRUCTION ================================
 
-  pub fn canBuildInf( self : *const Economy, inf : InfType, count : u64 ) bool
+  pub fn canBuildInf( self : *const Economy, infT : InfType, count : u64 ) bool
   {
-    if( !InfType.canBeBuiltIn( inf, self.location, self.hasAtmo ))
+    if( !InfType.canBeBuiltIn( infT, self.location, self.hasAtmo ))
     {
-      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {}", .{ @tagName( inf ), @tagName( self.location ) });
+      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {}", .{ @tagName( infT ), @tagName( self.location ) });
       return false;
     }
 
-    if( inf == .HABITAT ){ return true; }
+    if( infT == .HABITAT ){ return true; }
 
-    const neededArea = inf.getAreaCost() * count;
+    const neededArea = infT.getAreaCost() * count;
     const areaAvail  = self.areaData.get( .AVAIL );
 
     if( areaAvail < neededArea )
     {
-      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {}. Needed : {d}", .{ @tagName( inf ), @tagName( self.location ), neededArea });
+      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {}. Needed : {d}", .{ @tagName( infT ), @tagName( self.location ), neededArea });
       return false;
     }
     return true;
   }
 
-  pub fn canBuildInd( self : *const Economy, ind : IndType, count : u64 ) bool
+  pub fn canBuildInd( self : *const Economy, indT : IndType, count : u64 ) bool
   {
-    if( !IndType.canBeBuiltIn( ind, self.location, self.hasAtmo ))
+    if( !IndType.canBeBuiltIn( indT, self.location, self.hasAtmo ))
     {
-      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {}", .{ @tagName( ind ), @tagName( self.location ) });
+      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {}", .{ @tagName( indT ), @tagName( self.location ) });
       return false;
     }
 
-    const neededArea = ind.getAreaCost() * count;
+    const neededArea = indT.getAreaCost() * count;
     const areaAvail  = self.areaData.get( .AVAIL );
 
     if( areaAvail < neededArea )
@@ -657,7 +660,7 @@ pub const Economy = struct
     const areaCost   = c.getAreaCost();
     var  builtAmount = @floor( amount );
 
-    if( !std.meta.eql( c, .{ .inf = .HABITAT }))
+    if( !std.meta.eql( c, .{ .infT = .HABITAT }))
     {
       const areaAvail = self.areaData.get( .AVAIL );
 
@@ -703,15 +706,15 @@ pub const Economy = struct
 
     switch( c )
     {
-      .inf => | inf |
+      .infT => | f |
       {
-        self.infState.add( .COUNT, inf, builtAmount );
-        self.infState.add( .BUILT, inf, builtAmount );
+        self.infState.add( .COUNT, f, builtAmount );
+        self.infState.add( .BUILT, f, builtAmount );
       },
-      .ind => | ind |
+      .indT => | d |
       {
-        self.indState.add( .COUNT, ind, builtAmount );
-        self.indState.add( .BUILT, ind, builtAmount );
+        self.indState.add( .COUNT, d, builtAmount );
+        self.indState.add( .BUILT, d, builtAmount );
       },
     //else =>
     //{
@@ -927,7 +930,7 @@ pub const Economy = struct
           if( amount > def.EPS )
           {
             def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( infT ) });
-            _ = self.buildQueue.?.addEntry( .{ .inf = infT }, @intFromFloat( amount ), .REPLACE );
+            _ = self.buildQueue.?.addEntry( .{ .infT = infT }, @intFromFloat( amount ), .REPLACE );
           }
         }
         else if( useLvl < AUTO_DECAY_INF_THRESH )
@@ -1028,7 +1031,7 @@ pub const Economy = struct
             if( amount > def.EPS )
             {
               def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( indT ) });
-              _ = self.buildQueue.?.addEntry( .{ .ind = indT }, @intFromFloat( amount ), .REPLACE );
+              _ = self.buildQueue.?.addEntry( .{ .indT = indT }, @intFromFloat( amount ), .REPLACE );
               // Will need to make industry spend capital on building new buildings once actually built
             }
           }
@@ -1056,7 +1059,7 @@ pub const Economy = struct
               const unitCost = indT.getResMetric_f64( .BUILD, .PART );
               const partCost = @floor( indDelta * unitCost * AUTO_DECAY_RES_FACTOR );
 
-              self.resState.add( .COUNT, .PART, partCost );
+              self.resState.add( .COUNT,   .PART, partCost );
               self.resState.add( .COUNT_D, .PART, partCost );
 
               const partPrice = self.resState.get( .PRICE, .PART );

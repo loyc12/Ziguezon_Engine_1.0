@@ -30,7 +30,7 @@ const POLLUTION_MIDPOINT : f64 = 2.0; // rawRatio at which pollution == 0.5
 const DEV_WEIGHT  : f64 = 0.2; // full development alone can reduce ecoFactor to 1.0 - val
 const POLL_WEIGHT : f64 = 0.9; // full pollution   alone can reduce ecoFactor to 1.0 - val
 
-const ECO_DAMPENING : f64 = 0.02;
+const ECO_DAMPENING : f64 = 0.01;
 
 
 pub const EcoState = struct
@@ -54,6 +54,9 @@ pub const EcoState = struct
 
     eco.update( econ );
 
+    // TODO : Ensure ecoFactor starts at ecoTarget properly, as this line does not seem to work
+    //        Odds are ecoTarget is still 1.0 here, leading to maxed out ecoFactor
+    //        Maybe inf anf ind act/use are still uninitialized here ?
     eco.ecoFactor = eco.ecoTarget;
 
     return eco;

@@ -7,12 +7,12 @@ const gdf = @import( "../gameDefs.zig"    );
 
 const ecn = gdf.ecn;
 
-const PowerSrc = gdf.PowerSrc;
-const VesType  = gdf.VesType;
-const ResType  = gdf.ResType;
-const PopType  = gdf.PopType;
-const InfType  = gdf.InfType;
-const IndType  = gdf.IndType;
+const PowerSrc  = gdf.PowerSrc;
+const VesType   = gdf.VesType;
+const ResType   = gdf.ResType;
+const PopType   = gdf.PopType;
+const InfType   = gdf.InfType;
+const IndType   = gdf.IndType;
 
 const powerSrcC = PowerSrc.count;
 const vesTypeC  = VesType.count;
@@ -198,7 +198,7 @@ pub const EconSolver = struct
       const popT = PopType.fromIdx( d );
       const popC = self.econ.popState.get( .COUNT, popT );
 
-    //def.log( .INFO, 0, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( pop )});
+    //def.log( .INFO, 0, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( popT )});
 
       if( popC > def.EPS ){ inline for ( 0..resTypeC )| r | // Skip absent populations
       {
@@ -207,7 +207,7 @@ pub const EconSolver = struct
         const maxCons = popC * popT.getResMetric_f64( .CONS, resT );
         const maxProd = popC * popT.getResMetric_f64( .PROD, resT );
 
-      //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( res ), maxProd, maxCons });
+      //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
 
         self.popResFlowData.set( popT, .OPR_CONS, resT, maxCons );
         self.popResFlowData.set( popT, .OPR_PROD, resT, maxProd );
@@ -243,7 +243,7 @@ pub const EconSolver = struct
       const indT = IndType.fromIdx( d );
       const indC = self.econ.indState.get( .COUNT, indT );
 
-    //def.log( .INFO, 0, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( ind )});
+    //def.log( .INFO, 0, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( indT )});
 
       if( indC > def.EPS ){ inline for ( 0..resTypeC )| r | // Skip absent industries
       {
@@ -260,22 +260,22 @@ pub const EconSolver = struct
 
         // NOTE : Potentially too penalizing. review this section
         //// further adjusting AGRONOMIC yields based on ecoFactor
-        //if( ind == .AGRONOMIC )
+        //if( indT == .AGRONOMIC )
         //{
         //  maxProd *= @min( agroFactor,                        1.0 );
         //  maxCons *= @min( agroFactor * AGRO_FACTOR_CONS_MUL, 1.0 );
         //}
         }
-      //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( res ), maxProd, maxCons });
+      //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
 
         self.indResFlowData.set( indT, .OPR_CONS, resT, maxCons );
         self.indResFlowData.set( indT, .OPR_PROD, resT, maxProd );
 
-        self.grpResFlowData.add( .IND,    .OPR_CONS, resT, maxCons );
-        self.grpResFlowData.add( .IND,    .OPR_PROD, resT, maxProd );
+        self.grpResFlowData.add( .IND, .OPR_CONS, resT, maxCons );
+        self.grpResFlowData.add( .IND, .OPR_PROD, resT, maxProd );
 
-        self.genResFlowData.add(          .OPR_CONS, resT, maxCons );
-        self.genResFlowData.add(          .OPR_PROD, resT, maxProd );
+        self.genResFlowData.add(       .OPR_CONS, resT, maxCons );
+        self.genResFlowData.add(       .OPR_PROD, resT, maxProd );
       }}
     }
   }
@@ -288,7 +288,7 @@ pub const EconSolver = struct
   // TODO : Fold into POP/INF/IND, and generalise to account for all res
   fn calcMntMaxFlow( self : *EconSolver ) void
   {
-  //inline for( 0..res )| r |
+  //inline for( 0..resTypeC )| r |
     {
       const resT = ResType.PART;
 
@@ -319,8 +319,8 @@ pub const EconSolver = struct
         const maxCost  = indCount * baseCost * scaling;
 
         self.indResFlowData.set( indT, .MNT_CONS, resT, maxCost );
-        self.grpResFlowData.add( .IND,    .MNT_CONS, resT, maxCost );
-        self.genResFlowData.add(          .MNT_CONS, resT, maxCost );
+        self.grpResFlowData.add( .IND, .MNT_CONS, resT, maxCost );
+        self.genResFlowData.add(       .MNT_CONS, resT, maxCost );
       }
     }
   }
@@ -347,13 +347,13 @@ pub const EconSolver = struct
 
       switch( e.construct )
       {
-        .inf => | inf | {
-          self.infResFlowData.add( inf, .BLD_CONS, .PART, cost );
-          self.grpResFlowData.add( .INF,    .BLD_CONS, .PART, cost );
+        .infT => | f | {
+          self.infResFlowData.add(    f, .BLD_CONS, .PART, cost );
+          self.grpResFlowData.add( .INF, .BLD_CONS, .PART, cost );
         },
-        .ind => | ind | {
-          self.indResFlowData.add( ind, .BLD_CONS, .PART, cost );
-          self.grpResFlowData.add( .IND,    .BLD_CONS, .PART, cost );
+        .indT => | d | {
+          self.indResFlowData.add(    d, .BLD_CONS, .PART, cost );
+          self.grpResFlowData.add( .IND, .BLD_CONS, .PART, cost );
         },
       }
     }
@@ -513,7 +513,7 @@ pub const EconSolver = struct
     self.genResFlowData.set(       .MNT_ACS, resT, access );
   }
 
-  // TODO : Fold into POP/INF/IND, and generalise to account for all res
+  // TODO : Fold into POP/INF/IND, and generalise to account for all resT
   fn calcBldResAccess( self : *EconSolver ) void
   {
     def.qlog( .INFO, 0, @src(), "$ LOGGING BLD RES ACCESS :" );
@@ -603,7 +603,7 @@ pub const EconSolver = struct
           }
         }
       }
-    //def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}", .{ @tagName( res ), activity });
+    //def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}", .{ @tagName( resT ), activity });
 
       self.econ.popState.set( .FLM_LVL, .HUMAN, fulfilment );
     }

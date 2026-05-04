@@ -15,25 +15,25 @@ pub const ConstructTag = enum( u4 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-//ves,
-  inf,
-  ind,
+//vesT,
+  infT,
+  indT,
 };
 
 pub const Construct = union( ConstructTag ) // Union of buildable things
 {
-//ves : VesType,
-  inf : InfType,
-  ind : IndType,
+//vesT : VesType,
+  infT : InfType,
+  indT : IndType,
 
 
   pub fn canBeBuiltIn( c : Construct, loc : gdf.EconLoc, hasAtmo : bool ) bool
   {
     return switch( c )
     {
-    //.ves => | v | v.canBeBuiltIn( loc, hasAtmo ),
-      .inf => | f | f.canBeBuiltIn( loc, hasAtmo ),
-      .ind => | d | d.canBeBuiltIn( loc, hasAtmo ),
+    //.vesT => | v | v.canBeBuiltIn( loc, hasAtmo ),
+      .infT => | f | f.canBeBuiltIn( loc, hasAtmo ),
+      .indT => | d | d.canBeBuiltIn( loc, hasAtmo ),
     };
   }
 
@@ -41,9 +41,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | v | v.getMetric_f64( .MASS ),
-      .inf => | f | f.getMetric_f64( .MASS ),
-      .ind => | d | d.getMetric_f64( .MASS ),
+    //.vesT => | v | v.getMetric_f64( .MASS ),
+      .infT => | f | f.getMetric_f64( .MASS ),
+      .indT => | d | d.getMetric_f64( .MASS ),
     };
   }
 
@@ -51,9 +51,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves =>  0.0,
-      .inf => | f | f.getMetric_f64( .AREA_COST ),
-      .ind => | d | d.getMetric_f64( .AREA_COST ),
+    //.vesT =>  0.0,
+      .infT => | f | f.getMetric_f64( .AREA_COST ),
+      .indT => | d | d.getMetric_f64( .AREA_COST ),
     };
   }
 
@@ -61,9 +61,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | v | v.getMetric_f64( .BLD_COST ),
-      .inf => | f | f.getMetric_f64( .CSTR_COST ),
-      .ind => | d | d.getMetric_f64( .CSTR_COST ),
+    //.vesT => | v | v.getMetric_f64( .BLD_COST ),
+      .infT => | f | f.getMetric_f64( .CSTR_COST ),
+      .indT => | d | d.getMetric_f64( .CSTR_COST ),
     };
   }
 
@@ -71,28 +71,28 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
   {
     return switch( c )
     {
-    //.ves => | v | v.getMetric_f64( .CAPACITY ),
-      .inf => | f | f.getMetric_f64( .CAPACITY ),
-      .ind =>  0.0,
+    //.vesT => | v | v.getMetric_f64( .CAPACITY ),
+      .infT => | f | f.getMetric_f64( .CAPACITY ),
+      .indT =>  0.0,
     };
   }
 
-  pub fn getResBldCost( c : Construct, res : ResType ) f64
+  pub fn getResBldCost( c : Construct, resT : ResType ) f64
   {
     return switch( c )
     {
-    //.ves => | v | v.getResMetric_f64( .BUILD, res ),
-      .inf => | f | f.getResMetric_f64( .BUILD, res ),
-      .ind => | d | d.getResMetric_f64( .BUILD, res ),
+    //.vesT => | v | v.getResMetric_f64( .BUILD, resT ),
+      .infT => | f | f.getResMetric_f64( .BUILD, resT ),
+      .indT => | d | d.getResMetric_f64( .BUILD, resT ),
     };
   }
-  pub fn getResMntCost( c : Construct, res : ResType ) f64
+  pub fn getResMntCost( c : Construct, resT : ResType ) f64
   {
     return switch( c )
     {
-    //.ves => | v | v.getResMetric_f64( .MAINT, res ), // Paid after arrival based on travel duration
-      .inf => | f | f.getResMetric_f64( .MAINT, res ), // Paid continually based on usage
-      .ind => | d | d.getResMetric_f64( .MAINT, res ), // Paid continually based on activity
+    //.vesT => | v | v.getResMetric_f64( .MAINT, resT ), // Paid after arrival based on travel duration
+      .infT => | f | f.getResMetric_f64( .MAINT, resT ), // Paid continually based on usage
+      .indT => | d | d.getResMetric_f64( .MAINT, resT ), // Paid continually based on activity
     };
   }
 };

@@ -90,21 +90,21 @@ pub const InfType = enum( u8 )
     return @intFromFloat( infMetricData.get( self, metric ));
   }
 
-  pub fn getResMetric_f32( self : InfType, metric : InfResMetricEnum, res : ResType ) f32
+  pub fn getResMetric_f32( self : InfType, metric : InfResMetricEnum, resT : ResType ) f32
   {
-    return @floatCast( infResMetricTable.get( self, metric, res ));
+    return @floatCast( infResMetricTable.get( self, metric, resT ));
   }
-  pub fn getResMetric_f64( self : InfType, metric : InfResMetricEnum, res : ResType ) f64
+  pub fn getResMetric_f64( self : InfType, metric : InfResMetricEnum, resT : ResType ) f64
   {
-    return infResMetricTable.get( self, metric, res );
+    return infResMetricTable.get( self, metric, resT );
   }
-  pub fn getResMetric_u32( self : InfType, metric : InfResMetricEnum, res : ResType ) u32
+  pub fn getResMetric_u32( self : InfType, metric : InfResMetricEnum, resT : ResType ) u32
   {
-    return @intFromFloat( infResMetricTable.get( self, metric, res ));
+    return @intFromFloat( infResMetricTable.get( self, metric, resT ));
   }
-  pub fn getResMetric_u64( self : InfType, metric : InfResMetricEnum, res : ResType ) u64
+  pub fn getResMetric_u64( self : InfType, metric : InfResMetricEnum, resT : ResType ) u64
   {
-    return @intFromFloat( infResMetricTable.get( self, metric, res ));
+    return @intFromFloat( infResMetricTable.get( self, metric, resT ));
   }
 };
 
