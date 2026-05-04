@@ -66,11 +66,11 @@ pub const ComponentRegistry = struct
       return false;
     }
 
-    const res = self.data.getOrPut( name ) catch { return false; }; // TODO : handle catch properly
+    const result = self.data.getOrPut( name ) catch { return false; }; // TODO : handle catch properly
     {
-      if( !res.found_existing ) // Initialize RegistryEntry instance if a matching one does not exist
+      if( !result.found_existing ) // Initialize RegistryEntry instance if a matching one does not exist
       {
-        res.value_ptr.*.storePtr = storePtr;
+        result.value_ptr.*.storePtr = storePtr;
         def.log( .TRACE, 0, @src(), "Registered ComponentStore {s} in ComponentRegistry", .{ name });
         return true;
       }
@@ -186,11 +186,11 @@ pub fn componentStoreFactory( comptime ComponentType : type ) type
         return false;
       }
 
-      const res = self.data.getOrPut( id ) catch { return false; }; // TODO : handle catch properly
+      const result = self.data.getOrPut( id ) catch { return false; }; // TODO : handle catch properly
       {
-        if( !res.found_existing ) // Initialize Component instance if one does not exist for this Entity
+        if( !result.found_existing ) // Initialize Component instance if one does not exist for this Entity
         {
-          res.value_ptr.* = value;
+          result.value_ptr.* = value;
           def.log( .TRACE, 0, @src(), "Added Entity {d} to ComponentStore for type {s}", .{ id, TypeName });
           return true;
         }

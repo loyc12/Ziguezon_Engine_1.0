@@ -95,21 +95,21 @@ pub const IndType = enum( u8 )
     return @intFromFloat( indMetricData.get( self, metric ));
   }
 
-  pub fn getResMetric_f32( self : IndType, metric : IndResMetricEnum, resType : ResType ) f32
+  pub fn getResMetric_f32( self : IndType, metric : IndResMetricEnum, res : ResType ) f32
   {
-    return @floatCast( indResMetricTable.get( self, metric, resType ));
+    return @floatCast( indResMetricTable.get( self, metric, res ));
   }
-  pub fn getResMetric_f64( self : IndType, metric : IndResMetricEnum, resType : ResType ) f64
+  pub fn getResMetric_f64( self : IndType, metric : IndResMetricEnum, res : ResType ) f64
   {
-    return indResMetricTable.get( self, metric, resType );
+    return indResMetricTable.get( self, metric, res );
   }
-  pub fn getResMetric_u32( self : IndType, metric : IndResMetricEnum, resType : ResType ) u32
+  pub fn getResMetric_u32( self : IndType, metric : IndResMetricEnum, res : ResType ) u32
   {
-    return @intFromFloat( indResMetricTable.get( self, metric, resType ));
+    return @intFromFloat( indResMetricTable.get( self, metric, res ));
   }
-  pub fn getResMetric_u64( self : IndType, metric : IndResMetricEnum, resType : ResType ) u64
+  pub fn getResMetric_u64( self : IndType, metric : IndResMetricEnum, res : ResType ) u64
   {
-    return @intFromFloat( indResMetricTable.get( self, metric, resType ));
+    return @intFromFloat( indResMetricTable.get( self, metric, res ));
   }
 };
 
@@ -125,7 +125,7 @@ pub const IndMetricEnum = enum( u8 )
 
   MASS,      // Mass this industry has
   AREA_COST, // Area this industry uses
-  BLD_COST,  // Total ASSEMBLY capacity required to complete build
+  CSTR_COST, // Total ASSEMBLY capacity required to complete build
   POLLUTION, // Pollution generated at full activity
 };
 

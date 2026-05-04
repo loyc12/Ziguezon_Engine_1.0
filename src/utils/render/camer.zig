@@ -109,7 +109,7 @@ pub const Cam2D = struct
     var tmp : Cam2D = self.*;
     tmp.updateView();
 
-    const res = RayCam{
+    const cam = RayCam{
     //.target   = tmp.pos.toRayVec2(),
       .target   = .{ .x = 0.0, .y = 0.0 }, // Always zero - we handle world offset manually during worldRender step
       .offset   = getHalfScreenSize().toRayVec2(),
@@ -117,7 +117,7 @@ pub const Cam2D = struct
       .zoom     = @floatCast( tmp.zoom ),
     };
 
-return res;
+  return cam;
   }
 
   pub inline fn fromViewBox( vb : Box2 ) Cam2D

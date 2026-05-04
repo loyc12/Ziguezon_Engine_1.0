@@ -3,308 +3,240 @@ Legend :
   [~]   partial / scaffolded
   [ ]   not started
 
-Sections are roughly ordered by foundation -> dynamics -> longterm
-Items inside a section are ordered small-to-large when equal in priority
+
+This file is a narrowed-down, actionable view of roadmap.txt -- focused
+on the easy / quick changes, the core econSolver + econBuilder rework
+( roadmap Tier 1.1 Stage A + Stage B ), and the precursors needed
+before that rework can start. Tier 1.2+ ( financial integration, agent
+self-build, government, trade, etc. ) live in the roadmap only. This
+file is the implementation checklist : tickable boxes, no higher-level
+design discussion -- consult roadmap.txt for the why.
+
+Section dependencies :
+  - Housekeeping is parallel-friendly with everything below
+  - Stage A must complete and validate against current behaviour before
+    Stage B starts
+  - Items within a section are roughly small-to-large unless a dependency
+    forces order
+
+Validation rule : after each item where applicable, run testEconLogs
+and confirm long-run tick parity ( hundreds of ticks at default debug
+state ) ; logSpecialMetrics output should track baseline within
+rounding tolerance.
 
 
-================ Economic Integration Plan ================
+================ NITPICKS ( non-logic stylistic, changes ) ================
 
-======== PHASE 1 - Foundations ========
 
-[ ] 1. Government wiring
-       - Treasury savings + per-tick NET_DELTA tracking
+[~] 1. Standardise name of common econ-related variables where it is not confusing
+       - xxxType  / xxx   => xxxT
+       - xxxCount / count => xxxC
+       - xxxPrice / Price => xxxP
+       - (xxx)[ [C/c]ap(acity) / [L/l]im(it) / [S/s]tor(ag)e ] => xxxL
 
-[ ] 2. Solver / data-array refactor pass
-       - Migrate the "function-as-lookup" patterns ( resourceData.getInfStore,
-         populationData.getInfStore, industryData L69 etc ) to data arrays
-       - Generalize solver fields hardcoded to .HUMAN ( prevPopCount,
-         nextPopCount, popDeaths, popBirths in EconSolver ) before adding new
-         PopTypes
-       - Standardise DataMatrix vs Array usage where it has drifted
-         ( indResMetricsTable already consolidates ind resource flows --
-         see Phase 3 #4 )
+[~] 2. Align arguments and symbols into neat columns for successive lines, when cleaner looking
+       - Example :
+         - var1 = func1( arg1, arg2 );   \      /  var1      = func1( arg1, arg2 );
+         - var2 += function2( arg2 );     > => <   var2     += function2(   arg2 );
+         - variable3 = f3( arg1, arg3 ); /      \  variable3 = f3(    arg1, arg3 );
 
-[~] 3. State data trim + solver-pointer return from stepEcon
-       - DONE  : stepEcon returns *const EconSolver ; pointer is valid ONLY
-                 until the next stepEcon call ( single shared scratchpad )
-       - DONE  : Debug log methods ( logResMetrics, logIndMetrics, logInfMetrics,
-                 logPopMetrics ) migrated onto EconSolver and read solver
-                 state directly. Economy keeps only logSpecialMetrics for
-                 sun / area / buildqueue summary
-       - DONE  : ResStateEnum trimmed to ( COUNT, COUNT_D, LIMIT, LIMIT_D,
-                 PRICE, PRICE_D, ACCESS, ACCESS_D ) -- all the debug-only
-                 fields ( MAX_DEM / MAX_SUP / GEN_CONS / GEN_PROD / DECAY /
-                 GROWTH / GEN_ACS / POP_ACS / IND_ACS / TRD_EXP / TRD_IMP )
-                 are gone, with derivations done from solver pointer
-       - DONE  : IndStateEnum / InfStateEnum / PopStateEnum cuts : DELTA,
-                 PROFIT, MARGIN gone. DELTA derived as BUILT - DESTR
-                 ( or BIRTHS - DEATHS for pop ) at log time. PROFIT / MARGIN
-                 stay as locals in updateXxxFinances ; never stored
-       - NOTE  : COUNT_D / LIMIT_D / ACCESS_D kept as deliberate analogues
-                 to PRICE_D ( smoothed signal + per-tick derivative for UI /
-                 charting ). ACCESS persists cross-tick to compute ACCESS_D ;
-                 also read by debugAutoBuild
-       - NOTE  : tryBuild's `consumeParts` branch is now `unreachable` with
-                 ~20 lines of commented-out body ; will be reworked by Phase 4 #1
-       - Pairs with Phase 2 #4 per-tick history buffer : that buffer is the
-         persistent snapshot mechanism for charts ; per-econ state only
-         keeps genuinely persistent / cross-tick fields. Snapshot is taken
-         from the solver pointer at end-of-tick before it is invalidated
+[~] 3. Standardise argument ordering, especially in dataMatrices
+       - Example rules : always put resT last, always put non resT xxxT first, etc.
+
+[ ] 4. If possible ( lookup how ), align successive loging lines better than just tabulations
 
 
 
-======== PHASE 2 - Allocation & Population ========
+================ HOUSEKEEPING ( quick wins, parallel-friendly ) ================
 
 
-[~] 1. Priority-weighted allocation
-       - DONE  : per-class access paths ( calcPopResAccess / calcMntResAccess /
-                 calcIndResAccess / calcBldResAccess ), strict priority via
-                 allocatedRes book-keeping, POP -> MNT -> IND -> BLD order
-       - TODO  : replace strict priority with weights per consumer-class
-       - TODO  : expose those weights as policy levers ( see Phase 4 gov work )
-       - TODO  : confirm POP_PROD_FLOOR ( old "minWorkRate" hack ) can be
-                 removed once weighted allocation is validated
+[ ] 1. Dedup maintenance cost calc
+       - Same calc lives in both calcMntMaxFlow and updateIndFinances ;
+         flagged in source as "duplicated code"
+       - Cache per-IndType / InfType maintenance demand from precalc, reuse downstream
 
-[~] 2. Labor as weighted allocation
-       - DONE  : WORK is allocated through the same access pipeline as any
-                 other resource ( aggregate IND bucket )
-       - TODO  : per-industry WORK weights so industries compete for labor
-       - TODO  : industries that PRODUCE WORK ( automation ) — currently no
-                 industry has a positive WORK output
+[ ] 2. Generalise solver pop fields away from .HUMAN
+       - prevPopCount / nextPopCount / popDeaths / popBirths -> per-PopType
+         GenDataLine
+       - Drop hardcoded HUMAN reads in initBaseState / updatePopCount /
+         logPopMetrics
 
-[~] 3. Welfare-based population model
-       - DONE  : updatePopCount iterates every resType with popType mortRate;
-                 no hardcoded FOOD/WATER/POWER checks
-       - DONE  : composite jobAccess + minResAccess modifiers on natality
-       - TODO  : Review welfare system to take more than just res into account
+[ ] 3. "function-as-lookup" -> data array migration
+       - resourceData.getInfStore, populationData.getInfStore,
+         industryData equivalents -- replace switch-style functions
+         with static lookup grids
 
-[~] 4. Economic metrics dashboard
-       - DONE  : avgPopFulfilment, avgInfUsage, avgIndActivity, avgResAccess
-                 ( currently as ad-hoc scalars on Economy )
-       - DONE  : AgentStateData scaffold added ( EconAgentGroup x { AVG_ACS ,
-                 AVG_RATE } grid ) intended to consolidate the four scalars
-                 into a single typed-key matrix
-       - TODO  : Wire AgentStateData : populate it from the solver pointer at
-                 end-of-tick, then retire the four ad-hoc avg* scalars on
-                 Economy. Uncomment INF in EconAgentGroupEnum so avgInfUsage
-                 has a slot. Document per-row meaning of AVG_RATE ( fulfilment
-                 for POP, activity for IND, use-level for INF, etc. )
-       - TODO  : GDP ( sum of real production * price per ResType )
-       - TODO  : scarcity index ( aggregate 1 - GEN access )
-       - TODO  : welfare composite ( weighted avg of pop access by mortRate )
-       - TODO  : avgPopDeathRate, avgPopBirthRate ( see updatePopCount L1176 )
-       - TODO  : wasted-clamp amount per ResType ( see clampResStocks L823 )
-       - TODO  : per-tick history buffer for charting ( pairs with Phase 1 #3
-                 solver-pointer end-of-tick snapshot mechanism )
-       - TODO  : "log build queue" helper ( econBuilder L278 )
+[ ] 4. logBuildQueue helper on BuildQueue
+       - Mirror logResMetrics / logIndMetrics / logInfMetrics shape
+       - Useful for debugging the upcoming queue rework
+
+[ ] 5. Persist avgPopDeathRate / avgPopBirthRate on econ
+       - Currently computed in updatePopCount, divided, then dropped
+
+[ ] 6. Track wasted-clamp amount per ResType in clampResStocks
+       - Currently logged but not stored ; useful as a real signal
+
+[~] 7. Standardise DataMatrix vs Array usage where it has drifted
 
 
-
-======== PHASE 3 - Signals & Depletion ========
-
-
-[x] 1. Resource price signals
-       - DONE  : updateResPrices with elasticity, dampening, scarcity ceiling
-                 and price floor; lerp toward equilibrium each tick
-       - DONE  : prices feed updatePopFinances / updateIndFinances and drive
-                 ACT_TRGT via sigmoid of margin
-
-[ ] 2. Extraction depletion
-       - Per-economy mineDeposit[res] and mineRate[res]
-       - GROUND_MINE / PROBE_MINE yields scale by remaining deposit
-       - Enables exploration value and per-body differentiation
-
-[~] 3. Infrastructure throughput constraints
-       - DONE  : USE_LVL tracked per InfType
-       - TODO  : USE_LVL above some threshold should degrade resource access
-                 for downstream consumers ( e.g. STORAGE saturation -> DECAY
-                 multiplier, future TRANSPORT -> intra-economy delivery cap )
-       - TODO  : multiple storage types per ResType ( WATER / POWER / WORK
-                 currently share STORAGE - see "Temp fix" notes in
-                 resourceData.zig )
-
-[~] 4. Capital depreciation & multi-resource construction    // construction refactor pass A
-       - DONE  : Maintenance demand computed in calcMntMaxDelta and consumed
-                 in calcMntResCons
-       - DONE  : indResMetricsTable / infResMetricsTable cubes added
-                 ( IndResMetric : CONS, PROD, BUILD, MAINT ;
-                   InfResMetric : CONS,       BUILD, MAINT )
-       - DONE  : PART_COST and MAINT_RATE scalars retired ; old indResDeltaTable
-                 + duplicate ResActionEnum merged into indResMetricsTable
-       - DONE  : MNT/BLD solver paths now read from the cubes ( still PART-only
-                 at runtime since multi-resource columns are zero pre-tuning )
-       - TODO  : Deduplicate maintenance cost calc ( duplicated between
-                 calcMntMaxDelta L218 and updateIndFinances L1015 -- already
-                 flagged with a "duplicated code" NOTE in source )
-       - TODO  : Add BLD_COST scalar to Ind/InfMetricEnum ( per-unit abstract
-                 construction effort ) ; repurpose ASSEMBLY.CAPACITY from
-                 PART/tick throttle to construction-effort/tick
-       - TODO  : ASSEMBLY pre-resolve sub-pass : resolve ASSEMBLY's own
-                 WORK/POWER access first, scale realised capacity to match,
-                 book OP_CONS against realised ( not nominal ) capacity to
-                 prevent over-consumption
-       - TODO  : ConstructionCapacity allocation phase in stepEcon : MNT
-                 first, BLD queue second
-       - TODO  : Tune in non-zero columns -- ASSEMBLY CONS[ WORK/POWER ] ,
-                 maintenance multi-resource recipes, optional BUILD[ WORK ]
-       - TODO  : Unpaid maintenance must DEGRADE buildings ( the TODO at end
-                 of calcMntResCons ) -> infState.add( .DECAY, ... )
+================ TIER 1.1 STAGE A : STRUCTURAL REWORK ================
 
 
+Must land and validate against current behaviour before Stage B begins.
+Each item should leave the simulator green.
 
-======== PHASE 4 - Agent Refactor & Government ========
+
+SOLVER-SIDE :
+
+[ ] 1. Split solver phases : OPR / MNT / BLD purpose loops
+       - calc{Pop|Inf|Ind}ResCons currently fold all three into FIN_CONS
+       - Split into per-purpose passes that each iterate all relevant agents
+       - MAX FLOW phase stays unified
+
+[ ] 2. Generalise MNT and BLD cost handling to all ResType
+       - calcMntMaxFlow / calcMntResAccess / calcBldMaxFlow / calcBldResAccess
+         currently hardcode .PART
+       - Loop over ResType ; metric tables already have the columns ready
+
+[ ] 3. MNT scaling : ACT_TRGT -> ACT_LVL
+       - MNT cost should reflect this-tick realised activity, not last
+         tick's plan
+       - Reorder so ACT_LVL is computed ( OPR phase ) before MNT phase runs
+
+[ ] 4. Tune in non-PART MNT / BLD costs
+       - ASSEMBLY's WORK + POWER OP_CONS
+       - Multi-res maintenance recipes for selected constructs
+       - Optional : multi-res BUILD recipes
+
+[ ] 5. ASSEMBLY pre-resolve sub-pass
+       - CAPACITY now denotes effort per tick ( not PART/tick )
+       - Resolve ASSEMBLY's own OP_CONS ( WORK + POWER ) before BLD access
+       - Scale realised capacity by ASSEMBLY's input access ; book OP_CONS
+         against realised, not nominal, capacity
+
+[ ] 6. tryBuild : remove consumeParts logic
+       - Queue handles all resource deduction via per-agent FIN_CONS
+       - tryBuild becomes a thin wrapper or absorbed into queue.update
 
 
-[ ] 1. BuildQueue rework + agent-owned build decisions    // construction refactor pass B
-       - Replace BuildQueue's fixed-array shape with a proper queue data
-         structure ( current array-with-shift in removeEntryAmount makes
-         large-scale extensions error-prone )
-       - Add `requester : Agent` to BuildEntry ( POP, IND, INF, GOV, COM
-         valid as requesters ; MNT/BLD/GEN/NAT not )
-       - Reservation at order time, with FRACTIONAL support : if the requester
-         cannot afford the full bundle, lock what is affordable and let the
-         entry accumulate funding over subsequent ticks ; smooths demand
-         instead of producing spikes
-       - BuildEntry gains : reservedRes, outstandingUnits, effortRemaining
-       - BuildQueue caches totalReservedRes for O(1) reads in calcBldMaxDelta
-         ( updated incrementally on add / partial-reserve / unit-complete /
-         cancel )
-       - Parallel processing per tick : GOV-requested entries get capacity
-         first, remaining capacity distributed across non-GOV entries
-         ( allocation policy itself a future player-facing lever )
-       - Financial transaction settled at order-time prices for the locked
-         portion ; cancellation refunds locked-but-unbuilt resources
-       - tryBuild loses its consumeParts branch ; the queue handles all
-         resource deduction
-       - Industries decide whether to enqueue / dequeue / liquidate from their
-         own SAVINGS, MARGIN, ACT_TRGT, workAccess
-       - Refactor the AUTO_BUILD_* constants into per-agent variables
-       - Hook for agent-driven order cancellation when SAVINGS / MARGIN
-         deteriorate ( frees locked resources back to operations )
-       - Infrastructure decisions remain "public" ( covered by gov, see #5 )
-       - Replaces the role of debugAutoBuild ( retired in #5 below )
+METRIC TABLES :
 
-[ ] 2. Industry capital accumulation
-       - Industries spend SAVINGS on construction orders ( pay parts at PRICE )
-       - Bankrupt industries auto-decay ( SAVINGS goes very negative -> sell
-         off some COUNT for parts at AUTO_DECAY_RES_FACTOR like today )
+[ ] 7. Add BLD_EFFORT scalar to Ind / Inf metric enums
+       - Decouples "effort to build" from "resource cost to build"
+       - Tune per construct
 
-[ ] 3. EconLoc activation hook
-       - Currently inactive locations never become active outside debug paths
-       - When player ( or gov, or auto ) builds infra in an EconLoc, flip
-         isActive ( see bodyComp.zig L157, L169 )
-       - Requires a clear definition of "active enough" ( min infrastructure ?
-         min population ? )
 
-[ ] 4. Government taxation pass
-       - TAX_POP, TAX_IND on profit; TAX_RES VAT on traded resources;
-         TAX_LND on used area
-       - Inheritance / liquidation : SAVINGS of dead pops and insolvent
-         industries route to Treasury ( econSolver L965, L1065 )
-       - Each tax routes into Treasury SAVINGS via NET_DELTA accounting
-       - Honour the per-Pop/Ind/Res rate grids already defined in
-         governmentData.zig
+BUILDQUEUE-SIDE :
 
-[ ] 5. Government subsidies & grants pass
-       - SUB_POP / SUB_IND offset realized expense
-       - GRT_POP / GRT_IND inject SAVINGS to specific agents
-       - SPEND_BLD : government places its own BuildEntry ( requester = .GOV ,
-         picked up first by the parallel queue allocator from #1 )
-       - Retire debugAutoBuild from Economy ; move AUTO_BUILD_* constants
-         into agent-specific fields
+[ ] 8. BuildQueue : per-requester sub-queues
+       - Replace single fixed array with one queue per AgentEnum requester
+         ( GOV, IND, INF, COM, POP )
 
-[ ] 6. Player-facing policy levers
-       - Per-EconLoc or per-economy: tax rates, subsidy rates, allocation
-         weight overrides, build priorities
-       - Sane defaults so a vanilla economy still runs without policy input
+[ ] 9. BuildQueue : true queue structure
+       - Replace fixed-array swap-remove dance in removeEntryAmount
+
+[ ] 10. BuildEntry : five-counter data model
+       - unitsRemaining : u64           ( decrements on completion )
+       - unitsReserved  : u64           ( can grow large at scale )
+       - fundingPool    : f64           ( accumulated money )
+       - reservedRes    : ResStockData  ( fractional remainder, < 1 unit )
+       - effortBuffered : f64           ( in [ 0, BLD_EFFORT-per-unit ] )
+
+[ ] 11. Money-first requester API
+       - Agents only contribute SAVINGS ; queue procures materials internally
+       - Explicit addEntry / cancelEntry operations
+       - Replace addEntry(count=0, .OVERRIDE) cancellation hack
+
+[ ] 12. Queue per-tick processing : four passes
+       1. Funding : requester SAVINGS -> fundingPool ( debited immediately )
+       2. Procurement ( eager ) : spend fundingPool at current prices ;
+          proportional per-resource buy via "cash access" rate ; validate
+          immediately ( unitsReserved += N , reservedRes carries fractional
+          remainder )
+       3. Effort allocation : ASSEMBLY budget across entries ; skip entries
+          with unitsReserved == 0
+       4. Effort consumption : effortBuffered crosses BLD_EFFORT -> one
+          unit completes ; unitsReserved -= 1 , unitsRemaining -= 1
+
+[ ] 13. Per-agent SAVINGS budget per tick
+       - Caps total commitment per agent across all their entries this tick
+       - Replaces single buildBudget on Economy ( the budget is in money,
+         not materials )
+
+[ ] 14. GOV-priority allocation
+       - GOV entries first, others FIFO from remaining budget
+       - Threshold-allocator generalisation deferred ( see roadmap suggestions )
+
+[ ] 15. Within-requester ordering : DEMOLISH before BUILD by default
+       - Demolitions refund materials that pending BUILDs can consume
+       - Override per-entry available
+
+[ ] 16. Order completion refund
+       - On unitsRemaining hits 0 : refund any remaining fundingPool back
+         to owner SAVINGS ( handles cost underruns from price drops )
 
 
 
-======== PHASE 5 - Inter-Economy Trade ========
+================ TIER 1.1 STAGE B : LIFECYCLE & FEEDBACK ================
 
 
-[ ] 1. Trade demand/supply matching
-       - Each economy publishes ( pricePoint, exportCapacity ) per ResType
-         and ( pricePoint, importDemand )
-       - Solar-system pass matches surplus -> deficit by price differential,
-         minus travel cost from ECON_TRAVEL_TABLE ( already populated by
-         transferSolver )
-
-[ ] 2. Cargo in flight
-       - Trades produce in-flight parcels with arrival time = travel duration
-       - Departure economy : exportCapacity consumed, REVENUE booked
-       - Arrival economy   : resource added to stock at arrival tick
-
-[ ] 3. Trade tariffs
-       - TAX_COM and policy bits on import per resource
-
-[ ] 4. Vessel-mediated transport
-       - Replace abstract trade with actual freighter / mass-driver vessels
-       - Vessels are built like industry ( resource bundle from a future
-         vesResMetricsTable when added, WORK to operate )
-       - Vessel capacity bounds exportCapacity ; vessel turnaround bounds
-         throughput
+Adds capital lifecycle on top of Stage A. Don't start until Stage A is
+validated. Items mostly independent within the section.
 
 
+METRIC TABLES :
 
-======== PHASE 6 - Dynamics & Polish ========
+[ ] 1. Per-construct .MNT_IDLE_FACTOR -> inf/indResMetric
+       - Retire INF_MAINT_IDLE_FACTOR / IND_MAINT_IDLE_FACTOR solver constants
 
-
-[ ] 1. Economic expectations
-       - Smoothed moving-average of price and demand per ResType
-       - Industries plan capacity off the smoothed values to dampen oscillation
-
-[ ] 2. Inflation drivers
-       - Drive inflationRate from growth/decay of total monetary mass
-       - Apply inflation to inf, pop, AND gov SAVINGS ( currently only
-         industry - see economy.zig L838 )
-       - Currently a constant 1.0
-
-[ ] 3. Variable tick rate / aggregation
-       - Coarse tick when populations cross thresholds
-       - Aggregate "background" economies whose state barely changes
-
-[ ] 4. Strategic reserves
-       - Government stockpile per ResType, fed by tax-in-kind or SPEND_RES
-       - Smooths shocks ; can be released during shortages
-
-[ ] 5. Migration between economies
-       - Pop flows along trade routes ; driven by welfare differential
-       - Limited by transport capacity ( depends on Phase 5 #4 vessels )
+[ ] 2. Per-construct refund metrics
+       - .REFUND_RATIO     : fraction of build cost returned on DEMOLISH
+       - .RFND_COST        : resource / effort cost of dismantling
+       - .DEMOLISH_EFFORT  : separate from BLD_EFFORT for ASSEMBLY accounting
 
 
+STATE FIELDS :
 
-======== PHASE 7 - Long-term ========
+[ ] 3. .MNT_BUFFER state field on Inf / Ind
+       - Single field drives delay, throttle, and decay :
+         * full MNT pay     -> buffer recovers toward MAX
+         * underpayment     -> buffer drains by ( 1 - mntAccess ) * mntDemand
+         * buffer >= THRESHOLD : no penalty
+         * buffer <  THRESHOLD : next-tick activity capped, attrition rate
+           scales with deficit
+       - Per-construct : BUFFER_MAX, THRESHOLD, RECOVERY_RATE, DECAY_SCALE
 
 
-[ ] 1. Ecology depth
-       - Pollution-reducing infrastructure ( ecology.zig L113 )
-       - Tighter coupling between IND output and ecoFactor ( re-enable the
-         AGRONOMIC ecoFactor block currently commented out )
+SOLVER-SIDE :
 
-[ ] 2. Technology system
-       - Tech modifies indResMetricsTable / infResMetricsTable / etc
-       - Unlock new InfType / IndType / VesType
-       - R&D as an industry that consumes WORK and produces a TECH resource
-       - Implement STRUC ResType ( resourceData.zig L25 ) as an early tech
+[ ] 4. New solver lane : .BLD_PROD
+       - Symmetric inverse of .BLD_CONS
+       - Routes refunds from DEMOLISH and degradation back to owner SAVINGS
 
-[ ] 3. Disasters and shocks
-       - Random or scripted events that wipe COUNTS or DEPOSITS
-       - Tests resilience of the welfare/trade systems
 
-[ ] 4. Megastructures
-       - Multi-tick, multi-economy capital projects
-       - Aggregate Build queue across contributing economies
+BUILDQUEUE-SIDE :
 
-[ ] 5. Astrodynamics polish
-       - Precise L1-L5 Lagrange position / velocity ( tradeData.zig L67 )
-       - Body-type auto-assignment from mass / orbit ( bodyComp.zig L20 )
+[ ] 5. Mirrored construction / destruction queue
+       - BuildEntry gains a kind field : BUILD | DEMOLISH | ABANDON
+       - BUILD    ( queued )    : as Stage A
+       - DEMOLISH ( queued )    : consumes effort + .RFND_COST ; refunds via
+                                  .BLD_PROD at per-unit completion
+       - ABANDON  ( immediate ) : no effort, no refund, bypasses queue
 
-[ ] 6. Pre-settlement automated infrastructure
-       - Generalises the PROBE_MINE pattern : autonomous constructs that do
-         not require pop-WORK to operate or maintain
-       - Self-sustaining on ORE / future base resources ( ICE, REGOLITH,
-         distinct minerals ) plus sunlight
-       - Bootstraps fresh EconLocs without pre-existing pops
-       - Depends on Phase 3 #4 multi-resource construction being stable
-       - Complements Phase 4 #3 EconLoc activation hook
+[ ] 6. ABANDON triggers
+       - Player / owner-triggered ( explicit decision )
+       - Forced : insolvency, disaster, .MNT_BUFFER stuck at zero
+       - Same mechanical outcome regardless of trigger source
+
+[ ] 7. cancelEntry semantics
+       - Cancel BUILD    : refund unspent fundingPool ; sell reservedRes
+                           back at current price into owner SAVINGS ;
+                           sub-unit effort progress is lost
+       - Cancel DEMOLISH : finish current in-flight unit ( round up to
+                           next integer ), refund its proceeds, then stop
+
+[ ] 8. debugAutoBuild's selloff branch -> DEMOLISH enqueue
+       - Until Tier 1.6 fully retires debugAutoBuild, its decay path should
+         use the new queue rather than the current immediate scrap
+
+NOTE : Agent ran out of token here. Finish todo list on next pass if need be.

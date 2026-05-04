@@ -90,21 +90,21 @@ pub const InfType = enum( u8 )
     return @intFromFloat( infMetricData.get( self, metric ));
   }
 
-  pub fn getResMetric_f32( self : InfType, metric : InfResMetricEnum, resType : ResType ) f32
+  pub fn getResMetric_f32( self : InfType, metric : InfResMetricEnum, res : ResType ) f32
   {
-    return @floatCast( infResMetricTable.get( self, metric, resType ));
+    return @floatCast( infResMetricTable.get( self, metric, res ));
   }
-  pub fn getResMetric_f64( self : InfType, metric : InfResMetricEnum, resType : ResType ) f64
+  pub fn getResMetric_f64( self : InfType, metric : InfResMetricEnum, res : ResType ) f64
   {
-    return infResMetricTable.get( self, metric, resType );
+    return infResMetricTable.get( self, metric, res );
   }
-  pub fn getResMetric_u32( self : InfType, metric : InfResMetricEnum, resType : ResType ) u32
+  pub fn getResMetric_u32( self : InfType, metric : InfResMetricEnum, res : ResType ) u32
   {
-    return @intFromFloat( infResMetricTable.get( self, metric, resType ));
+    return @intFromFloat( infResMetricTable.get( self, metric, res ));
   }
-  pub fn getResMetric_u64( self : InfType, metric : InfResMetricEnum, resType : ResType ) u64
+  pub fn getResMetric_u64( self : InfType, metric : InfResMetricEnum, res : ResType ) u64
   {
-    return @intFromFloat( infResMetricTable.get( self, metric, resType ));
+    return @intFromFloat( infResMetricTable.get( self, metric, res ));
   }
 };
 
@@ -120,7 +120,7 @@ pub const InfMetricEnum = enum( u8 )
 
   MASS,      // Mass this infrastructure has
   AREA_COST, // Area this infrastructure uses
-  BLD_COST,  // Total ASSEMBLY capacity required to complete build
+  CSTR_COST, // Total ASSEMBLY capacity required to complete build
   POLLUTION, // Pollution generated at full useage // TODO : wire into system properly
   CAPACITY,  // Respective scalar produced by a unit of this infrastructure
 };
@@ -192,10 +192,10 @@ pub fn loadInfrastructureData() void
   // ================================ BUILD COST ================================
   // Unit : Abstract "building complexity"
 
-  infMetricData.set( .ASSEMBLY, .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
-  infMetricData.set( .HOUSING,  .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
-  infMetricData.set( .HABITAT,  .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
-  infMetricData.set( .STORAGE,  .BLD_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .ASSEMBLY, .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .HOUSING,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .HABITAT,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .STORAGE,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
 
 
   // ================================ POLLUTION ================================

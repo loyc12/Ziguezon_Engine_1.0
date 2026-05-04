@@ -102,10 +102,10 @@ pub const EcoState = struct
     // Pop pollution
     for( 0..popTypeC )| p |
     {
-      const popType = PopType.fromIdx( p );
+      const popT = PopType.fromIdx( p );
 
-      var tmp  = popType.getMetric_f64( .POLLUTION );
-          tmp *= econ.popState.get( .COUNT, popType );
+      var tmp  = popT.getMetric_f64( .POLLUTION );
+          tmp *= econ.popState.get( .COUNT, popT );
 
       pollutionAmount += tmp;
     }
@@ -113,12 +113,12 @@ pub const EcoState = struct
     // Inf pollution                       // TODO : add pollution reducing inf
     for( 0..infTypeC )| f |
     {
-      const infType = InfType.fromIdx( f );
-      const useRate = econ.infState.get( .USE_LVL, infType );
+      const infT = InfType.fromIdx( f );
+      const use  = econ.infState.get( .USE_LVL, infT );
 
-      var tmp  = infType.getMetric_f64( .POLLUTION );
-          tmp *= econ.infState.get( .COUNT, infType );
-          tmp *= useRate;
+      var tmp  = infT.getMetric_f64( .POLLUTION );
+          tmp *= econ.infState.get( .COUNT, infT );
+          tmp *= use;
 
       pollutionAmount += tmp;
     }
@@ -126,12 +126,12 @@ pub const EcoState = struct
     // Ind pollution
     for( 0..indTypeC )| d |
     {
-      const indType  = IndType.fromIdx( d );
-      const activity = econ.indState.get( .ACT_LVL, indType );
+      const indT = IndType.fromIdx( d );
+      const act  = econ.indState.get( .ACT_LVL, indT );
 
-      var tmp  = indType.getMetric_f64( .POLLUTION );
-          tmp *= econ.indState.get( .COUNT, indType );
-          tmp *= activity;
+      var tmp  = indT.getMetric_f64( .POLLUTION );
+          tmp *= econ.indState.get( .COUNT, indT );
+          tmp *= act;
 
       pollutionAmount += tmp;
     }

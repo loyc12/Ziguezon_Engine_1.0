@@ -752,18 +752,18 @@ pub const EconSolver = struct
     {
       const resType = ResType.fromIdx( r );
 
-      const resCap  = self.econ.resState.get( .LIMIT, resType );
+      const resL  = self.econ.resState.get( .LIMIT, resType );
       const current = self.nextResStock.get( resType );
 
-      if( current > resCap )
+      if( current > resL )
       {
         // Clamp stock but do NOT adjust production metrics
         // Industries consumed real inputs and produced real outputs - the overflow
         // is a storage problem, not a production problem
         // Prices will naturally suppress overproduction via supply > demand
-        self.nextResStock.set( resType, resCap );
+        self.nextResStock.set( resType, resL );
 
-        def.log( .WARN, 0, @src(), "{s} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resType ), current, resCap, current - resCap });
+        def.log( .WARN, 0, @src(), "{s} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resType ), current, resL, current - resL });
       }
     }
   }
@@ -1133,22 +1133,22 @@ pub const EconSolver = struct
 
     inline for( 0..resTypeC )| r |
     {
-      const res = ResType.fromIdx( r );
+      const resType = ResType.fromIdx( r );
 
-      const initialStk = self.prevResStock.get( res );
-      const finalStk   = self.nextResStock.get( res );
-      const initialAcs = self.econ.resState.get( .ACCESS, res );
-      const finalAcs   = self.resFlowData.get( .GEN, .AVG_ACS, res );
+      const initialStk = self.prevResStock.get( resType );
+      const finalStk   = self.nextResStock.get( resType );
+      const initialAcs = self.econ.resState.get( .ACCESS, resType );
+      const finalAcs   = self.resFlowData.get( .GEN, .AVG_ACS, resType );
 
-      econ.resState.set( .COUNT,     res, @max( 0.0, finalStk  ));
-      econ.resState.set( .COUNT_D,   res, finalStk - initialStk );
-      econ.resState.set( .ACCESS,    res, @max( 0.0, finalAcs  ));
-      econ.resState.set( .ACCESS_D,  res, finalAcs - initialAcs );
+      econ.resState.set( .COUNT,    resType, @max( 0.0, finalStk  ));
+      econ.resState.set( .COUNT_D,  resType, finalStk - initialStk );
+      econ.resState.set( .ACCESS,   resType, @max( 0.0, finalAcs  ));
+      econ.resState.set( .ACCESS_D, resType, finalAcs - initialAcs );
 
-      avgGenResAccess += self.resFlowData.get( .GEN, .AVG_ACS, res );
-      avgPopResAccess += self.resFlowData.get( .POP, .AVG_ACS, res );
+      avgGenResAccess += self.resFlowData.get( .GEN, .AVG_ACS, resType );
+      avgPopResAccess += self.resFlowData.get( .POP, .AVG_ACS, resType );
     //avgInfResAccess += self.resFlowData.get( .INF, .AVG_ACS, res );
-      avgIndResAccess += self.resFlowData.get( .IND, .AVG_ACS, res );
+      avgIndResAccess += self.resFlowData.get( .IND, .AVG_ACS, resType );
     }
 
 

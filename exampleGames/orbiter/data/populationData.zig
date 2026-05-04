@@ -46,21 +46,21 @@ pub const PopType = enum( u8 )
     return @intFromFloat( popMetricData.get( self, metric ));
   }
 
-  pub fn getResMetric_f32( self : PopType, metric : PopResMetricEnum, resType : ResType ) f32
+  pub fn getResMetric_f32( self : PopType, metric : PopResMetricEnum, res : ResType ) f32
   {
-    return @floatCast( popResMetricTable.get( self, metric, resType ));
+    return @floatCast( popResMetricTable.get( self, metric, res ));
   }
-  pub fn getResMetric_f64( self : PopType, metric : PopResMetricEnum, resType : ResType ) f64
+  pub fn getResMetric_f64( self : PopType, metric : PopResMetricEnum, res : ResType ) f64
   {
-    return popResMetricTable.get( self, metric, resType );
+    return popResMetricTable.get( self, metric, res );
   }
-  pub fn getResMetric_u32( self : PopType, metric : PopResMetricEnum, resType : ResType ) u32
+  pub fn getResMetric_u32( self : PopType, metric : PopResMetricEnum, res : ResType ) u32
   {
-    return @intFromFloat( popResMetricTable.get( self, metric, resType ));
+    return @intFromFloat( popResMetricTable.get( self, metric, res ));
   }
-  pub fn getResMetric_u64( self : PopType, metric : PopResMetricEnum, resType : ResType ) u64
+  pub fn getResMetric_u64( self : PopType, metric : PopResMetricEnum, res : ResType ) u64
   {
-    return @intFromFloat( popResMetricTable.get( self, metric, resType ));
+    return @intFromFloat( popResMetricTable.get( self, metric, res ));
   }
 };
 

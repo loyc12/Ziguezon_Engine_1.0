@@ -44,7 +44,7 @@ pub const BuildEntry = struct
 
   pub inline fn getUnitPartCost( self : *const BuildEntry ) f64
   {
-    return self.construct.getPartCost();
+    return self.construct.getResBldCost( .PART );
   }
 
   pub inline fn getTotalPartCost( self : *const BuildEntry ) f64
@@ -238,7 +238,7 @@ pub const BuildQueue = struct
         remainParts += @floatFromInt( e.partProgress );
         e.partProgress = 0;
 
-        const unitPartCost = e.construct.getPartCost();
+        const unitPartCost = e.construct.getResBldCost( .PART );
         const unitsToBuild = e.calcBuildableAmount( remainParts );
 
         if( unitsToBuild > def.EPS )
