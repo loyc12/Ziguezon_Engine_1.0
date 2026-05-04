@@ -295,13 +295,13 @@ pub const EconSolver = struct
       inline for( 0..infTypeC )| f |
       {
         const infT = InfType.fromIdx( f );
+        const infC = self.econ.infState.get( .COUNT, infT );
 
         const factor   = self.econ.infState.get( .USE_LVL, infT );
         const scaling  = def.lerp( INF_MAINT_IDLE_FACTOR, 1.0, factor );
 
-        const infCount = self.econ.infState.get( .COUNT, infT );
         const baseCost = infT.getResMetric_f64(  .MAINT, resT );
-        const maxCost  = infCount * baseCost * scaling;
+        const maxCost  = infC * baseCost * scaling;
 
         self.infResFlowData.set( infT, .MNT_CONS, resT, maxCost );
         self.grpResFlowData.add( .INF, .MNT_CONS, resT, maxCost );
@@ -310,13 +310,13 @@ pub const EconSolver = struct
       inline for( 0..indTypeC )| d |
       {
         const indT = IndType.fromIdx( d );
+        const indC = self.econ.indState.get(   .COUNT, indT );
 
         const factor   = self.econ.indState.get( .ACT_LVL, indT );
         const scaling  = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, factor );
 
-        const indCount = self.econ.indState.get(   .COUNT, indT );
         const baseCost = indT.getResMetric_f64( .MAINT, resT );
-        const maxCost  = indCount * baseCost * scaling;
+        const maxCost  = indC * baseCost * scaling;
 
         self.indResFlowData.set( indT, .MNT_CONS, resT, maxCost );
         self.grpResFlowData.add( .IND, .MNT_CONS, resT, maxCost );
@@ -643,7 +643,7 @@ pub const EconSolver = struct
           }
         }
       }
-    //def.log( .CONT, 0, @src(), "{s}\t: {d:.6}", .{ @tagName( ind ), activity });
+    //def.log( .CONT, 0, @src(), "{s}\t: {d:.6}", .{ @tagName( indT ), activity });
 
       self.econ.indState.set( .ACT_LVL, indT, activity );
     }
@@ -879,7 +879,8 @@ pub const EconSolver = struct
 
     inline for( 0..resTypeC )| r |
     {
-      const resT       = ResType.fromIdx( r );
+      const resT = ResType.fromIdx( r );
+
       const basePrice  = resT.getMetric_f64( .PRICE_BASE );
       const elasticity = resT.getMetric_f64( .PRICE_ELAS );
       const dampening  = resT.getMetric_f64( .PRICE_DAMP ); // Lerp factor (0 = no change, 1 = instant)
@@ -902,9 +903,9 @@ pub const EconSolver = struct
       const dltPrcnt = 100.0 * dltPrice / oldPrice;
       const offPrcnt = 100.0 * newPrice / basePrice;
 
-      const resCount = self.resStockData.get( .FINAL, resT );
+      const resC = self.resStockData.get( .FINAL, resT );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0} \t| {d:.6}\t| {d:.6}\t{d:.6}\t| {d:.1}%  \tx {d:.1}%", .{ @tagName( resT ), resCount, basePrice, oldPrice, newPrice, dltPrcnt, offPrcnt });
+      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0} \t| {d:.6}\t| {d:.6}\t{d:.6}\t| {d:.1}%  \tx {d:.1}%", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, dltPrcnt, offPrcnt });
 
       self.econ.resState.set( .PRICE,   resT, newPrice );
       self.econ.resState.set( .PRICE_D, resT, dltPrice );
@@ -921,13 +922,13 @@ pub const EconSolver = struct
     const econ = self.econ;
     inline for( 0..popTypeC )| p |
     {
-      const popT   = PopType.fromIdx( p );
-      var popCount = econ.popState.get( .COUNT, popT );
+      const popT = PopType.fromIdx( p );
+      var   popC = econ.popState.get( .COUNT, popT );
 
-      const isPresent : bool = ( popCount > def.EPS );
-      if( !isPresent ){ popCount = 1.0; }
+      const isPresent : bool = ( popC > def.EPS );
+      if( !isPresent ){ popC = 1.0; }
 
-      if( popCount > def.EPS )
+      if( popC > def.EPS )
       {
         var expense : f64 = 0.0;
         var revenue : f64 = 0.0;
@@ -971,7 +972,7 @@ pub const EconSolver = struct
           const nextSavings = prevSavings + profit;
 
           // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
-          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}", .{ @tagName( popT ), popCount, nextSavings, revenue / popCount, expense / popCount, margin });
+          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}", .{ @tagName( popT ), popC, nextSavings, revenue / popC, expense / popC, margin });
 
           econ.popState.set( .EXPENSE,  popT, expense     );
           econ.popState.set( .REVENUE,  popT, revenue     );
@@ -1011,11 +1012,11 @@ pub const EconSolver = struct
     const econ = self.econ;
     inline for( 0..indTypeC )| d |
     {
-      const indT   = IndType.fromIdx( d );
-      var indCount = econ.indState.get( .COUNT, indT );
+      const indT = IndType.fromIdx( d );
+      var   indC = econ.indState.get( .COUNT, indT );
 
-      const isPresent : bool = ( indCount > def.EPS );
-      if( !isPresent ){ indCount = 1.0; }
+      const isPresent : bool = ( indC > def.EPS );
+      if( !isPresent ){ indC = 1.0; }
 
       if( indT.canBeBuiltIn( econ.location, econ.hasAtmo ))
       {
@@ -1069,7 +1070,7 @@ pub const EconSolver = struct
           const nextCapital = prevCapital + profit;
 
           // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
-          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}\t{d:.4}%", .{ @tagName( indT ), indCount, nextCapital, revenue / indCount, expense / indCount, margin, activityTarget * 100.0 });
+          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}\t{d:.4}%", .{ @tagName( indT ), indC, nextCapital, revenue / indC, expense / indC, margin, activityTarget * 100.0 });
 
           econ.indState.set( .EXPENSE,  indT, expense     );
           econ.indState.set( .REVENUE,  indT, revenue     );

@@ -373,8 +373,8 @@ pub const Economy = struct
     {
       const resT = ResType.fromIdx( r );
       const infT = resT.getInfStore();
+      const infC = self.infState.get(  .COUNT, infT );
 
-      const infCount  = self.infState.get(  .COUNT, infT );
       const capacity  = infT.getMetric_f64( .CAPACITY    );
       const storeRate = resT.getMetric_f64( .STORE_RATE  );
 
@@ -383,12 +383,12 @@ pub const Economy = struct
 
       if( storeRate > def.EPS )
       {
-        nextLimit =  MIN_RES_CAP + ( infCount * capacity / storeRate );
+        nextLimit =  MIN_RES_CAP + ( infC * capacity / storeRate );
       }
       else
       {
         // Infinite storage ( or resource doesn't need storage )
-        nextLimit = MIN_RES_CAP + ( infCount * capacity / def.EPS );
+        nextLimit = MIN_RES_CAP + ( infC * capacity / def.EPS );
       }
 
       self.resState.set( .LIMIT,   resT, nextLimit );
@@ -789,10 +789,10 @@ pub const Economy = struct
 
 
     // HOUSING
-    const popCount : f64 = @floatFromInt( self.getTotalPopCount() );
-    const popCap   : f64 = @floatFromInt( self.getTotalPopCap()   );
+    const popC : f64 = @floatFromInt( self.getTotalPopCount() );
+    const popL : f64 = @floatFromInt( self.getTotalPopCap()   );
 
-    self.infState.set( .USE_LVL, .HOUSING, popCount / popCap );
+    self.infState.set( .USE_LVL, .HOUSING, popC / popL );
 
 
     // HABITAT
@@ -892,7 +892,7 @@ pub const Economy = struct
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
-    const popCount   : f64 = self.popState.get( .COUNT, .HUMAN );
+    const popC = self.popState.get( .COUNT, .HUMAN );
 
     if( self.buildQueue.?.getEntryCount() < AUTO_BUILD_QUEUE_LIMIT )
     {
@@ -913,13 +913,13 @@ pub const Economy = struct
               scale *= ( useLvl - AUTO_BUILD_INF_THRESH ) / ( 1.0 - AUTO_BUILD_INF_THRESH );
               scale  = @min( AUTO_BUILD_MAX_SCALE, scale );
 
-          var amount : f64 = scale * popCount * AUTO_BUILD_INF_FACTOR;
+          var amount : f64 = scale * popC * AUTO_BUILD_INF_FACTOR;
 
           // Clamp ASSEMBLY to a fraction of population to prevent self-reinforcing build spiral
           if( infT == .ASSEMBLY )
           {
             const count : f64 = self.infState.get( .COUNT, .ASSEMBLY );
-            const cap   : f64 = popCount * AUTO_BUILD_ASSEMBLY_F;
+            const cap   : f64 = popC * AUTO_BUILD_ASSEMBLY_F;
 
             amount = @min( amount, @max( 0.0, cap - count ));
           }
@@ -940,7 +940,7 @@ pub const Economy = struct
               scale *= ( AUTO_DECAY_INF_THRESH - useLvl ) / AUTO_DECAY_INF_THRESH;
               scale  = @max( 0, scale );
 
-          var amount : f64 = scale * popCount * AUTO_DECAY_INF_FACTOR;
+          var amount : f64 = scale * popC * AUTO_DECAY_INF_FACTOR;
               amount = @ceil( amount );
 
           // NOTE : Clamps ASSEMBLY to a fraction of population to prevent total decay
@@ -949,7 +949,7 @@ pub const Economy = struct
             amount *= 0.2; // NOTE : Slows ASSEMBLY decay even further
 
             const count : f64 = self.infState.get( .COUNT, .ASSEMBLY );
-            const cap   : f64 = popCount * AUTO_BUILD_ASSEMBLY_F;
+            const cap   : f64 = popC * AUTO_BUILD_ASSEMBLY_F;
 
             amount = @min( amount, @max( 0.0, cap - count ));
           }
@@ -1003,7 +1003,7 @@ pub const Economy = struct
                 scale *= ( workAcs - AUTO_BUILD_WORK_THRESH ) / ( 1.0 - AUTO_BUILD_WORK_THRESH );
                 scale  = @min( AUTO_BUILD_MAX_SCALE, scale );
 
-            var amount : f64 = scale * popCount * AUTO_BUILD_IND_FACTOR;
+            var amount : f64 = scale * popC * AUTO_BUILD_IND_FACTOR;
 
             // Dampen build amounts if any output resource is oversupplied
             inline for( 0..resTypeC )| r |
@@ -1042,7 +1042,7 @@ pub const Economy = struct
                 scale *= ( AUTO_DECAY_IND_THRESH - actTrgt ) / AUTO_DECAY_IND_THRESH;
                 scale  = @max( 0, scale );
 
-            var amount : f64 = scale * popCount * AUTO_DECAY_IND_FACTOR;
+            var amount : f64 = scale * popC * AUTO_DECAY_IND_FACTOR;
                 amount = @ceil( amount );
 
             amount = @floor( @min( amount, self.indState.get( .COUNT, indT )));
