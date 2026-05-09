@@ -296,14 +296,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
 
-        self.popResFlowData.set( popT, .OPR_CONS, resT, maxCons );
-        self.popResFlowData.set( popT, .OPR_PROD, resT, maxProd );
-
-      //self.grpResFlowData.add( .POP, .OPR_CONS, resT, maxCons );
-      //self.grpResFlowData.add( .POP, .OPR_PROD, resT, maxProd );
-
-      //self.genResFlowData.add(       .OPR_CONS, resT, maxCons );
-      //self.genResFlowData.add(       .OPR_PROD, resT, maxProd );
+        self.popResFlowData.set( popT, .OPR_CONS, resT, @ceil(  maxCons ));
+        self.popResFlowData.set( popT, .OPR_PROD, resT, @floor( maxProd ));
       }}
     }
   }
@@ -357,14 +351,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
         }
       //def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
 
-        self.indResFlowData.set( indT, .OPR_CONS, resT, maxCons );
-        self.indResFlowData.set( indT, .OPR_PROD, resT, maxProd );
-
-      //self.grpResFlowData.add( .IND, .OPR_CONS, resT, maxCons );
-      //self.grpResFlowData.add( .IND, .OPR_PROD, resT, maxProd );
-
-      //self.genResFlowData.add(       .OPR_CONS, resT, maxCons );
-      //self.genResFlowData.add(       .OPR_PROD, resT, maxProd );
+        self.indResFlowData.set( indT, .OPR_CONS, resT, @ceil(  maxCons ));
+        self.indResFlowData.set( indT, .OPR_PROD, resT, @floor( maxProd ));
       }}
     }
   }
@@ -392,10 +380,9 @@ fn updateFlowAllSums( self : *EconSolver ) void
         const baseCost = infT.getResMetric_f64(  .MAINT, resT );
         const maxCost  = infC * baseCost * scaling;
 
-        self.infResFlowData.set( infT, .MNT_CONS, resT, maxCost );
-      //self.grpResFlowData.add( .INF, .MNT_CONS, resT, maxCost );
-      //self.genResFlowData.add(       .MNT_CONS, resT, maxCost );
+        self.infResFlowData.set( infT, .MNT_CONS, resT, @ceil( maxCost ));
       }
+
       inline for( 0..indTypeC )| d |
       {
         const indT = IndType.fromIdx( d );
@@ -407,9 +394,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         const baseCost = indT.getResMetric_f64( .MAINT, resT );
         const maxCost  = indC * baseCost * scaling;
 
-        self.indResFlowData.set( indT, .MNT_CONS, resT, maxCost );
-      //self.grpResFlowData.add( .IND, .MNT_CONS, resT, maxCost );
-      //self.genResFlowData.add(       .MNT_CONS, resT, maxCost );
+        self.indResFlowData.set( indT, .MNT_CONS, resT, @ceil( maxCost ));
       }
     }
   }
@@ -450,38 +435,32 @@ fn updateFlowAllSums( self : *EconSolver ) void
     // Apply ASSEMBLY throughput cap (preserves old calcBuildDemand semantics)
     const assemblyCount = self.econ.infState.get( .COUNT, .ASSEMBLY );
     const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
-    const assemblyCap   = @floor( assemblyCount * assemblyRate );
+    const assemblyCap   = assemblyCount * assemblyRate;
 
     var scale : f64 = 1.0;
 
     if( rawTotal > def.EPS and assemblyCap < rawTotal )
     {
-      scale = assemblyCap / rawTotal;
+      scale = assemblyCap / rawTotal; // [ 0.0, 1.0 ]
     }
-
-    // Scale all per-agent rows by `scale` so they reflect throughput-capped demand
 
     inline for( 0..infTypeC )| f |
     {
       const infT    = InfType.fromIdx( f );
       const maxCost = self.infResFlowData.get( infT, .BLD_CONS, .PART );
 
-      self.infResFlowData.set( infT, .BLD_CONS, .PART, @floor( maxCost * scale ) );
+      self.infResFlowData.set( infT, .BLD_CONS, .PART, @ceil( maxCost * scale ) );
     }
-
-  //self.grpResFlowData.set( .INF, .BLD_CONS, .PART, self.grpResFlowData.get( .INF, .BLD_CONS, .PART ) * scale );
 
     inline for( 0..indTypeC )| d |
     {
       const indT    = IndType.fromIdx( d );
       const maxCost = self.indResFlowData.get( indT, .BLD_CONS, .PART );
 
-      self.indResFlowData.set( indT, .BLD_CONS, .PART, @floor( maxCost * scale ));
+      self.indResFlowData.set( indT, .BLD_CONS, .PART, @ceil( maxCost * scale ));
     }
 
-  //self.grpResFlowData.set( .IND, .BLD_CONS, .PART, self.grpResFlowData.get( .IND, .BLD_CONS, .PART ) * scale );
-
-  //self.genResFlowData.add( .BLD_CONS, .PART, cap );
+    // TODO : Account for deconstruction res production
   }
 
 
@@ -750,16 +729,13 @@ fn updateFlowAllSums( self : *EconSolver ) void
       {
         const resT = ResType.fromIdx( r );
 
-        const oprAcs  = self.grpResFlowData.get( .POP, .OPR_ACS,  resT );
-        const oprCons = self.popResFlowData.get( popT, .OPR_CONS, resT ) * oprAcs;
+        const oprAcs  =        self.grpResFlowData.get( .POP, .OPR_ACS,  resT );
+        const oprCons = @ceil( self.popResFlowData.get( popT, .OPR_CONS, resT ) * oprAcs );
 
         const totCons = oprCons; // To indicate this might change
 
         self.popResFlowData.set( popT, .OPR_CONS, resT, oprCons );
         self.popResFlowData.set( popT, .TOT_CONS, resT, totCons );
-
-      //self.grpResFlowData.add( .POP, .TOT_CONS, resT, totCons );
-      //self.genResFlowData.add(       .TOT_CONS, resT, totCons );
       }
     }
   }
@@ -778,9 +754,9 @@ fn updateFlowAllSums( self : *EconSolver ) void
         const mntAcs  = self.grpResFlowData.get( .INF, .MNT_ACS,  resT );
         const bldAcs  = self.grpResFlowData.get( .INF, .BLD_ACS,  resT );
 
-        const oprCons = self.infResFlowData.get( infT, .OPR_CONS, resT ) * infUsage;
-        const mntCons = self.infResFlowData.get( infT, .MNT_CONS, resT ) * mntAcs;
-        const bldCons = self.infResFlowData.get( infT, .BLD_CONS, resT ) * bldAcs;
+        const oprCons = @ceil( self.infResFlowData.get( infT, .OPR_CONS, resT ) * infUsage );
+        const mntCons = @ceil( self.infResFlowData.get( infT, .MNT_CONS, resT ) * mntAcs   );
+        const bldCons = @ceil( self.infResFlowData.get( infT, .BLD_CONS, resT ) * bldAcs   );
 
         const totCons = oprCons + mntCons + bldCons;
 
@@ -788,9 +764,6 @@ fn updateFlowAllSums( self : *EconSolver ) void
         self.infResFlowData.set( infT, .MNT_CONS, resT, mntCons );
         self.infResFlowData.set( infT, .BLD_CONS, resT, bldCons );
         self.infResFlowData.set( infT, .TOT_CONS, resT, totCons );
-
-      //self.grpResFlowData.add( .INF, .TOT_CONS, resT, totCons );
-      //self.genResFlowData.add(       .TOT_CONS, resT, totCons );
       }
     }
   }
@@ -809,9 +782,9 @@ fn updateFlowAllSums( self : *EconSolver ) void
         const mntAcs  = self.grpResFlowData.get( .IND, .MNT_ACS,  resT );
         const bldAcs  = self.grpResFlowData.get( .IND, .BLD_ACS,  resT );
 
-        const oprCons = self.indResFlowData.get( indT, .OPR_CONS, resT ) * indAct;
-        const mntCons = self.indResFlowData.get( indT, .MNT_CONS, resT ) * mntAcs;
-        const bldCons = self.indResFlowData.get( indT, .BLD_CONS, resT ) * bldAcs;
+        const oprCons = @ceil( self.indResFlowData.get( indT, .OPR_CONS, resT ) * indAct );
+        const mntCons = @ceil( self.indResFlowData.get( indT, .MNT_CONS, resT ) * mntAcs );
+        const bldCons = @ceil( self.indResFlowData.get( indT, .BLD_CONS, resT ) * bldAcs );
 
         const totCons = oprCons + mntCons + bldCons;
 
@@ -819,9 +792,6 @@ fn updateFlowAllSums( self : *EconSolver ) void
         self.indResFlowData.set( indT, .MNT_CONS, resT, mntCons );
         self.indResFlowData.set( indT, .BLD_CONS, resT, bldCons );
         self.indResFlowData.set( indT, .TOT_CONS, resT, totCons );
-
-      //self.grpResFlowData.add( .IND, .TOT_CONS, resT, totCons );
-      //self.genResFlowData.add(       .TOT_CONS, resT, totCons );
       }
     }
   }
@@ -873,7 +843,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         const resT = ResType.fromIdx( r );
 
         const prodRate = @max( popFlm, POP_PROD_FLOOR ); // Even starving, pops can work a bit
-        const oprProd  = self.popResFlowData.get( popT, .OPR_PROD, resT ) * prodRate;
+        const oprProd  = @floor( self.popResFlowData.get( popT, .OPR_PROD, resT ) * prodRate );
 
         self.popResFlowData.set( popT, .TOT_PROD, resT, oprProd );
         self.grpResFlowData.add( .POP, .TOT_PROD, resT, oprProd );
@@ -895,8 +865,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
       {
         inline for( 0..resTypeC )| r |
         {
-          const resT = ResType.fromIdx( r );
-          const oprProd = self.indResFlowData.get( indT, .OPR_PROD, resT ) * indAct;
+          const resT    = ResType.fromIdx( r );
+          const oprProd = @floor( self.indResFlowData.get( indT, .OPR_PROD, resT ) * indAct );
 
           self.indResFlowData.set( indT, .TOT_PROD, resT, oprProd );
           self.grpResFlowData.add( .IND, .TOT_PROD, resT, oprProd );
@@ -986,7 +956,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       const resC = self.resStockData.get( .FINAL, resT );
 
-      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} | {d:>8.6}$ | {d:>8.6}$ > {d:>8.6}$ | {d:>6.1}% ( {d:>6.1} )%", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, offPrcnt, dltPrcnt });
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} | {d:>8.6}$ | {d:>8.6}$ > {d:>8.6}$ | {d:>6.3}% ( {d:>6.2}% )", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, offPrcnt, dltPrcnt });
 
       self.econ.resState.set( .PRICE,   resT, newPrice );
       self.econ.resState.set( .PRICE_D, resT, dltPrice );
