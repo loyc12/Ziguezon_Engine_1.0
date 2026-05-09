@@ -16,8 +16,6 @@ are roughly small-to-large when no dependency forces an ordering.
   0.1 Refactor current logic organization ( large, parallel-friendly )
       - Migrate "function-as-lookup" patterns to data arrays
         ( resourceData, populationData, industryData )
-      - Generalise EconSolver fields hardcoded to .HUMAN
-        ( prevPopCount / nextPopCount / popDeaths / popBirths )
       - Standardise DataMatrix vs Array usage where it has drifted
       - Can run in parallel with later tiers
 

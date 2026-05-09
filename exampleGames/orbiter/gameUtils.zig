@@ -276,7 +276,7 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
 
   for( 0..stepCount )| _ |
   {
-    def.qlog( .DEBUG, 0, @src(), "==== Ticking all econs once ====" );
+    def.qlog( .DEBUG, 0, @src(), "# ================================ Ticking all econs once ================================" );
 
     var econCount : u32 = 0;
 

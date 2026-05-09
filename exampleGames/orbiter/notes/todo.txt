@@ -68,7 +68,7 @@ rounding tolerance.
 
 [ ] 6. Validate econSolver's CONSUMPTION PHASE xxxResFlowData.set/add accounting
        - looks suspicious in areas. makes ure we don't over or under acount resources
-       - Find a way to standardize logic to avoif confusion like this moving forward
+       - Find a way to standardize logic to avoid confusion like this moving forward
 
 
 ================ TIER 1.1 STAGE A : STRUCTURAL REWORK ================

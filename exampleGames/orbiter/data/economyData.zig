@@ -69,16 +69,48 @@ pub const AgentFlowEnum = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  OPR_PROD, OPR_CONS, // Maximum operational  res flow ( before clamping )
-  OPR_ACS,            // Resource demand satisfaction rate
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
-  MNT_CONS,           // Maximum maintenance  res cons ( before clamping )
-  MNT_ACS,            // Resource demand satisfaction rate
 
-  BLD_PROD, BLD_CONS, // Maximum construciton res flow ( before clamping )
-  BLD_ACS,            // Resource demand satisfaction rate
+  OPR_PROD, OPR_CONS, // Maximum operational res flow ( before clamping )
+  OPR_ACS,            // Operational res demand satisfaction rate
+
+  MNT_CONS,           // Maximum maintenance res cons ( before clamping )
+  MNT_ACS,            // Maintenance res demand satisfaction rate
+
+  BLD_PROD, BLD_CONS, // Maximum construction res flow ( before clamping )
+  BLD_ACS,            // Construction res demand satisfaction rate
 
   TOT_PROD, TOT_CONS, // Applied, final res flow ( clamped by ACCESS & ACTION rates )
+
+
+  pub inline fn isAdditive( self : AgentFlowEnum ) bool
+  {
+    return switch( self )
+    {
+      .OPR_ACS, .MNT_ACS, .BLD_ACS => false,
+      else =>                         true,
+    };
+  }
+
+  pub inline fn isCons( self : AgentFlowEnum ) bool
+  {
+    return switch( self )
+    {
+      .OPR_CONS, .MNT_CONS, .BLD_CONS, .TOT_CONS => true,
+      else =>                                       false,
+    };
+  }
+
+  pub inline fn isProd ( self : AgentFlowEnum ) bool
+  {
+    return switch( self )
+    {
+      .OPR_PROD, .BLD_PROD, .TOT_PROD => true,
+      else =>                            false,
+    };
+  }
 };
 
 
