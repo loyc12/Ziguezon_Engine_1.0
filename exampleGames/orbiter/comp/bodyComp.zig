@@ -162,13 +162,13 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     }
   }
 
-  pub fn debugSetEconState( self : *BodyComp, loc : gdf.EconLoc, value : u64 ) void
+  pub fn debugSetEconState( self : *BodyComp, loc : gdf.EconLoc, value : u64, sunshine : f64 ) void
   {
     const econ : *ecn.Economy = self.getEcon( loc );
 
     if( econ.isActive ) // TODO : Activate locs when player build infra there
     {
-      econ.debugSetEconState( value );
+      econ.debugSetEconState( value, sunshine );
     }
   }
 };

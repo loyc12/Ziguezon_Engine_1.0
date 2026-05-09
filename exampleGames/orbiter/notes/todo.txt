@@ -13,7 +13,7 @@ file is the implementation checklist : tickable boxes, no higher-level
 design discussion -- consult roadmap.txt for the why.
 
 Section dependencies :
-  - Housekeeping is parallel-friendly with everything below
+  - Housekeeping and above is parallel-friendly with everything below
   - Stage A must complete and validate against current behaviour before
     Stage B starts
   - Items within a section are roughly small-to-large unless a dependency
@@ -43,49 +43,30 @@ rounding tolerance.
 [~] 3. Standardise argument ordering, especially in dataMatrices
        - Example rules : always put resT last, always put non resT xxxT first, etc.
 
-[ ] 4. If possible ( lookup how ), align successive loging lines better than just tabulations
-
-
-
-================ MINOR BUGFIXES ================
-
-
-[ ] 1. Review ecology.ecoFactor initialization, as it always starts at zero
-       - this is despite use calling "eco.ecoFactor = eco.ecoTarget" in ecology.init()
+[ ] 4. If possible ( lookup how ), align successive logging lines better simple tabulations
 
 
 ================ HOUSEKEEPING ( quick wins, parallel-friendly ) ================
 
 
-[ ] 1. Dedup maintenance cost calc
-       - Same calc lives in both calcMntMaxFlow and updateIndFinances ;
-         flagged in source as "duplicated code"
-       - Cache per-IndType / InfType maintenance demand from precalc, reuse downstream
+[~] 1. Standardise DataMatrix vs Array usage where it has drifted
 
-[ ] 2. Generalise solver pop fields away from .HUMAN
-       - prevPopCount / nextPopCount / popDeaths / popBirths -> per-PopType
-         GenDataLine
-       - Drop hardcoded HUMAN reads in initBaseState / updatePopCount /
-         logPopMetrics
-
-[ ] 3. "function-as-lookup" -> data array migration
+[ ] 2. "function-as-lookup" -> data array migration
        - resourceData.getInfStore, populationData.getInfStore,
          industryData equivalents -- replace switch-style functions
          with static lookup grids
 
-[ ] 4. logBuildQueue helper on BuildQueue
+[ ] 3. logBuildQueue helper on BuildQueue
        - Mirror logResMetrics / logIndMetrics / logInfMetrics shape
        - Useful for debugging the upcoming queue rework
 
-[ ] 5. Persist avgPopDeathRate / avgPopBirthRate on econ
+[ ] 4. Persist avgPopDeathRate / avgPopBirthRate on econ
        - Currently computed in updatePopCount, divided, then dropped
 
-[ ] 6. Track wasted-clamp amount per ResType in clampResStocks
+[ ] 5. Track wasted-clamp amount per ResType in clampResStocks
        - Currently logged but not stored ; useful as a real signal
 
-[~] 7. Standardise DataMatrix vs Array usage where it has drifted
-
-[ ] 8. Validate econSolver's CONSUMPTION PHASE xxxResFlowData.set/add accounting
+[ ] 6. Validate econSolver's CONSUMPTION PHASE xxxResFlowData.set/add accounting
        - looks suspicious in areas. makes ure we don't over or under acount resources
        - Find a way to standardize logic to avoif confusion like this moving forward
 
@@ -249,5 +230,3 @@ BUILDQUEUE-SIDE :
 [ ] 8. debugAutoBuild's selloff branch -> DEMOLISH enqueue
        - Until Tier 1.6 fully retires debugAutoBuild, its decay path should
          use the new queue rather than the current immediate scrap
-
-NOTE : Agent ran out of token here. Finish todo list on next pass if need be.

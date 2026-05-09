@@ -7,6 +7,9 @@ const gdf = @import( "../gameDefs.zig"    );
 //const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
 const ResType  = @import( "resourceData.zig" ).ResType;
 
+
+// NOTE : This represent the "Service" portion of the economy, aka the non-resource producing consumers
+
 pub const InfType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -202,10 +205,10 @@ pub fn loadInfrastructureData() void
   // Units : abstract pollution points per unit per tick at full usage
   // Will be recalibrated after industry pollution is set
 
-  infMetricData.set( .ASSEMBLY, .POLLUTION, 16.0 );  // Dust, material waste
-  infMetricData.set( .HOUSING,  .POLLUTION,  0.5 );  // Sewage, waste, minor emissions
+  infMetricData.set( .ASSEMBLY, .POLLUTION,  1.0 );  // Dust, material waste
+  infMetricData.set( .HOUSING,  .POLLUTION,  0.3 );  // Sewage, waste, minor emissions
   infMetricData.set( .HABITAT,  .POLLUTION,  0.0 );  // Sealed system
-  infMetricData.set( .STORAGE,  .POLLUTION,  0.2 );  // Minimal — some runoff
+  infMetricData.set( .STORAGE,  .POLLUTION,  0.1 );  // Minimal — some runoff
 
 
   // ================================ CAPACITY ================================

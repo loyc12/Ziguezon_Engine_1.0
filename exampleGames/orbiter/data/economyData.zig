@@ -12,6 +12,7 @@ const IndType = gdf.IndType;
 
 
 // ================================ ECONOMY LOCATION ENUM ================================
+
 pub const EconLoc = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;

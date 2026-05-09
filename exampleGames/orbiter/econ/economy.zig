@@ -32,10 +32,7 @@ const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
 
-const MIN_RES_CAP           = 10_000.0;
-const MAX_SUN_ACCESS_CAP    =      2.0;
-const SUN_SHORTAGE_EXPONENT =      2.0;
-
+const MIN_RES_CAP = 10_000.0;
 
 pub const Economy = struct
 {
@@ -48,8 +45,8 @@ pub const Economy = struct
   hasAtmo   : bool,
 
   stepCount : u64 = 0,
-  sunshine  : f64 = 0.0,
-  sunAccess : f32 = 0.5,
+  sunshine  : f64 = 0.0, // How much sunlight reachs the econ's location from the sun
+  sunAccess : f32 = 0.0, // How much sunlight is accessible to the econ, ( scaled + clamped )
 
   ecology   : ?Ecology  = null,
 
@@ -127,8 +124,8 @@ pub const Economy = struct
       self.indState.set( .ACT_TRGT, indT, 1.0 );
     }
 
-
     self.buildQueue = BuildQueue.init();
+
     self.updateAreas();
 
     if( self.hasEcology() )
@@ -141,17 +138,22 @@ pub const Economy = struct
   // ================================ DEBUG INIT ================================
 
   // Setups the economy needed to support value * 10k pop
-  pub inline fn debugSetEconState( self : *Economy, value : u64 ) void
+  pub inline fn debugSetEconState( self : *Economy, value : u64, sunshine : f64 ) void
   {
     self.debugSetInfCounts( value );
     self.debugSetIndCounts( value );
     self.debugSetResCounts( value );
     self.debugSetPopCounts( value );
 
-    self.sunAccess = 0.5;
+    // Updating dependant systems based on newly updated counts
+    self.updateAreas();
+    self.updateInfUsage();
+    self.updateSunshine( sunshine );
 
+    if( self.hasEcology() ){ self.ecology.?.seed( self ); }
+
+    // Logging new metrics
     self.logSpecialMetrics();
-
     ecnSlvr.testEconLogs( self );
   }
 
@@ -189,9 +191,6 @@ pub const Economy = struct
 
     self.updateResCaps();
     self.updatePopCaps();
-    self.updateAreas();
-    self.updateInfUsage();
-    self.updateEcology();
   }
 
   pub inline fn debugSetIndCounts( self : *Economy, value : u64 ) void
@@ -230,9 +229,6 @@ pub const Economy = struct
       self.indState.set( .COUNT, .WATER_PLANT, @floatFromInt( value * 10 ));
       self.indState.set( .COUNT, .SOLAR_PLANT, @floatFromInt( value * 50 ));
     }
-
-    self.updateAreas();
-    self.updateEcology();
   }
 
 
@@ -250,10 +246,10 @@ pub const Economy = struct
     const areaUsed = self.areaData.get( .USED );
     const areaCap  = self.areaData.get( .CAP  );
 
-    def.qlog( .INFO, 0, @src(), "$ Logging general metrics" );
-    def.log(  .CONT, 0, @src(), "Steps done   : {d:.6}", .{ self.stepCount });
-    def.log(  .CONT, 0, @src(), "Sun access   : {d:.6}", .{ self.sunAccess });
-    def.log(  .CONT, 0, @src(), "Development  : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
+    def.qlog( .INFO, 0, @src(), "$ Logging general metrics :" );
+    def.log(  .CONT, 0, @src(), "Step count  : {d:.6}", .{ self.stepCount });
+    def.log(  .CONT, 0, @src(), "Sunshine    : {d:.6} / {d:.6}", .{ self.sunAccess, self.sunshine });
+    def.log(  .CONT, 0, @src(), "Development : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
 
     if( self.buildQueue != null )
     {
@@ -488,6 +484,10 @@ pub const Economy = struct
 
   // ================================ ENVIRONMENT ================================
 
+  const SUN_GROUND_LOSS_FACTOR = 0.5;
+  const SUN_MAX_ACCESS_FACTOR  = 2.0;
+  const SUN_SHORTAGE_EXPONENT  = 2.0;
+
   pub inline fn updateSunshine( self : *Economy, sunshine : f64 ) void
   {
     self.sunshine = sunshine;
@@ -505,12 +505,12 @@ pub const Economy = struct
 
         if( developedArea < surfaceArea )
         {
-          tmp = 0.5 * sunshine;
+          tmp = SUN_GROUND_LOSS_FACTOR * sunshine;
         }
         else
         {
           const sunlessRatio = def.pow( f64, 1.0 - overgroundRatio, SUN_SHORTAGE_EXPONENT );
-          tmp = 0.5 * sunshine * ( 1.0 - sunlessRatio );
+          tmp = SUN_GROUND_LOSS_FACTOR * sunshine * ( 1.0 - sunlessRatio );
         }
       },
 
@@ -518,7 +518,7 @@ pub const Economy = struct
       else   => tmp = sunshine,
     }
 
-    self.sunAccess = @floatCast( def.clmp( tmp, 0.001, MAX_SUN_ACCESS_CAP ));
+    self.sunAccess = @floatCast( def.clmp( tmp, def.EPS, SUN_MAX_ACCESS_FACTOR ));
   }
 
   pub inline fn hasEcology( self : *const Economy ) bool
@@ -892,7 +892,7 @@ pub const Economy = struct
 
   pub fn debugAutoBuild( self : *Economy ) void
   {
-    const popC = self.popState.get( .COUNT, .HUMAN );
+    const popC : f64 = @floatFromInt( self.getTotalPopCount() );
 
     if( self.buildQueue.?.getEntryCount() < AUTO_BUILD_QUEUE_LIMIT )
     {

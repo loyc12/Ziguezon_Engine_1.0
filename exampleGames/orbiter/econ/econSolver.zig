@@ -255,8 +255,10 @@ pub const EconSolver = struct
         // Adjust expected max prod based on sunlight
         if( indT.getPowerSrc() == .SOLAR )
         {
-          maxCons *= @floatCast( self.econ.sunAccess );
-          maxProd *= @floatCast( self.econ.sunAccess );
+          const sunAccess : f64 = @floatCast( self.econ.sunAccess );
+
+          maxCons *= sunAccess;
+          maxProd *= sunAccess;
 
         // NOTE : Potentially too penalizing. review this section
         //// further adjusting AGRONOMIC yields based on ecoFactor
@@ -603,9 +605,9 @@ pub const EconSolver = struct
           }
         }
       }
-    //def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}", .{ @tagName( resT ), activity });
+    //def.log( .CONT, 0, @src(), "{s}  \t: {d:.6}", .{ @tagName( resT ), fulfilment });
 
-      self.econ.popState.set( .FLM_LVL, .HUMAN, fulfilment );
+      self.econ.popState.set( .FLM_LVL, popT, fulfilment );
     }
   }
 
@@ -1003,7 +1005,7 @@ pub const EconSolver = struct
   const IND_MIN_ACT_TRGT  : f64 = 0.05;
   const IND_MARGIN_FLOOR  : f64 = -2.5;
   const IND_MARGIN_OFFSET : f64 = -0.0;
-  const ACT_TRGT_FACTOR   : f64 =  8.0; // NOTE : lower for a smoother target transitioning
+  const ACT_TRGT_FACTOR   : f64 =  8.0; // NOTE : Lower for a smoother target transitioning
 
   fn updateIndFinances( self : *EconSolver ) void
   {
@@ -1032,7 +1034,7 @@ pub const EconSolver = struct
 
           if( isPresent )
           {
-            // NOTE : ignore build costs, as those are one-time payments from savings
+            // NOTE : Ignore build costs, as those are one-time payments from savings
             expense += resP * self.indResFlowData.get( indT, .OPR_CONS, resT );
             expense += resP * self.indResFlowData.get( indT, .MNT_CONS, resT );
 

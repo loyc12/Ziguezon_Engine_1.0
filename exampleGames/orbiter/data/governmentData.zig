@@ -10,6 +10,7 @@ const PopType = gdf.PopType;
 const InfType = gdf.InfType;
 const IndType = gdf.IndType;
 
+
 // TODO : Review implementation FULLY before implementing - this is a draft, and likely has blindspots / overcomplexities
 
 // ================================ GOVERNMENT POLICY DATA ================================
@@ -17,11 +18,11 @@ const IndType = gdf.IndType;
 // Applies equaly to all Agent subtypess
 pub const GovGeneralPolicyRates = def.GenDataGrid( f64, TaxGroupEnum, TaxTypeEnum );
 
-// Applies on top of gene
-pub const GovPerResPolicyRates  = def.GenDataGrid( f64, ResType, TaxTypeEnum );
-pub const GovPerPopPolicyRates  = def.GenDataGrid( f64, PopType, TaxTypeEnum );
-pub const GovPerInfPolicyRates  = def.GenDataGrid( f64, InfType, TaxTypeEnum );
-pub const GovPerIndPolicyRates  = def.GenDataGrid( f64, IndType, TaxTypeEnum );
+// Applies on top of general policies
+pub const GovPerResPolicyRates = def.GenDataGrid( f64, ResType, TaxTypeEnum );
+pub const GovPerPopPolicyRates = def.GenDataGrid( f64, PopType, TaxTypeEnum );
+pub const GovPerInfPolicyRates = def.GenDataGrid( f64, InfType, TaxTypeEnum );
+pub const GovPerIndPolicyRates = def.GenDataGrid( f64, IndType, TaxTypeEnum );
 
 
 pub const TaxGroupEnum = enum( u8 )

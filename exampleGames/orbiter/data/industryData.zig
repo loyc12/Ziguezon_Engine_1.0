@@ -8,6 +8,8 @@ const ResType  = @import( "resourceData.zig" ).ResType;
 const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
 
 
+// NOTE : This represent the "Manufacture" portion of the economy, aka the resource producing consumers
+
 pub const IndType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -234,15 +236,15 @@ pub fn loadIndustryData() void
   // Calibrated with NATURAL_CAPACITY=0.2, POLLUTION_MIDPOINT=2.0, pop=0.05/person
   // Target: 1B pop → pollution ~0.08, 10B pop → pollution ~0.65
 
-  indMetricData.set( .AGRONOMIC,   .POLLUTION, 12.0 ); // Methane, fertiliser runoff
-  indMetricData.set( .HYDROPONIC,  .POLLUTION,  3.0 ); // Contained system, minor waste
-  indMetricData.set( .WATER_PLANT, .POLLUTION,  4.0 ); // Brine discharge, chemical treatment
-  indMetricData.set( .SOLAR_PLANT, .POLLUTION,  1.5 ); // Manufacturing waste (amortised)
-  indMetricData.set( .POWER_PLANT, .POLLUTION,  8.0 ); // Thermal pollution, tritium traces
+  indMetricData.set( .AGRONOMIC,   .POLLUTION, 8.0 ); // Methane, fertiliser runoff
+  indMetricData.set( .HYDROPONIC,  .POLLUTION, 1.0 ); // Contained system, minor waste
+  indMetricData.set( .WATER_PLANT, .POLLUTION, 2.0 ); // Brine discharge, chemical treatment
+  indMetricData.set( .SOLAR_PLANT, .POLLUTION, 0.0 ); // Manufacturing waste (amortised)
+  indMetricData.set( .POWER_PLANT, .POLLUTION, 4.0 ); // Thermal pollution, tritium traces
 
-  indMetricData.set( .REFINERY,    .POLLUTION, 25.0 ); // VOCs, chemical waste, thermal
-  indMetricData.set( .GROUND_MINE, .POLLUTION, 50.0 ); // Tailings, acid drainage, dust
-  indMetricData.set( .FOUNDRY,     .POLLUTION, 40.0 ); // Slag, thermal, heavy metal emissions
+  indMetricData.set( .REFINERY,    .POLLUTION, 20.0 ); // VOCs, chemical waste, thermal
+  indMetricData.set( .GROUND_MINE, .POLLUTION, 40.0 ); // Tailings, acid drainage, dust
+  indMetricData.set( .FOUNDRY,     .POLLUTION, 30.0 ); // Slag, thermal, heavy metal emissions
   indMetricData.set( .FACTORY,     .POLLUTION, 20.0 ); // Chemical waste, minor emissions
 
   indMetricData.set( .PROBE_MINE,  .POLLUTION,  0.0 ); // Off-planet

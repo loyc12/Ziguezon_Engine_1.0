@@ -22,22 +22,27 @@ const infTypeC  = InfType.count;
 const indTypeC  = IndType.count;
 
 
-// Tune this to control how steeply pollution rises
-const NATURAL_CAPACITY   : f64 = 0.2; // Quantity of polution each unit area can absorbe for free // NOTE : increase if pollution is too harsh
-const POLLUTION_MIDPOINT : f64 = 2.0; // rawRatio at which pollution == 0.5
 
 // Tune these to control how harshly each factor penalises the eco factor
-const DEV_WEIGHT  : f64 = 0.2; // full development alone can reduce ecoFactor to 1.0 - val
-const POLL_WEIGHT : f64 = 0.9; // full pollution   alone can reduce ecoFactor to 1.0 - val
+// NOTE : 0.0 means no influence, 1.0 means maximal influence
+const DEV_WEIGHT  : f64 = 0.2;
+const POLL_WEIGHT : f64 = 0.9;
 
+// Tune these to control how steeply the pollution factor rises
+const NATURAL_CAPACITY   : f64 = 0.2; // Quantity of polution each unit area can absorbe for free // NOTE : increase if pollution is too harsh
+const POLLUTION_MIDPOINT : f64 = 2.0; // rawRatio at which pollution factor == 0.5
+
+// How far towards ecoTarget does ecoFactor move each update
 const ECO_DAMPENING : f64 = 0.01;
 
 
 pub const EcoState = struct
 {
   surfaceArea : f64,
+
   development : f64 = 0.0,
   pollution   : f64 = 0.0,
+
   ecoTarget   : f64 = 1.0,
   ecoFactor   : f64 = 1.0,
 
@@ -50,16 +55,7 @@ pub const EcoState = struct
       return null;
     }
 
-    var eco : EcoState = .{ .surfaceArea = econ.areaData.get( .CAP )};
-
-    eco.update( econ );
-
-    // TODO : Ensure ecoFactor starts at ecoTarget properly, as this line does not seem to work
-    //        Odds are ecoTarget is still 1.0 here, leading to maxed out ecoFactor
-    //        Maybe inf anf ind act/use are still uninitialized here ?
-    eco.ecoFactor = eco.ecoTarget;
-
-    return eco;
+    return .{ .surfaceArea = econ.areaData.get( .CAP )};
   }
 
   pub inline fn logEco( self : *const EcoState ) void
@@ -71,13 +67,20 @@ pub const EcoState = struct
     def.log(  .CONT, 0, @src(), "Eco Target     : {d:.6}", .{ self.ecoTarget   });
   }
 
+  /// Sets ecoFactor to the calculated ecoTarget
+  /// Call this once all dependent metrics are set ( Ind, Inf, Pop, etc )
+  pub inline fn seed( self : *EcoState, econ : *const ecn.Economy ) void
+  {
+    self.update( econ );
+    self.ecoFactor = self.ecoTarget;
+  }
+
   pub fn update( self : *EcoState, econ : *const ecn.Economy ) void
   {
     self.calcDevelopment( econ );
     self.calcPollution(   econ );
 
-  // Each factor independently penalises the eco factor multiplicatively.
-  // Neither alone reaches 0 - both together approach it.
+  // Each factor independently penalises thefinal factor multiplicatively
 
     const devPenalty  = 1.0 - ( self.development * DEV_WEIGHT  );
     const pollPenalty = 1.0 - ( self.pollution   * POLL_WEIGHT );
@@ -89,7 +92,6 @@ pub const EcoState = struct
     self.ecoTarget = def.clmp( self.ecoTarget, def.EPS, 1.0 - def.EPS );
 
     self.ecoFactor = def.lerp( self.ecoFactor, self.ecoTarget, ECO_DAMPENING );
-
   }
 
   inline fn calcDevelopment( self : *EcoState, econ : *const ecn.Economy ) void
