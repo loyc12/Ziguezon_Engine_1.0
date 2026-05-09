@@ -43,7 +43,7 @@ rounding tolerance.
 [~] 3. Standardise argument ordering, especially in dataMatrices
        - Example rules : always put resT last, always put non resT xxxT first, etc.
 
-[ ] 4. If possible ( lookup how ), align successive logging lines better simple tabulations
+[~] 4. Replace tabs by formating size arguments {d>N.D}
 
 
 ================ HOUSEKEEPING ( quick wins, parallel-friendly ) ================

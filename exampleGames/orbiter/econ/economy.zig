@@ -172,8 +172,21 @@ pub const Economy = struct
       const resL  = self.resState.get( .LIMIT, resT );
 
     // Start at 20% of cap - leaves room for production without crashing prices
-      var amount = @ceil( resL * 0.2 );
-      if( resT == .WORK ){ amount *= 5.0; }
+      var amount = resL * 0.2;
+
+      amount *= switch( resT )
+      {
+        .WORK  => 1.00,
+        .FUEL  => 0.05,
+        .FOOD  => 0.25,
+        .WATER => 0.25,
+        .POWER => 0.25,
+        .ORE   => 0.25,
+        .INGOT => 0.25,
+        .PART  => 0.05,
+      };
+
+      amount = @ceil( amount );
 
       self.resState.set( .COUNT, resT, amount );
     }
@@ -186,7 +199,7 @@ pub const Economy = struct
       self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1000 )); // TODO : RECOMPUTE AND VALIDATE
     }
     self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
-    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value * 1000 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  100 ));
     self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  100 ));
 
     self.updateResCaps();

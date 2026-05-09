@@ -33,8 +33,8 @@ pub const cbrt  = std.math.cbrt;
 
 pub const gcd   = std.math.gcd;
 
-// Custom
 
+// Customs
 
 pub fn sign( val : anytype ) @TypeOf( val )
 {
@@ -98,7 +98,7 @@ pub fn pow2( val : anytype ) @TypeOf( val )
   }
 }
 
-/// Maps any value to the range [0,1]
+/// Maps any value to the range [ 0, 1 ]
 /// Negatives val = bellow 0.5, Positives val = above 0.5
 /// Small k = gentle slope, large k = steep curve
 pub fn sigmoid( val : anytype, k : @TypeOf( val )) @TypeOf( val )
@@ -137,7 +137,7 @@ pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 }
 
 
-// Equivalent to modulo operation that wraps the value around the range [ min, max ]
+// Equivalent to modulo operation that wraps the value around the range [ min, max - EPS ] instead of [ 0, range - EPS ]
 pub fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val )))
@@ -159,7 +159,7 @@ pub fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
 
 pub fn norm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
 {
-  switch( @typeInfo( @TypeOf( val ))) // Normalizes a value to the range ( 0.0, 1.0 )
+  switch( @typeInfo( @TypeOf( val ))) // Normalizes a value to the range [ 0, 1 ]
   {
     .float, .comptime_float => return( val - min ) / ( max - min ),
     else => @compileError( "norm() only supports Float types" ),
@@ -167,7 +167,7 @@ pub fn norm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
 }
 pub fn denorm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
 {
-  switch( @typeInfo( @TypeOf( val ))) // Denormalizes a value from the range ( 0.0, 1.0 )
+  switch( @typeInfo( @TypeOf( val ))) // Denormalizes a value from the range [ 0, 1 ]
   {
     .float, .comptime_float => return( val * ( max - min )) + min,
     else => @compileError( "denorm() only supports Float types" ),

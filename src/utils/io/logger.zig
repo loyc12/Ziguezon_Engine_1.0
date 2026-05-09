@@ -294,6 +294,7 @@ fn setMsgColour( message : [] const u8 ) !void
   }
 }
 
+
 // =============================== SHORTHAND FUNCTIONS ================================
 
 // Shortcut to log a message with no arguments ( for simple text with no formatting )
@@ -336,4 +337,25 @@ pub fn logDeltaTime( deltaTime : TimeVal, logloc : ?std.builtin.SourceLocation, 
 
   if( logloc )| loc |{ log( .INFO, 0, loc,    message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
   else {               log( .INFO, 0, @src(), message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
+}
+
+
+// =============================== FORMATING HELPER FUNCTIONS ================================
+
+pub fn getSignChar( val : anytype ) u8
+{
+  switch( @typeInfo( @TypeOf( val )))
+  {
+    .float, .comptime_float =>
+    {
+      if( val >= 0.0 ){ return '+'; }
+      else{             return '-'; }
+    },
+    .int, .comptime_int =>
+    {
+      if( val >= 0 ){ return '+'; }
+      else{           return '-'; }
+    },
+    else => @compileError( "getSignChar() only supports Int and Float types" ),
+  }
 }

@@ -467,7 +467,7 @@ pub const EconSolver = struct
       {
         access = @min( access, remain / indDem );
 
-        def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( resT ), remain, indDem, access * 100.0 });
+        def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( resT ), remain, indDem, access * 100.0 });
 
         if( access < 1.0 - def.EPS )
         {
@@ -501,7 +501,7 @@ pub const EconSolver = struct
     {
       access = @min( access, remain / mntDem );
 
-      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( resT ), remain, mntDem, access * 100.0 });
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( resT ), remain, mntDem, access * 100.0 });
 
       if( access < 1.0 - def.EPS )
       {
@@ -537,7 +537,7 @@ pub const EconSolver = struct
     {
       access = @min( access, remain / bldDem );
 
-      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( .PART ), remain, bldDem, access * 100.0 });
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( .PART ), remain, bldDem, access * 100.0 });
 
       if( access < 1.0 - def.EPS )
       {
@@ -1359,7 +1359,7 @@ pub const EconSolver = struct
 
       const flmLvl  : f64 = self.econ.popState.get( .FLM_LVL, popT ) * 100;
 
-      def.log( .CONT, 0, @src(), "{s:<8}: {d:>8.0} / {d:>8.0} [ {d:>8.0} | +{d:>8.0} -{d:>8.0} ( -{d:<8.0} )]  {d:>7.3}%",
+      def.log( .CONT, 0, @src(), "{s:<8}: {d:<12.0} / {d:<12.0} [ {d:<8.0} | +{d:<8.0} -{d:<8.0} ( -{d:<8.0} )]  {d:>7.3}%",
         .{ @tagName( popT ), popC, popL, delta, births, deaths, starved, flmLvl });
     }
   }
@@ -1381,7 +1381,7 @@ pub const EconSolver = struct
       const bonus  : f64 = infC * infT.getMetric_f64( .CAPACITY );
       const useLvl : f64 = self.econ.infState.get( .USE_LVL, infT ) * 100.0;
 
-      def.log( .CONT, 0, @src(), "{s:<10}: {d:>10.0} ( +{d:<14.0} ) [ {d:>8.0} ]  {d:>7.2}%",
+      def.log( .CONT, 0, @src(), "{s:<10}: {d:<10.0} ( +{d:<14.0} ) [ {d:<8.0} ]  {d:>6.2}%",
         .{ @tagName( infT ), infC, bonus, delta, useLvl });
     }
   }
@@ -1402,7 +1402,7 @@ pub const EconSolver = struct
       const actLvl    : f64 = self.econ.indState.get( .ACT_LVL,  indT ) * 100;
       const actTarget : f64 = self.econ.indState.get( .ACT_TRGT, indT ) * 100;
 
-      def.log( .CONT, 0, @src(), "{s:<12}: {d:>8.0} [ {d:>6.0} ]  {d:>7.2}% / {d:>7.2}%",
+      def.log( .CONT, 0, @src(), "{s:<12}: {d:<10.0} [ {d:<8.0} ]  {d:>6.2}% / {d:>6.2}%",
         .{ @tagName( indT ), indC, delta, actLvl, actTarget });
     }
   }
@@ -1426,7 +1426,7 @@ pub const EconSolver = struct
 
       const avgAcs : f64 = self.genResFlowData.get( .OPR_ACS, resT );
 
-      def.log( .CONT, 0, @src(), "{s:<8} : {d:>14.0} / {d:>14.0} [ {d:<12.0} |  +{d:<12.0} -{d:<12.0} -{d:<12.0} ] {d:>10.3}  ( {d:>8.6}$ )",
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} / {d:<14.0}  [ {d:<12.0} |  +{d:<12.0} -{d:<12.0} -{d:<12.0} ] {d:>10.3}  ( {d:>8.6}$ )",
         .{ @tagName( resT ), resC, resL, delta, prod, cons, decay, avgAcs, resP });
     }
   }
@@ -1466,7 +1466,7 @@ pub fn testEconLogs( econ : *ecn.Economy ) void
     var ratio : f64 = 0.0;
     if( prod > def.EPS ){ ratio = delta / prod; }
 
-    def.log( .CONT, 0, @src(), "{s}  \t| +{d:.0}\t-{d:.0}\t= {d:.0}\t( {d:.2}% )", .{ @tagName( resT ), prod, cons, delta, ratio * 100.0 });
+    def.log( .CONT, 0, @src(), "{s:<8} | +{d:<12.0} -{d:<12.0} = {d:<12.0} ( {d:<6.2}% )", .{ @tagName( resT ), prod, cons, delta, ratio * 100.0 });
   }
 
   def.qlog( .INFO, 0, @src(), "# POP PROFITABILITY :" );
@@ -1493,7 +1493,7 @@ pub fn testEconLogs( econ : *ecn.Economy ) void
     var margin : f64 = 0.0;
     if( revenue > def.EPS ){ margin = profit / revenue; }
 
-    def.log( .CONT, 0, @src(), "{s}\t : {d:.0}\t| +{d:.0}\t-{d:.0}\t= {d:.0}\t( {d:.2}% )", .{ @tagName( popT ), popC, revenue, expense, profit, margin * 100.0 });
+    def.log( .CONT, 0, @src(), "{s:<8} : {d:<8.0} | +{d:<10.0} -{d:<10.0} = {d:<10.0} ( {d:>6.2}% )", .{ @tagName( popT ), popC, revenue, expense, profit, margin * 100.0 });
   }
 
   def.qlog( .INFO, 0, @src(), "# IND PROFITABILITY :" );
@@ -1525,7 +1525,7 @@ pub fn testEconLogs( econ : *ecn.Economy ) void
     var margin : f64 = 0.0;
     if( revenue > def.EPS ){ margin = profit / revenue; }
 
-    def.log( .CONT, 0, @src(), "{s}\t : {d:.0}\t| +{d:.0}\t-{d:.0}\t-{d:.0}\t= {d:.0}\t( {d:.2}% )", .{ @tagName( indT ), indC, revenue, expense, mntCosts, profit, margin * 100.0 });
+    def.log( .CONT, 0, @src(), "{s:<12}: {d:<8.0} | +{d:<10.0} -{d:<10.0} -{d:<10.0} = {d:<10.0} ( {d:>6.2}% )", .{ @tagName( indT ), indC, revenue, expense, mntCosts, profit, margin * 100.0 });
   }
 
 //tmpSolver.logAllMetrics();
