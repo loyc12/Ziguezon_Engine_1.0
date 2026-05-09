@@ -61,10 +61,10 @@ pub const EcoState = struct
   pub inline fn logEco( self : *const EcoState ) void
   {
     def.qlog( .INFO, 0, @src(), "Loggin ecology :" );
-    def.log(  .CONT, 0, @src(), "Development    : {d:.6}", .{ self.development });
-    def.log(  .CONT, 0, @src(), "Pollution      : {d:.6}", .{ self.pollution   });
-    def.log(  .CONT, 0, @src(), "Eco Factor     : {d:.6}", .{ self.ecoFactor   });
-    def.log(  .CONT, 0, @src(), "Eco Target     : {d:.6}", .{ self.ecoTarget   });
+    def.log(  .CONT, 0, @src(), "Development : {d:.6}", .{ self.development });
+    def.log(  .CONT, 0, @src(), "Pollution   : {d:.6}", .{ self.pollution   });
+    def.log(  .CONT, 0, @src(), "Eco Factor  : {d:.6}", .{ self.ecoFactor   });
+    def.log(  .CONT, 0, @src(), "Eco Target  : {d:.6}", .{ self.ecoTarget   });
   }
 
   /// Sets ecoFactor to the calculated ecoTarget

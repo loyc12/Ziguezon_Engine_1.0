@@ -427,7 +427,7 @@ pub const EconSolver = struct
       {
         access = @min( access, remain / popDem );
 
-        def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( resT ), remain, popDem, access * 100.0 });
+        def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( resT ), remain, popDem, access * 100.0 });
 
         if( access < 1.0 - def.EPS )
         {
@@ -467,7 +467,7 @@ pub const EconSolver = struct
       {
         access = @min( access, remain / indDem );
 
-        def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( resT ), remain, indDem, access * 100.0 });
+        def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( resT ), remain, indDem, access * 100.0 });
 
         if( access < 1.0 - def.EPS )
         {
@@ -501,7 +501,7 @@ pub const EconSolver = struct
     {
       access = @min( access, remain / mntDem );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( resT ), remain, mntDem, access * 100.0 });
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( resT ), remain, mntDem, access * 100.0 });
 
       if( access < 1.0 - def.EPS )
       {
@@ -537,7 +537,7 @@ pub const EconSolver = struct
     {
       access = @min( access, remain / bldDem );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.2}%", .{ @tagName( .PART ), remain, bldDem, access * 100.0 });
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( .PART ), remain, bldDem, access * 100.0 });
 
       if( access < 1.0 - def.EPS )
       {
@@ -570,7 +570,7 @@ pub const EconSolver = struct
         access = stored / genDem;
       }
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}\t| {d:.6}", .{ @tagName( resT ), stored, genDem, access });
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>10.4}%", .{ @tagName( resT ), stored, genDem, access });
       self.genResFlowData.set( .OPR_ACS, resT, access );
     }
   }
@@ -758,18 +758,17 @@ pub const EconSolver = struct
     }
   }
 
-  /// Independent from GEN cons
   fn applyResDecay( self : *EconSolver ) void
   {
     inline for( 0..resTypeC )| r |
     {
       const resT   = ResType.fromIdx( r );
-      const remain = self.resStockData.get( .BUFF, resT );
+      const stored = self.resStockData.get( .FINAL, resT );
 
-      // Decay applies to what remains AFTER general consumption
-      if( remain > def.EPS )
+      // Decay applies to reamining res AFTER general consumption, but BEFORE general production
+      if( stored > def.EPS )
       {
-        const decayed = @ceil( remain * @min( 1.0, resT.getMetric_f64( .DECAY_RATE )));
+        const decayed = @ceil( stored * @min( 1.0, resT.getMetric_f64( .DECAY_RATE )));
 
         self.resStockData.set( .DECAY, resT, decayed );
         self.resStockData.sub( .FINAL, resT, decayed );
@@ -863,7 +862,7 @@ pub const EconSolver = struct
         self.resStockData.set( .DESTR, resT, destroyed );
         self.resStockData.sub( .FINAL, resT, destroyed );
 
-        def.log( .WARN, 0, @src(), "{s} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resT ), resC, resL, resC - resL });
+        def.log( .WARN, 0, @src(), "{s:<8} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resT ), resC, resL, resC - resL });
       }
     }
   }
@@ -901,13 +900,14 @@ pub const EconSolver = struct
       const oldPrice = self.econ.resState.get( .PRICE, resT );
       const newPrice = def.lerp(  oldPrice, rawPrice, dampening ); // Lerp dampening
 
+      const offPrcnt = 100.0 * newPrice / basePrice;
+
       const dltPrice = newPrice - oldPrice;
       const dltPrcnt = 100.0 * dltPrice / oldPrice;
-      const offPrcnt = 100.0 * newPrice / basePrice;
 
       const resC = self.resStockData.get( .FINAL, resT );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0} \t| {d:.6}\t| {d:.6}\t{d:.6}\t| {d:.1}%  \tx {d:.1}%", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, dltPrcnt, offPrcnt });
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} | {d:>8.6}$ | {d:>8.6}$ > {d:>8.6}$ | {d:>6.1}% ( {d:>6.1} )%", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, offPrcnt, dltPrcnt });
 
       self.econ.resState.set( .PRICE,   resT, newPrice );
       self.econ.resState.set( .PRICE_D, resT, dltPrice );
@@ -974,7 +974,7 @@ pub const EconSolver = struct
           const nextSavings = prevSavings + profit;
 
           // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
-          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}", .{ @tagName( popT ), popC, nextSavings, revenue / popC, expense / popC, margin });
+          def.log( .CONT, 0, @src(), "{s:<8}: {d:<8.0} | {d:>16.1}$ | +{d:<8.4} -{d:<8.4} | {d:>7.4}", .{ @tagName( popT ), popC, nextSavings, revenue / popC, expense / popC, margin });
 
           econ.popState.set( .EXPENSE,  popT, expense     );
           econ.popState.set( .REVENUE,  popT, revenue     );
@@ -982,7 +982,8 @@ pub const EconSolver = struct
         }
         else
         {
-          def.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.1}\t| +N/A\t-N/A\t| {d:.4}", .{ @tagName( popT ), prevSavings, margin});
+          def.log( .CONT, 0, @src(), "{s:<8}: {s:<8} | {d:>16.1}$ | +{d:<8.4} -{d:<8.4} | {d:>7.4}", .{ @tagName( popT ), "0", prevSavings, revenue, expense, margin });
+        //def.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.1}\t| +N/A\t-N/A\t| {d:.4}", .{ @tagName( popT ), prevSavings, margin});
 
           econ.popState.zero( .EXPENSE,  popT );
           econ.popState.zero( .REVENUE,  popT );
@@ -1072,7 +1073,7 @@ pub const EconSolver = struct
           const nextCapital = prevCapital + profit;
 
           // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
-          def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t| {d:.1}\t| +{d:.4}\t-{d:.4}\t| {d:.4}\t{d:.4}%", .{ @tagName( indT ), indC, nextCapital, revenue / indC, expense / indC, margin, activityTarget * 100.0 });
+          def.log( .CONT, 0, @src(), "{s:<12}: {d:>8.0} | {d:>16.1}$ |  +{d:<8.4} -{d:<8.4} | {d:>7.4} {d:>10.4}%", .{ @tagName( indT ), indC, nextCapital, revenue / indC, expense / indC, margin, activityTarget * 100.0 });
 
           econ.indState.set( .EXPENSE,  indT, expense     );
           econ.indState.set( .REVENUE,  indT, revenue     );
@@ -1080,7 +1081,7 @@ pub const EconSolver = struct
         }
         else
         {
-          def.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.1}\t| +N/A\t-N/A\t| {d:.4}\t{d:.4}%", .{ @tagName( indT ), prevCapital, margin, activityTarget * 100.0 });
+          def.log( .CONT, 0, @src(), "{s:<12}: {s:>8} | {d:>16.1}$ |  +{d:<8.4} -{d:<8.4} | {d:>7.4} {d:>10.4}%", .{ @tagName( indT ), "0", prevCapital, revenue, expense, margin, activityTarget * 100.0 });
 
           econ.indState.zero( .EXPENSE,  indT );
           econ.indState.zero( .REVENUE,  indT );
@@ -1151,7 +1152,7 @@ pub const EconSolver = struct
             const access = self.grpResFlowData.get( .POP, .OPR_ACS, resT );
             minResAccess = @min( minResAccess, access );
 
-            def.log( .CONT, 0, @src(), "- {s}\t : {d:.4}", .{ @tagName( resT ), access });
+            def.log( .CONT, 0, @src(), "- {s:<8} = {d:.4}", .{ @tagName( resT ), access });
 
             if( access < 1.0 )
             {
@@ -1165,7 +1166,7 @@ pub const EconSolver = struct
 
         avgPopStarveRate += maxStarveRate;
 
-        def.log( .CONT, 0, @src(), "Starve Rate  : {d:.6}", .{ maxStarveRate });
+        def.log( .CONT, 0, @src(), "Starve Rate   : {d:.6}", .{ maxStarveRate });
 
 
         const deathRate = baseFatality + maxStarveRate;
@@ -1173,7 +1174,7 @@ pub const EconSolver = struct
 
         avgPopDeathRate += deathRate;
 
-        def.log( .CONT, 0, @src(), "Death Rate   : {d:.6}", .{ deathRate });
+        def.log( .CONT, 0, @src(), "Death Rate    : {d:.6}", .{ deathRate });
 
 
         // ================ NATALITY ================
@@ -1189,9 +1190,9 @@ pub const EconSolver = struct
 
         avgPopBirthRate += birthRate;
 
-        def.log( .CONT, 0, @src(), "Birth Rate   : {d:.6}", .{ birthRate });
-        def.log( .CONT, 0, @src(), "Res Modifier : {d:.8}", .{ resModifier });
-        def.log( .CONT, 0, @src(), "Job Modifier : {d:.8}", .{ jobModifier });
+        def.log( .CONT, 0, @src(), "Birth Rate    : {d:.6}", .{ birthRate });
+        def.log( .CONT, 0, @src(), "Res Modifier  : {d:.8}", .{ resModifier });
+        def.log( .CONT, 0, @src(), "Job Modifier  : {d:.8}", .{ jobModifier });
 
 
         // ================ POP DELTA ================
@@ -1342,8 +1343,8 @@ pub const EconSolver = struct
 
   pub fn logPopMetrics( self : *const EconSolver ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ POPULATION : Count ( Capacity )  [ Delta | Births Deaths ( Starved )]  Fulfilment" );
-    def.qlog( .CONT, 0, @src(), "$ =================================================================================" );
+    def.qlog( .INFO, 0, @src(), "$ POPULATION : Count ( Capacity )  [ Delta | Births Deaths ( Starved )]  Fulfilment Rate" );
+    def.qlog( .CONT, 0, @src(), "$ ======================================================================================" );
 
     inline for( 0..popTypeC )| p |
     {
@@ -1358,7 +1359,7 @@ pub const EconSolver = struct
 
       const flmLvl  : f64 = self.econ.popState.get( .FLM_LVL, popT ) * 100;
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t/ {d:.0}\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t( -{d:.0}\t)] {d:.3}%",
+      def.log( .CONT, 0, @src(), "{s:<8}: {d:>8.0} / {d:>8.0} [ {d:>8.0} | +{d:>8.0} -{d:>8.0} ( -{d:<8.0} )]  {d:>7.3}%",
         .{ @tagName( popT ), popC, popL, delta, births, deaths, starved, flmLvl });
     }
   }
@@ -1380,7 +1381,7 @@ pub const EconSolver = struct
       const bonus  : f64 = infC * infT.getMetric_f64( .CAPACITY );
       const useLvl : f64 = self.econ.infState.get( .USE_LVL, infT ) * 100.0;
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d:.0}\t( +{d:.0}\t) [ {d:.0}\t] {d:.2}%",
+      def.log( .CONT, 0, @src(), "{s:<10}: {d:>10.0} ( +{d:<14.0} ) [ {d:>8.0} ]  {d:>7.2}%",
         .{ @tagName( infT ), infC, bonus, delta, useLvl });
     }
   }
@@ -1401,15 +1402,15 @@ pub const EconSolver = struct
       const actLvl    : f64 = self.econ.indState.get( .ACT_LVL,  indT ) * 100;
       const actTarget : f64 = self.econ.indState.get( .ACT_TRGT, indT ) * 100;
 
-      def.log( .CONT, 0, @src(), "{s}\t: {d:.0} \t[ {d:.0}\t] {d:.2}%\t/ {d:.2}%",
+      def.log( .CONT, 0, @src(), "{s:<12}: {d:>8.0} [ {d:>6.0} ]  {d:>7.2}% / {d:>7.2}%",
         .{ @tagName( indT ), indC, delta, actLvl, actTarget });
     }
   }
 
   pub inline fn logResMetrics( self : *const EconSolver ) void
   {
-    def.qlog( .INFO, 0, @src(), "$ RESOURCE : Count / Capacity  [ Delta | Prod Cons Decay ]  Access  ( Price )" );
-    def.qlog( .CONT, 0, @src(), "$ ===========================================================================" );
+    def.qlog( .INFO, 0, @src(), "$ RESOURCE : Count / Capacity  [ Delta | Prod Cons Decay ]  Access Rate  ( Price )" );
+    def.qlog( .CONT, 0, @src(), "$ ================================================================================" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -1425,7 +1426,7 @@ pub const EconSolver = struct
 
       const avgAcs : f64 = self.genResFlowData.get( .OPR_ACS, resT );
 
-      def.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t/ {d:.0}\t[ {d:.0}\t| +{d:.0}\t-{d:.0}\t-{d:.0}\t] {d:.3} \t ( {d:.6} )",
+      def.log( .CONT, 0, @src(), "{s:<8} : {d:>14.0} / {d:>14.0} [ {d:<12.0} |  +{d:<12.0} -{d:<12.0} -{d:<12.0} ] {d:>10.3}  ( {d:>8.6}$ )",
         .{ @tagName( resT ), resC, resL, delta, prod, cons, decay, avgAcs, resP });
     }
   }
