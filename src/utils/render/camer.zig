@@ -248,8 +248,8 @@ pub const Cam2D = struct
   {
     def.log( .TRACE, 0, @src(), "Clamping Cam2D center in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
 
-    self.pos.x = def.clmp( self.pos.x, area.getLeftX(), area.getRightX() );
-    self.pos.y = def.clmp( self.pos.y, area.getTopY(), area.getBottomY() );
+    self.pos.x = def.clmp( self.pos.x, area.getMinX(), area.getMaxX() );
+    self.pos.y = def.clmp( self.pos.y, area.getMinY(), area.getMaxY() );
   }
 
 };

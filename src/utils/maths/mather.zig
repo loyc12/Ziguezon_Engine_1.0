@@ -99,7 +99,7 @@ pub fn pow2( val : anytype ) @TypeOf( val )
 }
 
 /// Maps any value to the range [ 0, 1 ]
-/// Negatives val = bellow 0.5, Positives val = above 0.5
+/// Negatives val = below 0.5, Positives val = above 0.5
 /// Small k = gentle slope, large k = steep curve
 pub fn sigmoid( val : anytype, k : @TypeOf( val )) @TypeOf( val )
 {

@@ -489,23 +489,12 @@ pub const drawTexture         = drwW_u.drawTexture;
 pub const drawTextureCentered = drwW_u.drawTextureCentered;
 
 
-// ======== INTERFACER ========
-
-pub const ntf_u = @import( "utils/render/interfacer.zig" );
-
-pub const InterfaceShape = ntf_u.InterfaceShape;
-pub const BevelType      = ntf_u.BevelType;
-pub const BevelArray     = ntf_u.BevelArray;
-pub const Interfacer2D   = ntf_u.Interfacer2D;
-
-
 // ======== SPRITEMAPS ========
 
 pub const spm_u = @import( "utils/render/spritemap.zig" );
 
 pub const Spritemap = spm_u.Spritemap;
 pub const Sprite    = spm_u.Sprite;
-
 
 
 // ================================ RNG SHORTHANDS ================================
@@ -521,6 +510,7 @@ pub const Noise2D = nsr_u.Noise2D;
 
 pub const rng_u  = @import( "utils/rng/randomer.zig" );
 
+
 // ======== SHAKE ========
 
 pub const shk_u = @import( "utils/rng/shaker2.zig" );
@@ -528,7 +518,16 @@ pub const shk_u = @import( "utils/rng/shaker2.zig" );
 pub const Shaker2D = shk_u.Shake2D;
 
 
+// ================================ UI SHORTHANDS ================================
 
+// ======== INTERFACER ========
+
+pub const ntf_u = @import( "utils/ui/interfacer.zig" );
+
+pub const InterfaceShape = ntf_u.InterfaceShape;
+pub const BevelType      = ntf_u.BevelType;
+pub const BevelArray     = ntf_u.BevelArray;
+pub const Interface2D    = ntf_u.Interface2D;
 
 
 

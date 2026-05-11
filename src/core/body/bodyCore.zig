@@ -177,22 +177,22 @@ pub const Body = struct
   pub inline fn clampNotInArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampNotInArea(   pMin, pMax ); self.updatePosFromHitbox(); }
 
 
-  pub inline fn clampInLeftX(   self : *Body, thresholdX : f64 ) void { self.hitbox.clampInLeftX(   thresholdX ); self.updatePosFromHitbox(); }
-  pub inline fn clampInRightX(  self : *Body, thresholdX : f64 ) void { self.hitbox.clampInRightX(  thresholdX ); self.updatePosFromHitbox(); }
-  pub inline fn clampInTopY(    self : *Body, thresholdY : f64 ) void { self.hitbox.clampInTopY(    thresholdY ); self.updatePosFromHitbox(); }
-  pub inline fn clampInBottomY( self : *Body, thresholdY : f64 ) void { self.hitbox.clampInBottomY( thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampInLeftX(   self : *Body, thresholdX : f64 ) void { self.hitbox.clampRightOfX(   thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampInRightX(  self : *Body, thresholdX : f64 ) void { self.hitbox.clampLeftOfX(  thresholdX ); self.updatePosFromHitbox(); }
+  pub inline fn clampInTopY(    self : *Body, thresholdY : f64 ) void { self.hitbox.clampBelowY(    thresholdY ); self.updatePosFromHitbox(); }
+  pub inline fn clampInBottomY( self : *Body, thresholdY : f64 ) void { self.hitbox.clampAboveY( thresholdY ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampNotOnX(     self : *Body, xVal : f64  ) void { self.hitbox.clampNotOnX(  xVal ); self.updatePosFromHitbox(); }
-  pub inline fn clampNotOnY(     self : *Body, yVal : f64  ) void { self.hitbox.clampNotOnY(  yVal ); self.updatePosFromHitbox(); }
-  pub inline fn clampNotOnPoint( self : *Body, p    : Vec2 ) void { self.hitbox.clampNotOnPoint( p ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnX(     self : *Body, xVal : f64  ) void { self.hitbox.clampOutOfX(  xVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnY(     self : *Body, yVal : f64  ) void { self.hitbox.clampOutOfY(  yVal ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnPoint( self : *Body, p    : Vec2 ) void { self.hitbox.clampOutOfPoint( p ); self.updatePosFromHitbox(); }
 
   pub inline fn clampInXRange( self : *Body, xMin : f64,  xMax : f64  ) void { self.hitbox.clampInXRange( xMin, xMax ); self.updatePosFromHitbox(); }
   pub inline fn clampInYRange( self : *Body, yMin : f64,  yMax : f64  ) void { self.hitbox.clampInYRange( yMin, yMax ); self.updatePosFromHitbox(); }
   pub inline fn clampInArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampInArea(   pMin, pMax ); self.updatePosFromHitbox(); }
 
-  pub inline fn clampNotOnXRange( self : *Body, xMin : f64,  xMax : f64  ) void { self.hitbox.clampNotOnXRange( xMin, xMax ); self.updatePosFromHitbox(); }
-  pub inline fn clampNotOnYRange( self : *Body, yMin : f64,  yMax : f64  ) void { self.hitbox.clampNotOnYRange( yMin, yMax ); self.updatePosFromHitbox(); }
-  pub inline fn clampNotOnArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampNotOnArea(   pMin, pMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnXRange( self : *Body, xMin : f64,  xMax : f64  ) void { self.hitbox.clampOutOfXRange( xMin, xMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnYRange( self : *Body, yMin : f64,  yMax : f64  ) void { self.hitbox.clampOutOfYRange( yMin, yMax ); self.updatePosFromHitbox(); }
+  pub inline fn clampNotOnArea(   self : *Body, pMin : Vec2, pMax : Vec2 ) void { self.hitbox.clampOutOfArea(   pMin, pMax ); self.updatePosFromHitbox(); }
 
 
   // ======== HITBOX ACCESSORS & MUTATORS ========

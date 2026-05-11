@@ -76,7 +76,7 @@ fn getEmptyVertexArray() VertexArray { comptime return .{ .{}, .{}, .{}, .{}, .{
 
 // ================================ INTERFACER STRUCT ================================
 
-pub const Interfacer2D = struct
+pub const Interface2D = struct
 {
 
   pos    : VecA,
@@ -104,9 +104,9 @@ pub const Interfacer2D = struct
 
 
 
-  pub inline fn getCornerCount( self : *const Interfacer2D ) u8 { return self.shape.getCornerCount(); }
+  pub inline fn getCornerCount( self : *const Interface2D ) u8 { return self.shape.getCornerCount(); }
 
-  pub fn hasAnyBevel( self : *const Interfacer2D ) bool
+  pub fn hasAnyBevel( self : *const Interface2D ) bool
   {
     if( self.edgeWidth < def.EPS ){ return false; }
 
@@ -118,7 +118,7 @@ pub const Interfacer2D = struct
     return false;
   }
 
-  pub fn updateShapeVertices( self : *Interfacer2D ) void
+  pub fn updateShapeVertices( self : *Interface2D ) void
   {
     if( self.shape == .ELLI ){ return; }
 
@@ -221,7 +221,7 @@ pub const Interfacer2D = struct
     }
   }
 
-  pub fn drawSelf( self : *const Interfacer2D ) void
+  pub fn drawSelf( self : *const Interface2D ) void
   {
     const p0 = self.pos.toVec2(); // Shape center pos
     const a0 = self.pos.a;        // Shape base angle

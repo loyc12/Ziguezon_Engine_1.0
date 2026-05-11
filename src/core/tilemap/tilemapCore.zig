@@ -461,7 +461,7 @@ pub const Tilemap = struct
 
     const viewBox = def.G_CAM.toViewBox();
 
-    if( !viewBox.isOverlapping( &self.getMapBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
+    if( !viewBox.doesOverlap( &self.getMapBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
 
     for( 0 .. self.getTileCount() )| index |
     {

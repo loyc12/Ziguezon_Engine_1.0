@@ -10,7 +10,7 @@ const Vec2 = def.Vec2;
 pub fn isOverlapping( e1 : *const Body, e2 : *const Body ) bool
 {
   def.log( .TRACE, e1.id, @src(), "Checking if Body {d} overlaps with {d}", .{ e1.id, e2.id });
-  return e1.hitbox.isOverlapping( &( e2.hitbox ) );
+  return e1.hitbox.doesOverlap( &( e2.hitbox ) );
 }
 
 // This function checks if the Body overlaps with another Body and returns the overlap vector if they do.

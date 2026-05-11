@@ -69,7 +69,7 @@ pub const Vec2 = struct
     return .{ .x = self.y, .y = self.x };
   }
 
-  // ================ COMPARISONS ================
+  // ================ COMPARISONS ================ // TODO : add EPS ranges to accout for fp errors
 
   pub inline fn isPosi( self : *const Vec2 ) bool { return self.x >= 0 and self.y >= 0; }
   pub inline fn isZero( self : *const Vec2 ) bool { return self.x == 0 and self.y == 0; }

@@ -884,7 +884,7 @@ pub const Economy = struct
   const AUTO_BUILD_INF_FACTOR   : f64 = 0.00005; // Fraction of pop count to build per tick at full scale (inf)
   const AUTO_BUILD_ASSEMBLY_F   : f64 = 0.01000; // Max ASSEMBLY count as a fraction of population count
 
-  const AUTO_DECAY_INF_THRESH   : f64 = 0.25000; // Infrastructure use rate bellow which it decays
+  const AUTO_DECAY_INF_THRESH   : f64 = 0.25000; // Infrastructure use rate below which it decays
   const AUTO_DECAY_INF_FACTOR   : f64 = 0.00002; // Fraction of pop count to decay per tick at full scale (ind)
   const AUTO_DECAY_ASSEMBLY_F   : f64 = 0.00025; // Min ASSEMBLY count as a fraction of population count
 
@@ -894,7 +894,7 @@ pub const Economy = struct
   const AUTO_BUILD_IND_FACTOR   : f64 = 0.00002; // Fraction of pop count to build per tick at full scale (ind)
   const AUTO_BUILD_ACCESS_LIMIT : f64 =    32.0; // Stored/demand ratio above which build amounts are dampened
 
-  const AUTO_DECAY_IND_THRESH   : f64 = 0.60000; // Industry activity target bellow which it decays
+  const AUTO_DECAY_IND_THRESH   : f64 = 0.60000; // Industry activity target below which it decays
   const AUTO_DECAY_IND_FACTOR   : f64 = 0.00001; // Fraction of pop count to decay per tick at full scale (ind)
 
 

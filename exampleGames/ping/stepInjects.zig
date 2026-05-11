@@ -204,7 +204,7 @@ pub fn OnTickWorld( ng : *Engine ) void
 
     if( part.canBeDel() ){ continue; } // skip pre-marked particles
 
-    // If the particle is bellow the screen, deactivate it and mark it for deletion
+    // If the particle is below the screen, deactivate it and mark it for deletion
     if( part.getTopY() >= def.getScreenHeight() / 2 )
     {
       part.delFlag( .ACTIVE );

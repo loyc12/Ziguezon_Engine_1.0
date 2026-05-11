@@ -114,7 +114,7 @@ pub const PopStateEnum = enum( u8 )
   DEATH,    // Amount lost from all deaths last tick
   BIRTH,    // Amount gained from births last tick
 
-  // TODO : Hook in the monetary values bellow properly
+  // TODO : Hook in the monetary values below properly
   EXPENSE,  // Amount of money spent to fulfill their needs
   REVENUE,  // Amount of money gained by via WORK production
   SAVINGS,  // Stored profits from previous ticks ( decays via inflation )

@@ -5,59 +5,65 @@ const Angle = def.Angle;
 const Vec2  = def.Vec2;
 const VecA  = def.VecA;
 
-// This is a simple AABB struct ( Axis-Aligned Bounding Box ) meant to ease collision checks and clamping operations.
+// This is a simple AABB struct ( Axis-Aligned Bounding Box ) meant to ease collision checks and position clamping
 
-// NOTE : The orientations are defined as follows:
+// NOTE : The orientations are defined as follows :
 
 // LEFT   => -X ( xMin side )
 // RIGHT  => +X ( xMax side )
-// TOP    => -Y ( minY side )
-// BOTTOM => +Y ( maxY side )
+// TOP    => -Y ( yMin side )
+// BOTTOM => +Y ( yMax side )
 
 // ================================ UTIL FUNCTIONS ================================
 
-pub inline fn isLeftOf(  xVal : f64, thresholdX : f64 ) bool { return xVal < thresholdX; }
-pub inline fn isRightOf( xVal : f64, thresholdX : f64 ) bool { return xVal > thresholdX; }
-pub inline fn isAbove(   yVal : f64, thresholdY : f64 ) bool { return yVal < thresholdY; } // NOTE : Y axis is inverted in raylib rendering
-pub inline fn isBelow(   yVal : f64, thresholdY : f64 ) bool { return yVal > thresholdY; } // NOTE : Y axis is inverted in raylib rendering
+pub inline fn isLeftOf(  valX : f64, thresholdX : f64 ) bool { return valX < thresholdX; }
+pub inline fn isRightOf( valX : f64, thresholdX : f64 ) bool { return valX > thresholdX; }
+pub inline fn isAbove(   valY : f64, thresholdY : f64 ) bool { return valY < thresholdY; } // NOTE : Y axis is inverted in raylib rendering
+pub inline fn isBelow(   valY : f64, thresholdY : f64 ) bool { return valY > thresholdY; } // NOTE : Y axis is inverted in raylib rendering
 
-pub inline fn getCenterXFromLeftX(   leftX   : f64, scale : Vec2 ) f64 { return leftX   + scale.x; }
-pub inline fn getCenterXFromRightX(  rightX  : f64, scale : Vec2 ) f64 { return rightX  - scale.x; }
-pub inline fn getCenterYFromTopY(    topY    : f64, scale : Vec2 ) f64 { return topY    + scale.y; }
-pub inline fn getCenterYFromBottomY( bottomY : f64, scale : Vec2 ) f64 { return bottomY - scale.y; }
+pub inline fn getCenterXFromMinX( xMin : f64, scale : Vec2 ) f64 { return xMin + scale.x; }
+pub inline fn getCenterXFromMaxX( xMax : f64, scale : Vec2 ) f64 { return xMax - scale.x; }
+pub inline fn getCenterYFromMinY( yMin : f64, scale : Vec2 ) f64 { return yMin + scale.y; }
+pub inline fn getCenterYFromMaxY( yMax : f64, scale : Vec2 ) f64 { return yMax - scale.y; }
 
-pub inline fn getCenterFromTopLeft(     topLeftPos     : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromLeftX(  topLeftPos.x,     scale ), .y = getCenterYFromTopY(    topLeftPos.y,     scale ) }; }
-pub inline fn getCenterFromTopRight(    topRightPos    : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromRightX( topRightPos.x,    scale ), .y = getCenterYFromTopY(    topRightPos.y,    scale ) }; }
-pub inline fn getCenterFromBottomLeft(  bottomLeftPos  : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromLeftX(  bottomLeftPos.x,  scale ), .y = getCenterYFromBottomY( bottomLeftPos.y,  scale ) }; }
-pub inline fn getCenterFromBottomRight( bottomRightPos : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromRightX( bottomRightPos.x, scale ), .y = getCenterYFromBottomY( bottomRightPos.y, scale ) }; }
+// TODO : remove these legacy wrapper functions once they are deemed unused
+pub inline fn getCenterXFromLeftX(   leftX   : f64, scale : Vec2 ) f64 { return getCenterXFromMinX( leftX,   scale ); }
+pub inline fn getCenterXFromRightX(  rightX  : f64, scale : Vec2 ) f64 { return getCenterXFromMaxX( rightX,  scale ); }
+pub inline fn getCenterYFromTopY(    topY    : f64, scale : Vec2 ) f64 { return getCenterYFromMinY( topY,    scale ); }
+pub inline fn getCenterYFromBottomY( bottomY : f64, scale : Vec2 ) f64 { return getCenterYFromMaxY( bottomY, scale ); }
 
-inline fn checkMinMax( minVal : f64, maxVal : f64 ) bool
+pub inline fn getCenterFromTopLeft(     topLeftPos     : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromMinX( topLeftPos.x,     scale ), .y = getCenterYFromMinY( topLeftPos.y,     scale ) }; }
+pub inline fn getCenterFromTopRight(    topRightPos    : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromMaxX( topRightPos.x,    scale ), .y = getCenterYFromMinY( topRightPos.y,    scale ) }; }
+pub inline fn getCenterFromBottomLeft(  bottomLeftPos  : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromMinX( bottomLeftPos.x,  scale ), .y = getCenterYFromMaxY( bottomLeftPos.y,  scale ) }; }
+pub inline fn getCenterFromBottomRight( bottomRightPos : Vec2, scale : Vec2 ) Vec2 { return Vec2{ .x = getCenterXFromMaxX( bottomRightPos.x, scale ), .y = getCenterYFromMaxY( bottomRightPos.y, scale ) }; }
+
+inline fn isMinMaxValid( vMin : f64, vMax : f64 ) bool
 {
-  if( minVal > maxVal )
+  if( vMin > vMax )
   {
-    def.log( .ERROR, 0, @src(), "Invalid range: minVal ({d}) is greater than maxVal ({d})", .{ minVal, maxVal });
-    return true;
+    def.log( .ERROR, 0, @src(), "Invalid range: vMin ({d}) is greater than vMax ({d})", .{ vMin, vMax });
+    return false;
   }
-  return false;
+  return true;
 }
-inline fn checkMinMax2( pMin : Vec2, pMax : Vec2 ) bool
+inline fn isMinMaxValidVec2( pMin : Vec2, pMax : Vec2 ) bool
 {
   if( pMin.x > pMax.x or pMin.y > pMax.y )
   {
     def.log( .ERROR, 0, @src(), "Invalid area: pMin ({d}:{d}) is greater than pMax ({d}:{d})", .{ pMin.x, pMin.y, pMax.x, pMax.y });
-    return true;
+    return false;
   }
-  return false;
+  return true;
 }
 
-inline fn checkClampRange( minVal : f64, maxVal : f64, size : f64 ) bool
+inline fn isClampRangeValid( vMin : f64, vMax : f64, size : f64 ) bool
 {
-  if( maxVal - minVal < size )
+  if( vMax - vMin < size )
   {
-    def.log( .ERROR, 0, @src(), "Invalid range for clamping: range ({d}) is smaller than the box size ({d})", .{ maxVal - minVal, size });
-    return true;
+    def.log( .ERROR, 0, @src(), "Invalid range for clamping: range ({d}) is smaller than the box size ({d})", .{ vMax - vMin, size });
+    return false;
   }
-  return false;
+  return true;
 }
 
 // ================================ BOX2 STRUCT ================================
@@ -134,10 +140,10 @@ pub const Box2 = struct
     const sideStepAngle = Angle.newRad( def.TAU / @as( f32, @floatFromInt( sides )));
     const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
 
-    var maxX : f64 = rP0.x;
-    var minX : f64 = rP0.x;
-    var maxY : f64 = rP0.y;
-    var minY : f64 = rP0.y;
+    var xMax : f64 = rP0.x;
+    var xMin : f64 = rP0.x;
+    var yMax : f64 = rP0.y;
+    var yMin : f64 = rP0.y;
 
 
     if( sides > 2 ) // 1 == radius line, 2 == diametre line
@@ -148,24 +154,24 @@ pub const Box2 = struct
       {
         const rVertex = Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a );
 
-        if( rVertex.x > maxX ){ maxX = rVertex.x; }
-        if( rVertex.x < minX ){ minX = rVertex.x; }
-        if( rVertex.y > maxY ){ maxY = rVertex.y; }
-        if( rVertex.y < minY ){ minY = rVertex.y; }
+        if( rVertex.x > xMax ){ xMax = rVertex.x; }
+        if( rVertex.x < xMin ){ xMin = rVertex.x; }
+        if( rVertex.y > yMax ){ yMax = rVertex.y; }
+        if( rVertex.y < yMin ){ yMin = rVertex.y; }
       }}
       else { for( 1..iterLimit )| i | // NOTE : slightly faster, but requires isoscalar polygons
       {
         const rVertex = rP0.rot( sideStepAngle.mulVal( @floatFromInt( i )));
 
-        if( rVertex.x > maxX ){ maxX = rVertex.x; }
-        if( rVertex.x < minX ){ minX = rVertex.x; }
-        if( rVertex.y > maxY ){ maxY = rVertex.y; }
-        if( rVertex.y < minY ){ minY = rVertex.y; }
+        if( rVertex.x > xMax ){ xMax = rVertex.x; }
+        if( rVertex.x < xMin ){ xMin = rVertex.x; }
+        if( rVertex.y > yMax ){ yMax = rVertex.y; }
+        if( rVertex.y < yMin ){ yMin = rVertex.y; }
       }}
     }
 
-    const newWidth  = @max( @abs( maxX ), @abs( minX ));
-    const newHeight = @max( @abs( maxY ), @abs( minY ));
+    const newWidth  = @max( @abs( xMax ), @abs( xMin ));
+    const newHeight = @max( @abs( yMax ), @abs( yMin ));
 
     return Box2{
       .center = pos,
@@ -176,113 +182,291 @@ pub const Box2 = struct
 
   // ================ ACCESSORS & MUTATORS ================
 
-  pub inline fn getLeftX(   self : *const Box2 ) f64 { return self.center.x - self.scale.x; }
-  pub inline fn getRightX(  self : *const Box2 ) f64 { return self.center.x + self.scale.x; }
-  pub inline fn getTopY(    self : *const Box2 ) f64 { return self.center.y - self.scale.y; }
-  pub inline fn getBottomY( self : *const Box2 ) f64 { return self.center.y + self.scale.y; }
+  pub inline fn getMinX( self : *const Box2 ) f64 { return self.center.x - self.scale.x; }
+  pub inline fn getMaxX( self : *const Box2 ) f64 { return self.center.x + self.scale.x; }
+  pub inline fn getMinY( self : *const Box2 ) f64 { return self.center.y - self.scale.y; }
+  pub inline fn getMaxY( self : *const Box2 ) f64 { return self.center.y + self.scale.y; }
 
-  pub inline fn getTopLeft(     self : *const Box2 ) Vec2 { return Vec2{ .x = self.getLeftX(),  .y = self.getTopY()    }; }
-  pub inline fn getTopRight(    self : *const Box2 ) Vec2 { return Vec2{ .x = self.getRightX(), .y = self.getTopY()    }; }
-  pub inline fn getBottomLeft(  self : *const Box2 ) Vec2 { return Vec2{ .x = self.getLeftX(),  .y = self.getBottomY() }; }
-  pub inline fn getBottomRight( self : *const Box2 ) Vec2 { return Vec2{ .x = self.getRightX(), .y = self.getBottomY() }; }
+  pub inline fn setMinX( self : *Box2, xMin : f64 ) void { self.center.x = xMin + self.scale.x; }
+  pub inline fn setMaxX( self : *Box2, xMax : f64 ) void { self.center.x = xMax - self.scale.x; }
+  pub inline fn setMinY( self : *Box2, yMin : f64 ) void { self.center.y = yMin + self.scale.y; }
+  pub inline fn setMaxY( self : *Box2, yMax : f64 ) void { self.center.y = yMax - self.scale.y; }
 
-  pub inline fn setLeftX(   self : *Box2, leftX   : f64 ) void { self.center.x = leftX   + self.scale.x ; }
-  pub inline fn setRightX(  self : *Box2, rightX  : f64 ) void { self.center.x = rightX  - self.scale.x ; }
-  pub inline fn setTopY(    self : *Box2, topY    : f64 ) void { self.center.y = topY    + self.scale.y ; }
-  pub inline fn setBottomY( self : *Box2, bottomY : f64 ) void { self.center.y = bottomY - self.scale.y ; }
 
-  pub inline fn setTopLeft(     self : *Box2, topLeftPos     : Vec2 ) void { self.setLeftX(  topLeftPos.x     ); self.setTopY(    topLeftPos.y     ); }
-  pub inline fn setTopRight(    self : *Box2, topRightPos    : Vec2 ) void { self.setRightX( topRightPos.x    ); self.setTopY(    topRightPos.y    ); }
-  pub inline fn setBottomLeft(  self : *Box2, bottomLeftPos  : Vec2 ) void { self.setLeftX(  bottomLeftPos.x  ); self.setBottomY( bottomLeftPos.y  ); }
-  pub inline fn setBottomRight( self : *Box2, bottomRightPos : Vec2 ) void { self.setRightX( bottomRightPos.x ); self.setBottomY( bottomRightPos.y ); }
+  // TODO : remove these legacy wrapper functions once they are deemed unused
+  pub inline fn getLeftX(   self : *const Box2 ) f64 { return self.getMinX(); }
+  pub inline fn getRightX(  self : *const Box2 ) f64 { return self.getMaxX(); }
+  pub inline fn getTopY(    self : *const Box2 ) f64 { return self.getMinY(); }
+  pub inline fn getBottomY( self : *const Box2 ) f64 { return self.getMaxY(); }
+
+  pub inline fn setLeftX(   self : *Box2, leftX   : f64 ) void { self.setMinX( leftX   ); }
+  pub inline fn setRightX(  self : *Box2, rightX  : f64 ) void { self.setMaxX( rightX  ); }
+  pub inline fn setTopY(    self : *Box2, topY    : f64 ) void { self.setMinY( topY    ); }
+  pub inline fn setBottomY( self : *Box2, bottomY : f64 ) void { self.setMaxY( bottomY ); }
+
+
+  pub inline fn getTopLeft(     self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMinX(), .y = self.getMinY() }; }
+  pub inline fn getTopRight(    self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMaxX(), .y = self.getMinY() }; }
+  pub inline fn getBottomLeft(  self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMinX(), .y = self.getMaxY() }; }
+  pub inline fn getBottomRight( self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMaxX(), .y = self.getMaxY() }; }
+
+  pub inline fn setTopLeft(     self : *Box2, topLeftPos     : Vec2 ) void { self.setMinX( topLeftPos.x     ); self.setMinY( topLeftPos.y     ); }
+  pub inline fn setTopRight(    self : *Box2, topRightPos    : Vec2 ) void { self.setMaxX( topRightPos.x    ); self.setMinY( topRightPos.y    ); }
+  pub inline fn setBottomLeft(  self : *Box2, bottomLeftPos  : Vec2 ) void { self.setMinX( bottomLeftPos.x  ); self.setMaxY( bottomLeftPos.y  ); }
+  pub inline fn setBottomRight( self : *Box2, bottomRightPos : Vec2 ) void { self.setMaxX( bottomRightPos.x ); self.setMaxY( bottomRightPos.y ); }
+
+
+  // TODO : Add "scaled" setters and getters for X, Y, and X+Y
+
 
   // ================ CHECKERS ================
 
-  pub inline fn isEq(    self : *const Box2, other : Box2 ) bool { return self.center.isEq(    other.center ) and self.scale.isEq(   other.scale ); }
-  pub inline fn isDiff(  self : *const Box2, other : Box2 ) bool { return self.center.isDiff(  other.center ) or  self.scale.isDiff( other.scale ); }
+  // TODO : add an EPS size range to account for fp errors
+  pub inline fn isEq(   self : *const Box2, zoneBox : Box2 ) bool { return self.center.isEq(   zoneBox.center ) and self.scale.isEq(   zoneBox.scale ); }
+  pub inline fn isDiff( self : *const Box2, zoneBox : Box2 ) bool { return self.center.isDiff( zoneBox.center ) or  self.scale.isDiff( zoneBox.scale ); }
 
-  // ======== PERMISSIVE RANGE CHECKERS ======== ( can be partially outside the range )
+  // Entirely _ of threshold
+  pub inline fn isLeftOfX(  self : *const Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getMaxX(), thresholdX ); }
+  pub inline fn isRightOfX( self : *const Box2, thresholdX : f64 ) bool { return isRightOf( self.getMinX(), thresholdX ); }
+  pub inline fn isAboveY(   self : *const Box2, thresholdY : f64 ) bool { return isAbove(   self.getMaxY(), thresholdY ); }
+  pub inline fn isBelowY(   self : *const Box2, thresholdY : f64 ) bool { return isBelow(   self.getMinY(), thresholdY ); }
 
-  pub inline fn goesLeftOfX(  self : *const Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getLeftX(),   thresholdX ); }
-  pub inline fn goesRightOfX( self : *const Box2, thresholdX : f64 ) bool { return isRightOf( self.getRightX(),  thresholdX ); }
-  pub inline fn goesAboveY(   self : *const Box2, thresholdY : f64 ) bool { return isAbove(   self.getTopY(),    thresholdY ); }
-  pub inline fn goesBelowY(   self : *const Box2, thresholdY : f64 ) bool { return isBelow(   self.getBottomY(), thresholdY ); }
+  // At least Partially _ of threshold
+  pub inline fn goesLeftOfX(  self : *const Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getMinX(), thresholdX ); }
+  pub inline fn goesRightOfX( self : *const Box2, thresholdX : f64 ) bool { return isRightOf( self.getMaxX(), thresholdX ); }
+  pub inline fn goesAboveY(   self : *const Box2, thresholdY : f64 ) bool { return isAbove(   self.getMinY(), thresholdY ); }
+  pub inline fn goesBelowY(   self : *const Box2, thresholdY : f64 ) bool { return isBelow(   self.getMaxY(), thresholdY ); }
 
-  pub inline fn isOnX(     self : *const Box2, xVal  : f64  ) bool { if( self.isLeftOfX( xVal ) or self.isRightOfX( xVal )){ return false; } return true; }
-  pub inline fn isOnY(     self : *const Box2, yVal  : f64  ) bool { if( self.isAboveY(  yVal ) or self.isBelowY(   yVal )){ return false; } return true; }
-  pub inline fn isOnPoint( self : *const Box2, p     : Vec2 ) bool { if( !self.isOnX(    p.x  ) or !self.isOnY(     p.y  )){ return false; } return true; }
 
-  pub fn isOnXRange( self : *const Box2, xMin : f64, xMax : f64 ) bool
-  {
-    if( checkMinMax(  xMin, xMax )){ return false; }
-    if( self.isLeftOfX(     xMin )){ return false; }
-    if( self.isRightOfX(    xMax )){ return false; }
-    return true;
-  }
-  pub fn isOnYRange( self : *const Box2, minY : f64, maxY : f64 ) bool
-  {
-    if( checkMinMax( minY, maxY )){ return false; }
-    if( self.isAboveY(     minY )){ return false; }
-    if( self.isBelowY(     maxY )){ return false; }
-    return true;
-  }
-  pub fn isOnArea( self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool
-  {
-    if( checkMinMax2(     pMin,   pMax   )){ return false; }
-    if( !self.isOnXRange( pMin.x, pMax.x )){ return false; }
-    if( !self.isOnYRange( pMin.y, pMax.y )){ return false; }
-    return true;
-  }
-
-  // ======== RESTRICTIVE RANGE CHECKERS ======== ( must be entirely inside the range )
-
-  pub inline fn isLeftOfX(  self : *const Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getRightX(),  thresholdX ); }
-  pub inline fn isRightOfX( self : *const Box2, thresholdX : f64 ) bool { return isRightOf( self.getLeftX(),   thresholdX ); }
-  pub inline fn isAboveY(   self : *const Box2, thresholdY : f64 ) bool { return isAbove(   self.getBottomY(), thresholdY ); }
-  pub inline fn isBelowY(   self : *const Box2, thresholdY : f64 ) bool { return isBelow(   self.getTopY(),    thresholdY ); }
-
+  // Fully Inside
   pub fn isInXRange( self : *const Box2, xMin : f64, xMax : f64 ) bool
   {
-    if( checkMinMax(       xMin, xMax )){                   return false; }
-    if( checkClampRange(   xMin, xMax, self.scale.x * 2 )){ return false; }
+    if( !isMinMaxValid(       xMin, xMax )){                   return false; }
+    if( !isClampRangeValid(   xMin, xMax, self.scale.x * 2 )){ return false; }
     if( self.goesLeftOfX(  xMin )){                         return false; }
     if( self.goesRightOfX( xMax )){                         return false; }
     return true;
   }
-  pub fn isInYRange( self : *const Box2, minY : f64, maxY : f64 ) bool
+  pub fn isInYRange( self : *const Box2, yMin : f64, yMax : f64 ) bool
   {
-    if( checkMinMax(      minY, maxY )){                   return false; }
-    if( checkClampRange(  minY, maxY, self.scale.y * 2 )){ return false; }
-    if( self.goesAboveY(  minY )){                         return false; }
-    if( self.goesBellowY( maxY )){                         return false; }
+    if( !isMinMaxValid(     yMin, yMax )){                   return false; }
+    if( !isClampRangeValid( yMin, yMax, self.scale.y * 2 )){ return false; }
+    if( self.goesAboveY( yMin )){                         return false; }
+    if( self.goesBelowY( yMax )){                         return false; }
     return true;
   }
-  pub fn isInArea( self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool
+  pub inline fn isInArea( self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool
   {
-    if( checkMinMax2(     pMin,   pMax   )){ return false; }
     if( !self.isInXRange( pMin.x, pMax.x )){ return false; }
     if( !self.isInYRange( pMin.y, pMax.y )){ return false; }
     return true;
   }
+  pub inline fn isInBox2( self : *const Box2, zoneBox : *const Box2 ) bool
+  {
+    return self.isInArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
+  }
+
+  // Fully Outside
+  pub inline fn isOutOfX(     self : *const Box2, valX : f64  ) bool { return !self.isOnX(  valX ); }
+  pub inline fn isOutOfY(     self : *const Box2, valY : f64  ) bool { return !self.isOnY(  valY ); }
+  pub inline fn isOutOfPoint( self : *const Box2, p    : Vec2 ) bool { return !self.isOnPoint( p ); }
+
+  pub fn isOutOfXRange( self : *const Box2, xMin : f64, xMax : f64 ) bool
+  {
+    if( !isMinMaxValid(     xMin, xMax )){ return true; }
+    if( self.isLeftOfX(  xMin )){       return true; }
+    if( self.isRightOfX( xMax )){       return true; }
+    return false;
+  }
+  pub fn isOutOfYRange( self : *const Box2, yMin : f64, yMax : f64 ) bool
+  {
+    if( !isMinMaxValid(   yMin, yMax )){ return true; }
+    if( self.isAboveY( yMin )){       return true; }
+    if( self.isBelowY( yMax )){       return true; }
+    return false;
+  }
+  pub inline fn isOutOfArea( self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool
+  {
+    if( self.isOutOfXRange( pMin.x, pMax.x )){ return true; }
+    if( self.isOutOfYRange( pMin.y, pMax.y )){ return true; }
+    return false;
+  }
+  pub inline fn isOutOfBox2( self : *const Box2, zoneBox : *const Box2 ) bool
+  {
+    return self.isOutOfArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
+  }
+
+  // Overlaps at least partially
+  pub inline fn isOnX(     self : *const Box2, valX : f64  ) bool { if( self.isLeftOfX( valX ) or self.isRightOfX( valX )){ return false; } return true; }
+  pub inline fn isOnY(     self : *const Box2, valY : f64  ) bool { if( self.isAboveY(  valY ) or self.isBelowY(   valY )){ return false; } return true; }
+  pub inline fn isOnPoint( self : *const Box2, p    : Vec2 ) bool { if( !self.isOnX(    p.x  ) or !self.isOnY(     p.y  )){ return false; } return true; }
+
+  pub fn isOnXRange( self : *const Box2, xMin : f64,  xMax : f64  ) bool { return !self.isOutOfXRange( xMin, xMax ); }
+  pub fn isOnYRange( self : *const Box2, yMin : f64,  yMax : f64  ) bool { return !self.isOutOfYRange( yMin, yMax ); }
+  pub fn isOnArea(   self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool { return !self.isOutOfArea(   pMin, pMax ); }
+
+  pub fn isOnBox2( self : *const Box2, zoneBox : *const Box2 ) bool
+  {
+      if( self.getMinX() > zoneBox.getMaxX() ){ return false; } // self is right of zoneBox
+      if( self.getMaxX() < zoneBox.getMinX() ){ return false; } // self is left of zoneBox
+      if( self.getMinY() > zoneBox.getMaxY() ){ return false; } // self is below zoneBox
+      if( self.getMaxY() < zoneBox.getMinY() ){ return false; } // self is above zoneBox
+      return true;
+  }
+  pub inline fn doesOverlap( self : *const Box2, zoneBox : *const Box2 ) bool { return self.isOnBox2( zoneBox ); }
+
+  pub fn getOverlap( self : *const Box2, zoneBox : *const Box2 ) ?Vec2
+  {
+    if( !self.doesOverlap( zoneBox )){ return null; }
+
+    return Vec2
+    {
+      .x = @min( self.getMaxX(), zoneBox.getMaxX() ) - @max( self.getMinX(), zoneBox.getMinX() ),
+      .y = @min( self.getMaxY(), zoneBox.getMaxY() ) - @max( self.getMinY(), zoneBox.getMinY() ),
+    };
+  }
+
 
   // ================ CLAMPERS ================
 
-  // ======== PERMISSIVE CLAMPERS ======== ( can be partially outside the range )
+  pub inline fn clampLeftOfX(  self : *Box2, thresholdX : f64 ) void { if( self.goesRightOfX( thresholdX )){ self.setMaxX( thresholdX ); }}
+  pub inline fn clampRightOfX( self : *Box2, thresholdX : f64 ) void { if( self.goesLeftOfX(  thresholdX )){ self.setMinX( thresholdX ); }}
+  pub inline fn clampAboveY(   self : *Box2, thresholdY : f64 ) void { if( self.goesBelowY(   thresholdY )){ self.setMaxY( thresholdY ); }}
+  pub inline fn clampBelowY(   self : *Box2, thresholdY : f64 ) void { if( self.goesAboveY(   thresholdY )){ self.setMinY( thresholdY ); }}
 
-  pub inline fn clampOnLeftX(   self : *Box2, thresholdX : f64 ) void { if( self.isLeftOfX(  thresholdX )){ self.setRightX(  thresholdX ); }}
-  pub inline fn clampOnRightX(  self : *Box2, thresholdX : f64 ) void { if( self.isRightOfX( thresholdX )){ self.setLeftX(   thresholdX ); }}
-  pub inline fn clampOnTopY(    self : *Box2, thresholdY : f64 ) void { if( self.isAboveY(   thresholdY )){ self.setBottomY( thresholdY ); }}
-  pub inline fn clampOnBottomY( self : *Box2, thresholdY : f64 ) void { if( self.isBelowY(   thresholdY )){ self.setTopY(    thresholdY ); }}
-
-  pub fn clampOnX( self : *Box2, xVal : f64 ) void
+  // Keep Fully Inside
+  pub fn clampInXRange( self : *Box2, xMin : f64, xMax : f64 ) void
   {
-    if( self.isLeftOfX(  xVal )){ self.setRightX( xVal ); }
-    if( self.isRightOfX( xVal )){ self.setLeftX(  xVal ); }
+    if( !isMinMaxValid(     xMin, xMax )){ return; }
+    if( !isClampRangeValid( xMin, xMax, self.scale.x * 2 ))
+    {
+      self.center.x = ( xMin + xMax ) * 0.5;
+      return;
+    }
+    self.clampRightOfX( xMin );
+    self.clampLeftOfX(  xMax );
   }
-  pub fn clampOnY( self : *Box2, yVal : f64 ) void
+  pub fn clampInYRange( self : *Box2, yMin : f64, yMax : f64 ) void
   {
-    if( self.isAboveY(   yVal )){ self.setBottomY( yVal ); }
-    if( self.isBelowY(   yVal )){ self.setTopY(    yVal ); }
+    if( !isMinMaxValid(     yMin, yMax )){ return; }
+    if( !isClampRangeValid( yMin, yMax, self.scale.y * 2 ))
+    {
+      self.center.y = ( yMin + yMax ) * 0.5;
+      return;
+    }
+    self.clampBelowY( yMin );
+    self.clampAboveY( yMax );
+  }
+  pub fn clampInArea( self : *Box2, pMin : Vec2, pMax : Vec2 ) void
+  {
+    if( !isMinMaxValidVec2( pMin,   pMax )){ return; }
+    self.clampInXRange(  pMin.x, pMax.x );
+    self.clampInYRange(  pMin.y, pMax.y );
+  }
+  pub inline fn clampInBox2( self : *const Box2, zoneBox : *const Box2 ) void
+  {
+    self.clampInArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
+  }
+
+  // Keep Fully Outside
+  pub inline fn clampOutOfX( self : *Box2, valX : f64 ) void
+  {
+    if( self.center.x < valX ){ self.clampLeftOfX(  valX ); }
+    else                      { self.clampRightOfX( valX ); }
+  }
+  pub inline fn clampOutOfY( self : *Box2, valY : f64 ) void
+  {
+    if( self.center.y < valY ){ self.clampAboveY( valY ); }
+    else                      { self.clampBelowY( valY ); }
+  }
+  pub fn clampOutOfPoint( self : *Box2, p : Vec2 ) void
+  {
+    self.clampOutOfX( p.x );
+    self.clampOutOfY( p.y );
+  }
+
+  // TODO : validate the clampOutOf logic
+
+  pub fn clampOutOfXRange( self : *Box2, xMin : f64, xMax : f64 ) void
+  {
+    if( !isMinMaxValid( xMin, xMax )){ return; }
+
+    const depthLeft  = self.getMaxX() - xMin;
+    const depthRight = xMax - self.getMinX();
+
+    if( @min( depthLeft, depthRight ) < 0.0 ){ return; } // A gap exists ( no overlap )
+
+    if( depthLeft < depthRight ){ self.clampLeftOfX(  xMin ); }
+    else                        { self.clampRightOfX( xMax ); }
+  }
+  pub fn clampOutOfYRange( self : *Box2, yMin : f64, yMax : f64 ) void
+  {
+    if( !isMinMaxValid( yMin, yMax )){ return; }
+
+    const depthTop    = self.getMaxY() - yMin;
+    const depthBottom = yMax - self.getMinY();
+
+    if( @min( depthTop, depthBottom ) < 0.0 ){ return; } // A gap exists ( no overlap )
+
+    if( depthTop < depthBottom ){ self.clampAboveY( yMin ); }
+    else                        { self.clampBelowY( yMax ); }
+  }
+  pub fn clampOutOfArea( self: *Box2, pMin : Vec2, pMax : Vec2 ) void
+  {
+    if( isMinMaxValidVec2( pMin, pMax )){ return; }
+
+    const depthLeft   = self.getMaxX() - pMin.x;
+    const depthRight  = pMax.x - self.getMinX();
+    const depthTop    = self.getMaxY() - pMin.y;
+    const depthBottom = pMax.y - self.getMinY();
+
+    // Finding the shalowest depth's side
+    var side : enum { left, right, top, bottom } = .left;
+
+    var best = depthLeft;
+
+    if( depthRight < best )
+    {
+      best = depthRight;
+      side = .right;
+    }
+    if( depthTop < best )
+    {
+      best = depthTop;
+      side = .top;
+    }
+    if( depthBottom < best )
+    {
+      best = depthBottom;
+      side = .bottom;
+    }
+
+    if( best < 0.0 ){ return; } // A gap exists ( no overlap )
+
+    switch( side )
+    {
+      .left   => self.clampLeftOfX(  pMin.x ),
+      .right  => self.clampRightOfX( pMax.x ),
+      .top    => self.clampAboveY(   pMin.y ),
+      .bottom => self.clampBelowY(   pMax.y ),
+    }
+  }
+  pub inline fn clampOutOfBox2( self : *const Box2, zoneBox : *const Box2 ) void
+  {
+    self.clampOutOfArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
+  }
+
+
+  // Maintain overlap at least partially
+  pub inline fn clampOnX( self : *Box2, valX : f64 ) void
+  {
+    if( self.isLeftOfX(  valX )){ self.setMaxX( valX ); }
+    if( self.isRightOfX( valX )){ self.setMinX( valX ); }
+  }
+  pub inline fn clampOnY( self : *Box2, valY : f64 ) void
+  {
+    if( self.isAboveY( valY )){ self.setMaxY( valY ); }
+    if( self.isBelowY( valY )){ self.setMinY( valY ); }
   }
   pub fn clampOnPoint( self : *Box2, p : Vec2 ) void
   {
@@ -292,136 +476,30 @@ pub const Box2 = struct
 
   pub fn clampOnXRange( self : *Box2, xMin : f64, xMax : f64 ) void
   {
-    if( checkMinMax( xMin, xMax )){ return; }
-    self.clampOnLeftX(  xMin );
-    self.clampOnRightX( xMax );
+    if( !isMinMaxValid(    xMin, xMax )){ return; }
+    self.clampRightOfX( xMin - self.scale.x );
+    self.clampLeftOfX(  xMax + self.scale.x );
   }
-  pub fn clampOnYRange( self : *Box2, minY : f64, maxY : f64 ) void
+  pub fn clampOnYRange( self : *Box2, yMin : f64, yMax : f64 ) void
   {
-    if( checkMinMax( minY, maxY )){ return; }
-    self.clampOnTopY(    minY );
-    self.clampOnBottomY( maxY );
+    if( !isMinMaxValid(  yMin, yMax )){ return; }
+    self.clampBelowY( yMin - self.scale.y );
+    self.clampAboveY( yMax + self.scale.y );
   }
   pub fn clampOnArea( self : *Box2, pMin : Vec2, pMax : Vec2 ) void
   {
-    if( checkMinMax2(   pMin,   pMax )){ return; }
-    self.clampOnXRange( pMin.x, pMax.x );
-    self.clampOnYRange( pMin.y, pMax.y );
+    if( !isMinMaxValidVec2( pMin,   pMax )){ return; }
+    self.clampOnXRange(  pMin.x, pMax.x );
+    self.clampOnYRange(  pMin.y, pMax.y );
   }
 
-  pub fn clampNotInXRange( self : *Box2, xMin : f64, xMax : f64 ) void
+  pub inline fn clampOnBox2( self : *const Box2, zoneBox : *const Box2 ) void
   {
-    if( checkMinMax( xMin, xMax )){ return; }
-    const leftOverlap  = @abs( self.getRightX() - xMin );
-    const rightOverlap = @abs( self.getLeftX()  - xMax );
-
-    if( leftOverlap < rightOverlap ){ self.clampOnLeftX(  xMin ); }
-    else                            { self.clampOnRightX( xMax ); }
-  }
-  pub fn clampNotInYRange( self : *Box2, minY : f64, maxY : f64 ) void
-  {
-    if( checkMinMax( minY, maxY )){ return; }
-    const topOverlap    = @abs( self.getBottomY() - minY );
-    const bottomOverlap = @abs( self.getTopY()    - maxY );
-
-    if( topOverlap < bottomOverlap ){ self.clampOnTopY(    minY ); }
-    else                            { self.clampOnBottomY( maxY ); }
-  }
-  pub fn clampNotInArea( self : *Box2, pMin : Vec2, pMax : Vec2 ) void
-  {
-    if( checkMinMax2( pMin, pMax )){ return; }
-    self.clampNotOnXRange( pMin.x, pMax.x );
-    self.clampNotOnYRange( pMin.y, pMax.y );
+    self.clampOnArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
 
 
-  // ======== RESTRICTIVE CLAMPERS ======== ( must be entirely inside the range )
-
-  pub inline fn clampInLeftX(   self : *Box2, thresholdX : f64 ) void { if( self.goesLeftOfX(  thresholdX )){ self.setLeftX(   thresholdX ); }}
-  pub inline fn clampInRightX(  self : *Box2, thresholdX : f64 ) void { if( self.goesRightOfX( thresholdX )){ self.setRightX(  thresholdX ); }}
-  pub inline fn clampInTopY(    self : *Box2, thresholdY : f64 ) void { if( self.goesAboveY(   thresholdY )){ self.setTopY(    thresholdY ); }}
-  pub inline fn clampInBottomY( self : *Box2, thresholdY : f64 ) void { if( self.goesBelowY(   thresholdY )){ self.setBottomY( thresholdY ); }}
-
-  pub fn clampNotOnX( self : *Box2, xVal : f64 ) void
-  {
-    if( self.center.x < xVal ){ self.clampInLeftX(  xVal ); }
-    else                      { self.clampInRightX( xVal ); }
-  }
-  pub fn clampNotOnY( self : *Box2, yVal : f64 ) void
-  {
-    if( self.center.y < yVal ){ self.clampInTopY(    yVal ); }
-    else                      { self.clampInBottomY( yVal ); }
-  }
-  pub fn clampNotOnPoint( self : *Box2, p : Vec2 ) void
-  {
-    self.clampNotOnX( p.x );
-    self.clampNotOnY( p.y );
-  }
-
-  pub fn clampInXRange( self : *Box2, xMin : f64, xMax : f64 ) void
-  {
-    if( checkMinMax(      xMin, xMax )){ return; }
-    if( checkClampRange(  xMin, xMax, self.scale.x * 2 )){ self.center.x = ( xMin + xMax ) * 0.5; return; }
-    self.clampInLeftX(  xMin );
-    self.clampInRightX( xMax );
-  }
-  pub fn clampInYRange( self : *Box2, minY : f64, maxY : f64 ) void
-  {
-    if( checkMinMax(     minY, maxY )){ return; }
-    if( checkClampRange( minY, maxY, self.scale.y * 2 )){ self.center.y = ( minY + maxY ) * 0.5; return; }
-    self.clampInTopY(    minY );
-    self.clampInBottomY( maxY );
-  }
-  pub fn clampInArea( self : *Box2, pMin : Vec2, pMax : Vec2 ) void
-  {
-    if( checkMinMax2(     pMin,   pMax   )){ return; }
-    self.clampInXRange( pMin.x, pMax.x );
-    self.clampInYRange( pMin.y, pMax.y );
-  }
-
-  pub fn clampNotOnXRange( self : *Box2, xMin : f64, xMax : f64 ) void
-  {
-    if( checkMinMax( xMin, xMax )){ return; }
-    const leftOverlap  = @abs( self.getRightX() - xMin );
-    const rightOverlap = @abs( self.getLeftX()  - xMax );
-
-    if( leftOverlap < rightOverlap ){ self.clampInLeftX(  xMin ); }
-    else                            { self.clampInRightX( xMax ); }
-  }
-  pub fn clampNotOnYRange( self : *Box2, minY : f64, maxY : f64 ) void
-  {
-    if( checkMinMax( minY, maxY )){ return; }
-    const topOverlap    = @abs( self.getBottomY() - minY );
-    const bottomOverlap = @abs( self.getTopY()    - maxY );
-
-    if( topOverlap < bottomOverlap ){ self.clampInTopY(    minY ); }
-    else                            { self.clampInBottomY( maxY ); }
-  }
-  pub fn clampNotOnArea( self : *Box2, pMin : Vec2, pMax : Vec2 ) void
-  {
-    if( checkMinMax2( pMin, pMax )){ return; }
-    self.clampNotOnXRange( pMin.x, pMax.x );
-    self.clampNotOnYRange( pMin.y, pMax.y );
-  }
-
-  // ================ OVERLAP CHECKERS ================
-
-  pub fn isOverlapping( self : *const Box2, other : *const Box2 ) bool
-  {
-    if( self.getRightX()  < other.getLeftX()   ){ return false; } // self is left of other
-    if( self.getLeftX()   > other.getRightX()  ){ return false; } // self is right of other
-    if( self.getBottomY() < other.getTopY()    ){ return false; } // self is above other
-    if( self.getTopY()    > other.getBottomY() ){ return false; } // self is below other
-    return true;
-  }
-  pub fn getOverlap( self : *const Box2, other : *const Box2 ) ?Vec2
-  {
-    if( !self.isOverlapping( other )){ return null; }
-    const boxOffset = self.center.sub( other.center );
-    return VecA{ .x = boxOffset.x, .y = boxOffset.y, .a = boxOffset.toAngle() };
-  }
-
-  // ================ DEBUG ================
+  // ================ DEBUG METHODS ================
 
   pub fn drawSelf( self : *const Box2, color : def.Colour ) void { def.drawRect( self.center, self.scale, .{}, color ); }
 };

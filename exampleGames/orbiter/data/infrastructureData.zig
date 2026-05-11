@@ -157,7 +157,7 @@ pub const InfStateEnum = enum( u8 )
   DESTR,   // Amount lost from deconstruction last tick
   BUILT,   // Amount gained from construction last tick
 
-  // TODO : Hook in the monetary values bellow properly
+  // TODO : Hook in the monetary values below properly
   EXPENSE, // Amount of money used for maintaining the infrastructure last tick
   REVENUE, // Amount of money gained from running  the infrastructure last tick
   SAVINGS, // Stored profits from previous ticks ( decays via inflation )
