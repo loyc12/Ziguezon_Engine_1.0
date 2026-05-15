@@ -6,22 +6,16 @@ A macro-economic simulation set in a solar system (Ours by default). The player 
 
 The game is centered around:
 
-* infrastructure planning
-* logistical bottlenecks
-* delayed interplanetary dynamics
-* colony specialisation
-* political autonomy
-* economic interdependence
+* infrastructure planning and growth
+* logistical bottleneck resolution
+* realistic interplanetary dynamics
+* local industrial specialisation
+* local political autonomy
+* global economic interdependence
 
-The fantasy is **"be the planning office of a young space-faring civilisation"**, not "command an empire". The player wins by enabling outcomes, not by clicking units. The unit of play is the economy — not the ship or the colony building — and time is measured in days and years.
+The fantasy is to **"be the planning office of a young space-faring civilisation"**, not "command an empire". The player wins by enabling outcomes, not by clicking units. The unit of play is the economy — not the ship or the colony building — and time is measured in weeks and years.
 
-The game is **not** intended to be:
-
-* a detailed commodity micromanagement simulator
-* a manual trade routing game
-* a spreadsheet optimisation sandbox
-
-The economy itself should mostly run automatically, with the player intervening at structural and strategic levels. See the "Player Actions" section below for the full player-role breakdown.
+The economy itself should mostly run automatically, with the player intervening at structural and strategic levels ( See "Player Actions" section for a full player-role breakdown )
 
 See [design_philosophy.md](design_philosophy.md) for engineering principles, design heuristics, and collaboration guidelines.
 
@@ -31,14 +25,14 @@ See [design_philosophy.md](design_philosophy.md) for engineering principles, des
 
 ## 1. The Simulation Exists To Produce Decisions
 
-Every major system must create:
+Every simulated system must create either:
 
-* tradeoffs
-* uncertainty
-* bottlenecks
-* strategic tension
+* decisional tradeoffs
+* outcome uncertainty
+* flow bottlenecks
+* strategic choices
 
-Simulation depth that does not generate meaningful player decisions should be deferred or removed. The engineering test for this is heuristic #1 in [design_philosophy.md](design_philosophy.md).
+Simulation depth that does not generate meaningful player decisions should be deferred or removed ( The engineering test for this is heuristic #1 in [design_philosophy.md](design_philosophy.md) )
 
 ---
 
@@ -52,11 +46,11 @@ If an action:
 * has an obvious correct answer
 * creates no strategic tension
 
-then it should be:
+then it should be either:
 
-* automated
-* abstracted
-* or policy-driven
+* automatable / automated
+* abstracted out
+* policy-driven
 
 Examples of things to automate:
 
@@ -66,29 +60,29 @@ Examples of things to automate:
 
 Player interaction should focus on:
 
-* incentives
-* infrastructure
-* priorities
-* strategic intervention
+* setting incentives and priorities
+* growing infrastructure and wealth
+* course-corecting autonomous growth
 
 ---
 
 ## 3. Preserve Meaningful Constraints (Emergence Over Scripting)
 
-Outcomes should primarily arise from the interaction of simple rules, not from scripted events. A famine should be the visible consequence of resource allocation choices and price dynamics. If we can name the cause downstream of player actions, we did it right.
+Outcomes should primarily arise from the interaction of simple rules, not from complex scripted events. A famine should be the visible consequence of resource allocation choices and price dynamics. Outcomes should be technically foreseeable based on the current state of the simulation and future player choices, not randomized.
 
 The game should continuously expose:
 
 * logistical bottlenecks
 * political instability
 * infrastructure limitations
-* delayed feedback
+* delayed action feedback
 * competing priorities
 
 The simulation should never fully stabilise into:
 
-* permanent equilibrium
+* permanent, "hands off" equilibrium
 * fully self-correcting optimisation
+* truly unrecoverable scenario, baring human extinction
 
 ---
 
@@ -96,11 +90,10 @@ The simulation should never fully stabilise into:
 
 Orbital mechanics should create:
 
-* constraints
-* timing windows
-* transport costs
+* logistical constraints
+* route timing windows
+* route supply costs
 * route specialisation
-* strategic geography
 
 Space should not merely be visual distance.
 
@@ -108,7 +101,7 @@ Space should not merely be visual distance.
 
 ## 5. Game-Feel Dominates Strict Realism
 
-Orbital mechanics, mass budgets, and biosphere rules are realistic where realism creates interesting decisions, and abstracted where it creates bookkeeping. The deltaV table is real; the freighter manifest is not. Choose the version of reality that produces interesting choices.
+Orbital mechanics, mass budgets, and biosphere rules are realistic where realism creates interesting decisions, and abstracted where it creates biring or overly detailed bookkeeping. The deltaV table is real; the freighter manifest is not. Choose the version of reality that produces interesting choices, not the one that feels like work.
 
 ---
 
@@ -120,41 +113,38 @@ All player-facing design choices live in this section: who the player is, what t
 
 The player primarily acts as:
 
-* a strategic planner
-* a civilisational coordinator
-* an infrastructure architect
-* a political governor
+* a large scale strategic planner
+* a civilisational growth coordinator
+* an infrastructure planner
+* aneconomic policy decider
 
 ## Primary Activities
 
 ### Expansion
 
-* establish colonies
-* exploit new resource sites
 * develop infrastructure
 * unlock new regions
+* exploit new resource sites
+* establish off-world settlements
 
 ### Bottleneck Resolution
 
-* solve shortages
+* solve complex shortages
 * relieve transport congestion
 * stabilise fragile colonies
-* expand capacity
+* expand economic capacities
 
 ### Infrastructure Planning
 
-* build depots
-* orbital stations
-* shipyards
-* industrial hubs
-* trade corridors
+* build shared infrastructure
+* open new trade routes
 
-### Political Governance
+### Political Concerns
 
-* manage autonomy
-* maintain legitimacy
-* prevent fragmentation
-* negotiate competing interests
+* expending local autonomy
+* governmental stability
+* civilisational fragmentation
+* competing economic interests
 
 ### Economic Steering
 
@@ -173,10 +163,10 @@ Indirect influence through policy levers — see "Player Economic Interaction" i
 
 * shape large-scale systems
 * make irreversible strategic decisions
-* respond to crises
-* prioritise competing needs
+* respond to economic crises
+* resolve competing needs
 * design resilient infrastructure
-* manage decentralisation
+* manage inevitable decentralisation
 
 ---
 
@@ -186,7 +176,7 @@ Indirect influence through policy levers — see "Player Economic Interaction" i
 
 Each settled body acts as:
 
-* a semi-independent economy
+* a increasingly independent economy
 * with local supply/demand dynamics
 * interacting through interplanetary trade
 
@@ -205,17 +195,17 @@ Trade is:
 * subsidies
 * tariffs
 * taxation
-* stockpile targets
 * export bans
 * infrastructure investment
+* trade fleet investment
 * industrial construction
-* strategic contracts
 
 ### Avoid
 
 * repetitive manual trade setup
 * per-route shipment micromanagement
-* constant production tuning
+* constant industrial production tuning
+* constant manual industrial (de)growth
 
 ---
 
@@ -225,44 +215,39 @@ Trade is:
 
 Trade should emerge naturally from:
 
-* prices
-* demand
-* transport cost
-* route capacity
-* travel time
-* risk
-* infrastructure
+* local prices from supply and demand
+* fuel and other supply costs
+* travel time and distance
+* cargo fleet capacity
+* transport infrastructure
 
-The player shapes trade structurally rather than operationally.
+The player primarily shapes trade structurally rather than operationally.
 
 ---
 
-## Strategic Trade Elements
+## Important Strategic Trade Elements
 
 ### Infrastructure
 
-* depots
-* transfer hubs
-* orbital stations
-* cyclers
-* shipyards
-* relay points
+* depots / stockpiles
+* localized trade hubs
+* orbital shipyards
+* mass drivers
+* space elevators
 
 ### Policy
 
-* trade subsidies
-* protected corridors
-* tariffs
-* embargoes
-* strategic reserves
+* trade subsidies and tariffs
+* import and export embargoes
+* strategic resource reserves
+* individual route subsidies
 
 ### Risks
 
 * supply shocks
-* route disruption
-* piracy
+* route disruption and piracy
 * political fragmentation
-* infrastructure failure
+* infrastructural failure
 
 ---
 
@@ -272,19 +257,19 @@ The player shapes trade structurally rather than operationally.
 
 Bodies should become economically distinct through:
 
-* geography
-* resource availability
-* gravity
-* energy access
-* infrastructure history
-* population composition
-* technological development
+* local resource availability
+* gravity well strenght
+* solar energy access
+* orbital development
+* industrial comparative advantages
+* population density and wellfare
+* orbital distances
 
 ---
 
 ## Examples
 
-| Body Type        | Likely Role                |
+| Body             | Likely Role                |
 | ---------------- | -------------------------- |
 | Mercury          | Energy production          |
 | Luna             | Heavy industry             |
@@ -297,7 +282,7 @@ Bodies should become economically distinct through:
 
 ## Resource Model
 
-### Resources Should Have:
+### Mineral Resources Should Have:
 
 * estimated quantities
 * uncertainty
@@ -305,12 +290,12 @@ Bodies should become economically distinct through:
 * extraction difficulty
 * diminishing returns
 
-### Information Improves Through:
+### Information Precision Improves Through:
 
 * exploration
 * research
 * settlement
-* industrial exploitation
+* continuous exploitation
 
 ---
 
@@ -320,24 +305,22 @@ Bodies should become economically distinct through:
 
 ### Homeworld
 
-* direct control
+* direct player control
 * strongest administrative reach
-* highest legitimacy
+* highest stability
+* easiest to govern overall
 
-### Core Colonies
+### Minor Colonies
 
 * partial autonomy
 * governor systems
 * policy ranges
 
-### Frontier Colonies
-
-* broad directives only
-* high local independence
-
-### Distant / Isolated Colonies
+### Major Colonies
 
 * effectively semi-autonomous
+* broad directives only
+* high local independence
 * possible faction divergence
 * secession risk
 
@@ -347,11 +330,8 @@ Bodies should become economically distinct through:
 
 * underinvestment
 * supply instability
-* cultural divergence
-* economic exploitation
-* isolation
-* communication delay
-* military weakness
+* unfair exploitation
+* economic isolation
 
 ---
 
@@ -363,14 +343,13 @@ Populations should not merely represent labour.
 
 Track:
 
-* growth
-* migration
-* morale
-* stability
-* faction alignment
-* dependency
-* radicalization
-* isolation pressure
+* growth, migration and decay
+* basic needs fulfilment
+* higher needs fulfilment
+* political autonomy
+* infrastructure access
+* factional alignment
+* unrest and radicalization
 
 ---
 
@@ -378,11 +357,12 @@ Track:
 
 Population systems exist to create:
 
+* labour supply
+* service demands
+* gameplay instability
 * political dynamics
-* labour shortages
-* migration flows
-* instability
-* social divergence
+* settlement planning
+* gameplay success metrics
 
 Avoid excessive demographic detail unless it produces gameplay decisions.
 
@@ -392,71 +372,48 @@ Avoid excessive demographic detail unless it produces gameplay decisions.
 
 Infrastructure is one of the main player expression systems.
 
-## Important Infrastructure Types
+## Important Infrastructure Categories
 
-### Logistics
-
-* depots
-* cargo hubs
-* fuel stations
-* transfer relays
-
-### Industrial
-
-* shipyards
-* refineries
-* orbital factories
-
-### Civil
-
-* habitats
-* life support
-* research facilities
-
-### Strategic
-
-* defence systems
-* surveillance
-* communication arrays
+* resource logistics
+* construction abilities
+* habitatable area
+* population ammenities
+* trade ammenities
+* ecologic modification
 
 ---
 
 # Failure & Crisis Systems
 
-The game should continuously generate instability.
-
-## Potential Crisis Sources
+The player should consistently have to worry about mismanagement leading to:
 
 * famine
 * transport collapse
 * political unrest
 * infrastructure failure
-* orbital debris
 * economic shocks
-* energy shortages
-* resource depletion
-* secession movements
+* resource shortages
+* mineral depletion
 
 ---
 
 # Scope Boundaries
 
-## In-Scope
+## In-Scope ( examples )
 
 * Macro-economic dynamics across solar-system scales
 * Resource flows: energy, work, parts, food, water, etc
-* Population dynamics: welfare, births / deaths, migration
-* Government: taxation, subsidies, public works, policy
+* Population dynamics: welfare, births, deaths, migration
+* Player leverage: taxation, subsidies, tarrifs, policies
 * Trade: surplus / deficit matching by price and travel cost
 * Money: capital accumulation / decay / depreciation / transactions
 * Long-game: technology, megaprojects, societal simulation
-* Player leverage: policies, rates, discretionary investments, state actions
 
-## Out-of-Scope (explicitly)
+## Out-of-Scope ( explicitly )
 
 * Direct unit control (no fleet command, no individual ship orders)
-* Combat as a primary loop (shocks and disasters yes; war as gameplay no, or at least not until the game ships out first)
-* Real-time gameplay (only orbital mechanics can be near real-time)
+* Combat as a primary loop (shocks and disasters yes; war as core gameplay no)
+* Real-time gameplay (only orbital mechanics approach real-time)
 
 ---
 
@@ -469,6 +426,7 @@ No deepening of simulation systems unless:
 * they already generate meaningful gameplay
 * they already create player decisions
 * the existing version is already fun
+* no critical systems are missing elsewhere
 
 ---
 
@@ -477,7 +435,6 @@ No deepening of simulation systems unless:
 Avoid early implementation of:
 
 * huge commodity chains
-* deep combat systems
 * elaborate diplomacy
 * complex demographic modelling
 * fine-grained ship simulation
@@ -490,6 +447,4 @@ until the core gameplay loop is proven.
 
 # Design North Star
 
-The player experience should feel like:
-
-> governing a growing interplanetary civilisation whose economy mostly operates autonomously, while the player shapes infrastructure, resolves crises, and manages the political and logistical consequences of expansion.
+The player experience should feel like governing a growing interplanetary civilisation whose economy mostly operates autonomously, while the player shapes infrastructure, resolves crises, and manages the economic, political and logistical consequences of innevitable expansion.

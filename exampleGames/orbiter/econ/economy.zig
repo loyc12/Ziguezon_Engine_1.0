@@ -154,7 +154,7 @@ pub const Economy = struct
 
     // Logging new metrics
     self.logSpecialMetrics();
-    ecnSlvr.testEconLogs( self );
+    ecnSlvr.debugTestEcon( self );
   }
 
   pub inline fn debugSetPopCounts(  self : *Economy, value : u64 ) void
@@ -200,7 +200,7 @@ pub const Economy = struct
     }
     self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
     self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  100 ));
-    self.infState.set(   .COUNT, .STORAGE,  @floatFromInt( value *  100 ));
+    self.infState.set(   .COUNT, .DEPOT,  @floatFromInt( value *  100 ));
 
     self.updateResCaps();
     self.updatePopCaps();
@@ -840,7 +840,7 @@ pub const Economy = struct
     self.infState.set( .USE_LVL, .HABITAT, habUse );
 
 
-    // STORAGE
+    // DEPOT
     var maxStoreUse : f64 = 0.0;
 
     inline for( 0..resTypeC )| r |
@@ -855,7 +855,7 @@ pub const Economy = struct
         maxStoreUse = @max( maxStoreUse, resC / resL );
       }
     }
-    self.infState.set( .USE_LVL, .STORAGE, maxStoreUse );
+    self.infState.set( .USE_LVL, .DEPOT, maxStoreUse );
 
 
   // TODO : Activate once INF is added as a real agent

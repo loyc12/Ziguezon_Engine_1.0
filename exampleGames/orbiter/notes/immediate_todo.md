@@ -5,6 +5,7 @@
 | Mark  | Meaning     |
 | ----- | ----------- |
 | `[ ]` | untouched   |
+| `[.]` | scaffolded  |
 | `[~]` | in progress |
 | `[x]` | finished    |
 
@@ -31,9 +32,9 @@ This file is a narrowed-down, actionable view of [economy_upgrade.md](roadmaps/e
 * `[~]` 2. Align arguments and symbols into neat columns for successive lines, when cleaner looking
   * Example :
     ```
-    var1 = func1( arg1, arg2 );          var1      = func1( arg1, arg2 );
-    var2 += function2( arg2 );      =>   var2     += function2(   arg2 );
-    variable3 = f3( arg1, arg3 );        variable3 = f3(    arg1, arg3 );
+    var1 = func1( arg1, arg2 );    =>  var1      = func1( arg1, arg2 );
+    var2 += function2( arg2 );     =>  var2     += function2(   arg2 );
+    variable3 = f3( arg1, arg3 );  =>  variable3 = f3(    arg1, arg3 );
     ```
 
 * `[~]` 3. Standardise argument ordering, especially in dataMatrices
@@ -47,7 +48,7 @@ This file is a narrowed-down, actionable view of [economy_upgrade.md](roadmaps/e
 
 * `[~]` 1. Standardise `DataMatrix` vs `Array` usage where it has drifted
 
-* `[ ]` 2. "function-as-lookup" → data array migration
+* `[~]` 2. "function-as-lookup" → data array migration
   * `resourceData.getInfStore`, `populationData.getInfStore`, `industryData.getPowerSrc` (each carries `// TODO : move to data array` comment)
 
 * `[ ]` 3. `logBuildQueue` helper on `BuildQueue`
@@ -83,30 +84,19 @@ Must land and validate against current behaviour before Stage B begins. Each ite
   * Loop over `ResType` ; per-inf and per-ind metric cubes already have the slots ready
   * Broadcast per-resource access back to grp / gen flow data
 
-* `[ ]` 3. Reorder phases so MNT cost scales by *this-tick* `ACT_LVL`
-  * `calcMntMaxFlow` already reads `.ACT_LVL`, but MAX FLOW runs before `updateIndActivity` so the value is stale
-  * Move `updateIndActivity` (and `updatePopFulfilment`, `updateInfUsage`) ahead of `calcMntMaxFlow` / `calcBldMaxFlow`
-  * Pick a single home for `updateInfUsage` (today it's split across `Economy.updateInfUsage` pre-step and `BuildQueue.update` post-step) — ideally in the solver between OPR and MNT
-
-* `[ ]` 4. Tune in non-PART MNT / BLD costs
+* `[ ]` 3. Tune in non-PART MNT / BLD costs
   * ASSEMBLY's WORK + POWER `OP_CONS`
   * Multi-res maintenance recipes for selected constructs
   * Optional: multi-res BUILD recipes
   * All non-PART slots in `infResMetricTable` / `indResMetricTable` MAINT and BUILD columns are currently zero
 
-* `[ ]` 5. ASSEMBLY pre-resolve sub-pass
+* `[ ]` 4. ASSEMBLY pre-resolve sub-pass
   * CAPACITY denotes effort per tick (not PART/tick)
   * Resolve ASSEMBLY's own `OP_CONS` (WORK + POWER) before BLD access
   * Scale realised capacity by ASSEMBLY's input access; book `OP_CONS` against realised, not nominal, capacity
   * Today `calcBldMaxFlow` only applies a global `scale = assemblyCap / rawTotal` clamp and consumes none of ASSEMBLY's own inputs
 
-* `[ ]` 6. Remove dead `consumeParts` block from `tryBuild` ; absorb area / location accounting into `BuildQueue.update` once the queue drives per-construct accounting
-
-## Metric tables
-
-* `[ ]` 7. Add `BLD_EFFORT` scalar to Ind / Inf metric enums
-  * Decouples "effort to build" from "resource cost to build"
-  * Natural home : `CSTR_COST` slot already exists on both enums and is uniformly `1.00` today
+* `[ ]` 5. Remove dead `consumeParts` block from `tryBuild` ; absorb area / location accounting into `BuildQueue.update` once the queue drives per-construct accounting
 
 ## BuildQueue-side
 

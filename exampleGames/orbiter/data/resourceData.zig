@@ -30,7 +30,7 @@ pub const ResType = enum( u8 )
     return switch( self )
     {
       .WORK => .HOUSING,
-      else  => .STORAGE, // TODO : update once multiple storage types exist
+      else  => .DEPOT, // TODO : update once multiple storage types exist
     };
   }
 
@@ -141,7 +141,7 @@ pub fn loadResourceData() void
 
   // ================================ STORE RATE ================================
   // Units of storage space consumed per unit of resource
-  // Lower values = more of that resource fits per STORAGE unit
+  // Lower values = more of that resource fits per DEPOT unit
   // WATER and POWER have high flow but compact storage (tanks, grid buffers)
 
   resMetricData.set( .WORK,  .STORE_RATE, 1.00 ); // Has its own "storage" ( housing ) // NOTE : Should be more than enough in every situation

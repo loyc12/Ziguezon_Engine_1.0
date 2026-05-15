@@ -1490,7 +1490,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
 // TODO : rework once solver refactor is done
 
-pub fn testEconLogs( econ : *ecn.Economy ) void
+pub fn debugTestEcon( econ : *ecn.Economy ) void
 {
   // NOTE : Uses non-global solver-instance to avoid corrupting the actual solver
   var tmpSolver : EconSolver = .{ .econ = undefined };

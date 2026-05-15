@@ -273,26 +273,29 @@ pub const OrbitComp = struct
     def.drawLine( selfPos, selfPos.add( scaledRelVel ), .red,  zoomedWidth * 2.0 ); // Velocity Vector ( relative )
 
     const minRad = self.getHillRadius();
-    const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.2 ); // Assumes a near-solid moon
+    const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.25 ); // Assumes a near-solid moon
 
-    var vecMin1 : Vec2 = .new( minRad, 0 );
-    var vecMax1 : Vec2 = .new( maxRad, 0 );
-
-    var vecMin2 : Vec2 = vecMin1;
-    var vecMax2 : Vec2 = vecMax1;
-
-    const a = def.TAU / @as( f64, @floatFromInt( N ));
-
-    for( 0..N )| _ | // Moon friendly region ( Disk )
+    if( minRad > maxRad ) // Do not draw these if the space the bound is inverted ( stable moon orbit possible )
     {
-      vecMin2 = vecMin1;
-      vecMax2 = vecMax1;
+      var vecMin1 : Vec2 = .new( minRad, 0 );
+      var vecMax1 : Vec2 = .new( maxRad, 0 );
 
-      vecMin1 = vecMin1.rot( .{ .r = a });
-      vecMax1 = vecMax1.rot( .{ .r = a });
+      var vecMin2 : Vec2 = vecMin1;
+      var vecMax2 : Vec2 = vecMax1;
 
-      def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
-      def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
+      const a = def.TAU / @as( f64, @floatFromInt( N ));
+
+      for( 0..N )| _ | // Moon friendly region ( Disk )
+      {
+        vecMin2 = vecMin1;
+        vecMax2 = vecMax1;
+
+        vecMin1 = vecMin1.rot( .{ .r = a });
+        vecMax1 = vecMax1.rot( .{ .r = a });
+
+        def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
+        def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
+      }
     }
 
     def.drawHexa( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange );
@@ -462,7 +465,7 @@ pub const OrbitComp = struct
   }
 
 
-  /// NOTE : radius at which the principal gravitational source swaps from this body to its parent body
+  // NOTE : rough radius at which the principal gravitational source swaps from this body to its parent body
   pub inline fn getHillRadius( self : *const OrbitComp ) f64 { return self.getSemiMajor() * self.getHillFactor(); }
 
   /// moonRigidity  : 1.0 = fluid, 0.0 = rigid
@@ -481,7 +484,9 @@ pub const OrbitComp = struct
     return selfRadius * rigidity * def.cbrt( densityRatio );
   }
 
-  pub inline fn getMaxMoonOrbitRadius( self : *const OrbitComp ) f64 { return 0.5 * self.getHillRadius(); }
-  pub inline fn getMinMoonOrbitRadius( self : *const OrbitComp ) f64 { return 1.1 * self.getRocheLimit(); }
+  pub inline fn getMaxMoonOrbitRadius( self : *const OrbitComp ) f64 { return 0.5 * self.getHillRadius(); } // Larger is unstable
+
+  /// arghs : planetRadius, moon density, moonRigidity
+  pub inline fn getMinMoonOrbitRadius( self : *const OrbitComp, p_r : f64, den : f64, rig : f64 ) f64 { return 1.2 * self.getRocheLimit( p_r, den, rig ); } // Smaller is unstable
 };
 
