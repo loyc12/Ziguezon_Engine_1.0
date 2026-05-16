@@ -30,7 +30,7 @@ pub const ResType = enum( u8 )
     return switch( self )
     {
       .WORK => .HOUSING,
-      else  => .DEPOT, // TODO : update once multiple storage types exist
+      else  => .DEPOT,   // TODO : update this once multiple storage types exist
     };
   }
 

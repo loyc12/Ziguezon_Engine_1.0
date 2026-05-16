@@ -41,8 +41,8 @@ pub const TaxTypeEnum = enum( u8 )
   PROFIT, // Net profits
   PROD,   // Value of produced resources ( operations + deconstruction income )
   CONS,   // Value of consumed resources ( operations costs  )
-  MAINT,  // Value of bought resources ( maintenance costs )
-  BUILD,  // Value of bought resources ( building costs    )
+  MAINT,  // Value of consumed resources ( maintenance costs )
+  BUILD,  // Value of consumed resources ( building costs )
 };
 
 

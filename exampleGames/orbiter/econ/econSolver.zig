@@ -32,11 +32,12 @@ var solver : EconSolver = .{ .econ = undefined };
 pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 {
   solver.resetValues();         // Zeroes out non-initializable data
-  solver.initBaseState( econ ); // Initializes data from econ
+  solver.initBaseState( econ ); // Copies relevant data from econ
 
 
 // ================ MAX RES FLOW PHASE ================
 
+//solver.calcGovMaxFlow(); // Computes the maximal governmental prod and cons
   solver.calcPopMaxFlow(); // Computes the maximal population prod and cons
 //solver.calcInfMaxFlow(); // Computes the maximal infrastr.  prod and cons
   solver.calcIndMaxFlow(); // Computes the maximal industrial prod and cons
@@ -47,7 +48,7 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   solver.calcMntMaxFlow(); // Computes the maximal maintenance  consumption
   solver.calcBldMaxFlow(); // Computes the maximal construction prod and cons
 
-  solver.updateFlowAllSums();
+  solver.updateFlowAllSums(); // Compiles all individualized flow values into relevant grouped metrics
 
 //testResFlowInvariant( &solver, "FLOW PHASE" );
 
@@ -55,6 +56,7 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 
   // TODO : Have these call a singular, generic "calcResAccess" instead (?)
   solver.calcGenResAccess(); // Computes the expected aggregated resource access
+//solver.calcGenResAccess(); // Computes the expected government resource access
   solver.calcPopResAccess(); // Computes the expected population resource access
 //solver.calcInfResAccess(); // Computes the expected infrastr.  resource access
   solver.calcIndResAccess(); // Computes the expected industrial resource access
@@ -80,12 +82,13 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 // ================ CONSUMPTION PHASE ================
 
   // NOTE : Have these call a singular, generic "calcResCons" instead (?)
+//solver.calcGovResCons();  // Computes resource cons from government policies
   solver.calcPopResCons();  // Computes resource cons from population based on popCount
   solver.calcInfResCons();  // Computes resource cons from infrastructure based on usage
   solver.calcIndResCons();  // Computes resource cons from industry based on activity
 //solver.calcComResCons();  // Computes resource cons from exports
 
-  solver.updateFlowConsSums();
+  solver.updateFlowConsSums(); // Recompiles all individualized consumption values into relevant grouped metrics
 
   solver.applyGenResCons(); // Applies all resource consumption to the economy
   solver.applyResDecay();   // Decays unsued resources leftover based on individual rates ( 100% for WORK )
@@ -95,12 +98,13 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 // ================ PRODUCTION PHASE ================
 
   // NOTE : Have these call a singular, generic "calcResProd" instead (?)
+//solver.calcGovResProd();  // Computes resource prod from government policies
   solver.calcPopResProd();  // Computes resource prod from population based on popCount
-//N/A                       // Inf does not produce resources
+//  N/A for Inf             // Inf does not produce resources
   solver.calcIndResProd();  // Computes resource prod from industry based on activity
 //solver.calcComResProd();  // Computes resource prod from imports
 
-  solver.updateFlowProdSums();
+  solver.updateFlowProdSums(); // Recompiles all individualized production values into relevant grouped metrics
 
   solver.applyGenResProd(); // Applies all resource production to the economy
 
@@ -109,14 +113,14 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 
 // ================ FINANCES PHASE ================
 
-  solver.clampResStocks();  // Clamps resource amounts to what their respective stores can handle
+  solver.clampResStocks();  // Clamps resource amounts to what their respective storer can handle, discarding the rest
   solver.updateResPrices(); // Update res prices from final supply and demand
 
   solver.updatePopFinances(); // Update monetary metrics for each population type
   solver.updateInfFinances(); // Update monetary metrics for each infrastructure type // TODO : IMPLEMENT ME
   solver.updateIndFinances(); // Update monetary metrics for each industry type
-//solver.updateComFinances();
-//solver.updateGovFinances();
+//solver.updateComFinances(); // Update monetary metrics for all traders
+//solver.updateGovFinances(); // Update monetary metrics for the local government
 
 //testResFlowInvariant( &solver, "FINANCE PHASE" );
 
@@ -124,8 +128,9 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 // ================ GROWTH & DECAY PHASE ================
 
   solver.updatePopCount();  // Computes population delta based on access
-//solver.updateInfCount();  // Computes infrastructure growth/decay based on profitability
-//solver.updateIndCount();  // Computes industrial growth/decay based on profitability
+//solver.updateInfCount();  // Orders infrastructure growth/decay based on profitability
+//solver.updateIndCount();  // Orders industrial growth/decay based on profitability
+//solver.updateComCount();  // Orders traderoute's growth/decay based on profitability
 
 
 // ================ ECON UPDATE PHASE ================
@@ -153,16 +158,13 @@ pub const EconSolver = struct
 
   maxPopActivity  : f64 = 1.0,
   maxIndActivity  : f64 = 1.0,
+  econ : *ecn.Economy, // Economy being updated
 
-  // Core solver data
-  econ : *ecn.Economy,
-
-  // Stock snapshot buffers
-  resStockData : ecnm_d.ResStockData = .{},
+  resStockData : ecnm_d.ResStockData = .{}, // Stock snapshot buffers
 
   // Res flow data
   genResFlowData : ecnm_d.GenResFlowData = .{}, // Aggregated sum of all changes
-  grpResFlowData : ecnm_d.GrpResFlowData = .{}, // Aggregated per AgentGroup
+  grpResFlowData : ecnm_d.GrpResFlowData = .{}, // Aggregated per AgentGroup ( POP, INF, IND, COM, GOV, NAT )
   popResFlowData : ecnm_d.PopResFlowData = .{}, // Split per PopType
   infResFlowData : ecnm_d.InfResFlowData = .{}, // Split per InfType
   indResFlowData : ecnm_d.IndResFlowData = .{}, // Split per IndType
@@ -1485,7 +1487,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 };
 
 
-// ================================ TEST-LOGGER ================================
+// ================================ TEST-LOGGER ( VALUES ) ================================
 
 
 // TODO : rework once solver refactor is done
@@ -1583,6 +1585,8 @@ pub fn debugTestEcon( econ : *ecn.Economy ) void
 //tmpSolver.logAllMetrics();
 }
 
+
+// ================================ TEST-LOGGER ( INVARIANCE ) ================================
 
 fn isFlowAction( a : ecnm_d.AgentFlowEnum ) bool
 {

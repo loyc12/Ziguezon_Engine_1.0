@@ -21,7 +21,7 @@ pub const InfType = enum( u8 )
 
 //BATTERY,      // Grants energy storage capacity
 //TANKS,        // Grants fluid storage capacity
-  DEPOT,      // Grants cargo storage capacity
+  DEPOT,        // Grants cargo storage capacity
   HOUSING,      // Increases population cap
 
 //AMENITIES,    // Services population needs
@@ -54,7 +54,7 @@ pub const InfType = enum( u8 )
         .HOUSING  => true,
         .HABITAT  => true,
 
-        .DEPOT  => true,
+        .DEPOT    => true,
       //.BATTERY  => true,
 
       //else      => false,
@@ -68,7 +68,7 @@ pub const InfType = enum( u8 )
         .HOUSING  => true,
         .HABITAT  => true,
 
-        .DEPOT  => true,
+        .DEPOT    => true,
       //.BATTERY  => true,
 
       //else      => false,
@@ -180,7 +180,7 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .ASSEMBLY, .MASS, 0.000_000_040 ); // ~40,000 t - heavy industrial yard
   infMetricData.set( .HOUSING,  .MASS, 0.000_000_010 ); // ~10,000 t - concrete residential bloc
   infMetricData.set( .HABITAT,  .MASS, 0.000_000_050 ); // ~50,000 t - pressurized dome structur
-  infMetricData.set( .DEPOT,  .MASS, 0.000_000_015 ); // ~15,000 t - warehouse complex
+  infMetricData.set( .DEPOT,    .MASS, 0.000_000_015 ); // ~15,000 t - warehouse complex
 
 
   // ================================ AREA COST ================================
@@ -189,7 +189,7 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .ASSEMBLY, .AREA_COST, 0.20 ); // 20 ha - Construction yard / fabrication workshop
   infMetricData.set( .HOUSING,  .AREA_COST, 0.02 ); //  2 ha - Residential block ( 100 pop → 5000/km² )
   infMetricData.set( .HABITAT,  .AREA_COST, 0.00 ); //  0 ha - Pressurized dome (provides area, not uses it)
-  infMetricData.set( .DEPOT,  .AREA_COST, 0.05 ); //  5 ha - Warehouse/depot complex
+  infMetricData.set( .DEPOT,    .AREA_COST, 0.05 ); //  5 ha - Warehouse/depot complex
 
 
   // ================================ BUILD COST ================================
@@ -198,7 +198,7 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .ASSEMBLY, .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
   infMetricData.set( .HOUSING,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
   infMetricData.set( .HABITAT,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
-  infMetricData.set( .DEPOT,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .DEPOT,    .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
 
 
   // ================================ POLLUTION ================================
@@ -208,7 +208,7 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .ASSEMBLY, .POLLUTION,  1.0 );  // Dust, material waste
   infMetricData.set( .HOUSING,  .POLLUTION,  0.3 );  // Sewage, waste, minor emissions
   infMetricData.set( .HABITAT,  .POLLUTION,  0.0 );  // Sealed system
-  infMetricData.set( .DEPOT,  .POLLUTION,  0.1 );  // Minimal — some runoff
+  infMetricData.set( .DEPOT,    .POLLUTION,  0.1 );  // Minimal — some runoff
 
 
   // ================================ CAPACITY ================================
@@ -218,7 +218,7 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .ASSEMBLY, .CAPACITY,  100.0 ); // 100 t of PARTs processed per week // TODO : Convert to Abstract "building complexity" units
   infMetricData.set( .HOUSING,  .CAPACITY,  100.0 ); // 100 people housed
   infMetricData.set( .HABITAT,  .CAPACITY,    1.0 ); // 1 km2 of pressurized area
-  infMetricData.set( .DEPOT,  .CAPACITY, 5000.0 ); // 5,000 t of resources stored
+  infMetricData.set( .DEPOT,    .CAPACITY, 5000.0 ); // 5,000 t of resources stored
 
 
   // TODO : move away from PARTS only construction and maintenance
@@ -231,7 +231,7 @@ pub fn loadInfrastructureData() void
   infResMetricTable.set( .ASSEMBLY, .BUILD, .PART, 10000.0 ); // Heavy machinery, cranes, fabrication tools
   infResMetricTable.set( .HOUSING,  .BUILD, .PART,  2000.0 ); // Concrete, steel, wiring, plumbing
   infResMetricTable.set( .HABITAT,  .BUILD, .PART, 50000.0 ); // Massive pressurized structure
-  infResMetricTable.set( .DEPOT,  .BUILD, .PART,  3000.0 ); // Shelving, climate control, structures
+  infResMetricTable.set( .DEPOT,    .BUILD, .PART,  3000.0 ); // Shelving, climate control, structures
 
 
   // ================================ MAINT RATE ================================
@@ -241,6 +241,6 @@ pub fn loadInfrastructureData() void
   infResMetricTable.set( .ASSEMBLY, .MAINT, .PART, 10000.0 * 0.0006 );  // ~3% annual — heavy wear on equipment
   infResMetricTable.set( .HOUSING,  .MAINT, .PART,  2000.0 * 0.0003 );  // ~1.5% annual — residential is low-maintenance
   infResMetricTable.set( .HABITAT,  .MAINT, .PART, 50000.0 * 0.0008 );  // ~4% annual — pressure vessels need constant upkee
-  infResMetricTable.set( .DEPOT,  .MAINT, .PART,  3000.0 * 0.0004 );  // ~2% annual
+  infResMetricTable.set( .DEPOT,    .MAINT, .PART,  3000.0 * 0.0004 );  // ~2% annual
 
 }

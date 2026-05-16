@@ -22,7 +22,7 @@ const BodyEconPair = gdf.BodyEconPair;
 /// Fractional semi-major axis offset for phasing drift orbit.
 /// Higher values = faster phase correction but more delta-V.
 /// Typical range: 0.01 to 0.10
-pub const DEFAULT_EPSILON : f64 = 0.0625;
+pub const DEFAULT_OFFSET : f64 = 0.0625;
 
 
 // ================================ UTILITY ================================
@@ -192,7 +192,7 @@ pub fn updateTravelTable() void
         continue;
       }
 
-      const result = estimateTransfer( dataA, dataB, DEFAULT_EPSILON );
+      const result = estimateTransfer( dataA, dataB, DEFAULT_OFFSET );
       gbl.ECON_TRAVEL_TABLE.set( pairA, pairB, result );
     }
   }

@@ -196,11 +196,11 @@ pub const Economy = struct
   {
     if( self.location != .GROUND or !self.hasAtmo )
     {
-      self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1000 )); // TODO : RECOMPUTE AND VALIDATE
+      self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1024 )); // TODO : RECOMPUTE AND VALIDATE
     }
-    self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1000 ));
-    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  100 ));
-    self.infState.set(   .COUNT, .DEPOT,  @floatFromInt( value *  100 ));
+    self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1024 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  256 ));
+    self.infState.set(   .COUNT, .DEPOT,    @floatFromInt( value *  128 ));
 
     self.updateResCaps();
     self.updatePopCaps();

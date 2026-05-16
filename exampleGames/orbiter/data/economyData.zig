@@ -28,6 +28,15 @@ pub const EconLoc = enum( u8 )
   L4,
   L5,
 
+  pub inline fn isLagrangian( self : EconLoc ) bool
+  {
+    return comptime switch( self )
+    {
+      .L1, .L2, .L3, .L4, .L5 => true,
+      else                    => false,
+    };
+  }
+
   pub inline fn toLagrangeIdx( self : EconLoc ) u4
   {
     return comptime switch( self )

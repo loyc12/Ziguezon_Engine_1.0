@@ -38,10 +38,10 @@ pub var vesMetricData : def.GenDataGrid( f64, VesType, VesMetricEnum ) = .{};
 pub const VesMetricEnum = enum( u8 )
 {
   MASS,
+  CREW_COST,
   PART_COST,
   BLD_COST,
   CAPACITY,
-  CREW_COUNT,
 //POWER_SRC,
 };
 
@@ -51,6 +51,14 @@ pub const VesMetricEnum = enum( u8 )
 pub fn loadVesselData() void
 {
   vesMetricData.fillWith( 0.0 );
+
+
+  // ================================ CREW COST ================================
+
+  vesMetricData.set( .PROBE,    .CREW_COST,   0.0 );
+  vesMetricData.set( .SHUTTLE,  .CREW_COST,   2.0 );
+  vesMetricData.set( .STARSHIP, .CREW_COST,  20.0 );
+  vesMetricData.set( .STATION,  .CREW_COST, 200.0 );
 
 
   // ================================ MASS ================================
@@ -75,12 +83,4 @@ pub fn loadVesselData() void
   vesMetricData.set( .SHUTTLE,  .CAPACITY,  25.0 );
   vesMetricData.set( .STARSHIP, .CAPACITY, 125.0 );
   vesMetricData.set( .STATION,  .CAPACITY, 625.0 );
-
-
-  // ================================ CREW COUNT ================================
-
-  vesMetricData.set( .PROBE,    .CREW_COUNT,   0.0 );
-  vesMetricData.set( .SHUTTLE,  .CREW_COUNT,   2.0 );
-  vesMetricData.set( .STARSHIP, .CREW_COUNT,  20.0 );
-  vesMetricData.set( .STATION,  .CREW_COUNT, 200.0 );
 }
