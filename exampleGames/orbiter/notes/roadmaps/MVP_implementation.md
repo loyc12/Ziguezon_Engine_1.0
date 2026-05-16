@@ -1,10 +1,10 @@
 # Minimum Viable Product (MVP)
 
-The MVP is a *gameplay-loop* milestone : the scope-construction targets (bodies, resources, locations) have been overshot in code, but the systems that turn scope into gameplay (trade execution, gov levers, autonomy pressure, player-facing policy) are still pending. The MVP is reached when the player can meaningfully steer at least one economy through survival or collapse.
+The MVP is a *gameplay-loop* milestone : the scope-construction targets (bodies, resources, locations) have been overshot in code, but the systems that turn scope into gameplay (trade execution, gov levers, autonomy pressure, player-facing policy) are still pending. The MVP is reached when the player can meaningfully steer at least a pair of economies towards survival in a non-trivial manner.
 
 ## Objective
 
-Create a small but complete gameplay loop proving:
+Create a small but complete gameplay loop demonstrating:
 
 * logistical planning
 * colony interdependence
@@ -17,20 +17,21 @@ Create a small but complete gameplay loop proving:
 
 ### Required
 
-* `[x]` orbital transfer simulation
-* `[ ]` automatic trade — Tier 3 in [economy_upgrade.md](economy_upgrade.md)
-* `[~]` local economies — per-econ tick is live ; each econ is an island until trade lands
+* `[x]` local economy simulation ; each econ is an island until trade lands
+* `[~]` adequate orbital transfer distance and duration simulation
+* `[ ]` transport constraints — gating mechanic needs trade to exist first
+* `[ ]` automatic inter-economy trade — Tier 3 in [economy_upgrade.md](economy_upgrade.md)
 * `[~]` colony growth/decline — pop dynamics implemented ; INF / IND growth currently driven by `debugAutoBuild` placeholder (Tier 1.3 / 1.4)
 * `[~]` infrastructure construction — basic `BuildQueue` works ; queue refactor (Tier 1.1 Stage A) is the prerequisite for player-driven construction
-* `[ ]` subsidies/taxes — Tier 2.1 / 2.2
-* `[ ]` transport constraints — gating mechanic needs trade to exist first
-* `[ ]` basic autonomy pressure — Tier 2 / Tier 3
+* `[ ]` governmental subsidies and taxes — Tier 2.1 / 2.2
+* `[ ]` local mineral resource count and access decay when mined
 
 ### Optional
 
 * `[ ]` simple random crises (Tier 5.3)
-* `[ ]` basic faction drift (Tier 2 governance)
 * `[ ]` exploration uncertainty (Tier 5.1)
+* `[ ]` basic faction drift (Tier 2 governance)
+* `[ ]` basic local autonomy pressure — Tier 2 / Tier 3
 
 ---
 
@@ -42,7 +43,7 @@ Goal:
 
 * prove basic gameplay loop
 
-Implement: see "MVP Core Systems / Required" above (orbital transfers, automatic trade, local economies, colony growth, infrastructure construction, subsidies/taxes, transport constraints, basic autonomy pressure).
+Implement: see "MVP Core Systems / Required" above (orbital transfers, automatic trade, local economies, colony growth, infrastructure construction, subsidies/taxes, transport constraints).
 
 Success condition:
 
@@ -125,13 +126,13 @@ Goal:
 Potential additions:
 
 * megaprojects
-* advanced politics
-* orbital hazards
-* deep research systems
+* advanced local politics
+* orbital / travel hazards
+* tech research systems
 * large-scale migration
 * late-game infrastructure
 
 Post-ship only (per [design_document.md](../design_document.md) "Out-of-Scope"):
 
-* diplomacy (elaborate diplomacy is deferred)
-* warfare (combat is not a gameplay loop until after ship)
+* inter-polity diplomacy (player vs bots, multiplayer-ish)
+* warfare (combat is not part of the core loop)
