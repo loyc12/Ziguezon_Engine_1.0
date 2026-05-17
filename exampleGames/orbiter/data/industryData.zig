@@ -127,7 +127,7 @@ pub const IndMetricEnum = enum( u8 )
 
   MASS,      // Mass this industry has
   AREA_COST, // Area this industry uses
-  CSTR_COST, // Total ASSEMBLY capacity required to complete build
+  CNST_COST, // Total ASSEMBLY capacity required to complete build
   POLLUTION, // Pollution generated at full activity
 };
 

@@ -65,6 +65,7 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   // TODO : Fold into POP/INF/IND, and generalise to account for all ResType
   solver.calcMntResAccess(); // Computes the expected maintenance  resource access
   solver.calcBldResAccess(); // Computes the expected construction resource access
+  // TODO :
 
 //testResFlowInvariant( &solver, "ACCESS PHASE" );
 
@@ -117,7 +118,7 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   solver.updateResPrices(); // Update res prices from final supply and demand
 
   solver.updatePopFinances(); // Update monetary metrics for each population type
-  solver.updateInfFinances(); // Update monetary metrics for each infrastructure type // TODO : IMPLEMENT ME
+//solver.updateInfFinances(); // Update monetary metrics for each infrastructure type // TODO : IMPLEMENT ME
   solver.updateIndFinances(); // Update monetary metrics for each industry type
 //solver.updateComFinances(); // Update monetary metrics for all traders
 //solver.updateGovFinances(); // Update monetary metrics for the local government
@@ -125,12 +126,18 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 //testResFlowInvariant( &solver, "FINANCE PHASE" );
 
 
+// ================ CONSTRUCTION PHASE ================
+
+// TODO : tick econSolver here instead of in economy ( funding and resource buying should be done earlier )
+
+
 // ================ GROWTH & DECAY PHASE ================
 
   solver.updatePopCount();  // Computes population delta based on access
-//solver.updateInfCount();  // Orders infrastructure growth/decay based on profitability
-//solver.updateIndCount();  // Orders industrial growth/decay based on profitability
-//solver.updateComCount();  // Orders traderoute's growth/decay based on profitability
+//solver.updateInfOrders(); // Orders infrastructure growth/decay based on profitability
+//solver.updateIndOrders(); // Orders industrial growth/decay based on profitability
+//solver.updateComOrders(); // Orders traderoute's growth/decay based on profitability
+
 
 
 // ================ ECON UPDATE PHASE ================
@@ -379,7 +386,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         const factor   = self.econ.infState.get( .USE_LVL, infT );
         const scaling  = def.lerp( INF_MAINT_IDLE_FACTOR, 1.0, factor );
 
-        const baseCost = infT.getResMetric_f64(  .MAINT, resT );
+        const baseCost = infT.getResMetric_f64( .MAINT, resT );
         const maxCost  = infC * baseCost * scaling;
 
         self.infResFlowData.set( infT, .MNT_CONS, resT, @ceil( maxCost ));
@@ -388,7 +395,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
       inline for( 0..indTypeC )| d |
       {
         const indT = IndType.fromIdx( d );
-        const indC = self.econ.indState.get(   .COUNT, indT );
+        const indC = self.econ.indState.get( .COUNT, indT );
 
         const factor   = self.econ.indState.get( .ACT_LVL, indT );
         const scaling  = def.lerp( IND_MAINT_IDLE_FACTOR, 1.0, factor );
@@ -408,61 +415,71 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
     const queue = &self.econ.buildQueue.?;
 
-    if( queue.entryCount == 0 ){ return; }
+    if( queue.maxEntryIdx == 0 ){ return; }
 
-    // Walk entries, attribute via construct for now
-    var rawTotal : f64 = 0.0;
-
-    for( 0..queue.entryCount )| idx |
+  //inline for( 0..resTypeC )| r |
     {
-      const e = queue.entries[ idx ];
-      if( e.buildCount == 0 ){ break; }
+      const resT = ResType.PART;
 
-      const cost = @as( f64, @floatFromInt( e.buildCount )) * e.construct.getResBldCost( .PART );
-      rawTotal += cost;
+      var rawTotal : f64 = 0.0;
 
-      switch( e.construct )
+      for( 0..queue.maxEntryIdx )| idx |
       {
-        .infT => | f | {
-          self.infResFlowData.add(    f, .BLD_CONS, .PART, cost );
-          self.grpResFlowData.add( .INF, .BLD_CONS, .PART, cost );
-        },
-        .indT => | d | {
-          self.indResFlowData.add(    d, .BLD_CONS, .PART, cost );
-          self.grpResFlowData.add( .IND, .BLD_CONS, .PART, cost );
-        },
+        const e = queue.entries[ idx ];
+
+        if( e.isValid() and !e.isClosed() )
+        {
+          const cost =  e.unitCount * e.construct.getResBldCost( resT );
+          rawTotal += cost;
+
+          switch( e.construct )
+          {
+            .infT => | f | {
+              self.infResFlowData.add(    f, .BLD_CONS, resT, cost );
+              self.grpResFlowData.add( .INF, .BLD_CONS, resT, cost );
+            },
+            .indT => | d | {
+              self.indResFlowData.add(    d, .BLD_CONS, resT, cost );
+              self.grpResFlowData.add( .IND, .BLD_CONS, resT, cost );
+            },
+            else =>
+            {
+              def.qlog( .ERROR, 0, @src(), "Construct type not handled yet" );
+            },
+          }
+        }
       }
+
+      // Apply ASSEMBLY throughput cap (preserves old calcBuildDemand semantics)
+      const assemblyCount = self.econ.infState.get( .COUNT, .ASSEMBLY );
+      const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
+      const assemblyCap   = assemblyCount * assemblyRate;
+
+      var scale : f64 = 1.0;
+
+      if( rawTotal > def.EPS and assemblyCap < rawTotal )
+      {
+        scale = assemblyCap / rawTotal; // [ 0.0, 1.0 ]
+      }
+
+      inline for( 0..infTypeC )| f |
+      {
+        const infT    = InfType.fromIdx( f );
+        const maxCost = self.infResFlowData.get( infT, .BLD_CONS, .PART );
+
+        self.infResFlowData.set( infT, .BLD_CONS, .PART, @ceil( maxCost * scale ) );
+      }
+
+      inline for( 0..indTypeC )| d |
+      {
+        const indT    = IndType.fromIdx( d );
+        const maxCost = self.indResFlowData.get( indT, .BLD_CONS, .PART );
+
+        self.indResFlowData.set( indT, .BLD_CONS, .PART, @ceil( maxCost * scale ));
+      }
+
+      // TODO : Account for deconstruction res production
     }
-
-    // Apply ASSEMBLY throughput cap (preserves old calcBuildDemand semantics)
-    const assemblyCount = self.econ.infState.get( .COUNT, .ASSEMBLY );
-    const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
-    const assemblyCap   = assemblyCount * assemblyRate;
-
-    var scale : f64 = 1.0;
-
-    if( rawTotal > def.EPS and assemblyCap < rawTotal )
-    {
-      scale = assemblyCap / rawTotal; // [ 0.0, 1.0 ]
-    }
-
-    inline for( 0..infTypeC )| f |
-    {
-      const infT    = InfType.fromIdx( f );
-      const maxCost = self.infResFlowData.get( infT, .BLD_CONS, .PART );
-
-      self.infResFlowData.set( infT, .BLD_CONS, .PART, @ceil( maxCost * scale ) );
-    }
-
-    inline for( 0..indTypeC )| d |
-    {
-      const indT    = IndType.fromIdx( d );
-      const maxCost = self.indResFlowData.get( indT, .BLD_CONS, .PART );
-
-      self.indResFlowData.set( indT, .BLD_CONS, .PART, @ceil( maxCost * scale ));
-    }
-
-    // TODO : Account for deconstruction res production
   }
 
 

@@ -80,15 +80,20 @@ pub const GameFlags = struct
 
 // ================ GAMEDATA MATRICES ================
 
-pub const stlr_d = @import( "data/stellarData.zig" );
-pub const ecnm_d = @import( "data/economyData.zig" );
+pub const stlr_d = @import( "data/stellarData.zig"    );
+pub const ecnm_d = @import( "data/economyData.zig"    );
+pub const bldr_d = @import( "data/builderData.zig"    );
 pub const gvmt_d = @import( "data/governmentData.zig" );
-pub const trde_d = @import( "data/tradeData.zig"   );
+pub const trde_d = @import( "data/tradeData.zig"      );
 
 pub const EconLoc           = ecnm_d.EconLoc;
 pub const BodyType          = stlr_d.StellarBodyType;
 pub const BodyName          = stlr_d.StellarBodyName;
 pub const StellarMetricEnum = stlr_d.StellarMetricEnum;
+
+pub const Construct         = bldr_d.Construct;
+pub const Requester         = bldr_d.Requester;
+
 
 pub const BodyEconPair      = trde_d.BodyEconPair;
 pub const toBodyEconPair    = trde_d.toBodyEconPair;

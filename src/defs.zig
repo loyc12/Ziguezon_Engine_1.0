@@ -532,5 +532,7 @@ pub const Interface2D    = ntf_u.Interface2D;
 
 
 
+// ================================ MINOR HELPER FUNCTIONS ================================
 
 
+pub const areContEqual = std.meta.eql;

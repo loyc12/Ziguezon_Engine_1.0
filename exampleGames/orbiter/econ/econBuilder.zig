@@ -16,274 +16,339 @@ const infTypeC = InfType.count;
 const indTypeC = IndType.count;
 
 
-const cst = @import( "construct.zig" );
+const bld = gdf.bldr_d;
 
-const Construct = cst.Construct;
-
-
-// NOTE : will require large refactor to handle new metrics
-// - requester Agent
-// - resource prealocation
-// - partial orders
-// - use CAPACITY on BUILD_COST instead of PART count
-// - build in parallel instead of sequentially
-// - gov order prioritization
-// - cancelation refunds
-// - smooth Agent API
-
-pub const BuildEntry = struct
-{
-  construct    : Construct = .{ .infT = InfType.HOUSING },
-  buildCount   : u64 = 0,
-  partProgress : u64 = 0,
-
-  pub inline fn isEntryClosed( self : *const BuildEntry ) bool
-  {
-    return( self.buildCount == 0 );
-  }
-
-  pub inline fn getUnitPartCost( self : *const BuildEntry ) f64
-  {
-    return self.construct.getResBldCost( .PART );
-  }
-
-  pub inline fn getTotalPartCost( self : *const BuildEntry ) f64
-  {
-    const  count : f64 = @floatFromInt( self.buildCount );
-    return count * self.getUnitPartCost();
-  }
-
-  pub fn calcBuildableAmount( self : *BuildEntry, availParts : f64 ) f64
-  {
-    const unitPartCost = self.getUnitPartCost();
-    const count : f64  = @floatFromInt( self.buildCount );
-
-    if( availParts > count * unitPartCost )
-    {
-      return @floor( count );
-    }
-
-    return @floor( availParts / unitPartCost );
-  }
-};
-
-pub const EntryMode = enum( u8 )
-{
-  APPEND,
-  REPLACE,
-};
+const BuildEntry = bld.BuildEntry;
+const Construct  = bld.Construct;
+const Requester  = bld.Requester;
+const EntryType  = bld.EntryTypeEnum;
+const EntryMode  = bld.EntryModeEnum;
 
 
-const BUILD_QUEUE_CAPACITY : usize = 255;
+
+// TODO :
+// - call from EconSolver instead of Econ itself ( pass in slvr, not econ )
+// - refund cancelations in res and cash
+// - build entries in parallel instead of sequentially
+// - setup priority ordering
+// - setup per-agentGroup queues instead of a single one
+
 
 pub const BuildQueue = struct
 {
-  entries       : [ BUILD_QUEUE_CAPACITY ]BuildEntry = undefined,
-  entryCount    : u64 = 0,
-  totUnitsBuilt : u64 = 0,
+  pub const BUILD_QUEUE_CAPACITY : usize = 127;
+
+  pub const BuildEntryArray = [ BUILD_QUEUE_CAPACITY ]BuildEntry;
+
+
+  entries : BuildEntryArray = undefined,
+
+  maxEntryIdx   : u64 = 0,
+  totUnitsBuilt : u64 = 0, // For debug logging only
 
 
   pub fn init() BuildQueue
   {
-    var queue : BuildQueue = .{ .entryCount = 0 };
+    var queue : BuildQueue = .{ .maxEntryIdx = 0 };
 
     for( 0..BUILD_QUEUE_CAPACITY )| i |
     {
-      queue.entries[ i ] =
-      .{
-        .construct  = .{ .infT = InfType.HABITAT },
-        .buildCount = 0,
-      };
+      queue.entries[ i ] = .{};
     }
 
     return queue;
   }
 
-  pub fn hasEntryForConstruct( self : *BuildQueue, c : Construct ) bool
+  pub fn hasMatchingEntry( self : *BuildQueue, c : Construct, q : Requester, t : EntryType ) bool
   {
-    for( self.entries )| e |{ if( std.meta.eql( c, e.construct ))
+    for( self.entries )| e |
     {
-      return true;
-    }}
+      if( e.matchesWith( .{ .construct = c, .requester = q, .entryType = t }))
+      {
+        return true;
+      }
+    }
     return false;
   }
 
-  pub fn addEntry( self : *BuildQueue, c : Construct, count : u64, mode : EntryMode ) bool
+// ================================ EXTERNAL API ================================
+
+  pub fn tryAddEntry( self : *BuildQueue, c : Construct, q : Requester, t : EntryType, m : EntryMode, count : u64 ) bool
   {
-    if( count == 0 ){ return false; }
+    const count_f : f64 = @floatFromInt( count );
 
     // If construct already in list, set amount to be built based on mode
-    if( self.entryCount > 0 )
+    if( self.maxEntryIdx > 0 )
     {
-      for( 0..self.entryCount )| idx |
+      for( 0..self.maxEntryIdx )| idx |
       {
         var e = &self.entries[ idx ];
 
-        if( std.meta.eql( c, e.construct ))
+        if( def.areContEqual( c, e.construct ) and def.areContEqual( q, e.requester ))
         {
-          switch( mode )
+          const eT1 = e.entryType;
+          const eT2 = t;
+
+          if( m == .CANCEL )
           {
-            .APPEND  => e.buildCount +=       count,
-            .REPLACE => e.buildCount  = @max( count, e.buildCount ), // Prevents overriding player-requested entries
+            e.unitCount = 0.0;
+            return true;
           }
-          return true;
+
+          if( eT1 == eT2 )
+          {
+            switch( m )
+            {
+              .SET_TO   => e.unitCount  = count_f,
+              .ADD_TO   => e.unitCount += count_f,
+              .RAISE_TO => e.unitCount  = @max( count_f, e.unitCount ),
+              .LOWER_TO => e.unitCount  = @min( count_f, e.unitCount ),
+              .CANCEL   => unreachable,
+            }
+            return true;
+          }
+          else // EntryType mismatch ( ex : CNSTR vs DESTR )
+          {
+            // TODO : IMPLEMENT THIS LOGIC
+          }
+
+          // NOTE : money refunds should be done in clearEntry(), called from update()
         }
       }
     }
 
-    // If list is full, deny the build order
-    if( self.entryCount >= BUILD_QUEUE_CAPACITY )
+    return self.addNewEntry( c, q, t, m, count_f );
+  }
+
+  fn addNewEntry( self : *BuildQueue, c : Construct, q : Requester, t : EntryType, m : EntryMode, count : f64 ) bool
+  {
+    if( m == .CANCEL )
     {
-      def.qlog( .WARN, 0, @src(), "Cannot add entry to build queue : no more spaces" );
+      def.qlog( .WARN, 0, @src(), "Cannot cancel non-existant entry form build queue" );
+      return false;
+    }
+    if( self.maxEntryIdx >= BUILD_QUEUE_CAPACITY )
+    {
+      def.qlog( .WARN, 0, @src(), "Cannot add entry to build queue : no more space left in queue" );
       return false;
     }
 
     // Add entry to the end of list
-    self.entryCount += 1;
-    self.entries[ self.entryCount - 1 ] = .{ .construct = c, .buildCount = count };
+    self.entries[ self.maxEntryIdx ] =
+    .{
+      .construct = c,
+      .requester = q,
+      .entryType = t,
+      .unitCount = count
+    };
+    self.maxEntryIdx += 1;
+
+    // NOTE : the following entries should already be zeroed
 
     return true;
   }
 
-  pub fn removeEntryAmount( self : *BuildQueue, amount : u64 ) void
+  /// Returns the unused funds
+  pub fn tryFundEntry( self : *BuildQueue, econ : *const ecn.Economy, c : Construct, q : Requester, t : EntryType, funds : f64 ) f64
   {
-    if( amount == 0 ){ return; }
-
-    var idx : usize = 0;
-
-    if( amount < self.entryCount )
+    // If construct already in list, set amount to be built based on mode
+    if( self.maxEntryIdx > 0 )
     {
-      // Remove completed entries ( swap-remove from front to back )
-      while( idx + amount < self.entryCount )
+      for( 0..self.maxEntryIdx )| idx |
       {
-        self.entries[ idx ] = self.entries[ idx + amount ];
+        var e = &self.entries[ idx ];
 
-        idx += 1;
+        if( e.matchesWith( .{ .construct = c, .requester = q, .entryType = t }))
+        {
+          return e.tryGrantFunds( econ, funds );
+        }
       }
-      self.entryCount -= amount;
+    }
+    return funds;
+  }
 
-    }
-    else // Clear all entries
-    {
-      self.entryCount = 0;
-    }
+  fn clearEntryByIdx( self : *BuildQueue, econ : *ecn.Economy, idx : usize ) void
+  {
+    // TODO : Put remaining resources into BUILD_PROD of requester
 
-    // fill remaining slots with zeros
-    while( idx < BUILD_QUEUE_CAPACITY )
-    {
-      self.entries[ idx ].buildCount = 0;
-      idx += 1;
-    }
+    // TODO : Give remaining funds back to requester
+
+    _ = econ;
+
+    const e = &self.entries[ idx ];
+    e.* = .{}; // NOTE : makes entries invalid on purpose
   }
 
 
-  pub inline fn getTotalBuildCount( self : *const BuildQueue ) u64
+  // ================================ SIMPLE ACCESSORS ================================
+
+  pub inline fn getTotalEntryCount( self : *const BuildQueue ) u64
   {
     var total : u64 = 0;
 
-    for( self.entries )| e |
+    for( 0..self.maxEntryIdx )| idx |
     {
-      if( e.buildCount == 0 ){ return total; }
-      total += e.buildCount;
+      var e = &self.entries[ idx ];
+
+      if( e.isValid() )
+      {
+        total += 1;
+      }
     }
+
     return total;
   }
 
-  pub inline fn getEntryCount( self : *const BuildQueue ) u32
-  {
-    for( self.entries, 0.. )| e, idx |
-    {
-      if( e.buildCount == 0 ){ return @intCast( idx ); }
-    }
-    return self.entries.len;
-  }
-
-  pub inline fn getTotalPartCost( self : *const BuildQueue ) f64
+  pub inline fn getTotalUnitCount( self : *const BuildQueue ) f64
   {
     var total : f64 = 0;
 
-    for( self.entries )| e |
+    for( 0..self.maxEntryIdx )| idx |
     {
-      if( e.buildCount != 0 )
+      var e = &self.entries[ idx ];
+
+      if( e.isValid() )
       {
-        total += e.getTotalPartCost();
+        total += e.unitCount;
       }
-      else break;
     }
+
+    return total;
+  }
+
+  pub inline fn getTotalRemainResCost( self : *const BuildQueue, resT : ResType ) f64
+  {
+    var total : u64 = 0;
+
+    for( 0..self.maxEntryIdx )| idx |
+    {
+      var e = &self.entries[ idx ];
+
+      if( e.isValid() )
+      {
+        total += e.getRemainResCost( resT );
+      }
+    }
+
+    return total;
+  }
+
+  pub inline fn getTotalRemainCnstCost( self : *const BuildQueue, resT : ResType ) f64
+  {
+    var total : u64 = 0;
+
+    for( 0..self.maxEntryIdx )| idx |
+    {
+      var e = &self.entries[ idx ];
+
+      if( e.isValid() )
+      {
+        total += e.getRemainCnstCost( resT );
+      }
+    }
+
+    return total;
+  }
+
+  pub inline fn getTotalRemainMoneyCost( self : *const BuildQueue, resT : ResType ) f64
+  {
+    var total : u64 = 0;
+
+    for( 0..self.maxEntryIdx )| idx |
+    {
+      var e = &self.entries[ idx ];
+
+      if( e.isValid() )
+      {
+        total += e.getRemainMoneyCost( resT );
+      }
+    }
+
     return total;
   }
 
 
-  pub fn update( self : *BuildQueue, econ : *ecn.Economy ) void
+  // ================================ UPDATE FUNCTIONS ================================
+
+
+  fn compactEntries( self : *BuildQueue ) void
+  {
+    var entryOffset    : usize = 0;
+    var newMaxEntryIdx : usize = 0;
+
+    for( 0..self.maxEntryIdx )| idx |
+    {
+      var e = &self.entries[ idx ];
+
+      if( !e.isValid() )
+      {
+        entryOffset += 1;
+
+        if( idx + entryOffset > self.maxEntryIdx )
+        {
+          break; // Stop offseting entries once all that remains is already zeroed
+        }
+
+        self.entries[ idx ] = self.entries[ idx + entryOffset ];
+      }
+      else
+      {
+        newMaxEntryIdx += 1;
+      }
+    }
+
+    self.maxEntryIdx = newMaxEntryIdx;
+  }
+
+
+  pub fn tickQueue( self : *BuildQueue, econ : *ecn.Economy ) void
   {
     self.totUnitsBuilt = 0;
 
-    if( self.entryCount > 0 )
+    var cnstUseRatio : f64 = 0.0;
+
+    if( self.maxEntryIdx > 0 )
     {
       var entriesClosed : u64 = 0;
 
       const assemblyCount = econ.infState.get( .COUNT, .ASSEMBLY );
       const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
-      const assemblyCap   = @ceil( assemblyCount * assemblyRate );
+      const maxAvailCnst  = @floor( assemblyCount * assemblyRate );
 
-      const availParts = @min( assemblyCap, econ.buildBudget );
-      var  remainParts = availParts;
+      var remainCnst  = maxAvailCnst;
+      var idx : usize = 0;
 
-
-      for( 0..self.entryCount )| idx |
+      while( idx < self.maxEntryIdx  )
       {
-        var e = &self.entries[ idx ];
-        var unitsBuilt : u64 = 0;
+        const e = &self.entries[ idx ];
+        idx    += 1;
 
-        remainParts += @floatFromInt( e.partProgress );
-        e.partProgress = 0;
-
-        const unitPartCost = e.construct.getResBldCost( .PART );
-        const unitsToBuild = e.calcBuildableAmount( remainParts );
-
-        if( unitsToBuild > def.EPS )
+        if( !e.isClosed() )
         {
-          unitsBuilt = econ.tryBuild( e.construct, unitsToBuild );
-          const unitsBuilt_f : f64 = @floatFromInt( unitsBuilt );
+          // NOTE : tryFundEntry() should have been called by beforehand to be able to buy the resources it may need
+          _ = e.tryBuyRes( econ );
 
-          remainParts        -= unitsBuilt_f * unitPartCost;
-          e.buildCount       -= unitsBuilt;
-          self.totUnitsBuilt += unitsBuilt;
+          // TODO : have assemblies get paid for the cnst used
+
+          remainCnst = e.tryGrantCnst( remainCnst );
+
+          self.totUnitsBuilt += @intFromFloat( e.tryBuildUnits( econ ));
         }
 
-
-        // Failed to close the entry : likely cannot build anything more
-        if( !e.isEntryClosed() )
+        if( e.isClosed() )
         {
-          def.log( .DEBUG, 0, @src(), "@ Could not close build queue : stashed remaining {d} parts", .{ remainParts });
-          e.partProgress += @intFromFloat( remainParts );
-          break;
+          self.clearEntryByIdx( econ, idx );
+          entriesClosed += 1;
         }
-
-        entriesClosed += 1;
       }
 
-      // Update assembly usage metric
-      if( assemblyCap > def.EPS )
+      if( entriesClosed > 0 )
       {
-        const partsUsed = availParts - remainParts;
-        econ.infState.set( .USE_LVL, .ASSEMBLY, partsUsed / assemblyCap );
+        self.compactEntries();
       }
-      else
-      {
-        econ.infState.set( .USE_LVL, .ASSEMBLY, 0.0 );
-      }
-
-      self.removeEntryAmount( entriesClosed );
+      cnstUseRatio = ( remainCnst - maxAvailCnst ) / maxAvailCnst;
     }
 
-    if( self.entryCount == 0 )
-    {
-      def.qlog( .DEBUG, 0, @src(), "$ Succesfully closed build queue" );
-    }
-
-    return;
+    econ.infState.set( .USE_LVL, .ASSEMBLY, cnstUseRatio );
   }
-
-  // TODO : add a "log build queue" function
 };

@@ -123,7 +123,7 @@ pub const InfMetricEnum = enum( u8 )
 
   MASS,      // Mass this infrastructure has
   AREA_COST, // Area this infrastructure uses
-  CSTR_COST, // Total ASSEMBLY capacity required to complete build
+  CNST_COST, // Total ASSEMBLY capacity required to complete build
   POLLUTION, // Pollution generated at full useage // TODO : wire into system properly
   CAPACITY,  // Respective scalar produced by a unit of this infrastructure
 };
@@ -195,10 +195,10 @@ pub fn loadInfrastructureData() void
   // ================================ BUILD COST ================================
   // Unit : Abstract "building complexity"
 
-  infMetricData.set( .ASSEMBLY, .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
-  infMetricData.set( .HOUSING,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
-  infMetricData.set( .HABITAT,  .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
-  infMetricData.set( .DEPOT,    .CSTR_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .ASSEMBLY, .CNST_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .HOUSING,  .CNST_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .HABITAT,  .CNST_COST, 1.00 ); // TODO : Adjust once implemented fully
+  infMetricData.set( .DEPOT,    .CNST_COST, 1.00 ); // TODO : Adjust once implemented fully
 
 
   // ================================ POLLUTION ================================

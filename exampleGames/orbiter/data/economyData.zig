@@ -122,7 +122,6 @@ pub const AgentFlowEnum = enum( u8 )
   }
 };
 
-
 // ================================ RES STOCK ENUM ================================
 // Temporary res buffers to cleanly split effect of each category of cons / prod
 
@@ -144,7 +143,8 @@ pub const ResStockEnum = enum( u8 )
 
 // ================================ FLOW MATRICES ================================
 
-pub const ResStockData = def.GenDataGrid( f64, ResStockEnum, ResType );
+pub const ResStockArray  = def.GenDataLine( f64,                ResType );
+pub const ResStockData   = def.GenDataGrid( f64, ResStockEnum,  ResType );
 
 // Per-action, per-resource
 pub const GenResFlowData = def.GenDataGrid( f64, AgentFlowEnum, ResType );

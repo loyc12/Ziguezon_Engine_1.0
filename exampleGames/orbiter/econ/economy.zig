@@ -4,12 +4,10 @@ const def = @import( "defs" );
 
 pub const ecnSlvr = @import( "econSolver.zig"  );
 pub const ecnBldr = @import( "econBuilder.zig" );
-pub const cst     = @import( "construct.zig"   );
-pub const eco     = @import( "ecology.zig"     );
+pub const ecnEco  = @import( "ecology.zig"     );
 
 pub const BuildQueue = ecnBldr.BuildQueue;
-pub const Construct  = @import( "construct.zig" ).Construct;
-pub const Ecology    = eco.EcoState;
+pub const Ecology    = ecnEco.EcoState;
 
 
 const gbl = @import( "../gameGlobals.zig" );
@@ -50,7 +48,6 @@ pub const Economy = struct
 
   ecology   : ?Ecology  = null,
 
-  localGov : gdf.gvmt_d.GovMonetaryData = .{},
 
   buildQueue  : ?BuildQueue = null,
   buildBudget : f64 = 0.0,  // PART allocation granted by solver
@@ -63,6 +60,8 @@ pub const Economy = struct
   agtState : gdf.ecnm_d.AgentStateData = .{},
   areaData : gdf.ecnm_d.EconAreaData   = .{},
 
+  govState : gdf.gvmt_d.GovMonetaryData = .{},
+//comState :
 
   // ================================ INIT ================================
 
@@ -267,7 +266,7 @@ pub const Economy = struct
     if( self.buildQueue != null )
     {
       const queue = self.buildQueue.?;
-      def.log(  .CONT, 0, @src(), "Build queue  : {d} ( {d} ) {d}", .{ queue.getEntryCount(), queue.getTotalBuildCount(), queue.totUnitsBuilt });
+      def.log( .CONT, 0, @src(), "Build queue  : {d:.0} ( {d:.0} ) {d:.0}", .{ queue.getTotalEntryCount(), queue.getTotalUnitCount(), queue.totUnitsBuilt });
     }
   }
   // TODO : generalize this function
@@ -662,7 +661,7 @@ pub const Economy = struct
   }
 
 
-  pub inline fn tryBuild( self : *Economy, c : Construct, amount : f64 ) u64
+  pub inline fn tryBuild( self : *Economy, c : gdf.Construct, amount : f64 ) u64
   {
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
@@ -787,7 +786,7 @@ pub const Economy = struct
 
     if( self.buildQueue != null )
     {
-      self.buildQueue.?.update( self );
+      self.buildQueue.?.tickQueue( self );
     }
     else
     {
@@ -877,7 +876,7 @@ pub const Economy = struct
 
   const AUTO_DECAY_RES_FACTOR   : f64 =    0.75; // Fraction of build PART costs reimbursed on decay
   const AUTO_BUILD_MAX_SCALE    : f64 =    2.00; // Max build scale multiplier ( 0.0 at thresh, this at 100%+ )
-  const AUTO_BUILD_QUEUE_LIMIT  : u32 =     128; // Max number of queued construction orders before ignoring autoBuild
+  const AUTO_BUILD_QUEUE_LIMIT  : u32 =      96; // Max number of queued construction orders before ignoring autoBuild
 
 
   const AUTO_BUILD_INF_THRESH   : f64 = 0.80000; // Infrastructure usage level above which it grows
@@ -907,7 +906,7 @@ pub const Economy = struct
   {
     const popC : f64 = @floatFromInt( self.getTotalPopCount() );
 
-    if( self.buildQueue.?.getEntryCount() < AUTO_BUILD_QUEUE_LIMIT )
+    if( self.buildQueue.?.maxEntryIdx < AUTO_BUILD_QUEUE_LIMIT )
     {
       def.qlog( .INFO, 0, @src(), "Logging autoBuilds : ");
 
@@ -943,7 +942,7 @@ pub const Economy = struct
           if( amount > def.EPS )
           {
             def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( infT ) });
-            _ = self.buildQueue.?.addEntry( .{ .infT = infT }, @intFromFloat( amount ), .REPLACE );
+            _ = self.buildQueue.?.tryAddEntry( .{ .infT = infT }, .{ .infT = infT }, .CNSTR, .RAISE_TO, @intFromFloat( amount ));
           }
         }
         else if( useLvl < AUTO_DECAY_INF_THRESH )
@@ -1044,7 +1043,7 @@ pub const Economy = struct
             if( amount > def.EPS )
             {
               def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( indT ) });
-              _ = self.buildQueue.?.addEntry( .{ .indT = indT }, @intFromFloat( amount ), .REPLACE );
+              _ = self.buildQueue.?.tryAddEntry( .{ .indT = indT }, .{ .indT = indT }, .CNSTR, .RAISE_TO, @intFromFloat( amount ));
               // Will need to make industry spend capital on building new buildings once actually built
             }
           }
