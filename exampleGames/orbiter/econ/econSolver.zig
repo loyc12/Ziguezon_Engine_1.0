@@ -1442,8 +1442,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
       const infT = InfType.fromIdx( f );
       const infC = self.econ.infState.get( .COUNT,   infT );
 
-      const built  : f64 = self.econ.infState.get( .BUILT,   infT );
-      const destr  : f64 = self.econ.infState.get( .DESTR,   infT );
+      const built  : f64 = self.econ.infState.get( .BUILT, infT );
+      const destr  : f64 = self.econ.infState.get( .DESTR, infT );
       const delta  : f64 = built - destr;
 
       const bonus  : f64 = infC * infT.getMetric_f64( .CAPACITY );
@@ -1479,7 +1479,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
   pub inline fn logResMetrics( self : *const EconSolver ) void
   {
     def.qlog( .INFO, 0, @src(), "$ RESOURCE : Count / Capacity ( % )  [ Delta | Prod Cons Decay ]  Access Rate  ( Price )" );
-    def.qlog( .CONT, 0, @src(), "$ ================================================================================" );
+    def.qlog( .CONT, 0, @src(), "$ ======================================================================================" );
 
     inline for( 0..resTypeC )| r |
     {

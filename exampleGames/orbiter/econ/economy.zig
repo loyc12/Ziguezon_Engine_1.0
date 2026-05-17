@@ -198,7 +198,7 @@ pub const Economy = struct
       self.infState.set( .COUNT, .HABITAT,  @floatFromInt( value * 1024 )); // TODO : RECOMPUTE AND VALIDATE
     }
     self.infState.set(   .COUNT, .HOUSING,  @floatFromInt( value * 1024 ));
-    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  256 ));
+    self.infState.set(   .COUNT, .ASSEMBLY, @floatFromInt( value *  128 ));
     self.infState.set(   .COUNT, .DEPOT,    @floatFromInt( value *  128 ));
 
     self.updateResCaps();
@@ -620,49 +620,65 @@ pub const Economy = struct
 
   // ================================ CONSTRUCTION ================================
 
-  pub fn canBuildInf( self : *const Economy, infT : InfType, count : u64 ) bool
+//pub fn canBuildInf( self : *const Economy, infT : InfType, count : u64 ) bool
+//{
+//  if( !InfType.canBeBuiltIn( infT, self.location, self.hasAtmo ))
+//  {
+//    def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {s}", .{ @tagName( infT ), @tagName( self.location ) });
+//    return false;
+//  }
+//
+//  if( infT == .HABITAT ){ return true; }
+//
+//  const neededArea = infT.getAreaCost() * count;
+//  const areaAvail  = self.areaData.get( .AVAIL );
+//
+//  if( areaAvail < neededArea )
+//  {
+//    def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {s} ( {d} / {d} )", .{ @tagName( infT ), @tagName( self.location ), areaAvail, neededArea });
+//    return false;
+//  }
+//  return true;
+//}
+
+//pub fn canBuildInd( self : *const Economy, indT : IndType, count : u64 ) bool
+//{
+//  if( !IndType.canBeBuiltIn( indT, self.location, self.hasAtmo ))
+//  {
+//    def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {s}", .{ @tagName( indT ), @tagName( self.location ) });
+//    return false;
+//  }
+//
+//  const neededArea = indT.getAreaCost() * count;
+//  const areaAvail  = self.areaData.get( .AVAIL );
+//
+//  if( areaAvail < neededArea )
+//  {
+//    def.log( .INFO, 0, @src(), "@ Not enough space to build industry of type {s} in location of type {s} ( {d} / {d} )", .{ @tagName( indT ), @tagName( self.location ), areaAvail, neededArea });
+//    return false;
+//  }
+//  return true;
+//}
+
+//pub fn canBuildConstruct( self : *const Economy, c : gdf.Construct, count : u64 ) bool
+//{
+//  switch( c )
+//  {
+//    .infT => | f | { self.canBuildInf( f, count ); },
+//    .indT => | d | { self.canBuildInd( d, count ); },
+//  //.vesT => | v | { self.canBuildVes( v, count ); },
+//  }
+//}
+
+
+  pub inline fn tryBuild( self : *Economy, c : gdf.Construct, amount : f64 ) f64
   {
-    if( !InfType.canBeBuiltIn( infT, self.location, self.hasAtmo ))
+    if( def.areContEqual( c, .{ .none = {} }))
     {
-      def.log( .WARN, 0, @src(), "@ You are not allowed to build infrastructure of type {s} in location of type {}", .{ @tagName( infT ), @tagName( self.location ) });
-      return false;
+      def.qlog( .WARN, 0, @src(), "Trying to build .none construct : aborting" );
+      return 0;
     }
 
-    if( infT == .HABITAT ){ return true; }
-
-    const neededArea = infT.getAreaCost() * count;
-    const areaAvail  = self.areaData.get( .AVAIL );
-
-    if( areaAvail < neededArea )
-    {
-      def.log( .WARN, 0, @src(), "@ Not enough space to build infrastructure of type {s} in location of type {}. Needed : {d}", .{ @tagName( infT ), @tagName( self.location ), neededArea });
-      return false;
-    }
-    return true;
-  }
-
-  pub fn canBuildInd( self : *const Economy, indT : IndType, count : u64 ) bool
-  {
-    if( !IndType.canBeBuiltIn( indT, self.location, self.hasAtmo ))
-    {
-      def.log( .INFO, 0, @src(), "You are not allowed to build industry of type {s} in location of type {}", .{ @tagName( indT ), @tagName( self.location ) });
-      return false;
-    }
-
-    const neededArea = indT.getAreaCost() * count;
-    const areaAvail  = self.areaData.get( .AVAIL );
-
-    if( areaAvail < neededArea )
-    {
-      def.log( .INFO, 0, @src(), "Not enough area : adjusting" );
-      return false;
-    }
-    return true;
-  }
-
-
-  pub inline fn tryBuild( self : *Economy, c : gdf.Construct, amount : f64 ) u64
-  {
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
       def.qlog( .WARN, 0, @src(), "Invalid location conditions : aborting" );
@@ -672,7 +688,17 @@ pub const Economy = struct
     const areaCost   = c.getAreaCost();
     var  builtAmount = @floor( amount );
 
-    if( !std.meta.eql( c, .{ .infT = .HABITAT }))
+
+    // Habitats generate area instead of consuming it
+    if( def.areContEqual( c, .{ .infT = .HABITAT }))
+    {
+      // Update area metrics immediately to prevent undershoot on successive calls
+      const newArea = builtAmount * InfType.HABITAT.getMetric_f64( .CAPACITY );
+
+      self.areaData.add( .AVAIL, newArea );
+      self.areaData.add( .CAP,   newArea );
+    }
+    else if( areaCost > 0.0 ) // Excludes vessels
     {
       const areaAvail = self.areaData.get( .AVAIL );
 
@@ -684,38 +710,19 @@ pub const Economy = struct
       if( areaAvail < builtAmount * areaCost )
       {
       //def.qlog( .WARN, 0, @src(), "Not enough area : adjusting amount" );
-        builtAmount = areaAvail / areaCost;
+        builtAmount = @divFloor( areaAvail, areaCost );
       }
+
+
+      // Update area metrics immediately to prevent overshoot on successive calls
+      const usedArea = builtAmount * areaCost;
+
+      self.areaData.add( .USED,  usedArea );
+      self.areaData.sub( .AVAIL, usedArea );
     }
 
-  //if( consumeParts ) // NOTE : Dead code : ignore for now - Large building pipeline rewrite incoming
-  //{
-  //  unreachable; // NOTE : Keeps this commented out section as-is for now for future reference
 
-  //  const availParts = self.resState.get( .COUNT, .PART );
-  //  const partCost   = c.getResBldCost( .PART );
-
-  //  if( availParts < partCost )
-  //  {
-  //  //def.qlog( .WARN, 0, @src(), "Not enough parts for a single unit : aborting" );
-  //    return 0;
-  //  }
-  //  if( availParts < builtAmount * partCost )
-  //  {
-  //  //def.qlog( .WARN, 0, @src(), "Not enough parts : adjusting amount" );
-  //    builtAmount = availParts / partCost;
-  //  }
-
-  //  builtAmount     = @floor( builtAmount            );
-  //  const totalCost = @ceil(  builtAmount * partCost );
-
-  //  // Deduct parts
-  //  self.resState.sub( .COUNT,    .PART, totalCost );
-  //  self.resState.add( .GEN_CONS, .PART, totalCost );
-  //}
-
-    builtAmount = @floor( builtAmount );
-
+    // Updating the relevant counts
     switch( c )
     {
       .infT => | f |
@@ -728,21 +735,14 @@ pub const Economy = struct
         self.indState.add( .COUNT, d, builtAmount );
         self.indState.add( .BUILT, d, builtAmount );
       },
-    //else =>
+    //.vesT =>
     //{
     //  // TODO : build vessels
     //},
+      .none => unreachable,
     }
 
-    // Update area metrics to prevent overshoot on successive calls
-    // TODO : VALIDATE
-    const builtArea = builtAmount * areaCost;
-    self.areaData.add( .USED, builtArea );
-
-    const newAvail = self.areaData.get( .CAP ) - self.areaData.get( .USED );
-    self.areaData.set( .AVAIL, @max( 0.0, newAvail ));
-
-    return @intFromFloat( builtAmount );
+    return builtAmount;
   }
 
 
@@ -941,7 +941,7 @@ pub const Economy = struct
           // Building requested amount, if any
           if( amount > def.EPS )
           {
-            def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( infT ) });
+          //def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( infT ) });
             _ = self.buildQueue.?.tryAddEntry( .{ .infT = infT }, .{ .infT = infT }, .CNSTR, .RAISE_TO, @intFromFloat( amount ));
           }
         }
@@ -980,7 +980,7 @@ pub const Economy = struct
             const unitCost = infT.getResMetric_f64( .BUILD, .PART );
             const partCost = @floor( infDelta * unitCost * AUTO_DECAY_RES_FACTOR );
 
-            self.resState.add( .COUNT, .PART, partCost );
+            self.resState.add( .COUNT,   .PART, partCost );
             self.resState.add( .COUNT_D, .PART, partCost );
 
             const partPrice = self.resState.get( .PRICE, .PART );

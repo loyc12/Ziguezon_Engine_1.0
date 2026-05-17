@@ -133,6 +133,7 @@ pub const BuildQueue = struct
       return false;
     }
 
+
     // Add entry to the end of list
     self.entries[ self.maxEntryIdx ] =
     .{
@@ -141,9 +142,13 @@ pub const BuildQueue = struct
       .entryType = t,
       .unitCount = count
     };
+
+    def.qlog( .DEBUG, 0, @src(), "# New build entry :" );
+    self.entries[ self.maxEntryIdx ].debugLogSimple();
+
     self.maxEntryIdx += 1;
 
-    // NOTE : the following entries should already be zeroed
+    // NOTE : the following entries should already have been be zeroed
 
     return true;
   }
@@ -318,7 +323,7 @@ pub const BuildQueue = struct
       var remainCnst  = maxAvailCnst;
       var idx : usize = 0;
 
-      while( idx < self.maxEntryIdx  )
+      while( idx < self.maxEntryIdx )
       {
         const e = &self.entries[ idx ];
         idx    += 1;
@@ -346,7 +351,7 @@ pub const BuildQueue = struct
       {
         self.compactEntries();
       }
-      cnstUseRatio = ( remainCnst - maxAvailCnst ) / maxAvailCnst;
+      cnstUseRatio = 1.0 - ( remainCnst / maxAvailCnst );
     }
 
     econ.infState.set( .USE_LVL, .ASSEMBLY, cnstUseRatio );

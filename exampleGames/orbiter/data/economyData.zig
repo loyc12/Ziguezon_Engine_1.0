@@ -189,10 +189,10 @@ pub const EconAreaEnum = enum( u8 )
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 //pub const maxPossibleArea : f64 = ...;
 
-  BODY,  // Total body's surface area         : if on GROUND
   INHAB, // Proportion of inhabitable surface : 0.0 to 1.0
+  BODY,  // Total body's surface area         : if on GROUND
   LAND,  // BODY * INHAB                      : Total useable land area
   CAP,   // LAND + HAB                        : Total buildable
-  AVAIL, // MAX - USED                        : Total unused
+  AVAIL, // MAX  - USED                       : Total unused
   USED,  // sum of all area spent             : INF + IND
 };

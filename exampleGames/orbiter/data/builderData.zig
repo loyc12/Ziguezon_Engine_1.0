@@ -240,7 +240,7 @@ pub const BuildEntry = struct
     const resCost  = self.getUnitResCost( resT );
     const resStock = self.remainStocks.get( resT );
 
-    return @mod( resStock, resCost );
+    return @divFloor( resStock, resCost );
   }
 
   /// Calculates the maximum amount of units that can be constructed with currently allocated resources
@@ -281,7 +281,7 @@ pub const BuildEntry = struct
       const resT = ResType.fromIdx( r );
       const resP = econ.resState.get( .PRICE, resT );
 
-      var purchaseAmount = @mod( fundsPerResType, resP );
+      var purchaseAmount = @divFloor( fundsPerResType, resP );
       const econResStock = econ.resState.get( .COUNT, resT );
 
       if( purchaseAmount < econResStock )
@@ -325,10 +325,9 @@ pub const BuildEntry = struct
 
   pub inline fn getBuildableWithCnst( self : *const BuildEntry ) f64
   {
-    const resCost  = self.getUnitCnstCost();
-    const resStock = self.remainCnst();
+    const cnstCost  = self.getUnitCnstCost();
 
-    return @mod( resStock, resCost );
+    return @divFloor( self.remainCnst, cnstCost );
   }
 
   /// Returns the unused cnst
@@ -441,13 +440,50 @@ pub const BuildEntry = struct
 
   pub fn tryBuildUnits( self : *BuildEntry, econ : *ecn.Economy ) f64
   {
-    _ = self;
-    _ = econ;
+    const targetBuildCount = self.getBuildableAmount();
+    if(   targetBuildCount < def.EPS ){ return 0.0; }
 
-    def.qlog( .ERROR, 0, @src(), "unimplemented function called" );
+    const realBuildCount = econ.tryBuild( self.construct, targetBuildCount );
+    if(   realBuildCount < def.EPS ){ return 0.0; }
 
-    // TODO : IMPLEMENT ME
+    self.unitCount -= realBuildCount;
 
-    return 0.0;
+    // Removing consumed resources
+    inline for( 0..resTypeC )| r |
+    {
+      const resT = ResType.fromIdx( r );
+
+      self.remainStocks.sub( resT, realBuildCount * self.getUnitResCost( resT ));
+    }
+
+    // Removing consumed construction effort
+    self.remainCnst -= ( realBuildCount * self.getUnitCnstCost() );
+
+    return realBuildCount;
+  }
+
+  // ================ DEBUG FUNCTIONS ================
+
+  pub inline fn debugLogSimple( self : *const BuildEntry ) void
+  {
+    const constructName = switch( self.construct )
+    {
+      .infT => | f | @tagName( f ),
+      .indT => | d | @tagName( d ),
+    //.vesT => | v | @tagName( v ),
+      .none => "NONE",
+    };
+    const requesterName = switch( self.requester )
+    {
+      .popT => | p | @tagName( p ),
+      .infT => | f | @tagName( f ),
+      .indT => | d | @tagName( d ),
+    //.com  => "COMMERCIAL",
+      .gov  => "GOVERNMENT",
+      .none => "*NONE*",
+    };
+    const typeName = @tagName( self.entryType );
+
+    def.log( .CONT, 0, @src(), "{s} -> {d:.0} x {s} ( {s} )", .{ requesterName, self.unitCount, constructName, typeName });
   }
 };

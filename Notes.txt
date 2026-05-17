@@ -31,8 +31,8 @@ Hex Empire Clone           ( TBS )
 
 ======== MEDIUM PROJECTS ========
 
-Apo Surviver               ( RPG ) Hydrowar
-Asteroid miner             ( RPG ) Orbiter
+Post-Apo Surviver          ( RPG ) Hydrowar
+Asteroid miner             ( RPG )
 
 City Builder               ( RTS )
 Polity Sim game            ( RTS )
@@ -43,10 +43,10 @@ Fire-Emblem / Advance Wars ( TBS )
 Card Game                  ( TBS )
 
 DOOM-like                  ( FPS )
-Cubehead                   ( FPS ) Squarehead
+Cubehead                   ( FPS ) Squareface
 
 Terraria-like              ( Sandbox )
-Sunrider-like              ( TRPG )    Lost Endeavour
+Sunrider-like              ( TRPG    ) Lost Endeavour
 
 
 
