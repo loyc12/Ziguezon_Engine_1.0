@@ -1306,10 +1306,10 @@ fn updateFlowAllSums( self : *EconSolver ) void
   {
     const econ : *ecn.Economy = self.econ;
 
-    const bldDem = self.genResFlowData.get( .BLD_CONS, .PART );
-    const bldAcs = self.genResFlowData.get( .BLD_ACS,  .PART );
+  //const bldDem = self.genResFlowData.get( .BLD_CONS, .PART );
+  //const bldAcs = self.genResFlowData.get( .BLD_ACS,  .PART );
 
-    self.econ.buildBudget = @floor( bldDem * bldAcs );
+  //self.econ.buildBudget = @floor( bldDem * bldAcs ); // TODO : refactor away buildBudget logic
 
 
   // ================ AGENT AVERAGE ACCESS RATE ================

@@ -28,10 +28,10 @@ const EntryMode  = bld.EntryModeEnum;
 
 // TODO :
 // - call from EconSolver instead of Econ itself ( pass in slvr, not econ )
-// - refund cancelations in res and cash
+// - have a dedicated build phase in solver, so we can properly calculate res delta
 // - build entries in parallel instead of sequentially
 // - setup priority ordering
-// - setup per-agentGroup queues instead of a single one
+// - setup per-agentGroup queues instead of monoqueue
 
 
 pub const BuildQueue = struct
@@ -63,7 +63,7 @@ pub const BuildQueue = struct
   {
     for( self.entries )| e |
     {
-      if( e.matchesWith( .{ .construct = c, .requester = q, .entryType = t }))
+      if( e.matchesWith( &BuildEntry{ .construct = c, .requester = q, .entryType = t }))
       {
         return true;
       }
@@ -84,33 +84,17 @@ pub const BuildQueue = struct
       {
         var e = &self.entries[ idx ];
 
-        if( def.areContEqual( c, e.construct ) and def.areContEqual( q, e.requester ))
+        if( self.hasMatchingEntry( c, q, t ))
         {
-          const eT1 = e.entryType;
-          const eT2 = t;
-
-          if( m == .CANCEL )
+          switch( m )
           {
-            e.unitCount = 0.0;
-            return true;
+            .SET_TO   => e.unitCount  = count_f,
+            .ADD_TO   => e.unitCount += count_f,
+            .RAISE_TO => e.unitCount  = @max( count_f, e.unitCount ),
+            .LOWER_TO => e.unitCount  = @min( count_f, e.unitCount ),
+            .CANCEL   => e.unitCount  = 0.0,
           }
-
-          if( eT1 == eT2 )
-          {
-            switch( m )
-            {
-              .SET_TO   => e.unitCount  = count_f,
-              .ADD_TO   => e.unitCount += count_f,
-              .RAISE_TO => e.unitCount  = @max( count_f, e.unitCount ),
-              .LOWER_TO => e.unitCount  = @min( count_f, e.unitCount ),
-              .CANCEL   => unreachable,
-            }
-            return true;
-          }
-          else // EntryType mismatch ( ex : CNSTR vs DESTR )
-          {
-            // TODO : IMPLEMENT THIS LOGIC
-          }
+          return true;
 
           // NOTE : money refunds should be done in clearEntry(), called from update()
         }
@@ -133,7 +117,6 @@ pub const BuildQueue = struct
       return false;
     }
 
-
     // Add entry to the end of list
     self.entries[ self.maxEntryIdx ] =
     .{
@@ -143,7 +126,6 @@ pub const BuildQueue = struct
       .unitCount = count
     };
 
-    def.qlog( .DEBUG, 0, @src(), "# New build entry :" );
     self.entries[ self.maxEntryIdx ].debugLogSimple();
 
     self.maxEntryIdx += 1;
@@ -156,6 +138,10 @@ pub const BuildQueue = struct
   /// Returns the unused funds
   pub fn tryFundEntry( self : *BuildQueue, econ : *const ecn.Economy, c : Construct, q : Requester, t : EntryType, funds : f64 ) f64
   {
+    if( t == .DESTR ){ return funds; } // Destruction will never need funds
+
+    var remainingFunds = funds;
+
     // If construct already in list, set amount to be built based on mode
     if( self.maxEntryIdx > 0 )
     {
@@ -165,23 +151,37 @@ pub const BuildQueue = struct
 
         if( e.matchesWith( .{ .construct = c, .requester = q, .entryType = t }))
         {
-          return e.tryGrantFunds( econ, funds );
+          remainingFunds = e.tryGrantFunds( econ, funds );
+          e.debugLogComplex();
+          break;
         }
       }
     }
-    return funds;
+    return remainingFunds;
   }
 
   fn clearEntryByIdx( self : *BuildQueue, econ : *ecn.Economy, idx : usize ) void
   {
-    // TODO : Put remaining resources into BUILD_PROD of requester
-
-    // TODO : Give remaining funds back to requester
-
-    _ = econ;
-
     const e = &self.entries[ idx ];
-    e.* = .{}; // NOTE : makes entries invalid on purpose
+
+    // Calculated requester refund
+    var refund = e.remainFunds;
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resT = ResType.fromIdx( r );
+      const resP = econ.resState.get( .PRICE, resT );
+      const resC = e.remainStocks.get(        resT );
+
+      // Selling off resources and adding them to the econ's stores
+      refund += (           resP * resC );
+      econ.resState.add( .COUNT,   resT,  resC );
+      econ.resState.add( .COUNT_D, resT,  resC );
+    }
+
+    Requester.addAgentSavings( econ, e.requester, refund );
+
+    e.* = .{}; // NOTE : Invalidates entry so it is remove on the next compactEntries() call
   }
 
 
@@ -328,22 +328,29 @@ pub const BuildQueue = struct
         const e = &self.entries[ idx ];
         idx    += 1;
 
-        if( !e.isClosed() )
+        if( e.isValid() )
         {
-          // NOTE : tryFundEntry() should have been called by beforehand to be able to buy the resources it may need
-          _ = e.tryBuyRes( econ );
+          if( !e.isClosed() )
+          {
+            // NOTE : tryFundEntry() should have been called by beforehand to be able to buy the resources it may need
+            _ = e.tryBuyRes( econ );
 
-          // TODO : have assemblies get paid for the cnst used
+            // TODO : have assemblies get paid for the cnst used
 
-          remainCnst = e.tryGrantCnst( remainCnst );
+            remainCnst = e.tryGrantCnst( remainCnst );
 
-          self.totUnitsBuilt += @intFromFloat( e.tryBuildUnits( econ ));
+            self.totUnitsBuilt += @intFromFloat( e.tryBuildUnits( econ ));
+          }
+
+          if( e.isClosed() )
+          {
+            self.clearEntryByIdx( econ, idx );
+            entriesClosed += 1;
+          }
         }
-
-        if( e.isClosed() )
+        else
         {
-          self.clearEntryByIdx( econ, idx );
-          entriesClosed += 1;
+          entriesClosed += 1; // Ensures compactEntries() gets called
         }
       }
 
@@ -353,7 +360,26 @@ pub const BuildQueue = struct
       }
       cnstUseRatio = 1.0 - ( remainCnst / maxAvailCnst );
     }
+  }
 
-    econ.infState.set( .USE_LVL, .ASSEMBLY, cnstUseRatio );
+
+  // ================ DEBUG FUNCTIONS ================
+
+  pub fn debugLog( self : *BuildQueue ) void
+  {
+    if( self.maxEntryIdx > 0 )
+    {
+      def.log( .INFO, 0, @src(), " Logging build queue entries ( maxIdx = {d} ):", .{ self.maxEntryIdx });
+
+      for( 0..self.maxEntryIdx )| idx |
+      {
+        const e = &self.entries[ idx ];
+
+        if( e.isValid() )
+        {
+          e.debugLogComplex();
+        }
+      }
+    }
   }
 };

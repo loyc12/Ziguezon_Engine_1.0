@@ -46,11 +46,8 @@ pub const Economy = struct
   sunshine  : f64 = 0.0, // How much sunlight reachs the econ's location from the sun
   sunAccess : f32 = 0.0, // How much sunlight is accessible to the econ, ( scaled + clamped )
 
-  ecology   : ?Ecology  = null,
-
-
-  buildQueue  : ?BuildQueue = null,
-  buildBudget : f64 = 0.0,  // PART allocation granted by solver
+  ecology    : ?Ecology    = null,
+  buildQueue : ?BuildQueue = null,
 
   resState : gdf.rsrc_d.ResStateData = .{},
   popState : gdf.popl_d.PopStateData = .{},
@@ -671,7 +668,7 @@ pub const Economy = struct
 //}
 
 
-  pub inline fn tryBuild( self : *Economy, c : gdf.Construct, amount : f64 ) f64
+  pub inline fn tryBuilding( self : *Economy, c : gdf.Construct, amount : f64 ) f64
   {
     if( def.areContEqual( c, .{ .none = {} }))
     {
@@ -746,6 +743,57 @@ pub const Economy = struct
   }
 
 
+  pub inline fn tryDestroying( self : *Economy, c : gdf.Construct, amount : f64 ) f64
+  {
+    if( def.areContEqual( c, .{ .none = {} }))
+    {
+      def.qlog( .WARN, 0, @src(), "Trying to destruct .none construct : aborting" );
+      return 0;
+    }
+
+    if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
+    {
+      def.qlog( .WARN, 0, @src(), "Invalid location conditions : aborting" );
+      return 0;
+    }
+
+    var destroyedAmount = @floor( amount );
+
+    // Habitats generate area instead of consuming it
+    if( def.areContEqual( c, .{ .infT = .HABITAT }))
+    {
+      // TODO : prevent desroying habitats in use
+    }
+
+
+    // Updating the relevant counts
+    switch( c )
+    {
+      .infT => | f |
+      {
+        destroyedAmount = @min( destroyedAmount, self.infState.get( .COUNT, f ));
+
+        self.infState.add( .COUNT, f, destroyedAmount );
+        self.infState.add( .DESTR, f, destroyedAmount );
+      },
+      .indT => | d |
+      {
+        destroyedAmount = @min( destroyedAmount, self.indState.get( .COUNT, d ));
+
+        self.indState.add( .COUNT, d, destroyedAmount );
+        self.indState.add( .DESTR, d, destroyedAmount );
+      },
+    //.vesT =>
+    //{
+    //  // TODO : build vessels
+    //},
+      .none => unreachable,
+    }
+
+    return destroyedAmount;
+  }
+
+
   // ================================ UPDATING ================================
 
   inline fn updateEcology( self : *Economy ) void
@@ -787,11 +835,13 @@ pub const Economy = struct
     if( self.buildQueue != null )
     {
       self.buildQueue.?.tickQueue( self );
+      self.buildQueue.?.debugLog();
     }
     else
     {
       def.qlog( .WARN, 0, @src(), "Cannot tick build queue : uninitialized" );
     }
+
   }
 
   inline fn updateInfUsage( self : *Economy ) void
@@ -809,7 +859,7 @@ pub const Economy = struct
 
     // HABITAT
     const areaUsed : f64 = self.areaData.get( .USED );
-    var   habUse   : f64 = 0.0;
+    var   habitUse : f64 = 0.0;
 
     if( self.location != .GROUND or !self.hasAtmo )
     {
@@ -818,29 +868,29 @@ pub const Economy = struct
 
       if( areaCap > def.EPS )
       {
-        habUse = @min( 1.0, areaUsed / areaCap );
+        habitUse = @min( 1.0, areaUsed / areaCap );
       }
     }
     else
     {
       // Ground with Atmo : account for non-habitat area
-      const habitatArea : f64 = self.getHabitatArea();
+      const habitArea : f64 = self.getHabitatArea();
 
-      if( habitatArea > def.EPS )
+      if( habitArea > def.EPS )
       {
         const landArea : f64 = self.areaData.get( .LAND );
 
         // How much of the used area exceeds what free land provides?
-        const areaOnHabitat = @max( 0.0, areaUsed - landArea );
+        const areaOnHabit = @max( 0.0, areaUsed - landArea );
 
-        habUse = areaOnHabitat / habitatArea;
+        habitUse = areaOnHabit / habitArea;
       }
     }
-    self.infState.set( .USE_LVL, .HABITAT, habUse );
+    self.infState.set( .USE_LVL, .HABITAT, habitUse );
 
 
     // DEPOT
-    var maxStoreUse : f64 = 0.0;
+    var maxDepotUse : f64 = 0.0;
 
     inline for( 0..resTypeC )| r |
     {
@@ -851,10 +901,10 @@ pub const Economy = struct
         const resC = self.resState.get( .COUNT, resT );
         const resL = self.resState.get( .LIMIT, resT );
 
-        maxStoreUse = @max( maxStoreUse, resC / resL );
+        maxDepotUse = @max( maxDepotUse, resC / resL );
       }
     }
-    self.infState.set( .USE_LVL, .DEPOT, maxStoreUse );
+    self.infState.set( .USE_LVL, .DEPOT, maxDepotUse );
 
 
   // TODO : Activate once INF is added as a real agent
@@ -941,7 +991,6 @@ pub const Economy = struct
           // Building requested amount, if any
           if( amount > def.EPS )
           {
-          //def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( infT ) });
             _ = self.buildQueue.?.tryAddEntry( .{ .infT = infT }, .{ .infT = infT }, .CNSTR, .RAISE_TO, @intFromFloat( amount ));
           }
         }
@@ -971,21 +1020,7 @@ pub const Economy = struct
           // Removing requested amount, if any
           if( amount > def.EPS )
           {
-            def.log( .CONT, 0, @src(), "@ Selling off {d:.0} {s}", .{ amount, @tagName( infT )});
-            const infDelta = @min( amount, self.infState.get( .COUNT, infT ));
-
-            self.infState.sub( .COUNT, infT, infDelta );
-            self.infState.add( .DESTR, infT, infDelta );
-
-            const unitCost = infT.getResMetric_f64( .BUILD, .PART );
-            const partCost = @floor( infDelta * unitCost * AUTO_DECAY_RES_FACTOR );
-
-            self.resState.add( .COUNT,   .PART, partCost );
-            self.resState.add( .COUNT_D, .PART, partCost );
-
-            const partPrice = self.resState.get( .PRICE, .PART );
-
-            self.infState.add( .SAVINGS, infT, partCost * partPrice );
+            _ = self.buildQueue.?.tryAddEntry( .{ .infT = infT }, .{ .infT = infT }, .RECYC, .RAISE_TO, @intFromFloat( amount ));
           }
         }
       }
@@ -1013,7 +1048,7 @@ pub const Economy = struct
             var scale : f64 = 1.0;
                 scale *= ( actTrgt - AUTO_BUILD_IND_THRESH  ) / ( 1.0 - AUTO_BUILD_IND_THRESH  );
                 scale *= ( workAcs - AUTO_BUILD_WORK_THRESH ) / ( 1.0 - AUTO_BUILD_WORK_THRESH );
-                scale  = @min( AUTO_BUILD_MAX_SCALE, scale );
+                scale  = @min( AUTO_BUILD_MAX_SCALE, scale  );
 
             var amount : f64 = scale * popC * AUTO_BUILD_IND_FACTOR;
 
@@ -1062,21 +1097,7 @@ pub const Economy = struct
             // Removing requested amount, if any
             if( amount > def.EPS )
             {
-              def.log( .CONT, 0, @src(), "@ Selling off {d:.0} {s}", .{ amount, @tagName( indT )});
-              const indDelta = @min( amount, self.indState.get( .COUNT, indT ));
-
-              self.indState.sub( .COUNT, indT, indDelta );
-              self.indState.add( .DESTR, indT, indDelta );
-
-              const unitCost = indT.getResMetric_f64( .BUILD, .PART );
-              const partCost = @floor( indDelta * unitCost * AUTO_DECAY_RES_FACTOR );
-
-              self.resState.add( .COUNT,   .PART, partCost );
-              self.resState.add( .COUNT_D, .PART, partCost );
-
-              const partPrice = self.resState.get( .PRICE, .PART );
-
-              self.indState.add( .SAVINGS, indT, partCost * partPrice );
+              _ = self.buildQueue.?.tryAddEntry( .{ .indT = indT }, .{ .indT = indT }, .RECYC, .RAISE_TO, @intFromFloat( amount ));
             }
           }
         }
