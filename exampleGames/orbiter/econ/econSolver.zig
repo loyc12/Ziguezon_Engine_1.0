@@ -415,7 +415,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
     const queue = &self.econ.buildQueue.?;
 
-    if( queue.maxEntryIdx == 0 ){ return; }
+    if( queue.maxEntryCount == 0 ){ return; }
 
   //inline for( 0..resTypeC )| r |
     {
@@ -423,7 +423,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       var rawTotal : f64 = 0.0;
 
-      for( 0..queue.maxEntryIdx )| idx |
+      for( 0..queue.maxEntryCount )| idx |
       {
         const e = queue.entries[ idx ];
 

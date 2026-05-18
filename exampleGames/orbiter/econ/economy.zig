@@ -956,7 +956,7 @@ pub const Economy = struct
   {
     const popC : f64 = @floatFromInt( self.getTotalPopCount() );
 
-    if( self.buildQueue.?.maxEntryIdx < AUTO_BUILD_QUEUE_LIMIT )
+    if( self.buildQueue.?.maxEntryCount < AUTO_BUILD_QUEUE_LIMIT )
     {
       def.qlog( .INFO, 0, @src(), "Logging autoBuilds : ");
 
@@ -1077,7 +1077,6 @@ pub const Economy = struct
             // Building requested amount, if any
             if( amount > def.EPS )
             {
-              def.log( .CONT, 0, @src(), "Updating build queue to {d:.0} for {s}", .{ amount, @tagName( indT ) });
               _ = self.buildQueue.?.tryAddEntry( .{ .indT = indT }, .{ .indT = indT }, .CNSTR, .RAISE_TO, @intFromFloat( amount ));
               // Will need to make industry spend capital on building new buildings once actually built
             }

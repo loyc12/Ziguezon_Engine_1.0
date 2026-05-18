@@ -216,12 +216,13 @@ pub const EntryTypeEnum = enum( u8 )
   CNSTR,
   RECYC,
   DESTR,
+//MAINT,
 };
 
 pub const EntryModeEnum = enum( u8 )
 {
-  SET_TO,
   ADD_TO,
+  SET_TO,
   RAISE_TO,
   LOWER_TO,
   CANCEL,
@@ -232,11 +233,11 @@ pub const EntryModeEnum = enum( u8 )
 
 pub const BuildEntry = struct
 {
-  // NOTE : move resource and money pools to a per-agent matrix if this is too expensive
-  remainStocks : gdf.ecnm_d.ResStockArray = .{}, // How much unused resources is there stored away
+  // NOTE : Consider moving resource and money pools to a per-agent matrix if this is too expensive
+  stashedRes   : gdf.ecnm_d.ResStockArray = .{}, // How much unused resources is there stored away
 
-  remainFunds  : f64 = 0.0, // How much unused money is thereto buy resources with
-  remainCnst   : f64 = 0.0, // How much unused construction cost ( "effort" ) is there to build a unit with
+  stashedFunds : f64 = 0.0, // How much unused money is there to buy resources with
+  stashedCnst  : f64 = 0.0, // How much unused construction ( "effort" ) is there to build a unit with
   unitCount    : f64 = 0.0, // How many units are there left to build
 
   construct : Construct     = .{ .none = {} },
@@ -248,6 +249,7 @@ pub const BuildEntry = struct
 
   // ================ RESOURCE COSTS ================
 
+  /// Returns negative values if refunding resources
   pub inline fn getUnitResCost( self : *const BuildEntry, resT : ResType ) f64
   {
     return switch( self.entryType )
@@ -258,6 +260,7 @@ pub const BuildEntry = struct
     };
   }
 
+  /// Returns negative values if refunding resources
   pub inline fn getTotalResCost( self : *const BuildEntry, resT : ResType ) f64
   {
     return self.unitCount * self.getUnitResCost( resT );
@@ -265,7 +268,7 @@ pub const BuildEntry = struct
 
   pub inline fn getStoredResStock( self : *const BuildEntry, resT : ResType ) f64
   {
-    return self.remainStocks.get( resT );
+    return self.stashedRes.get( resT );
   }
 
   pub inline fn getStoredResSum( self : *const BuildEntry ) f64
@@ -288,18 +291,19 @@ pub const BuildEntry = struct
     return self.getTotalResCost( resT ) - self.getStoredResStock( resT );
   }
 
+  /// Calculates how many units can be built from a specific resource's current stocks
   pub inline fn getBuildableWithRes( self : *const BuildEntry, resT : ResType ) f64
   {
     if( self.entryType != .CNSTR ){ return self.unitCount; }
 
     const resCost  = self.getUnitResCost(   resT );
-    const resStock = self.remainStocks.get( resT );
+    const resStock = self.stashedRes.get( resT );
 
     return @divFloor( resStock, resCost );
   }
 
 
-  /// Calculates the maximum amount of units that can be constructed with currently allocated resources
+  /// Calculates how many units can be built from any resource's current stocks
   pub fn getBuildableWithAnyRes( self : *const BuildEntry) f64
   {
     if( self.entryType != .CNSTR ){ return self.unitCount; }
@@ -315,43 +319,47 @@ pub const BuildEntry = struct
     return buildable;
   }
 
-  // Returns false is it econcountered a resource shortage
+  // Returns false is it encountered a resource shortage
   pub fn tryBuyRes( self : *BuildEntry, econ : *ecn.Economy ) bool
   {
     if( self.entryType != .CNSTR ){ return true; }
 
-    var resTypeCount : f64  = 0;
+    var resTypeCount : f64  = 0.0;
     var resShortage  : bool = false;
 
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
 
-      // Count how many different resources remain to be purchased
+      // Counts how many different resource types need to be purchased
       if( self.getRemainResCost( resT ) > 0.0 ){ resTypeCount += 1.0; }
     }
 
     if( resTypeCount == 0 ){ return true; }
 
 
-    const fundsPerResType = self.remainFunds / resTypeCount;
+    // Split funds equally across all resources
+    // NOTE : This is a naive approach
+    // TODO : Rework once this causes issues
+    const fundsPerResType = self.stashedFunds / resTypeCount;
 
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
       const resP = econ.resState.get( .PRICE, resT );
 
-      var   boughtAmount = @divFloor( fundsPerResType, resP );
+      var   boughtAmount = self.getRemainResCost( resT );
+            boughtAmount = @min( boughtAmount, @divFloor( fundsPerResType, resP ));
       const econResStock = econ.resState.get( .COUNT, resT );
 
       if( boughtAmount < econResStock )
       {
         boughtAmount = econResStock;
-        resShortage    = true;
+        resShortage  = true;
       }
       if( boughtAmount > def.EPS )
       {
-        self.remainStocks.add(       resT, boughtAmount );
+        self.stashedRes.add(       resT, boughtAmount );
         econ.resState.sub( .COUNT,   resT, boughtAmount );
         econ.resState.sub( .COUNT_D, resT, boughtAmount );
 
@@ -361,6 +369,7 @@ pub const BuildEntry = struct
 
     return( !resShortage );
   }
+
 
   // ================ CONSTRUCTION COSTS ================
 
@@ -379,16 +388,16 @@ pub const BuildEntry = struct
     return self.unitCount * self.getUnitCnstCost();
   }
 
-  pub inline fn getStoredCnstPrgrs( self : *const BuildEntry ) f64
+  pub inline fn getStoredCnst( self : *const BuildEntry ) f64
   {
-    return self.remainCnst;
+    return self.stashedCnst;
   }
 
   pub inline fn getRemainCnstCost( self : *const BuildEntry ) f64
   {
     if( self.entryType == .DESTR ){ return 0.0; }
 
-    return self.getTotalCnstCost() - self.getStoredCnstPrgrs();
+    return self.getTotalCnstCost() - self.getStoredCnst();
   }
 
   pub inline fn getBuildableWithCnst( self : *const BuildEntry ) f64
@@ -397,67 +406,71 @@ pub const BuildEntry = struct
 
     const cnstCost = self.getUnitCnstCost();
 
-    return @divFloor( self.remainCnst, cnstCost );
+    return @divFloor( self.stashedCnst, cnstCost );
   }
 
   /// Returns the unused cnst
   pub fn tryGrantCnst( self : *BuildEntry, availCnst : f64 ) f64
   {
-    if( self.entryType == .DESTR ){ return self.unitCount; }
+    if( self.entryType == .DESTR ){ return availCnst; }
 
     const transferedCnst = @min( availCnst, self.getRemainCnstCost());
 
-    self.remainCnst += transferedCnst;
+    self.stashedCnst += transferedCnst;
 
     return availCnst - transferedCnst;
 
-
-    // TODO : integrate assembly payments from requester here
   }
+
 
   // ================ FINANCIAL COSTS ================
 
   /// Uses current resource costs. Result is not inter-tick stable
-  pub fn getUnitMoneyCost( self : *const BuildEntry, econ : *const ecn.Economy ) f64
+  pub fn getUnitCashCost( self : *const BuildEntry, econ : *const ecn.Economy ) f64
   {
-    var moneyCost = 0.0;
+    if( self.entryType == .DESTR ){ return 0.0; }
+
+    var cashCost = 0.0;       // TODO : integrate assembly cnstr payments in costs
+
+
+    if( self.entryType == .RECYC ){ return cashCost; }
 
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
       const resP = econ.resState.get( .PRICE, resT );
 
-      moneyCost += resP * self.getUnitResCost( resT );
+      cashCost += resP * self.getUnitResCost( resT );
     }
 
-    // TODO : integrate assembly cnstr payments in costs
-
-    return moneyCost;
+    return cashCost;
   }
 
   /// Uses current resource costs. Result is not inter-tick stable
-  pub inline fn getTotalMoneyCost( self : *const BuildEntry, econ : *const ecn.Economy ) f64
+  pub inline fn getTotalCashCost( self : *const BuildEntry, econ : *const ecn.Economy ) f64
   {
-    const  count : f64 = @floatFromInt( self.unitCount );
-    return count * self.getUnitResCost( econ );
+    return self.unitCount * self.getUnitResCost( econ );
   }
 
   /// Uses current resource costs. Result is not inter-tick stable
-  pub fn getRemainMoneyCost( self : *const BuildEntry, econ : *const ecn.Economy ) f64
+  pub fn getRemainCashCost( self : *const BuildEntry, econ : *const ecn.Economy ) f64
   {
-    var moneyCost = 0.0;
+    if( self.entryType == .DESTR ){ return 0.0; }
+
+    var cashCost = 0.0;       // TODO : integrate assembly cnstr payments in costs
+
+
+    if( self.entryType == .RECYC ){ return cashCost; }
 
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
       const resP = econ.resState.get( .PRICE, resT );
 
-      moneyCost += resP * self.getRemainResCost( resT );
+      cashCost += resP * self.getRemainResCost( resT );
     }
 
-    // TODO : integrate assembly cnstr payments in costs
-
-    return moneyCost;
+    return cashCost;
   }
 
   /// Returns the unused funds
@@ -465,12 +478,13 @@ pub const BuildEntry = struct
   {
     if( self.entryType == .DESTR ){ return availFunds; }
 
-    const transferedFunds = @min( availFunds, self.getRemainMoneyCost( econ ));
+    const transferedFunds = @min( availFunds, self.getRemainCashCost( econ ));
 
-    self.remainFunds += transferedFunds;
+    self.stashedFunds += transferedFunds;
 
     return availFunds - transferedFunds;
   }
+
 
   // ================ HELPER FUNCTIONS ================
 
@@ -500,7 +514,16 @@ pub const BuildEntry = struct
   }
 
 
-  pub inline fn matchesWith( self : *const BuildEntry, other : *const BuildEntry ) bool
+  pub inline fn matchesWithPart( self : *const BuildEntry, other : *const BuildEntry ) bool
+  {
+    if( !def.areContEqual( self.construct, other.construct )){ return false; }
+    if( !def.areContEqual( self.requester, other.requester )){ return false; }
+
+    return true;
+  }
+
+
+  pub inline fn matchesWithFull( self : *const BuildEntry, other : *const BuildEntry ) bool
   {
     if( !def.areContEqual( self.construct, other.construct )){ return false; }
     if( !def.areContEqual( self.requester, other.requester )){ return false; }
@@ -546,11 +569,11 @@ pub const BuildEntry = struct
       {
         const resT = ResType.fromIdx( r );
 
-        self.remainStocks.add( resT, -realBuildCount * self.getUnitResCost( resT ));
+        self.stashedRes.add( resT, -realBuildCount * self.getUnitResCost( resT ));
       }
 
       // Removing consumed construction effort
-      self.remainCnst -= ( realBuildCount * self.getUnitCnstCost() );
+      self.stashedCnst -= ( realBuildCount * self.getUnitCnstCost() );
     }
 
     return realBuildCount;
@@ -590,7 +613,7 @@ pub const BuildEntry = struct
   pub inline fn debugLogComplex( self : *const BuildEntry ) void
   {
     self.debugLogSimple();
-    def.log( .CONT, 0, @src(), " - {d:.2}$ | {d:.2}c | {d:.0}r | #{d:.0}", .{ self.remainFunds, self.remainCnst, self.getStoredResSum(), self.priority });
+    def.log( .CONT, 0, @src(), " - {d:.2}$ | {d:.2}c | {d:.0}r | #{d:.0}", .{ self.stashedFunds, self.stashedCnst, self.getStoredResSum(), self.priority });
   }
 };
 

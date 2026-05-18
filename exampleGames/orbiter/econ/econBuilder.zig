@@ -38,18 +38,21 @@ pub const BuildQueue = struct
 {
   pub const BUILD_QUEUE_CAPACITY : usize = 127;
 
-  pub const BuildEntryArray = [ BUILD_QUEUE_CAPACITY ]BuildEntry;
+  pub const EntryArray = [ BUILD_QUEUE_CAPACITY ]BuildEntry;
 
 
-  entries : BuildEntryArray = undefined,
+  entries : EntryArray = undefined,
 
-  maxEntryIdx   : u64 = 0,
-  totUnitsBuilt : u64 = 0, // For debug logging only
+  maxEntryCount  : u64 = 0,
+  totCnstrAvail  : f64 = 0.0,
+  totUnitsBuilt  : u64 = 0, // For debug logging only
+  totEntryClosed : u64 = 0, // For debug logging only
+
 
 
   pub fn init() BuildQueue
   {
-    var queue : BuildQueue = .{ .maxEntryIdx = 0 };
+    var queue : BuildQueue = .{ .maxEntryCount = 0 };
 
     for( 0..BUILD_QUEUE_CAPACITY )| i |
     {
@@ -59,11 +62,11 @@ pub const BuildQueue = struct
     return queue;
   }
 
-  pub fn hasMatchingEntry( self : *BuildQueue, c : Construct, q : Requester, t : EntryType ) bool
+  pub fn hasMatchingEntry( self : *BuildQueue, c : Construct, q : Requester ) bool
   {
     for( self.entries )| e |
     {
-      if( e.matchesWith( &BuildEntry{ .construct = c, .requester = q, .entryType = t }))
+      if( e.matchesWithPart( &BuildEntry{ .construct = c, .requester = q }))
       {
         return true;
       }
@@ -78,29 +81,37 @@ pub const BuildQueue = struct
     const count_f : f64 = @floatFromInt( count );
 
     // If construct already in list, set amount to be built based on mode
-    if( self.maxEntryIdx > 0 )
+    if( self.maxEntryCount > 0 )
     {
-      for( 0..self.maxEntryIdx )| idx |
+      for( 0..self.maxEntryCount )| idx |
       {
         var e = &self.entries[ idx ];
 
-        if( self.hasMatchingEntry( c, q, t ))
+        if( self.hasMatchingEntry( c, q ))
         {
+          if( e.entryType != t ) // TODO : Find something better to do with conflicting entryTypes here
+          {
+            def.qlog( .WARN, 0, @src(), "EntryType mismatch : overriding type and clearing previous unitCount" );
+
+            e.entryType = t;
+            e.unitCount = 0.0;
+          }
+
           switch( m )
           {
-            .SET_TO   => e.unitCount  = count_f,
-            .ADD_TO   => e.unitCount += count_f,
+            .ADD_TO   => e.unitCount +=       count_f,
+            .SET_TO   => e.unitCount  =       count_f,
             .RAISE_TO => e.unitCount  = @max( count_f, e.unitCount ),
             .LOWER_TO => e.unitCount  = @min( count_f, e.unitCount ),
             .CANCEL   => e.unitCount  = 0.0,
           }
-          return true;
 
-          // NOTE : money refunds should be done in clearEntry(), called from update()
+          return true;
         }
       }
     }
 
+    // If no matching entry found, try adding a new one
     return self.addNewEntry( c, q, t, m, count_f );
   }
 
@@ -111,26 +122,25 @@ pub const BuildQueue = struct
       def.qlog( .WARN, 0, @src(), "Cannot cancel non-existant entry form build queue" );
       return false;
     }
-    if( self.maxEntryIdx >= BUILD_QUEUE_CAPACITY )
+    if( self.maxEntryCount >= BUILD_QUEUE_CAPACITY )
     {
       def.qlog( .WARN, 0, @src(), "Cannot add entry to build queue : no more space left in queue" );
       return false;
     }
 
     // Add entry to the end of list
-    self.entries[ self.maxEntryIdx ] =
+    self.entries[ self.maxEntryCount ] =
     .{
       .construct = c,
       .requester = q,
       .entryType = t,
-      .unitCount = count
+      .unitCount = count,
+      .priority  = 1,
     };
 
-    self.entries[ self.maxEntryIdx ].debugLogSimple();
+    self.entries[ self.maxEntryCount ].debugLogSimple();
 
-    self.maxEntryIdx += 1;
-
-    // NOTE : the following entries should already have been be zeroed
+    self.maxEntryCount += 1; // NOTE : the following entries should already have been be zeroed
 
     return true;
   }
@@ -143,9 +153,9 @@ pub const BuildQueue = struct
     var remainingFunds = funds;
 
     // If construct already in list, set amount to be built based on mode
-    if( self.maxEntryIdx > 0 )
+    if( self.maxEntryCount > 0 )
     {
-      for( 0..self.maxEntryIdx )| idx |
+      for( 0..self.maxEntryCount )| idx |
       {
         var e = &self.entries[ idx ];
 
@@ -165,13 +175,13 @@ pub const BuildQueue = struct
     const e = &self.entries[ idx ];
 
     // Calculated requester refund
-    var refund = e.remainFunds;
+    var refund = e.stashedFunds;
 
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
       const resP = econ.resState.get( .PRICE, resT );
-      const resC = e.remainStocks.get(        resT );
+      const resC = e.stashedRes.get(        resT );
 
       // Selling off resources and adding them to the econ's stores
       refund += (           resP * resC );
@@ -191,7 +201,7 @@ pub const BuildQueue = struct
   {
     var total : u64 = 0;
 
-    for( 0..self.maxEntryIdx )| idx |
+    for( 0..self.maxEntryCount )| idx |
     {
       var e = &self.entries[ idx ];
 
@@ -208,7 +218,7 @@ pub const BuildQueue = struct
   {
     var total : f64 = 0;
 
-    for( 0..self.maxEntryIdx )| idx |
+    for( 0..self.maxEntryCount )| idx |
     {
       var e = &self.entries[ idx ];
 
@@ -225,7 +235,7 @@ pub const BuildQueue = struct
   {
     var total : u64 = 0;
 
-    for( 0..self.maxEntryIdx )| idx |
+    for( 0..self.maxEntryCount )| idx |
     {
       var e = &self.entries[ idx ];
 
@@ -242,7 +252,7 @@ pub const BuildQueue = struct
   {
     var total : u64 = 0;
 
-    for( 0..self.maxEntryIdx )| idx |
+    for( 0..self.maxEntryCount )| idx |
     {
       var e = &self.entries[ idx ];
 
@@ -255,17 +265,17 @@ pub const BuildQueue = struct
     return total;
   }
 
-  pub inline fn getTotalRemainMoneyCost( self : *const BuildQueue, resT : ResType ) f64
+  pub inline fn getTotalRemainCashCost( self : *const BuildQueue, resT : ResType ) f64
   {
     var total : u64 = 0;
 
-    for( 0..self.maxEntryIdx )| idx |
+    for( 0..self.maxEntryCount )| idx |
     {
       var e = &self.entries[ idx ];
 
       if( e.isValid() )
       {
-        total += e.getRemainMoneyCost( resT );
+        total += e.getRemainCashCost( resT );
       }
     }
 
@@ -278,52 +288,50 @@ pub const BuildQueue = struct
 
   fn compactEntries( self : *BuildQueue ) void
   {
-    var entryOffset    : usize = 0;
-    var newMaxEntryIdx : usize = 0;
+    var dstEntryIdx : usize = 0;
+    var srcEntryIdx : usize = 1;
 
-    for( 0..self.maxEntryIdx )| idx |
+    while( true )
     {
-      var e = &self.entries[ idx ];
+      var e = &self.entries[ srcEntryIdx ];
 
       if( !e.isValid() )
       {
-        entryOffset += 1;
-
-        if( idx + entryOffset > self.maxEntryIdx )
-        {
-          break; // Stop offseting entries once all that remains is already zeroed
-        }
-
-        self.entries[ idx ] = self.entries[ idx + entryOffset ];
+        srcEntryIdx += 1;
       }
       else
       {
-        newMaxEntryIdx += 1;
+        self.entries[ dstEntryIdx ] = self.entries[ srcEntryIdx ];
+        dstEntryIdx += 1;
+        srcEntryIdx += 1;
+      }
+
+      if( srcEntryIdx >= self.maxEntryCount or srcEntryIdx >= BUILD_QUEUE_CAPACITY )
+      {
+        break; // Redundant but why not
       }
     }
 
-    self.maxEntryIdx = newMaxEntryIdx;
+    self.maxEntryCount = dstEntryIdx + 1; // Should always be the number of valid entries found
   }
 
 
   pub fn tickQueue( self : *BuildQueue, econ : *ecn.Economy ) void
   {
-    self.totUnitsBuilt = 0;
+    self.totUnitsBuilt  = 0;
+    self.totEntryClosed = 0;
 
-    var cnstUseRatio : f64 = 0.0;
+    const assemblyCount = econ.infState.get( .COUNT, .ASSEMBLY );
+    const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
+    self.totCnstrAvail  = @floor( assemblyCount * assemblyRate );
 
-    if( self.maxEntryIdx > 0 )
+    var remainCnst = self.totCnstrAvail;
+
+    if( self.maxEntryCount > 0 )
     {
-      var entriesClosed : u64 = 0;
-
-      const assemblyCount = econ.infState.get( .COUNT, .ASSEMBLY );
-      const assemblyRate  = InfType.ASSEMBLY.getMetric_f64( .CAPACITY );
-      const maxAvailCnst  = @floor( assemblyCount * assemblyRate );
-
-      var remainCnst  = maxAvailCnst;
       var idx : usize = 0;
 
-      while( idx < self.maxEntryIdx )
+      while( idx < self.maxEntryCount )
       {
         const e = &self.entries[ idx ];
         idx    += 1;
@@ -345,21 +353,22 @@ pub const BuildQueue = struct
           if( e.isClosed() )
           {
             self.clearEntryByIdx( econ, idx );
-            entriesClosed += 1;
+            self.totEntryClosed += 1;
           }
         }
         else
         {
-          entriesClosed += 1; // Ensures compactEntries() gets called
+          self.totEntryClosed += 1; // Ensures compactEntries() gets called
         }
       }
 
-      if( entriesClosed > 0 )
+      if( self.totEntryClosed > 0 )
       {
         self.compactEntries();
       }
-      cnstUseRatio = 1.0 - ( remainCnst / maxAvailCnst );
     }
+
+    econ.infState.set( .USE_LVL, .ASSEMBLY, 1.0 - ( remainCnst / self.totCnstrAvail ) );
   }
 
 
@@ -367,11 +376,13 @@ pub const BuildQueue = struct
 
   pub fn debugLog( self : *BuildQueue ) void
   {
-    if( self.maxEntryIdx > 0 )
+    if( self.maxEntryCount > 0 )
     {
-      def.log( .INFO, 0, @src(), " Logging build queue entries ( maxIdx = {d} ):", .{ self.maxEntryIdx });
+      def.qlog( .INFO, 0, @src(), "# Logging build queue entries :" );
+      def.log(  .CONT, 0, @src(), "EntryCount : {d} ( CnstrPoints : {d} | UnitsBuilt {d} | EntryClosed : {d} )", .{ self.maxEntryCount, self.totCnstrAvail, self.totUnitsBuilt, self.totUnitsBuilt });
 
-      for( 0..self.maxEntryIdx )| idx |
+
+      for( 0..self.maxEntryCount )| idx |
       {
         const e = &self.entries[ idx ];
 
