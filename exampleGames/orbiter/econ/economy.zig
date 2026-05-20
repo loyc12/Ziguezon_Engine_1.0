@@ -259,13 +259,8 @@ pub const Economy = struct
     def.log(  .CONT, 0, @src(), "Step count  : {d:.6}", .{ self.stepCount });
     def.log(  .CONT, 0, @src(), "Sunshine    : {d:.6} / {d:.6}", .{ self.sunAccess, self.sunshine });
     def.log(  .CONT, 0, @src(), "Development : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
-
-    if( self.buildQueue != null )
-    {
-      const queue = self.buildQueue.?;
-      def.log( .CONT, 0, @src(), "Build queue  : {d:.0} ( {d:.0} ) {d:.0}", .{ queue.getTotalEntryCount(), queue.getTotalUnitCount(), queue.totUnitsBuilt });
-    }
   }
+
   // TODO : generalize this function
   pub inline fn logTravelMetrics_TERRA( self : *const Economy ) void
   {
@@ -751,12 +746,6 @@ pub const Economy = struct
       return 0;
     }
 
-    if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
-    {
-      def.qlog( .WARN, 0, @src(), "Invalid location conditions : aborting" );
-      return 0;
-    }
-
     var destroyedAmount = @floor( amount );
 
     // Habitats generate area instead of consuming it
@@ -773,14 +762,14 @@ pub const Economy = struct
       {
         destroyedAmount = @min( destroyedAmount, self.infState.get( .COUNT, f ));
 
-        self.infState.add( .COUNT, f, destroyedAmount );
+        self.infState.sub( .COUNT, f, destroyedAmount );
         self.infState.add( .DESTR, f, destroyedAmount );
       },
       .indT => | d |
       {
         destroyedAmount = @min( destroyedAmount, self.indState.get( .COUNT, d ));
 
-        self.indState.add( .COUNT, d, destroyedAmount );
+        self.indState.sub( .COUNT, d, destroyedAmount );
         self.indState.add( .DESTR, d, destroyedAmount );
       },
     //.vesT =>
@@ -835,7 +824,7 @@ pub const Economy = struct
     if( self.buildQueue != null )
     {
       self.buildQueue.?.tickQueue( self );
-      self.buildQueue.?.debugLog();
+      self.buildQueue.?.debugLogBuildQueue();
     }
     else
     {
@@ -999,20 +988,19 @@ pub const Economy = struct
           // Scale decay amount : at THRESH decay 0, at 0.0 decay full amount
           var scale : f64 = 1.0;
               scale *= ( AUTO_DECAY_INF_THRESH - useLvl ) / AUTO_DECAY_INF_THRESH;
-              scale  = @max( 0, scale );
+              scale  = @max( 0.0, scale );
 
           var amount : f64 = scale * popC * AUTO_DECAY_INF_FACTOR;
-              amount = @ceil( amount );
 
-          // NOTE : Clamps ASSEMBLY to a fraction of population to prevent total decay
+
+          // Clamp ASSEMBLY to a fraction of population to prevent complete selloff
           if( infT == .ASSEMBLY )
           {
-            amount *= 0.2; // NOTE : Slows ASSEMBLY decay even further
-
             const count : f64 = self.infState.get( .COUNT, .ASSEMBLY );
-            const cap   : f64 = popC * AUTO_BUILD_ASSEMBLY_F;
+            const cap   : f64 = popC * AUTO_BUILD_ASSEMBLY_F * 0.01;
 
-            amount = @min( amount, @max( 0.0, cap - count ));
+            amount  = @min( amount, @max( 0.0, count - cap ));
+            amount *= 0.2; // Slows ASSEMBLY decay even further
           }
 
           amount = @floor( @min( amount, self.infState.get( .COUNT, infT )));

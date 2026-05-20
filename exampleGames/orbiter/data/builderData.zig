@@ -148,7 +148,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
       .infT => | f | econ.infState.get( .SAVINGS, f ),
       .indT => | d | econ.indState.get( .SAVINGS, d ),
     //.com  =>       econ.comState.set( .SAVINGS    ),
-      .gov  =>       econ.govState.set( .SAVINGS    ),
+      .gov  =>       econ.govState.get( .SAVINGS    ),
       .none =>  0.0,
     };
   }
@@ -247,6 +247,21 @@ pub const BuildEntry = struct
   priority : u8 = 0, // Higher priority entries should be built first
 
 
+  pub inline fn reset( self : *BuildEntry ) void
+  {
+    self.stashedRes.fillWith( 0.0 );
+
+    self.stashedFunds = 0.0;
+    self.stashedCnst  = 0.0;
+    self.unitCount    = 0.0;
+
+    self.construct = .{ .none = {} };
+    self.requester = .{ .none = {} };
+    self.entryType = .CNSTR;
+
+    self.priority = 0;
+  }
+
   // ================ RESOURCE COSTS ================
 
   /// Returns negative values if refunding resources
@@ -273,7 +288,7 @@ pub const BuildEntry = struct
 
   pub inline fn getStoredResSum( self : *const BuildEntry ) f64
   {
-    var resSum : f64 = 0;
+    var resSum : f64 = 0.0;
 
     inline for( 0..resTypeC )| r |
     {
@@ -296,7 +311,10 @@ pub const BuildEntry = struct
   {
     if( self.entryType != .CNSTR ){ return self.unitCount; }
 
-    const resCost  = self.getUnitResCost(   resT );
+    const resCost  = self.getUnitResCost( resT );
+
+    if( resCost < def.EPS ){ return self.unitCount; }
+
     const resStock = self.stashedRes.get( resT );
 
     return @divFloor( resStock, resCost );
@@ -316,13 +334,14 @@ pub const BuildEntry = struct
       buildable  = @min( buildable, self.getBuildableWithRes( resT ));
     }
 
-    return buildable;
+    return @floor( buildable );
   }
 
   // Returns false is it encountered a resource shortage
   pub fn tryBuyRes( self : *BuildEntry, econ : *ecn.Economy ) bool
   {
-    if( self.entryType != .CNSTR ){ return true; }
+    if( self.entryType   != .CNSTR  ){ return true; }
+    if( self.stashedFunds < def.EPS ){ return true; }
 
     var resTypeCount : f64  = 0.0;
     var resShortage  : bool = false;
@@ -335,7 +354,7 @@ pub const BuildEntry = struct
       if( self.getRemainResCost( resT ) > 0.0 ){ resTypeCount += 1.0; }
     }
 
-    if( resTypeCount == 0 ){ return true; }
+    if( resTypeCount < def.EPS ){ return true; }
 
 
     // Split funds equally across all resources
@@ -352,14 +371,14 @@ pub const BuildEntry = struct
             boughtAmount = @min( boughtAmount, @divFloor( fundsPerResType, resP ));
       const econResStock = econ.resState.get( .COUNT, resT );
 
-      if( boughtAmount < econResStock )
+      if( boughtAmount > econResStock )
       {
         boughtAmount = econResStock;
         resShortage  = true;
       }
       if( boughtAmount > def.EPS )
       {
-        self.stashedRes.add(       resT, boughtAmount );
+        self.stashedRes.add(         resT, boughtAmount );
         econ.resState.sub( .COUNT,   resT, boughtAmount );
         econ.resState.sub( .COUNT_D, resT, boughtAmount );
 
@@ -406,7 +425,9 @@ pub const BuildEntry = struct
 
     const cnstCost = self.getUnitCnstCost();
 
-    return @divFloor( self.stashedCnst, cnstCost );
+    if( cnstCost < def.EPS ){ return self.unitCount; }
+
+    return @min( self.unitCount, @divFloor( self.stashedCnst, cnstCost ));
   }
 
   /// Returns the unused cnst
@@ -414,12 +435,11 @@ pub const BuildEntry = struct
   {
     if( self.entryType == .DESTR ){ return availCnst; }
 
-    const transferedCnst = @min( availCnst, self.getRemainCnstCost());
+    const transferedCnst = @min( availCnst, self.getRemainCnstCost() );
 
     self.stashedCnst += transferedCnst;
 
     return availCnst - transferedCnst;
-
   }
 
 
@@ -539,8 +559,8 @@ pub const BuildEntry = struct
     return switch( self.entryType )
     {
       .CNSTR => @min( self.getBuildableWithCnst(), self.getBuildableWithAnyRes() ),
-      .RECYC =>       self.getBuildableWithCnst(),
-      .DESTR =>       self.unitCount,
+      .RECYC =>       self.getBuildableWithCnst(), // Recylcing does not cost resources
+      .DESTR =>       self.unitCount,              // Destroying is free
     };
   }
 
@@ -553,27 +573,28 @@ pub const BuildEntry = struct
 
     switch( self.entryType )
     {
-      .CNSTR => { realBuildCount = econ.tryBuilding( self.construct, targetBuildCount ); },
-      .RECYC => { realBuildCount = econ.tryDestroying(   self.construct, targetBuildCount ); },
-      .DESTR => { realBuildCount = econ.tryDestroying(   self.construct, targetBuildCount ); },
+      .CNSTR => { realBuildCount = econ.tryBuilding(   self.construct, targetBuildCount ); },
+      .RECYC => { realBuildCount = econ.tryDestroying( self.construct, targetBuildCount ); },
+      .DESTR => { realBuildCount = econ.tryDestroying( self.construct, targetBuildCount ); },
     }
 
-    if( realBuildCount < def.EPS ){ return 0.0; }
+    if( realBuildCount < 1.0 - def.EPS ){ return 0.0; }
 
     self.unitCount -= realBuildCount;
 
     if( self.entryType != .DESTR )
     {
       // Removing consumed resources / Adding resources recycled
+
+      // Removing consumed construction effort
+      self.stashedCnst -= ( realBuildCount * self.getUnitCnstCost() );
+
       inline for( 0..resTypeC )| r |
       {
         const resT = ResType.fromIdx( r );
 
-        self.stashedRes.add( resT, -realBuildCount * self.getUnitResCost( resT ));
+        self.stashedRes.sub( resT, realBuildCount * self.getUnitResCost( resT ));
       }
-
-      // Removing consumed construction effort
-      self.stashedCnst -= ( realBuildCount * self.getUnitCnstCost() );
     }
 
     return realBuildCount;
@@ -613,7 +634,7 @@ pub const BuildEntry = struct
   pub inline fn debugLogComplex( self : *const BuildEntry ) void
   {
     self.debugLogSimple();
-    def.log( .CONT, 0, @src(), " - {d:.2}$ | {d:.2}c | {d:.0}r | #{d:.0}", .{ self.stashedFunds, self.stashedCnst, self.getStoredResSum(), self.priority });
+    def.log( .CONT, 0, @src(), " - {d:.2}$ | {d:.2}c | {d:.0}r | lvl {d:.0}", .{ self.stashedFunds, self.stashedCnst, self.getStoredResSum(), self.priority });
   }
 };
 

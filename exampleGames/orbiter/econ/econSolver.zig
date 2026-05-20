@@ -36,7 +36,7 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 
 
 // ================ MAX RES FLOW PHASE ================
-
+{
 //solver.calcGovMaxFlow(); // Computes the maximal governmental prod and cons
   solver.calcPopMaxFlow(); // Computes the maximal population prod and cons
 //solver.calcInfMaxFlow(); // Computes the maximal infrastr.  prod and cons
@@ -51,9 +51,9 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   solver.updateFlowAllSums(); // Compiles all individualized flow values into relevant grouped metrics
 
 //testResFlowInvariant( &solver, "FLOW PHASE" );
-
+}
 // ================ RES ACCESS PHASE ================
-
+{
   // TODO : Have these call a singular, generic "calcResAccess" instead (?)
   solver.calcGenResAccess(); // Computes the expected aggregated resource access
 //solver.calcGenResAccess(); // Computes the expected government resource access
@@ -65,23 +65,20 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   // TODO : Fold into POP/INF/IND, and generalise to account for all ResType
   solver.calcMntResAccess(); // Computes the expected maintenance  resource access
   solver.calcBldResAccess(); // Computes the expected construction resource access
-  // TODO :
 
 //testResFlowInvariant( &solver, "ACCESS PHASE" );
-
-
+}
 // ================ ACTION RATES PHASE ================
-
+{
   solver.updatePopFulfilment(); // Computes the final population fulfilment ratio
 //solver.updateInfUsage();      // Computes the final infrastructure usage  ratio
   solver.updateIndActivity();   // Computes the final industrial activity   ratio
 //solver.updateComActivity();   // Computes the final commercial activity   ratio (?)
 
 //testResFlowInvariant( &solver, "ACTION PHASE" );
-
-
+}
 // ================ CONSUMPTION PHASE ================
-
+{
   // NOTE : Have these call a singular, generic "calcResCons" instead (?)
 //solver.calcGovResCons();  // Computes resource cons from government policies
   solver.calcPopResCons();  // Computes resource cons from population based on popCount
@@ -95,9 +92,9 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   solver.applyResDecay();   // Decays unsued resources leftover based on individual rates ( 100% for WORK )
 
 //testResFlowInvariant( &solver, "CONS PHASE" );
-
+}
 // ================ PRODUCTION PHASE ================
-
+{
   // NOTE : Have these call a singular, generic "calcResProd" instead (?)
 //solver.calcGovResProd();  // Computes resource prod from government policies
   solver.calcPopResProd();  // Computes resource prod from population based on popCount
@@ -110,10 +107,9 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   solver.applyGenResProd(); // Applies all resource production to the economy
 
 //testResFlowInvariant( &solver, "PROD PHASE" );
-
-
+}
 // ================ FINANCES PHASE ================
-
+{
   solver.clampResStocks();  // Clamps resource amounts to what their respective storer can handle, discarding the rest
   solver.updateResPrices(); // Update res prices from final supply and demand
 
@@ -124,27 +120,23 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 //solver.updateGovFinances(); // Update monetary metrics for the local government
 
 //testResFlowInvariant( &solver, "FINANCE PHASE" );
-
-
+}
 // ================ CONSTRUCTION PHASE ================
-
-// TODO : tick econSolver here instead of in economy ( funding and resource buying should be done earlier )
-
-
+{
+  // TODO : tick econSolver here instead of in economy ( funding and resource buying should be done earlier )
+}
 // ================ GROWTH & DECAY PHASE ================
-
+{
   solver.updatePopCount();  // Computes population delta based on access
 //solver.updateInfOrders(); // Orders infrastructure growth/decay based on profitability
 //solver.updateIndOrders(); // Orders industrial growth/decay based on profitability
 //solver.updateComOrders(); // Orders traderoute's growth/decay based on profitability
-
-
-
+}
 // ================ ECON UPDATE PHASE ================
-
+{
   solver.pushResMetrics();
   solver.pushAgentMetrics();
-
+}
   return &solver;
 }
 

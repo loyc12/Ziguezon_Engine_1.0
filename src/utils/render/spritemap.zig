@@ -179,7 +179,7 @@ pub const Spritemap = struct
       .height = @floatCast( self.frameSize.y * scale.y ),
     };
 
-    self.atlas.?.drawPro( src, dst, self.frameSize.mul( scale ).mulVal( 0.5 ).toRayVec2(), pos.a.toDeg(), col.toRayCol() );
+    self.atlas.?.drawPro( src, dst, self.frameSize.mul( scale ).mulVal( 0.5 ).toRayVec2(), @floatCast( pos.a.toDeg() ), col.toRayCol() );
   }
 
   pub fn drawScreenSprite( self : *const Spritemap, index : u32, pos : VecA, scale : Vec2, col : def.Colour ) void
