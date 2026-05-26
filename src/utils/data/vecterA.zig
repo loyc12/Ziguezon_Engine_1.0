@@ -53,9 +53,9 @@ pub const VecA = struct
 
   // ================ CONVERSIONS ================
 
-  pub inline fn toRayVec2( self : *const VecA ) RayVec2 { return RayVec2{ .x = @floatCast( self.x ), .y = @floatCast( self.y )}; }
-  pub inline fn toVec2(    self : *const VecA ) Vec2    { return Vec2{    .x = self.x, .y = self.y }; }
-  pub inline fn toCoords2( self : *const VecA ) Coords2
+  pub inline fn toRayVec2( self : VecA ) RayVec2 { return RayVec2{ .x = @floatCast( self.x ), .y = @floatCast( self.y )}; }
+  pub inline fn toVec2(    self : VecA ) Vec2    { return Vec2{    .x = self.x, .y = self.y }; }
+  pub inline fn toCoords2( self : VecA ) Coords2
   {
     return Coords3{
       .x = @intFromFloat( @trunc( self.x )),
@@ -65,25 +65,25 @@ pub const VecA = struct
 
   // ================ COMPARISONS ================
 
-  pub inline fn isPosi( self : *const VecA ) bool { return self.x >= 0 and self.y >= 0; }
-  pub inline fn isZero( self : *const VecA ) bool { return self.x == 0 and self.y == 0; }
-  pub inline fn isIso(  self : *const VecA ) bool { return self.x == self.y; }
+  pub inline fn isPosi( self : VecA ) bool { return self.x >= 0 and self.y >= 0; }
+  pub inline fn isZero( self : VecA ) bool { return self.x == 0 and self.y == 0; }
+  pub inline fn isIso(  self : VecA ) bool { return self.x == self.y; }
 
-  pub inline fn isEq(    self : *const VecA, other : VecA ) bool { return self.x == other.x and self.y == other.y and self.a == other.a; }
-  pub inline fn isDiff(  self : *const VecA, other : VecA ) bool { return self.x != other.x or  self.y != other.y or  self.a != other.a; }
-  pub inline fn isInfXY( self : *const VecA, other : VecA ) bool { return self.x <  other.x or  self.y <  other.y; }
-  pub inline fn isSupXY( self : *const VecA, other : VecA ) bool { return self.x >  other.x or  self.y >  other.y; }
+  pub inline fn isEq(    self : VecA, other : VecA ) bool { return self.x == other.x and self.y == other.y and self.a == other.a; }
+  pub inline fn isDiff(  self : VecA, other : VecA ) bool { return self.x != other.x or  self.y != other.y or  self.a != other.a; }
+  pub inline fn isInfXY( self : VecA, other : VecA ) bool { return self.x <  other.x or  self.y <  other.y; }
+  pub inline fn isSupXY( self : VecA, other : VecA ) bool { return self.x >  other.x or  self.y >  other.y; }
 
 
   // ================ BACIS MATHS ================
 
-  pub inline fn abs( self : *const VecA ) VecA { return VecA{ .x =  @abs( self.x ), .y =  @abs( self.y ), .a =   @abs( self.a )}; }
-  pub inline fn neg( self : *const VecA ) VecA { return VecA{ .x = -@abs( self.x ), .y = -@abs( self.y ), .a =  -@abs( self.a )}; }
+  pub inline fn abs( self : VecA ) VecA { return VecA{ .x =  @abs( self.x ), .y =  @abs( self.y ), .a =   @abs( self.a )}; }
+  pub inline fn neg( self : VecA ) VecA { return VecA{ .x = -@abs( self.x ), .y = -@abs( self.y ), .a =  -@abs( self.a )}; }
 
-  pub inline fn add( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x + other.x, .y = self.y + other.y, .a = self.a.add( other.a )}; }
-  pub inline fn sub( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x - other.x, .y = self.y - other.y, .a = self.a.sub( other.a )}; }
-  pub inline fn mul( self : *const VecA, other : VecA ) VecA { return VecA{ .x = self.x * other.x, .y = self.y * other.y, .a = self.a.mul( other.a )}; }
-  pub inline fn div( self : *const VecA, other : VecA ) ?VecA
+  pub inline fn add( self : VecA, other : VecA ) VecA { return VecA{ .x = self.x + other.x, .y = self.y + other.y, .a = self.a.add( other.a )}; }
+  pub inline fn sub( self : VecA, other : VecA ) VecA { return VecA{ .x = self.x - other.x, .y = self.y - other.y, .a = self.a.sub( other.a )}; }
+  pub inline fn mul( self : VecA, other : VecA ) VecA { return VecA{ .x = self.x * other.x, .y = self.y * other.y, .a = self.a.mul( other.a )}; }
+  pub inline fn div( self : VecA, other : VecA ) ?VecA
   {
     if( other.x == 0.0 or other.y == 0.0 )
     {
@@ -93,10 +93,10 @@ pub const VecA = struct
     return VecA{ .x = self.x / other.x, .y = self.y / other.y, .a = self.a.div( other.a )};
   }
 
-  pub inline fn addVal( self : *const VecA, val : f64 ) VecA { return VecA{ .x = self.x + val, .y = self.y + val, .a = self.a.addVal( @floatCast( val ))}; }
-  pub inline fn subVal( self : *const VecA, val : f64 ) VecA { return VecA{ .x = self.x - val, .y = self.y - val, .a = self.a.subVal( @floatCast( val ))}; }
-  pub inline fn mulVal( self : *const VecA, val : f64 ) VecA { return VecA{ .x = self.x * val, .y = self.y * val, .a = self.a.mulVal( @floatCast( val ))}; }
-  pub inline fn divVal( self : *const VecA, val : f64 ) ?VecA
+  pub inline fn addVal( self : VecA, val : f64 ) VecA { return VecA{ .x = self.x + val, .y = self.y + val, .a = self.a.addVal( @floatCast( val ))}; }
+  pub inline fn subVal( self : VecA, val : f64 ) VecA { return VecA{ .x = self.x - val, .y = self.y - val, .a = self.a.subVal( @floatCast( val ))}; }
+  pub inline fn mulVal( self : VecA, val : f64 ) VecA { return VecA{ .x = self.x * val, .y = self.y * val, .a = self.a.mulVal( @floatCast( val ))}; }
+  pub inline fn divVal( self : VecA, val : f64 ) ?VecA
   {
     if( -def.EPS > val and val < def.EPS )
     {
@@ -106,32 +106,39 @@ pub const VecA = struct
     return VecA{ .x = self.x / val, .y = self.y / val, .a = self.a.mulVal( 1.0 / val )};
   }
 
-  pub inline fn getDist(    self : *const VecA, other : VecA ) f64 { return @sqrt( self.getDistSqr( other )); }
-  pub inline fn getDistSqr( self : *const VecA, other : VecA ) f64
+  pub inline fn getDist(    self : VecA, other : VecA ) f64 { return @sqrt( self.getDistSqr( other )); }
+  pub inline fn getDistSqr( self : VecA, other : VecA ) f64
   {
     const dx = self.x - other.x;
     const dy = self.y - other.y;
     return ( dx * dx ) + ( dy * dy );
   }
 
-  pub inline fn getDistM( self : *const VecA, other : VecA ) f64 { return self.getDistX( other ) + self.getDistY( other ); }
-  pub inline fn getDistX( self : *const VecA, other : VecA ) f64 { return @abs( self.x - other.x ); }
-  pub inline fn getDistY( self : *const VecA, other : VecA ) f64 { return @abs( self.y - other.y ); }
-  pub inline fn getDistR( self : *const VecA, other : VecA ) f64 { return @abs( self.a - other.a ); }
+  pub inline fn getDistM( self : VecA, other : VecA ) f64 { return self.getDistX( other ) + self.getDistY( other ); }
+  pub inline fn getDistX( self : VecA, other : VecA ) f64 { return @abs( self.x - other.x ); }
+  pub inline fn getDistY( self : VecA, other : VecA ) f64 { return @abs( self.y - other.y ); }
+  pub inline fn getDistR( self : VecA, other : VecA ) f64 { return @abs( self.a - other.a ); }
 
-  pub inline fn getMaxLinDist( self : *const VecA, other : VecA ) f64 { return @max( self.getDistX( other ), self.getDistY( other )); }
-  pub inline fn getMinLinDist( self : *const VecA, other : VecA ) f64 { return @min( self.getDistX( other ), self.getDistY( other )); }
-  pub inline fn getAvgLinDist( self : *const VecA, other : VecA ) f64 { return ( self.getDistX( other ) + self.getDistY( other )) / 2.0; }
+  pub inline fn getMaxLinDist( self : VecA, other : VecA ) f64 { return @max( self.getDistX( other ), self.getDistY( other )); }
+  pub inline fn getMinLinDist( self : VecA, other : VecA ) f64 { return @min( self.getDistX( other ), self.getDistY( other )); }
+  pub inline fn getAvgLinDist( self : VecA, other : VecA ) f64 { return ( self.getDistX( other ) + self.getDistY( other )) / 2.0; }
 
 
   // ================ VECTOR MATHS ================
+  pub inline fn lerp(  self : VecA, other : VecA, t : f64 ) VecA
+  {
+    const x : f64 = def.lerp( self.x,   other.x,   t );
+    const y : f64 = def.lerp( self.y,   other.y,   t );
+    const r : f64 = def.lerp( self.a.r, other.a.r, t );
 
-  pub inline fn norm(  self : *const Vec2               ) Vec2 { return self.normToLen( 1.0 ); }
-  pub inline fn dot(   self : *const Vec2, other : Vec2 ) f64  { return ( self.x * other.x ) + ( self.y * other.y ); }
-  pub inline fn cross( self : *const Vec2, other : Vec2 ) f64  { return ( self.x * other.y ) - ( self.y * other.x ); }
+    return .new( x, y, .newRad( r ));
+  }
+  pub inline fn norm(  self : VecA               ) VecA { return self.normToLen( 1.0 ); }
+  pub inline fn dot(   self : VecA, other : VecA ) f64  { return ( self.x * other.x ) + ( self.y * other.y ); }
+  pub inline fn cross( self : VecA, other : VecA ) f64  { return ( self.x * other.y ) - ( self.y * other.x ); }
 
   // Normalizes a vector to a new length, returns null if the vector is zero'd
-  pub fn normToLen( self : *const VecA, newLen : f64 ) VecA
+  pub fn normToLen( self : VecA, newLen : f64 ) VecA
   {
     if( newLen == 0.0 )
     {
@@ -152,11 +159,11 @@ pub const VecA = struct
     return self.mulVal( factor );
   }
 
-  pub inline fn len(    self : *const VecA ) f64 { return @sqrt( self.lenSqr() ); }
-  pub inline fn lenSqr( self : *const VecA ) f64 { return ( self.x * self.x ) + ( self.y * self.y ); }
+  pub inline fn len(    self : VecA ) f64 { return @sqrt( self.lenSqr() ); }
+  pub inline fn lenSqr( self : VecA ) f64 { return ( self.x * self.x ) + ( self.y * self.y ); }
 
-  pub inline fn rotDeg( self : *const Vec2, d : f64   ) Vec2 { return self.rot( .{ .r = def.DtR( d )}); }
-  pub inline fn rot(    self : *const VecA, a : Angle ) VecA
+  pub inline fn rotDeg( self : VecA, d : f64   ) VecA { return self.rot( .{ .r = def.DtR( d )}); }
+  pub inline fn rot(    self : VecA, a : Angle ) VecA
   {
     if( a.isZero() ){ return .{ .x = self.x, .y = self.y, .a = self.a }; }
     const cosA = a.cos();
@@ -169,5 +176,5 @@ pub const VecA = struct
     };
   }
 
-  pub inline fn toAngle( self : *const VecA ) Angle { return Angle.atan2( self.y, self.x ); }
+  pub inline fn toAngle( self : VecA ) Angle { return Angle.atan2( self.y, self.x ); }
 };

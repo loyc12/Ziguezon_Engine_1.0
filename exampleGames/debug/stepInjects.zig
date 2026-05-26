@@ -74,7 +74,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
   }
 
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.c ))
   {
     var newShape : usize = @intFromEnum( ui.shape );
         newShape = @mod( newShape + 1, def.InterfaceShape.count );
@@ -84,16 +84,27 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     ui.updateShapeVertices();
   }
 
-  if( def.ray.isKeyPressed( def.ray.KeyboardKey.b ))
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
   {
-    var newBevel : usize = @intFromEnum( ui.bevelTypes[ 0 ]);
-        newBevel = @mod( newBevel + 1, def.BevelType.count );
-
+    const s = ui.bevelStrenght[ 0 ] + 0.1;
     const n = def.InterfaceShape.maxCornerCount;
 
     for( 0..n )| i |
     {
-      ui.bevelTypes[ i ] = @enumFromInt( newBevel );
+      ui.bevelStrenght[ i ] = s;
+    }
+
+    ui.updateShapeVertices();
+  }
+
+  if( def.ray.isKeyPressed( def.ray.KeyboardKey.b ))
+  {
+    const s = ui.bevelStrenght[ 0 ] - 0.1;
+    const n = def.InterfaceShape.maxCornerCount;
+
+    for( 0..n )| i |
+    {
+      ui.bevelStrenght[ i ] = s;
     }
 
     ui.updateShapeVertices();

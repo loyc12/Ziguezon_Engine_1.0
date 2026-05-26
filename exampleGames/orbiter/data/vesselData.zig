@@ -2,6 +2,10 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 
+
+// NOTE : Have vessels represent fleets that act as mobile "economies", with storage, industrial, and lifesupport systems.
+//        These would only interact with nearby economies, and could move around the system
+
 pub const VesType = enum( u8 )
 {
  pub const count = @typeInfo( @This() ).@"enum".fields.len;
