@@ -35,8 +35,8 @@ pub const StellarBodyName = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( i    ); }
 
-  pub inline fn toNttId( self : @This() ) def.EntityId { return 1 + @intFromEnum( self ); } // No id 0
-  pub inline fn fromNttId( i : def.EntityId ) @This() {  return @enumFromInt( i - 1    ); } // No Entity 0
+  pub inline fn toNttId( self : @This() ) def.EntityId { return 1 + @intFromEnum( self ); } // No entity 0
+  pub inline fn fromNttId( i : def.EntityId ) @This() {  return @enumFromInt( i - 1    ); } // No entity 0
 
   SOL,
 

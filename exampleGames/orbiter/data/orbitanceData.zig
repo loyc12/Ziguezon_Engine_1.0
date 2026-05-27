@@ -13,29 +13,29 @@ pub inline fn idFromName( n : BodyName ) EntityId { return n.toNttId();         
 pub inline fn nameFromId( i : EntityId ) BodyName { return BodyName.fromNttId( i ); }
 
 
-pub const OrbitTree = struct
+pub const OrbitanceData = struct
 {
   const arrayLen = gdf.G_CONSTS.bodyCount + 1;
   const maxNttId = gdf.G_CONSTS.maxEntityId;
 
 
-  targetArray : [ arrayLen ]EntityId = undefined, // Maps each orbiter ( idx = id ) to and orbited ( id )
+  orbitArray : [ arrayLen ]EntityId = undefined, // Maps each orbiter ( idx == id ) to an orbited ( id )
 
 
-  pub inline fn new() OrbitTree
+  pub inline fn new() OrbitanceData
   {
-    var self : OrbitTree = .{};
+    var self : OrbitanceData = .{};
 
     inline for( 0..arrayLen )| idx |
     {
-      self.targetArray[ idx ] = 0; // No 0th entity id
+      self.orbitArray[ idx ] = 0; // No 0th entity id
     }
 
     return self;
   }
 
   /// Usage : orbitTree.setOrbitance( moon, earth );
-  pub inline fn addOrbitance( self : *OrbitTree, orbiterId : EntityId, orbitedId : EntityId ) void
+  pub inline fn addOrbitance( self : *OrbitanceData, orbiterId : EntityId, orbitedId : EntityId ) void
   {
     if( orbiterId == 0 )
     {
@@ -51,14 +51,14 @@ pub const OrbitTree = struct
 
     def.log( .CONT, 0, @src(), "{d} > {d}  ( {s} > {s} )", .{ orbiterId, orbitedId, @tagName( nameFromId( orbiterId )), @tagName( nameFromId( orbitedId ))});
 
-    self.targetArray[ @intCast( orbiterId )] = orbitedId;
+    self.orbitArray[ @intCast( orbiterId )] = orbitedId;
   }
 
 
   /// Allows itterating over all orbiterIds linked to an orbitedId without allocating memory, via successive calls
   /// Finds and returns the lowest entityId that orbits orbitedId, ignoring all entries lower than prevId + 1
   /// Returns 0 ( invalid id ) if no orbiterId was found
-  pub inline fn getNextOrbiterId( self : *OrbitTree, targetOrbitedId : EntityId, prevId : EntityId ) EntityId
+  pub inline fn getNextOrbiterId( self : *OrbitanceData, targetOrbitedId : EntityId, prevId : EntityId ) EntityId
   {
     const startId = prevId + 1;
 
@@ -70,7 +70,7 @@ pub const OrbitTree = struct
 
     for( startId..arrayLen )| orbiterId |
     {
-      const orbitedId = self.targetArray[ orbiterId ];
+      const orbitedId = self.orbitArray[ orbiterId ];
 
       if( orbitedId == targetOrbitedId )
       {
@@ -84,19 +84,19 @@ pub const OrbitTree = struct
   }
 
 
-  pub inline fn getOrbitedId( self : *OrbitTree, orbiterId : EntityId ) EntityId
+  pub inline fn getOrbitedId( self : *OrbitanceData, orbiterId : EntityId ) EntityId
   {
-    return self.targetArray[ @intCast( orbiterId )];
+    return self.orbitArray[ @intCast( orbiterId )];
   }
 };
 
 
-pub var orbitTree : OrbitTree = undefined;
+pub var orbitTree : OrbitanceData = undefined;
 
 
 pub inline fn loadOrbitanceTree() void
 {
-  orbitTree = OrbitTree.new();
+  orbitTree = OrbitanceData.new();
 
    def.qlog( .DEBUG, 0, @src(), "Loading orbitance :" );
 
