@@ -245,8 +245,6 @@ pub const Economy = struct
 
   pub inline fn logSpecialMetrics( self : *const Economy ) void
   {
-    //self.logTravelMetrics_TERRA();
-
     if( self.ecology != null )
     {
       self.ecology.?.logEco();
@@ -259,27 +257,6 @@ pub const Economy = struct
     def.log(  .CONT, 0, @src(), "Step count  : {d:.6}", .{ self.stepCount });
     def.log(  .CONT, 0, @src(), "Sunshine    : {d:.6} / {d:.6}", .{ self.sunAccess, self.sunshine });
     def.log(  .CONT, 0, @src(), "Development : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
-  }
-
-  // TODO : generalize this function
-  pub inline fn logTravelMetrics_TERRA( self : *const Economy ) void
-  {
-    def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) :" );
-
-    inline for( 0..gdf.BodyName.count )| b |
-    {
-      const body  = gdf.BodyName.fromIdx( b );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( body, self.location ) );
-
-      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( body ), table.deltaV, table.duration });
-    }
-    inline for( 0..EconLoc.count )| l |
-    {
-      const loc   = EconLoc.fromIdx( l );
-      const table = gbl.ECON_TRAVEL_TABLE.get( gdf.toBodyEconPair( .TERRA, self.location ), gdf.toBodyEconPair( .TERRA, loc ) );
-
-      def.log( .CONT, 0, @src(), "{s}   \t: {d:.3}\t/ {d:.3}", .{ @tagName( loc ), table.deltaV, table.duration });
-    }
   }
 
 
@@ -1136,11 +1113,14 @@ pub const Economy = struct
     self.debugAutoBuild();
     self.logSpecialMetrics();
     solver.logAllMetrics();
+
+    gdf.debugLogTravelCostsList( .TERRA, self.location );
   }
 
   inline fn postStepUpdates( self : *Economy ) void
   {
     self.tickBuildQueue();
     self.tickLocalGov();   // TODO : IMPLEMENT THIS
+
   }
 };

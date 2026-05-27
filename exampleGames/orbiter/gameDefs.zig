@@ -106,7 +106,10 @@ pub const fromBodyEconPair  = trde_d.fromBodyEconPair;
 pub const OrbitalData       = trde_d.OrbitalData;
 pub const TravelData        = trde_d.TravelData;
 
-pub const updateOrbitalDataEntry = trde_d.updateOrbitalDataEntry;
+pub const updateOrbitalDataEntry  = trde_d.updateOrbitalDataEntry;
+pub const debugLogTravelCosts     = trde_d.debugLogTravelCosts;
+pub const debugLogTravelCostsList = trde_d.debugLogTravelCostsList;
+
 
 
 pub const powr_d = @import( "data/powerData.zig"          );

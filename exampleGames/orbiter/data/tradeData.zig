@@ -32,6 +32,36 @@ pub fn fromBodyEconPair( pair : BodyEconPair ) BodyEconSplit
   return def.splitEnums( BodyName, EconLoc, pair );
 }
 
+pub inline fn debugLogTravelCosts( departure : gdf.BodyEconPair, arrival : gdf.BodyEconPair ) void
+{
+  const pair1 = gdf.fromBodyEconPair( departure );
+  const pair2 = gdf.fromBodyEconPair( arrival );
+
+  const tData = gdf.trfSlvr.estimateTransfer( pair1.a.toNttId(), pair1.b, pair2.a.toNttId(), pair2.b );
+  def.log( .CONT, 0, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.3} days", .{ @tagName( departure ), @tagName( arrival ), tData.deltaV, tData.duration });
+}
+
+pub inline fn debugLogTravelCostsList( body : gdf.BodyName, loc : gdf.EconLoc ) void
+{
+  def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) : km/s | days" );
+
+  const departure = gdf.toBodyEconPair( body, loc );
+
+  inline for( 0..EconLoc.count )| l |
+  {
+    gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( body, .fromIdx( l )));
+    gdf.debugLogTravelCosts( gdf.toBodyEconPair( body, .fromIdx( l )), departure );
+
+  }
+  def.qlog( .CONT, 0, @src(), "--------------------------------" );
+
+  inline for( 0..gdf.BodyName.count )| b |
+  {
+    gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( .fromIdx( b ), loc ));
+    gdf.debugLogTravelCosts( gdf.toBodyEconPair( .fromIdx( b ), loc ), departure );
+  }
+}
+
 
 // ================================ TRADE DATA SNAPSHOT ================================
 
@@ -45,8 +75,8 @@ pub const OrbitalData = struct // NOTE : invalid if orbitLvl < EPS
 
 pub const TravelData = struct // NOTE : invalid if deltaV < EPS
 {
-  deltaV   : f64  = 0.0,
-  duration : f64  = 0.0,
+  deltaV   : f64  = 0.0, // Approximate in km/s, derived from transfer energy cost.
+  duration : f64  = 0.0, // Approximate travel time in days.
 };
 
 

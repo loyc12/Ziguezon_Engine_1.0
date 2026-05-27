@@ -98,7 +98,7 @@ pub inline fn loadOrbitanceTree() void
 {
   orbitTree = OrbitanceData.new();
 
-   def.qlog( .DEBUG, 0, @src(), "Loading orbitance :" );
+//def.qlog( .DEBUG, 0, @src(), "Loading orbitance :" );
 
   // NOTE : This should list all bodies except the main star
   orbitTree.addOrbitance( idFromName( .MERCURY  ), idFromName( .SOL   ));
