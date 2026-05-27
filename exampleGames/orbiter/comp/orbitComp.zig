@@ -23,8 +23,8 @@ pub const OrbitComp = struct
   orbiterMass : f64 = 100.0, // mass of self
 
   // Min/Max radius approach
-  minRadius : f64 = 200.0, // Periapsis (closest)
-  maxRadius : f64 = 600.0, // Apoapsis  (farthest)
+  minRadius   : f64 = 200.0, // Periapsis (closest)
+  maxRadius   : f64 = 600.0, // Apoapsis  (farthest)
 
   // Eccentricity and Procession direction
   orientation : f64  = 0.0,   // Periapsis angle ( 0 to 2π, 0 => +X )
@@ -71,6 +71,27 @@ pub const OrbitComp = struct
   }
 
 
+  /// Calculates mu ( standard gravitational parameter )
+  pub inline fn getGravParam( self : *const OrbitComp ) f64
+  {
+    return G * ( self.orbitedMass + self.orbiterMass );
+  }
+  pub inline fn getOrbitalEnergy( self : *const OrbitComp ) f64
+  {
+    const mu = self.getGravParam();
+    const a  = self.getSemiMajor();
+
+    return -mu / ( 2.0 * a );
+  }
+  pub inline fn getGravWellEnergy( self : *const OrbitComp ) f64
+  {
+    const mu = self.getGravParam();
+    const hr = self.getHillRadius();
+
+    return -mu / ( 2.0 * hr );
+  }
+
+
   pub inline fn getSemiMajor( self : *const OrbitComp ) f64
   {
     return ( self.maxRadius + self.minRadius ) / 2.0;
@@ -87,6 +108,7 @@ pub const OrbitComp = struct
     return def.clmp(( self.maxRadius - self.minRadius ) / ( self.maxRadius + self.minRadius ), 0.0, 0.999 );
   }
 
+
   pub inline fn setPeriodFromMass( self : *OrbitComp ) void
   {
     const semiMajor = self.getSemiMajor();
@@ -98,9 +120,8 @@ pub const OrbitComp = struct
     }
 
     const semiMajor3 = semiMajor * semiMajor * semiMajor;
-    const totalMass  = self.orbitedMass + self.orbiterMass;
 
-    self.period = @floatCast( def.TAU * @sqrt( semiMajor3 / ( G * totalMass )));
+    self.period = @floatCast( def.TAU * @sqrt( semiMajor3 / self.getGravParam() ));
   }
 
   pub inline fn getCurrentRadius( self : *const OrbitComp ) f64
@@ -412,7 +433,7 @@ pub const OrbitComp = struct
   inline fn getL3Factor( self : *const OrbitComp ) f64
   {
     // Approx distance ~ r * ( 1 + ( 5μ / 12 ))
-    const mu = self.orbiterMass / ( self.orbitedMass + self.orbiterMass );
+    const mu = self.getGravParam();
 
     return -( 1.0 + ( 5.0 * mu / 12.0 ));
   }
