@@ -20,7 +20,8 @@ pub const StellarMetricEnum = enum( u8 )
   PERIAP, // Minimal orbital radius
   APOAP,  // Maximal orbital radius
   LONG,   // Longitude of periapsis ( orientation of exentricity )
-  TYPE,   //
+  TYPE,   // idx of the body type as an f64 ( inelegant. ought to store it in some other fashion OR infer it )
+  ATMO,   // Atmospheric density at GROUND in atm. Gas giant GROUND is a temporary 1 atm reference surface.
 };
 
 
@@ -264,6 +265,7 @@ pub fn loadStellarData() void
   stellarData.set( .VENUS,    .APOAP,         108_940_000 );
   stellarData.set( .VENUS,    .LONG,              131.564 );
   stellarData.set( .VENUS,    .TYPE,   SBT.PLANET.toFlt() );
+  stellarData.set( .VENUS,    .ATMO,               92.000 );
 
   //stellarData.set( .ZOOZVE, .MASS,                0.024 ); // Estimated
   //stellarData.set( .ZOOZVE, .RADIUS,              0.236 );
@@ -279,6 +281,7 @@ pub fn loadStellarData() void
   stellarData.set( .TERRA,    .APOAP,         152_097_597 );
   stellarData.set( .TERRA,    .LONG,              102.947 );
   stellarData.set( .TERRA,    .TYPE,   SBT.PLANET.toFlt() );
+  stellarData.set( .TERRA,    .ATMO,                1.000 );
 
     stellarData.set( .LUNA,   .MASS,       73_460_000_000 );
     stellarData.set( .LUNA,   .RADIUS,          1_737.400 );
@@ -294,6 +297,7 @@ pub fn loadStellarData() void
   stellarData.set( .MARS,     .APOAP,          249_261_000 );
   stellarData.set( .MARS,     .LONG,               336.078 );
   stellarData.set( .MARS,     .TYPE,    SBT.PLANET.toFlt() );
+  stellarData.set( .MARS,     .ATMO,                 0.006 );
 
     stellarData.set( .PHOBOS, .MASS,                16_000 );
     stellarData.set( .PHOBOS, .RADIUS,              11.080 );
@@ -369,6 +373,8 @@ pub fn loadStellarData() void
   stellarData.set( .SYLVIA,   .TYPE,  SBT.ASTEROID.toFlt() );
 
 // OUTER SYSTEM
+// NOTE : Gas giant GROUND currently represents a solid 1 atm reference surface.
+//        Replace this with floating infrastructure / atmospheric platform logic later.
 
   stellarData.set( .JUPITER,  .MASS, 1_898_125_000_000_000 );
   stellarData.set( .JUPITER,  .RADIUS,          69_886.000 );
@@ -376,6 +382,7 @@ pub fn loadStellarData() void
   stellarData.set( .JUPITER,  .APOAP,          816_363_000 );
   stellarData.set( .JUPITER,  .LONG,                14.331 );
   stellarData.set( .JUPITER,  .TYPE,    SBT.PLANET.toFlt() );
+  stellarData.set( .JUPITER,  .ATMO,                 1.000 );
 
   stellarData.set( .SATURN,   .MASS,   568_317_000_000_000 );
   stellarData.set( .SATURN,   .RADIUS,          58_232.000 );
@@ -383,6 +390,7 @@ pub fn loadStellarData() void
   stellarData.set( .SATURN,   .APOAP,        1_514_500_000 );
   stellarData.set( .SATURN,   .LONG,                93.057 );
   stellarData.set( .SATURN,   .TYPE,    SBT.PLANET.toFlt() );
+  stellarData.set( .SATURN,   .ATMO,                 1.000 );
 
   stellarData.set( .URANUS,   .MASS,    86_809_900_000_000 );
   stellarData.set( .URANUS,   .RADIUS,          25_362.000 );
@@ -390,6 +398,7 @@ pub fn loadStellarData() void
   stellarData.set( .URANUS,   .APOAP,        3_006_390_000 );
   stellarData.set( .URANUS,   .LONG,               171.005 );
   stellarData.set( .URANUS,   .TYPE,    SBT.PLANET.toFlt() );
+  stellarData.set( .URANUS,   .ATMO,                 1.000 );
 
   stellarData.set( .NEPTUNE,  .MASS,   102_409_200_000_000 );
   stellarData.set( .NEPTUNE,  .RADIUS,          24_622.000 );
@@ -397,6 +406,7 @@ pub fn loadStellarData() void
   stellarData.set( .NEPTUNE,  .APOAP,        4_540_000_000 );
   stellarData.set( .NEPTUNE,  .LONG,                44.970 );
   stellarData.set( .NEPTUNE,  .TYPE,    SBT.PLANET.toFlt() );
+  stellarData.set( .NEPTUNE,  .ATMO,                 1.000 );
 
 
   stellarData.isInit = true;

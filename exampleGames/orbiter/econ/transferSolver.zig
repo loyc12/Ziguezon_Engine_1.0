@@ -24,14 +24,22 @@ const BODY_COUNT : usize = gdf.G_CONSTS.bodyCount;
 const CACHE_LEN  : usize = BODY_COUNT + 1; // Entity id 0 is invalid, but kept as a sentinel slot.
 const MAX_DEPTH  : usize = @min( CACHE_LEN, MAX_NESTING_DEPTH );
 
-const LOW_ORBIT_RADIUS_FACTOR    : f64 = 1.10;
-const ATMOSPHERIC_LANDING_FACTOR : f64 = 0.60; // How much of the landing cost is deducted in atmosphere
-const ATMOSPHERIC_LAUNCH_FACTOR  : f64 = 1.00; // How much of the launching cost is surcharged in atmosphere
+const LOW_ORBIT_RADIUS_FACTOR       : f64 = 1.10;
+const ATMOSPHERIC_LAUNCH_DV_FACTOR  : f64 = 0.21;
+const ATMOSPHERIC_LANDING_DV_FACTOR : f64 = 0.25;
+const MIN_LANDING_DV_FACTOR         : f64 = 0.10;
+const MIN_SURFACE_TRANSFER_DAYS     : f64 = 0.03;
+const ATMOSPHERIC_LAUNCH_DAYS       : f64 = 0.10;
+const ATMOSPHERIC_LANDING_DAYS      : f64 = 0.07;
 
 const ECCENTRICITY_WEIGHT : f64 = 0.20;
 const ORIENTATION_WEIGHT  : f64 = 0.10;
 const PHASE_WEIGHT        : f64 = 0.15;
 const RETROGRADE_WEIGHT   : f64 = 0.50;
+
+const CO_ORBITAL_RADIUS_TOLERANCE : f64 = 0.01;
+const CO_ORBITAL_PHASE_DV_FACTOR  : f64 = 0.05;
+const CO_ORBITAL_DRIFT_RADIUS_OFFSET : f64 = 0.25;
 
 
 // ================================ TRANSFER CACHE ================================
@@ -42,6 +50,7 @@ pub const TransferNode = struct
 
   mass   : f64 = 0.0,
   radius : f64 = 0.0,
+  atmo   : f64 = 0.0,
 
   semiMajor    : f64 = 0.0,
   eccentricity : f64 = 0.0,
@@ -52,6 +61,7 @@ pub const TransferNode = struct
 
   gravParam      : f64 = 0.0,
   orbitalEnergy  : f64 = 0.0,
+  boundaryRadius : f64 = 0.0,
   boundaryEnergy : f64 = 0.0,
 
   valid : bool = false,
@@ -65,14 +75,17 @@ const RepState = struct
   angularPos   : f64 = 0.0,
   angularVel   : f64 = 0.0,
 
+  radius : f64 = 0.0,
   energy : f64 = 0.0,
   valid  : bool = false,
 };
 
-const CostEstimate = struct
+const HohmannResult = struct
 {
-  energyCost  : f64 = 0.0, // Specific energy proxy, in km² / min².
-  durationDay : f64 = 0.0,
+  travel : TData = .{},
+
+  departDeltaV : f64 = 0.0,
+  arriveDeltaV : f64 = 0.0,
 };
 
 var transferNodes : [ CACHE_LEN ]TransferNode = std.mem.zeroes([ CACHE_LEN ]TransferNode );
@@ -112,6 +125,45 @@ fn minutesToDays( minutes : f64 ) f64
   return minutes / ( 60.0 * 24.0 );
 }
 
+fn combineTravel( a : TData, b : TData ) TData
+{
+  return .{
+    .deltaE   = a.deltaE + b.deltaE,
+    .deltaV   = a.deltaV + b.deltaV,
+    .deltaT = a.deltaT + b.deltaT,
+  };
+}
+
+fn travelFromEnergy( energyCost : f64 ) TData
+{
+  return .{
+    .deltaE = energyCost,
+    .deltaV = energyCostToDeltaVKmS( energyCost ),
+  };
+}
+
+fn isCoOrbitalRadius( a : f64, b : f64 ) bool
+{
+  const mean = ( a + b ) * 0.5;
+  if( mean < EPS ){ return false; }
+
+  return( @abs( a - b ) / mean <= CO_ORBITAL_RADIUS_TOLERANCE );
+}
+
+fn coOrbitalDriftDurationDays( radius : f64, phase : f64, mu : f64 ) f64
+{
+  if( radius < EPS or phase < EPS or mu < EPS ){ return 0.0; }
+
+  const baseAngularVel  = @sqrt( mu / ( radius * radius * radius ));
+  const driftRadius     = radius * ( 1.0 + CO_ORBITAL_DRIFT_RADIUS_OFFSET );
+  const driftAngularVel = @sqrt( mu / ( driftRadius * driftRadius * driftRadius ));
+  const relAngularVel   = @abs( baseAngularVel - driftAngularVel );
+
+  if( relAngularVel < EPS ){ return 0.0; }
+
+  return minutesToDays( phase / relAngularVel );
+}
+
 fn locIsParentFrameCoOrbital( loc : EconLoc ) bool
 {
   return switch( loc )
@@ -148,6 +200,18 @@ fn bodyEnergyAtRadius( node : *const TransferNode, radius : f64 ) f64
   return -node.gravParam / ( 2.0 * radius );
 }
 
+fn orbitalEnergyAtRadius( gravParam : f64, radius : f64 ) f64
+{
+  if( gravParam < EPS or radius < EPS ){ return 0.0; }
+  return -gravParam / ( 2.0 * radius );
+}
+
+fn bodyRestEnergyAtRadius( node : *const TransferNode, radius : f64 ) f64
+{
+  if( node.gravParam < EPS or radius < EPS ){ return 0.0; }
+  return -node.gravParam / radius;
+}
+
 fn lowOrbitRadius( node : *const TransferNode ) f64
 {
   return @max( node.radius * LOW_ORBIT_RADIUS_FACTOR, node.radius + 1.0 ); // At least 1 km above surface
@@ -157,7 +221,7 @@ fn localPlacementEnergy( node : *const TransferNode, loc : EconLoc ) f64
 {
   return switch( loc )
   {
-    .GROUND => bodyEnergyAtRadius( node, node.radius ),
+    .GROUND => bodyRestEnergyAtRadius( node, node.radius ),
     .ORBIT  => bodyEnergyAtRadius( node, lowOrbitRadius( node )),
 
     .L1, .L2      => node.boundaryEnergy,
@@ -170,9 +234,89 @@ inline fn localPlacementEnergyDelta( node : *const TransferNode, fromLoc : EconL
   return localPlacementEnergy( node, toLoc ) - localPlacementEnergy( node, fromLoc );
 }
 
-inline fn isTerraGround( bodyId : EntityId, loc : EconLoc ) bool
+fn localPlacementRadius( node : *const TransferNode, loc : EconLoc ) f64
 {
-  return( loc == .GROUND and bodyId == gdf.idFromName( .TERRA )); // TODO : generalise to hasAtmo instead
+  return switch( loc )
+  {
+    .GROUND, .ORBIT => lowOrbitRadius( node ),
+    .L1, .L2        => node.boundaryRadius,
+    .L3, .L4, .L5   => node.semiMajor,
+  };
+}
+
+fn circularDeltaVKmS( node : *const TransferNode, radius : f64 ) f64
+{
+  if( node.gravParam < EPS or radius < EPS ){ return 0.0; }
+  return @sqrt( node.gravParam / radius ) / 60.0;
+}
+
+fn escapeDeltaVKmS( node : *const TransferNode, radius : f64 ) f64
+{
+  if( node.gravParam < EPS or radius < EPS ){ return 0.0; }
+  return @sqrt(( 2.0 * node.gravParam ) / radius ) / 60.0;
+}
+
+fn atmosphereAt( bodyId : EntityId, loc : EconLoc ) f64
+{
+  if( loc != .GROUND ){ return 0.0; }
+
+  const node = getNode( bodyId ) orelse return 0.0;
+  const atmo = @max( node.atmo, 0.0 );
+
+  // Earth-normalized, saturating pressure response.
+  return @max(( 2.0 * atmo ) / ( 1.0 + atmo ), 0.0 );
+}
+
+fn surfaceTransferDays( atmoEffect : f64, launching : bool ) f64
+{
+  const atmoDays = if( launching ) ATMOSPHERIC_LAUNCH_DAYS else ATMOSPHERIC_LANDING_DAYS;
+  return MIN_SURFACE_TRANSFER_DAYS + ( atmoDays * atmoEffect );
+}
+
+fn hohmannTransferDetailed( radiusA : f64, radiusB : f64, mu : f64 ) HohmannResult
+{
+  if( radiusA < EPS or radiusB < EPS or mu < EPS ){ return .{}; }
+
+  const transferA = ( radiusA + radiusB ) * 0.5;
+
+  const velA  = @sqrt( mu / radiusA );
+  const velB  = @sqrt( mu / radiusB );
+  const velT1 = @sqrt( mu * (( 2.0 / radiusA ) - ( 1.0 / transferA )));
+  const velT2 = @sqrt( mu * (( 2.0 / radiusB ) - ( 1.0 / transferA )));
+
+  const departDeltaV = @abs( velT1 - velA ) / 60.0;
+  const arriveDeltaV = @abs( velB - velT2 ) / 60.0;
+  const durationMin = PI * @sqrt(( transferA * transferA * transferA ) / mu );
+
+  return .{
+    .travel = .{
+      .deltaE = @abs( orbitalEnergyAtRadius( mu, radiusB ) - orbitalEnergyAtRadius( mu, radiusA )),
+      .deltaV = departDeltaV + arriveDeltaV,
+      .deltaT = minutesToDays( durationMin ),
+    },
+    .departDeltaV = departDeltaV,
+    .arriveDeltaV = arriveDeltaV,
+  };
+}
+
+fn hohmannTransfer( radiusA : f64, radiusB : f64, mu : f64 ) TData
+{
+  return hohmannTransferDetailed( radiusA, radiusB, mu ).travel;
+}
+
+fn departureDeltaVFromParking( bodyId : EntityId, vInf : f64 ) f64
+{
+  const node = getNode( bodyId ) orelse return vInf;
+  const radius = lowOrbitRadius( node );
+  const escape = escapeDeltaVKmS( node, radius );
+  const circular = circularDeltaVKmS( node, radius );
+
+  return @max( @sqrt(( vInf * vInf ) + ( escape * escape )) - circular, 0.0 );
+}
+
+fn captureDeltaVToParking( bodyId : EntityId, vInf : f64 ) f64
+{
+  return departureDeltaVFromParking( bodyId, vInf );
 }
 
 
@@ -192,6 +336,7 @@ fn refreshTransferNode( bodyId : EntityId ) void
   var node : TransferNode = .{
     .mass      = body.?.mass,
     .radius    = body.?.radius,
+    .atmo      = gbl.STLR_DATA.get( body.?.name, .ATMO ),
     .gravParam = gdf.G_CONSTS.gravFactor * body.?.mass,
     .valid     = true,
   };
@@ -219,7 +364,8 @@ fn refreshTransferNode( bodyId : EntityId ) void
   node.angularVel     = orbit.?.angularVel;
   node.orbitalEnergy  = orbit.?.getOrbitalEnergy();
 
-  node.boundaryEnergy = bodyEnergyAtRadius( &node, orbit.?.getHillRadius() );
+  node.boundaryRadius = orbit.?.getHillRadius();
+  node.boundaryEnergy = bodyEnergyAtRadius( &node, node.boundaryRadius );
 
   transferNodes[ @intCast( bodyId )] = node;
 }
@@ -342,57 +488,92 @@ fn childUnderAncestor( bodyId : EntityId, ancestorId : EntityId ) EntityId
 
 // ================================ WELL COSTS ================================
 
-fn localTransferCost( bodyId : EntityId, fromLoc : EconLoc, toLoc : EconLoc ) f64
+fn groundToOrbitTransfer( bodyId : EntityId, node : *const TransferNode ) TData
 {
-  const node = getNode( bodyId ) orelse return 0.0;
+  const radius = lowOrbitRadius( node );
+  const atmo = atmosphereAt( bodyId, .GROUND );
 
-  var cost = @abs( localPlacementEnergyDelta( node, fromLoc, toLoc ));
+  const baseEnergy = @abs( localPlacementEnergyDelta( node, .GROUND, .ORBIT ));
+  const deltaV = circularDeltaVKmS( node, radius ) * ( 1.0 + ( ATMOSPHERIC_LAUNCH_DV_FACTOR * atmo ));
 
-  if( bodyId == gdf.idFromName( .TERRA ) and ( fromLoc == .GROUND or toLoc == .GROUND ))
-  {
-  //const atmoCost = @abs( localPlacementEnergyDelta( node, .GROUND, .ORBIT ));
-
-    if( toLoc == .GROUND )
-    {
-      cost -= 0.0; //atmoCost * ATMOSPHERIC_LANDING_FACTOR;
-    }
-    else
-    {
-      cost += 0.0; //atmoCost * ATMOSPHERIC_LAUNCH_FACTOR;
-    }
-  }
-
-  return cost;
+  return .{
+    .deltaE = baseEnergy,
+    .deltaV = deltaV,
+    .deltaT = surfaceTransferDays( atmo, true ),
+  };
 }
 
-fn localBoundaryCost( bodyId : EntityId, loc : EconLoc, descending : bool ) f64
+fn orbitToGroundTransfer( bodyId : EntityId, node : *const TransferNode ) TData
 {
-  const node = getNode( bodyId ) orelse return 0.0;
+  const atmo = atmosphereAt( bodyId, .GROUND );
+  const baseEnergy = @abs( localPlacementEnergyDelta( node, .ORBIT, .GROUND ));
+  const landingFactor = @max( 1.0 - (( 1.0 - ATMOSPHERIC_LANDING_DV_FACTOR ) * atmo ), MIN_LANDING_DV_FACTOR );
+  const deltaV = circularDeltaVKmS( node, lowOrbitRadius( node )) * landingFactor;
 
-  var cost = @abs( localPlacementEnergy( node, loc ) - node.boundaryEnergy );
-
-  if( bodyId == gdf.idFromName( .TERRA ) and ( loc == .GROUND ))
-  {
-  //const atmoCost = @abs( localPlacementEnergyDelta( node, .GROUND, .ORBIT ));
-
-    if( descending )
-    {
-      cost -= 0.0; // atmoCost * ATMOSPHERIC_LANDING_FACTOR;
-    }
-    else
-    {
-      cost += 0.0; //atmoCost * ATMOSPHERIC_LAUNCH_FACTOR;
-    }
-  }
-
-  return cost;
+  return .{
+    .deltaE = baseEnergy,
+    .deltaV = deltaV,
+    .deltaT = surfaceTransferDays( atmo, false ),
+  };
 }
 
-fn routeWellCostToLca( bodyId : EntityId, loc : EconLoc, lcaId : EntityId, descending : bool ) f64
+fn localTransferEstimate( bodyId : EntityId, fromLoc : EconLoc, toLoc : EconLoc ) TData
 {
-  if( !isValidBodyId( lcaId )){ return 0.0; }
+  const node = getNode( bodyId ) orelse return .{};
 
-  var total : f64 = 0.0;
+  if( fromLoc == toLoc ){ return .{}; }
+
+  if( fromLoc == .GROUND and toLoc == .ORBIT ){ return groundToOrbitTransfer( bodyId, node ); }
+  if( fromLoc == .ORBIT  and toLoc == .GROUND ){ return orbitToGroundTransfer( bodyId, node ); }
+
+  if( fromLoc == .ORBIT and ( toLoc == .L1 or toLoc == .L2 )){ return localBoundaryEstimate( bodyId, fromLoc, false ); }
+  if(( fromLoc == .L1 or fromLoc == .L2 ) and toLoc == .ORBIT ){ return localBoundaryEstimate( bodyId, toLoc, true ); }
+
+  if( fromLoc == .GROUND )
+  {
+    return combineTravel(
+      groundToOrbitTransfer( bodyId, node ),
+      localTransferEstimate( bodyId, .ORBIT, toLoc ),
+    );
+  }
+
+  if( toLoc == .GROUND )
+  {
+    return combineTravel(
+      localTransferEstimate( bodyId, fromLoc, .ORBIT ),
+      orbitToGroundTransfer( bodyId, node ),
+    );
+  }
+
+  return travelFromEnergy( @abs( localPlacementEnergyDelta( node, fromLoc, toLoc )));
+}
+
+fn localBoundaryEstimate( bodyId : EntityId, loc : EconLoc, descending : bool ) TData
+{
+  const node = getNode( bodyId ) orelse return .{};
+
+  if( loc == .L1 or loc == .L2 ){ return .{}; }
+
+  const startRadius = localPlacementRadius( node, if( loc == .GROUND ) .ORBIT else loc );
+  var boundary = hohmannTransfer( startRadius, node.boundaryRadius, node.gravParam );
+  boundary.deltaV = departureDeltaVFromParking( bodyId, 0.0 );
+
+  const local = if( loc == .GROUND )
+    if( descending ) orbitToGroundTransfer( bodyId, node ) else groundToOrbitTransfer( bodyId, node )
+  else
+    TData{};
+
+  return if( descending )
+    combineTravel( boundary, local )
+  else
+    combineTravel( local, boundary );
+}
+
+fn routeWellCostToLca( bodyId : EntityId, loc : EconLoc, lcaId : EntityId, descending : bool ) TData
+{
+  if( !isValidBodyId( lcaId )){ return .{}; }
+
+  var total : TData = .{};
   var current = bodyId;
 
   if( locIsParentFrameCoOrbital( loc ))
@@ -401,11 +582,18 @@ fn routeWellCostToLca( bodyId : EntityId, loc : EconLoc, lcaId : EntityId, desce
   }
   else if( current == lcaId )
   {
-    return 0.0;
+    const node = getNode( bodyId ) orelse return .{};
+
+    if( loc == .GROUND ){ return if( descending ) orbitToGroundTransfer( bodyId, node ) else groundToOrbitTransfer( bodyId, node ); }
+    return .{};
   }
   else
   {
-    total += localBoundaryCost( current, loc, descending );
+    if( loc == .GROUND )
+    {
+      const node = getNode( current ) orelse return .{};
+      total = combineTravel( total, if( descending ) orbitToGroundTransfer( current, node ) else groundToOrbitTransfer( current, node ));
+    }
   }
 
   while( isValidBodyId( current ) and current != lcaId )
@@ -415,8 +603,8 @@ fn routeWellCostToLca( bodyId : EntityId, loc : EconLoc, lcaId : EntityId, desce
 
     if( parentId == 0 or parentId == lcaId ){ break; }
 
-    const parent = getNode( parentId ) orelse break;
-    total += @abs( node.orbitalEnergy - parent.boundaryEnergy );
+    _ = getNode( parentId ) orelse break;
+    total.deltaE += @abs( node.orbitalEnergy - node.boundaryEnergy );
 
     current = parentId;
   }
@@ -437,6 +625,7 @@ fn coOrbitalRepState( bodyId : EntityId, loc : EconLoc ) RepState
     .orientation  = node.orientation,
     .angularPos   = normalizeAngle( node.angularPos + locAngularOffset( loc )),
     .angularVel   = node.angularVel,
+    .radius       = node.semiMajor,
     .energy       = node.orbitalEnergy,
     .valid        = true,
   };
@@ -452,7 +641,25 @@ fn nodeRepState( bodyId : EntityId ) RepState
     .orientation  = node.orientation,
     .angularPos   = node.angularPos,
     .angularVel   = node.angularVel,
+    .radius       = node.semiMajor,
     .energy       = node.orbitalEnergy,
+    .valid        = true,
+  };
+}
+
+fn frameLocalRepState( bodyId : EntityId, loc : EconLoc ) RepState
+{
+  const node = getNode( bodyId ) orelse return .{};
+  const frameLoc = if( loc == .GROUND ) .ORBIT else loc;
+
+  return .{
+    .semiMajor    = localPlacementRadius( node, frameLoc ),
+    .eccentricity = 0.0,
+    .orientation  = node.orientation,
+    .angularPos   = node.angularPos,
+    .angularVel   = node.angularVel,
+    .radius       = localPlacementRadius( node, frameLoc ),
+    .energy       = localPlacementEnergy( node, frameLoc ),
     .valid        = true,
   };
 }
@@ -475,7 +682,7 @@ fn representativeInFrame( bodyId : EntityId, loc : EconLoc, frameId : EntityId )
     return .{};
   }
 
-  if( bodyId == frameId ){ return .{ .valid = true }; }
+  if( bodyId == frameId ){ return frameLocalRepState( bodyId, loc ); }
 
   const node = getNode( bodyId ) orelse return .{};
   if( node.parentId == frameId ){ return nodeRepState( bodyId ); }
@@ -486,7 +693,7 @@ fn representativeInFrame( bodyId : EntityId, loc : EconLoc, frameId : EntityId )
   return .{};
 }
 
-fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : EntityId, toLoc : EconLoc, frameId : EntityId ) CostEstimate
+fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : EntityId, toLoc : EconLoc, frameId : EntityId ) TData
 {
   const a = representativeInFrame( fromBodyId, fromLoc, frameId );
   const b = representativeInFrame( toBodyId,   toLoc,   frameId );
@@ -501,14 +708,61 @@ fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : Enti
   const phase      = @abs( normalizeAngle( b.angularPos - a.angularPos ));
   const phaseCost  = phase / PI * scale * PHASE_WEIGHT;
   const retroCost  = if( sameAngularDir( a.angularVel, b.angularVel )) 0.0 else scale * RETROGRADE_WEIGHT;
+  const penaltyEnergy = eccCost + orientCost + phaseCost + retroCost;
 
-  const relAngVel = @abs( b.angularVel - a.angularVel );
-  const durationMin = if( relAngVel > EPS ) phase / relAngVel else 0.0;
+  const frame = getNode( frameId ) orelse return .{};
+  if( isCoOrbitalRadius( a.radius, b.radius ))
+  {
+    const phaseFrac = phase / PI;
+    const circular = @sqrt( frame.gravParam / @max( a.radius, EPS )) / 60.0;
+    const coOrbitalDeltaV = circular * CO_ORBITAL_PHASE_DV_FACTOR * phaseFrac;
 
-  return .{
-    .energyCost  = energyCost + eccCost + orientCost + phaseCost + retroCost,
-    .durationDay = minutesToDays( durationMin ),
-  };
+    var transfer : TData = .{
+      .deltaE = energyCost + penaltyEnergy,
+      .deltaV = coOrbitalDeltaV,
+    };
+
+    const relAngVel = @abs( b.angularVel - a.angularVel );
+    transfer.deltaT = if( relAngVel > EPS )
+      minutesToDays( phase / relAngVel )
+    else
+      coOrbitalDriftDurationDays( a.radius, phase, frame.gravParam );
+
+    return transfer;
+  }
+
+  const h = hohmannTransferDetailed( a.radius, b.radius, frame.gravParam );
+  var transfer = h.travel;
+
+  transfer.deltaE = energyCost + penaltyEnergy;
+  transfer.deltaV = 0.0;
+
+  if( fromBodyId != frameId and !locIsParentFrameCoOrbital( fromLoc ))
+  {
+    transfer.deltaV += departureDeltaVFromParking( fromBodyId, h.departDeltaV );
+  }
+  else
+  {
+    transfer.deltaV += h.departDeltaV;
+  }
+
+  if( toBodyId != frameId and !locIsParentFrameCoOrbital( toLoc ))
+  {
+    transfer.deltaV += captureDeltaVToParking( toBodyId, h.arriveDeltaV );
+  }
+  else
+  {
+    transfer.deltaV += h.arriveDeltaV;
+  }
+
+  if( transfer.deltaT <= EPS )
+  {
+    const relAngVel = @abs( b.angularVel - a.angularVel );
+    const durationMin = if( relAngVel > EPS ) phase / relAngVel else 0.0;
+    transfer.deltaT = minutesToDays( durationMin );
+  }
+
+  return transfer;
 }
 
 
@@ -516,14 +770,14 @@ fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : Enti
 
 pub fn estimateTransfer( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : EntityId, toLoc : EconLoc ) TData
 {
+  if(( fromBodyId == gdf.G_CONSTS.starId and fromLoc == .GROUND ) or ( toBodyId == gdf.G_CONSTS.starId and toLoc == .GROUND ))
+  {
+    return .{};
+  }
+
   if( fromBodyId == toBodyId and !locIsParentFrameCoOrbital( fromLoc ) and !locIsParentFrameCoOrbital( toLoc ))
   {
-    const energyCost = localTransferCost( fromBodyId, fromLoc, toLoc );
-
-    return .{
-      .deltaV   = energyCostToDeltaVKmS( energyCost ),
-      .duration = 0.0,
-    };
+    return localTransferEstimate( fromBodyId, fromLoc, toLoc );
   }
 
   const lcaId = findLowestCommonOrbitalParent( fromBodyId, fromLoc, toBodyId, toLoc );
@@ -532,12 +786,8 @@ pub fn estimateTransfer( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : En
   const ascent  = routeWellCostToLca( fromBodyId, fromLoc, lcaId, false );
   const descent = routeWellCostToLca( toBodyId,   toLoc,   lcaId, true  );
   const common  = commonFramePenalty( fromBodyId, fromLoc, toBodyId, toLoc, lcaId );
-  const energyCost = ascent + descent + common.energyCost;
 
-  return .{
-    .deltaV   = energyCostToDeltaVKmS( energyCost ),
-    .duration = common.durationDay,
-  };
+  return combineTravel( combineTravel( ascent, common ), descent );
 }
 
 pub fn estimateTransferPair( from : BodyEconPair, to : BodyEconPair ) TData

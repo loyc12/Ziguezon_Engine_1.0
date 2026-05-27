@@ -1114,7 +1114,7 @@ pub const Economy = struct
     self.logSpecialMetrics();
     solver.logAllMetrics();
 
-    gdf.debugLogTravelCostsList( .TERRA, self.location );
+    gdf.debugLogTravelCostsList( .TERRA, .ORBIT );
   }
 
   inline fn postStepUpdates( self : *Economy ) void

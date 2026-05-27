@@ -37,28 +37,38 @@ pub inline fn debugLogTravelCosts( departure : gdf.BodyEconPair, arrival : gdf.B
   const pair1 = gdf.fromBodyEconPair( departure );
   const pair2 = gdf.fromBodyEconPair( arrival );
 
-  const tData = gdf.trfSlvr.estimateTransfer( pair1.a.toNttId(), pair1.b, pair2.a.toNttId(), pair2.b );
-  def.log( .CONT, 0, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.3} days", .{ @tagName( departure ), @tagName( arrival ), tData.deltaV, tData.duration });
+  const tData1 = gdf.trfSlvr.estimateTransfer( pair1.a.toNttId(), pair1.b, pair2.a.toNttId(), pair2.b );
+  def.log( .CONT, 0, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE", .{ @tagName( departure ), @tagName( arrival ), tData1.deltaV, tData1.deltaT, tData1.deltaE });
+
+  const tData2 = gdf.trfSlvr.estimateTransfer( pair2.a.toNttId(), pair2.b, pair1.a.toNttId(), pair1.b );
+  def.log( .CONT, 0, @src(), "{s} < {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE\n", .{ @tagName( departure ), @tagName( arrival ), tData2.deltaV, tData2.deltaT, tData2.deltaE });
 }
 
 pub inline fn debugLogTravelCostsList( body : gdf.BodyName, loc : gdf.EconLoc ) void
 {
-  def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) : km/s | days" );
+  def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) : km/s | days | dE\n" );
 
   const departure = gdf.toBodyEconPair( body, loc );
 
   inline for( 0..EconLoc.count )| l |
   {
-    gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( body, .fromIdx( l )));
-    gdf.debugLogTravelCosts( gdf.toBodyEconPair( body, .fromIdx( l )), departure );
+    const loc2 = EconLoc.fromIdx( l );
 
+    if( loc2 != loc )
+    {
+      gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( body, loc2 ));
+    }
   }
-  def.qlog( .CONT, 0, @src(), "--------------------------------" );
+  def.qlog( .CONT, 0, @src(), "----------------------------------------------------------------\n" );
 
-  inline for( 0..gdf.BodyName.count )| b |
+  inline for( 1..gdf.BodyName.count )| b | // Skip SUN
   {
-    gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( .fromIdx( b ), loc ));
-    gdf.debugLogTravelCosts( gdf.toBodyEconPair( .fromIdx( b ), loc ), departure );
+    const body2 = BodyName.fromIdx( b );
+
+    if( body2 != body )
+    {
+      gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( body2, loc ));
+    }
   }
 }
 
@@ -75,8 +85,9 @@ pub const OrbitalData = struct // NOTE : invalid if orbitLvl < EPS
 
 pub const TravelData = struct // NOTE : invalid if deltaV < EPS
 {
-  deltaV   : f64  = 0.0, // Approximate in km/s, derived from transfer energy cost.
-  duration : f64  = 0.0, // Approximate travel time in days.
+  deltaE : f64 = 0.0, // Approximate specific energy cost in km^2 / min^2.
+  deltaV : f64 = 0.0, // Approximate transfer cost in km/s.
+  deltaT : f64 = 0.0, // Approximate travel time in days.
 };
 
 
