@@ -162,38 +162,38 @@ pub fn isOrbitalDataValid( data : OData ) bool
   return( @abs( data.orbitLvl ) >= EPS ); // NOTE : Is the absolute even needed ?
 }
 
-/// Update the entire econTravelTable from the current econOrbitalData.
-pub fn updateTravelTable() void
-{
-  const pairCount = @typeInfo( BodyEconPair ).@"enum".fields.len;
-
-  for( 0..pairCount )| i |
-  {
-    const pairA : BodyEconPair = @enumFromInt( i );
-    const dataA = gbl.ECON_ORBIT_DATA.get( pairA );
-
-
-    if( !isOrbitalDataValid( dataA )) continue;
-
-    for( 0..pairCount )| j |
-    {
-      if( i == j )
-      {
-        gbl.ECON_TRAVEL_TABLE.set( pairA, pairA, .{} );
-        continue;
-      }
-
-      const pairB : BodyEconPair = @enumFromInt( j );
-      const dataB = gbl.ECON_ORBIT_DATA.get( pairB );
-
-      if( !isOrbitalDataValid( dataB ))
-      {
-        gbl.ECON_TRAVEL_TABLE.set( pairA, pairB, .{} );
-        continue;
-      }
-
-      const result = estimateTransfer( dataA, dataB, DEFAULT_OFFSET );
-      gbl.ECON_TRAVEL_TABLE.set( pairA, pairB, result );
-    }
-  }
-}
+// Update the entire econTravelTable from the current econOrbitalData.
+//pub fn updateTravelTable() void
+//{
+//  const pairCount = @typeInfo( BodyEconPair ).@"enum".fields.len;
+//
+//  for( 0..pairCount )| i |
+//  {
+//    const pairA : BodyEconPair = @enumFromInt( i );
+//    const dataA = gbl.ECON_ORBIT_DATA.get( pairA );
+//
+//
+//    if( !isOrbitalDataValid( dataA )) continue;
+//
+//    for( 0..pairCount )| j |
+//    {
+//      if( i == j )
+//      {
+//        gbl.ECON_TRAVEL_TABLE.set( pairA, pairA, .{} );
+//        continue;
+//      }
+//
+//      const pairB : BodyEconPair = @enumFromInt( j );
+//      const dataB = gbl.ECON_ORBIT_DATA.get( pairB );
+//
+//      if( !isOrbitalDataValid( dataB ))
+//      {
+//        gbl.ECON_TRAVEL_TABLE.set( pairA, pairB, .{} );
+//        continue;
+//      }
+//
+//      const result = estimateTransfer( dataA, dataB, DEFAULT_OFFSET );
+//      gbl.ECON_TRAVEL_TABLE.set( pairA, pairB, result );
+//    }
+//  }
+//}
