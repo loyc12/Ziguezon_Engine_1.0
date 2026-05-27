@@ -16,6 +16,8 @@ pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
 
     data : [ len ]DataType = undefined,
 
+    isInit : bool = false,
+
 
     pub fn initFrom( newData : [ len ]DataType ) SelfType
     {

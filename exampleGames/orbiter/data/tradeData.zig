@@ -23,10 +23,6 @@ pub const BodyEconSplit = def.GenSplitEnum(  BodyName, EconLoc );
 //  Combine BodyName & EconLoc into the corresponding composite enum
 pub fn toBodyEconPair( body : BodyName, econ : EconLoc ) BodyEconPair
 {
-  if( body == .CUSTOM )
-  {
-    // TODO : Raise issue
-  }
   return def.pairEnums( BodyName, body, EconLoc, econ );
 }
 

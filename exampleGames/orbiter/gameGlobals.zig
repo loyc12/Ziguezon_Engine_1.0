@@ -5,6 +5,7 @@ pub const gdf = @import( "gameDefs.zig" );
 
 const bodyCount = gdf.G_CONSTS.bodyCount;
 
+
 // ================ GAMEDATA STRUCTS ================
 
 pub var G_DATA : GameData = .{};
@@ -242,17 +243,14 @@ pub const SpeedFactor = enum( i8 )
 
 // ================ GAMEDATA MATRICES ================
 
-    const sshn_d = @import( "econ/starShine.zig"   );
-
-pub const SUNSHINE = &sshn_d.solShine;
-
     const stlr_d = @import( "data/stellarData.zig" );
-    const ecnm_d = @import( "data/economyData.zig" );
     const trde_d = @import( "data/tradeData.zig"   );
+    const ecnm_d = @import( "data/economyData.zig" );
 
 pub const STLR_DATA         = &stlr_d.stellarData;
 pub const ECON_ORBIT_DATA   = &trde_d.econOrbitalData;
 pub const ECON_TRAVEL_TABLE = &trde_d.econTravelTable;
+
 
     const powr_d = @import( "data/powerData.zig"          );
     const vesl_d = @import( "data/vesselData.zig"         );
@@ -269,9 +267,17 @@ pub const NFRS_DATA = &nfrs_d.infrastructureData;
 pub const NDST_DATA = &ndst_d.industryData;
 
 
+    const rbtc_d = @import( "data/orbitanceData.zig" );
+    const sshn_d = @import( "data/sunshineData.zig"   );
+
+pub const ORBITANCE = &rbtc_d.orbitTree;
+pub const SUNSHINE  = &sshn_d.solShine;
+
+
 pub fn loadStaticDataMatrices() void
 {
   stlr_d.loadStellarData();
+  rbtc_d.loadOrbitanceTree();
 
   powr_d.loadPowerSrcData();
   vesl_d.loadVesselData();
@@ -279,4 +285,33 @@ pub fn loadStaticDataMatrices() void
   popl_d.loadPopulationData();
   nfrs_d.loadInfrastructureData();
   ndst_d.loadIndustryData();
+
+  if( !debugCheckDataInit() )
+  {
+    def.qlog( .ERROR, 0, @src(), "One or more dataMatrices were left uninitialized" );
+  }
+
+  _ = SUNSHINE.initFromData();
 }
+
+
+pub fn debugCheckDataInit() bool
+{
+  if( !stlr_d.stellarData.isInit ){ return false; }
+
+  if( !powr_d.powerMetricData.isInit ){ return false; }
+  if( !vesl_d.vesMetricData.isInit   ){ return false; }
+
+  if( !rsrc_d.resMetricData.isInit     ){ return false; }
+  if( !popl_d.popResMetricTable.isInit ){ return false; }
+  if( !nfrs_d.infResMetricTable.isInit ){ return false; }
+  if( !ndst_d.indResMetricTable.isInit ){ return false; }
+
+  if( !popl_d.popMetricData.isInit ){ return false; }
+  if( !nfrs_d.infMetricData.isInit ){ return false; }
+  if( !ndst_d.indMetricData.isInit ){ return false; }
+
+  return true;
+}
+
+

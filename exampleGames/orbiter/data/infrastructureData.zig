@@ -221,6 +221,9 @@ pub fn loadInfrastructureData() void
   infMetricData.set( .DEPOT,    .CAPACITY, 5000.0 ); // 5,000 t of resources stored
 
 
+  infMetricData.isInit = true;
+
+
   // TODO : move away from PARTS only construction and maintenance
 
   // ================================ PART COST ================================
@@ -243,4 +246,6 @@ pub fn loadInfrastructureData() void
   infResMetricTable.set( .HABITAT,  .MAINT, .PART, 50000.0 * 0.0008 );  // ~4% annual — pressure vessels need constant upkee
   infResMetricTable.set( .DEPOT,    .MAINT, .PART,  3000.0 * 0.0004 );  // ~2% annual
 
+
+  infResMetricTable.isInit = true;
 }

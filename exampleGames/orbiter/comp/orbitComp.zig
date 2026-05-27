@@ -1,7 +1,8 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const Vec2 = def.Vec2;
+const Vec2     = def.Vec2;
+const EntityId = def.EntityId;
 
 
 const gbl = @import( "../gameGlobals.zig" );
@@ -16,8 +17,6 @@ pub const OrbitComp = struct
 
   const G : f64 = gdf.G_CONSTS.gravFactor;
   const N : u32 = 256; // number of segments used to render orbital path
-
-  orbitedID : def.EntityId = 1, // 1 is the sun by default
 
   // Orbit's masses ( ought to be near-constant )
   orbitedMass : f64 = 100.0, // mass of whatever self orbits

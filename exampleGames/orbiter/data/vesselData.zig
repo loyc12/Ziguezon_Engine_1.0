@@ -87,4 +87,7 @@ pub fn loadVesselData() void
   vesMetricData.set( .SHUTTLE,  .CAPACITY,  25.0 );
   vesMetricData.set( .STARSHIP, .CAPACITY, 125.0 );
   vesMetricData.set( .STATION,  .CAPACITY, 625.0 );
+
+
+  vesMetricData.isInit = true;
 }

@@ -191,6 +191,9 @@ pub fn loadResourceData() void
   resMetricData.set( .ORE,   .PRICE_DAMP, 0.10 ); // Slow - stockpiles buffer shocks
   resMetricData.set( .INGOT, .PRICE_DAMP, 0.15 ); // Slow
   resMetricData.set( .PART,  .PRICE_DAMP, 0.20 ); // Moderate - high demand from multiple sectors
+
+
+  resMetricData.isInit = true;
 }
 
 

@@ -47,4 +47,7 @@ pub const PowerMetricEnum = enum( u8 )
 pub fn loadPowerSrcData() void
 {
   powerMetricData.fillWith( 0.0 );
+
+
+  powerMetricData.isInit = true;
 }

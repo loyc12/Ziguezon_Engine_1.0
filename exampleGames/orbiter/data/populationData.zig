@@ -140,6 +140,8 @@ pub fn loadPopulationData() void
   popMetricData.set( .HUMAN, .FATALITY,  0.0001 ); // ~0.5% annual — advanced medicine, ~200yr life expectancy
 
 
+  popMetricData.isInit = true;
+
 
   // ================================ RESOURCE METRICS ================================
   // NOTE : Per week. Units in gameDefs.zig
@@ -159,6 +161,9 @@ pub fn loadPopulationData() void
   popResMetricTable.set( .HUMAN, .MORT, .WATER, 0.0200 ); // Dehydration — lethal in days, mass death in 1-2 weeks
   popResMetricTable.set( .HUMAN, .MORT, .FOOD,  0.0100 ); // Starvation  — serious in 3 weeks, mass death in 4-8 weeks
   popResMetricTable.set( .HUMAN, .MORT, .POWER, 0.0005 ); // Exposure    — environment dependent, slow killer
+
+
+  popResMetricTable.isInit = true;
 }
 
 

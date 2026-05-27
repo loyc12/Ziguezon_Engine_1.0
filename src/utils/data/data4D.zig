@@ -23,6 +23,8 @@ pub fn GenDataMatrix4( comptime DataType : type, comptime Enum1 : type, comptime
 
     data : [ len1 ][ len2 ][ len3 ][ len4 ]DataType = undefined,
 
+    isInit : bool = false,
+
 
     pub fn initFrom( newData : [ len1 ][ len2 ][ len3 ][ len4 ]DataType ) SelfType
     {

@@ -21,6 +21,8 @@ pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime 
     // NOTE : Row can be easily sliced, Columns and Layers are harder to iterate over without original struct
     data : [ rowLen ][ colLen ][ layLen ]DataType = undefined,
 
+    isInit : bool = false,
+
 
     pub fn initFrom( newData : [ rowLen ][ colLen ][ layLen ]DataType ) SelfType
     {

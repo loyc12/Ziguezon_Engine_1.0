@@ -250,6 +250,9 @@ pub fn loadIndustryData() void
   indMetricData.set( .PROBE_MINE,  .POLLUTION,  0.0 ); // Off-planet
 
 
+  indMetricData.isInit = true;
+
+
   // ================================ RESOURCES ================================
   // All values per facility per tick (week) at full activity
   // WORK unit: person-weeks. A worker producing 0.45 pw means each WORK unit ≈ 2.22 people
@@ -394,4 +397,7 @@ pub fn loadIndustryData() void
   indResMetricTable.set( .FACTORY,     .MAINT, .PART, 20000.0 * 0.0008 ); // ~4% annual — tooling wear, robotics upkeep
 
   indResMetricTable.set( .PROBE_MINE,  .MAINT, .PART, 0.0 ); // Needs to be fully autonomous. maybe use a "shelflife" countdown instead
+
+
+  indResMetricTable.isInit = true;
 }

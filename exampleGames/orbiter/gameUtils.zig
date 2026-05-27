@@ -20,27 +20,25 @@ const ecn = gdf.econ;
 
 // ================================ STATE INJECT ================================
 
-inline fn initStar( bodyComp : *bdy.BodyComp, bodyName : BodyName ) void
+inline fn initStar( bodyComp : *bdy.BodyComp, bodyId : def.EntityId ) void
 {
+  const bodyName = gdf.nameFromId( bodyId );
+
   bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
   bodyComp.name     = bodyName;
   bodyComp.mass     = gbl.STLR_DATA.get( bodyName, .MASS );
   bodyComp.radius   = gbl.STLR_DATA.get( bodyName, .RADIUS );
 
   bodyComp.softInitAllEcons();
-
-  // TODO : find a better way to manage shine
-  if( bodyName == .SOL )
-  {
-    const terraMin = gbl.STLR_DATA.get( .TERRA, .PERIAP );
-    const terraMax = gbl.STLR_DATA.get( .TERRA, .APOAP  );
-
-    gbl.SUNSHINE.setShineAt( 1.0, @sqrt( terraMin * terraMax ));
-  }
 }
 
-fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : BodyName, orbitedId : def.EntityId ) void
+fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyId : def.EntityId ) void
 {
+  const bodyName  = gdf.nameFromId( bodyId );
+  const orbitedId = gbl.ORBITANCE.getOrbitedId( bodyId );
+
+//def.log( .DEBUG, 0, @src(), "{s} orbits {s} ( {d} > {d} )", .{ @tagName( gdf.nameFromId( bodyId )), @tagName( gdf.nameFromId( orbitedId )), bodyId, orbitedId });
+
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
 
@@ -66,7 +64,6 @@ fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyNa
     null,
     bodyComp.bodyType.getDisplayColour(),
   );
-  orbitComp.orbitedID = orbitedId;
 
   bodyComp.softInitAllEcons();
 
@@ -116,58 +113,38 @@ pub fn initStellarSystem( ng : *def.Engine ) void
     var orbitComp : orb.OrbitComp = undefined;
     var bodyComp  : bdy.BodyComp  = .{};
 
-    switch( id ) // Adjusting bodyType-specific orbitComp and bodyComp variables
-    {
-      1  => initStar( &bodyComp, .SOL ),
-      2  => initStellarBody( &orbitComp, &bodyComp, .DEBUGY,  1 ),
-
-      3  => initStellarBody( &orbitComp, &bodyComp, .MERCURY, 1 ),
-      4  => initStellarBody( &orbitComp, &bodyComp, .VENUS,   1 ),
-      5  => initStellarBody( &orbitComp, &bodyComp, .TERRA,   1 ),
-      6  => initStellarBody( &orbitComp, &bodyComp, .LUNA,    5 ),
-      7  => initStellarBody( &orbitComp, &bodyComp, .MARS,    1 ),
-      8  => initStellarBody( &orbitComp, &bodyComp, .PHOBOS,  7 ),
-      9  => initStellarBody( &orbitComp, &bodyComp, .DEIMOS,  7 ),
-
-      10 => initStellarBody( &orbitComp, &bodyComp, .CERES,   1 ),
-      11 => initStellarBody( &orbitComp, &bodyComp, .VESTA,   1 ),
-      12 => initStellarBody( &orbitComp, &bodyComp, .PALLAS,  1 ),
-      13 => initStellarBody( &orbitComp, &bodyComp, .HYGIEA,  1 ),
-      14 => initStellarBody( &orbitComp, &bodyComp, .EUROPEA, 1 ),
-      15 => initStellarBody( &orbitComp, &bodyComp, .DAVIDA,  1 ),
-      16 => initStellarBody( &orbitComp, &bodyComp, .SYLVIA,  1 ),
-
-      17 => initStellarBody( &orbitComp, &bodyComp, .JUPITER, 1 ),
-      18 => initStellarBody( &orbitComp, &bodyComp, .SATURN,  1 ),
-      19 => initStellarBody( &orbitComp, &bodyComp, .URANUS,  1 ),
-      20 => initStellarBody( &orbitComp, &bodyComp, .NEPTUNE, 1 ),
-
-      else => // Will ignore all subsequent Ids ( should have none left )
-      {
-        def.log( .INFO, 0, @src(), "Id #{d} is invalid: will not initialize related comps", .{ id });
-        continue;
-      },
-    }
 
     var startPos : def.Vec2 = .{};
 
-    if( id != gdf.G_CONSTS.starId )
+    if( id > gdf.G_CONSTS.maxEntityId ) // Will ignore all subsequent Ids ( should have none left )
     {
-      startPos = orbitComp.getRelPos(); // Getting initial position from orbit
+      def.log( .INFO, 0, @src(), "Id #{d} is invalid: will not initialize related comps", .{ id });
+      continue;
+    }
+    else if( id == gdf.G_CONSTS.starId )
+    {
+      initStar( &bodyComp, id ); // Setting sol's bodyComp variables
+    }
+    else
+    {
+      initStellarBody( &orbitComp, &bodyComp, id ); // Setting bodyType-specific orbitComp and bodyComp variables
 
-      if( orbitComp.orbitedID != gdf.G_CONSTS.starId )
+      const orbitedId = gbl.ORBITANCE.getOrbitedId( id );
+             startPos = orbitComp.getRelPos();
+
+      if( orbitedId != gdf.G_CONSTS.starId )
       {
-        if( stores.trans.get( orbitComp.orbitedID ))| trans |
+        if( stores.trans.get( orbitedId ))| trans |
         {
           startPos = startPos.add( trans.pos.toVec2() );
         }
         else
         {
-          def.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitComp.orbitedID });
+          def.log( .ERROR, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
         }
       }
 
-      _ = stores.orbit.add( id, orbitComp ); // Adding this here because SOL doesn't need one
+      _ = stores.orbit.add( id, orbitComp ); // SOL does not have an orbit comp
     }
 
 
@@ -244,7 +221,7 @@ pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore 
     if( orbiter == null ){ continue; }
 
     const orbiterTrans = transStore.get( id );
-    const orbitedTrans = transStore.get( orbiter.?.orbitedID );
+    const orbitedTrans = transStore.get( gbl.ORBITANCE.getOrbitedId( id ) );
 
     if( orbiterTrans != null and orbitedTrans != null )
     {
@@ -322,7 +299,7 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
     const orbiterBody  = bodyStore.get(  id );
     const orbiterTrans = transStore.get( id );
 
-    const orbitedTrans = transStore.get( orbiter.?.orbitedID );
+    const orbitedTrans = transStore.get( gbl.ORBITANCE.getOrbitedId( id ) );
 
     if( orbiterTrans != null and orbitedTrans != null and orbiterBody != null )
     {

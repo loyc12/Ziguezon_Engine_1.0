@@ -16,8 +16,8 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
   pub inline fn getStoreType() type { return def.componentStoreFactory( @This() ); }
 
-  name     : BodyName = .CUSTOM,
-  bodyType : BodyType = .PLANET, // TODO : auto-assign type based on mass instead ? ( and orbital radius ? )
+  name     : BodyName = .DEBUGY, // NOTE : Should be overwritten. If more than one DEBUGY exists, something went wrong
+  bodyType : BodyType = .PLANET, // TODO : infer type based on mass ( and orbitance ) instead ?
 
   // NOTE : defaults to earth values
 

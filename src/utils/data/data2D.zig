@@ -19,6 +19,8 @@ pub fn GenDataGrid( comptime DataType : type, comptime RowEnum : type, comptime 
     // NOTE : Row can be easily sliced, Columns are harder to iterate over without original struct
     data : [ rowLen ][ colLen ]DataType = undefined,
 
+    isInit : bool = false,
+
 
     pub fn initFrom( newData : [ rowLen ][ colLen ]DataType ) SelfType
     {

@@ -17,7 +17,6 @@ pub const OrbitStore  = orb.OrbitComp.getStoreType();
 pub const BodyStore   = bdy.BodyComp.getStoreType();
 
 
-
 // ================ UNITS AND CONSTANTS ================
 
 // ======== Astronomical / geological units ========
@@ -38,6 +37,7 @@ pub const BodyStore   = bdy.BodyComp.getStoreType();
 
 // NOTE : 1 kg of FOOD  represents about 1 kcal
 // NOTE : 1 kg of WATER represents exactly 1_000 L
+
 
 // ================================ ENGINE & GAME SETTINGS ================================
 
@@ -63,11 +63,11 @@ pub const GameConsts = struct
   foreColour : def.Colour = .dCrimson,
   textColour : def.Colour = .lGreen,
 
-  bodyCount   : usize = BodyName.count - 1, // Skipping .CUSTOM
-  maxEntityId : usize = BodyName.count - 1, // Skipping .CUSTOM
+  bodyCount   : usize        = BodyName.count,
+  maxEntityId : def.EntityId = BodyName.count,
 
-  starId : def.EntityId = 1, // SUN
-  homeId : def.EntityId = 5, // EARTH
+  starId : def.EntityId = idFromName( .SOL   ), // SUN
+  homeId : def.EntityId = idFromName( .TERRA ), // EARTH
 };
 
 pub const GameFlags = struct
@@ -84,7 +84,6 @@ pub const stlr_d = @import( "data/stellarData.zig"    );
 pub const ecnm_d = @import( "data/economyData.zig"    );
 pub const bldr_d = @import( "data/builderData.zig"    );
 pub const gvmt_d = @import( "data/governmentData.zig" );
-pub const trde_d = @import( "data/tradeData.zig"      );
 
 pub const EconLoc           = ecnm_d.EconLoc;
 pub const BodyType          = stlr_d.StellarBodyType;
@@ -94,10 +93,16 @@ pub const StellarMetricEnum = stlr_d.StellarMetricEnum;
 pub const Construct         = bldr_d.Construct;
 pub const Requester         = bldr_d.Requester;
 
+pub const rbtc_d = @import( "data/orbitanceData.zig"  );
+pub const trde_d = @import( "data/tradeData.zig"      );
+
+pub const idFromName        = rbtc_d.idFromName;
+pub const nameFromId        = rbtc_d.nameFromId;
 
 pub const BodyEconPair      = trde_d.BodyEconPair;
 pub const toBodyEconPair    = trde_d.toBodyEconPair;
 pub const fromBodyEconPair  = trde_d.fromBodyEconPair;
+
 pub const OrbitalData       = trde_d.OrbitalData;
 pub const TravelData        = trde_d.TravelData;
 
