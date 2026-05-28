@@ -46,7 +46,7 @@ pub inline fn debugLogTravelCosts( departure : gdf.BodyEconPair, arrival : gdf.B
 
 pub inline fn debugLogTravelCostsList( body : gdf.BodyName, loc : gdf.EconLoc ) void
 {
-  def.qlog( .INFO, 0, @src(), "& Logging travel metrics ( from Earth to X ) : km/s | days | dE\n" );
+  def.qlog( .INFO, 0, @src(), "& Logging travel metrics :\n" );
 
   const departure = gdf.toBodyEconPair( body, loc );
 

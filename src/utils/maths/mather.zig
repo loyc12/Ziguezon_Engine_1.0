@@ -36,7 +36,7 @@ pub const gcd   = std.math.gcd;
 
 // Customs
 
-pub fn sign( val : anytype ) @TypeOf( val )
+pub inline fn sign( val : anytype ) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val )))
   {
@@ -56,7 +56,7 @@ pub fn sign( val : anytype ) @TypeOf( val )
   }
 }
 
-pub fn inv1( val : anytype ) f64
+pub inline fn inv1( val : anytype ) f64
 {
   switch( @typeInfo( @TypeOf( val )))
   {
@@ -75,7 +75,7 @@ pub fn inv1( val : anytype ) f64
   }
 }
 
-pub fn pow2( val : anytype ) @TypeOf( val )
+pub inline fn pow2( val : anytype ) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val )))
   {
@@ -98,10 +98,12 @@ pub fn pow2( val : anytype ) @TypeOf( val )
   }
 }
 
-/// Maps any value to the range [ 0, 1 ]
-/// Negatives val = below 0.5, Positives val = above 0.5
-/// Small k = gentle slope, large k = steep curve
-pub fn sigmoid( val : anytype, k : @TypeOf( val )) @TypeOf( val )
+/// Saturating logistic response curve.
+/// Input range  : any finite float.
+/// Output range : [ 0, 1 ].
+/// Anchors      : 0 -> 0.5.
+/// Shape        : k controls steepness around 0.
+pub inline fn sigmoid( val : anytype, k : @TypeOf( val )) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val )))
   {
@@ -109,11 +111,29 @@ pub fn sigmoid( val : anytype, k : @TypeOf( val )) @TypeOf( val )
     {
       return 1.0 / ( 1.0 + @exp( -val * k ));
     },
-    else => @compileError( "med3() only supports Int and Float types" ),
+    else => @compileError( "sigmoid() only supports Float types" ),
   }
 }
 
-pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
+/// Saturating rational response curve.
+/// Input range  : non-negative float.
+/// Output range : [ 0, 1 ).
+/// Anchors      : 0 -> 0, 1 -> 0.5.
+/// Shape        : high values flatten toward 1.
+pub inline fn softCap( val : anytype ) @TypeOf( val )
+{
+  switch( @typeInfo( @TypeOf( val )))
+  {
+    .float, .comptime_float =>
+    {
+      const x = @max( val, 0.0 );
+      return x / ( 1.0 + x );
+    },
+    else => @compileError( "softCap() only supports Float types" ),
+  }
+}
+
+pub inline fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 {
   switch( @typeInfo( @TypeOf( a )))
   {
@@ -138,7 +158,7 @@ pub fn med3( a : anytype, b : @TypeOf( a ), c : @TypeOf( a )) @TypeOf( a )
 
 
 // Equivalent to modulo operation that wraps the value around the range [ min, max - EPS ] instead of [ 0, range - EPS ]
-pub fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
+pub inline fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val )))
   {
@@ -157,7 +177,7 @@ pub fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
   }
 }
 
-pub fn norm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
+pub inline fn norm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val ))) // Normalizes a value to the range [ 0, 1 ]
   {
@@ -165,7 +185,7 @@ pub fn norm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf(
     else => @compileError( "norm() only supports Float types" ),
   }
 }
-pub fn denorm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
+pub inline fn denorm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val ))) // Denormalizes a value from the range [ 0, 1 ]
   {
@@ -173,7 +193,7 @@ pub fn denorm( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @TypeO
     else => @compileError( "denorm() only supports Float types" ),
   }
 }
-pub fn renorm( val : anytype, srcMin : @TypeOf( val ), srcMax : @TypeOf( val ), dstMin : @TypeOf( val ), dstMax : @TypeOf( val )) @TypeOf( val )
+pub inline fn renorm( val : anytype, srcMin : @TypeOf( val ), srcMax : @TypeOf( val ), dstMin : @TypeOf( val ), dstMax : @TypeOf( val )) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val ))) // Renormalizes a value from a src range to a dst range
   {

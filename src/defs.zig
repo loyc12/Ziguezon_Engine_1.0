@@ -334,6 +334,7 @@ pub const sign = mth_u.sign;
 pub const pow2 = mth_u.pow2;
 
 pub const sigmoid = mth_u.sigmoid;
+pub const softCap = mth_u.softCap;
 
 pub const med3    = mth_u.med3;
 pub const wrap    = mth_u.wrap;
