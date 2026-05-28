@@ -69,15 +69,15 @@ For implementation strategy and ordering, see the [roadmaps](roadmaps/) folder. 
 * `[ x ]` Velocity-vector overlay (absolute + relative), periapsis / apoapsis markers, Hill / Roche disks
 * `[ x ]` Body rendering with min display size per body type, planet-above-moon ordering
 
-## Inter-Econ Transfer Table
+## Inter-Econ Transfer Estimator
 
 * `[ x ]` `BodyEconPair` paired enum (BodyName × EconLoc)
 * `[ x ]` `OrbitalData` per (body, loc): `orbitLvl = 1/√r`, `angPos`, `angVel`, `radVel`
-* `[ x ]` `TravelData`: `deltaV`, `duration`
+* `[ x ]` `TravelData`: `deltaE`, `deltaV`, `deltaT`
 * `[ x ]` Per-tick `econOrbitalData` snapshot via `updateOrbitalDataEntry` (also updates per-econ sunshine)
-* `[ x ]` `econTravelTable` full pair-to-pair Hohmann radial + drift-phase combined transfer estimate
-* `[ x ]` `updateTravelTable()` called every econ tick
-* `[   ]` Trade matching pass / cargo objects on top of the table (Tier 3 roadmap — table is ready and waiting)
+* `[ x ]` Per-body transfer cache refreshed after stellar init and orbit movement
+* `[ x ]` `travelSolver.estimateTransfer()` on-demand hierarchical transfer estimate
+* `[   ]` Trade matching pass / cargo objects on top of the estimator (Tier 3 roadmap)
 
 ## Star Shine
 
@@ -294,7 +294,7 @@ Per-tick phase order is the spine. Phases marked `[ x ]` are wired and ticking; 
 # Trade & Commerce
 
 * `[ x ]` `EconOrbitalData` per (BodyName, EconLoc) updated every tick
-* `[ x ]` `EconTravelTable` full pair-to-pair deltaV / duration table (radial + phase combined)
+* `[ x ]` On-demand travel estimate via `travelSolver.estimateTransfer()`
 * `[ . ]` `AgentGroupEnum.COM` commented out (placeholder)
 * `[ . ]` `AgentFlowEnum.BLD_PROD` declared for inverse refund lane (no consumers yet)
 * `[ . ]` `ResStockEnum.IMPORT` / `.EXPORT` commented out
@@ -339,4 +339,3 @@ Per-tick phase order is the spine. Phases marked `[ x ]` are wired and ticking; 
 * `[ x ]` Camera follow toggle indicator
 * `[ ~ ]` Logger families: `logResMetrics`, `logIndMetrics`, `logInfMetrics`, `logPopMetrics`, `logSpecialMetrics`, `logTravelMetrics_TERRA` — formatting being polished
 * `[   ]` In-game UI for economy state (ResStateData / PopStateData / etc.) — currently log-only
-

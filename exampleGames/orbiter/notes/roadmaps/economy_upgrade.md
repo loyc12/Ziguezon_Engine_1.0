@@ -4,7 +4,7 @@
 
 * Replace hardcoded debug autobuild with agent-driven decisions
 * Add a Government layer with taxation, subsidies, and policy levers
-* Add inter-economy trade riding on the existing travel table
+* Add inter-economy trade riding on the on-demand travel estimator
 * Streamline `econSolver` and `econBuilder`
 
 Tiers should be done in order. Items inside a tier can be tackled in any order, though the listed order minimises rework. Within a tier, items are roughly small-to-large when no dependency forces an ordering.
@@ -168,7 +168,7 @@ Treasury, taxation, subsidies, and policy levers to validate the loop.
 
 # Tier 3 — Inter-Economy Trade
 
-Hooks into `ECON_TRAVEL_TABLE` which `travelSolver` already populates with full per-tick pair-to-pair deltaV / duration data. The spatial layer is live ; this tier builds the matching / cargo / finance / vessel layers on top of it.
+Hooks into `travelSolver.estimateTransfer()` for on-demand deltaV / deltaT / deltaE estimates. The spatial layer is live ; this tier builds the matching / cargo / finance / vessel layers on top of it.
 
 ## 3.1 Trade signals
 

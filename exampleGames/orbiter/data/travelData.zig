@@ -94,10 +94,6 @@ pub const TravelData = struct // NOTE : invalid if deltaV < EPS
 // Most recent positional data for any econ
 pub var econOrbitalData : def.GenDataLine( OrbitalData, BodyEconPair ) = .{};
 
-// Most recent travel data betwix any two econs     | DEPARTURE   | ARRIVAL
-pub var econTravelTable : def.GenDataGrid( TravelData, BodyEconPair, BodyEconPair ) = .{};
-
-
 /// Also updates econ's sunshine value
 pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gdf.EconLoc, bodyPos : Vec2, bodyVel : Vec2, starPos : Vec2 ) void
 {

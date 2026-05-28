@@ -277,9 +277,6 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
       }
     }
 
-    // Update travel table from the fresh orbital data generated in tickAllEcons()
-  //gdf.trfSlvr.updateTravelTable(); // NOTE : deprecated : to be replaced by orbital energy sytem
-
     def.log( .DEBUG, 0, @src(), "Ticked {d} distinct economies", .{ econCount });
   }
   def.log( .DEBUG, 0, @src(), "==== Ticked global economy {d} time(s) ====", .{ stepCount });

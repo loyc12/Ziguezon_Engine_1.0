@@ -249,7 +249,6 @@ pub const SpeedFactor = enum( i8 )
 
 pub const STLR_DATA         = &stlr_d.stellarData;
 pub const ECON_ORBIT_DATA   = &trde_d.econOrbitalData;
-pub const ECON_TRAVEL_TABLE = &trde_d.econTravelTable;
 
 
     const powr_d = @import( "data/powerData.zig"          );
@@ -313,5 +312,4 @@ pub fn debugCheckDataInit() bool
 
   return true;
 }
-
 
