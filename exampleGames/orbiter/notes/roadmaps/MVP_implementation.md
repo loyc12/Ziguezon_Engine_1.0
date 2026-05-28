@@ -2,6 +2,15 @@
 
 The MVP is a *gameplay-loop* milestone : the scope-construction targets (bodies, resources, locations) have been overshot in code, but the systems that turn scope into gameplay (trade execution, gov levers, autonomy pressure, player-facing policy) are still pending. The MVP is reached when the player can meaningfully steer at least a pair of economies towards survival in a non-trivial manner.
 
+## Legend
+
+| Mark  | Meaning     |
+| ----- | ----------- |
+| `[ ]` | untouched   |
+| `[.]` | scaffolded  |
+| `[~]` | in progress |
+| `[x]` | finished    |
+
 ## Objective
 
 Create a small but complete gameplay loop demonstrating:

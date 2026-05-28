@@ -1,316 +1,321 @@
-# Economy Upgrade — Roadmap
+# Economy Upgrade — Remaining Roadmap
 
-## Goals
+This roadmap starts from the current implementation, not the original design draft.
 
-* Replace hardcoded debug autobuild with agent-driven decisions
-* Add a Government layer with taxation, subsidies, and policy levers
-* Add inter-economy trade riding on the on-demand travel estimator
-* Streamline `econSolver` and `econBuilder`
+Current baseline:
 
-Tiers should be done in order. Items inside a tier can be tackled in any order, though the listed order minimises rework. Within a tier, items are roughly small-to-large when no dependency forces an ordering.
+* `Economy` owns `govState : GovMonetaryData` and optional `buildQueue : ?BuildQueue`.
+* `BuildQueue` and `BuildEntry` exist in `econBuilder.zig` / `builderData.zig`.
+* Queue entries currently use `Construct`, `Requester`, `EntryTypeEnum` (`CNSTR`, `RECYC`, `DESTR`) and `EntryModeEnum` (`ADD_TO`, `SET_TO`, `RAISE_TO`, `LOWER_TO`, `CANCEL`).
+* `BuildEntry` currently tracks `stashedFunds`, `stashedRes`, `stashedCnst`, and `unitCount`.
+* `InfMetricEnum.CNST_COST` and `IndMetricEnum.CNST_COST` already represent construction effort.
+* `InfResMetricEnum.BUILD` / `.MAINT` and `IndResMetricEnum.BUILD` / `.MAINT` already exist, but current data and solver paths are still effectively PART-only.
+* `debugAutoBuild()` still drives infrastructure and industry growth / shrink decisions.
+* `tickLocalGov()`, `updateInfFinances()`, `applyInflation()`, `calcInfMaxFlow()`, `calcInfResAccess()`, `updateInfUsage()` in the solver, `updateInfCount()`, and `updateIndCount()` are still stubs or inactive.
 
----
+## Review Flags
 
-# Tier 0 — Pre-Work
+These are implementation-plan contradictions or suspicious divergences worth reviewing before deeper work:
 
-## 0.1 Refactor current logic organisation (large, parallel-friendly)
-
-* Migrate "function-as-lookup" patterns to data arrays (`ResType.getInfStore`, `PopType.getInfStore`, `IndType.getPowerSrc`)
-* Standardise `DataMatrix` vs `Array` usage where it has drifted (mirrored in [immediate_todo.md](../immediate_todo.md) Nitpicks)
-* Can run in parallel with later tiers
-
----
-
-# Tier 1 — Agent Refactor
-
-Make industries and infrastructure responsible for their own growth / decay / finances decisions, instead of `debugAutoBuild` on `Economy`.
-
-## 1.1 Construction & maintenance system rework (the big one)
-
-Splits into two stages. Stage A is structural (prerequisite for everything); Stage B is the gameplay-meaningful lifecycle layer. Land Stage A and validate before starting Stage B.
-
-### Stage A : structural
-
-* Split CONS phase per purpose: OPR / MNT / BLD loops over all relevant agents (the four lanes are already in `AgentFlowEnum` and written inside per-agent loops ; what's missing is the file-level split into `calcOprResCons` / `calcMntResCons` / `calcBldResCons`). MAX FLOW phase stays unified
-* Generalise MNT and BLD cost handling from PART-only to all `ResType`: `calcMntMaxFlow` / `calcMntResAccess` / `calcBldMaxFlow` / `calcBldResAccess` all currently hardcode `.PART`; the per-construct metric tables (`indResMetricsTable` / `infResMetricsTable`) already have per-resource MAINT / BUILD columns ready to populate. Loop over `ResType`, drop the `.PART` hardcodings, then tune in non-PART costs (ASSEMBLY's WORK + POWER, multi-res maintenance for selected constructs)
-* MNT scaling: `ACT_TRGT` (last tick) → `ACT_LVL` (this tick, computed after OPR phase) so MNT cost reflects realised activity
-* BuildQueue: per-requester sub-queues replace single fixed array, keyed on `AgentEnum` (GOV, IND, INF, ...)
-* Money-first requester API: agents interact with the queue only through SAVINGS contributions ("I authorise X SAVINGS/tick to this entry"). Queue handles material procurement at current prices internally. Mirrors real-world construction contracting (pay the firm, they procure); single API contact point for agents, decouples agent decisions from material market state
-* BuildEntry data model (five counters with explicit roles):
-  * `unitsRemaining : u64` — units left to build (decrements on completion)
-  * `unitsReserved  : u64` — units whose materials have been validated (bought + committed to specific units) and await effort. Can grow large at scale: a 1B-pop econ may have thousands reserved at once on a single entry
-  * `fundingPool    : f64` — accumulated money committed by requester, debited immediately from owner SAVINGS. Spent down eagerly each tick by procurement at then-current market prices
-  * `reservedRes    : ResStockData` — sub-unit fractional remainder from procurement waiting to combine with future purchases. Naturally bounded < 1 unit's bundle by eager validation; not a "warehouse" of materials but the running work-in-progress on the next unit's worth
-  * `effortBuffered : f64` — continuous effort progress on the current in-progress unit, range `[ 0, BLD_EFFORT-per-unit ]`
-* True queue structure replaces fixed-array swap-remove
-* Per-tick processing has four passes:
-  1. **Funding** : requester contributes from SAVINGS to `fundingPool` (debited immediately from owner). Per-agent SAVINGS budget caps total commitment per tick across all of that agent's entries. `fundingPool` can accumulate across many units' worth — requester is making a multi-tick commitment, not buying materials directly
-  2. **Procurement (eager)** : queue spends `fundingPool` at current market prices to buy as many units' worth of materials as money + global stock + per-tick price allow. Per-resource buying is proportional via a "cash access" rate — same Leontief shape as industrial consumption: if available `fundingPool` covers 70% of N units' bundle at current prices, buy 70% of each input across those N units' worth. Materials deducted from global pool (same accounting path as normal IND consumption). Validation is immediate: while `reservedRes >= one full unit bundle`, subtract and `unitsReserved += 1`. Sub-unit remainder stays in `reservedRes` for next tick. At scale this validates many units per tick; `reservedRes` only ever holds the fractional leftover. Price exposure is per-tick: most of an order is procured in the first few ticks before market prices have time to react, effectively price-locked-by-speed
-  3. **Effort allocation** : ASSEMBLY budget distributed across entries; entries with `unitsReserved == 0` are skipped (no effort wasted on starved entries — budget redirects to next eligible)
-  4. **Effort consumption** : eligible entries add allocation to `effortBuffered`; when it crosses `BLD_EFFORT`, subtract, `unitsReserved -= 1`, `unitsRemaining -= 1`, one unit completes
-* On order completion (`unitsRemaining` hits 0): refund any remaining `fundingPool` back to owner SAVINGS (handles cost underruns from mid-order price drops). Cancellation behaves identically per Stage B
-* Per-unit granularity holds: materials and built units are integer; only `fundingPool` and `effortBuffered` are fractional. No "half-built unit" physical state; no sub-unit material reservation
-* Per-agent SAVINGS budget per tick replaces single `buildBudget` on Economy (the budget is in money, not materials)
-* GOV-priority allocation: GOV entries first, others FIFO from remaining budget (simple policy; threshold-allocator generalisation deferred to suggestions)
-* Within-requester ordering: DEMOLISH entries run before BUILD entries by default. Demolitions refund materials that pending BUILDs can then consume; natural data dependency. Agents can override per-entry if expansion-confident (rare)
-* Explicit queue API: `addEntry` / `cancelEntry` as distinct operations (today's `addEntry` exposes only `APPEND` / `REPLACE` modes with no real cancellation path). `cancelEntry` handles both BUILD and DEMOLISH cancellation properly
-* ASSEMBLY pre-resolve: its CAPACITY denotes effort, `OP_CONS` (WORK + POWER) resolved before BLD access; realised capacity scales by ASSEMBLY's own input access (prevents over-consumption)
-* `BLD_EFFORT` scalar on Inf/Ind metric enums: decouples "effort to build" from "resource cost to build"
-* `tryBuild` loses any `consumeParts` logic; queue handles all resource deduction via per-agent `FIN_CONS`
-
-### Stage B : lifecycle & feedback
-
-* Per-construct `.MNT_IDLE_FACTOR` migrated from solver constant to inf/indResMetric
-* New state field `.MNT_BUFFER` on Inf/Ind: single field drives delay, throttle, and decay:
-  * full MNT pay → buffer recovers toward MAX
-  * underpayment → buffer drains by `(1 - mntAccess) * mntDemand`
-  * `buffer >= THRESHOLD` : no penalty
-  * `buffer <  THRESHOLD` : next-tick activity capped by `buffer/THRESHOLD`, attrition rate scales with deficit
-
-  `BUFFER_MAX`, `THRESHOLD`, `RECOVERY_RATE`, `DECAY_SCALE` all per-construct metrics for differentiation (HOUSING tolerates neglect longer than FOUNDRY, etc)
-* Per-construct refund metrics:
-  * `.REFUND_RATIO` : fraction of build cost returned via `.BLD_PROD` lane on per-unit DEMOLISH completion (routed to owner SAVINGS)
-  * `.RFND_COST`    : small resource / effort cost of dismantling (separate from the original `BLD_COST` so demolition can be cheaper or more expensive than construction; `.DEMOLISH_EFFORT` analogous scalar for ASSEMBLY-cap accounting)
-* Mirrored construction / destruction queue: BuildEntry gains a `kind` field. Two queued forms + one immediate:
-  * **BUILD** (queued) : consumes effort + resources, produces a unit
-  * **DEMOLISH** (queued) : consumes effort + small resource cost (`.RFND_COST` per construct), refunds via `.BLD_PROD` at per-unit completion (`.REFUND_RATIO` routed to owner SAVINGS)
-  * **ABANDON** (immediate) : no effort, no refund, no resource cost. Bypasses the queue. Same code path as insolvency / disaster / full-degradation collapse (same outcome regardless of trigger source); the only difference is who decided
-* ABANDON is the escape valve for collapsed economies: without ASSEMBLY, queued DEMOLISH stalls forever; ABANDON lets owners shed unmaintainable stock at the cost of forfeiting the refund
-* When `.MNT_BUFFER` hits zero and stays there, attrition decays COUNT to zero: this is auto-ABANDON via degradation. Agents that want to recoup material should queue DEMOLISH while `.MNT_BUFFER` still permits it; waiting too long forfeits the refund
-* Cancellation semantics (per `cancelEntry` from Stage A):
-  * **Cancel BUILD** : refund unspent `fundingPool` back to owner SAVINGS; sell any `reservedRes` back to the market at current price, deposit proceeds into owner SAVINGS; per-unit progress that completed stays as real buildings; sub-unit effort progress is lost (no refund for partially-applied work)
-  * **Cancel DEMOLISH** : finish demolishing the current in-flight unit (round up to next integer so no half-demolished state lingers), sell its refund proceeds at current price into owner SAVINGS, then stop. Subsequent entries vanish
-
-## 1.2 Financial integration (prerequisite for 1.3 / 1.4 self-build)
-
-* `updateInfFinances` : implement (mirror `updateIndFinances` structure)
-* Per-construct `.OWNERSHIP_MODEL` metric (PUBLIC | PRIVATE):
-  * PUBLIC infs receive GOV subsidies for upkeep
-  * PRIVATE infs collect rent / fees from POP or other agents
-* POP rent payment: POP expense += HOUSING rent; INF revenue += same (drop-in slot exists at the `// TODO : add housing costs` line in `updatePopFinances`)
-* Cross-agent settlement step in FINANCES phase: routes payments between SAVINGS pools (POP → INF, INF → POP, IND → tax pool, etc)
-* Inheritance & liquidation hooks (were Tier 2.2):
-  * When a pop type goes extinct: transfer remaining SAVINGS to Treasury
-  * When an industry goes insolvent: transfer remaining SAVINGS, scrap buildings via immediate-destroy path (bypasses queue, no refund; material scrap becomes PARTs in econ stock)
-* POP negative savings: log warning placeholder; real handling in Tier 4
-
-## 1.3 Industry self-build / self-shrink
-
-* For each `IndType`: decide each tick whether to enqueue BUILD, enqueue DEMOLISH, or do nothing, based on `(SAVINGS, MARGIN, ACT_TRGT, workAccess, projected MNT headroom)`
-* Refactor the `AUTO_BUILD_*` constants currently in `Economy.debugAutoBuild` into per-agent variables
-* Funding the entry costs SAVINGS over time at then-current material prices (queue procures from market per 1.1 Stage A); effort cap throttles realisation, not affordability
-* DEMOLISH refunds via `.BLD_PROD` (from 1.1 Stage B) → credits SAVINGS
-* Agents may cancel pending build orders if SAVINGS / MARGIN deteriorate (`cancelEntry` frees locked SAVINGS and unsold materials back to owner)
-* **Design principle** : agents check projected MNT headroom before queueing BUILDs; "don't build more than you can maintain" (solver exposes helper: `agent.getConstructionHeadroom() = SAVINGS - projected MNT cost`)
-
-## 1.4 Infrastructure self-build / self-shrink
-
-* Same shape as 1.3; routing depends on `.OWNERSHIP_MODEL` (from 1.2):
-  * PRIVATE infs decide via their own SAVINGS / MARGIN
-  * PUBLIC infs decide via gov subsidies / SPEND_BLD (cross-ref Tier 2)
-
-## 1.5 Population spending dynamics
-
-* POP expenses gain housing rent (→ INF SAVINGS if PRIVATE, → Treasury as TAX_LND if PUBLIC)
-* Births / deaths stay welfare-driven; SAVINGS gates migration (Tier 4)
-
-## 1.6 Retire debugAutoBuild
-
-* Once 1.3 + 1.4 (+ 1.5) are validated, deprecate `debugAutoBuild` (the `AUTO_BUILD_*` constants already live in per-agent fields per 1.3)
+* `BuildQueue.tryAddEntry()` checks `self.hasMatchingEntry(c, q)` inside a loop but then mutates the current loop entry `e`. That can update the wrong entry when a matching entry exists at a different index. It should compare against `e` directly.
+* `BuildQueue.tryFundEntry()` calls `e.matchesWith(...)`, but `BuildEntry` exposes `matchesWithPart()` and `matchesWithFull()`. This appears latent because the function is not currently compile-checked through an active call path.
+* `compactEntries()` assigns `dst = src`, which only reassigns the local pointer rather than copying the entry value. If triggered, compaction likely does not do what the name promises.
+* `tickQueue()` increments `idx` before calling `dumpEntryByIdx(econ, idx)`, so a closed entry may dump the following slot.
+* `BuildEntry.getTotalCashCost()` calls `getUnitResCost(econ)` instead of `getUnitCashCost(econ)`.
+* Several `BuildQueue` total helpers accumulate `f64` values into `u64` locals. If these helpers become active, they should be corrected first.
+* `loadIndustryData()` appears to write construction effort values to `.AREA_COST` instead of `.CNST_COST` in the "BUILD COST" section.
+* Current `RECYC` semantics partly cover the old DEMOLISH design, but names and behavior do not match: `RECYC` refunds resources by using negative `BUILD` cost, `DESTR` is free removal, and neither currently routes refund value through `.BLD_PROD` or requester savings cleanly.
+* `BuildEntry.tryBuyRes()` splits `stashedFunds` equally across resource types and never subtracts spent funds. This conflicts with the intended money-first queue accounting.
 
 ---
 
-# Tier 2 — Government
+# Tier 0 — Hygiene Before Expanding Behavior
 
-Treasury, taxation, subsidies, and policy levers to validate the loop.
+## 0.1 Fix latent builder correctness issues
 
-> The data layer is already in place : `governmentData.zig` defines `GovMonetaryData` (all SAVINGS / TAX_xxx / SUB_xxx / GRT_xxx / SPEND_BLD lanes), `TaxGroupEnum`, `TaxTypeEnum`, and five per-target rate grids. `Economy.localGov` carries an instance and `tickLocalGov` is a stub. Tier 2 work is now writing the solver passes that consume that schema, not designing it.
+Do before relying on `tryFundEntry()`, cancellation, or long-lived queues.
 
-## 2.1 Tax pass (per tick, after `updateIndFinances`)
+* Fix entry matching in `BuildQueue.tryAddEntry()`.
+* Replace the nonexistent `matchesWith()` call with `matchesWithFull()`.
+* Fix `compactEntries()` to copy entry values and set `maxEntryCount` to the actual valid count.
+* Fix closed-entry dumping in `tickQueue()`.
+* Fix `getTotalCashCost()` and the total helper accumulator types.
+* Decide whether `BuildEntry.deactivate()` should return `void` or an actual `bool`.
 
-* `TAX_POP` : `pop profit * popTaxRate` → Treasury
-* `TAX_IND` : `ind profit * indTaxRate` → Treasury
-* `TAX_LND` : `areaUsed by IND/INF * landTaxRate` → Treasury
-* `TAX_BLD` : applied to both BUILD and DEMOLISH transactions (unified by the mirrored queue from 1.1 Stage B)
-* Update per-agent SAVINGS to subtract the tax
-* Initialise rate grid to gentle defaults (e.g. 5–15%)
+## 0.2 Finish data cleanup that blocks economy tuning
 
-## 2.2 Subsidy pass
+* Move `ResType.getInfStore()`, `PopType.getInfStore()`, and `IndType.getPowerSrc()` from switch lookups into data tables.
+* Fix industry `CNST_COST` initialization.
+* Add non-PART `BUILD` / `MAINT` data only after solver and builder code actually loops all `ResType`.
 
-* `SUB_POP` / `SUB_IND` offset MARGIN by a configured share of expense
-* `SUB_INF` funds PUBLIC infrastructure upkeep (ties into 1.2)
-* `GRT_POP` / `GRT_IND` inject SAVINGS to specific agents (triggered, not per-tick)
+---
 
-## 2.3 Government construction
+# Tier 1 — Construction, Maintenance, and Agent Autonomy
 
-* `SPEND_BLD` lets gov enqueue BuildEntry (`requester = .GOV`); uses same queue + GOV-priority allocator from 1.1 Stage A
-* Pays parts at PART price from Treasury SAVINGS
-* Default policy: maintain HOUSING / HABITAT / ASSEMBLY availability floor based on pop projections
+Goal: replace `debugAutoBuild()` with decisions made by the owning agents, using the existing queue and finance state.
 
-## 2.4 EconLoc activation
+## 1.1 Make construction accounting coherent
 
-* `isActive` flag and per-econ `softInit` / `hardInit` are in place ; `Economy.tryTick` already gates on `isActive`
-* Missing piece : trigger that flips `isActive` on once enough gov-built infrastructure exists in a location
-* Defines the "first colony on Mars" gameplay loop
+Keep current names unless there is a strong reason to rename:
 
-## 2.5 Government decay handling
+* `EntryTypeEnum.CNSTR` = queued construction.
+* `EntryTypeEnum.RECYC` = queued salvage / demolition with partial refund.
+* `EntryTypeEnum.DESTR` = immediate or queue-mediated abandon / destruction with no refund.
+* `unitCount` = remaining units.
+* `stashedFunds` = committed unspent money.
+* `stashedRes` = purchased / reserved resources.
+* `stashedCnst` = buffered construction effort.
 
-* When `deficit > some window`: raise tax rates or sell strategic reserves (Tier 4.4)
-* Stub for now; just clamp Treasury SAVINGS >= some debt floor and log a warning
+Required work:
 
-## 2.6 First player-facing policy lever
+* Make `tryGrantFunds()` debit the `Requester` savings when funds are accepted, not just add to `stashedFunds`.
+* Make `tryBuyRes()` spend down `stashedFunds` as resources are bought.
+* Replace equal-per-resource buying with proportional purchase against the remaining resource-cost bundle.
+* Keep `stashedRes` bounded to useful reserved work, or explicitly allow it to reserve multiple units and document that choice.
+* Ensure cancellation via `EntryModeEnum.CANCEL` refunds `stashedFunds` and sells `stashedRes` back to the economy at current `ResStateEnum.PRICE`.
+* Route construction resource consumption through one accounting path so solver `BLD_CONS` and queue purchases cannot double-count.
+* Keep `CNST_COST` as the effort scalar instead of adding a separate `BLD_EFFORT`.
 
-* One concrete lever (e.g. tax rate slider per `ResType`) wired end-to-end so the loop is provably interactive
-* Validates the data-grid format from `governmentData.zig`
-* Other levers ride the same plumbing
+## 1.2 Generalize maintenance and build flows beyond PART
+
+Current solver functions still hardcode `.PART`:
+
+* `calcMntMaxFlow()`
+* `calcMntResAccess()`
+* `calcBldMaxFlow()`
+* `calcBldResAccess()`
+
+Required work:
+
+* Loop over all `ResType`.
+* Use `InfResMetricEnum.MAINT` / `.BUILD` and `IndResMetricEnum.MAINT` / `.BUILD` directly.
+* Broadcast access values into `grpResFlowData`, `genResFlowData`, and per-agent flow data consistently.
+* Recompute `TOT_CONS` after all access values are known.
+* Add test or debug invariant coverage for multi-resource build and maintenance costs before tuning non-PART values.
+
+## 1.3 Resolve ASSEMBLY as real construction effort
+
+Current `BuildQueue.tickQueue()` uses `ASSEMBLY.CAPACITY * COUNT` directly.
+
+Required work:
+
+* Decide whether ASSEMBLY effort is constrained by ASSEMBLY operational inputs (`CONS` for WORK / POWER) before queue effort is granted.
+* If yes, activate solver-side infrastructure operation for ASSEMBLY before `tickQueue()`.
+* Keep `InfStateEnum.USE_LVL` for ASSEMBLY as the realized effort usage rate.
+* Ensure zero ASSEMBLY capacity does not divide by zero when setting `USE_LVL`.
+
+## 1.4 Add maintenance lifecycle feedback
+
+Required work:
+
+* Add per-construct maintenance idle factors instead of solver constants `INF_MAINT_IDLE_FACTOR` and `IND_MAINT_IDLE_FACTOR`.
+* Add maintenance buffer state for `InfStateEnum` and `IndStateEnum`.
+* Underpaid maintenance drains the buffer; sufficient maintenance restores it.
+* Low buffer throttles next-tick `USE_LVL` / `ACT_LVL`.
+* Zero or exhausted buffer causes attrition through the same destruction path used by `DESTR`.
+* Decide whether `RECYC` remains the refunding demolition path and `DESTR` remains abandon, or whether the enum names should be changed before this becomes player-facing.
+
+## 1.5 Implement infrastructure finances
+
+Required work:
+
+* Implement `updateInfFinances()` alongside `updateIndFinances()`.
+* Store `InfStateEnum.EXPENSE`, `.REVENUE`, and `.SAVINGS` from real operations and maintenance.
+* Add housing rent at the existing `// TODO : add housing costs` slot in `updatePopFinances()`.
+* Route rent to `InfStateEnum.SAVINGS` or `GovMonetaryEnum.TAX_LND`, depending on ownership policy once implemented.
+* Add settlement helpers for POP, INF, IND, and GOV savings transfers instead of hand-editing each state grid.
+
+## 1.6 Replace `debugAutoBuild()` with agent order passes
+
+Required work:
+
+* Move industry growth / shrink logic into `updateIndCount()` or a dedicated order function called from the growth phase.
+* Move infrastructure growth / shrink logic into `updateInfCount()` or a dedicated order function.
+* Base industry decisions on `SAVINGS`, `REVENUE`, `EXPENSE`, `ACT_TRGT`, work access, and projected maintenance headroom.
+* Base infrastructure decisions on `SAVINGS`, `REVENUE`, `EXPENSE`, `USE_LVL`, and projected maintenance headroom.
+* Convert the `AUTO_BUILD_*` constants into per-agent tuning constants or data metrics.
+* Retire `debugAutoBuild()` only after INF and IND can enqueue `CNSTR`, `RECYC`, and cancellation paths without debug intervention.
+
+---
+
+# Tier 2 — Government and Player Policy
+
+Goal: make `govState` affect the simulation through taxes, subsidies, public construction, and one player-facing lever.
+
+## 2.1 Wire government policy data into `Economy`
+
+Current `governmentData.zig` defines policy rate grids, but `Economy` only stores `govState`.
+
+Required work:
+
+* Decide where `GovGeneralPolicyRates`, `GovPerResPolicyRates`, `GovPerPopPolicyRates`, `GovPerInfPolicyRates`, and `GovPerIndPolicyRates` live at runtime.
+* Add initialization defaults for policy rates.
+* Implement `tickLocalGov()` or solver finance passes that read those rates.
+
+## 2.2 Tax pass
+
+Required work:
+
+* Apply `GovMonetaryEnum.TAX_POP`, `.TAX_INF`, and `.TAX_IND` to positive agent profit.
+* Apply `.TAX_LND` from `areaData.USED` or per-agent area use.
+* Apply `.TAX_BLD` to `CNSTR` and `RECYC` transactions once construction accounting is coherent.
+* Apply `.TAX_COM` after inter-economy trade exists.
+* Subtract taxes from agent savings and credit `GovMonetaryEnum.SAVINGS`.
+* Populate `TAX_TOT`, `TOT_REVENUE`, and `NET_DELTA`.
+
+## 2.3 Subsidies and grants
+
+Required work:
+
+* Apply `SUB_POP`, `SUB_INF`, and `SUB_IND` as expense offsets or direct reimbursements.
+* Apply `SUB_MNT` and `SUB_BLD` once maintenance and construction costs have stable accounting.
+* Apply `GRT_POP`, `GRT_INF`, and `GRT_IND` as direct savings injections for triggered policy actions.
+* Populate `SUB_TOT`, `GRT_TOT`, `TOT_EXPENSE`, and `NET_DELTA`.
+
+## 2.4 Government construction and activation
+
+Required work:
+
+* Let government enqueue `BuildEntry` with `Requester.gov`.
+* Spend from `GovMonetaryEnum.SPEND_BLD` / `.SAVINGS`.
+* Give government entries priority through the existing `BuildEntry.priority` field or a clear queue ordering rule.
+* Define the infrastructure threshold that turns a `softInit()` inactive economy into an active colony.
+* Keep `Economy.tryTick()` gated on `isActive`.
+
+## 2.5 First player-facing policy lever
+
+Required work:
+
+* Pick one narrow lever, preferably a tax or subsidy rate already represented by `governmentData.zig`.
+* Wire it from player input to policy storage to solver behavior.
+* Expose enough debug/UI state to verify that changing the lever changes agent savings and behavior.
 
 ---
 
 # Tier 3 — Inter-Economy Trade
 
-Hooks into `travelSolver.estimateTransfer()` for on-demand deltaV / deltaT / deltaE estimates. The spatial layer is live ; this tier builds the matching / cargo / finance / vessel layers on top of it.
+Goal: connect local economies through price, surplus, deficit, and travel cost.
 
-## 3.1 Trade signals
+## 3.1 Add trade signals
 
-* Each economy populates `EXP_CAP` / `IMP_DEM` / `pricePoint` per `ResType` at end of `tickEcon`
-* Surplus = `max(0, prod - cons - refill?)` → `EXP_CAP`
-* Deficit = `max(0, demand - prod)` → `IMP_DEM`
+Required work:
 
-## 3.2 Solar-system trade matching pass
+* Add per-economy export capacity and import demand storage, likely per `ResType`.
+* Compute export capacity from surplus stock / production after local needs.
+* Compute import demand from shortage, unmet demand, or refill target.
+* Store a usable price point from `ResStateEnum.PRICE`.
 
-* New top-level function (not per-economy) that runs between per-economy ticks
-* For each `ResType`: sort exporters by `(price + travelCost)` ascending, sort importers by `(price - travelCost)` descending
-* Greedy match; honour exporter `EXP_CAP` and importer `IMP_DEM`
-* Travel cost = `f(deltaV)` priced in PART or POWER
-* Generate Trade objects: `{ res, count, fromEcon, toEcon, arriveTick }`
+## 3.2 Add a top-level trade matching pass
 
-## 3.3 In-flight cargo
+Required work:
 
-* Departure economy locks resource on departure (prevents double-spend)
-* Trade objects sit in a global queue
-* Each tick: decrement timer and check for arrivals
-* Arrival economy adds resource to stock, credit exporter SAVINGS, debit importer SAVINGS
+* Run matching after local economy ticks and before arrivals are applied for the next tick.
+* Use `travelSolver` estimates for route cost / duration.
+* Match exporters and importers by price plus travel cost.
+* Generate trade records containing resource, amount, source economy, destination economy, and arrival tick.
 
-## 3.4 Tariffs (gov hook)
+## 3.3 Add in-flight cargo
 
-* `TAX_COM` applied to inbound trade by importing government
-* Deducted from importer at arrival; credited to Treasury
-* Embargoes = rate so high trade is uneconomical
+Required work:
 
-## 3.5 Vessel-mediated transport
+* Lock or remove exported resources at departure.
+* Hold shipments in a global queue.
+* On arrival, add resources to the destination economy.
+* Credit exporter savings and debit importer savings.
+* Apply `TAX_COM` to imports once government taxation is live.
 
-* Replace the abstract teleport in 3.3 with FREIGHTER vessels (`VesType` data model is already scaffolded — uncomment the `vesT` lane in `Construct` and add `vesState` analogous to `indState`)
-* Vessels are built, consume parts/work, have finite stocks, cargo and pop capacity
-* Stocks (Fuel, Food, Water) gate max transport duration
-* `EXP_CAP` becomes `(freighter cap * trips per tick)`
-* This is a big task; do only after 3.1–3.4 prove the design
+## 3.4 Replace abstract shipments with vessels later
+
+Required work after abstract trade works:
+
+* Re-enable `vesT` in `Construct`.
+* Add vessel state analogous to `indState`.
+* Give vessels construction cost, cargo capacity, stock capacity, and travel constraints.
+* Convert export capacity from abstract surplus to fleet throughput.
 
 ---
 
-# Tier 4 — Dynamics Layer
+# Tier 4 — Macro Dynamics
 
-These can be parallelized across work sessions.
+These are optional until the core autonomy / government / trade loop is stable.
 
-## 4.1 Economic expectations (smoothing)
+## 4.1 Inflation
 
-* Per `ResType`: exponential moving average of PRICE, DEMAND, SUPPLY
-* Industries decide builds off EMA values, not instantaneous ones
-* Reduces oscillation; enables business cycles
-* Note : `updateResPrices` already lerps via per-res `PRICE_DAMP`, and `updateIndFinances` already routes margin through a sigmoid for next-tick `ACT_TRGT` — both reduce oscillation today but neither is a true EMA on PRICE / DEMAND / SUPPLY ; design decision pending on whether to layer EMA on top or refactor those smoothers
+Required work:
 
-## 4.2 Inflation driven by monetary mass
+* Implement `Economy.applyInflation()`.
+* Base inflation on total money supply or a simpler configured rate.
+* Apply it consistently to POP, INF, IND, and GOV savings.
 
-* `inflationRate = f(total SAVINGS across all agents this tick vs. last tick)`
-* Apply to inf / pop / gov savings, not just industry
-* Replaces / augments the hardcoded flat 1.0
+## 4.2 Expectations and smoothing
 
-## 4.3 Welfare & employment based migration
+Current smoothing already exists through `PRICE_DAMP` and sigmoid-based `ACT_TRGT`.
 
-* Pops flow between economies along trade routes
-* Driven by `(welfare differential - travel cost)`
-* Capacity-limited by transport (3.5); treats pops as cargo with maintenance
+Required work:
+
+* Decide whether to add true EMA state for price / demand / supply.
+* If added, use EMA values for autonomous build decisions instead of instantaneous prices.
+
+## 4.3 Migration
+
+Required work:
+
+* Move population between active economies based on welfare, employment, savings, and travel cost.
+* Gate migration by trade / vessel capacity once transport exists.
 
 ## 4.4 Strategic reserves
 
-* Government stockpile per `ResType`, fed by tax-in-kind or `SPEND_RES`
-* Smooths shocks; released during shortages
-* Gives 2.5 (gov decay handling) something concrete to do
+Required work:
 
-## 4.5 Societal simulation
-
-* Add more complex society simulation aspects (Think "Democracy 3"-lite)
-* Would replace the singular access (welfare) metric
-* Look out for performance costs (could be as costly as economy itself)
-* May tick less or more often than economies (ex: once a month)
+* Add government resource stockpiles per `ResType`.
+* Let policy buy into or release from reserves.
+* Use reserves during shortages or fiscal stress.
 
 ---
 
-# Tier 5 — World Flavour
+# Tier 5 — World Depth
 
-Optional but high-impact for a "humanity in space" game feel.
+Do after the economic loop is playable.
 
 ## 5.1 Extraction depletion
 
-* Per-economy `deposit[res]`; mining yields scale by `sqrt(deposit)`
-* Bodies become finite; exploration matters
+* Add per-economy deposits.
+* Scale mining yields by remaining deposit quality.
+* Make exploration and site choice matter.
 
-## 5.2 Ecological depth
+## 5.2 Ecology depth
 
-The ecology system (development / pollution / dampened ecoFactor) already ticks. Two outstanding pieces :
+The ecology system already exists and ticks.
 
-* Re-enable the AGRONOMIC `ecoFactor` coupling currently commented out in `calcIndMaxFlow` (constants `AGRO_ECO_THRESHOLD` / `AGRO_FACTOR_FLOOR` / `AGRO_FACTOR_CONS_MUL` are already defined)
-* Add pollution-reducing infrastructure (`calcPollution` has a `// TODO : add pollution reducing inf` slot)
+Remaining work:
 
-## 5.3 Disasters / shocks
+* Re-enable the AGRONOMIC `ecoFactor` coupling in `calcIndMaxFlow()` after balance review.
+* Add pollution-reducing infrastructure to the ecology path.
 
-* Solar flares (pulse SUN_ACCESS), pandemics (pulse FATALITY), accidents (wipe COUNT for one Inf/Ind type)
-* Tests resilience; gives gov reserves (4.4) a job
+## 5.3 Pre-settlement automation
 
-## 5.4 Pre-settlement automated infrastructure
+Current `PROBE_MINE` is the first pattern.
 
-The `PROBE_MINE` pattern (no-WORK, no-MAINT, gated to non-atmo, auto-built by `debugAutoBuild`) already exists. Outstanding :
+Remaining work:
 
-* Generalise to ICE / REGOLITH / distinct base minerals — currently only ORE is produced this way
-* Add a closed-loop base-resources + sunlight pre-settlement economy so new EconLocs can bootstrap without pre-existing pops
-* Defines the "first robotic foothold on Mars" gameplay loop; complements 2.4 EconLoc activation
+* Add distinct base resources beyond generic ORE.
+* Support closed-loop robotic bootstrap economies before population arrives.
+* Tie activation into government construction / colony founding.
 
-## 5.5 Megaprojects
+## 5.4 Megaprojects and tech
 
-* Multi-economy capital projects (O'Neill cylinders, Dyson swarm increment, mass driver chain)
-* Aggregate non-GROUND BuildQueue across contributors; long lead times
-
-## 5.6 Tech tree
-
-* TECH `ResType` produced by R&D industry
-* Spending TECH unlocks new `InfType` / `IndType` / `VesType` or shifts metrics
-* Foundation for long-game progression
-* Pulls in STRUC `ResType` and the commented-out FLOP / DATA_CENTER / EDUCATION slots already foreshadowed in `resourceData.zig` and `infrastructureData.zig`
+* Add multi-economy construction projects only after trade and government funding work.
+* Add TECH / R&D only after the resource and policy loop is stable.
+* Revisit commented `FLOP`, `DATA_CENTER`, `EDUCATION`, and `STRUC` ideas at that point.
 
 ---
 
-# Suggested Additions (fit the game well)
+# Deferred Design Choices
 
-## Choose one:
+These are not implementation tasks yet:
 
-### Unified threshold-weighted allocator
-
-Generalises the current OPR > MNT > BLD priority cascade and the per-requester BLD allocation (from 1.1 Stage A) into one primitive: each consumer gets a guaranteed share (threshold) in pass 1, leftovers redistributed by ordering in pass 2. Player-tuneable thresholds become an additional GOV policy lever.
-
-Scope: Tier 2 (Government); design first, code later.
-
-### Free-market / highest-bidder allocation
-
-Alternative to the threshold allocator: agents bid SAVINGS for resources and construction capacity; market-clearing price emerges from supply and demand. More emergent, less player-controllable. Likely incompatible with strong gov policy levers, so pick-one-or-the-other if both are pursued.
-
----
-
-## Other ideas
-
-* **Per-construct `.OWNERSHIP_MODEL` granularity** — Beyond PUBLIC / PRIVATE: COMMERCIAL (rent-driven), MUNICIPAL (gov-subsidised but with usage fees), COOPERATIVE (pop-collective owned), etc. Only if PUBLIC / PRIVATE proves too coarse in 1.2.
-* **Black market** (trade that ignores tariffs at a price-and-risk premium)
-* **POP & WORK subtypes** (SCIENTIST, ENGINEER, COLONIST as `PopType` variants that gate which industries can run at full activity)
-* **Long-haul transit hazards** (cargo loss probability scaling with deltaV)
-* **Reputation / trust per polity-pair** that dampens trade volume independently of price
-* **Insurance / futures markets** at very late game (Tier 4 dynamics)
-* **Astrodynamics polish** (precise L1–L5 positions, body-type auto-classification)
-* **Multithreaded / GPU economy ticks** (very long-term, may never ship) — Each `Economy.tickEcon` is per-econ local with no cross-econ side effects; the natural parallelism is "N economies in parallel" rather than within a single solver. Prerequisites when picked up: per-thread / per-worker `EconSolver` instances (today's single global is not thread-safe — documented but currently fine because ticks are serial), trade matching remains a separate top-level pass between per-econ batches, and the metric cubes (`indResMetricsTable` etc.) are already contiguous `f64` arrays that would upload to GPU buffers cleanly. Defer until a profiler says we need it.
+* Whether to keep `CNSTR` / `RECYC` / `DESTR` names or rename them to player-facing terms.
+* Whether construction allocation should stay priority/FIFO or become a threshold-weighted policy allocator.
+* Whether resource allocation should remain physical-priority based or move toward highest-bidder market clearing.
+* Whether infrastructure ownership needs more than PUBLIC / PRIVATE.
+* Whether per-economy ticks need threading; the current global `EconSolver` instance is not thread-safe.
