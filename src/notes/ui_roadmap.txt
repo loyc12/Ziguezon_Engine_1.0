@@ -38,8 +38,8 @@ CONTEXT
        .OnRenderWorld   - during the camera-transformed render pass
      UI logic lives in these hooks.
 
-   - Drawer split: src/utils/render/drawerS.zig (screen-space) and
-     drawerW.zig (world-space). Stable. UI panels use sDraw; world-space
+   - Drawer split: src/utils/render/drawerScreen.zig (screen-space) and
+     drawerWorld.zig (world-space). Stable. UI panels use sDraw; world-space
      UI elements (floating labels, etc.) use wDraw.
 
    - Interfacer2D (src/utils/ui/interfacer.zig, moved from utils/render):

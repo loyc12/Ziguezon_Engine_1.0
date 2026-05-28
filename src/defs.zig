@@ -386,8 +386,8 @@ pub const Colour = col_u.Colour;
 
 // ======== DRAWERS ========
 
-pub const wDraw = @import( "utils/render/drawerW.zig" );
-pub const sDraw = @import( "utils/render/drawerS.zig" );
+pub const wDraw = @import( "utils/render/drawerWorld.zig" );
+pub const sDraw = @import( "utils/render/drawerScreen.zig" );
 
 
 // ======== SPRITEMAPS ========
