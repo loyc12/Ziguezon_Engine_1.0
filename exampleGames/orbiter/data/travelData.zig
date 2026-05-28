@@ -37,10 +37,10 @@ pub inline fn debugLogTravelCosts( departure : gdf.BodyEconPair, arrival : gdf.B
   const pair1 = gdf.fromBodyEconPair( departure );
   const pair2 = gdf.fromBodyEconPair( arrival );
 
-  const tData1 = gdf.trfSlvr.estimateTransfer( pair1.a.toNttId(), pair1.b, pair2.a.toNttId(), pair2.b );
+  const tData1 = gdf.trvlSlvr.estimateTransfer( pair1.a.toNttId(), pair1.b, pair2.a.toNttId(), pair2.b );
   def.log( .CONT, 0, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE", .{ @tagName( departure ), @tagName( arrival ), tData1.deltaV, tData1.deltaT, tData1.deltaE });
 
-  const tData2 = gdf.trfSlvr.estimateTransfer( pair2.a.toNttId(), pair2.b, pair1.a.toNttId(), pair1.b );
+  const tData2 = gdf.trvlSlvr.estimateTransfer( pair2.a.toNttId(), pair2.b, pair1.a.toNttId(), pair1.b );
   def.log( .CONT, 0, @src(), "{s} < {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE\n", .{ @tagName( departure ), @tagName( arrival ), tData2.deltaV, tData2.deltaT, tData2.deltaE });
 }
 

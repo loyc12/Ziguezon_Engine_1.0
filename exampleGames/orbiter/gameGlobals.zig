@@ -244,7 +244,7 @@ pub const SpeedFactor = enum( i8 )
 // ================ GAMEDATA MATRICES ================
 
     const stlr_d = @import( "data/stellarData.zig" );
-    const trde_d = @import( "data/tradeData.zig"   );
+    const trde_d = @import( "data/travelData.zig"   );
     const ecnm_d = @import( "data/economyData.zig" );
 
 pub const STLR_DATA         = &stlr_d.stellarData;

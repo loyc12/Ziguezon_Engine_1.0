@@ -168,7 +168,7 @@ Treasury, taxation, subsidies, and policy levers to validate the loop.
 
 # Tier 3 — Inter-Economy Trade
 
-Hooks into `ECON_TRAVEL_TABLE` which `transferSolver` already populates with full per-tick pair-to-pair deltaV / duration data. The spatial layer is live ; this tier builds the matching / cargo / finance / vessel layers on top of it.
+Hooks into `ECON_TRAVEL_TABLE` which `travelSolver` already populates with full per-tick pair-to-pair deltaV / duration data. The spatial layer is live ; this tier builds the matching / cargo / finance / vessel layers on top of it.
 
 ## 3.1 Trade signals
 

@@ -7,7 +7,7 @@ pub const orb = @import( "comp/orbitComp.zig" );
 pub const bdy = @import( "comp/bodyComp.zig"  );
 pub const ecn = @import( "econ/economy.zig"   );
 
-pub const trfSlvr = @import( "econ/transferSolver.zig"  );
+pub const trvlSlvr = @import( "econ/travelSolver.zig"  );
 
 
 pub const TransStore  = def.TransComp.getStoreType();
@@ -94,21 +94,21 @@ pub const Construct         = bldr_d.Construct;
 pub const Requester         = bldr_d.Requester;
 
 pub const rbtc_d = @import( "data/orbitanceData.zig"  );
-pub const trde_d = @import( "data/tradeData.zig"      );
+pub const trvl_d = @import( "data/travelData.zig"      );
 
 pub const idFromName        = rbtc_d.idFromName;
 pub const nameFromId        = rbtc_d.nameFromId;
 
-pub const BodyEconPair      = trde_d.BodyEconPair;
-pub const toBodyEconPair    = trde_d.toBodyEconPair;
-pub const fromBodyEconPair  = trde_d.fromBodyEconPair;
+pub const BodyEconPair      = trvl_d.BodyEconPair;
+pub const toBodyEconPair    = trvl_d.toBodyEconPair;
+pub const fromBodyEconPair  = trvl_d.fromBodyEconPair;
 
-pub const OrbitalData       = trde_d.OrbitalData;
-pub const TravelData        = trde_d.TravelData;
+pub const OrbitalData       = trvl_d.OrbitalData;
+pub const TravelData        = trvl_d.TravelData;
 
-pub const updateOrbitalDataEntry  = trde_d.updateOrbitalDataEntry;
-pub const debugLogTravelCosts     = trde_d.debugLogTravelCosts;
-pub const debugLogTravelCostsList = trde_d.debugLogTravelCostsList;
+pub const updateOrbitalDataEntry  = trvl_d.updateOrbitalDataEntry;
+pub const debugLogTravelCosts     = trvl_d.debugLogTravelCosts;
+pub const debugLogTravelCostsList = trvl_d.debugLogTravelCostsList;
 
 
 
