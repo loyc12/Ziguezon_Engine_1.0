@@ -426,21 +426,21 @@ pub fn OnRenderOverlay( ng : *Engine ) void
   const screenCenter = def.getHalfScreenSize();
 
   // Draw each player's score in the middle of their respective fields
-  def.drawTextCenter( &s1_buff, .new( screenCenter.x - 512, screenCenter.y ), 64, def.Colour.blue );
-  def.drawTextCenter( &s2_buff, .new( screenCenter.x + 512, screenCenter.y ), 64, def.Colour.red );
+  def.sDraw.textCenter( &s1_buff, .new( screenCenter.x - 512, screenCenter.y ), 64, def.Colour.blue );
+  def.sDraw.textCenter( &s2_buff, .new( screenCenter.x + 512, screenCenter.y ), 64, def.Colour.red );
 
   if( ng.state == .OPENED )
   {
-    def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
+    def.sDraw.coverScreenWithCol( .new( 0, 0, 0, 128 ));
 
     if( ng.state == .OPENED and WINNER == 0 ) // NOTE : Gray out the game when it is paused
     {
 
-      def.drawTextCenter( "Hold A or D to accelerate", .new( screenCenter.x * 0.5, screenCenter.y + 128 ), 32, def.Colour.yellow );
-      def.drawTextCenter( "Press S or Space to break", .new( screenCenter.x * 0.5, screenCenter.y + 192 ), 32, def.Colour.yellow );
+      def.sDraw.textCenter( "Hold A or D to accelerate", .new( screenCenter.x * 0.5, screenCenter.y + 128 ), 32, def.Colour.yellow );
+      def.sDraw.textCenter( "Press S or Space to break", .new( screenCenter.x * 0.5, screenCenter.y + 192 ), 32, def.Colour.yellow );
 
-      def.drawTextCenter( "Hold Left or Right to accelerate", .new( screenCenter.x * 1.5, screenCenter.y + 128 ), 32, def.Colour.yellow );
-      def.drawTextCenter( "Press Down or KP enter to break",  .new( screenCenter.x * 1.5, screenCenter.y + 192 ), 32, def.Colour.yellow );
+      def.sDraw.textCenter( "Hold Left or Right to accelerate", .new( screenCenter.x * 1.5, screenCenter.y + 128 ), 32, def.Colour.yellow );
+      def.sDraw.textCenter( "Press Down or KP enter to break",  .new( screenCenter.x * 1.5, screenCenter.y + 192 ), 32, def.Colour.yellow );
     }
 
   }
@@ -449,12 +449,12 @@ pub fn OnRenderOverlay( ng : *Engine ) void
   {
 
     const winner_msg = if( WINNER == 1 ) "Player 1 wins!" else "Player 2 wins!";
-    def.drawTextCenter( winner_msg,               .new( screenCenter.x, screenCenter.y - 192 ), 128, def.Colour.green );
-    def.drawTextCenter( "Press Enter to restart", .new( screenCenter.x, screenCenter.y       ),  64, def.Colour.yellow );
-    def.drawTextCenter( "Press Escape to exit",   .new( screenCenter.x, screenCenter.y + 128 ),  64, def.Colour.yellow );
+    def.sDraw.textCenter( winner_msg,               .new( screenCenter.x, screenCenter.y - 192 ), 128, def.Colour.green );
+    def.sDraw.textCenter( "Press Enter to restart", .new( screenCenter.x, screenCenter.y       ),  64, def.Colour.yellow );
+    def.sDraw.textCenter( "Press Escape to exit",   .new( screenCenter.x, screenCenter.y + 128 ),  64, def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawTextCenter( "Press Enter to resume", .new( screenCenter.x, screenCenter.y - 128 ), 128, def.Colour.yellow );
+    def.sDraw.textCenter( "Press Enter to resume", .new( screenCenter.x, screenCenter.y - 128 ), 128, def.Colour.yellow );
   }
 }

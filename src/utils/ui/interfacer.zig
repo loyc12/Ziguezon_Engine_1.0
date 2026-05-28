@@ -6,7 +6,7 @@ const Vec2    = def.Vec2;
 const VecA    = def.VecA;
 const Angle   = def.Angle;
 
-const drawer  = def.drwS_u;
+const drawer  = def.sDraw;
 
 
 pub const InterfaceShape = enum( u8 )
@@ -209,9 +209,9 @@ pub const Interface2D = struct
     {
       const innerScale : Vec2 = self.scale.subVal( self.edgeWidth );
 
-      drawer.drawPolygonPlus(      pos, self.scale, ang, self.edgeCol, def.G_ST.Graphic_Ellipse_Facets                 );
-      drawer.drawPolygonPlus(      pos, innerScale, ang, self.fillCol, def.G_ST.Graphic_Ellipse_Facets                 );
-      drawer.drawPolygonLinesPlus( pos, self.scale, ang, self.lineCol, def.G_ST.Graphic_Ellipse_Facets, self.lineWidth );
+      drawer.poly(      pos, self.scale, ang, self.edgeCol, def.G_ST.Graphic_Ellipse_Facets                 );
+      drawer.poly(      pos, innerScale, ang, self.fillCol, def.G_ST.Graphic_Ellipse_Facets                 );
+      drawer.polyPerim( pos, self.scale, ang, self.lineCol, def.G_ST.Graphic_Ellipse_Facets, self.lineWidth );
 
       return;
     }
@@ -227,7 +227,7 @@ pub const Interface2D = struct
       {
         const vec2 = self.bevelVertsI[ i ];
 
-        drawer.drawBasicTria( vec0, vec2, vec1, self.fillCol );
+        drawer.basicTria( vec0, vec2, vec1, self.fillCol );
 
         vec1 = vec2;
       }
@@ -244,8 +244,8 @@ pub const Interface2D = struct
         const vec3 = self.bevelVertsI[ iNext ]; // Edge's rightmost inner vertex
         const vec4 = self.bevelVertsO[ iNext ]; // Edge's rightmost outer vertex
 
-        drawer.drawBasicQuad( vec1, vec2, vec3, vec4, self.edgeCol );
-        drawer.drawLine( vec1, vec4, self.lineCol, self.lineWidth );
+        drawer.basicQuad( vec1, vec2, vec3, vec4, self.edgeCol );
+        drawer.basicLine( vec1, vec4, self.lineCol, self.lineWidth );
       }
       return;
     }
@@ -261,8 +261,8 @@ pub const Interface2D = struct
         const vec3 = self.bevelVertsI[ iNext ]; // Edge's rightmost inner vertex
         const vec4 = self.bevelVertsL[ iNext ]; // Edge's rightmost outer vertex
 
-        drawer.drawBasicQuad( vec1, vec2, vec3, vec4, self.edgeCol );
-        drawer.drawLine( vec1, vec4, self.lineCol, self.lineWidth );
+        drawer.basicQuad( vec1, vec2, vec3, vec4, self.edgeCol );
+        drawer.basicLine( vec1, vec4, self.lineCol, self.lineWidth );
       }
 
 
@@ -275,16 +275,16 @@ pub const Interface2D = struct
 
         if( @abs( self.bevelStrenght[ i ] - 1.0 ) < def.EPS ) // Squared bevel ( Special S = 1,0 Case )
         {
-          drawer.drawBasicQuad( v1, v0, v2, v12,  self.edgeCol   );
-          drawer.drawLine( v1, v12, self.lineCol, self.lineWidth );
-          drawer.drawLine( v2, v12, self.lineCol, self.lineWidth );
+          drawer.basicQuad( v1, v0, v2, v12,  self.edgeCol   );
+          drawer.basicLine( v1, v12, self.lineCol, self.lineWidth );
+          drawer.basicLine( v2, v12, self.lineCol, self.lineWidth );
 
           continue;
         }
         if( @abs( self.bevelStrenght[ i ] + 1.0 ) < def.EPS ) // Diagonal bevel ( Special S = -1.0 case )
         {
-          drawer.drawBasicTria( v1, v0, v2,      self.edgeCol   );
-          drawer.drawLine( v1, v2, self.lineCol, self.lineWidth );
+          drawer.basicTria( v1, v0, v2,      self.edgeCol   );
+          drawer.basicLine( v1, v2, self.lineCol, self.lineWidth );
 
           continue;
         }
@@ -297,10 +297,10 @@ pub const Interface2D = struct
           {
             const p0 = Vec2.lerp( v0, v12, t );
 
-            drawer.drawBasicTria( v1, v0, p0,      self.edgeCol   );
-            drawer.drawBasicTria( v0, v2, p0,      self.edgeCol   );
-            drawer.drawLine( p0, v1, self.lineCol, self.lineWidth );
-            drawer.drawLine( p0, v2, self.lineCol, self.lineWidth );
+            drawer.basicTria( v1, v0, p0,      self.edgeCol   );
+            drawer.basicTria( v0, v2, p0,      self.edgeCol   );
+            drawer.basicLine( p0, v1, self.lineCol, self.lineWidth );
+            drawer.basicLine( p0, v2, self.lineCol, self.lineWidth );
           },
 
          -1 => // Inverted Bevel ( split )
@@ -308,19 +308,19 @@ pub const Interface2D = struct
             const p1 = Vec2.lerp( v1, v12, t );
             const p2 = Vec2.lerp( v2, v12, t );
 
-            drawer.drawBasicTria( v1, v0, p1,      self.edgeCol   );
-            drawer.drawLine( p1, v0, self.lineCol, self.lineWidth );
-            drawer.drawLine( p1, v1, self.lineCol, self.lineWidth );
+            drawer.basicTria( v1, v0, p1,      self.edgeCol   );
+            drawer.basicLine( p1, v0, self.lineCol, self.lineWidth );
+            drawer.basicLine( p1, v1, self.lineCol, self.lineWidth );
 
-            drawer.drawBasicTria( v0, v2, p2,      self.edgeCol   );
-            drawer.drawLine( p2, v0, self.lineCol, self.lineWidth );
-            drawer.drawLine( p2, v2, self.lineCol, self.lineWidth );
+            drawer.basicTria( v0, v2, p2,      self.edgeCol   );
+            drawer.basicLine( p2, v0, self.lineCol, self.lineWidth );
+            drawer.basicLine( p2, v2, self.lineCol, self.lineWidth );
           },
 
           0 => // No bevel ( cutout )
           {
-            drawer.drawLine( v0, v1, self.lineCol, self.lineWidth );
-            drawer.drawLine( v0, v2, self.lineCol, self.lineWidth );
+            drawer.basicLine( v0, v1, self.lineCol, self.lineWidth );
+            drawer.basicLine( v0, v2, self.lineCol, self.lineWidth );
           },
 
           else => unreachable

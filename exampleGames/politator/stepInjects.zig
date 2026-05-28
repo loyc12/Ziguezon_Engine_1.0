@@ -450,13 +450,13 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   const screenCenter = def.getHalfScreenSize();
 
-  def.drwS_u.drawRectanglePlus( .{ .x = screenCenter.x, .y = 0 }, .{ .x = screenCenter.x, .y = 128 }, .{}, .{ .r = 0, .g = 0, .b = 0, .a = 64 });
+  def.sDraw.rect( .{ .x = screenCenter.x, .y = 0 }, .{ .x = screenCenter.x, .y = 128 }, .{}, .{ .r = 0, .g = 0, .b = 0, .a = 64 });
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.drawTextCenter( "Paused",                      .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 96.0 ), 64, def.Colour.yellow );
-    def.drawTextCenter( "Press P or Enter to resume",  .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 32.0 ), 32, def.Colour.yellow );
-    def.drawTextCenter( "Press V to change view mode", .new( screenCenter.x,   screenCenter.y + 60.0         ), 20, def.Colour.white );
+    def.sDraw.textCenter( "Paused",                      .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 96.0 ), 64, def.Colour.yellow );
+    def.sDraw.textCenter( "Press P or Enter to resume",  .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 32.0 ), 32, def.Colour.yellow );
+    def.sDraw.textCenter( "Press V to change view mode", .new( screenCenter.x,   screenCenter.y + 60.0         ), 20, def.Colour.white );
   }
 
   if( SELECTED_TILE )| tile |
@@ -516,14 +516,14 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       return;
     };
 
-    def.drawTextCenter( &popBuff,  .new( screenCenter.x * 0.5, 32.0 ), 24, def.Colour.nWhite );
-    def.drawTextCenter( &dPopBuff, .new( screenCenter.x * 0.5, 64.0 ), 24, def.Colour.nWhite );
-    def.drawTextCenter( &migBuff,  .new( screenCenter.x * 0.5, 96.0 ), 24, def.Colour.nWhite );
+    def.sDraw.textCenter( &popBuff,  .new( screenCenter.x * 0.5, 32.0 ), 24, def.Colour.nWhite );
+    def.sDraw.textCenter( &dPopBuff, .new( screenCenter.x * 0.5, 64.0 ), 24, def.Colour.nWhite );
+    def.sDraw.textCenter( &migBuff,  .new( screenCenter.x * 0.5, 96.0 ), 24, def.Colour.nWhite );
 
-    def.drawTextCenter( &resBuff,  .new( screenCenter.x * 1.0, 32.0 ), 24, def.Colour.nWhite );
-    def.drawTextCenter( &dResBuff, .new( screenCenter.x * 1.0, 64.0 ), 24, def.Colour.nWhite );
+    def.sDraw.textCenter( &resBuff,  .new( screenCenter.x * 1.0, 32.0 ), 24, def.Colour.nWhite );
+    def.sDraw.textCenter( &dResBuff, .new( screenCenter.x * 1.0, 64.0 ), 24, def.Colour.nWhite );
 
-    def.drawTextCenter( &infBuff,  .new( screenCenter.x * 1.5, 32.0 ), 24, def.Colour.nWhite );
-    def.drawTextCenter( &dInfBuff, .new( screenCenter.x * 1.5, 64.0 ), 24, def.Colour.nWhite );
+    def.sDraw.textCenter( &infBuff,  .new( screenCenter.x * 1.5, 32.0 ), 24, def.Colour.nWhite );
+    def.sDraw.textCenter( &dInfBuff, .new( screenCenter.x * 1.5, 64.0 ), 24, def.Colour.nWhite );
   }
 }

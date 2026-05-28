@@ -363,34 +363,34 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
   var lineCount : f32 = 1.0;
 
-  def.drawTextRightFmt( "== Entity #{d} ==", .{ id }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.5;
+  def.sDraw.textRightFmt( "== Entity #{d} ==", .{ id }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.5;
 
 
   if( trans != null )
   {
-    def.drawTextRightFmt( "{d:.3} :     posX", .{ trans.?.pos.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :     posY", .{ trans.?.pos.y }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :     posX", .{ trans.?.pos.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :     posY", .{ trans.?.pos.y }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
 
   if( shape != null )
   {
-    def.drawTextRightFmt( "{d:.3} :  scaleX", .{ shape.?.scale.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  scaleY", .{ shape.?.scale.y },. new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :  scaleX", .{ shape.?.scale.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :  scaleY", .{ shape.?.scale.y },. new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
 
   if( body != null ) // PLANETS AND CO.
   {
-    def.drawTextRightFmt( "{d:.3} :     mass", .{ body.?.mass         }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :     mass", .{ body.?.mass         }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     if( target.targetId == gdf.G_CONSTS.starId )
     {
-      def.drawTextRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrenght }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+      def.sDraw.textRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrenght }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     }
 
     lineCount += 0.5;
@@ -398,15 +398,15 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
   if( orbit != null )
   {
-    def.drawTextRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    def.drawTextRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
 
   if( target.camFollow )
   {
-    def.drawTextRight( "Traking ON", .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    def.sDraw.textRight( "Traking ON", .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     lineCount += 0.5;
   }
 }

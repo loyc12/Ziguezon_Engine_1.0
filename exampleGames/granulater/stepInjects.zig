@@ -196,14 +196,14 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 {
   const screenCenter = def.getHalfScreenSize();
 
-  def.drwS_u.drawRectanglePlus( .{ .x = screenCenter.x, .y = 0 }, .{ .x = screenCenter.x, .y = 128 }, .{}, .{ .r = 0, .g = 0, .b = 0, .a = 64 });
+  def.sDraw.rect( .{ .x = screenCenter.x, .y = 0 }, .{ .x = screenCenter.x, .y = 128 }, .{}, .{ .r = 0, .g = 0, .b = 0, .a = 64 });
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.drawTextCenter( "Paused",                      .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 96.0 ), 64.0, def.Colour.yellow );
-    def.drawTextCenter( "Press P or Enter to resume",  .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 32.0 ), 32.0, def.Colour.yellow );
+    def.sDraw.textCenter( "Paused",                      .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 96.0 ), 64.0, def.Colour.yellow );
+    def.sDraw.textCenter( "Press P or Enter to resume",  .new( screenCenter.x, ( screenCenter.y * 2.0 ) - 32.0 ), 32.0, def.Colour.yellow );
   }
-  def.drawTextCenter( "Press Q to regenerate terrain", .new( screenCenter.x, 32.0 ), 24.0, def.Colour.nWhite );
+  def.sDraw.textCenter( "Press Q to regenerate terrain", .new( screenCenter.x, 32.0 ), 24.0, def.Colour.nWhite );
 
   if( SELECTED_TILE )| tile |
   {
@@ -217,6 +217,6 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
       return;
     };
 
-    def.drawTextCenter( &noiseValBuff, .new( screenCenter.x, 96.0 ), 24.0, def.Colour.nWhite );
+    def.sDraw.textCenter( &noiseValBuff, .new( screenCenter.x, 96.0 ), 24.0, def.Colour.nWhite );
   }
 }

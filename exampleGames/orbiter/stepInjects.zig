@@ -127,12 +127,12 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void // Called by engine.renderGraphi
   if( ng.isPaused() )
   {
     // Draw lines around screen edge to show it is paused
-    def.surroundScreenWithCol( def.Colour.new( 255, 0, 0, 64 ), edgeWidth );
+    def.sDraw.surroundScreenWithCol( def.Colour.new( 255, 0, 0, 64 ), edgeWidth );
 
-    def.drawTextTop( "Press P to resume", .{ .x = def.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
+    def.sDraw.textTop( "Press P to resume", .{ .x = def.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
   }
 
-  def.drawTextOffsetFmt( "Speed : {s}", .{ @tagName( times.speedSetting )}, .{ .x = def.getScreenWidth() - 10.0, .y = def.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
+  def.sDraw.textOffsetFmt( "Speed : {s}", .{ @tagName( times.speedSetting )}, .{ .x = def.getScreenWidth() - 10.0, .y = def.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
 
 
   const transStore : *gdf.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));

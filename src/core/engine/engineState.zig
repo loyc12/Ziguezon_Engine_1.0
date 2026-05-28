@@ -169,7 +169,7 @@ pub fn open( ng : *Engine ) void
       );
 
       // TODO : Check if this font leaks
-      _ = def.setDefaultFont( def.G_ST.Graphic_Default_Font );
+      _ = def.sDraw.setDefaultFont( def.G_ST.Graphic_Default_Font );
     }
   }
   def.tryHook( .OnOpen, ng );

@@ -257,8 +257,8 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   if( ng.state == .OPENED ) // NOTE : Gray out the game when it is paused
   {
-    def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
-    def.drawTextCenter( "Paused",                     .new( screenCenter.x, screenCenter.y - 20.0 ), 40.0, def.Colour.white );
-    def.drawTextCenter( "Press P or Enter to resume", .new( screenCenter.x, screenCenter.y + 20.0 ), 20.0, def.Colour.white );
+    def.sDraw.coverScreenWithCol( .new( 0, 0, 0, 128 ));
+    def.sDraw.textCenter( "Paused",                     .new( screenCenter.x, screenCenter.y - 20.0 ), 40.0, def.Colour.white );
+    def.sDraw.textCenter( "Press P or Enter to resume", .new( screenCenter.x, screenCenter.y + 20.0 ), 20.0, def.Colour.white );
   }
 }

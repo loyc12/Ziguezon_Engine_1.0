@@ -501,7 +501,7 @@ pub const Box2 = struct
 
   // ================ DEBUG METHODS ================
 
-  pub fn drawSelf( self : *const Box2, color : def.Colour ) void { def.drawRect( self.center, self.scale, .{}, color ); }
+  pub fn drawSelf( self : *const Box2, color : def.Colour ) void { def.wDraw.rect( self.center, self.scale, .{}, color ); }
 };
 
 

@@ -187,12 +187,12 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
 
   const halfScreenSize = def.getHalfScreenSize();
 
-  def.drawTextCenter( &s_buff, .new( halfScreenSize.x * 1.6, halfScreenSize.y ), 128, def.Colour.yellow );
+  def.sDraw.textCenter( &s_buff, .new( halfScreenSize.x * 1.6, halfScreenSize.y ), 128, def.Colour.yellow );
 
 
   if( ng.state == .OPENED ) // NOTE : Greys out the game when it is paused
   {
-    def.coverScreenWithCol( .new( 0, 0, 0, 128 ));
+    def.sDraw.coverScreenWithCol( .new( 0, 0, 0, 128 ));
   }
 
 
@@ -200,15 +200,15 @@ pub fn OnRenderOverlay( ng : *def.Engine ) void
   {
     const game_over_msg = "Final score : ";
 
-    def.drawTextCenter( game_over_msg ++ &s_buff, .new( halfScreenSize.x, halfScreenSize.y - 192 ), 128, def.Colour.red );
-    def.drawTextCenter( "Press Enter to restart", .new( halfScreenSize.x, halfScreenSize.y       ),  64, def.Colour.yellow );
-    def.drawTextCenter( "Press Escape to exit",   .new( halfScreenSize.x, halfScreenSize.y + 128 ),  64, def.Colour.yellow );
+    def.sDraw.textCenter( game_over_msg ++ &s_buff, .new( halfScreenSize.x, halfScreenSize.y - 192 ), 128, def.Colour.red );
+    def.sDraw.textCenter( "Press Enter to restart", .new( halfScreenSize.x, halfScreenSize.y       ),  64, def.Colour.yellow );
+    def.sDraw.textCenter( "Press Escape to exit",   .new( halfScreenSize.x, halfScreenSize.y + 128 ),  64, def.Colour.yellow );
   }
   else if( ng.state == .OPENED ) // If the game is paused, display the resume message
   {
-    def.drawTextCenter( "Press Enter to resume",   .new( halfScreenSize.x, halfScreenSize.y - 256 ), 64, def.Colour.yellow );
-    def.drawTextCenter( "Press Escape to exit",    .new( halfScreenSize.x, halfScreenSize.y - 128 ), 64, def.Colour.yellow );
-    def.drawTextCenter( "Press W, Up or Space to", .new( halfScreenSize.x, halfScreenSize.y + 128 ), 64, def.Colour.yellow );
-    def.drawTextCenter( "jump during the game",    .new( halfScreenSize.x, halfScreenSize.y + 256 ), 64, def.Colour.yellow );
+    def.sDraw.textCenter( "Press Enter to resume",   .new( halfScreenSize.x, halfScreenSize.y - 256 ), 64, def.Colour.yellow );
+    def.sDraw.textCenter( "Press Escape to exit",    .new( halfScreenSize.x, halfScreenSize.y - 128 ), 64, def.Colour.yellow );
+    def.sDraw.textCenter( "Press W, Up or Space to", .new( halfScreenSize.x, halfScreenSize.y + 128 ), 64, def.Colour.yellow );
+    def.sDraw.textCenter( "jump during the game",    .new( halfScreenSize.x, halfScreenSize.y + 256 ), 64, def.Colour.yellow );
   }
 }

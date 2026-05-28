@@ -289,8 +289,8 @@ pub const OrbitComp = struct
     const zoomedWidth  = 1.0 / def.G_CAM.getZoom();
 
 
-    def.drawLine( selfPos, selfPos.add( scaledAbsVel ), .blue, zoomedWidth * 2.0 ); // Velocity Vector ( absolute )
-    def.drawLine( selfPos, selfPos.add( scaledRelVel ), .red,  zoomedWidth * 2.0 ); // Velocity Vector ( relative )
+    def.wDraw.basicLine( selfPos, selfPos.add( scaledAbsVel ), .blue, zoomedWidth * 2.0 ); // Velocity Vector ( absolute )
+    def.wDraw.basicLine( selfPos, selfPos.add( scaledRelVel ), .red,  zoomedWidth * 2.0 ); // Velocity Vector ( relative )
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.25 ); // Assumes a near-solid moon
@@ -313,13 +313,13 @@ pub const OrbitComp = struct
         vecMin1 = vecMin1.rot( .{ .r = a });
         vecMax1 = vecMax1.rot( .{ .r = a });
 
-        def.drawLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
-        def.drawLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
+        def.wDraw.basicLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
+        def.wDraw.basicLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
       }
     }
 
-    def.drawHexa( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange );
-    def.drawHexa( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple );
+    def.wDraw.hexa( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange );
+    def.wDraw.hexa( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple );
   }
 
   pub fn renderPath( self : *const OrbitComp, orbitedPos : Vec2 ) void
@@ -392,7 +392,7 @@ pub const OrbitComp = struct
       p2 = p1;
       p1 = self.getRelPosAtAngle( drawAngle );
 
-      def.drawLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, zoomedWidth );
+      def.wDraw.basicLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, zoomedWidth );
 
       pathCol = pathCol.subA( gdf.G_CONSTS.orbitFadeStrenght ); // Fading-out path's alpha
 
@@ -421,7 +421,7 @@ pub const OrbitComp = struct
     {
       const pos = self.getAbsLpPos( orbitedPos, @intCast( i ));
 
-      def.drawHexa( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3.0 ), .{}, .red );
+      def.wDraw.hexa( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3.0 ), .{}, .red );
     }
   }
 

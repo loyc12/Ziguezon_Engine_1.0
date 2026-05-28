@@ -51,14 +51,14 @@ pub fn renderBody( e1 : *const Body ) void
 
   if( e1.shape == .RECT )
   {
-    def.drawRect( p, s, a, c );
+    def.wDraw.rect( p, s, a, c );
   }
   else if( e1.shape.isStar() )
   {
-    def.drawStar( p, s, a, c, e1.shape.getEdgeCount(), e1.shape.getSkipFactor() );
+    def.wDraw.star( p, s, a, c, e1.shape.getEdgeCount(), e1.shape.getSkipFactor() );
   }
   else // Lines can be handled by drawPoly()
   {
-    def.drawPoly( p, s, a, c, e1.shape.getEdgeCount() );
+    def.wDraw.poly( p, s, a, c, e1.shape.getEdgeCount() );
   }
 }

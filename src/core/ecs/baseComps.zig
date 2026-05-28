@@ -86,15 +86,15 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 
   if( self.shape == .RECT )
   {
-    def.drawRect( p, s, a, c );
+    def.wDraw.rect( p, s, a, c );
   }
   else if( self.shape.isStar() )
   {
-    def.drawStar( p, s, a, c, self.shape.getEdgeCount(), self.shape.getSkipFactor() );
+    def.wDraw.star( p, s, a, c, self.shape.getEdgeCount(), self.shape.getSkipFactor() );
   }
   else // Lines can be handled by drawPoly()
   {
-    def.drawPoly( p, s, a, c, self.shape.getEdgeCount() );
+    def.wDraw.poly( p, s, a, c, self.shape.getEdgeCount() );
   }
   }
 };

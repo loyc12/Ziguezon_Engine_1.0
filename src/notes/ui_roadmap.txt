@@ -39,8 +39,8 @@ CONTEXT
      UI logic lives in these hooks.
 
    - Drawer split: src/utils/render/drawerS.zig (screen-space) and
-     drawerW.zig (world-space). Stable. UI panels use drwS_u; world-space
-     UI elements (floating labels, etc.) use drwW_u.
+     drawerW.zig (world-space). Stable. UI panels use sDraw; world-space
+     UI elements (floating labels, etc.) use wDraw.
 
    - Interfacer2D (src/utils/ui/interfacer.zig, moved from utils/render):
      first-draft panel-visual primitive. The vertex/bevel/render half is
@@ -107,9 +107,9 @@ CONTEXT
    - A layout pass assigning each node a Box2 (its layout-output rect)
    - A render pass that translates node state into immediate-mode draw
      calls via the existing primitives:
-       * drwS_u for lines, rectangles, text, basic shapes
+       * sDraw for lines, rectangles, text, basic shapes
        * Interfacer2D's visual half for beveled panel/button surfaces
-       * drwW_u for any world-space UI element
+       * wDraw for any world-space UI element
 
   No raygui. Single primitive backend.
 
@@ -122,7 +122,7 @@ CONTEXT
    - Layout (start trivial absolute-position; graduate to flex-like later)
    - Text measurement and wrapping (raylib has MeasureTextEx; wrap it)
    - Scissor / clip rects for scroll regions (raylib BeginScissorMode)
-   - A font choice the user is happy with (drwS_u already has
+   - A font choice the user is happy with (sDraw already has
      getDefaultFont / setDefaultFont)
    - Input routing that knows which panel has focus (lives in
      .OnUpdateInputs hook)
@@ -197,12 +197,12 @@ CONTEXT
   in Zig) with primitives like:
 
     draw_panel(box, style)         -> Interfacer2D visuals
-    draw_text(box, text, style)    -> drwS_u text fns
-    draw_button(box, label, state) -> Interfacer2D shape + drwS_u text
+    draw_text(box, text, style)    -> sDraw text fns
+    draw_button(box, label, state) -> Interfacer2D shape + sDraw text
     begin_clip(box) / end_clip()   -> raylib BeginScissorMode wrappers
     measure_text(text, style)      -> raylib MeasureTextEx wrapper
 
-  Nodes only call these. One implementation, backed by drwS_u +
+  Nodes only call these. One implementation, backed by sDraw +
   Interfacer2D visual half. No second backend.
 
 
@@ -212,7 +212,7 @@ CONTEXT
   One UISystem owns several z-ordered layer trees:
 
    - World-space layer - floating health bars, unit labels, damage numbers
-     (renders with camera transform; uses drwW_u; hooked into
+     (renders with camera transform; uses wDraw; hooked into
      .OnRenderWorld)
    - HUD layer         - persistent screen-space (resource bar, minimap,
      clock)
@@ -313,7 +313,7 @@ CONTEXT
   Floating health bars / damage numbers / name labels DO belong attached
   to entities (they share the entity's transform). Model them as a
   distinct, lightweight component (WorldLabel or similar) - they render
-  via drwW_u in the .OnRenderWorld hook, need no layout, no focus, no
+  via wDraw in the .OnRenderWorld hook, need no layout, no focus, no
   input routing.
 
   Don't try to unify world-space UI and screen-space UI under one model.
@@ -439,7 +439,7 @@ testing it.
    4. Trivial absolute-position layout - Box2 does the work. Flex later.
 
    5. UIRenderer interface with 3-4 methods, single implementation
-      against drwS_u + Interfacer2D visual half.
+      against sDraw + Interfacer2D visual half.
 
    6. PanelDefinition comptime struct + ui.show(def) / ui.hide(id).
 
@@ -567,7 +567,7 @@ system runs build -> layout -> render+input over each tree:
 UI reads game state through bindings; it writes back through the engine's
 existing event system. Nodes are tagged unions, dumb, addressable by
 stable ID; they don't know how to draw themselves - they ask a UIRenderer
-interface backed by drwS_u + Interfacer2D's visual half (no raygui). The
+interface backed by sDraw + Interfacer2D's visual half (no raygui). The
 existing Box2 struct is the universal rect type. Game entities can
 reference UI elements (Selectable, HasTooltip) but UI state never lives
 on game entities, except for world-space labels which are a separate,

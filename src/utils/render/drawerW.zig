@@ -22,46 +22,51 @@ inline fn wtrRay( worldPos : Vec2 ) def.RayVec2
 }
 
 
-// ================ SIMPLE DRAWING FUNCTIONS ================
+// ================ WORLD SPECIFIC FUNCTIONS ================
 
-pub inline fn drawPixel( pos : Vec2, col : Colour ) void
+// NOTE : N/A for now
+
+
+// ================ BASIC DRAWING FUNCTIONS ================
+
+pub inline fn pixel( pos : Vec2, col : Colour ) void
 {
   ray.drawPixelV( wtrRay( pos ), col.toRayCol() );
 }
-pub inline fn drawMacroPixel( pos : Vec2, size : f64, col : Colour ) void
+pub inline fn macroPixel( pos : Vec2, size : f64, col : Colour ) void
 {
   ray.drawRectangleV( wtrRay( pos ), @floatCast( size ), col.toRayCol() );
 }
 
-pub inline fn drawLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f64 ) void
+pub inline fn basicLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f64 ) void
 {
   ray.drawLineEx( wtrRay( p1 ), wtrRay( p2 ), @floatCast( width ), col.toRayCol() );
 }
-// pub fn drawDotedLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f64, spacinf : f64 ) void
+// pub fn dotedLine( p1 : Vec2, p2 : Vec2, col : Colour, width : f64, spacinf : f64 ) void
 
-pub inline fn drawCircle( pos : Vec2, radius : f64, col : Colour ) void
+pub inline fn basicCircle( pos : Vec2, radius : f64, col : Colour ) void
 {
   ray.drawCircleV( wtrRay( pos ), @floatCast( radius), col.toRayCol() );
 }
-pub inline fn drawCircleLines( pos : Vec2, radius : f64, col : Colour ) void // TODO : Add line thickness
+pub inline fn basicCirclePerim( pos : Vec2, radius : f64, col : Colour ) void // TODO : Add line thickness
 {
   ray.drawCircleLinesV( wtrRay( pos ), @floatCast( radius ), col.toRayCol() );
 }
 
-pub inline fn drawSimpleEllipse( pos : Vec2, radii : Vec2, col : Colour ) void
+pub inline fn basicElli( pos : Vec2, radii : Vec2, col : Colour ) void
 {
   ray.drawEllipseV( wtrRay( pos ), @floatCast( radii.x ), @floatCast( radii.y ), col.toRayCol() );
 }
-pub inline fn drawSimpleEllipseLines( pos : Vec2, radii : Vec2, col : Colour ) void // TODO : Add line thickness
+pub inline fn basicElliPerim( pos : Vec2, radii : Vec2, col : Colour ) void // TODO : Add line thickness
 {
   ray.drawEllipseLinesV( wtrRay( pos ), @floatCast( radii.x ), @floatCast( radii.y ), col.toRayCol() );
 }
 
-pub inline fn drawSimpleRectangle( pos : Vec2, size : Vec2, col : Colour ) void
+pub inline fn basicRect( pos : Vec2, size : Vec2, col : Colour ) void
 {
   ray.drawRectangleV( wtrRay( pos ), size.toRayVec2(), col.toRayCol() );
 }
-pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, width : f64  ) void
+pub inline fn basicRectPerim( pos : Vec2, size : Vec2, col : Colour, width : f64  ) void
 {
   ray.drawRectangleLinesEx(
     RayRect
@@ -76,28 +81,23 @@ pub inline fn drawSimpleRectangleLines( pos : Vec2, size : Vec2, col : Colour, w
   );
 }
 
-// TODO : Add a drawSimplePolygon( Lines ) function
-
-
-// ================ BASIC DRAWING FUNCTIONS ================
-
-pub inline fn drawBasicTria( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour ) void
+pub inline fn basicTria( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour ) void
 {
   ray.drawTriangle( wtrRay( p1 ), wtrRay( p2 ), wtrRay( p3 ), col.toRayCol() );
 }
-pub inline fn drawBasicTriaLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f32 ) void
+pub inline fn basicTriaPerim( p1 : Vec2, p2 : Vec2, p3 : Vec2, col : Colour, width : f32 ) void
 {
   ray.drawLineEx( wtrRay( p1 ), wtrRay( p2 ), width, col.toRayCol() );
   ray.drawLineEx( wtrRay( p2 ), wtrRay( p3 ), width, col.toRayCol() );
   ray.drawLineEx( wtrRay( p3 ), wtrRay( p1 ), width, col.toRayCol() );
 }
 
-pub inline fn drawBasicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour ) void
+pub inline fn basicQuad( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour ) void
 {
   ray.drawTriangle( wtrRay( p1 ), wtrRay( p2 ), wtrRay( p3 ), col.toRayCol() );
   ray.drawTriangle( wtrRay( p3 ), wtrRay( p4 ), wtrRay( p1 ), col.toRayCol() );
 }
-pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f32  ) void
+pub inline fn basicQuadPerim( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, col : Colour, width : f32  ) void
 {
   ray.drawLineEx( wtrRay( p1 ), wtrRay( p2 ), width, col.toRayCol() );
   ray.drawLineEx( wtrRay( p2 ), wtrRay( p3 ), width, col.toRayCol() );
@@ -105,11 +105,11 @@ pub inline fn drawBasicQuadLines( p1 : Vec2, p2 : Vec2, p3 : Vec2, p4 : Vec2, co
   ray.drawLineEx( wtrRay( p4 ), wtrRay( p1 ), width, col.toRayCol() );
 }
 
-pub inline fn drawBasicPoly( pos : Vec2, radius : f64, a : Angle, col : Colour, sides : u16 ) void
+pub inline fn basicPoly( pos : Vec2, radius : f64, a : Angle, col : Colour, sides : u16 ) void
 {
   ray.drawPoly( wtrRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), col.toRayCol() );
 }
-pub inline fn drawBasicPolyLines( pos : Vec2, radius : f64, a : Angle, col : Colour, width : f64, sides : u16  ) void // TODO : Add line thickness
+pub inline fn basicPolyPerim( pos : Vec2, radius : f64, a : Angle, col : Colour, width : f64, sides : u16  ) void // TODO : Add line thickness
 {
   ray.drawPolyLinesEx( wtrRay( pos ), @intCast( sides ), @floatCast( radius ), def.RtD( a ), @floatCast( width ), col.toRayCol() );
 }
@@ -117,37 +117,37 @@ pub inline fn drawBasicPolyLines( pos : Vec2, radius : f64, a : Angle, col : Col
 
 // ================ ADVANCED DRAWING FUNCTIONS ================
 
-pub inline fn drawTrianglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 3 ); }
-pub inline fn drawDiamondPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 4 ); }
-pub inline fn drawPentagonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 5 ); }
-pub inline fn drawHexagonPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 6 ); }
-pub inline fn drawOctagonPlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, 8 ); }
-pub inline fn drawEllipsePlus(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { drawPolygonPlus( pos, radii, a, col, def.G_ST.Graphic_Ellipse_Facets ); }
+pub inline fn tria( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { poly( pos, radii, a, col, 3 ); }
+pub inline fn diam(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { poly( pos, radii, a, col, 4 ); }
+pub inline fn pent( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { poly( pos, radii, a, col, 5 ); }
+pub inline fn hexa(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { poly( pos, radii, a, col, 6 ); }
+pub inline fn octa(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { poly( pos, radii, a, col, 8 ); }
+pub inline fn elli(  pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { poly( pos, radii, a, col, def.G_ST.Graphic_Ellipse_Facets ); }
 
 
 // Draws a rectangle centered at a given position with specified rotation (rad), colour and size, and scaled in x/y by radii
-pub inline fn drawRectanglePlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
+pub inline fn rect( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void
 {
   const p1 = pos.add( Vec2.new(  radii.x,  radii.y ).rot( a ));
   const p2 = pos.add( Vec2.new(  radii.x, -radii.y ).rot( a ));
   const p3 = pos.add( Vec2.new( -radii.x, -radii.y ).rot( a ));
   const p4 = pos.add( Vec2.new( -radii.x,  radii.y ).rot( a ));
 
-  drawBasicQuad( p1, p2, p3, p4, col );
+  basicQuad( p1, p2, p3, p4, col );
 }
-pub inline fn drawRectangleLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, width : f64 ) void
+pub inline fn rectPerim( pos : Vec2, radii : Vec2, a : Angle, col : Colour, width : f64 ) void
 {
   const p1 = pos.add( Vec2.new(  radii.x,  radii.y ).rot( a ));
   const p2 = pos.add( Vec2.new(  radii.x, -radii.y ).rot( a ));
   const p3 = pos.add( Vec2.new( -radii.x, -radii.y ).rot( a ));
   const p4 = pos.add( Vec2.new( -radii.x,  radii.y ).rot( a ));
 
-  drawBasicQuadLines( p1, p2, p3, p4, col, width );
+  basicQuadPerim( p1, p2, p3, p4, col, width );
 }
 
 
 // Draws a polygon centered at a given position with specified rotation (rad), colour and facet count, and scaled in x/y by radii
-pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16 ) void
+pub fn poly( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16 ) void
 {
   if( sides < 1 )
   {
@@ -163,8 +163,8 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
   {
     const rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
 
-    if( sides == 1 ){ drawLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
-    else { drawLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+    if( sides == 1 ){ basicLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+    else { basicLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
   }
   else if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
   {
@@ -175,7 +175,7 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
       const angle = sideStepAngle.mulVal( @floatFromInt( i ));
       const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
 
-      drawBasicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
+      basicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
       rP1 = rP2;
     }
   }
@@ -188,12 +188,12 @@ pub fn drawPolygonPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides
       const angle = sideStepAngle.mulVal( @floatFromInt( i ));
       const rP2 = rP0.rot( angle );
 
-      drawBasicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
+      basicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
       rP1 = rP2;
     }
   }
 }
-pub fn drawPolygonLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, width : f64 ) void
+pub fn polyPerim( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, width : f64 ) void
 {
   if( sides < 1 )
   {
@@ -209,8 +209,8 @@ pub fn drawPolygonLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, 
   {
     const rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
 
-    if( sides == 1 ){ drawLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
-    else { drawLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+    if( sides == 1 ){ basicLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+    else { basicLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
   }
   else if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
   {
@@ -221,7 +221,7 @@ pub fn drawPolygonLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, 
       const angle = sideStepAngle.mulVal( @floatFromInt( i + 1 ));
       const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
 
-      drawLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
+      basicLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
       rP1 = rP2;
     }
   }
@@ -234,14 +234,14 @@ pub fn drawPolygonLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, 
       const angle = sideStepAngle.mulVal( @floatFromInt( i + 1 ));
       const rP2 = rP0.rot( angle );
 
-      drawLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
+      basicLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
       rP1 = rP2;
     }
   }
 }
 
 
-pub fn drawStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16 ) void
+pub fn star( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16 ) void
 {
   if( sides < 5 )
   {
@@ -252,7 +252,7 @@ pub fn drawStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : 
   if( skipFactor == 1 )
   {
     def.qlog( .WARN, 0, @src(), "Not a star : drawing a polygon instead" );
-    drawPolygonPlus( pos, radii, a, col, sides );
+    poly( pos, radii, a, col, sides );
     return;
   }
 
@@ -292,12 +292,12 @@ pub fn drawStarPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : 
     for( 0..pathLen )| _ |
     {
       const idx2 = ( idx1 + skipFactor ) % sides;
-      drawBasicTria( pos, pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col );
+      basicTria( pos, pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col );
       idx1 = idx2;
     }
   }
 }
-pub fn drawStarLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16, width : f64 ) void
+pub fn starPerim( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16, width : f64 ) void
 {
   if( sides < 5 )
   {
@@ -308,7 +308,7 @@ pub fn drawStarLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sid
   if( skipFactor == 1 )
   {
     def.qlog( .WARN, 0, @src(), "Not a star : drawing a polygon instead" );
-    drawPolygonLinesPlus( pos, radii, a, col, sides, width );
+    polyPerim( pos, radii, a, col, sides, width );
     return;
   }
 
@@ -348,7 +348,7 @@ pub fn drawStarLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sid
     for( 0..pathLen )| _ |
     {
       const idx2 = ( idx1 + skipFactor ) % sides;
-      drawLine( pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col, width );
+      basicLine( pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col, width );
       idx1 = idx2;
     }
   }
@@ -356,19 +356,19 @@ pub fn drawStarLinesPlus( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sid
 
 // ================ TEXTURE DRAWING FUNCTIONS ================
 
-pub inline fn drawTexture( image : ray.Texture2D, pos : Vec2, a : Angle, scale : Vec2, col : Colour ) void
+pub inline fn texture( image : ray.Texture2D, pos : Vec2, a : Angle, scale : Vec2, col : Colour ) void
 {
   ray.drawTextureEx( image, wtrRay( pos ), a, scale.x, col.toRayCol() );
 }
 
-pub inline fn drawTextCenterure( image : ray.Texture2D, pos : Vec2, a : Angle, scale : Vec2, col : Colour ) void
+pub inline fn textureCentered( image : ray.Texture2D, pos : Vec2, a : Angle, scale : Vec2, col : Colour ) void
 {
   const halfWidth  = @as( f64, @floatFromInt( image.width  )) * scale.x / 2.0;
   const halfHeight = @as( f64, @floatFromInt( image.height )) * scale.y / 2.0;
-  drawTexture( image, @floatCast( pos.x - halfWidth ), @floatCast( pos.y - halfHeight ), a, scale, col );
+  texture( image, @floatCast( pos.x - halfWidth ), @floatCast( pos.y - halfHeight ), a, scale, col );
 }
 
-pub inline fn drawTexturePlus( image : ray.Texture2D, source : RayRect, dest : RayRect, origin : Vec2, a : Angle, col : Colour ) void
+pub inline fn texturePro( image : ray.Texture2D, source : RayRect, dest : RayRect, origin : Vec2, a : Angle, col : Colour ) void
 {
   ray.drawTexturePro( image, source, dest, origin, a.toDeg(), col.toRayCol() );
 }
