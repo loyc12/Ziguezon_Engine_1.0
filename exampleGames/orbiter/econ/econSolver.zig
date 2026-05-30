@@ -80,11 +80,11 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 // ================ CONSUMPTION PHASE ================
 {
   // NOTE : Have these call a singular, generic "calcResCons" instead (?)
-//solver.calcGovResCons();  // Computes resource cons from government policies
-  solver.calcPopResCons();  // Computes resource cons from population based on popCount
-  solver.calcInfResCons();  // Computes resource cons from infrastructure based on usage
-  solver.calcIndResCons();  // Computes resource cons from industry based on activity
-//solver.calcComResCons();  // Computes resource cons from exports
+//solver.calcGovResCons(); // Computes resource cons from government policies
+  solver.calcPopResCons(); // Computes resource cons from population based on popCount
+  solver.calcInfResCons(); // Computes resource cons from infrastructure based on usage
+  solver.calcIndResCons(); // Computes resource cons from industry based on activity
+//solver.calcComResCons(); // Computes resource cons from exports
 
   solver.updateFlowConsSums(); // Recompiles all individualized consumption values into relevant grouped metrics
 
@@ -96,11 +96,11 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
 // ================ PRODUCTION PHASE ================
 {
   // NOTE : Have these call a singular, generic "calcResProd" instead (?)
-//solver.calcGovResProd();  // Computes resource prod from government policies
-  solver.calcPopResProd();  // Computes resource prod from population based on popCount
-//  N/A for Inf             // Inf does not produce resources
-  solver.calcIndResProd();  // Computes resource prod from industry based on activity
-//solver.calcComResProd();  // Computes resource prod from imports
+//solver.calcGovResProd(); // Computes resource prod from government policies
+  solver.calcPopResProd(); // Computes resource prod from population based on popCount
+//  N/A for Inf            // Inf does not produce resources
+  solver.calcIndResProd(); // Computes resource prod from industry based on activity
+//solver.calcComResProd(); // Computes resource prod from imports
 
   solver.updateFlowProdSums(); // Recompiles all individualized production values into relevant grouped metrics
 
@@ -157,6 +157,7 @@ pub const EconSolver = struct
 
   maxPopActivity  : f64 = 1.0,
   maxIndActivity  : f64 = 1.0,
+
   econ : *ecn.Economy, // Economy being updated
 
   resStockData : ecnm_d.ResStockData = .{}, // Stock snapshot buffers
