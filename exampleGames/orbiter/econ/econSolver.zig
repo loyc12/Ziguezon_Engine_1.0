@@ -1214,7 +1214,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
             def.log( .CONT, 0, @src(), "- {s:<8} = {d:.4}", .{ @tagName( resT ), access });
 
-            if( access < 1.0 )
+            if( access < 1.0 - def.EPS )
             {
               def.log( .CONT, 0, @src(), "@ Experiencing {s} shortages !", .{ @tagName( resT ) });
 

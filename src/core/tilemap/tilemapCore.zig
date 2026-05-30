@@ -125,12 +125,12 @@ pub const Tilemap = struct
       def.log( .ERROR, 0, @src(), "Tilemap {d} is already initialized, cannot reinitialize", .{ self.id });
       return;
     }
-    if( self.mapSize.x == 0 or self.mapSize.y == 0 )
+    if( self.mapSize.x <= 0 or self.mapSize.y <= 0 )
     {
       def.log( .ERROR, 0, @src(), "Tilemap grid scale must be greater than 0, got {d}:{d}", .{ self.mapSize.x, self.mapSize.y });
       return;
     }
-    if( self.tileScale.x <= 0 or self.tileScale.y <= 0 )
+    if( self.tileScale.x <= def.EPS or self.tileScale.y <= def.EPS )
     {
       def.log( .ERROR, 0, @src(), "Tilemap tile scale must be greater than 0, got {d}:{d}", .{ self.tileScale.x, self.tileScale.y });
       return;

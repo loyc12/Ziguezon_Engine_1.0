@@ -351,7 +351,7 @@ pub const BuildEntry = struct
       const resT = ResType.fromIdx( r );
 
       // Counts how many different resource types need to be purchased
-      if( self.getRemainResCost( resT ) > 0.0 ){ resTypeCount += 1.0; }
+      if( self.getRemainResCost( resT ) > def.EPS ){ resTypeCount += 1.0; }
     }
 
     if( resTypeCount < def.EPS ){ return true; }

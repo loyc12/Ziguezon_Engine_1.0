@@ -329,18 +329,19 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       var   gridX = @floor( rawGridX );
       const gridY = @round( rawGridY );
 
-      const pointsDown = ( @mod( gridY, 2 ) + @mod( gridX, 2 ) == 1 );
+      const sumOfParities = @mod( gridY, 2 ) + @mod( gridX, 2 );
+      const pointsDown    = ( def.isFltEq( sumOfParities, 1.0 ));
 
       const fracX = rawGridX - gridX;
       const fracY = rawGridY - gridY + 0.5; // + 0.5 to offset the origin of the line ( 0.0 : 0.5 )
 
-      const outOfTri : bool = switch( pointsDown )
+      const outsideTri : bool = switch( pointsDown )
       {
         false => fracX - fracY > 0.0,
         true  => fracX + fracY > 1.0,
       };
 
-      if( outOfTri ) { gridX += 1; }
+      if( outsideTri ) { gridX += 1; }
 
       return .{ .x = @intFromFloat( gridX ), .y = @intFromFloat( gridY )};
     },
@@ -353,18 +354,19 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       var   gridY = @floor( rawGridY );
       const gridX = @round( rawGridX );
 
-      const pointsRight = ( @mod( gridY, 2 ) + @mod( gridX, 2 ) == 1 );
+      const sumOfParities = @mod( gridY, 2 ) + @mod( gridX, 2 );
+      const pointsRight   = ( def.isFltEq( sumOfParities, 1.0 ));
 
       const fracY = rawGridY - gridY;
       const fracX = rawGridX - gridX + 0.5; // + 0.5 to offset the origin of the line ( 0.5 : 0.0 )
 
-      const outOfTri : bool = switch( pointsRight )
+      const outsideTri : bool = switch( pointsRight )
       {
         false => fracY - fracX > 0.0,
         true  => fracY + fracX > 1.0,
       };
 
-      if( outOfTri ) { gridY += 1; }
+      if( outsideTri ) { gridY += 1; }
 
       return .{ .x = @intFromFloat( gridX ), .y = @intFromFloat( gridY )};
     },

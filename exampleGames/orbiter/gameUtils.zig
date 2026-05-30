@@ -183,13 +183,13 @@ pub fn updateCameraLogic() void
   // Zooms in and out with the mouse wheel
   if( target.camFollow )
   {
-    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomBy( 1.0 * zoomSpeed ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomBy( 1.0 / zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() >  def.EPS ){ cam.zoomBy( 1.0 * zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() < -def.EPS ){ cam.zoomBy( 1.0 / zoomSpeed ); }
   }
   else
   {
-    if( def.ray.getMouseWheelMove() > 0.0 ){ cam.zoomOnMouseBy( 1.0 * zoomSpeed ); }
-    if( def.ray.getMouseWheelMove() < 0.0 ){ cam.zoomOnMouseBy( 1.0 / zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() >  def.EPS ){ cam.zoomOnMouseBy( 1.0 * zoomSpeed ); }
+    if( def.ray.getMouseWheelMove() < -def.EPS ){ cam.zoomOnMouseBy( 1.0 / zoomSpeed ); }
   }
 
   // Resets the camera zoom and position

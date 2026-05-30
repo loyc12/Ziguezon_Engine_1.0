@@ -96,7 +96,7 @@ pub const Interface2D = struct
     self.shape = newShape;
   }
 
-  pub inline fn setBevelStrenght( self : *Interface2D, bevelIdx : usize, newStrenght : f32 ) void
+  pub inline fn setBevelStrenght( self : *Interface2D, bevelIdx : usize, newStrenght : f64 ) void
   {
     const oldBevelStrenght = self.bevelStrenght[ bevelIdx ];
 
@@ -138,20 +138,20 @@ pub const Interface2D = struct
     // Adjust starting angle and scale based on shape variant
     switch( self.shape )
     {
-      .TRI_D  => { draw_a = def.DtR(  90 ); },
-      .TRI_L  => { draw_a = def.DtR( 180 ); },
-      .TRI_U  => { draw_a = def.DtR( 270 ); },
+      .TRI_D => { draw_a = def.DtR(  90 ); },
+      .TRI_L => { draw_a = def.DtR( 180 ); },
+      .TRI_U => { draw_a = def.DtR( 270 ); },
 
-      .RECT   =>
+      .RECT  =>
       {
         draw_a = def.DtR( 45 );
         draw_s = draw_s.mulVal( def.R2 );
       },
 
-      .HEX_F  => { draw_a = def.DtR( 30   ); },
-      .OCT_P  => { draw_a = def.DtR( 22.5 ); },
+      .HEX_F => { draw_a = def.DtR( 30   ); },
+      .OCT_P => { draw_a = def.DtR( 22.5 ); },
 
-      else    => {},
+      else   => {},
     }
 
     // Compute outer vertices
@@ -217,7 +217,7 @@ pub const Interface2D = struct
     self.isInit = true;
   }
 
-  pub fn drawSelf( self : *const Interface2D ) void
+  pub fn drawSelf( self : *Interface2D ) void
   {
     const pos = self.pos.toVec2(); // Shape center pos
     const ang = self.pos.a;        // Shape base angle

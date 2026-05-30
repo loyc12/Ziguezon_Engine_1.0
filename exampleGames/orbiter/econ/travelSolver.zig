@@ -1,11 +1,6 @@
 const std = @import( "std" );
 const def = @import( "defs" );
 
-const PI  = def.PI;
-const TAU = def.TAU;
-const EPS = def.EPS;
-
-
 const gbl = @import( "../gameGlobals.zig" );
 const gdf = @import( "../gameDefs.zig"    );
 
@@ -96,14 +91,14 @@ inline fn isValidBodyId( id : EntityId ) bool { return( id > 0 and id < CACHE_LE
 
 fn normalizeAngle( angle : f64 ) f64
 {
-  var a = @mod( angle + PI, TAU );
-  if( a < 0.0 ){ a += TAU; }
-  return a - PI;
+  var a = @mod( angle + def.PI, def.TAU );
+  if( a < 0.0 ){ a += def.TAU; }
+  return a - def.PI;
 }
 
 fn doDirMatch( a : f64, b : f64 ) bool
 {
-  if( @abs( a ) < EPS or @abs( b ) < EPS ){ return true; }
+  if( def.isFltZr( a ) or def.isFltZr( a )){ return true; }
   return( ( a < 0.0 ) == ( b < 0.0 ));
 }
 
@@ -124,21 +119,21 @@ fn combineTravel( a : TData, b : TData ) TData
 fn isCoOrbitalRadius( a : f64, b : f64 ) bool
 {
   const mean = ( a + b ) * 0.5;
-  if( mean < EPS ){ return false; }
+  if( mean < def.EPS ){ return false; }
 
   return( @abs( a - b ) / mean <= CO_ORBITAL_RADIUS_TOLERANCE );
 }
 
 fn coOrbitalDriftDurationDays( radius : f64, phase : f64, mu : f64 ) f64
 {
-  if( radius < EPS or phase < EPS or mu < EPS ){ return 0.0; }
+  if( radius < def.EPS or phase < def.EPS or mu < def.EPS ){ return 0.0; }
 
   const baseAngularVel  = @sqrt( mu / ( radius * radius * radius ));
   const driftRadius     = radius * ( 1.0 + CO_ORBITAL_DRIFT_RADIUS_OFFSET );
   const driftAngularVel = @sqrt( mu / ( driftRadius * driftRadius * driftRadius ));
   const relAngularVel   = @abs( baseAngularVel - driftAngularVel );
 
-  if( relAngularVel < EPS ){ return 0.0; }
+  if( relAngularVel < def.EPS ){ return 0.0; }
 
   return minutesToDays( phase / relAngularVel );
 }
@@ -156,9 +151,9 @@ fn locAngularOffset( loc : EconLoc ) f64
 {
   return switch( loc )
   {
-    .L3 => PI,
-    .L4 => PI / 3.0,
-    .L5 => -PI / 3.0,
+    .L3 => def.PI,
+    .L4 => def.PI / 3.0,
+    .L5 => -def.PI / 3.0,
     else => 0.0,
   };
 }
@@ -180,13 +175,13 @@ fn bodyEnergyAtRadius( node : *const TransferNode, radius : f64 ) f64
 
 fn orbitalEnergyAtRadius( gravParam : f64, radius : f64 ) f64
 {
-  if( gravParam < EPS or radius < EPS ){ return 0.0; }
+  if( gravParam < def.EPS or radius < def.EPS ){ return 0.0; }
   return -gravParam / ( 2.0 * radius );
 }
 
 fn bodyRestEnergyAtRadius( node : *const TransferNode, radius : f64 ) f64
 {
-  if( node.gravParam < EPS or radius < EPS ){ return 0.0; }
+  if( node.gravParam < def.EPS or radius < def.EPS ){ return 0.0; }
   return -node.gravParam / radius;
 }
 
@@ -224,13 +219,13 @@ fn localPlacementRadius( node : *const TransferNode, loc : EconLoc ) f64
 
 fn circularDeltaVKmS( node : *const TransferNode, radius : f64 ) f64
 {
-  if( node.gravParam < EPS or radius < EPS ){ return 0.0; }
+  if( node.gravParam < def.EPS or radius < def.EPS ){ return 0.0; }
   return @sqrt( node.gravParam / radius ) / 60.0;
 }
 
 fn escapeDeltaVKmS( node : *const TransferNode, radius : f64 ) f64
 {
-  if( node.gravParam < EPS or radius < EPS ){ return 0.0; }
+  if( node.gravParam < def.EPS or radius < def.EPS ){ return 0.0; }
   return @sqrt(( 2.0 * node.gravParam ) / radius ) / 60.0;
 }
 
@@ -253,7 +248,7 @@ fn surfaceTransferDays( atmoEffect : f64, launching : bool ) f64
 
 fn hohmannTransfer( radiusA : f64, radiusB : f64, mu : f64 ) HohmannResult
 {
-  if( radiusA < EPS or radiusB < EPS or mu < EPS ){ return .{}; }
+  if( radiusA < def.EPS or radiusB < def.EPS or mu < def.EPS ){ return .{}; }
 
   const transferA = ( radiusA + radiusB ) * 0.5;
 
@@ -264,7 +259,7 @@ fn hohmannTransfer( radiusA : f64, radiusB : f64, mu : f64 ) HohmannResult
 
   const departDeltaV = @abs( velT1 - velA ) / 60.0;
   const arriveDeltaV = @abs( velB - velT2 ) / 60.0;
-  const durationMin = PI * @sqrt(( transferA * transferA * transferA ) / mu );
+  const durationMin = def.PI * @sqrt(( transferA * transferA * transferA ) / mu );
 
   return .{
     .travel = .{
@@ -667,17 +662,17 @@ fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : Enti
 
   const energyCost = @abs( a.energy - b.energy );
   const eccCost    = @abs( a.eccentricity - b.eccentricity ) * scale * ECCENTRICITY_WEIGHT;
-  const orientCost = @abs( normalizeAngle( b.orientation - a.orientation )) / PI * scale * ORIENTATION_WEIGHT;
+  const orientCost = @abs( normalizeAngle( b.orientation - a.orientation )) / def.PI * scale * ORIENTATION_WEIGHT;
   const phase      = @abs( normalizeAngle( b.angularPos - a.angularPos ));
-  const phaseCost  = phase / PI * scale * PHASE_WEIGHT;
+  const phaseCost  = phase / def.PI * scale * PHASE_WEIGHT;
   const retroCost  = if( doDirMatch( a.angularVel, b.angularVel )) 0.0 else scale * RETROGRADE_WEIGHT;
   const penaltyEnergy = eccCost + orientCost + phaseCost + retroCost;
 
   const frame = getNode( frameId ) orelse return .{};
   if( isCoOrbitalRadius( a.radius, b.radius ))
   {
-    const phaseFrac = phase / PI;
-    const circular = @sqrt( frame.gravParam / @max( a.radius, EPS )) / 60.0;
+    const phaseFrac = phase / def.PI;
+    const circular = @sqrt( frame.gravParam / @max( a.radius, def.EPS )) / 60.0;
     const coOrbitalDeltaV = circular * CO_ORBITAL_PHASE_DV_FACTOR * phaseFrac;
 
     var transfer : TData = .{
@@ -686,7 +681,7 @@ fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : Enti
     };
 
     const relAngVel = @abs( b.angularVel - a.angularVel );
-    transfer.deltaT = if( relAngVel > EPS )
+    transfer.deltaT = if( relAngVel > def.EPS )
       minutesToDays( phase / relAngVel )
     else
       coOrbitalDriftDurationDays( a.radius, phase, frame.gravParam );
@@ -718,10 +713,10 @@ fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : Enti
     transfer.deltaV += h.arriveDeltaV;
   }
 
-  if( transfer.deltaT <= EPS )
+  if( transfer.deltaT <= def.EPS )
   {
     const relAngVel = @abs( b.angularVel - a.angularVel );
-    const durationMin = if( relAngVel > EPS ) phase / relAngVel else 0.0;
+    const durationMin = if( relAngVel > def.EPS ) phase / relAngVel else 0.0;
     transfer.deltaT = minutesToDays( durationMin );
   }
 

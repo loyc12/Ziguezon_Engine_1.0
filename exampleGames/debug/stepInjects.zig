@@ -79,7 +79,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     var newShape : usize = @intFromEnum( ui.shape );
         newShape = @mod( newShape + 1, def.InterfaceShape.count );
 
-    ui.setSHape( @enumFromInt( newShape ));
+    ui.setShape( @enumFromInt( newShape ));
   }
 
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))

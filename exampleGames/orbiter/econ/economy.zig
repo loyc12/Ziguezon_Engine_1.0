@@ -667,7 +667,7 @@ pub const Economy = struct
       self.areaData.add( .AVAIL, newArea );
       self.areaData.add( .CAP,   newArea );
     }
-    else if( areaCost > 0.0 ) // Excludes vessels
+    else if( areaCost > def.EPS ) // Excludes vessels
     {
       const areaAvail = self.areaData.get( .AVAIL );
 

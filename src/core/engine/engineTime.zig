@@ -188,7 +188,7 @@ pub const EngineTime = struct
   pub fn setTimeScale( self: *EngineTime, newTimeScale : f32 ) void
   {
     def.qlog( .TRACE, 0, @src(), "Setting time scale to {d}", .{ newTimeScale });
-    if( newTimeScale < 0 )
+    if( newTimeScale < 0.0 )
     {
       def.log( .WARN, 0, @src(), "Cannot set time scale to {d}: clamping to 0", .{ newTimeScale });
       self.simScale = 0.0;
