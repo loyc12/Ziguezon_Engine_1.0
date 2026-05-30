@@ -1,15 +1,17 @@
 const std = @import( "std" );
 const tpr = @import( "typer.zig" );
 
+const MAX_ENUM_LEN : u32 = 200; // NOTE : Increase if too sever. Never decrease
+
 
 pub fn GenDataMatrix4( comptime DataType : type, comptime Enum1 : type, comptime Enum2 : type, comptime Enum3 : type, comptime Enum4 : type ) type
 {
   comptime // Validate enums
   {
-    tpr.assertIsEnumContiguous( Enum1 );
-    tpr.assertIsEnumContiguous( Enum2 );
-    tpr.assertIsEnumContiguous( Enum3 );
-    tpr.assertIsEnumContiguous( Enum4 );
+    tpr.assertIsEnumContiguousOfLenLessThan( Enum1, MAX_ENUM_LEN );
+    tpr.assertIsEnumContiguousOfLenLessThan( Enum2, MAX_ENUM_LEN );
+    tpr.assertIsEnumContiguousOfLenLessThan( Enum3, MAX_ENUM_LEN );
+    tpr.assertIsEnumContiguousOfLenLessThan( Enum4, MAX_ENUM_LEN );
   }
 
   return struct

@@ -1,13 +1,15 @@
 const std = @import( "std" );
 const tpr = @import( "typer.zig" );
 
+const MAX_ENUM_LEN : u32 = 600; // NOTE : Increase if too sever. Never decrease
+
 
 pub fn GenDataGrid( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type ) type
 {
   comptime // Validate enums
   {
-    tpr.assertIsEnumContiguous( RowEnum    );
-    tpr.assertIsEnumContiguous( ColumnEnum );
+    tpr.assertIsEnumContiguousOfLenLessThan( RowEnum,    MAX_ENUM_LEN );
+    tpr.assertIsEnumContiguousOfLenLessThan( ColumnEnum, MAX_ENUM_LEN );
   }
 
   return struct

@@ -1,12 +1,14 @@
 const std = @import( "std" );
 const tpr = @import( "typer.zig" );
 
+const MAX_ENUM_LEN : u32 = 800; // NOTE : Increase if too sever. Never decrease
+
 
 pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
 {
   comptime // Validate enum
   {
-    tpr.assertIsEnumContiguous( IdxEnum );
+    tpr.assertIsEnumContiguousOfLenLessThan( IdxEnum, MAX_ENUM_LEN );
   }
 
   return struct

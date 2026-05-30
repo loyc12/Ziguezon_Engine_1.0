@@ -1,14 +1,16 @@
 const std = @import( "std" );
 const tpr = @import( "typer.zig" );
 
+const MAX_ENUM_LEN : u32 = 400; // NOTE : Increase if too sever. Never decrease
+
 
 pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type, comptime LayerEnum : type ) type
 {
   comptime // Validate enums
   {
-    tpr.assertIsEnumContiguous( RowEnum    );
-    tpr.assertIsEnumContiguous( ColumnEnum );
-    tpr.assertIsEnumContiguous( LayerEnum  );
+    tpr.assertIsEnumContiguousOfLenLessThan( RowEnum,    MAX_ENUM_LEN );
+    tpr.assertIsEnumContiguousOfLenLessThan( ColumnEnum, MAX_ENUM_LEN );
+    tpr.assertIsEnumContiguousOfLenLessThan( LayerEnum,  MAX_ENUM_LEN );
   }
 
   return struct

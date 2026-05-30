@@ -23,17 +23,27 @@ pub fn assertIsEnumContiguous( comptime T : type ) void
 
   for( fields, 0.. )| f, i |{ if( f.value != i )
   {
-    @compileError( "Enum " ++ @typeName( T ) ++ " is not contiguous from zero " ++ std.fmt.comptimePrint( "( field {s} == {} )", .{ f.name, f.value }) );
+    @compileError( "Enum " ++ @typeName( T ) ++ " is not contiguous from zero " ++ std.fmt.comptimePrint( "( field {s} == {d} )", .{ f.name, f.value }) );
   }}
 }
 
-pub fn assertIsEnumContiguousofLen( comptime T : type, comptime len : usize ) void
+pub fn assertIsEnumContiguousOfLen( comptime T : type, comptime len : usize ) void
 {
   assertIsEnumContiguous( T );
 
   if( @typeInfo( T ).@"enum".fields.len != len )
   {
-    @compileError( "Enum " ++ @typeName( T ) ++ " has an invalid field count "  ++ std.fmt.comptimePrint( "( len != {} )", .{ len }) );
+    @compileError( "Enum " ++ @typeName( T ) ++ " has an invalid field count "  ++ std.fmt.comptimePrint( "( len != {d} )", .{ len }) );
+  }
+}
+
+pub fn assertIsEnumContiguousOfLenLessThan( comptime T : type, comptime len : usize ) void
+{
+  assertIsEnumContiguous( T );
+
+  if( @typeInfo( T ).@"enum".fields.len >= len )
+  {
+    @compileError( "Enum " ++ @typeName( T ) ++ " has an invalid field count "  ++ std.fmt.comptimePrint( "( len >= {d} )", .{ len }) );
   }
 }
 
@@ -70,7 +80,7 @@ pub fn GenPairedEnum( comptime A : type, comptime B : type ) type
     .is_exhaustive = true,
   }});
 
-  assertIsEnumContiguousofLen( PairedEnum, total );
+  assertIsEnumContiguousOfLen( PairedEnum, total );
 
   return PairedEnum;
 }
