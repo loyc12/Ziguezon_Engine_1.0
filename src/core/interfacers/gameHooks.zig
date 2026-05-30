@@ -31,8 +31,8 @@ pub const e_hook_tag = enum( u8 )
 
   // Update and Tick Hooks
 
-  OnUpdateInputs   = 20, // Called every frame for updates ( at the start )
-//OffUpdateInputs  = 21, // Called every frame for updates ( at the end )
+  OnUpdateFrame   = 20, // Called every frame for updates ( at the start )
+//OffUpdateFrame  = 21, // Called every frame for updates ( at the end )
 
   OnTickWorld      = 22, // Called every tick for logic updates ( at the start )
   OffTickWorld     = 23, // Called every tick for logic updates ( at the end )
@@ -82,8 +82,8 @@ pub const GameHooks = struct
 
   // Update and Tick Hooks
 
-  OnUpdateInputs   : ?HookFunc = null,
-//OffUpdateInputs  : ?HookFunc = null,
+  OnUpdateFrame   : ?HookFunc = null,
+//OffUpdateFrame  : ?HookFunc = null,
 
   OnTickWorld      : ?HookFunc = null,
   OffTickWorld     : ?HookFunc = null,
@@ -128,10 +128,10 @@ pub const GameHooks = struct
     if( @hasDecl( module, "OnLoopCycle" )) self.OnLoopCycle = @field( module, "OnLoopCycle" );
 
     // Update and Tick Hooks
-    if( @hasDecl( module, "OnUpdateInputs"  )) self.OnUpdateInputs  = @field( module, "OnUpdateInputs"  );
-  //if( @hasDecl( module, "OffUpdateInputs" )) self.OffUpdateInputs = @field( module, "OffUpdateInputs" );
-    if( @hasDecl( module, "OnTickWorld"     )) self.OnTickWorld     = @field( module, "OnTickWorld"  );
-    if( @hasDecl( module, "OffTickWorld"    )) self.OffTickWorld    = @field( module, "OffTickWorld" );
+    if( @hasDecl( module, "OnUpdateFrame"  )) self.OnUpdateFrame  = @field( module, "OnUpdateFrame"  );
+  //if( @hasDecl( module, "OffUpdateFrame" )) self.OffUpdateFrame = @field( module, "OffUpdateFrame" );
+    if( @hasDecl( module, "OnTickWorld"    )) self.OnTickWorld    = @field( module, "OnTickWorld"    );
+    if( @hasDecl( module, "OffTickWorld"   )) self.OffTickWorld   = @field( module, "OffTickWorld"   );
 
     // Rendering Hooks
     if( @hasDecl( module, "OnRenderBckgrnd"  )) self.OnRenderBckgrnd  = @field( module, "OnRenderBckgrnd" );
@@ -188,11 +188,11 @@ pub const GameHooks = struct
       .OnLoopCycle => self.OnLoopCycle,
 
     // Update and Tick Hooks
-      .OnUpdateInputs   => self.OnUpdateInputs,
-    //.OffUpdateInputs  => self.OffUpdateInputs,
+      .OnUpdateFrame  => self.OnUpdateFrame,
+    //.OffUpdateFrame => self.OffUpdateFrame,
 
-      .OnTickWorld      => self.OnTickWorld,
-      .OffTickWorld     => self.OffTickWorld,
+      .OnTickWorld    => self.OnTickWorld,
+      .OffTickWorld   => self.OffTickWorld,
 
     // Rendering Hooks
       .OnRenderBckgrnd  => self.OnRenderBckgrnd,

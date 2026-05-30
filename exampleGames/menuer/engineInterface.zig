@@ -29,7 +29,7 @@ const def = @import( "defs" );
 //pub const Startup_Window_Width     : u16 = 1080;
 //pub const Startup_Window_Height    : u16 = 720;
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Ui test";
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Empty Template";
 
 
 // Graphical Values

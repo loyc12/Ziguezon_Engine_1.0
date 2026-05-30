@@ -340,7 +340,7 @@ pub fn OnLoopStart( ng : *def.Engine ) void
 }
 
 
-pub fn OnUpdateInputs( ng : *def.Engine ) void
+pub fn OnUpdateFrame( ng : *def.Engine ) void
 {
   var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {

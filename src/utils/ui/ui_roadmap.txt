@@ -33,10 +33,10 @@ CONTEXT
    - Hook system (src/core/interfacers/gameHooks.zig): robust, well-tested
      (one of the first features implemented). Provides phase tags consumed
      by the engine loop in src/core/engine/engineStep.zig. Key tags for UI:
-       .OnUpdateInputs  - input phase, before tick + render
+       .OnUpdateFrame   - frame-cadence update, before tick + render
        .OnRenderOverlay - after world render, in screen space
        .OnRenderWorld   - during the camera-transformed render pass
-     UI logic lives in these hooks.
+     UI logic lives in the engine's updateFrame phase, not in tickAll.
 
    - Drawer split: src/utils/render/drawerScreen.zig (screen-space) and
      drawerWorld.zig (world-space). Stable. UI panels use sDraw; world-space
@@ -125,7 +125,7 @@ CONTEXT
    - A font choice the user is happy with (sDraw already has
      getDefaultFont / setDefaultFont)
    - Input routing that knows which panel has focus (lives in
-     .OnUpdateInputs hook)
+     .OnUpdateFrame hook)
 
   The classic trap is jumping to fancy widgets. Chart rendering is ~20% of
   the work; the scroll / clip / focus / resize machinery around it is ~80%.
@@ -155,15 +155,19 @@ CONTEXT
          it.
        - For v1, absolute positioning is fine. Graduate to flex later.
 
-   3. Input + Render. Walk front-to-back for input (hit-test, route
-      events to topmost interested node), back-to-front for render
-      (or use z-indices).
+   3. Input. Walk front-to-back for input (hit-test, route events to the
+      topmost interested node). Input depends on layout, so it belongs after
+      layout in the frame update phase.
+
+   4. Render. Build render commands from retained state, then draw
+      back-to-front (or use z-indices). Rendering belongs in renderAll,
+      after world rendering has left camera mode.
 
   Wiring into the engine loop:
 
-   - Build + Layout + Input  ->  ran from .OnUpdateInputs hook
-   - Render (screen layers)  ->  ran from .OnRenderOverlay hook
-   - Render (world layer)    ->  ran from .OnRenderWorld hook
+   - Build + Layout + Input  ->  updateFrame / .OnUpdateFrame
+   - Render (screen layers)  ->  renderAll / .OnRenderOverlay
+   - Render (world layer)    ->  renderAll / .OnRenderWorld
 
   Keep these passes separate. Input depends on layout (need the rect for
   hit-testing); render depends on input (need to know hovered/pressed
@@ -188,6 +192,31 @@ CONTEXT
 
   Aim for ~10 node kinds, not 47. "Custom drawing" can be a single node
   variant that holds a function pointer.
+
+
+2.2.1  Parent ownership vs. dependency links
+--------------------------------------------------------------------------------
+
+  Menus need more than a plain tree. Parent links should control layout,
+  clipping, and ordinary ownership. Dependency links should control
+  invalidation.
+
+   - Closing a parent closes parent-owned descendants.
+   - Closing an upper dependent menu closes lower dependent menus.
+   - Opening a sibling submenu closes lower dependent menus from the old
+     branch.
+   - A menu can spawn an independent root/window by detaching it from the
+     menu dependency chain before the menu closes.
+
+  This makes cascading menus cheap while still allowing a menu action to
+  instantiate a durable inspector or tool window.
+
+  Useful operations:
+
+   - close_node(id)             - closes node and parent-owned descendants
+   - close_dependent_chain(id)  - closes nodes that depend on id
+   - detach_node(id)            - preserves a node by removing parent /
+                                  dependency ownership
 
 
 2.3  The UIRenderer interface
@@ -225,6 +254,15 @@ CONTEXT
   routes top-down through layers. Cheap to add now, painful to retrofit.
 
   Similar to Godot's CanvasLayer / Unity's sorted Canvas model.
+
+  Initial layer order:
+
+   1. World-space layer
+   2. HUD layer
+   3. Panel layer
+   4. Popup / menu layer
+   5. Modal layer
+   6. Tooltip layer
 
 
 2.5  Box2 as layout output
@@ -329,7 +367,7 @@ CONTEXT
    3. UI system iterates UIAnchor components, updates positions of
       world-space elements
    4. UI system runs its three passes (build, layout, render+input) over
-      each UIRoot's tree, in z-order, hooked into .OnUpdateInputs and
+      each UIRoot's tree, in z-order, hooked into .OnUpdateFrame and
       .OnRenderOverlay (and .OnRenderWorld for the world-space layer)
    5. UI emits commands back to game via the engine event system when
       buttons clicked, etc. Game processes those events next frame.
@@ -420,6 +458,48 @@ CONTEXT
   brief, not as a blocker.
 
 
+4.5  Input capture
+--------------------------------------------------------------------------------
+
+  The UI system consumes raw input and emits UI events. Game input should
+  be able to query capture before acting on the same mouse / keyboard state.
+
+  Minimum capture helpers:
+
+    ui.wants_mouse()
+    ui.wants_keyboard()
+    ui.get_hovered_id()
+    ui.get_focused_id()
+
+  Mouse capture is required for drag / slider / scroll interactions.
+  Keyboard capture is required for text input and command fields. Modal
+  capture blocks interaction outside the modal subtree.
+
+
+4.6  Engine-owned frame surface
+--------------------------------------------------------------------------------
+
+  The engine should own common UI phase calls. Games can populate UI roots
+  and drain events through hooks, but the timing should not be per-game.
+
+  Draft frame shape:
+
+    // updateFrame phase
+    ui.begin_frame(input)
+    ui.update_layout()
+    ui.dispatch_input()
+
+    // renderAll overlay phase
+    ui.build_render_commands()
+    ui.draw_screen()
+    ui.end_frame()
+
+  If world-space UI is needed, keep it as a distinct draw path:
+
+    // renderAll world phase, inside camera mode
+    ui.draw_world()
+
+
 
 ================================================================================
 5. BUILD ORDER
@@ -429,10 +509,11 @@ CONTEXT
 The order to actually implement in. Resist building the full system before
 testing it.
 
-   1. Fix Box2 bugs (APPENDIX A) - UI depends on Box2 being correct.
+   1. Fix / verify Box2 semantics (APPENDIX A) - UI depends on Box2 being
+      correct for hit testing, clipping, and layout bounds.
 
-   2. UISystem singleton (def.G_UI) in the engine, owning a list of
-      layers. Start with one layer.
+   2. UiContext / UISystem owned by Engine, analogous to other engine
+      managers. Start with one layer.
 
    3. Node tagged union with three variants: Panel, Label, Button.
 
@@ -443,15 +524,19 @@ testing it.
 
    6. PanelDefinition comptime struct + ui.show(def) / ui.hide(id).
 
-   7. UI hooks wired: build / layout / input in .OnUpdateInputs;
-      render in .OnRenderOverlay (and .OnRenderWorld for world layer).
+   7. UI hooks wired: build / layout / input in updateFrame /
+      .OnUpdateFrame; screen render in renderAll / .OnRenderOverlay
+      (and .OnRenderWorld for world layer).
 
    8. Event integration: button clicks emit engine Events the game polls.
 
-   9. ONE REAL PANEL end-to-end - even something dumb like an FPS
+   9. Menu lifetime and dependency invalidation: dependent submenu,
+      independent spawned window, outside-click close, escape close.
+
+  10. ONE REAL PANEL end-to-end - even something dumb like an FPS
       counter with a "Reset" button.
 
-  The most important step is #9. Until one panel exists end-to-end, every
+  The most important step is #10. Until one panel exists end-to-end, every
   architectural decision is theoretical. Wiring "game state -> binding ->
   render -> click -> event -> game response" through the whole pipeline
   will surface half a dozen small design decisions invisible from the
@@ -560,18 +645,18 @@ several z-ordered layer trees. Each tree is built from declarative
 PanelDefinitions the game registers via ui.show(...). Each frame, the
 system runs build -> layout -> render+input over each tree:
 
-   build / layout / input  ->  .OnUpdateInputs hook
+   build / layout / input  ->  .OnUpdateFrame hook
    render (screen)         ->  .OnRenderOverlay hook
    render (world)          ->  .OnRenderWorld hook
 
-UI reads game state through bindings; it writes back through the engine's
-existing event system. Nodes are tagged unions, dumb, addressable by
-stable ID; they don't know how to draw themselves - they ask a UIRenderer
-interface backed by sDraw + Interfacer2D's visual half (no raygui). The
-existing Box2 struct is the universal rect type. Game entities can
-reference UI elements (Selectable, HasTooltip) but UI state never lives
-on game entities, except for world-space labels which are a separate,
-simpler model.
+  UI reads game state through bindings; it writes back through the engine's
+  existing event system. Nodes are tagged unions, dumb, addressable by
+  stable ID; they don't know how to draw themselves - they ask a UIRenderer
+  interface backed by sDraw + Interfacer2D's visual half (no raygui). The
+  existing Box2 struct is the universal rect type. Game entities can
+  reference UI elements (Selectable, HasTooltip) but UI state never lives
+  on game entities, except for world-space labels which are a separate,
+  simpler model.
 
 
 

@@ -43,7 +43,7 @@ const sOffset : f32 = sScale / 4;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateInputs( ng : *def.Engine ) void
+pub fn OnUpdateFrame( ng : *def.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }

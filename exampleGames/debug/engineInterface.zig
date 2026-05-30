@@ -28,7 +28,7 @@ const gameState = @import( "stateInjects.zig" );
 
 const gameStep  = @import( "stepInjects.zig" );
 
-  pub const OnUpdateInputs  = gameStep.OnUpdateInputs;
+  pub const OnUpdateFrame  = gameStep.OnUpdateFrame;
 
   pub const OnTickWorld     = gameStep.OnTickWorld;
 

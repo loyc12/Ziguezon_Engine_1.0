@@ -54,7 +54,7 @@ inline fn tryUpdate( ng : *Engine ) bool
   //const tmpTime = def.getNow();
 
   //def.ray.pollInputEvents(); // Resets and fills the input "buffer" with the latest inputs (???)
-    updateInputs( ng );
+    updateFrame( ng );
 
   //def.log_u.logDeltaTime( tmpTime.timeSince(), @src(), "@ Input delta time" );
     return true;
@@ -62,12 +62,12 @@ inline fn tryUpdate( ng : *Engine ) bool
   return false;
 }
 
-inline fn updateInputs( ng : *Engine ) void
+inline fn updateFrame( ng : *Engine ) void
 {
 
   def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
 
-  def.tryHook( .OnUpdateInputs, ng );
+  def.tryHook( .OnUpdateFrame, ng );
   {
     if( def.ray.isWindowResized() )
     {
@@ -75,7 +75,7 @@ inline fn updateInputs( ng : *Engine ) void
       def.G_CAM.updateView();
     }
   }
-  //def.tryHook( .OffUpdateInputs, ng );
+  //def.tryHook( .OffUpdateFrame, ng );
 }
 
 

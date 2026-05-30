@@ -32,7 +32,7 @@ var ui : def.Interface2D = .{ .pos = .new( 256, 512, .{ .r = 0 }), .scale = .new
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateInputs( ng : *def.Engine ) void
+pub fn OnUpdateFrame( ng : *def.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.enter ) or def.ray.isKeyPressed( def.ray.KeyboardKey.p )){ ng.togglePause(); }

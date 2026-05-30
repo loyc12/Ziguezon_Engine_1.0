@@ -31,7 +31,7 @@ pub fn OnLoopCycle( ng : *def.Engine ) void // Called by engine.loopLogic() ( ev
 
 
 // NOTE : This is where you should capture inputs to update global flags
-pub fn OnUpdateInputs( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateFrame( ng : *def.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.space )){ ng.togglePause(); }
 
