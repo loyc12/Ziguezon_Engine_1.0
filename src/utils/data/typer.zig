@@ -4,20 +4,20 @@ const def = @import( "defs" );
 
 // ================================ ENUM ASSERTION FUNCTIONS ================================
 
-fn assertIsEnum( comptime T : type ) void
+pub inline fn assertIsEnum( comptime T : type ) void
 {
   if( @typeInfo( T ) != .@"enum" ){ @compileError( "Expected an enum type, got " ++ @typeName( T )); }
 }
 
-fn assertIsExhaustiveEnum( comptime T : type ) void
+pub inline fn assertIsEnumExhaustive( comptime T : type ) void
 {
   assertIsEnum( T );
   if( !@typeInfo( T ).@"enum".is_exhaustive ){ @compileError( "Expected an exhaustive enum, got " ++ @typeName( T )); }
 }
 
-fn assertIsEnumContiguousFromZero( comptime T : type ) void
+pub fn assertIsEnumContiguous( comptime T : type ) void
 {
-  assertIsExhaustiveEnum( T );
+  assertIsEnumExhaustive( T );
 
   const fields = @typeInfo( T ).@"enum".fields;
 
@@ -27,9 +27,9 @@ fn assertIsEnumContiguousFromZero( comptime T : type ) void
   }}
 }
 
-fn assertIsContiguousEnumWithLen( comptime T : type, comptime len : usize ) void
+pub fn assertIsEnumContiguousofLen( comptime T : type, comptime len : usize ) void
 {
-  assertIsEnumContiguousFromZero( T );
+  assertIsEnumContiguous( T );
 
   if( @typeInfo( T ).@"enum".fields.len != len )
   {
@@ -44,8 +44,8 @@ fn assertIsContiguousEnumWithLen( comptime T : type, comptime len : usize ) void
 //  Field names follow the format "AFieldName_BFieldName"
 pub fn GenPairedEnum( comptime A : type, comptime B : type ) type
 {
-  assertIsEnumContiguousFromZero( A );
-  assertIsEnumContiguousFromZero( B );
+  assertIsEnumContiguous( A );
+  assertIsEnumContiguous( B );
 
   const a_fields = @typeInfo( A ).@"enum".fields;
   const b_fields = @typeInfo( B ).@"enum".fields;
@@ -70,7 +70,7 @@ pub fn GenPairedEnum( comptime A : type, comptime B : type ) type
     .is_exhaustive = true,
   }});
 
-  assertIsContiguousEnumWithLen( PairedEnum, total );
+  assertIsEnumContiguousofLen( PairedEnum, total );
 
   return PairedEnum;
 }
@@ -104,3 +104,7 @@ pub fn splitEnums( comptime A : type, comptime B : type, pair : GenPairedEnum( A
 
   return .{ .a = aEnum, .b = bEnum };
 }
+
+// ================================ ENUM CONCATENATION ================================
+
+// pub fn concatEnum

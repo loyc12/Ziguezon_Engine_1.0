@@ -1,14 +1,15 @@
 const std = @import( "std" );
+const tpr = @import( "typer.zig" );
 
 
 pub fn GenDataMatrix4( comptime DataType : type, comptime Enum1 : type, comptime Enum2 : type, comptime Enum3 : type, comptime Enum4 : type ) type
 {
   comptime // Validate enums
   {
-    if( @typeInfo( Enum1 ) != .@"enum" ){ @compileError( "Enum1 must be an enum" ); }
-    if( @typeInfo( Enum2 ) != .@"enum" ){ @compileError( "Enum2 must be an enum" ); }
-    if( @typeInfo( Enum3 ) != .@"enum" ){ @compileError( "Enum3 must be an enum" ); }
-    if( @typeInfo( Enum4 ) != .@"enum" ){ @compileError( "Enum4 must be an enum" ); }
+    tpr.assertIsEnumContiguous( Enum1 );
+    tpr.assertIsEnumContiguous( Enum2 );
+    tpr.assertIsEnumContiguous( Enum3 );
+    tpr.assertIsEnumContiguous( Enum4 );
   }
 
   return struct
@@ -30,7 +31,7 @@ pub fn GenDataMatrix4( comptime DataType : type, comptime Enum1 : type, comptime
     {
       var matrix : SelfType = .{};
 
-      inline for( 0..len4 )| e4 |{ inline for( 0..len3 )| e3 |{ inline for( 0..len2 )| e2 |{ inline for( 0..len1 )| e1 |
+      for( 0..len4 )| e4 |{ for( 0..len3 )| e3 |{ for( 0..len2 )| e2 |{ for( 0..len1 )| e1 |
       {
         matrix.data[ e1 ][ e2 ][ e3 ][ e4 ] = newData[ e1 ][ e2 ][ e3 ][ e4 ];
       }}}}
@@ -40,7 +41,7 @@ pub fn GenDataMatrix4( comptime DataType : type, comptime Enum1 : type, comptime
 
     pub fn fillWith( self : *SelfType, value : DataType ) void
     {
-      inline for( 0..len4 )| e4 |{ inline for( 0..len3 )| e3 |{ inline for( 0..len2 )| e2 |{ inline for( 0..len1 )| e1 |
+      for( 0..len4 )| e4 |{ for( 0..len3 )| e3 |{ for( 0..len2 )| e2 |{ for( 0..len1 )| e1 |
       {
         self.data[ e1 ][ e2 ][ e3 ][ e4 ] = value;
       }}}}

@@ -1,11 +1,12 @@
 const std = @import( "std" );
+const tpr = @import( "typer.zig" );
 
 
 pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
 {
   comptime // Validate enum
   {
-    if( @typeInfo( IdxEnum ) != .@"enum" ){ @compileError( "IdxEnum must be an enum" ); }
+    tpr.assertIsEnumContiguous( IdxEnum );
   }
 
   return struct
@@ -23,7 +24,7 @@ pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
     {
       var array : SelfType = .{};
 
-      inline for( 0..len )| idx |
+      for( 0..len )| idx |
       {
         array.data[ idx ] = newData[ idx ];
       }
@@ -33,7 +34,7 @@ pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
 
     pub fn fillWith( self : *SelfType, value : DataType ) void
     {
-      inline for( 0..len )| idx |
+      for( 0..len )| idx |
       {
         self.data[ idx ] = value;
       }
@@ -85,17 +86,6 @@ pub fn GenDataLine( comptime DataType : type, comptime IdxEnum : type ) type
     pub inline fn ptr( self : *SelfType, idx : IdxEnum ) *DataType
     {
       return &self.data[ @intFromEnum( idx )];
-    }
-
-
-    pub inline fn getSliceC( self : *const SelfType, idx : IdxEnum ) []const DataType
-    {
-      return self.getSliceM( idx );
-    }
-
-    pub inline fn getSliceM( self : *SelfType, idx : IdxEnum ) []DataType
-    {
-      return self.data[ @intFromEnum( idx )][ 0..len ];
     }
   };
 }

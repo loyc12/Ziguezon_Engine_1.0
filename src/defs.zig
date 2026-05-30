@@ -237,7 +237,7 @@ pub const BitField64 = flg_u.BitField64;
 
 // ======== TIMING ========
 
-pub const tmr_u         = @import( "utils/data/timer.zig" );
+pub const tmr_u = @import( "utils/data/timer.zig" );
 
 pub const TimeVal       = tmr_u.TimeVal;
 pub const Timer         = tmr_u.Timer;
@@ -248,7 +248,7 @@ pub const getNow        = tmr_u.getNow;
 
 // ======== TYPING ========
 
-pub const tpr_u         = @import( "utils/data/typer.zig" );
+pub const tpr_u = @import( "utils/data/typer.zig" );
 
 pub const GenPairedEnum = tpr_u.GenPairedEnum;
 pub const GenSplitEnum  = tpr_u.GenSplitEnum;
@@ -263,9 +263,9 @@ pub const vec2_u = @import( "utils/data/vecter2.zig" );
 pub const vec3_u = @import( "utils/data/vecter3.zig" );
 pub const vecA_u = @import( "utils/data/vecterA.zig" );
 
-pub const Vec2   = vec2_u.Vec2;
-pub const Vec3   = vec3_u.Vec3;
-pub const VecA   = vecA_u.VecA;
+pub const Vec2 = vec2_u.Vec2;
+pub const Vec3 = vec3_u.Vec3;
+pub const VecA = vecA_u.VecA;
 
 
 

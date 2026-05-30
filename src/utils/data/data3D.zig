@@ -1,13 +1,14 @@
 const std = @import( "std" );
+const tpr = @import( "typer.zig" );
 
 
 pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime ColumnEnum : type, comptime LayerEnum : type ) type
 {
   comptime // Validate enums
   {
-    if( @typeInfo( RowEnum    ) != .@"enum" ){ @compileError( "RowEnum must be an enum"    ); }
-    if( @typeInfo( ColumnEnum ) != .@"enum" ){ @compileError( "ColumnEnum must be an enum" ); }
-    if( @typeInfo( LayerEnum  ) != .@"enum" ){ @compileError( "LayerEnum must be an enum"  ); }
+    tpr.assertIsEnumContiguous( RowEnum    );
+    tpr.assertIsEnumContiguous( ColumnEnum );
+    tpr.assertIsEnumContiguous( LayerEnum  );
   }
 
   return struct
@@ -28,7 +29,7 @@ pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime 
     {
       var matrix : SelfType = .{};
 
-      inline for( 0..layLen )| lay |{ inline for( 0..colLen )| col |{ inline for( 0..rowLen )| row |
+      for( 0..layLen )| lay |{ for( 0..colLen )| col |{ for( 0..rowLen )| row |
       {
         matrix.data[ row ][ col ][ lay ] = newData[ row ][ col ][ lay ];
       }}}
@@ -38,7 +39,7 @@ pub fn GenDataCube( comptime DataType : type, comptime RowEnum : type, comptime 
 
     pub fn fillWith( self : *SelfType, value : DataType ) void
     {
-      inline for( 0..layLen )| lay |{ inline for( 0..colLen )| col |{ inline for( 0..rowLen )| row |
+      for( 0..layLen )| lay |{ for( 0..colLen )| col |{ for( 0..rowLen )| row |
       {
         self.data[ row ][ col ][ lay ] = value;
       }}}
