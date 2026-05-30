@@ -109,7 +109,7 @@ pub const Box2 = struct
 
   pub fn newRectAABB( pos : Vec2, radii : Vec2, a : Angle ) Box2
   {
-    if( a.r == 0.0 or a.r == std.math.pi or a.r == -std.math.pi )
+    if( def.isFltZr( a.r ) or def.isFltEq( @abs( a.r ), def.PI ) or def.isFltEq( @abs( a.r ), def.TAU ))
     {
       return Box2{
         .center = pos,
@@ -150,7 +150,7 @@ pub const Box2 = struct
     {
       const iterLimit = if( sides % 2 == 0 ) sides / 2 else sides; // no need to check for each two opposite vertices
 
-      if( radii.x != radii.y ){ for( 1..iterLimit )| i | // NOTE : slower, but accounts for non isoscalar polygons
+      if( !radii.isIso() ){ for( 1..iterLimit )| i | // NOTE : slower, but accounts for non isoscalar polygons
       {
         const rVertex = Vec2.fromAngleScaled( sideStepAngle.mulVal( @floatFromInt( i )), radii ).rot( a );
 

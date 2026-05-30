@@ -157,7 +157,7 @@ pub fn GetDrawer( comptime Transform : type ) type
         if( sides == 1 ){ Self.basicLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
         else { Self.basicLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
       }
-      else if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
+      else if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
       {
         var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
 
@@ -203,7 +203,7 @@ pub fn GetDrawer( comptime Transform : type ) type
         if( sides == 1 ){ Self.basicLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
         else { Self.basicLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
       }
-      else if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
+      else if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
       {
         var rP1 = rP0;
 
@@ -253,7 +253,7 @@ pub fn GetDrawer( comptime Transform : type ) type
       // Precompute all vertex positions
       var verts : [ 32 ]Vec2 = undefined; // 32 is enough for all defined star shapes FOR NOW
 
-      if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
+      if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
       {
         for( 0..sides )| i |
         {
@@ -309,7 +309,7 @@ pub fn GetDrawer( comptime Transform : type ) type
       // Precompute all vertex positions
       var verts : [ 32 ]Vec2 = undefined; // 32 is enough for all defined star shapes FOR NOW
 
-      if( @abs( radii.x - radii.y ) > def.EPS ) // NOTE : slower, but accounts for non isoscalar polygons
+      if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
       {
         for( 0..sides )| i |
         {

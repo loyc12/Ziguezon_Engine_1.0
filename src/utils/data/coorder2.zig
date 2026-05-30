@@ -95,8 +95,6 @@ pub const Coords2 = struct
 
   pub inline fn isEq(    self : Coords2, other : Coords2 ) bool { return self.x == other.x and self.y == other.y; }
   pub inline fn isDiff(  self : Coords2, other : Coords2 ) bool { return self.x != other.x or  self.y != other.y; }
-  pub inline fn isInfXY( self : Coords2, other : Coords2 ) bool { return self.x <  other.x or  self.y <  other.y; }
-  pub inline fn isSupXY( self : Coords2, other : Coords2 ) bool { return self.x >  other.x or  self.y >  other.y; }
 
 
   // ================ OPERATIONS ================
@@ -117,7 +115,7 @@ pub const Coords2 = struct
 
   pub inline fn divVal( self : Coords2, f : f32 ) ?Coords2
   {
-    if( f == 0.0 )
+    if( def.isFltZr( f ))
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Coords2.div()" );
       return null;

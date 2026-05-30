@@ -65,14 +65,12 @@ pub const VecA = struct
 
   // ================ COMPARISONS ================
 
-  pub inline fn isPosi( self : VecA ) bool { return self.x >= 0 and self.y >= 0; }
-  pub inline fn isZero( self : VecA ) bool { return self.x == 0 and self.y == 0; }
-  pub inline fn isIso(  self : VecA ) bool { return self.x == self.y; }
+  pub inline fn isPosi( self : VecA ) bool { return self.x > 0 and self.y > 0; }
+  pub inline fn isZero( self : VecA ) bool { return def.isFltZr( self.x ) and def.isFltZr( self.y ); }
+  pub inline fn isIso(  self : VecA ) bool { return def.isFltEq( self.x, self.y ); }
 
-  pub inline fn isEq(    self : VecA, other : VecA ) bool { return self.x == other.x and self.y == other.y and self.a == other.a; }
-  pub inline fn isDiff(  self : VecA, other : VecA ) bool { return self.x != other.x or  self.y != other.y or  self.a != other.a; }
-  pub inline fn isInfXY( self : VecA, other : VecA ) bool { return self.x <  other.x or  self.y <  other.y; }
-  pub inline fn isSupXY( self : VecA, other : VecA ) bool { return self.x >  other.x or  self.y >  other.y; }
+  pub inline fn isEq(   self : VecA, other : VecA ) bool { return def.isFltEq( self.x, other.x ) and def.isFltEq( self.y, other.y ) and self.a.isEq( other.a ); }
+  pub inline fn isDiff( self : VecA, other : VecA ) bool { return !self.isEq( other ); }
 
 
   // ================ BACIS MATHS ================
@@ -85,7 +83,7 @@ pub const VecA = struct
   pub inline fn mul( self : VecA, other : VecA ) VecA { return VecA{ .x = self.x * other.x, .y = self.y * other.y, .a = self.a.mul( other.a )}; }
   pub inline fn div( self : VecA, other : VecA ) ?VecA
   {
-    if( other.x == 0.0 or other.y == 0.0 )
+    if( def.isFltZr( other.x ) or def.isFltZr( other.y ) )
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in VecA.div()" );
       return null;
@@ -98,7 +96,7 @@ pub const VecA = struct
   pub inline fn mulVal( self : VecA, val : f64 ) VecA { return VecA{ .x = self.x * val, .y = self.y * val, .a = self.a.mulVal( @floatCast( val ))}; }
   pub inline fn divVal( self : VecA, val : f64 ) ?VecA
   {
-    if( -def.EPS > val and val < def.EPS )
+    if( def.isFltZr( val ))
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in VecA.divVal()" );
       return null;
@@ -140,20 +138,20 @@ pub const VecA = struct
   // Normalizes a vector to a new length, returns null if the vector is zero'd
   pub fn normToLen( self : VecA, newLen : f64 ) VecA
   {
-    if( newLen == 0.0 )
+    if( def.isFltZr( newLen ))
     {
       def.qlog( .WARN, 0, @src(), "Normalizing a VecA to 0" );
       return .{};
     }
 
     const oldLenSqr = self.lenSqr();
-    if( oldLenSqr  == 0.0 )
+    if( def.isFltZr( oldLenSqr ))
     {
       def.qlog( .WARN, 0, @src(), "Normalizing a 0:0 VecA" );
       return .{};
     }
 
-    if( oldLenSqr == newLen * newLen ){ return self; } // TODO : use EPS for float comparisons
+    if( def.isFltEq( oldLenSqr, newLen * newLen )){ return self; }
     const factor = newLen / @sqrt( oldLenSqr );
 
     return self.mulVal( factor );

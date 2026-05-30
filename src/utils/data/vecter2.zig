@@ -72,13 +72,11 @@ pub const Vec2 = struct
   // ================ COMPARISONS ================ // TODO : add EPS ranges to accout for fp errors
 
   pub inline fn isPosi( self : Vec2 ) bool { return self.x >= 0 and self.y >= 0; }
-  pub inline fn isZero( self : Vec2 ) bool { return self.x == 0 and self.y == 0; }
-  pub inline fn isIso(  self : Vec2 ) bool { return self.x == self.y; }
+  pub inline fn isZero( self : Vec2 ) bool { return def.isFltZr( self.x ) and def.isFltZr( self.y ); }
+  pub inline fn isIso(  self : Vec2 ) bool { return def.isFltEq( self.x, self.y ); }
 
-  pub inline fn isEq(    self : Vec2, other : Vec2 ) bool { return self.x == other.x and self.y == other.y; }
-  pub inline fn isDiff(  self : Vec2, other : Vec2 ) bool { return self.x != other.x or  self.y != other.y; }
-  pub inline fn isInfXY( self : Vec2, other : Vec2 ) bool { return self.x <  other.x or  self.y <  other.y; }
-  pub inline fn isSupXY( self : Vec2, other : Vec2 ) bool { return self.x >  other.x or  self.y >  other.y; }
+  pub inline fn isEq(   self : Vec2, other : Vec2 ) bool { return def.isFltEq( self.x, other.x ) and def.isFltEq( self.y, other.y ); }
+  pub inline fn isDiff( self : Vec2, other : Vec2 ) bool { return !self.isEq( other ); }
 
 
   // ================ BACIS MATHS ================
@@ -92,7 +90,7 @@ pub const Vec2 = struct
   pub inline fn mul( self : Vec2, other : Vec2 ) Vec2 { return Vec2{ .x = self.x * other.x, .y = self.y * other.y }; }
   pub inline fn div( self : Vec2, other : Vec2 ) ?Vec2
   {
-    if( other.x == 0.0 or other.y == 0.0 )
+    if( def.isFltZr( other.x ) or def.isFltZr( other.y ))
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Vec2.div()" );
       return null;
@@ -105,7 +103,7 @@ pub const Vec2 = struct
   pub inline fn mulVal( self : Vec2, val : f64 ) Vec2 { return Vec2{ .x = self.x * val, .y = self.y * val }; }
   pub inline fn divVal( self : Vec2, val : f64 ) ?Vec2
   {
-    if( val == 0.0 )
+    if( def.isFltZr( val ))
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Vec2.divVal()" );
       return null;
@@ -147,21 +145,21 @@ pub const Vec2 = struct
   // Normalizes a vector to a new length, returns null if the vector is zero'd
   pub fn normToLen( self : Vec2, newLen : f64 ) Vec2
   {
-    if( newLen == 0.0 )
+    if( def.isFltZr( newLen ))
     {
       def.qlog( .TRACE, 0, @src(), "Normalizing a Vec2 to 0" );
       return .{};
     }
 
     const oldLenSqr = self.lenSqr();
-    if( oldLenSqr  == 0.0 )
+    if( def.isFltZr( oldLenSqr ))
     {
       def.qlog( .TRACE, 0, @src(), "Normalizing a 0:0 Vec2" );
       return .{};
     }
 
-    if( oldLenSqr == newLen * newLen ){ return self; } // TODO : use EPS for float comparisons
-    const factor  =  newLen / @sqrt( oldLenSqr );
+    if( def.isFltEq( oldLenSqr, newLen * newLen )){ return self; }
+    const factor = newLen / @sqrt( oldLenSqr );
 
     return self.mulVal( factor );
   }

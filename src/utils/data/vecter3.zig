@@ -58,13 +58,11 @@ pub const Vec3 = struct
   // ================ COMPARISONS ================
 
   pub inline fn isPosi( self : Vec3 ) bool { return self.x >= 0 and self.y >= 0 and self.z >= 0; }
-  pub inline fn isZero( self : Vec3 ) bool { return self.x == 0 and self.y == 0 and self.z == 0; }
-  pub inline fn isIso(  self : Vec3 ) bool { return self.x == self.y and self.y == self.z; }
+  pub inline fn isZero( self : Vec3 ) bool { return def.isFltZr( self.x ) and def.isFltZr( self.y ) and def.isFltZr( self.z ); }
+  pub inline fn isIso(  self : Vec3 ) bool { return def.isFltEq( self.x, self.y ) and def.isFltEq( self.x, self.z ); }
 
-  pub inline fn isEq(     self : Vec3, other : Vec3 ) bool { return self.x == other.x and self.y == other.y and self.z == other.z; }
-  pub inline fn isDiff(   self : Vec3, other : Vec3 ) bool { return self.x != other.x or  self.y != other.y or  self.z != other.z; }
-  pub inline fn isInfXYZ( self : Vec3, other : Vec3 ) bool { return self.x <  other.x or  self.y <  other.y or  self.z <  other.z; }
-  pub inline fn isSupXYZ( self : Vec3, other : Vec3 ) bool { return self.x >  other.x or  self.y >  other.y or  self.z >  other.z; }
+  pub inline fn isEq(   self : Vec3, other : Vec3 ) bool { return def.isFltEq( self.x, other.x ) and def.isFltEq( self.y, other.y ) and def.isFltEq( self.z, other.z ); }
+  pub inline fn isDiff( self : Vec3, other : Vec3 ) bool { return !self.isEq( other ); }
 
 
   // ================ BACIS MATHS ================
@@ -77,7 +75,7 @@ pub const Vec3 = struct
   pub inline fn mul( self : Vec3, other : Vec3 ) Vec3 { return Vec3{ .x = self.x * other.x, .y = self.y * other.y, .z = self.z * other.z }; }
   pub inline fn div( self : Vec3, other : Vec3 ) ?Vec3
   {
-    if( other.x == 0.0 or other.y == 0.0 or other.z == 0.0 )
+    if( def.isFltZr( other.x ) or def.isFltZr( other.y ) or def.isFltZr( other.z ) )
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Vec3.div()" );
       return null;
@@ -90,7 +88,7 @@ pub const Vec3 = struct
   pub inline fn mulVal( self : Vec3, val : f64 ) Vec3 { return Vec3{ .x = self.x * val, .y = self.y * val, .z = self.z * val }; }
   pub inline fn divVal( self : Vec3, val : f64 ) ?Vec3
   {
-    if( val == 0.0 )
+    if( def.isFltZr( val ))
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Vec3.divVal()" );
       return null;
@@ -141,20 +139,20 @@ pub const Vec3 = struct
   // Normalizes a vector to a new length, returns null if the vector is zero'd
   pub fn normToLen( self : Vec3, newLen : f64 ) Vec3
   {
-    if( newLen == 0.0 )
+    if( def.isFltZr( newLen ))
     {
       def.qlog( .WARN, 0, @src(), "Normalizing a Vec3 to 0" );
       return .{};
     }
 
     const oldLenSqr = self.lenSqr();
-    if( @abs( oldLenSqr ) < def.eps )
+    if( def.isFltZr( oldLenSqr ))
     {
       def.qlog( .WARN, 0, @src(), "Normalizing a 0:0 Vec3" );
       return .{};
     }
 
-    if( oldLenSqr == newLen * newLen ){ return self; } // TODO : use EPS for float comparisons
+    if( def.isFltEq( oldLenSqr, newLen * newLen )){ return self; }
     const factor = newLen / @sqrt( oldLenSqr );
 
     return self.mulVal( factor );
@@ -166,7 +164,7 @@ pub const Vec3 = struct
   //pub inline fn rotDeg( self : Vec3, a : Angle ) Vec3 { return self.rot( def.DtR( a )); }
   //pub inline fn rot(    self : Vec3, a : Angle ) Vec3
   //{
-  //  if( angle == 0.0 ){ return *self; } // No rotation needed
+  //  if( a.isZero() ){ return *self; } // No rotation needed
   //  const cosA = @cos( a );
   //  const sinA = @sin( a );
 
@@ -179,7 +177,7 @@ pub const Vec3 = struct
   //pub inline fn angleDeg( self : Vec3 ) f64 { return def.RtD( self.angle() ); }
   //pub inline fn angle(    self : Vec3 ) f64
   //{
-  //  if( self.x == 0.0 and self.y == 0.0 )
+  //  if( def.isFltZr( self.x ) and def.isFltZr( self.y ))
   //  {
   //    def.qlog( .WARN, 0, @src(), "Angle of a zero vector in Vec3.angle()" );
   //    return 0.0;

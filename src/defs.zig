@@ -312,9 +312,9 @@ pub const IR3  = mth_u.IR3;
 
 // Builtins
 
-pub const atan2 = mth_u.atan2;
-pub const DtR   = mth_u.DtR;
-pub const RtD   = mth_u.RtD;
+pub const atan2   = mth_u.atan2;
+pub const DtR     = mth_u.DtR;
+pub const RtD     = mth_u.RtD;
 
 pub const clmp    = mth_u.clmp;
 pub const lerp    = mth_u.lerp;
@@ -329,9 +329,12 @@ pub const gcd     = mth_u.gcd;
 
 // Custom
 
-pub const inv1 = mth_u.inv1;
-pub const sign = mth_u.sign;
-pub const pow2 = mth_u.pow2;
+pub const isFltZr = mth_u.isFltZr;
+pub const isFltEq = mth_u.isFltEq;
+
+pub const sign    = mth_u.getSign;
+pub const inv1    = mth_u.inv1;
+pub const pow2    = mth_u.pow2;
 
 pub const sigmoid = mth_u.sigmoid;
 pub const softCap = mth_u.softCap;

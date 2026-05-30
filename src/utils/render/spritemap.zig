@@ -91,7 +91,7 @@ pub const Spritemap = struct
 
     const atlasSize = Vec2{ .x = @floatFromInt( self.atlas.?.width ), .y = @floatFromInt( self.atlas.?.height )};
 
-    if( frameSize.isSupXY( atlasSize ))
+    if( frameSize.x > atlasSize.x or frameSize.y > atlasSize.y )
     {
       def.qlog( .ERROR, 0, @src(), "frameSize is larger than atlasSize : returning" );
       self.deinit();

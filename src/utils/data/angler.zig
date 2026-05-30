@@ -47,12 +47,12 @@ pub const Angle = struct
 
   // ================ COMPARISONS ================
 
-  pub inline fn isPosi(  self : *const Angle ) bool { return self.r > 0; }
-  pub inline fn isNeg(  self : *const Angle ) bool { return self.r < 0; }
-  pub inline fn isZero( self : *const Angle ) bool { return self.r == 0; }
+  pub inline fn isPosi( self : *const Angle ) bool { return self.r >  def.EPS; }
+  pub inline fn isNeg(  self : *const Angle ) bool { return self.r < -def.EPS; }
+  pub inline fn isZero( self : *const Angle ) bool { return def.isFltZr( self.r ); }
 
-  pub inline fn isEq(   self : *const Angle, other : Angle ) bool { return self.r == other.r; }
-  pub inline fn isDiff( self : *const Angle, other : Angle ) bool { return self.r != other.r; }
+  pub inline fn isEq(   self : *const Angle, other : Angle ) bool { return  def.isFltEq( self.r, other.r ); }
+  pub inline fn isDiff( self : *const Angle, other : Angle ) bool { return !def.isFltEq( self.r, other.r ); }
 
   pub inline fn isLeftOf(  self : *const Angle, other : Angle ) bool { return self.sub( other ).isPosi(); }
   pub inline fn isRightOf( self : *const Angle, other : Angle ) bool { return self.sub( other ).isNeg(); }
@@ -85,7 +85,7 @@ pub const Angle = struct
   pub inline fn mulVal( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r * val ).norm(); }
   pub inline fn divVal( self : *const Angle, val : f64 ) Angle
   {
-    if( val == 0 )
+    if( def.isFltZr( val ) )
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Angle.div()" );
       return self.*;

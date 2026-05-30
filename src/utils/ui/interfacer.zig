@@ -66,15 +66,14 @@ fn getEmptyVertexArray() VertexArray { comptime return .{ .{}, .{}, .{}, .{}, .{
 
 pub const Interface2D = struct
 {
-
   pos   : VecA,
   scale : Vec2 = .new( 128, 128 ),
   layer : u16  = 1,
 
   shape : InterfaceShape = .RECT,
 
-  isActive   : bool = true,
-  isSelected : bool = false,
+  isActive  : bool = true,
+  isInit    : bool = false,
 
   lineWidth : f64 = 1,
   edgeWidth : f64 = 8,
@@ -90,6 +89,21 @@ pub const Interface2D = struct
   bevelVertsR : VertexArray  = getEmptyVertexArray(), // Bevel end point
   bevelVertsI : VertexArray  = getEmptyVertexArray(), // Inner corners
 
+  pub inline fn setShape( self : *Interface2D, newShape : InterfaceShape ) void
+  {
+    if( self.shape != newShape ){ self.isInit = false; }
+
+    self.shape = newShape;
+  }
+
+  pub inline fn setBevelStrenght( self : *Interface2D, bevelIdx : usize, newStrenght : f32 ) void
+  {
+    const oldBevelStrenght = self.bevelStrenght[ bevelIdx ];
+
+    if( !def.isFltEq( oldBevelStrenght, newStrenght )){ self.isInit = false; }
+
+    self.bevelStrenght[ bevelIdx ] = newStrenght;
+  }
 
   pub inline fn getCornerCount( self : *const Interface2D ) u8 { return self.shape.getCornerCount(); }
 
@@ -100,7 +114,7 @@ pub const Interface2D = struct
 
     for( 0..self.shape.getCornerCount() )| b |
     {
-      if( @abs( self.bevelStrenght[ b ] - 1.0 ) > def.EPS ){ return true; }
+      if( !def.isFltEq( self.bevelStrenght[ b ], 1.0 )){ return true; }
     }
 
     return false;
@@ -108,7 +122,11 @@ pub const Interface2D = struct
 
   pub fn updateShapeVertices( self : *Interface2D ) void
   {
-    if( self.shape == .ELLI ){ return; }
+    if( self.shape == .ELLI )
+    {
+      self.isInit = true;
+      return;
+    }
 
     const n      : u8  = self.shape.getCornerCount();
     const n_f    : f32 = @floatFromInt( n );
@@ -179,8 +197,7 @@ pub const Interface2D = struct
         // Intersect inset edges to find inner corner
         const cross = eA_dir.x * eB_dir.y - eA_dir.y * eB_dir.x;
 
-        const inner = if( @abs( cross ) < def.EPS )
-          self.bevelVertsO[ i ].sub( eA_norm.mulVal( self.edgeWidth ))
+        const inner = if( def.isFltZr( cross )) self.bevelVertsO[ i ].sub( eA_norm.mulVal( self.edgeWidth ))
         else blk:
         {
           const d = eB_pt.sub( eA_pt );
@@ -197,12 +214,18 @@ pub const Interface2D = struct
         self.bevelVertsR[ i ] = self.bevelVertsO[ i ].add( eB_dir.mulVal( toInner.dot( eB_dir )));
       }
     }
+    self.isInit = true;
   }
 
   pub fn drawSelf( self : *const Interface2D ) void
   {
     const pos = self.pos.toVec2(); // Shape center pos
     const ang = self.pos.a;        // Shape base angle
+
+    if( !self.isInit )
+    {
+      self.updateShapeVertices();
+    }
 
     // Ellipses cannot have bevels
     if( self.shape == .ELLI )
@@ -273,7 +296,7 @@ pub const Interface2D = struct
         const v2  = self.bevelVertsR[ i ]; // Corner's right vertex
         const v12 = self.bevelVertsO[ i ]; // Corner's outer vertex
 
-        if( @abs( self.bevelStrenght[ i ] - 1.0 ) < def.EPS ) // Squared bevel ( Special S = 1,0 Case )
+        if( def.isFltEq( self.bevelStrenght[ i ], 1.0 )) // Squared bevel
         {
           drawer.basicQuad( v1, v0, v2, v12,  self.edgeCol   );
           drawer.basicLine( v1, v12, self.lineCol, self.lineWidth );
@@ -281,7 +304,7 @@ pub const Interface2D = struct
 
           continue;
         }
-        if( @abs( self.bevelStrenght[ i ] + 1.0 ) < def.EPS ) // Diagonal bevel ( Special S = -1.0 case )
+        if( def.isFltEq( self.bevelStrenght[ i ], -1.0 )) // Diagonal bevel
         {
           drawer.basicTria( v1, v0, v2,      self.edgeCol   );
           drawer.basicLine( v1, v2, self.lineCol, self.lineWidth );
@@ -289,7 +312,7 @@ pub const Interface2D = struct
           continue;
         }
 
-        const t : f64 = @abs( self.bevelStrenght[ i ]);
+        const t : f64 = @abs( self.bevelStrenght[ i ]); // NOTE : Can make lerp go past 1.0 strenght. This is intended
 
         switch( getBevelDir( self.bevelStrenght[ i ]))
         {

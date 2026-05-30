@@ -88,7 +88,7 @@ pub const Tilemap = struct
       def.log( .TRACE, 0, @src(), "Tile position {d}:{d} is negative, cannot be in grid", .{ coords.x, coords.y });
       return false;
     }
-    if( coords.isSupXY( self.mapSize.subVal( 1 )))
+    if( coords.x >= self.mapSize.x or coords.y >= self.mapSize.y )
     {
       def.log( .TRACE, 0, @src(), "Tile position {d}:{d} is out of bounds for tilemap with scale {d}:{d}", .{ coords.x, coords.y, self.mapSize.x, self.mapSize.y });
       return false;

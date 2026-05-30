@@ -36,7 +36,30 @@ pub const gcd   = std.math.gcd;
 
 // Customs
 
-pub inline fn sign( val : anytype ) @TypeOf( val )
+pub inline fn isFltZr( a : anytype ) bool
+{
+  switch( @typeInfo( @TypeOf( a )))
+  {
+    .float, .comptime_float =>
+    {
+      return( @abs( a ) < EPS );
+    },
+    else => @compileError( "isFltEq() only supports Float types" ),
+  }
+}
+pub inline fn isFltEq( a : anytype, b : @TypeOf( a ) ) bool
+{
+  switch( @typeInfo( @TypeOf( a )))
+  {
+    .float, .comptime_float =>
+    {
+      return( @abs( a - b ) < EPS );
+    },
+    else => @compileError( "isFltEq() only supports Float types" ),
+  }
+}
+
+pub inline fn getSign( val : anytype ) @TypeOf( val )
 {
   switch( @typeInfo( @TypeOf( val )))
   {

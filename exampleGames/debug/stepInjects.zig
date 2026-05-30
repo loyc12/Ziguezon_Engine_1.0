@@ -79,9 +79,7 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
     var newShape : usize = @intFromEnum( ui.shape );
         newShape = @mod( newShape + 1, def.InterfaceShape.count );
 
-    ui.shape = @enumFromInt( newShape );
-
-    ui.updateShapeVertices();
+    ui.setSHape( @enumFromInt( newShape ));
   }
 
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.v ))
@@ -91,10 +89,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
     for( 0..n )| i |
     {
-      ui.bevelStrenght[ i ] = s;
+       ui.setBevelStrenght( i, s );
     }
-
-    ui.updateShapeVertices();
   }
 
   if( def.ray.isKeyPressed( def.ray.KeyboardKey.b ))
@@ -104,10 +100,8 @@ pub fn OnUpdateInputs( ng : *def.Engine ) void
 
     for( 0..n )| i |
     {
-      ui.bevelStrenght[ i ] = s;
+      ui.setBevelStrenght( i, s );
     }
-
-    ui.updateShapeVertices();
   }
 
 

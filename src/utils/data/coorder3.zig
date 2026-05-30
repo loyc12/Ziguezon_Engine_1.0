@@ -73,8 +73,6 @@ pub const Coords3 = struct
 
   pub inline fn isEq(     self : Coords3, other : Coords3 ) bool { return self.x == other.x and self.y == other.y and self.z == other.z; }
   pub inline fn isDiff(   self : Coords3, other : Coords3 ) bool { return self.x != other.x or  self.y != other.y or  self.z != other.z; }
-  pub inline fn isInfXYZ( self : Coords3, other : Coords3 ) bool { return self.x <  other.x or  self.y <  other.y or  self.z < other.z; }
-  pub inline fn isSupXYZ( self : Coords3, other : Coords3 ) bool { return self.x >  other.x or  self.y >  other.y or  self.z > other.z; }
 
   // ================ OPERATIONS ================
 
@@ -95,7 +93,7 @@ pub const Coords3 = struct
 
   pub inline fn divVal( self : Coords3, f : f32 ) ?Coords3
   {
-    if( f == 0.0 )
+    if( def.isFltZr( f ))
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Coords3.div()" );
       return null;

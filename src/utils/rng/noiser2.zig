@@ -124,7 +124,7 @@ pub const Noise2D = struct
 
   inline fn baseWarpPos( self : Noise2D, pos : Vec2 ) Vec2
   {
-    if( self.warpStrenght == 0.0 ) return pos;
+    if( def.isFltZr( self.warpStrenght )){ return pos; }
 
     const wx = self.baseSample( pos.add( .{ .x = 79.0, .y = 67.0 }));
     const wy = self.baseSample( pos.add( .{ .x = 53.0, .y = 97.0 }));

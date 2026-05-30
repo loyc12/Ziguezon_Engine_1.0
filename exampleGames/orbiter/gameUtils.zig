@@ -280,6 +280,10 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
     def.log( .DEBUG, 0, @src(), "Ticked {d} distinct economies", .{ econCount });
   }
   def.log( .DEBUG, 0, @src(), "==== Ticked global economy {d} time(s) ====", .{ stepCount });
+
+
+  // DEBUG logging
+//gdf.debugLogTravelCostsList( .TERRA, .ORBIT );
 }
 
 pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void

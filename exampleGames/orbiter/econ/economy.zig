@@ -1113,8 +1113,6 @@ pub const Economy = struct
     self.debugAutoBuild();
     self.logSpecialMetrics();
     solver.logAllMetrics();
-
-    gdf.debugLogTravelCostsList( .TERRA, .ORBIT );
   }
 
   inline fn postStepUpdates( self : *Economy ) void

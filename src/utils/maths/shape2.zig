@@ -17,14 +17,14 @@ inline fn getRamanujanFactor( a : f64, b : f64 ) f64
   const sum = a + b;
   const dif = a - b;
 
-  if ( sum < def.EPS ) return 1.0;
-  if ( dif < def.EPS ) return 1.0;
+  if( def.isFltZr( sum )) return 1.0;
+  if( def.isFltZr( dif )) return 1.0; // Math would result in 1.0 anyways
 
   // Ellipticity parameter
-  const h = ( dif * dif ) / ( sum * sum );
+  const h3 = 3.0 * (( dif * dif ) / ( sum * sum ));
 
   // Ramanujan correction factor
-  return 1.0 + ( 3.0 * h ) / ( 10.0 + @sqrt( 4.0 - ( 3.0 * h )));
+  return 1.0 + ( h3 / ( 10.0 + @sqrt( 4.0 - h3 )));
 }
 
 
@@ -161,7 +161,7 @@ pub const Shape2D = enum( u8 )
       {
         const regP = PI * ( rX + rY );
 
-        if( @abs( rX - rY ) < def.EPS ) // Circle circumference from radius
+        if( def.isFltEq( rX, rY )) // Circle circumference from radius
         {
           return regP;
         }
@@ -181,7 +181,7 @@ pub const Shape2D = enum( u8 )
         const regP = ( 2.0 * N ) * rM * @sin( k * PI / N );
       //const regP = ( 2.0 * N ) * rM * @sin( PI / N );
 
-        if( @abs( rX - rY ) < def.EPS ) // Regular polygon perimeter from circumradius ( trigonometric form )
+        if( def.isFltEq( rX, rY )) // Regular polygon perimeter from circumradius ( trigonometric form )
         {
           return regP;
         }
