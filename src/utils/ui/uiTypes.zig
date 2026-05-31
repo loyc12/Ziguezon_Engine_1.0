@@ -180,5 +180,5 @@ pub inline fn boxFromTopLeft( topLeft : def.Vec2, size : def.Vec2 ) def.Box2
 
 pub inline fn boxSize( box : def.Box2 ) def.Vec2
 {
-  return box.scale.mulVal( 2.0 );
+  return box.getSize();
 }

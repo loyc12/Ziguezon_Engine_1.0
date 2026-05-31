@@ -20,6 +20,8 @@ This pass should add:
 
 Keep the current MVP architecture: engine-owned manager, retained nodes, `Box2` bounds, simple `sDraw` rendering, UI-local events, and game-facing use through `def.UiManager`.
 
+Treat `interfacer.zig` as a deprecated/stub visual experiment. Do not read from it, refactor it, depend on it, or route rendering through it unless the user explicitly asks for that later.
+
 ## Location
 
 All new retained UI implementation files should live under `src/utils/ui/`.
@@ -50,7 +52,9 @@ The frame sequence should stay:
 
 Only change this ordering if the new behavior cannot be made correct otherwise, and document the reason in `todo.md`.
 
-Do not integrate retained UI with `src/core/event` in this pass unless it becomes necessary for the sandbox. The current UI-local event buffer is acceptable for v0.5.
+Do not integrate retained UI with `src/core/event` in this pass unless the user explicitly changes the scope. The current UI-local event buffer is preferred for v0.5 because it is narrow, already used by `menuer`, and keeps UI command ordering easy to reason about while the global event manager remains mostly unused and insufficiently validated.
+
+Use `Box2` for retained UI layout output, draw bounds, hit testing, overlap checks, clipping decisions, and screen-edge clamping. Its min/max, size, `isOnPoint`, overlap, `clampIn`, `clampOn`, and `clampOut` semantics are suitable for this pass and covered by focused Box2 tests.
 
 ## Style Constraints
 
@@ -131,6 +135,8 @@ Implementation expectations:
 
 Use fixed text buffers consistent with the current node text approach. Do not add rich text.
 
+Use Box2 helpers for tooltip bounds when they make the code clearer. Prefer `getSize` / `getSizeX` / `getSizeY` over repeated `scale * 2.0` math.
+
 ### 5. Debug Overlay
 
 Add an optional compact debug overlay for retained UI state.
@@ -178,6 +184,7 @@ Do not implement these unless needed to complete the above behavior:
 * world-space UI / anchors
 * engine event system integration
 * `interfacer.zig` bevel / shape integration
+* any cleanup, replacement, or partial integration of `interfacer.zig`
 * advanced theme files
 
 ## Validation
@@ -186,6 +193,7 @@ Required checks:
 
 * `zig build -Dengine_interface_path=exampleGames/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`
 * `zig build`
+* `zig build test` after touching utility code such as `Box2`
 
 Do not run `zig fmt`.
 

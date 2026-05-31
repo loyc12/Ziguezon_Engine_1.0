@@ -11,7 +11,7 @@ Action checklist for the retained-mode UI system. Design rationale lives in `ui_
 * UI frame processing runs in `engineStep.updateFrame`: `beginFrame`, `updateLayout`, `dispatchInput`, game `OnUpdateFrame`, then `endFrame`.
 * Screen UI render runs from `engineStep.renderAll` in the overlay phase after game `OnRenderOverlay` and before debug FPS / TPS text.
 * UI currently reads game state through direct sandbox updates and writes back through a UI-local event buffer.
-* `interfacer.zig` is not wired into retained UI rendering yet.
+* `interfacer.zig` is a deprecated/stub visual experiment for now. Ignore it for retained UI work until the user explicitly asks to revisit it.
 
 ## 1. Completed MVP
 
@@ -38,9 +38,10 @@ Action checklist for the retained-mode UI system. Design rationale lives in `ui_
 
 * Run `zig build`
 * Run `zig build -Dengine_interface_path=exampleGames/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`
+* Run `zig build test` after utility-level changes
 * Do not run formatting pass
 
-Passed as of 2026-05-31, 13:58
+Passed as of 2026-05-31, 14:23 EDT
 
 ## 3. Active Next Slice
 
@@ -56,17 +57,17 @@ Expected headline tasks:
 * Add a compact UI debug overlay for layer / focus / hover / capture state.
 * Extend `exampleGames/menuer` to exercise each new behavior.
 
-## 4. Known Gaps And Clashes
+## 4. Resolved Conflicts And Known Gaps
 
-* `ui_roadmap.txt` says Box2 semantics should be fixed / verified before UI relies on it, but the MVP already relies on `Box2.isOnPoint` for hit testing. Treat Box2 verification as a near-term correctness task, not a prerequisite that can still block the MVP.
-* `ui_roadmap.txt` recommends UI actions become engine events through `src/core/event`, but the MVP currently uses a UI-local event buffer. Keep the local buffer for the next slice unless engine event integration is explicitly selected.
-* `ui_roadmap.txt` describes a renderer interface backed by `sDraw` plus the visual half of `interfacer.zig`; the current implementation directly renders in `uiContext.zig` through `sDraw`. The next slice should extract a small render helper only if scroll clipping or layers make it clearly useful.
-* `implementation_brief.md` keeps `interfacer.zig` integration out of scope for now to preserve the previous constraint. This is a deliberate deferral from the roadmap.
-* There are no dedicated unit tests for retained UI or Box2 UI semantics yet; current validation is build plus the `menuer` sandbox.
+* Box2 is suitable for retained UI layout bounds, hit tests, overlap checks, and screen-edge clamping. The relation semantics and `clampIn` / `clampOn` / `clampOut` behavior are now covered by focused Box2 tests.
+* Prefer Box2 `getSize` / `getSizeX` / `getSizeY` over ad hoc `scale * 2.0` math in new UI code.
+* `ui_roadmap.txt` recommends UI actions become engine events through `src/core/event`, but the current global `EventManager` is unused, lightly validated, and has uncompiled-risk code paths. Keep the UI-local event buffer for the next slice; revisit global event integration after the event manager has tests or a real non-UI consumer.
+* `ui_roadmap.txt` describes a renderer interface backed by `sDraw` plus the visual half of `interfacer.zig`; the current implementation directly renders in `uiContext.zig` through `sDraw`. Since `interfacer.zig` is treated as a stub, the next slice should ignore it entirely and extract a small render helper only if scroll clipping or layers make it clearly useful.
+* There are no dedicated unit tests for retained UI behavior yet; current UI validation is build plus the `menuer` sandbox.
 
 ## 5. Later
 
-* Engine event integration for UI commands.
+* Engine event integration for UI commands after `src/core/event` has a validated dispatch contract.
 * Comptime panel definitions and `ui.show` / `ui.hide` API.
 * Text input.
 * Dropdown.
@@ -82,4 +83,4 @@ Expected headline tasks:
 * Theme / skin files.
 * Hot-reloadable panel definitions.
 * World-space UI / anchors.
-* `interfacer.zig` bevel / shape integration as a retained UI panel renderer.
+* Possible replacement or rewrite of `interfacer.zig` as a retained UI panel renderer, only after explicit user approval.

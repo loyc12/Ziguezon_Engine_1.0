@@ -5,9 +5,11 @@ const Angle = def.Angle;
 const Vec2  = def.Vec2;
 const VecA  = def.VecA;
 
-// TODO : review the logic in this file for issues, as I do not trust claude code
-
 // This is a simple AABB struct ( Axis-Aligned Bounding Box ) meant to ease collision checks and position clamping
+// Relation semantics:
+// - In  : fully contained in a range / area
+// - Out : no overlap at all
+// - On  : at least partially overlaps, including edge contact
 
 // NOTE : The orientations are defined as follows :
 
@@ -28,7 +30,7 @@ pub inline fn getCenterXFromMaxX( xMax : f64, scale : Vec2 ) f64 { return xMax -
 pub inline fn getCenterYFromMinY( yMin : f64, scale : Vec2 ) f64 { return yMin + scale.y; }
 pub inline fn getCenterYFromMaxY( yMax : f64, scale : Vec2 ) f64 { return yMax - scale.y; }
 
-// TODO : remove these legacy wrapper functions once they are deemed unused
+// Legacy directional aliases kept while body/game call sites still use them.
 pub inline fn getCenterXFromLeftX(   leftX   : f64, scale : Vec2 ) f64 { return getCenterXFromMinX( leftX,   scale ); }
 pub inline fn getCenterXFromRightX(  rightX  : f64, scale : Vec2 ) f64 { return getCenterXFromMaxX( rightX,  scale ); }
 pub inline fn getCenterYFromTopY(    topY    : f64, scale : Vec2 ) f64 { return getCenterYFromMinY( topY,    scale ); }
@@ -194,8 +196,23 @@ pub const Box2 = struct
   pub inline fn setMinY( self : *Box2, yMin : f64 ) void { self.center.y = yMin + self.scale.y; }
   pub inline fn setMaxY( self : *Box2, yMax : f64 ) void { self.center.y = yMax - self.scale.y; }
 
+  pub inline fn getScaleX( self : Box2 ) f64  { return self.scale.x; }
+  pub inline fn getScaleY( self : Box2 ) f64  { return self.scale.y; }
+  pub inline fn getScale(  self : Box2 ) Vec2 { return self.scale;   }
 
-  // TODO : remove these legacy wrapper functions once they are deemed unused
+  pub inline fn setScaleX( self : *Box2, scaleX : f64 )  void { self.scale.x = scaleX; }
+  pub inline fn setScaleY( self : *Box2, scaleY : f64 )  void { self.scale.y = scaleY; }
+  pub inline fn setScale(  self : *Box2, scale  : Vec2 ) void { self.scale   = scale;  }
+
+  pub inline fn getSizeX( self : Box2 ) f64  { return self.scale.x * 2.0; }
+  pub inline fn getSizeY( self : Box2 ) f64  { return self.scale.y * 2.0; }
+  pub inline fn getSize(  self : Box2 ) Vec2 { return self.scale.mulVal( 2.0 ); }
+
+  pub inline fn setSizeX( self : *Box2, sizeX : f64 )  void { self.scale.x = sizeX * 0.5; }
+  pub inline fn setSizeY( self : *Box2, sizeY : f64 )  void { self.scale.y = sizeY * 0.5; }
+  pub inline fn setSize(  self : *Box2, size  : Vec2 ) void { self.scale   = size.mulVal( 0.5 ); }
+
+  // Legacy directional aliases kept while body/game call sites still use them.
   pub inline fn getLeftX(   self : Box2 ) f64 { return self.getMinX(); }
   pub inline fn getRightX(  self : Box2 ) f64 { return self.getMaxX(); }
   pub inline fn getTopY(    self : Box2 ) f64 { return self.getMinY(); }
@@ -217,13 +234,9 @@ pub const Box2 = struct
   pub inline fn setBottomLeft(  self : *Box2, bottomLeftPos  : Vec2 ) void { self.setMinX( bottomLeftPos.x  ); self.setMaxY( bottomLeftPos.y  ); }
   pub inline fn setBottomRight( self : *Box2, bottomRightPos : Vec2 ) void { self.setMaxX( bottomRightPos.x ); self.setMaxY( bottomRightPos.y ); }
 
-
-  // TODO : Add "scaled" setters and getters for X, Y, and X+Y
-
-
   // ================ CHECKERS ================
 
-  // TODO : add an EPS size range to account for fp errors
+  // Equality is approximate through Vec2.isEq. Range predicates intentionally use strict edge comparisons.
   pub inline fn isEq(   self : Box2, zoneBox : Box2 ) bool { return self.center.isEq(   zoneBox.center ) and self.scale.isEq(   zoneBox.scale ); }
   pub inline fn isDiff( self : Box2, zoneBox : Box2 ) bool { return self.center.isDiff( zoneBox.center ) or  self.scale.isDiff( zoneBox.scale ); }
 
@@ -244,7 +257,7 @@ pub const Box2 = struct
   pub fn isInXRange( self : Box2, xMin : f64, xMax : f64 ) bool
   {
     if( !isMinMaxValid(       xMin, xMax )){                   return false; }
-    if( !isClampRangeValid(   xMin, xMax, self.scale.x * 2 )){ return false; }
+    if( !isClampRangeValid(   xMin, xMax, self.getSizeX() )){ return false; }
     if( self.goesLeftOfX(  xMin )){                         return false; }
     if( self.goesRightOfX( xMax )){                         return false; }
     return true;
@@ -252,7 +265,7 @@ pub const Box2 = struct
   pub fn isInYRange( self : Box2, yMin : f64, yMax : f64 ) bool
   {
     if( !isMinMaxValid(     yMin, yMax )){                   return false; }
-    if( !isClampRangeValid( yMin, yMax, self.scale.y * 2 )){ return false; }
+    if( !isClampRangeValid( yMin, yMax, self.getSizeY() )){ return false; }
     if( self.goesAboveY( yMin )){                         return false; }
     if( self.goesBelowY( yMax )){                         return false; }
     return true;
@@ -340,7 +353,7 @@ pub const Box2 = struct
   pub fn clampInXRange( self : *Box2, xMin : f64, xMax : f64 ) void
   {
     if( !isMinMaxValid(     xMin, xMax )){ return; }
-    if( !isClampRangeValid( xMin, xMax, self.scale.x * 2 ))
+    if( !isClampRangeValid( xMin, xMax, self.getSizeX() ))
     {
       self.center.x = ( xMin + xMax ) * 0.5;
       return;
@@ -351,7 +364,7 @@ pub const Box2 = struct
   pub fn clampInYRange( self : *Box2, yMin : f64, yMax : f64 ) void
   {
     if( !isMinMaxValid(     yMin, yMax )){ return; }
-    if( !isClampRangeValid( yMin, yMax, self.scale.y * 2 ))
+    if( !isClampRangeValid( yMin, yMax, self.getSizeY() ))
     {
       self.center.y = ( yMin + yMax ) * 0.5;
       return;
@@ -383,11 +396,40 @@ pub const Box2 = struct
   }
   pub fn clampOutOfPoint( self : *Box2, p : Vec2 ) void
   {
-    self.clampOutOfX( p.x );
-    self.clampOutOfY( p.y );
-  }
+    if( self.isOutOfPoint( p )){ return; }
 
-  // TODO : validate the clampOutOf logic
+    const depthLeft   = self.getMaxX() - p.x;
+    const depthRight  = p.x - self.getMinX();
+    const depthTop    = self.getMaxY() - p.y;
+    const depthBottom = p.y - self.getMinY();
+
+    var side : enum { left, right, top, bottom } = .left;
+    var best = depthLeft;
+
+    if( depthRight < best )
+    {
+      best = depthRight;
+      side = .right;
+    }
+    if( depthTop < best )
+    {
+      best = depthTop;
+      side = .top;
+    }
+    if( depthBottom < best )
+    {
+      best = depthBottom;
+      side = .bottom;
+    }
+
+    switch( side )
+    {
+      .left   => self.clampLeftOfX(  p.x ),
+      .right  => self.clampRightOfX( p.x ),
+      .top    => self.clampAboveY(   p.y ),
+      .bottom => self.clampBelowY(   p.y ),
+    }
+  }
 
   pub fn clampOutOfXRange( self : *Box2, xMin : f64, xMax : f64 ) void
   {
@@ -415,14 +457,14 @@ pub const Box2 = struct
   }
   pub fn clampOutOfArea( self: *Box2, pMin : Vec2, pMax : Vec2 ) void
   {
-    if( isMinMaxValidVec2( pMin, pMax )){ return; }
+    if( !isMinMaxValidVec2( pMin, pMax )){ return; }
 
     const depthLeft   = self.getMaxX() - pMin.x;
     const depthRight  = pMax.x - self.getMinX();
     const depthTop    = self.getMaxY() - pMin.y;
     const depthBottom = pMax.y - self.getMinY();
 
-    // Finding the shalowest depth's side
+    // Finding the shallowest depth's side
     var side : enum { left, right, top, bottom } = .left;
 
     var best = depthLeft;
@@ -507,9 +549,74 @@ pub const Box2 = struct
 };
 
 
+// ================================ TESTS ================================
 
+test "Box2 accessors and size helpers use center plus half-scale" {
+  var box = Box2.new( Vec2.new( 10.0, 20.0 ), Vec2.new( 3.0, 4.0 ));
 
+  try std.testing.expect( box.getMinX() ==  7.0 );
+  try std.testing.expect( box.getMaxX() == 13.0 );
+  try std.testing.expect( box.getMinY() == 16.0 );
+  try std.testing.expect( box.getMaxY() == 24.0 );
+  try std.testing.expect( box.getSizeX() == 6.0 );
+  try std.testing.expect( box.getSizeY() == 8.0 );
+  try std.testing.expect( box.getSize().isEq( Vec2.new( 6.0, 8.0 )));
 
+  box.setSize( Vec2.new( 12.0, 14.0 ));
+  try std.testing.expect( box.getScale().isEq( Vec2.new( 6.0, 7.0 )));
+
+  box.setMinX( -2.0 );
+  box.setMaxY(  9.0 );
+  try std.testing.expect( box.getMinX() == -2.0 );
+  try std.testing.expect( box.getMaxY() ==  9.0 );
+}
+
+test "Box2 in out on predicates use inclusive edge contact" {
+  const box = Box2.new( Vec2.new( 0.0, 0.0 ), Vec2.new( 2.0, 3.0 ));
+
+  try std.testing.expect( box.isOnPoint( Vec2.new( 0.0, 0.0 )));
+  try std.testing.expect( box.isOnPoint( Vec2.new( 2.0, 3.0 )));
+  try std.testing.expect( box.isOutOfPoint( Vec2.new( 2.1, 0.0 )));
+
+  try std.testing.expect( box.isInArea( Vec2.new( -2.0, -3.0 ), Vec2.new( 2.0, 3.0 )));
+  try std.testing.expect( box.isOnArea( Vec2.new( 2.0, 3.0 ), Vec2.new( 4.0, 5.0 )));
+  try std.testing.expect( box.isOutOfArea( Vec2.new( 2.1, 0.0 ), Vec2.new( 4.0, 5.0 )));
+}
+
+test "Box2 clampIn keeps box contained" {
+  var box = Box2.new( Vec2.new( 10.0, -10.0 ), Vec2.new( 2.0, 3.0 ));
+
+  box.clampInArea( Vec2.new( -5.0, -5.0 ), Vec2.new( 5.0, 5.0 ));
+
+  try std.testing.expect( box.isInArea( Vec2.new( -5.0, -5.0 ), Vec2.new( 5.0, 5.0 )));
+  try std.testing.expect( box.getMaxX() ==  5.0 );
+  try std.testing.expect( box.getMinY() == -5.0 );
+}
+
+test "Box2 clampOn keeps at least partial overlap" {
+  var box = Box2.new( Vec2.new( 10.0, 10.0 ), Vec2.new( 2.0, 2.0 ));
+  const areaMin = Vec2.new( -4.0, -4.0 );
+  const areaMax = Vec2.new(  4.0,  4.0 );
+
+  box.clampOnArea( areaMin, areaMax );
+
+  try std.testing.expect( box.isOnArea( areaMin, areaMax ));
+  try std.testing.expect( box.getMinX() == 4.0 );
+  try std.testing.expect( box.getMinY() == 4.0 );
+}
+
+test "Box2 clampOut moves by the shallowest separating side" {
+  var pointBox = Box2.new( Vec2.new( 0.0, 0.0 ), Vec2.new( 2.0, 2.0 ));
+  pointBox.clampOutOfPoint( Vec2.new( 1.0, 0.0 ));
+  try std.testing.expect( pointBox.isOutOfPoint( Vec2.new( 1.0, 0.0 )));
+  try std.testing.expect( pointBox.getMinX() == 1.0 );
+  try std.testing.expect( pointBox.center.y == 0.0 );
+
+  var areaBox = Box2.new( Vec2.new( 0.0, 0.0 ), Vec2.new( 2.0, 2.0 ));
+  areaBox.clampOutOfArea( Vec2.new( -1.0, -1.0 ), Vec2.new( 3.0, 3.0 ));
+  try std.testing.expect( areaBox.isOutOfArea( Vec2.new( -1.0, -1.0 ), Vec2.new( 3.0, 3.0 )));
+  try std.testing.expect( areaBox.getMaxX() == -1.0 );
+}
 
 
 
