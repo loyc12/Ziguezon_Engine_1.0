@@ -2,6 +2,7 @@ const std = @import( "std"  );
 const def = @import( "defs" );
 
 const Vec2 = def.Vec2;
+const Angle = def.Angle;
 
 
 const gbl = @import( "../gameGlobals.zig" );
@@ -78,7 +79,7 @@ pub inline fn debugLogTravelCostsList( body : gdf.BodyName, loc : gdf.EconLoc ) 
 pub const OrbitalData = struct // NOTE : invalid if orbitLvl < EPS
 {
   orbitLvl : f64  = 0.0, // 1 / root( distFromSun )
-  angPos   : f64  = 0.0, // Current angle relative to the reference plane ( centered on sun )
+  angPos   : Angle = .{}, // Current angle relative to the reference plane ( centered on sun )
   angVel   : f64  = 0.0, // Instantanious angular speed ( - == counter-clockwise )
   radVel   : f64  = 0.0, // Instantanious radial  speed ( - == towards the sun )
 };
@@ -113,7 +114,7 @@ pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gdf.EconLoc, body
 
     // Angular position relative to star
     const delta = econPos.sub( starPos );
-    data.angPos = delta.toAngle().r;
+    data.angPos = delta.toAngle();
 
     // Angular velocity : v_tangential / r
     // Tangential component = perpendicular to radial direction

@@ -2,6 +2,7 @@ const std = @import( "std" );
 const def = @import( "defs" );
 
 const Vec2     = def.Vec2;
+const Angle    = def.Angle;
 const EntityId = def.EntityId;
 
 
@@ -27,12 +28,12 @@ pub const OrbitComp = struct
   maxRadius   : f64 = 600.0, // Apoapsis  (farthest)
 
   // Eccentricity and Procession direction
-  orientation : f64  = 0.0,   // Periapsis angle ( 0 to 2π, 0 => +X )
-  retrograde  : bool = false, // If the orbit is counter-clockwise visually ( clockwise mathematically )
+  orientation : Angle = .{},   // Periapsis angle ( 0 => +X )
+  retrograde  : bool  = false, // If the orbit is counter-clockwise visually ( clockwise mathematically )
 
   // Current position
-  angularPos : f64 = 0.0, // Current position along orbit ( 0 to 2π, 0 => +X )
-  angularVel : f64 = 0.0,
+  angularPos : Angle = .{}, // Current position along orbit ( 0 => +X )
+  angularVel : f64   = 0.0,
 
   // Other metrics
   period  : f64 = 0.0, // how many days to complete a full orbit around its path
@@ -51,7 +52,7 @@ pub const OrbitComp = struct
       .orbiterMass = orbiterMass,
       .minRadius   = minRadius,
       .maxRadius   = maxRadius,
-      .orientation = @floatCast( orientation ),
+      .orientation = .newRad( orientation ),
       .period      = 0.0,
       .pathCol     = pathColour
     };
@@ -128,14 +129,14 @@ pub const OrbitComp = struct
   {
     return self.getRadiusAtAngle( self.angularPos );
   }
-  pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : f64 ) f64
+  pub inline fn getRadiusAtAngle( self : *const OrbitComp, angle : Angle ) f64
   {
     const e = self.getEccentricity();
     const eSqr = e * e;
 
     // Orbital radius formula: r = a( 1 - e² ) / ( 1 + e·cos(θ) )
     const numer = self.getSemiMajor() * ( 1.0 - ( eSqr ));
-    const denom = 1.0 + ( e * @cos( angle ));
+    const denom = 1.0 + ( e * angle.cos() );
 
     return numer / denom;
   }
@@ -167,7 +168,7 @@ pub const OrbitComp = struct
     const ecc    = self.getEccentricity();
     const eccSqr = ecc * ecc;
 
-    const numerRoot = 1.0 + ( ecc * @cos( self.angularPos ));
+    const numerRoot = 1.0 + ( ecc * self.angularPos.cos() );
     const denom     = ( 1.0 - eccSqr ) * @sqrt( 1.0 - eccSqr );
 
     const ratio : f64 = @floatCast(( numerRoot * numerRoot ) / denom );
@@ -178,17 +179,17 @@ pub const OrbitComp = struct
 
   pub inline fn getPeriapsisRelPos( self : *const OrbitComp ) Vec2
   {
-    return self.getRelPosAtAngle( 0 );
+    return self.getRelPosAtAngle( .{} );
   }
   pub inline fn getApoapsisRelPos( self : *const OrbitComp  ) Vec2
   {
-    return self.getRelPosAtAngle( def.PI );
+    return self.getRelPosAtAngle( .newRad( def.PI ) );
   }
 
   // Orbital ellipse's orientation
   pub inline fn getApsidesVec( self : *const OrbitComp ) Vec2
   {
-    return self.getRelPosAtAngle( def.PI ).sub( self.getRelPosAtAngle( 0 ));
+    return self.getRelPosAtAngle( .newRad( def.PI ) ).sub( self.getRelPosAtAngle( .{} ));
   }
 
   pub inline fn getOrbitLen( self : *const OrbitComp ) f64
@@ -219,16 +220,16 @@ pub const OrbitComp = struct
   {
     return self.getRelPosAtAngle( self.angularPos );
   }
-  pub inline fn getRelPosAtAngle( self : *const OrbitComp, angle : f64 ) Vec2
+  pub inline fn getRelPosAtAngle( self : *const OrbitComp, angle : Angle ) Vec2
   {
     const radius = self.getRadiusAtAngle( angle );
 
     // Position in orbit space ( 0° => along +X )
-    const x = radius * @cos( angle );
-    const y = radius * @sin( angle );
+    const x = radius * angle.cos();
+    const y = radius * angle.sin();
 
     // Return the position after rotating it appropriately
-    return Vec2.new( x, y ).rot( .{ .r = self.orientation });
+    return Vec2.new( x, y ).rot( self.orientation );
   }
 
 
@@ -243,17 +244,17 @@ pub const OrbitComp = struct
 
     // Radial velocity component
     // v_r = ( a * e * sin( θ ) * meanMotion ) / sqrt( 1 - e^2 )
-    const velRad = self.getSemiMajor() * ecc * @sin( self.angularPos ) * self.getMeanAngularVel() / @sqrt( 1.0 - ecc * ecc );
+    const velRad = self.getSemiMajor() * ecc * self.angularPos.sin() * self.getMeanAngularVel() / @sqrt( 1.0 - ecc * ecc );
 
     // Tangential velocity component
     const velTan = self.angularVel * self.getCurrentRadius();
 
     // Convert to Cartesian vectors
-    const vecRad = Vec2.fromAngle( .{ .r = self.angularPos }).mulVal( velRad );
-    const vecTan = Vec2.fromAngle( .{ .r = self.angularPos + def.PI / 2.0 }).mulVal( velTan );
+    const vecRad = Vec2.fromAngle( self.angularPos ).mulVal( velRad );
+    const vecTan = Vec2.fromAngle( self.angularPos.addRad( def.PI / 2.0 )).mulVal( velTan );
 
     // Rotate by orbit orientation
-    return vecRad.add( vecTan ).rot(.{ .r = self.orientation });
+    return vecRad.add( vecTan ).rot( self.orientation );
   }
 
 
@@ -263,10 +264,7 @@ pub const OrbitComp = struct
 
     for( 0..stepCount )| _ |
     {
-      self.angularPos += self.angularVel;
-
-      // Wrap to 0-2π ( handles both positive and negative )
-      self.angularPos = def.wrap( self.angularPos, 0.0, def.TAU );
+      self.angularPos = self.angularPos.addRad( self.angularVel );
 
       // NOTE : Be careful about update ordering, as angular vel is cached for reuse in getAbsVel()
       self.angularVel = self.getAngularVel(); // negative angularVel == retrograde orbits
@@ -303,15 +301,15 @@ pub const OrbitComp = struct
       var vecMin2 : Vec2 = vecMin1;
       var vecMax2 : Vec2 = vecMax1;
 
-      const a = def.TAU / @as( f64, @floatFromInt( N ));
+      const a = Angle.newRad( def.TAU / @as( f64, @floatFromInt( N )));
 
       for( 0..N )| _ | // Moon friendly region ( Disk )
       {
         vecMin2 = vecMin1;
         vecMax2 = vecMax1;
 
-        vecMin1 = vecMin1.rot( .{ .r = a });
-        vecMax1 = vecMax1.rot( .{ .r = a });
+        vecMin1 = vecMin1.rot( a );
+        vecMax1 = vecMax1.rot( a );
 
         def.wDraw.basicLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
         def.wDraw.basicLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
@@ -357,7 +355,7 @@ pub const OrbitComp = struct
     const maxLen : f64 = self.getOrbitLen() * pathLenFactor;
     var   sumLen : f64 = 0.0;
 
-    var drawAngle : f64 = self.angularPos;
+    var drawAngle : Angle = self.angularPos;
     var sumAngle  : f64 = 0.0;
 
     var  step : f64 = baseStep;
@@ -386,7 +384,7 @@ pub const OrbitComp = struct
       }
       else
       {
-        drawAngle += step * dir;
+        drawAngle = drawAngle.addRad( step * dir );
       }
 
       p2 = p1;
@@ -445,8 +443,8 @@ pub const OrbitComp = struct
     const t = self.angularPos;
 
     // First-order libration correction
-    const dt = ( 2.0 / 3.0 ) * e * @as( f64, @floatCast( @sin( t )));
-    const lagAngle = t + ( sign * def.PI / 3.0 ) + dt;
+    const dt = ( 2.0 / 3.0 ) * e * t.sin();
+    const lagAngle = t.addRad(( sign * def.PI / 3.0 ) + dt );
 
     return self.getRelPosAtAngle( lagAngle );
   }
@@ -509,4 +507,3 @@ pub const OrbitComp = struct
   /// arghs : planetRadius, moon density, moonRigidity
   pub inline fn getMinMoonOrbitRadius( self : *const OrbitComp, p_r : f64, den : f64, rig : f64 ) f64 { return 1.2 * self.getRocheLimit( p_r, den, rig ); } // Smaller is unstable
 };
-

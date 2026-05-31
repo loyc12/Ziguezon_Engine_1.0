@@ -8,6 +8,7 @@ const TData = gdf.TravelData;
 
 const BodyEconPair = gdf.BodyEconPair;
 const EconLoc      = gdf.EconLoc;
+const Angle        = def.Angle;
 const EntityId     = def.EntityId;
 
 const MAX_NESTING_DEPTH = 4; // Assumes depth will never exceede this
@@ -49,8 +50,9 @@ pub const TransferNode = struct
 
   semiMajor    : f64 = 0.0,
   eccentricity : f64 = 0.0,
-  orientation  : f64 = 0.0,
-  angularPos   : f64 = 0.0,
+
+  orientation  : Angle = .{},
+  angularPos   : Angle = .{},
   angularVel   : f64 = 0.0,
 
   gravParam      : f64 = 0.0,
@@ -65,8 +67,9 @@ const RepState = struct
 {
   semiMajor    : f64 = 0.0,
   eccentricity : f64 = 0.0,
-  orientation  : f64 = 0.0,
-  angularPos   : f64 = 0.0,
+
+  orientation  : Angle = .{},
+  angularPos   : Angle = .{},
   angularVel   : f64 = 0.0,
 
   radius : f64 = 0.0,
@@ -88,13 +91,6 @@ var transferNodes : [ CACHE_LEN ]TransferNode = std.mem.zeroes([ CACHE_LEN ]Tran
 // ================================ UTILITY ================================
 
 inline fn isValidBodyId( id : EntityId ) bool { return( id > 0 and id < CACHE_LEN ); }
-
-fn normalizeAngle( angle : f64 ) f64
-{
-  var a = @mod( angle + def.PI, def.TAU );
-  if( a < 0.0 ){ a += def.TAU; }
-  return a - def.PI;
-}
 
 fn doDirMatch( a : f64, b : f64 ) bool
 {
@@ -147,14 +143,14 @@ fn locIsParentFrameCoOrbital( loc : EconLoc ) bool
   };
 }
 
-fn locAngularOffset( loc : EconLoc ) f64
+fn locAngularOffset( loc : EconLoc ) Angle
 {
   return switch( loc )
   {
-    .L3 => def.PI,
-    .L4 => def.PI / 3.0,
-    .L5 => -def.PI / 3.0,
-    else => 0.0,
+    .L3 => .newRad(  def.PI ),
+    .L4 => .newRad(  def.PI / 3.0 ),
+    .L5 => .newRad( -def.PI / 3.0 ),
+    else => .{},
   };
 }
 
@@ -581,7 +577,7 @@ fn coOrbitalRepState( bodyId : EntityId, loc : EconLoc ) RepState
     .semiMajor    = node.semiMajor,
     .eccentricity = node.eccentricity,
     .orientation  = node.orientation,
-    .angularPos   = normalizeAngle( node.angularPos + locAngularOffset( loc )),
+    .angularPos   = node.angularPos.add( locAngularOffset( loc )),
     .angularVel   = node.angularVel,
     .radius       = node.semiMajor,
     .energy       = node.orbitalEnergy,
@@ -662,10 +658,13 @@ fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : Enti
 
   const energyCost = @abs( a.energy - b.energy );
   const eccCost    = @abs( a.eccentricity - b.eccentricity ) * scale * ECCENTRICITY_WEIGHT;
-  const orientCost = @abs( normalizeAngle( b.orientation - a.orientation )) / def.PI * scale * ORIENTATION_WEIGHT;
-  const phase      = @abs( normalizeAngle( b.angularPos - a.angularPos ));
-  const phaseCost  = phase / def.PI * scale * PHASE_WEIGHT;
+
+  const orientCost = @abs( b.orientation.sub( a.orientation ).toRad() ) / def.PI * scale * ORIENTATION_WEIGHT;
+  const phase      = @abs( b.angularPos.sub( a.angularPos ).toRad() );
+
   const retroCost  = if( doDirMatch( a.angularVel, b.angularVel )) 0.0 else scale * RETROGRADE_WEIGHT;
+
+  const phaseCost     = phase / def.PI * scale * PHASE_WEIGHT;
   const penaltyEnergy = eccCost + orientCost + phaseCost + retroCost;
 
   const frame = getNode( frameId ) orelse return .{};
