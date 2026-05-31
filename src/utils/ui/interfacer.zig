@@ -47,7 +47,7 @@ pub const InterfaceShape = enum( u8 )
 
 const BevelArray = [ InterfaceShape.maxCornerCount ]f64;
 
-fn getEmptyBevelArray() BevelArray { comptime return .{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 }; }
+fn getEmptyBevelArray() BevelArray { comptime return [_]f64{ 1.0 } ** InterfaceShape.maxCornerCount; }
 
 fn getBevelDir( strenght : f64 ) i2
 {
@@ -59,7 +59,7 @@ fn getBevelDir( strenght : f64 ) i2
 
 const VertexArray = [ InterfaceShape.maxCornerCount ]Vec2;
 
-fn getEmptyVertexArray() VertexArray { comptime return .{ .{}, .{}, .{}, .{}, .{}, .{}, .{}, .{} }; }
+fn getEmptyVertexArray() VertexArray { comptime return [_]Vec2{ .{} } ** InterfaceShape.maxCornerCount; }
 
 
 // ================================ INTERFACER STRUCT ================================

@@ -67,7 +67,6 @@ inline fn updateFrame( ng : *Engine ) void
 
   def.qlog( .TRACE, 0, @src(), "Getting inputs..." );
 
-  def.tryHook( .OnUpdateFrame, ng );
   {
     if( def.ray.isWindowResized() )
     {
@@ -75,6 +74,13 @@ inline fn updateFrame( ng : *Engine ) void
       def.G_CAM.updateView();
     }
   }
+
+  ng.uiManager.beginFrame();
+  ng.uiManager.updateLayout();
+  ng.uiManager.dispatchInput();
+
+  def.tryHook( .OnUpdateFrame, ng );
+  ng.uiManager.endFrame();
   //def.tryHook( .OffUpdateFrame, ng );
 }
 
@@ -187,6 +193,8 @@ inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instea
 
   def.tryHook( .OnRenderOverlay, ng );
   {
+    ng.uiManager.drawScreen();
+
     drawDebugFpsCount( ng );
     drawDebugTpsCount( ng );
   }

@@ -1,5 +1,6 @@
 const std = @import( "std" );
 const def = @import( "defs" );
+const stepInj = @import( "stepInjects.zig" );
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
@@ -16,7 +17,7 @@ pub fn OnStop( ng : *def.Engine ) void // Called by engine.stop()
 
 pub fn OnOpen( ng : *def.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your entities
 {
-  _ = ng; // Prevent unused variable warning
+  stepInj.buildUi( ng );
 }
 pub fn OnClose( ng : *def.Engine ) void // Called by engine.close()
 {
@@ -32,7 +33,6 @@ pub fn OnPause( ng : *def.Engine ) void // Called by engine.pause()
 {
   _ = ng; // Prevent unused variable warning
 }
-
 
 
 

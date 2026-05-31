@@ -71,7 +71,6 @@ const gameStep  = @import( "stepInjects.zig" );
 
 
   pub const OnUpdateFrame   = gameStep.OnUpdateFrame;
-  pub const OffUpdateFrame  = gameStep.OffUpdateFrame;
 
   pub const OnTickWorld      = gameStep.OnTickWorld;
 

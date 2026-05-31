@@ -33,6 +33,7 @@ pub const Engine = struct
   bodyManager       : def.bdy_m.BodyManager     = .{},
   tilemapManager    : def.tlm_m.TilemapManager  = .{},
   eventManager      : def.vnt_m.EventManager    = .{},
+  uiManager         : def.UiManager             = .{},
 
   // ECS Management
   componentRegistry : def.ComponentRegistry = .{},

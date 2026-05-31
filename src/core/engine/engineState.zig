@@ -90,6 +90,7 @@ pub fn start( ng : *Engine ) void
     ng.tilemapManager.init(    def.getAlloc() );
     ng.bodyManager.init(       def.getAlloc() );
     ng.eventManager.init(      def.getAlloc() );
+    ng.uiManager.init(         def.getAlloc() );
     ng.componentRegistry.init( def.getAlloc() );
 
     def.qlog( .INFO, 0, @src(), "& Engine substructs initialized !" );
@@ -117,6 +118,7 @@ pub fn stop( ng : *Engine ) void
     def.qlog( .INFO, 0, @src(), "# Deinitializing engine substructs..." );
 
     ng.componentRegistry.deinit();
+    ng.uiManager.deinit();
     ng.eventManager.deinit();
     ng.bodyManager.deinit();
     ng.tilemapManager.deinit();

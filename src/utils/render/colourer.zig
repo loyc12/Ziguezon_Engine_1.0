@@ -241,7 +241,6 @@ pub const Colour = struct
 
     return .new( r, g, b, a );
   }
-
   pub inline fn mergeRGB( self : Colour, other : Colour ) Colour
   {
     const r : u8 = self.r +| other.r;
@@ -251,26 +250,87 @@ pub const Colour = struct
     return .new( r, g, b, self.a );
   }
 
+  pub inline fn avgRGBA( self : Colour, other : Colour  ) Colour
+  {
+    return .new( self.avgR( other ), self.avgG( other ), self.avgB( other ), self.avgA( other ));
+  }
+  pub inline fn avgRGB( self : Colour, other : Colour  ) Colour
+  {
+    return .new( self.avgR( other ), self.avgG( other ), self.avgB( other ), self.a );
+  }
+
+  pub inline fn avgR( self : Colour, other : Colour  ) u8
+  {
+    const r1 : u16 = @intCast( self.r  );
+    const r2 : u16 = @intCast( other.r );
+
+    return @intCast( @divFloor( r1 + r2, 2 ));
+  }
+  pub inline fn avgG( self : Colour, other : Colour  ) u8
+  {
+    const g1 : u16 = @intCast( self.g  );
+    const g2 : u16 = @intCast( other.g );
+
+    return @intCast( @divFloor( g1 + g2, 2 ));
+  }
+  pub inline fn avgB( self : Colour, other : Colour  ) u8
+  {
+    const b1 : u16 = @intCast( self.b  );
+    const b2 : u16 = @intCast( other.b );
+
+    return @intCast( @divFloor( b1 + b2, 2 ));
+  }
+  pub inline fn avgA( self : Colour, other : Colour  ) u8
+  {
+    const a1 : u16 = @intCast( self.a  );
+    const a2 : u16 = @intCast( other.a );
+
+    return @intCast( @divFloor( a1 + a2, 2 ));
+  }
 
   // ================ COMPARISONS ================
 
-  pub inline fn isWhite( self : Colour ) bool { return self.r >= 0 and self.g >= 0 and self.b >= 0; }
-  pub inline fn isBlack( self : Colour ) bool { return self.r == 0 and self.g == 0 and self.b == 0; }
-  pub inline fn isGray(  self : Colour ) bool { return self.r == self.g and self.g == self.b; }
+  pub inline fn isWhite(     self : Colour ) bool { return self.r == 255    and self.g == 255 and self.b == 255; }
+  pub inline fn isBlack(     self : Colour ) bool { return self.r == 0      and self.g == 0   and self.b == 0;   }
+  pub inline fn isGrayScale( self : Colour ) bool { return self.r == self.g and self.g == self.b; }
 
-  pub inline fn isRed(   self : Colour ) bool { return self.r > self.g and self.r > self.b; }
-  pub inline fn isGreen( self : Colour ) bool { return self.g > self.r and self.r > self.b; }
-  pub inline fn isBlue(  self : Colour ) bool { return self.b > self.g and self.b > self.g; }
+  pub inline fn isRedish(   self : Colour ) bool { return self.r > self.g and self.r > self.b; }
+  pub inline fn isGreenish( self : Colour ) bool { return self.g > self.r and self.r > self.b; }
+  pub inline fn isBlueish(  self : Colour ) bool { return self.b > self.g and self.b > self.g; }
 
 
   pub inline fn isSolid( self : Colour ) bool { return self.a == 255; }
   pub inline fn isTrans( self : Colour ) bool { return self.a != 0 and self.a != 255; }
-  pub inline fn isVisib( self : Colour ) bool { return self.a >  0; }
+  pub inline fn isVisib( self : Colour ) bool { return self.a > 0; }
 
-  pub inline fn isEq(    self : Colour, other : Colour ) bool { return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a; }
-  pub inline fn isDiff(  self : Colour, other : Colour ) bool { return self.r != other.r or  self.g != other.g or  self.b != other.b or  self.a != other.a; }
+  pub inline fn isEq(   self : Colour, other : Colour ) bool { return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a; }
+  pub inline fn isDiff( self : Colour, other : Colour ) bool { return self.r != other.r or  self.g != other.g or  self.b != other.b or  self.a != other.a; }
 
-  pub inline fn sumRGBA(  self : Colour ) u16
+
+  pub inline fn distRGBA( self : Colour, other : Colour ) u16
+  {
+    const dR : u16 = @intCast( @max( self.r, other.r ) - @min( self.r, other.r ));
+    const dG : u16 = @intCast( @max( self.g, other.g ) - @min( self.g, other.g ));
+    const dB : u16 = @intCast( @max( self.b, other.b ) - @min( self.b, other.b ));
+    const dA : u16 = @intCast( @max( self.a, other.a ) - @min( self.a, other.a ));
+
+    return dR + dG + dB + dA;
+  }
+  pub inline fn distRGB( self : Colour, other : Colour ) u16
+  {
+    const dR : u16 = @intCast( @max( self.r, other.r ) - @min( self.r, other.r ));
+    const dG : u16 = @intCast( @max( self.g, other.g ) - @min( self.g, other.g ));
+    const dB : u16 = @intCast( @max( self.b, other.b ) - @min( self.b, other.b ));
+
+    return dR + dG + dB;
+  }
+  pub inline fn distR( self : Colour, other : Colour ) u16 { return @intCast( @max( self.r, other.r ) - @min( self.r, other.r )); }
+  pub inline fn distG( self : Colour, other : Colour ) u16 { return @intCast( @max( self.g, other.g ) - @min( self.g, other.g )); }
+  pub inline fn distB( self : Colour, other : Colour ) u16 { return @intCast( @max( self.b, other.b ) - @min( self.b, other.b )); }
+  pub inline fn distA( self : Colour, other : Colour ) u16 { return @intCast( @max( self.a, other.a ) - @min( self.a, other.a )); }
+
+
+  pub inline fn sumRGBA( self : Colour ) u16
   {
     const r : u16 = @intCast( self.r );
     const g : u16 = @intCast( self.g );
@@ -279,7 +339,7 @@ pub const Colour = struct
 
     return( r + g + b + a );
   }
-  pub inline fn sumRGB(  self : Colour ) u16
+  pub inline fn sumRGB( self : Colour ) u16
   {
     const r : u16 = @intCast( self.r );
     const g : u16 = @intCast( self.g );

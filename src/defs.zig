@@ -424,6 +424,25 @@ pub const Shaker2D = shk_u.Shake2D;
 
 // ================================ UI SHORTHANDS ================================
 
+// ======== RETAINED UI ========
+
+pub const ui_m = @import( "utils/ui/uiContext.zig" );
+pub const ui_t = @import( "utils/ui/uiTypes.zig" );
+
+pub const UiManager   = ui_m.UiManager;
+pub const UiContext   = ui_m.UiContext;
+pub const UiId        = ui_m.UiId;
+pub const UiNodeKind  = ui_m.UiNodeKind;
+pub const UiLayout    = ui_m.UiLayout;
+pub const UiEvent     = ui_m.UiEvent;
+pub const UiEventType = ui_m.UiEventType;
+pub const UiStyle     = ui_m.UiStyle;
+pub const UiNodeOpts  = ui_m.UiNodeOpts;
+pub const UiInput     = ui_m.UiInput;
+
+pub const uiBoxFromTopLeft = ui_m.boxFromTopLeft;
+
+
 // ======== INTERFACER ========
 
 pub const ntf_u = @import( "utils/ui/interfacer.zig" );
