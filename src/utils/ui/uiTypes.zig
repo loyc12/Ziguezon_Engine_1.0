@@ -34,6 +34,47 @@ pub const UiNodeKind = enum( u8 )
   checkbox,
   popup,
   window,
+  scrollArea,
+  slider,
+};
+
+pub const UiLayer = enum( u8 )
+{
+  hud,
+  panel,
+  popup,
+  modal,
+  tooltip,
+
+  pub const count = @typeInfo( UiLayer ).@"enum".fields.len;
+
+  pub inline fn fromIndex( i : usize ) UiLayer
+  {
+    return @enumFromInt( @as( u8, @intCast( i )));
+  }
+
+  pub inline fn defaultFor( kind : UiNodeKind, isModal : bool ) UiLayer
+  {
+    if( isModal ){ return .modal; }
+
+    return switch( kind )
+    {
+      .popup       => .popup,
+      .root        => .hud,
+      .panel,
+      .label,
+      .button,
+      .checkbox,
+      .window,
+      .scrollArea,
+      .slider      => .panel,
+    };
+  }
+
+  pub inline fn isInputLayer( self : UiLayer ) bool
+  {
+    return self != .tooltip;
+  }
 };
 
 pub const UiLayout = enum( u8 )
@@ -56,6 +97,7 @@ pub const UiEvent = struct
   eType     : UiEventType = .clicked,
   node      : UiId        = .{},
   valueBool : bool        = false,
+  valueFlt  : f64         = 0.0,
 };
 
 
@@ -131,6 +173,22 @@ pub const UiStyle = struct
         style.edgeCol      = def.Colour.pOrange;
         style.edgeFocusCol = def.Colour.pGold;
       },
+
+      .scrollArea =>
+      {
+        style.fillCol      = def.Colour.nBlack.setA( 210 );
+        style.edgeCol      = def.Colour.sGray;
+        style.edgeFocusCol = def.Colour.pGold;
+      },
+
+      .slider =>
+      {
+        style.fillCol        = def.Colour.nBlack.setA( 230 );
+        style.fillHoverCol   = def.Colour.sGray.setA( 240 );
+        style.fillPressedCol = def.Colour.sGray.setA( 245 );
+        style.edgeCol        = def.Colour.lGray;
+        style.accentCol      = def.Colour.pTeal;
+      },
     }
 
     return style;
@@ -149,7 +207,9 @@ pub const UiNodeOpts = struct
   desiredSize : def.Vec2 = .new( 160.0, 32.0 ),
 
   layout : UiLayout = .absolute,
+  layer  : ?UiLayer = null,
   text   : []const u8 = "",
+  tooltip : []const u8 = "",
 
   padding : f64 = 8.0,
   gap     : f64 = 6.0,
@@ -163,6 +223,14 @@ pub const UiNodeOpts = struct
   closeOnEscape  : bool = false,
 
   valueBool : bool     = false,
+  valueFlt  : f64      = 0.0,
+
+  sliderMin  : f64 = 0.0,
+  sliderMax  : f64 = 1.0,
+  sliderStep : f64 = 0.0,
+
+  scrollY : f64 = 0.0,
+
   style     : ?UiStyle = null,
 };
 

@@ -169,7 +169,7 @@ The sandbox should demonstrate:
 
 Do not implement these unless needed to complete the above behavior:
 
-* text input
+* textual input
 * clipboard
 * gamepad navigation
 * full keyboard navigation
@@ -198,3 +198,11 @@ Required checks:
 Do not run `zig fmt`.
 
 Also manually inspect the `menuer` sandbox if a graphical run is available. At minimum, the code should make each new behavior reachable from the sandbox without hidden setup.
+
+
+
+# User note on current build
+
+Blocker menu currently auto-closes on outside click, like a normal popup
+Menuer should have more examples / option ( ex : one buton per menu type, to instanciate any of them individually )
+Menus should have the option to be dragable across the screen ( isMovable variable or smthg like it )

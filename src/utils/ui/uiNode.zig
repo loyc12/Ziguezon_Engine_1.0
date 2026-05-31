@@ -4,6 +4,7 @@ const types = @import( "uiTypes.zig" );
 
 const UiId       = types.UiId;
 const UiNodeKind = types.UiNodeKind;
+const UiLayer    = types.UiLayer;
 const UiLayout   = types.UiLayout;
 const UiStyle    = types.UiStyle;
 const UiNodeOpts = types.UiNodeOpts;
@@ -14,6 +15,7 @@ const UiNodeOpts = types.UiNodeOpts;
 pub const UiNode = struct
 {
   pub const textBufLen : usize = 128;
+  pub const tooltipBufLen : usize = 160;
 
   id  : UiId = .{},
   gen : u32  = 0,
@@ -27,6 +29,7 @@ pub const UiNode = struct
   desiredSize : def.Vec2 = .new( 160.0, 30.0 ),
 
   layout  : UiLayout = .absolute,
+  layer   : UiLayer  = .panel,
   padding : f64      = 8.0,
   gap     : f64      = 6.0,
 
@@ -43,10 +46,22 @@ pub const UiNode = struct
   closeOnEscape  : bool = false,
 
   valueBool : bool    = false,
+  valueFlt  : f64     = 0.0,
+
+  sliderMin  : f64 = 0.0,
+  sliderMax  : f64 = 1.0,
+  sliderStep : f64 = 0.0,
+
+  scrollY             : f64 = 0.0,
+  scrollContentHeight : f64 = 0.0,
+
   style     : UiStyle = .{},
 
   text    : [ textBufLen ]u8 = [_]u8{ 0 } ** textBufLen,
   textLen : usize            = 0,
+
+  tooltip    : [ tooltipBufLen ]u8 = [_]u8{ 0 } ** tooltipBufLen,
+  tooltipLen : usize               = 0,
 
 
   // ================================ CREATION ================================
@@ -65,6 +80,7 @@ pub const UiNode = struct
       .desiredSize = opts.desiredSize,
 
       .layout      = opts.layout,
+      .layer       = if( opts.layer )| layer | layer else UiLayer.defaultFor( kind, opts.isModal ),
       .padding     = opts.padding,
       .gap         = opts.gap,
 
@@ -78,10 +94,19 @@ pub const UiNode = struct
       .closeOnEscape  = opts.closeOnEscape,
 
       .valueBool = opts.valueBool,
+      .valueFlt  = opts.valueFlt,
+
+      .sliderMin  = opts.sliderMin,
+      .sliderMax  = opts.sliderMax,
+      .sliderStep = opts.sliderStep,
+
+      .scrollY = opts.scrollY,
+
       .style     = if( opts.style )| style | style else UiStyle.forKind( kind ),
     };
 
     node.setText( opts.text );
+    node.setTooltip( opts.tooltip );
     return node;
   }
 
@@ -102,6 +127,21 @@ pub const UiNode = struct
   pub inline fn getText( self : *const UiNode ) []const u8
   {
     return self.text[ 0..self.textLen ];
+  }
+
+  pub fn setTooltip( self : *UiNode, str : []const u8 ) void
+  {
+    const len = @min( str.len, self.tooltip.len );
+
+    if( len > 0                ){ @memcpy( self.tooltip[ 0..len ], str[ 0..len ] ); }
+    if( len < self.tooltip.len ){ @memset( self.tooltip[ len..  ], 0             ); }
+
+    self.tooltipLen = len;
+  }
+
+  pub inline fn getTooltip( self : *const UiNode ) []const u8
+  {
+    return self.tooltip[ 0..self.tooltipLen ];
   }
 
 
@@ -134,5 +174,15 @@ pub const UiNode = struct
       .button, .checkbox => true,
       else               => false,
     };
+  }
+
+  pub inline fn isSlider( self : *const UiNode ) bool
+  {
+    return self.kind == .slider;
+  }
+
+  pub inline fn isScrollArea( self : *const UiNode ) bool
+  {
+    return self.kind == .scrollArea;
   }
 };

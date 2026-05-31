@@ -6,6 +6,7 @@ const types = @import( "uiTypes.zig" );
 
 pub const UiId        = types.UiId;
 pub const UiNodeKind  = types.UiNodeKind;
+pub const UiLayer     = types.UiLayer;
 pub const UiLayout    = types.UiLayout;
 pub const UiEventType = types.UiEventType;
 pub const UiEvent     = types.UiEvent;
@@ -17,6 +18,11 @@ pub const boxFromTopLeft = types.boxFromTopLeft;
 pub const boxSize        = types.boxSize;
 
 const UiNode  = node.UiNode;
+const TimeVal = def.TimeVal;
+
+const tooltipDelay : TimeVal = TimeVal.new( 350 * TimeVal.nsPerMs() );
+const scrollWheelStep : f64 = 30.0;
+const clipStackLen : usize = 8;
 
 
 // ================================ UI CONTEXT ================================
@@ -34,8 +40,18 @@ pub const UiContext = struct
   pressed : UiId = .{},
   focused : UiId = .{},
 
+  hoveredPrev       : UiId    = .{},
+  hoverStarted      : TimeVal = .{},
+  tooltipHoverReady : bool    = false,
+
   wantsMouseFlag    : bool = false,
   wantsKeyboardFlag : bool = false,
+
+  debugOverlayEnabled : bool = false,
+  debugOverlayBounds  : bool = true,
+
+  clipStack : [ clipStackLen ]def.Box2 = [_]def.Box2{ .{} } ** clipStackLen,
+  clipDepth : usize = 0,
 
   isInit : bool = false,
 
@@ -61,8 +77,17 @@ pub const UiContext = struct
     self.pressed = .{};
     self.focused = .{};
 
+    self.hoveredPrev       = .{};
+    self.hoverStarted      = .{};
+    self.tooltipHoverReady = false;
+
     self.wantsMouseFlag    = false;
     self.wantsKeyboardFlag = false;
+
+    self.debugOverlayEnabled = false;
+    self.debugOverlayBounds  = true;
+
+    self.clipDepth = 0;
 
     self.isInit = true;
     def.qlog( .INFO, 0, @src(), "& UI manager initialized !" );
@@ -86,8 +111,17 @@ pub const UiContext = struct
     self.pressed = .{};
     self.focused = .{};
 
+    self.hoveredPrev       = .{};
+    self.hoverStarted      = .{};
+    self.tooltipHoverReady = false;
+
     self.wantsMouseFlag    = false;
     self.wantsKeyboardFlag = false;
+
+    self.debugOverlayEnabled = false;
+    self.debugOverlayBounds  = true;
+
+    self.clipDepth = 0;
 
     self.isInit = false;
     self.alloc  = undefined;
@@ -110,6 +144,7 @@ pub const UiContext = struct
     self.input = UiInput.readRaylib();
 
     self.hovered = .{};
+    self.clipDepth = 0;
     self.wantsMouseFlag    = false;
     self.wantsKeyboardFlag = false;
 
@@ -150,11 +185,20 @@ pub const UiContext = struct
     if( !self.isInit ){ return; }
 
     self.hovered = self.findHovered( self.input.mousePos );
+    self.updateTooltipState();
     if( self.getNodePtr( self.hovered ))| uiNode |{ uiNode.isHovered = true; }
 
     if( self.input.escapePressed )
     {
       if( self.closeTopEscapeNode() ){ self.wantsKeyboardFlag = true; }
+    }
+
+    if( self.input.mouseWheel != 0.0 )
+    {
+      if( self.scrollHovered( self.input.mousePos, self.input.mouseWheel ))
+      {
+        self.wantsMouseFlag = true;
+      }
     }
 
     if( self.input.leftPressed )
@@ -175,6 +219,8 @@ pub const UiContext = struct
         self.wantsKeyboardFlag = true;
 
         self.setFocused( newFocus );
+
+        if( uiNode.isSlider() ){ self.updateSliderFromMouse( newFocus ); }
       }
       else
       {
@@ -187,20 +233,36 @@ pub const UiContext = struct
     {
       const oldPressed = self.pressed;
 
+      if( self.getNode( oldPressed ))| uiNode |
+      {
+        if( uiNode.isSlider() ){ self.updateSliderFromMouse( oldPressed ); }
+      }
+
       if( self.getNodePtr( oldPressed ))| uiNode |{ uiNode.isPressed = false; }
 
       if( oldPressed.isValid() )
       {
         self.wantsMouseFlag = true;
 
-        if( oldPressed.isEq( self.hovered )){ self.triggerNode( oldPressed ); }
+        if( self.getNode( oldPressed ))| uiNode |
+        {
+          if( !uiNode.isSlider() and oldPressed.isEq( self.hovered )){ self.triggerNode( oldPressed ); }
+        }
       }
 
       self.pressed = .{};
     }
 
-    if( self.input.leftDown and self.pressed.isValid() ){ self.wantsMouseFlag = true; }
-    if( self.input.mouseWheel != 0.0 and self.hovered.isValid() ){ self.wantsMouseFlag = true; }
+    if( self.input.leftDown and self.pressed.isValid() )
+    {
+      if( self.getNode( self.pressed ))| uiNode |
+      {
+        if( uiNode.isSlider() ){ self.updateSliderFromMouse( self.pressed ); }
+      }
+
+      self.wantsMouseFlag = true;
+    }
+
     if( self.hovered.isValid() ){ self.wantsMouseFlag = true; }
 
     if( self.focused.isValid() ){ self.wantsKeyboardFlag = true; }
@@ -224,6 +286,9 @@ pub const UiContext = struct
       return null;
     }
 
+    var fixedOpts = opts;
+    fixedOpts.layer = self.resolveLayer( kind, opts );
+
     for( self.nodes.items, 0.. )| *slot, i |
     {
       if( slot.isAlive ){ continue; }
@@ -233,7 +298,7 @@ pub const UiContext = struct
       if( gen == 0 ){ gen = 1; }
 
       const id = UiId.fromIndexGen( @intCast( i ), gen );
-      slot.* = UiNode.init( id, kind, opts );
+      slot.* = UiNode.init( id, kind, fixedOpts );
       return id;
     }
 
@@ -245,13 +310,26 @@ pub const UiContext = struct
 
     const id = UiId.fromIndexGen( @intCast( self.nodes.items.len ), 1 );
 
-    self.nodes.append( self.alloc, UiNode.init( id, kind, opts )) catch | err |
+    self.nodes.append( self.alloc, UiNode.init( id, kind, fixedOpts )) catch | err |
     {
       def.log( .ERROR, 0, @src(), "Failed to append UI node : {}", .{ err });
       return null;
     };
 
     return id;
+  }
+
+  fn resolveLayer( self : *const UiContext, kind : UiNodeKind, opts : UiNodeOpts ) UiLayer
+  {
+    if( opts.layer )| layer |{ return layer; }
+    if( opts.isModal ){ return .modal; }
+
+    if( opts.parent )| parent |
+    {
+      if( self.getNode( parent ))| parentNode |{ return parentNode.layer; }
+    }
+
+    return UiLayer.defaultFor( kind, false );
   }
 
   pub inline fn createRoot(     self : *UiContext, opts : UiNodeOpts ) ?UiId { return self.createNode( .root,     opts ); }
@@ -261,6 +339,8 @@ pub const UiContext = struct
   pub inline fn createCheckbox( self : *UiContext, opts : UiNodeOpts ) ?UiId { return self.createNode( .checkbox, opts ); }
   pub inline fn createPopup(    self : *UiContext, opts : UiNodeOpts ) ?UiId { return self.createNode( .popup,    opts ); }
   pub inline fn createWindow(   self : *UiContext, opts : UiNodeOpts ) ?UiId { return self.createNode( .window,   opts ); }
+  pub inline fn createScrollArea( self : *UiContext, opts : UiNodeOpts ) ?UiId { return self.createNode( .scrollArea, opts ); }
+  pub inline fn createSlider(     self : *UiContext, opts : UiNodeOpts ) ?UiId { return self.createNode( .slider,     opts ); }
 
 
   // ================================ NODE ACCESS ================================
@@ -321,6 +401,17 @@ pub const UiContext = struct
     return "";
   }
 
+  pub fn setTooltip( self : *UiContext, id : UiId, str : []const u8 ) void
+  {
+    if( self.getNodePtr( id ))| uiNode |{ uiNode.setTooltip( str ); }
+  }
+
+  pub fn getTooltip( self : *const UiContext, id : UiId ) []const u8
+  {
+    if( self.getNode( id ))| uiNode |{ return uiNode.getTooltip(); }
+    return "";
+  }
+
   pub fn setBool( self : *UiContext, id : UiId, value : bool ) void
   {
     if( self.getNodePtr( id ))| uiNode |{ uiNode.valueBool = value; }
@@ -330,6 +421,20 @@ pub const UiContext = struct
   {
     if( self.getNode( id ))| uiNode |{ return uiNode.valueBool; }
     return false;
+  }
+
+  pub fn setFloat( self : *UiContext, id : UiId, value : f64 ) void
+  {
+    if( self.getNodePtr( id ))| uiNode |
+    {
+      uiNode.valueFlt = self.clampSliderValue( uiNode, value );
+    }
+  }
+
+  pub fn getFloat( self : *const UiContext, id : UiId ) f64
+  {
+    if( self.getNode( id ))| uiNode |{ return uiNode.valueFlt; }
+    return 0.0;
   }
 
   pub fn setBox( self : *UiContext, id : UiId, box : def.Box2 ) void
@@ -358,6 +463,12 @@ pub const UiContext = struct
     return "none";
   }
 
+  pub fn getNodeLayer( self : *const UiContext, id : UiId ) ?UiLayer
+  {
+    if( self.getNode( id ))| uiNode |{ return uiNode.layer; }
+    return null;
+  }
+
   pub fn getParent( self : *const UiContext, id : UiId ) UiId
   {
     if( self.getNode( id ))| uiNode |{ return uiNode.parent; }
@@ -367,6 +478,12 @@ pub const UiContext = struct
   pub inline fn getHoveredId( self : *const UiContext ) UiId { return self.hovered; }
   pub inline fn getPressedId( self : *const UiContext ) UiId { return self.pressed; }
   pub inline fn getFocusedId( self : *const UiContext ) UiId { return self.focused; }
+
+  pub inline fn setDebugOverlay( self : *UiContext, enabled : bool, drawBounds : bool ) void
+  {
+    self.debugOverlayEnabled = enabled;
+    self.debugOverlayBounds  = drawBounds;
+  }
 
   /// True when UI consumed or is under pointer input this frame.
   pub inline fn wantsMouse( self : *const UiContext ) bool
@@ -483,19 +600,35 @@ pub const UiContext = struct
   /// Applies the parent layout mode to visible direct children, then recurses.
   fn layoutChildren( self : *UiContext, parentId : UiId ) void
   {
-    const parent = self.getNode( parentId ) orelse return;
+    const parentSnapshot = self.getNode( parentId ) orelse return;
 
-    const parentBounds = parent.bounds;
-    const layout       = parent.layout;
-    const padding      = parent.padding;
-    const gap          = parent.gap;
+    const parentBounds = parentSnapshot.bounds;
+    const layout       = parentSnapshot.layout;
+    const padding      = parentSnapshot.padding;
+    const gap          = parentSnapshot.gap;
+    const isScrollArea = parentSnapshot.isScrollArea();
+
+    if( isScrollArea )
+    {
+      const contentHeight = self.measureScrollContentHeight( parentId );
+      const maxScroll = @max( 0.0, contentHeight - parentBounds.getSizeY() );
+
+      if( self.getNodePtr( parentId ))| parent |
+      {
+        parent.scrollContentHeight = contentHeight;
+        parent.scrollY = def.clmp( parent.scrollY, 0.0, maxScroll );
+      }
+    }
+
+    const scrollY = if( self.getNode( parentId ))| parent | parent.scrollY else 0.0;
+    const childYOffset = if( isScrollArea ) -scrollY else 0.0;
 
     switch( layout )
     {
       .vertical =>
       {
-        var topLeft = parentBounds.getTopLeft().add( .new( padding, padding ));
-        const contentWidth = @max( 0.0, ( parentBounds.scale.x * 2.0 ) - ( padding * 2.0 ));
+        var topLeft = parentBounds.getTopLeft().add( .new( padding, padding + childYOffset ));
+        const contentWidth = @max( 0.0, parentBounds.getSizeX() - ( padding * 2.0 ));
 
         for( 0..self.nodes.items.len )| i |
         {
@@ -514,8 +647,8 @@ pub const UiContext = struct
 
       .horizontal =>
       {
-        var topLeft = parentBounds.getTopLeft().add( .new( padding, padding ));
-        const contentHeight = @max( 0.0, ( parentBounds.scale.y * 2.0 ) - ( padding * 2.0 ));
+        var topLeft = parentBounds.getTopLeft().add( .new( padding, padding + childYOffset ));
+        const contentHeight = @max( 0.0, parentBounds.getSizeY() - ( padding * 2.0 ));
 
         for( 0..self.nodes.items.len )| i |
         {
@@ -534,7 +667,7 @@ pub const UiContext = struct
 
       .absolute, .floating =>
       {
-        const parentTopLeft = parentBounds.getTopLeft();
+        const parentTopLeft = parentBounds.getTopLeft().add( .new( 0.0, childYOffset ));
 
         for( 0..self.nodes.items.len )| i |
         {
@@ -553,6 +686,46 @@ pub const UiContext = struct
     }
   }
 
+  fn measureScrollContentHeight( self : *const UiContext, parentId : UiId ) f64
+  {
+    const parent = self.getNode( parentId ) orelse return 0.0;
+
+    switch( parent.layout )
+    {
+      .vertical =>
+      {
+        var height = parent.padding * 2.0;
+        var childCount : usize = 0;
+
+        for( self.nodes.items )| *uiNode |
+        {
+          if( !self.isLayoutChild( uiNode.id, parentId )){ continue; }
+
+          height += uiNode.desiredSize.y;
+          childCount += 1;
+        }
+
+        if( childCount > 1 ){ height += parent.gap * @as( f64, @floatFromInt( childCount - 1 )); }
+        return height;
+      },
+
+      else =>
+      {
+        var bottom = parent.bounds.getMinY() + parent.padding;
+
+        for( self.nodes.items )| *uiNode |
+        {
+          if( !self.isLayoutChild( uiNode.id, parentId )){ continue; }
+
+          const childBottom = uiNode.localBox.getMaxY() + uiNode.desiredSize.y + parent.padding;
+          bottom = @max( bottom, childBottom );
+        }
+
+        return @max( parent.bounds.getSizeY(), bottom );
+      },
+    }
+  }
+
   fn isLayoutChild( self : *const UiContext, child : UiId, parent : UiId ) bool
   {
     const uiNode = self.getNode( child ) orelse return false;
@@ -566,21 +739,175 @@ pub const UiContext = struct
   /// Finds the topmost pointer-capturing node under `mousePos`.
   fn findHovered( self : *const UiContext, mousePos : def.Vec2 ) UiId
   {
-    // Later nodes are rendered later, so scan backward for topmost hit.
+    const activeModal = self.findActiveModal();
+
+    var layerIdx : usize = UiLayer.count;
+    while( layerIdx > 0 )
+    {
+      layerIdx -= 1;
+
+      const layer = UiLayer.fromIndex( layerIdx );
+      if( !layer.isInputLayer() ){ continue; }
+
+      // Later nodes on the same layer are rendered later, so scan backward for topmost hit.
+      var i = self.nodes.items.len;
+      while( i > 0 )
+      {
+        i -= 1;
+
+        const uiNode = &self.nodes.items[ i ];
+        if( uiNode.layer != layer ){ continue; }
+        if( !uiNode.capturesPointer() ){ continue; }
+        if( !self.isVisibleInTree( uiNode.id )){ continue; }
+        if( activeModal.isValid() and !self.isDescOrSelf( uiNode.id, activeModal )){ continue; }
+        if( !uiNode.bounds.isOnPoint( mousePos )){ continue; }
+        if( !self.isPointInsideClipAncestors( uiNode.id, mousePos )){ continue; }
+
+        return uiNode.id;
+      }
+    }
+
+    return .{};
+  }
+
+  fn findActiveModal( self : *const UiContext ) UiId
+  {
     var i = self.nodes.items.len;
     while( i > 0 )
     {
       i -= 1;
 
       const uiNode = &self.nodes.items[ i ];
-      if( !uiNode.capturesPointer() ){ continue; }
+      if( !uiNode.isAlive or !uiNode.isVisible ){ continue; }
+      if( !uiNode.isModal ){ continue; }
       if( !self.isVisibleInTree( uiNode.id )){ continue; }
-      if( !uiNode.bounds.isOnPoint( mousePos )){ continue; }
 
       return uiNode.id;
     }
 
     return .{};
+  }
+
+  fn isPointInsideClipAncestors( self : *const UiContext, id : UiId, mousePos : def.Vec2 ) bool
+  {
+    var cursor = id;
+    while( self.getNode( cursor ))| uiNode |
+    {
+      if( !uiNode.parent.isValid() ){ return true; }
+
+      const parent = self.getNode( uiNode.parent ) orelse return false;
+      if( parent.isScrollArea() and !parent.bounds.isOnPoint( mousePos )){ return false; }
+
+      cursor = uiNode.parent;
+    }
+
+    return false;
+  }
+
+  fn scrollHovered( self : *UiContext, mousePos : def.Vec2, wheel : f64 ) bool
+  {
+    const activeModal = self.findActiveModal();
+
+    var layerIdx : usize = UiLayer.count;
+    while( layerIdx > 0 )
+    {
+      layerIdx -= 1;
+
+      const layer = UiLayer.fromIndex( layerIdx );
+      if( !layer.isInputLayer() ){ continue; }
+
+      var i = self.nodes.items.len;
+      while( i > 0 )
+      {
+        i -= 1;
+
+        const uiNode = &self.nodes.items[ i ];
+        if( uiNode.layer != layer ){ continue; }
+        if( !uiNode.isScrollArea() ){ continue; }
+        if( !uiNode.capturesPointer() ){ continue; }
+        if( !self.isVisibleInTree( uiNode.id )){ continue; }
+        if( activeModal.isValid() and !self.isDescOrSelf( uiNode.id, activeModal )){ continue; }
+        if( !uiNode.bounds.isOnPoint( mousePos )){ continue; }
+        if( !self.isPointInsideClipAncestors( uiNode.id, mousePos )){ continue; }
+
+        const maxScroll = @max( 0.0, uiNode.scrollContentHeight - uiNode.bounds.getSizeY() );
+        const oldScroll = uiNode.scrollY;
+        self.nodes.items[ i ].scrollY = def.clmp( uiNode.scrollY - ( wheel * scrollWheelStep ), 0.0, maxScroll );
+        return !def.isFltEq( oldScroll, self.nodes.items[ i ].scrollY );
+      }
+    }
+
+    return false;
+  }
+
+  fn updateTooltipState( self : *UiContext ) void
+  {
+    if( !self.hovered.isEq( self.hoveredPrev ))
+    {
+      self.hoveredPrev       = self.hovered;
+      self.hoverStarted      = if( self.hovered.isValid() ) TimeVal.newNow() else .{};
+      self.tooltipHoverReady = false;
+      return;
+    }
+
+    const hoveredNode = self.getNode( self.hovered ) orelse
+    {
+      self.hoverStarted      = .{};
+      self.tooltipHoverReady = false;
+      return;
+    };
+
+    if( hoveredNode.tooltipLen == 0 )
+    {
+      self.tooltipHoverReady = false;
+      return;
+    }
+
+    if( !self.hoverStarted.isSet() ){ self.hoverStarted = TimeVal.newNow(); }
+
+    self.tooltipHoverReady = self.hoverStarted.timeSince().value >= tooltipDelay.value;
+  }
+
+  fn updateSliderFromMouse( self : *UiContext, id : UiId ) void
+  {
+    const uiNode = self.getNodePtr( id ) orelse return;
+    if( !uiNode.isSlider() ){ return; }
+
+    const nextValue = self.sliderValueFromMouse( uiNode, self.input.mousePos );
+    if( def.isFltEq( uiNode.valueFlt, nextValue )){ return; }
+
+    uiNode.valueFlt = nextValue;
+    self.pushEvent( .{ .eType = .changed, .node = id, .valueFlt = nextValue });
+  }
+
+  fn sliderValueFromMouse( self : *const UiContext, uiNode : *const UiNode, mousePos : def.Vec2 ) f64
+  {
+    const pad  = @max( 6.0, uiNode.padding );
+    const minX = uiNode.bounds.getMinX() + pad;
+    const maxX = uiNode.bounds.getMaxX() - pad;
+    const width = @max( 1.0, maxX - minX );
+    const t = def.clmp(( mousePos.x - minX ) / width, 0.0, 1.0 );
+
+    return self.clampSliderValue( uiNode, def.lerp( uiNode.sliderMin, uiNode.sliderMax, t ));
+  }
+
+  fn clampSliderValue( self : *const UiContext, uiNode : *const UiNode, value : f64 ) f64
+  {
+    _ = self;
+
+    const minValue = @min( uiNode.sliderMin, uiNode.sliderMax );
+    const maxValue = @max( uiNode.sliderMin, uiNode.sliderMax );
+
+    if( def.isFltEq( minValue, maxValue )){ return minValue; }
+
+    var out = def.clmp( value, minValue, maxValue );
+    if( uiNode.sliderStep > 0.0 )
+    {
+      out = minValue + ( @round(( out - minValue ) / uiNode.sliderStep ) * uiNode.sliderStep );
+      out = def.clmp( out, minValue, maxValue );
+    }
+
+    return out;
   }
 
   /// Closes transient nodes when a click lands outside them and outside their descendants.
@@ -649,13 +976,7 @@ pub const UiContext = struct
 
   fn hasModalNode( self : *const UiContext ) bool
   {
-    for( self.nodes.items )| *uiNode |
-    {
-      if( !uiNode.isAlive or !uiNode.isVisible ){ continue; }
-      if( uiNode.isModal ){ return true; }
-    }
-
-    return false;
+    return self.findActiveModal().isValid();
   }
 
   /// Checks parent links only; dependency links do not make descendants.
@@ -694,18 +1015,149 @@ pub const UiContext = struct
 
   // ================================ RENDERING ================================
 
-  /// Draws all visible screen-space UI nodes in storage order.
+  /// Draws all visible screen-space UI nodes by layer, preserving storage order within each layer.
   pub fn drawScreen( self : *UiContext ) void
   {
     if( !self.isInit ){ return; }
 
-    for( self.nodes.items )| *uiNode |
-    {
-      if( !uiNode.isAlive or !uiNode.isVisible ){ continue; }
-      if( !self.isVisibleInTree( uiNode.id )){ continue; }
+    self.clipDepth = 0;
 
-      self.drawNode( uiNode );
+    for( 0..UiLayer.count )| layerIdx |
+    {
+      const layer = UiLayer.fromIndex( layerIdx );
+
+      for( self.nodes.items )| *uiNode |
+      {
+        if( uiNode.layer != layer ){ continue; }
+        if( !uiNode.isAlive or !uiNode.isVisible ){ continue; }
+        if( !self.isVisibleInTree( uiNode.id )){ continue; }
+
+        self.drawNodeClipped( uiNode );
+      }
     }
+
+    if( self.debugOverlayEnabled ){ self.drawDebugOverlay(); }
+    self.drawTooltip();
+
+    while( self.clipDepth > 0 ){ self.endClip(); }
+  }
+
+  fn drawNodeClipped( self : *UiContext, uiNode : *const UiNode ) void
+  {
+    if( self.getAncestorClipBox( uiNode.id ))| clipBox |
+    {
+      if( !uiNode.bounds.doesOverlap( clipBox )){ return; }
+      if( self.beginClip( clipBox ))
+      {
+        self.drawNode( uiNode );
+        self.endClip();
+      }
+
+      return;
+    }
+
+    if( self.hasClipAncestor( uiNode.id )){ return; }
+    self.drawNode( uiNode );
+  }
+
+  fn getAncestorClipBox( self : *const UiContext, id : UiId ) ?def.Box2
+  {
+    var cursor = id;
+    var clipBox : ?def.Box2 = null;
+
+    while( self.getNode( cursor ))| uiNode |
+    {
+      if( !uiNode.parent.isValid() ){ break; }
+
+      const parent = self.getNode( uiNode.parent ) orelse break;
+      if( parent.isScrollArea() )
+      {
+        clipBox = if( clipBox )| oldClip | intersectBoxes( oldClip, parent.bounds ) else parent.bounds;
+        if( clipBox == null ){ return null; }
+      }
+
+      cursor = uiNode.parent;
+    }
+
+    return clipBox;
+  }
+
+  fn hasClipAncestor( self : *const UiContext, id : UiId ) bool
+  {
+    var cursor = id;
+    while( self.getNode( cursor ))| uiNode |
+    {
+      if( !uiNode.parent.isValid() ){ return false; }
+
+      const parent = self.getNode( uiNode.parent ) orelse return false;
+      if( parent.isScrollArea() ){ return true; }
+
+      cursor = uiNode.parent;
+    }
+
+    return false;
+  }
+
+  fn beginClip( self : *UiContext, box : def.Box2 ) bool
+  {
+    if( self.clipDepth >= self.clipStack.len )
+    {
+      def.qlog( .WARN, 0, @src(), "UI clip stack overflow" );
+      return false;
+    }
+
+    const clipped = if( self.clipDepth > 0 )
+      intersectBoxes( self.clipStack[ self.clipDepth - 1 ], box ) orelse return false
+    else
+      box;
+
+    if( clipped.getSizeX() <= 0.0 or clipped.getSizeY() <= 0.0 ){ return false; }
+
+    self.clipStack[ self.clipDepth ] = clipped;
+    self.clipDepth += 1;
+    applyClipBox( clipped );
+    return true;
+  }
+
+  fn endClip( self : *UiContext ) void
+  {
+    if( self.clipDepth == 0 ){ return; }
+
+    def.ray.endScissorMode();
+    self.clipDepth -= 1;
+
+    if( self.clipDepth > 0 ){ applyClipBox( self.clipStack[ self.clipDepth - 1 ] ); }
+  }
+
+  fn applyClipBox( box : def.Box2 ) void
+  {
+    const topLeft = box.getTopLeft();
+    const size    = box.getSize();
+
+    def.ray.beginScissorMode(
+      roundToI32( topLeft.x ),
+      roundToI32( topLeft.y ),
+      roundToI32( @max( 1.0, size.x )),
+      roundToI32( @max( 1.0, size.y ))
+    );
+  }
+
+  fn roundToI32( value : f64 ) i32
+  {
+    return @intFromFloat( @round( value ));
+  }
+
+  fn intersectBoxes( a : def.Box2, b : def.Box2 ) ?def.Box2
+  {
+    if( !a.doesOverlap( b )){ return null; }
+
+    const min = def.Vec2.new( @max( a.getMinX(), b.getMinX() ), @max( a.getMinY(), b.getMinY() ));
+    const max = def.Vec2.new( @min( a.getMaxX(), b.getMaxX() ), @min( a.getMaxY(), b.getMaxY() ));
+    const size = max.sub( min );
+
+    if( size.x <= 0.0 or size.y <= 0.0 ){ return null; }
+
+    return boxFromTopLeft( min, size );
   }
 
   fn drawNode( self : *UiContext, uiNode : *const UiNode ) void
@@ -725,6 +1177,7 @@ pub const UiContext = struct
       },
 
       .checkbox => drawCheckbox( uiNode ),
+      .slider   => drawSlider( uiNode ),
 
       .button =>
       {
@@ -759,6 +1212,144 @@ pub const UiContext = struct
         }
       },
     }
+  }
+
+  fn drawSlider( uiNode : *const UiNode ) void
+  {
+    drawBox(
+      uiNode.bounds,
+      uiNode.style.fillForState( uiNode.isHovered, uiNode.isPressed ),
+      if( uiNode.isFocused ) uiNode.style.edgeFocusCol else uiNode.style.edgeCol,
+      uiNode.style.lineWidth
+    );
+
+    const pad  = @max( 8.0, uiNode.padding );
+    const minX = uiNode.bounds.getMinX() + pad;
+    const maxX = uiNode.bounds.getMaxX() - pad;
+    const width = @max( 1.0, maxX - minX );
+    const minValue = @min( uiNode.sliderMin, uiNode.sliderMax );
+    const maxValue = @max( uiNode.sliderMin, uiNode.sliderMax );
+    const denom = @max( def.EPS, maxValue - minValue );
+    const t = def.clmp(( uiNode.valueFlt - minValue ) / denom, 0.0, 1.0 );
+
+    const trackHeight = 6.0;
+    const trackBox = boxFromTopLeft(
+      .new( minX, uiNode.bounds.center.y - ( trackHeight * 0.5 )),
+      .new( width, trackHeight )
+    );
+
+    drawBox( trackBox, def.Colour.dGray, def.Colour.transpa, 0.0 );
+
+    const fillWidth = @max( 1.0, width * t );
+    const fillBox = boxFromTopLeft(
+      .new( minX, uiNode.bounds.center.y - ( trackHeight * 0.5 )),
+      .new( fillWidth, trackHeight )
+    );
+
+    drawBox( fillBox, uiNode.style.accentCol, def.Colour.transpa, 0.0 );
+
+    const handleWidth  = 12.0;
+    const handleHeight = @min( uiNode.bounds.getSizeY() - 8.0, 24.0 );
+    const handleX = minX + ( width * t ) - ( handleWidth * 0.5 );
+    const handleBox = boxFromTopLeft(
+      .new( handleX, uiNode.bounds.center.y - ( handleHeight * 0.5 )),
+      .new( handleWidth, handleHeight )
+    );
+
+    drawBox( handleBox, def.Colour.nWhite, uiNode.style.edgeCol, 1.0 );
+
+    if( uiNode.textLen > 0 )
+    {
+      drawTextLeft(
+        uiNode.getText(),
+        .new( uiNode.bounds.getMinX() + pad, uiNode.bounds.getMinY() + uiNode.style.fontSize ),
+        uiNode.style.fontSize,
+        uiNode.style.textCol
+      );
+    }
+  }
+
+  fn drawTooltip( self : *UiContext ) void
+  {
+    if( !self.tooltipHoverReady ){ return; }
+
+    const hoveredNode = self.getNode( self.hovered ) orelse return;
+    if( hoveredNode.tooltipLen == 0 ){ return; }
+
+    const tooltipText = hoveredNode.getTooltip();
+    const fontSize = 14.0;
+    const padding  = 8.0;
+    const textWidth = @max( 80.0, @as( f64, @floatFromInt( tooltipText.len )) * fontSize * 0.56 );
+    const size = def.Vec2.new( textWidth + ( padding * 2.0 ), fontSize + ( padding * 2.0 ));
+
+    var box = boxFromTopLeft( self.input.mousePos.add( .new( 14.0, 18.0 )), size );
+    box.clampInArea( .{}, def.getScreenSize() );
+
+    drawBox( box, def.Colour.nBlack.setA( 245 ), def.Colour.pGold, 1.0 );
+    drawTextLeft(
+      tooltipText,
+      .new( box.getMinX() + padding, box.center.y ),
+      fontSize,
+      def.Colour.nWhite
+    );
+  }
+
+  fn drawDebugOverlay( self : *UiContext ) void
+  {
+    if( self.debugOverlayBounds ){ self.drawDebugBounds(); }
+
+    const size = def.Vec2.new( 286.0, 178.0 );
+    var box = boxFromTopLeft( .new( def.getScreenWidth() - size.x - 18.0, 18.0 ), size );
+    box.clampInArea( .{}, def.getScreenSize() );
+
+    drawBox( box, def.Colour.nBlack.setA( 218 ), def.Colour.pTeal, 1.0 );
+
+    var pos = box.getTopLeft().add( .new( 10.0, 18.0 ));
+    const lineH = 17.0;
+    const textCol = def.Colour.nWhite;
+
+    drawTextLeft( "UI debug", pos, 15.0, def.Colour.pTeal ); pos.y += lineH;
+    drawTextLeftFmt( "nodes: {d} live:{d} events:{d}", .{ self.nodes.items.len, self.getLiveNodeCount(), self.getEventCount() }, pos, 13.0, textCol ); pos.y += lineH;
+    drawTextLeftFmt( "hover: {s}", .{ self.getNodeKindName( self.hovered ) }, pos, 13.0, textCol ); pos.y += lineH;
+    drawTextLeftFmt( "focus: {s}", .{ self.getNodeKindName( self.focused ) }, pos, 13.0, textCol ); pos.y += lineH;
+    drawTextLeftFmt( "pressed: {s}", .{ self.getNodeKindName( self.pressed ) }, pos, 13.0, textCol ); pos.y += lineH;
+    drawTextLeftFmt( "wants mouse:{s} key:{s}", .{ if( self.wantsMouse() ) "yes" else "no", if( self.wantsKeyboard() ) "yes" else "no" }, pos, 13.0, textCol ); pos.y += lineH;
+    drawTextLeftFmt( "modal: {s}", .{ self.getNodeKindName( self.findActiveModal() ) }, pos, 13.0, textCol ); pos.y += lineH;
+  }
+
+  fn getLiveNodeCount( self : *const UiContext ) usize
+  {
+    var count : usize = 0;
+
+    for( self.nodes.items )| *uiNode |
+    {
+      if( uiNode.isAlive ){ count += 1; }
+    }
+
+    return count;
+  }
+
+  fn drawDebugBounds( self : *UiContext ) void
+  {
+    for( self.nodes.items )| *uiNode |
+    {
+      if( !uiNode.isAlive or !uiNode.isVisible ){ continue; }
+      if( !self.isVisibleInTree( uiNode.id )){ continue; }
+
+      drawBox( uiNode.bounds, def.Colour.transpa, layerDebugColor( uiNode.layer ), 1.0 );
+    }
+  }
+
+  fn layerDebugColor( layer : UiLayer ) def.Colour
+  {
+    return switch( layer )
+    {
+      .hud     => def.Colour.lGray,
+      .panel   => def.Colour.pTeal,
+      .popup   => def.Colour.pGold,
+      .modal   => def.Colour.pOrange,
+      .tooltip => def.Colour.nWhite,
+    };
   }
 
   fn drawCheckbox( uiNode : *const UiNode ) void
@@ -799,7 +1390,7 @@ pub const UiContext = struct
     const size    = boxSize( box );
 
     def.sDraw.basicRect(      topLeft, size, fillCol );
-    def.sDraw.basicRectPerim( topLeft, size, edgeCol, lineWidth );
+    if( lineWidth > 0.0 ){ def.sDraw.basicRectPerim( topLeft, size, edgeCol, lineWidth ); }
   }
 
   fn drawTextLeft( str : []const u8, pos : def.Vec2, fontSize : f64, col : def.Colour ) void
@@ -816,6 +1407,14 @@ pub const UiContext = struct
     const zStr = std.fmt.bufPrintZ( &buf, "{s}", .{ str }) catch return;
 
     def.sDraw.textCenter( zStr, pos, fontSize, col );
+  }
+
+  fn drawTextLeftFmt( comptime fmt : []const u8, args : anytype, pos : def.Vec2, fontSize : f64, col : def.Colour ) void
+  {
+    var buf : [ 256 ]u8 = undefined;
+    const str = std.fmt.bufPrint( &buf, fmt, args ) catch return;
+
+    drawTextLeft( str, pos, fontSize, col );
   }
 };
 

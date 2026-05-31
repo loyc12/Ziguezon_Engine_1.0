@@ -34,30 +34,32 @@ Action checklist for the retained-mode UI system. Design rationale lives in `ui_
 * Basic `sDraw` rendering for panels / windows / popups, labels, buttons, and checkboxes.
 * `exampleGames/menuer` sandbox demonstrates panel, label, button, checkbox, dependent popup, independent window, close behavior, and capture debug text.
 
-## 2. Verifying State
+## 2. Completed v0.5 Feature Layer
+
+* Explicit UI layers: HUD, panel, popup, modal, tooltip.
+* Layer-aware draw order and hit testing.
+* Modal hit-test blocking for lower / non-descendant UI.
+* Raylib scissor clip helpers for retained screen UI.
+* Scroll-area node with clipped children, wheel scrolling, and vertical scroll clamping.
+* Horizontal slider node with mouse drag capture and float changed events.
+* Fixed-buffer tooltip text with hover delay, top overlay rendering, and screen-edge clamping.
+* Toggleable compact debug overlay for node count, live count, event count, hover / focus / press kinds, capture flags, modal state, and optional layer-colored bounds.
+* `exampleGames/menuer` sandbox demonstrates the retained MVP controls plus popup layering, modal blocking, scroll area, slider label updates, tooltips, debug overlay, and input capture suppression.
+
+## 3. Verifying State
 
 * Run `zig build`
 * Run `zig build -Dengine_interface_path=exampleGames/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`
 * Run `zig build test` after utility-level changes
 * Do not run formatting pass
 
-Passed as of 2026-05-31, 14:23 EDT
+Passed as of 2026-05-31, 15:19 EDT
 
-## 3. Active Next Slice
+## 4. Active Next Slice
 
-Implement the next core feature layer described in `implementation_brief.md`.
+No active retained UI implementation slice is defined after the v0.5 pass.
 
-Expected headline tasks:
-
-* Add explicit UI layers and route draw / hit-test order through them.
-* Add a scissor / clip abstraction and first scroll-area behavior.
-* Add slider support with drag capture and changed events.
-* Add modal blocking behavior that prevents interaction below modal nodes.
-* Add tooltip nodes on a top layer with hover delay.
-* Add a compact UI debug overlay for layer / focus / hover / capture state.
-* Extend `exampleGames/menuer` to exercise each new behavior.
-
-## 4. Resolved Conflicts And Known Gaps
+## 5. Resolved Conflicts And Known Gaps
 
 * Box2 is suitable for retained UI layout bounds, hit tests, overlap checks, and screen-edge clamping. The relation semantics and `clampIn` / `clampOn` / `clampOut` behavior are now covered by focused Box2 tests.
 * Prefer Box2 `getSize` / `getSizeX` / `getSizeY` over ad hoc `scale * 2.0` math in new UI code.
@@ -65,7 +67,7 @@ Expected headline tasks:
 * `ui_roadmap.txt` describes a renderer interface backed by `sDraw` plus the visual half of `interfacer.zig`; the current implementation directly renders in `uiContext.zig` through `sDraw`. Since `interfacer.zig` is treated as a stub, the next slice should ignore it entirely and extract a small render helper only if scroll clipping or layers make it clearly useful.
 * There are no dedicated unit tests for retained UI behavior yet; current UI validation is build plus the `menuer` sandbox.
 
-## 5. Later
+## 6. Later
 
 * Engine event integration for UI commands after `src/core/event` has a validated dispatch contract.
 * Comptime panel definitions and `ui.show` / `ui.hide` API.

@@ -433,6 +433,7 @@ pub const UiManager   = ui_m.UiManager;
 pub const UiContext   = ui_m.UiContext;
 pub const UiId        = ui_m.UiId;
 pub const UiNodeKind  = ui_m.UiNodeKind;
+pub const UiLayer     = ui_m.UiLayer;
 pub const UiLayout    = ui_m.UiLayout;
 pub const UiEvent     = ui_m.UiEvent;
 pub const UiEventType = ui_m.UiEventType;

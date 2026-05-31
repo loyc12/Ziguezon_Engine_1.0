@@ -11,10 +11,20 @@ var CAPTURE_LABEL  : def.UiId = .{};
 var CLICK_BUTTON   : def.UiId = .{};
 var CHECKBOX       : def.UiId = .{};
 var POPUP_BUTTON   : def.UiId = .{};
+var MODAL_BUTTON   : def.UiId = .{};
+var DEBUG_CHECKBOX : def.UiId = .{};
+var SLIDER         : def.UiId = .{};
+var SLIDER_LABEL   : def.UiId = .{};
 
 var POPUP_PANEL    : def.UiId = .{};
 var POPUP_SPAWN    : def.UiId = .{};
 var POPUP_CLOSE    : def.UiId = .{};
+
+var FEATURE_PANEL  : def.UiId = .{};
+var SCROLL_AREA    : def.UiId = .{};
+
+var MODAL_PANEL    : def.UiId = .{};
+var MODAL_CLOSE    : def.UiId = .{};
 
 var CLICK_COUNT    : u32 = 0;
 var WINDOW_COUNT   : u32 = 0;
@@ -26,9 +36,13 @@ pub fn buildUi( ng : *def.Engine ) void
 {
   var ui = &ng.uiManager;
 
+  CLICK_COUNT  = 0;
+  WINDOW_COUNT = 0;
+  ui.setDebugOverlay( false, true );
+
   MAIN_PANEL = ui.createPanel(
     .{
-      .box     = def.uiBoxFromTopLeft( .{ .x = 24.0, .y = 24.0 }, .{ .x = 372.0, .y = 286.0 }),
+      .box     = def.uiBoxFromTopLeft( .{ .x = 24.0, .y = 24.0 }, .{ .x = 372.0, .y = 500.0 }),
       .layout  = .vertical,
       .padding = 12.0,
       .gap     = 8.0,
@@ -39,7 +53,7 @@ pub fn buildUi( ng : *def.Engine ) void
     .{
       .parent      = MAIN_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 28.0 },
-      .text        = "Retained UI MVP",
+      .text        = "Retained UI v0.5",
     }
   );
 
@@ -47,7 +61,7 @@ pub fn buildUi( ng : *def.Engine ) void
     .{
       .parent      = MAIN_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 24.0 },
-      .text        = "Click a control to generate UI events.",
+      .text        = "Click, drag, scroll, and open layered panels.",
     }
   ) orelse def.UiId.none();
 
@@ -64,6 +78,7 @@ pub fn buildUi( ng : *def.Engine ) void
       .parent      = MAIN_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Count click",
+      .tooltip     = "Buttons emit clicked events through the UI-local buffer.",
     }
   ) orelse def.UiId.none();
 
@@ -73,6 +88,7 @@ pub fn buildUi( ng : *def.Engine ) void
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Enable sandbox flag",
       .valueBool   = true,
+      .tooltip     = "Checkboxes emit changed events and keep retained bool state.",
     }
   ) orelse def.UiId.none();
 
@@ -81,6 +97,46 @@ pub fn buildUi( ng : *def.Engine ) void
       .parent      = MAIN_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Open dependent popup",
+      .tooltip     = "The popup is on the popup layer and closes on outside click or Escape.",
+    }
+  ) orelse def.UiId.none();
+
+  SLIDER_LABEL = ui.createLabel(
+    .{
+      .parent      = MAIN_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 24.0 },
+      .text        = "Slider value: 42",
+    }
+  ) orelse def.UiId.none();
+
+  SLIDER = ui.createSlider(
+    .{
+      .parent      = MAIN_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 38.0 },
+      .valueFlt    = 42.0,
+      .sliderMin   = 0.0,
+      .sliderMax   = 100.0,
+      .sliderStep  = 1.0,
+      .tooltip     = "Drag the handle; the slider captures the mouse until release.",
+    }
+  ) orelse def.UiId.none();
+
+  MODAL_BUTTON = ui.createButton(
+    .{
+      .parent      = MAIN_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 34.0 },
+      .text        = "Open modal blocker",
+      .tooltip     = "Modal nodes block lower-layer controls until they close.",
+    }
+  ) orelse def.UiId.none();
+
+  DEBUG_CHECKBOX = ui.createCheckbox(
+    .{
+      .parent      = MAIN_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 34.0 },
+      .text        = "Show UI debug overlay",
+      .valueBool   = false,
+      .tooltip     = "Draws retained UI internals without creating UI events itself.",
     }
   ) orelse def.UiId.none();
 
@@ -91,6 +147,69 @@ pub fn buildUi( ng : *def.Engine ) void
       .text        = "capture: free",
     }
   ) orelse def.UiId.none();
+
+  FEATURE_PANEL = ui.createPanel(
+    .{
+      .box     = def.uiBoxFromTopLeft( .{ .x = 420.0, .y = 24.0 }, .{ .x = 354.0, .y = 330.0 }),
+      .layout  = .vertical,
+      .padding = 12.0,
+      .gap     = 8.0,
+    }
+  ) orelse def.UiId.none();
+
+  _ = ui.createLabel(
+    .{
+      .parent      = FEATURE_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 26.0 },
+      .text        = "Clip and scroll area",
+    }
+  );
+
+  SCROLL_AREA = ui.createScrollArea(
+    .{
+      .parent      = FEATURE_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 216.0 },
+      .layout      = .vertical,
+      .padding     = 8.0,
+      .gap         = 6.0,
+      .tooltip     = "Mouse wheel over this box scrolls clipped retained children.",
+    }
+  ) orelse def.UiId.none();
+
+  const scrollRows = [_][]const u8{
+    "Clipped row 01",
+    "Clipped row 02",
+    "Clipped row 03",
+    "Clipped row 04",
+    "Clipped row 05",
+    "Clipped row 06",
+    "Clipped row 07",
+    "Clipped row 08",
+    "Clipped row 09",
+    "Clipped row 10",
+    "Clipped row 11",
+    "Clipped row 12",
+  };
+
+  for( scrollRows )| rowText |
+  {
+    _ = ui.createButton(
+      .{
+        .parent      = SCROLL_AREA,
+        .desiredSize = .{ .x = 0.0, .y = 30.0 },
+        .text        = rowText,
+        .tooltip     = "Scroll children stay clipped to the scroll-area bounds.",
+      }
+    );
+  }
+
+  _ = ui.createLabel(
+    .{
+      .parent      = FEATURE_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 36.0 },
+      .text        = "Wheel here; popup/modal overlap.",
+    }
+  );
 }
 
 fn togglePopup( ng : *def.Engine ) void
@@ -106,7 +225,7 @@ fn togglePopup( ng : *def.Engine ) void
   POPUP_PANEL = ui.createPopup(
     .{
       .dependsOn      = POPUP_BUTTON,
-      .box            = def.uiBoxFromTopLeft( .{ .x = 420.0, .y = 58.0 }, .{ .x = 282.0, .y = 158.0 }),
+      .box            = def.uiBoxFromTopLeft( .{ .x = 446.0, .y = 72.0 }, .{ .x = 286.0, .y = 158.0 }),
       .layout         = .vertical,
       .padding        = 10.0,
       .gap            = 8.0,
@@ -128,6 +247,7 @@ fn togglePopup( ng : *def.Engine ) void
       .parent      = POPUP_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Spawn independent window",
+      .tooltip     = "Windows are detached roots and stay open when this popup closes.",
     }
   ) orelse def.UiId.none();
 
@@ -136,6 +256,51 @@ fn togglePopup( ng : *def.Engine ) void
       .parent      = POPUP_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Close popup",
+      .tooltip     = "Closes this dependent popup and its owned controls.",
+    }
+  ) orelse def.UiId.none();
+}
+
+fn openModal( ng : *def.Engine ) void
+{
+  var ui = &ng.uiManager;
+
+  if( ui.isNodeAlive( MODAL_PANEL )){ return; }
+
+  MODAL_PANEL = ui.createPanel(
+    .{
+      .box            = def.uiBoxFromTopLeft( .{ .x = 330.0, .y = 166.0 }, .{ .x = 376.0, .y = 178.0 }),
+      .layout         = .vertical,
+      .padding        = 12.0,
+      .gap            = 8.0,
+      .isModal        = true,
+      .closeOnOutside = true,
+      .closeOnEscape  = true,
+    }
+  ) orelse return;
+
+  _ = ui.createLabel(
+    .{
+      .parent      = MODAL_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 26.0 },
+      .text        = "Modal blocker",
+    }
+  );
+
+  _ = ui.createLabel(
+    .{
+      .parent      = MODAL_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 42.0 },
+      .text        = "Lower panels are blocked while this is open.",
+    }
+  );
+
+  MODAL_CLOSE = ui.createButton(
+    .{
+      .parent      = MODAL_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 34.0 },
+      .text        = "Close modal",
+      .tooltip     = "Escape or outside click also closes this modal.",
     }
   ) orelse def.UiId.none();
 }
@@ -179,6 +344,7 @@ fn spawnWindow( ng : *def.Engine ) void
       .parent      = window,
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Close window",
+      .tooltip     = "Closes only this independent window.",
     }
   );
 }
@@ -204,6 +370,11 @@ fn handleUiEvents( ng : *def.Engine ) void
           togglePopup( ng );
           ui.setText( STATUS_LABEL, "Popup button event received." );
         }
+        else if( event.node.isEq( MODAL_BUTTON ))
+        {
+          openModal( ng );
+          ui.setText( STATUS_LABEL, "Modal opened; lower controls are blocked." );
+        }
         else if( event.node.isEq( POPUP_SPAWN ))
         {
           spawnWindow( ng );
@@ -213,6 +384,11 @@ fn handleUiEvents( ng : *def.Engine ) void
         {
           ui.closeNode( POPUP_PANEL );
           ui.setText( STATUS_LABEL, "Popup closed from button." );
+        }
+        else if( event.node.isEq( MODAL_CLOSE ))
+        {
+          ui.closeNode( MODAL_PANEL );
+          ui.setText( STATUS_LABEL, "Modal closed from button." );
         }
         else if( std.mem.eql( u8, ui.getText( event.node ), "Close window" ))
         {
@@ -227,6 +403,16 @@ fn handleUiEvents( ng : *def.Engine ) void
         {
           ui.setTextFmt( STATUS_LABEL, "Checkbox changed: {s}", .{ if( event.valueBool ) "on" else "off" });
         }
+        else if( event.node.isEq( DEBUG_CHECKBOX ))
+        {
+          ui.setDebugOverlay( event.valueBool, true );
+          ui.setTextFmt( STATUS_LABEL, "Debug overlay: {s}", .{ if( event.valueBool ) "shown" else "hidden" });
+        }
+        else if( event.node.isEq( SLIDER ))
+        {
+          ui.setTextFmt( SLIDER_LABEL, "Slider value: {d:.0}", .{ event.valueFlt });
+          ui.setText( STATUS_LABEL, "Slider changed while dragging." );
+        }
       },
 
       .closed =>
@@ -236,6 +422,11 @@ fn handleUiEvents( ng : *def.Engine ) void
           POPUP_PANEL = .{};
           POPUP_SPAWN = .{};
           POPUP_CLOSE = .{};
+        }
+        else if( event.node.isEq( MODAL_PANEL ))
+        {
+          MODAL_PANEL = .{};
+          MODAL_CLOSE = .{};
         }
       },
     }
@@ -248,12 +439,13 @@ fn updateCaptureLabel( ng : *def.Engine ) void
 
   ui.setTextFmt(
     CAPTURE_LABEL,
-    "capture mouse:{s} key:{s}\nhover:{s} focus:{s}",
+    "capture mouse:{s} key:{s}\nhover:{s} focus:{s} press:{s}",
     .{
       if( ui.wantsMouse()    ) "yes" else "no",
       if( ui.wantsKeyboard() ) "yes" else "no",
       ui.getNodeKindName( ui.getHoveredId() ),
       ui.getNodeKindName( ui.getFocusedId() ),
+      ui.getNodeKindName( ui.getPressedId() ),
     }
   );
 }
