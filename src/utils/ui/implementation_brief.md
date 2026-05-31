@@ -1,85 +1,192 @@
 # UI Implementation Brief
 
-This is the implementation contract for the first retained-mode UI pass. It supplements `ui_roadmap.txt` and `todo.md`; keep broader design rationale in the roadmap and actionable task lists in the TODO.
+This is the implementation contract for the next retained-mode UI pass after the MVP. It supplements `ui_roadmap.txt` and `todo.md`; keep broader design rationale in the roadmap and status / backlog tracking in the TODO.
 
 ## Scope
 
-Build an MVP v0 retained-mode UI foundation large enough to prove the architecture and engine integration, but not a full final widget suite.
+Build a v0.5 retained UI feature layer: enough core behavior to make the UI useful for real debug panels, without attempting a full shipped-game widget suite.
 
-The v0 should include:
+This pass should add:
 
-* engine-owned UI context / manager
-* retained node storage
-* stable node ids
-* parent / child hierarchy
-* dependency links for menu invalidation
-* basic input capture
-* basic layout
-* basic screen-space rendering through existing draw primitives
-* event buffer or equivalent game-facing action output
-* `exampleGames/menuer/` sandbox demo
+* explicit UI layers
+* layer-aware input routing and draw order
+* modal input blocking
+* scissor / clip helpers for screen UI
+* first scroll-area node
+* first slider node with drag capture
+* tooltip layer behavior
+* compact debug overlay for retained UI internals
+* stronger `menuer` sandbox coverage for both old and new behaviors
+
+Keep the current MVP architecture: engine-owned manager, retained nodes, `Box2` bounds, simple `sDraw` rendering, UI-local events, and game-facing use through `def.UiManager`.
 
 ## Location
 
-All new UI implementation files should live under src/utils/ui/
+All new retained UI implementation files should live under `src/utils/ui/`.
 
+Allowed supporting edits:
 
-## Engine Integration Constraints
-
-Minimize engine changes. Allowed engine edits are limited to what is needed to hook the UI system cleanly into the current loop.
-
-Expected allowed areas:
-
-* `src/core/ui/*` ( except `interfacer.zig` )
-* `src/core/engine/engineCore.zig`
-* `src/core/engine/engineStep.zig`
-* `src/core/event/event.zig`
-* `src/core/event/eventManager.zig`
-* def.zig exports/imports needed to expose the UI manager through existing engine conventions
+* `src/defs.zig` exports for new UI types / helpers
+* `src/core/engine/engineCore.zig` only if manager storage changes
+* `src/core/engine/engineState.zig` only if init / deinit changes
+* `src/core/engine/engineStep.zig` only if frame order must change
+* `exampleGames/menuer/*` for the behavior sandbox
 
 Ask before making major structural changes outside those areas.
 
-The UI context should be treated like the existing managers / registries, not like a tiny global camera helper. Prefer an `Engine`-owned manager/context field.
+## Engine Integration Constraints
+
+Do not move UI ownership out of `Engine.uiManager`.
+
+The frame sequence should stay:
+
+* `beginFrame`
+* `updateLayout`
+* `dispatchInput`
+* game `OnUpdateFrame`
+* `endFrame`
+* game `OnRenderOverlay`
+* UI screen draw
+
+Only change this ordering if the new behavior cannot be made correct otherwise, and document the reason in `todo.md`.
+
+Do not integrate retained UI with `src/core/event` in this pass unless it becomes necessary for the sandbox. The current UI-local event buffer is acceptable for v0.5.
 
 ## Style Constraints
 
-Match the existing Zig codebase style and naming patterns.
+Match the existing Zig codebase style and naming patterns, especially from complex /src/utils/*/** and /src/core/*/** files
 
-These are intentionally different from standard zig, so do not run formatting passes such as `zig fmt`.
+These are intentionally different from standard Zig, so do not run formatting passes such as `zig fmt`.
 
-If the existing local style conflicts with a meaningful performance or correctness concern, pause and raise the issue before changing style broadly.
+Comment non-self-documenting or non-obvious code enough so that a skilled zig coder could understand without extremely domain-specific knowledge
 
-## Existing UI Code
+Prefer compact implementations. Extract helpers when they reduce repeated layer / clipping / hit-test logic, but do not build a broad framework ahead of the current widgets.
 
-The current UI code is an unused proof-of-concept and can be reworked freely.
+Prefer using /src/utils/** utils over local (re)implementation when it makes sense. If no matching util is available, implement it locally for now, but warn the user it could become a util
 
-Do not hook `interfacer.zig` into v0 rendering. Use simpler `sDraw`-based primitives first. `interfacer.zig` may be revisited later as a panel-shape renderer.
+## Required Work Chunks
 
-## Sandbox
+### 1. Layers
 
-Use exampleGames/menuer/ as the integration and behavior sandbox.
+Add explicit layer data to the UI system.
+
+Minimum layer set:
+
+* HUD
+* panel
+* popup
+* modal
+* tooltip
+
+Implementation expectations:
+
+* Each node has a layer or belongs to a root that has a layer.
+* Rendering draws lower layers first and tooltip last.
+* Hit testing scans higher input-capable layers first.
+* A modal node blocks hit tests to lower layers and non-descendant nodes behind it.
+* Existing MVP nodes keep their current behavior when no explicit layer is provided.
+
+Avoid a full multi-root rewrite unless it clearly simplifies the implementation. A compact layer field plus ordered scans is acceptable.
+
+### 2. Clip And Scroll
+
+Add a minimal clipping abstraction around raylib scissor mode for screen UI.
+
+Implementation expectations:
+
+* Add begin / end clip helpers with a small fixed-depth or array-backed stack.
+* Add a `scrollArea` node kind or equivalent flag.
+* Scroll areas clip their children to their bounds.
+* Mouse wheel over a scroll area changes a stored vertical scroll offset.
+* Child layout inside a scroll area is offset by the scroll value.
+* Clamp scroll offset to a sensible range based on content height.
+
+Do not implement horizontal scroll unless it falls out naturally.
+
+### 3. Slider
+
+Add a simple horizontal slider widget.
+
+Implementation expectations:
+
+* Store min, max, current value, and step or no-step mode.
+* Pressing and dragging captures the mouse until release.
+* Dragging emits `changed` events when the value changes.
+* Slider rendering must show track, fill, and handle.
+* `menuer` must demonstrate the slider driving a visible value label.
+
+Keep value storage simple and numeric. Do not add generic typed bindings yet.
+
+### 4. Tooltips
+
+Add tooltip behavior as a top-layer UI feature.
+
+Implementation expectations:
+
+* Nodes can carry tooltip text.
+* Hovering a node for a short delay shows a tooltip node or tooltip draw path.
+* Tooltips render above all normal UI and do not receive input.
+* Tooltip position follows the mouse with screen-edge clamping.
+* Moving off the node hides the tooltip.
+
+Use fixed text buffers consistent with the current node text approach. Do not add rich text.
+
+### 5. Debug Overlay
+
+Add an optional compact debug overlay for retained UI state.
+
+Implementation expectations:
+
+* Toggleable from `menuer`.
+* Shows node count, live node count, event count, hovered kind, focused kind, pressed kind, wants mouse, wants keyboard, and active modal state.
+* Optionally draws layer-colored bounds for visible nodes.
+* Must not create UI events or capture input while only displaying state.
+
+This can live in `UiContext` or a small helper file. Keep it simple.
+
+### 6. Menuer Sandbox
+
+Update `exampleGames/menuer` so the new behavior is visible and manually testable.
 
 The sandbox should demonstrate:
 
-* visible panel
-* label
-* button with click event
-* checkbox / toggle
-* submenu or popup
-* independent spawned window that survives opener closure
-* basic hover / focus / capture debug display
+* existing MVP panel / button / checkbox / popup / independent window behavior still works
+* layered popup above panel
+* modal blocking lower UI
+* scroll area with clipped overflowing content
+* slider changing a label
+* tooltip on at least two controls
+* debug overlay toggle
+* camera and pause inputs still respect `wantsMouse` / `wantsKeyboard`
 
-## Non-Goals For V0
+## Non-Goals For This Pass
 
-Do not implement these unless needed to complete the proof-of-concept:
+Do not implement these unless needed to complete the above behavior:
 
 * text input
 * clipboard
 * gamepad navigation
 * full keyboard navigation
-* advanced theme files
-* hot-reloadable panel definitions
-* complex tables
+* dropdowns
+* menu bars
+* tabs
+* tables
 * charts / graph widgets
-* `interfacer.zig` bevel/shape integration
+* property inspectors
+* hot-reloadable panel definitions
+* comptime panel definition API
+* world-space UI / anchors
+* engine event system integration
+* `interfacer.zig` bevel / shape integration
+* advanced theme files
 
+## Validation
+
+Required checks:
+
+* `zig build -Dengine_interface_path=exampleGames/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`
+* `zig build`
+
+Do not run `zig fmt`.
+
+Also manually inspect the `menuer` sandbox if a graphical run is available. At minimum, the code should make each new behavior reachable from the sandbox without hidden setup.

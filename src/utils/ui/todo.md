@@ -1,118 +1,73 @@
 # UI TODO
 
-Action checklist for the retained-mode UI system. Design rationale lives in `ui_roadmap.txt`; keep this file short and implementation-focused.
+Action checklist for the retained-mode UI system. Design rationale lives in `ui_roadmap.txt`; the active implementation contract lives in `implementation_brief.md`.
 
 ## 0. Current Decisions
 
-* Retained-mode UI tree owned by the engine.
+* Retained-mode UI tree owned by the engine through `Engine.uiManager`.
 * No raygui dependency.
 * Use `Box2` as the final layout / hit-test rectangle.
-* Use `def.sDraw` for screen UI and `def.wDraw` only for simple world-space labels / markers.
-* UI update runs from `updateFrame` / `OnUpdateFrame`.
-* Screen UI render runs from `renderAll` / `OnRenderOverlay`.
-* World-space UI, if needed, is a separate lightweight path in `OnRenderWorld`.
-* UI reads game state through bindings / snapshots and writes back through events or commands.
+* Use `def.sDraw` for screen UI and `def.wDraw` only for separate world-space labels / markers.
+* UI frame processing runs in `engineStep.updateFrame`: `beginFrame`, `updateLayout`, `dispatchInput`, game `OnUpdateFrame`, then `endFrame`.
+* Screen UI render runs from `engineStep.renderAll` in the overlay phase after game `OnRenderOverlay` and before debug FPS / TPS text.
+* UI currently reads game state through direct sandbox updates and writes back through a UI-local event buffer.
+* `interfacer.zig` is not wired into retained UI rendering yet.
 
-## 1. Prerequisites
+## 1. Completed MVP
 
-* Review `Box2` `isOn` / `isIn` / `isOut` semantics before relying on it for UI.
-* Add small Box2 tests or debug checks for point hit tests, overlap, containment, and clamp behavior.
-* Decide whether `interfacer.zig` becomes only a panel-shape renderer or stays fully separate until later.
-* Verify the current event system can carry UI click / command events cleanly.
+* Engine-owned `UiManager` / `UiContext` lifecycle: init during engine start, deinit during engine stop.
+* Core files exist: `uiContext.zig`, `uiNode.zig`, `uiInput.zig`, `uiTypes.zig`.
+* Public retained UI types are exported through `defs.zig`.
+* Stable `UiId` with index + generation and `UiId.none()`.
+* Retained node storage with slot reuse and stale-id rejection.
+* Node kinds: root, panel, label, button, checkbox, popup, window.
+* Parent / child hierarchy.
+* Dependency links for menu / popup invalidation.
+* Close propagation for parent-owned children and dependent nodes.
+* Visibility, enabled, modal, detached-root, close-on-outside, and close-on-escape flags.
+* Basic absolute, vertical, horizontal, and floating layout.
+* Final bounds stored as `Box2`.
+* Per-frame `UiInput` snapshot for mouse, wheel, Escape, Enter, and Space.
+* Mouse hover, press, release, focus, capture helpers, and basic keyboard capture.
+* Outside-click and Escape close for transient UI.
+* UI-local events for clicked, changed, and closed.
+* Basic `sDraw` rendering for panels / windows / popups, labels, buttons, and checkboxes.
+* `exampleGames/menuer` sandbox demonstrates panel, label, button, checkbox, dependent popup, independent window, close behavior, and capture debug text.
 
-## 2. Core Files
+## 2. Verifying State
 
-* Create `uiContext.zig`.
-* Create `uiNode.zig`.
-* Create `uiInput.zig`.
-* Create `uiEvent.zig`.
-* Create `uiStyle.zig`.
-* Create `uiRender.zig`.
-* Export the public UI surface through `defs.zig` once the first pieces compile.
+* Run `zig build`
+* Run `zig build -Dengine_interface_path=exampleGames/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`
+* Do not run formatting pass
 
-## 3. Engine Integration
+Passed as of 2026-05-31, 13:58
 
-* Add a UI context / manager field to `Engine`.
-* Initialize UI during engine startup.
-* Deinitialize UI during engine shutdown.
-* In `updateFrame`, collect `UiInput`.
-* In `updateFrame`, run UI layout and input dispatch.
-* In `renderAll`, draw screen UI inside the overlay phase.
-* Add input capture helpers: `wantsMouse`, `wantsKeyboard`, focused id, hovered id.
+## 3. Active Next Slice
 
-## 4. Retained Tree
+Implement the next core feature layer described in `implementation_brief.md`.
 
-* Add stable `UiId`.
-* Add node storage.
-* Add parent / child links.
-* Add visibility and enabled flags.
-* Add node destruction with deferred cleanup.
-* Add close propagation for parent-owned children.
-* Add dependency links for menu chains.
-* Add detach behavior for independent spawned windows.
-* Add invariants for parent cycles, dependency cycles, and stale ids.
+Expected headline tasks:
 
-## 5. Layout
+* Add explicit UI layers and route draw / hit-test order through them.
+* Add a scissor / clip abstraction and first scroll-area behavior.
+* Add slider support with drag capture and changed events.
+* Add modal blocking behavior that prevents interaction below modal nodes.
+* Add tooltip nodes on a top layer with hover delay.
+* Add a compact UI debug overlay for layer / focus / hover / capture state.
+* Extend `exampleGames/menuer` to exercise each new behavior.
 
-* Implement absolute positioning.
-* Implement vertical stack.
-* Implement horizontal stack.
-* Implement floating roots.
-* Store final bounds as `Box2`.
-* Add padding, margin, min size, desired size, and max size.
-* Defer flex-style layout until at least one real panel exposes the need.
+## 4. Known Gaps And Clashes
 
-## 6. Input
+* `ui_roadmap.txt` says Box2 semantics should be fixed / verified before UI relies on it, but the MVP already relies on `Box2.isOnPoint` for hit testing. Treat Box2 verification as a near-term correctness task, not a prerequisite that can still block the MVP.
+* `ui_roadmap.txt` recommends UI actions become engine events through `src/core/event`, but the MVP currently uses a UI-local event buffer. Keep the local buffer for the next slice unless engine event integration is explicitly selected.
+* `ui_roadmap.txt` describes a renderer interface backed by `sDraw` plus the visual half of `interfacer.zig`; the current implementation directly renders in `uiContext.zig` through `sDraw`. The next slice should extract a small render helper only if scroll clipping or layers make it clearly useful.
+* `implementation_brief.md` keeps `interfacer.zig` integration out of scope for now to preserve the previous constraint. This is a deliberate deferral from the roadmap.
+* There are no dedicated unit tests for retained UI or Box2 UI semantics yet; current validation is build plus the `menuer` sandbox.
 
-* Create a per-frame `UiInput` snapshot.
-* Resolve mouse hover by layer and depth.
-* Resolve click / press / release events.
-* Track hovered node.
-* Track pressed node.
-* Track focused node.
-* Track active / captured node.
-* Support outside-click close for transient menus.
-* Support escape close for menus / popups.
+## 5. Later
 
-## 7. Rendering
-
-* Add a small renderer interface / module.
-* Draw panels.
-* Draw labels.
-* Draw buttons.
-* Draw checkbox / toggle state.
-* Add clip region wrappers for scroll areas.
-* Add debug drawing for node bounds and focus / hover state.
-
-## 8. First Widgets
-
-* Panel.
-* Label.
-* Button.
-* Checkbox / toggle.
-* Slider.
-* Scroll area.
-
-## 9. Menus And Popups
-
-* Add dependent submenu.
-* Closing an upper menu closes lower dependent menus.
-* Opening a sibling submenu closes the old lower branch.
-* Add independent spawned window that survives opener closure.
-* Add modal popup behavior.
-* Add tooltip layer behavior.
-
-## 10. First End-To-End Panel
-
-* Build one minimal debug panel.
-* Show static text from a UI definition.
-* Show live data through a simple binding or pushed snapshot.
-* Click a button and emit an event.
-* Let game code handle the event.
-* Close and reopen the panel without losing unrelated UI state.
-
-## 11. Later
-
+* Engine event integration for UI commands.
+* Comptime panel definitions and `ui.show` / `ui.hide` API.
 * Text input.
 * Dropdown.
 * Menu bar.
@@ -126,4 +81,5 @@ Action checklist for the retained-mode UI system. Design rationale lives in `ui_
 * Clipboard.
 * Theme / skin files.
 * Hot-reloadable panel definitions.
-
+* World-space UI / anchors.
+* `interfacer.zig` bevel / shape integration as a retained UI panel renderer.
