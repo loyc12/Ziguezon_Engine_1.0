@@ -184,10 +184,10 @@ pub const Box2 = struct
 
   // ================ ACCESSORS & MUTATORS ================
 
-  pub inline fn getMinX( self : *const Box2 ) f64 { return self.center.x - self.scale.x; }
-  pub inline fn getMaxX( self : *const Box2 ) f64 { return self.center.x + self.scale.x; }
-  pub inline fn getMinY( self : *const Box2 ) f64 { return self.center.y - self.scale.y; }
-  pub inline fn getMaxY( self : *const Box2 ) f64 { return self.center.y + self.scale.y; }
+  pub inline fn getMinX( self : Box2 ) f64 { return self.center.x - self.scale.x; }
+  pub inline fn getMaxX( self : Box2 ) f64 { return self.center.x + self.scale.x; }
+  pub inline fn getMinY( self : Box2 ) f64 { return self.center.y - self.scale.y; }
+  pub inline fn getMaxY( self : Box2 ) f64 { return self.center.y + self.scale.y; }
 
   pub inline fn setMinX( self : *Box2, xMin : f64 ) void { self.center.x = xMin + self.scale.x; }
   pub inline fn setMaxX( self : *Box2, xMax : f64 ) void { self.center.x = xMax - self.scale.x; }
@@ -196,10 +196,10 @@ pub const Box2 = struct
 
 
   // TODO : remove these legacy wrapper functions once they are deemed unused
-  pub inline fn getLeftX(   self : *const Box2 ) f64 { return self.getMinX(); }
-  pub inline fn getRightX(  self : *const Box2 ) f64 { return self.getMaxX(); }
-  pub inline fn getTopY(    self : *const Box2 ) f64 { return self.getMinY(); }
-  pub inline fn getBottomY( self : *const Box2 ) f64 { return self.getMaxY(); }
+  pub inline fn getLeftX(   self : Box2 ) f64 { return self.getMinX(); }
+  pub inline fn getRightX(  self : Box2 ) f64 { return self.getMaxX(); }
+  pub inline fn getTopY(    self : Box2 ) f64 { return self.getMinY(); }
+  pub inline fn getBottomY( self : Box2 ) f64 { return self.getMaxY(); }
 
   pub inline fn setLeftX(   self : *Box2, leftX   : f64 ) void { self.setMinX( leftX   ); }
   pub inline fn setRightX(  self : *Box2, rightX  : f64 ) void { self.setMaxX( rightX  ); }
@@ -207,10 +207,10 @@ pub const Box2 = struct
   pub inline fn setBottomY( self : *Box2, bottomY : f64 ) void { self.setMaxY( bottomY ); }
 
 
-  pub inline fn getTopLeft(     self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMinX(), .y = self.getMinY() }; }
-  pub inline fn getTopRight(    self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMaxX(), .y = self.getMinY() }; }
-  pub inline fn getBottomLeft(  self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMinX(), .y = self.getMaxY() }; }
-  pub inline fn getBottomRight( self : *const Box2 ) Vec2 { return Vec2{ .x = self.getMaxX(), .y = self.getMaxY() }; }
+  pub inline fn getTopLeft(     self : Box2 ) Vec2 { return Vec2{ .x = self.getMinX(), .y = self.getMinY() }; }
+  pub inline fn getTopRight(    self : Box2 ) Vec2 { return Vec2{ .x = self.getMaxX(), .y = self.getMinY() }; }
+  pub inline fn getBottomLeft(  self : Box2 ) Vec2 { return Vec2{ .x = self.getMinX(), .y = self.getMaxY() }; }
+  pub inline fn getBottomRight( self : Box2 ) Vec2 { return Vec2{ .x = self.getMaxX(), .y = self.getMaxY() }; }
 
   pub inline fn setTopLeft(     self : *Box2, topLeftPos     : Vec2 ) void { self.setMinX( topLeftPos.x     ); self.setMinY( topLeftPos.y     ); }
   pub inline fn setTopRight(    self : *Box2, topRightPos    : Vec2 ) void { self.setMaxX( topRightPos.x    ); self.setMinY( topRightPos.y    ); }
@@ -224,24 +224,24 @@ pub const Box2 = struct
   // ================ CHECKERS ================
 
   // TODO : add an EPS size range to account for fp errors
-  pub inline fn isEq(   self : *const Box2, zoneBox : Box2 ) bool { return self.center.isEq(   zoneBox.center ) and self.scale.isEq(   zoneBox.scale ); }
-  pub inline fn isDiff( self : *const Box2, zoneBox : Box2 ) bool { return self.center.isDiff( zoneBox.center ) or  self.scale.isDiff( zoneBox.scale ); }
+  pub inline fn isEq(   self : Box2, zoneBox : Box2 ) bool { return self.center.isEq(   zoneBox.center ) and self.scale.isEq(   zoneBox.scale ); }
+  pub inline fn isDiff( self : Box2, zoneBox : Box2 ) bool { return self.center.isDiff( zoneBox.center ) or  self.scale.isDiff( zoneBox.scale ); }
 
   // Entirely _ of threshold
-  pub inline fn isLeftOfX(  self : *const Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getMaxX(), thresholdX ); }
-  pub inline fn isRightOfX( self : *const Box2, thresholdX : f64 ) bool { return isRightOf( self.getMinX(), thresholdX ); }
-  pub inline fn isAboveY(   self : *const Box2, thresholdY : f64 ) bool { return isAbove(   self.getMaxY(), thresholdY ); }
-  pub inline fn isBelowY(   self : *const Box2, thresholdY : f64 ) bool { return isBelow(   self.getMinY(), thresholdY ); }
+  pub inline fn isLeftOfX(  self : Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getMaxX(), thresholdX ); }
+  pub inline fn isRightOfX( self : Box2, thresholdX : f64 ) bool { return isRightOf( self.getMinX(), thresholdX ); }
+  pub inline fn isAboveY(   self : Box2, thresholdY : f64 ) bool { return isAbove(   self.getMaxY(), thresholdY ); }
+  pub inline fn isBelowY(   self : Box2, thresholdY : f64 ) bool { return isBelow(   self.getMinY(), thresholdY ); }
 
   // At least Partially _ of threshold
-  pub inline fn goesLeftOfX(  self : *const Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getMinX(), thresholdX ); }
-  pub inline fn goesRightOfX( self : *const Box2, thresholdX : f64 ) bool { return isRightOf( self.getMaxX(), thresholdX ); }
-  pub inline fn goesAboveY(   self : *const Box2, thresholdY : f64 ) bool { return isAbove(   self.getMinY(), thresholdY ); }
-  pub inline fn goesBelowY(   self : *const Box2, thresholdY : f64 ) bool { return isBelow(   self.getMaxY(), thresholdY ); }
+  pub inline fn goesLeftOfX(  self : Box2, thresholdX : f64 ) bool { return isLeftOf(  self.getMinX(), thresholdX ); }
+  pub inline fn goesRightOfX( self : Box2, thresholdX : f64 ) bool { return isRightOf( self.getMaxX(), thresholdX ); }
+  pub inline fn goesAboveY(   self : Box2, thresholdY : f64 ) bool { return isAbove(   self.getMinY(), thresholdY ); }
+  pub inline fn goesBelowY(   self : Box2, thresholdY : f64 ) bool { return isBelow(   self.getMaxY(), thresholdY ); }
 
 
   // Fully Inside
-  pub fn isInXRange( self : *const Box2, xMin : f64, xMax : f64 ) bool
+  pub fn isInXRange( self : Box2, xMin : f64, xMax : f64 ) bool
   {
     if( !isMinMaxValid(       xMin, xMax )){                   return false; }
     if( !isClampRangeValid(   xMin, xMax, self.scale.x * 2 )){ return false; }
@@ -249,7 +249,7 @@ pub const Box2 = struct
     if( self.goesRightOfX( xMax )){                         return false; }
     return true;
   }
-  pub fn isInYRange( self : *const Box2, yMin : f64, yMax : f64 ) bool
+  pub fn isInYRange( self : Box2, yMin : f64, yMax : f64 ) bool
   {
     if( !isMinMaxValid(     yMin, yMax )){                   return false; }
     if( !isClampRangeValid( yMin, yMax, self.scale.y * 2 )){ return false; }
@@ -257,57 +257,57 @@ pub const Box2 = struct
     if( self.goesBelowY( yMax )){                         return false; }
     return true;
   }
-  pub inline fn isInArea( self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool
+  pub inline fn isInArea( self : Box2, pMin : Vec2, pMax : Vec2 ) bool
   {
     if( !self.isInXRange( pMin.x, pMax.x )){ return false; }
     if( !self.isInYRange( pMin.y, pMax.y )){ return false; }
     return true;
   }
-  pub inline fn isInBox2( self : *const Box2, zoneBox : *const Box2 ) bool
+  pub inline fn isInBox2( self : Box2, zoneBox : Box2 ) bool
   {
     return self.isInArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
 
   // Fully Outside
-  pub inline fn isOutOfX(     self : *const Box2, valX : f64  ) bool { return !self.isOnX(  valX ); }
-  pub inline fn isOutOfY(     self : *const Box2, valY : f64  ) bool { return !self.isOnY(  valY ); }
-  pub inline fn isOutOfPoint( self : *const Box2, p    : Vec2 ) bool { return !self.isOnPoint( p ); }
+  pub inline fn isOutOfX(     self : Box2, valX : f64  ) bool { return !self.isOnX(  valX ); }
+  pub inline fn isOutOfY(     self : Box2, valY : f64  ) bool { return !self.isOnY(  valY ); }
+  pub inline fn isOutOfPoint( self : Box2, p    : Vec2 ) bool { return !self.isOnPoint( p ); }
 
-  pub fn isOutOfXRange( self : *const Box2, xMin : f64, xMax : f64 ) bool
+  pub fn isOutOfXRange( self : Box2, xMin : f64, xMax : f64 ) bool
   {
     if( !isMinMaxValid(     xMin, xMax )){ return true; }
     if( self.isLeftOfX(  xMin )){       return true; }
     if( self.isRightOfX( xMax )){       return true; }
     return false;
   }
-  pub fn isOutOfYRange( self : *const Box2, yMin : f64, yMax : f64 ) bool
+  pub fn isOutOfYRange( self : Box2, yMin : f64, yMax : f64 ) bool
   {
     if( !isMinMaxValid(   yMin, yMax )){ return true; }
     if( self.isAboveY( yMin )){       return true; }
     if( self.isBelowY( yMax )){       return true; }
     return false;
   }
-  pub inline fn isOutOfArea( self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool
+  pub inline fn isOutOfArea( self : Box2, pMin : Vec2, pMax : Vec2 ) bool
   {
     if( self.isOutOfXRange( pMin.x, pMax.x )){ return true; }
     if( self.isOutOfYRange( pMin.y, pMax.y )){ return true; }
     return false;
   }
-  pub inline fn isOutOfBox2( self : *const Box2, zoneBox : *const Box2 ) bool
+  pub inline fn isOutOfBox2( self : Box2, zoneBox : Box2 ) bool
   {
     return self.isOutOfArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
 
   // Overlaps at least partially
-  pub inline fn isOnX(     self : *const Box2, valX : f64  ) bool { if( self.isLeftOfX( valX ) or self.isRightOfX( valX )){ return false; } return true; }
-  pub inline fn isOnY(     self : *const Box2, valY : f64  ) bool { if( self.isAboveY(  valY ) or self.isBelowY(   valY )){ return false; } return true; }
-  pub inline fn isOnPoint( self : *const Box2, p    : Vec2 ) bool { if( !self.isOnX(    p.x  ) or !self.isOnY(     p.y  )){ return false; } return true; }
+  pub inline fn isOnX(     self : Box2, valX : f64  ) bool { if( self.isLeftOfX( valX ) or self.isRightOfX( valX )){ return false; } return true; }
+  pub inline fn isOnY(     self : Box2, valY : f64  ) bool { if( self.isAboveY(  valY ) or self.isBelowY(   valY )){ return false; } return true; }
+  pub inline fn isOnPoint( self : Box2, p    : Vec2 ) bool { if( !self.isOnX(    p.x  ) or !self.isOnY(     p.y  )){ return false; } return true; }
 
-  pub fn isOnXRange( self : *const Box2, xMin : f64,  xMax : f64  ) bool { return !self.isOutOfXRange( xMin, xMax ); }
-  pub fn isOnYRange( self : *const Box2, yMin : f64,  yMax : f64  ) bool { return !self.isOutOfYRange( yMin, yMax ); }
-  pub fn isOnArea(   self : *const Box2, pMin : Vec2, pMax : Vec2 ) bool { return !self.isOutOfArea(   pMin, pMax ); }
+  pub fn isOnXRange( self : Box2, xMin : f64,  xMax : f64  ) bool { return !self.isOutOfXRange( xMin, xMax ); }
+  pub fn isOnYRange( self : Box2, yMin : f64,  yMax : f64  ) bool { return !self.isOutOfYRange( yMin, yMax ); }
+  pub fn isOnArea(   self : Box2, pMin : Vec2, pMax : Vec2 ) bool { return !self.isOutOfArea(   pMin, pMax ); }
 
-  pub fn isOnBox2( self : *const Box2, zoneBox : *const Box2 ) bool
+  pub fn isOnBox2( self : Box2, zoneBox : Box2 ) bool
   {
       if( self.getMinX() > zoneBox.getMaxX() ){ return false; } // self is right of zoneBox
       if( self.getMaxX() < zoneBox.getMinX() ){ return false; } // self is left of zoneBox
@@ -315,9 +315,9 @@ pub const Box2 = struct
       if( self.getMaxY() < zoneBox.getMinY() ){ return false; } // self is above zoneBox
       return true;
   }
-  pub inline fn doesOverlap( self : *const Box2, zoneBox : *const Box2 ) bool { return self.isOnBox2( zoneBox ); }
+  pub inline fn doesOverlap( self : Box2, zoneBox : Box2 ) bool { return self.isOnBox2( zoneBox ); }
 
-  pub fn getOverlap( self : *const Box2, zoneBox : *const Box2 ) ?Vec2
+  pub fn getOverlap( self : Box2, zoneBox : Box2 ) ?Vec2
   {
     if( !self.doesOverlap( zoneBox )){ return null; }
 
@@ -365,7 +365,7 @@ pub const Box2 = struct
     self.clampInXRange(  pMin.x, pMax.x );
     self.clampInYRange(  pMin.y, pMax.y );
   }
-  pub inline fn clampInBox2( self : *Box2, zoneBox : *const Box2 ) void
+  pub inline fn clampInBox2( self : *Box2, zoneBox : Box2 ) void
   {
     self.clampInArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
@@ -453,7 +453,7 @@ pub const Box2 = struct
       .bottom => self.clampBelowY(   pMax.y ),
     }
   }
-  pub inline fn clampOutOfBox2( self : *Box2, zoneBox : *const Box2 ) void
+  pub inline fn clampOutOfBox2( self : *Box2, zoneBox : Box2 ) void
   {
     self.clampOutOfArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
@@ -495,7 +495,7 @@ pub const Box2 = struct
     self.clampOnYRange(  pMin.y, pMax.y );
   }
 
-  pub inline fn clampOnBox2( self : *Box2, zoneBox : *const Box2 ) void
+  pub inline fn clampOnBox2( self : *Box2, zoneBox : Box2 ) void
   {
     self.clampOnArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
@@ -503,9 +503,8 @@ pub const Box2 = struct
 
   // ================ DEBUG METHODS ================
 
-  pub fn drawSelf( self : *const Box2, color : def.Colour ) void { def.wDraw.rect( self.center, self.scale, .{}, color ); }
+  pub fn drawSelf( self : Box2, color : def.Colour ) void { def.wDraw.rect( self.center, self.scale, .{}, color ); }
 };
-
 
 
 

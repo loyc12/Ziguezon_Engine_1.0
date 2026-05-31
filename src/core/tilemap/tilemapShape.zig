@@ -554,7 +554,7 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
     return;
   }
 
-  if( !viewBox.doesOverlap( &tileBox ))
+  if( !viewBox.doesOverlap( tileBox ))
   {
     def.qlog( .TRACE, 0, @src(), "not drawing tiles outside of viewbox : returning" );
     return;

@@ -98,7 +98,7 @@ fn normalizeAngle( angle : f64 ) f64
 
 fn doDirMatch( a : f64, b : f64 ) bool
 {
-  if( def.isFltZr( a ) or def.isFltZr( a )){ return true; }
+  if( def.isFltZr( a ) or def.isFltZr( b )){ return true; }
   return( ( a < 0.0 ) == ( b < 0.0 ));
 }
 

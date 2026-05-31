@@ -27,30 +27,30 @@ pub const Angle = struct
 
   // ================ CONVERSIONS ================
 
-  pub inline fn toRayVec2( self : *const Angle, scale : ?Vec2 ) RayVec2 { return self.toVec2( scale ).toRayVec2(); }
+  pub inline fn toRayVec2( self : Angle, scale : ?Vec2 ) RayVec2 { return self.toVec2( scale ).toRayVec2(); }
 
-  pub inline fn toVec2( self : *const Angle, scale : ?Vec2 ) Vec2
+  pub inline fn toVec2( self : Angle, scale : ?Vec2 ) Vec2
   {
     const x = @cos( self.r ) * if( scale )| s | s.x else 1.0;
     const y = @sin( self.r ) * if( scale )| s | s.y else 1.0;
 
     return Vec2{ .x = x, .y = y };
   }
-  pub inline fn toVecA( self : *const Angle, scale : ?Vec2, a : ?Angle ) VecA // NOTE : uses self for vecA.a if a is null
+  pub inline fn toVecA( self : Angle, scale : ?Vec2, a : ?Angle ) VecA // NOTE : uses self for vecA.a if a is null
   {
-    return self.toVec2( scale ).toVecA( a orelse self.* );
+    return self.toVec2( scale ).toVecA( a orelse self );
   }
 
-  inline fn getPosR( self : *const Angle ) f64 { return if( self.r < 0.0 ) self.r + def.TAU else self.r; }
+  inline fn getPosR( self : Angle ) f64 { return if( self.r < 0.0 ) self.r + def.TAU else self.r; }
 
-  pub inline fn toRad(     self : *const Angle ) f64 { return self.r; }
-  pub inline fn toPosRad(  self : *const Angle ) f64 { return self.getPosR(); }
+  pub inline fn toRad(     self : Angle ) f64 { return self.r; }
+  pub inline fn toPosRad(  self : Angle ) f64 { return self.getPosR(); }
 
-  pub inline fn toDeg(     self : *const Angle ) f64 { return def.RtD( self.r ); }
-  pub inline fn toPosDeg(  self : *const Angle ) f64 { return def.RtD( self.getPosR() ); }
+  pub inline fn toDeg(     self : Angle ) f64 { return def.RtD( self.r ); }
+  pub inline fn toPosDeg(  self : Angle ) f64 { return def.RtD( self.getPosR() ); }
 
-  pub inline fn toCenUnit( self : *const Angle ) f64 { return self.r / def.PI; }
-  pub inline fn toPosUnit( self : *const Angle ) f64 { return self.getPosR() / def.TAU; }
+  pub inline fn toCenUnit( self : Angle ) f64 { return self.r / def.PI; }
+  pub inline fn toPosUnit( self : Angle ) f64 { return self.getPosR() / def.TAU; }
 
   pub inline fn norm(     self : Angle ) Angle { return Angle{ .r = def.wrap( self.r, -def.PI, def.PI )}; }
   pub inline fn normSelf( self :*Angle ) void  {           self.r = def.wrap( self.r, -def.PI, def.PI );  }
@@ -58,49 +58,49 @@ pub const Angle = struct
 
   // ================ COMPARISONS ================
 
-  pub inline fn isPosi( self : *const Angle ) bool { return self.r >  def.EPS; }
-  pub inline fn isNeg(  self : *const Angle ) bool { return self.r < -def.EPS; }
-  pub inline fn isZero( self : *const Angle ) bool { return def.isFltZr( self.r ); }
+  pub inline fn isPosi( self : Angle ) bool { return self.r >  def.EPS; }
+  pub inline fn isNeg(  self : Angle ) bool { return self.r < -def.EPS; }
+  pub inline fn isZero( self : Angle ) bool { return def.isFltZr( self.r ); }
 
-  pub inline fn isEq(   self : *const Angle, other : Angle ) bool { return  def.isFltEq( self.r, other.r ); }
-  pub inline fn isDiff( self : *const Angle, other : Angle ) bool { return !def.isFltEq( self.r, other.r ); }
+  pub inline fn isEq(   self : Angle, other : Angle ) bool { return  def.isFltEq( self.r, other.r ); }
+  pub inline fn isDiff( self : Angle, other : Angle ) bool { return !def.isFltEq( self.r, other.r ); }
 
-  pub inline fn isLeftOf(  self : *const Angle, other : Angle ) bool { return self.sub( other ).isPosi(); }
-  pub inline fn isRightOf( self : *const Angle, other : Angle ) bool { return self.sub( other ).isNeg(); }
+  pub inline fn isLeftOf(  self : Angle, other : Angle ) bool { return self.sub( other ).isPosi(); }
+  pub inline fn isRightOf( self : Angle, other : Angle ) bool { return self.sub( other ).isNeg(); }
 
-  pub inline fn isAlignedTo(  self : *const Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( self.sub( other ).r ) <= threshold; }
-  pub inline fn isOppositeTo( self : *const Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - def.PI ) <= threshold; }
-  pub inline fn isPerpTo(     self : *const Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - ( def.PI / 2 )) <= threshold; }
+  pub inline fn isAlignedTo(  self : Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( self.sub( other ).r ) <= threshold; }
+  pub inline fn isOppositeTo( self : Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - def.PI ) <= threshold; }
+  pub inline fn isPerpTo(     self : Angle, other : Angle, threshold : f64 ) bool { return std.math.abs( std.math.abs( self.sub( other ).r ) - ( def.PI / 2 )) <= threshold; }
 
 
   // ================ BACIS MATHS ================
 
-  pub inline fn neg( self : *const Angle ) Angle { return Angle.newRad( -self.r ).norm(); }
-  pub inline fn inv( self : *const Angle ) Angle { return Angle.newRad( self.r + def.PI ).norm(); }
+  pub inline fn neg( self : Angle ) Angle { return Angle.newRad( -self.r ).norm(); }
+  pub inline fn inv( self : Angle ) Angle { return Angle.newRad( self.r + def.PI ).norm(); }
 
 // TODO : review these 2 functions for issues, as I do not trust copilote ( why are they the same ?? )
-  pub inline fn flipAlongTangent( self : *const Angle, tangA : Angle ) Angle { return tangA.mulVal( 2 ).sub( self ).norm(); }
-  pub inline fn flipAlongNormal(  self : *const Angle, normA : Angle ) Angle { return normA.mulVal( 2 ).sub( self ).norm(); }
+  pub inline fn flipAlongTangent( self : Angle, tangA : Angle ) Angle { return tangA.mulVal( 2 ).sub( self ).norm(); }
+  pub inline fn flipAlongNormal(  self : Angle, normA : Angle ) Angle { return normA.mulVal( 2 ).sub( self ).norm(); }
 
-  pub inline fn rot( self : *const Angle, other : Angle ) Angle { return self.add( other ); }
-  pub inline fn add( self : *const Angle, other : Angle ) Angle { return Angle.newRad( self.r + other.r ).norm(); }
-  pub inline fn sub( self : *const Angle, other : Angle ) Angle { return Angle.newRad( self.r - other.r ).norm(); }
+  pub inline fn rot( self : Angle, other : Angle ) Angle { return self.add( other ); }
+  pub inline fn add( self : Angle, other : Angle ) Angle { return Angle.newRad( self.r + other.r ).norm(); }
+  pub inline fn sub( self : Angle, other : Angle ) Angle { return Angle.newRad( self.r - other.r ).norm(); }
 
-  pub inline fn rotRad( self : *const Angle, val : f64 ) Angle { return self.addRad(  val ); }
-  pub inline fn addRad( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r + val ).norm(); }
-  pub inline fn subRad( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r - val ).norm(); }
+  pub inline fn rotRad( self : Angle, val : f64 ) Angle { return self.addRad(  val ); }
+  pub inline fn addRad( self : Angle, val : f64 ) Angle { return Angle.newRad( self.r + val ).norm(); }
+  pub inline fn subRad( self : Angle, val : f64 ) Angle { return Angle.newRad( self.r - val ).norm(); }
 
-  pub inline fn rotDeg( self : *const Angle, val : f64 ) Angle { return self.addDeg(  val ); }
-  pub inline fn addDeg( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r + def.DtR( val )).norm(); }
-  pub inline fn subDeg( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r - def.DtR( val )).norm(); }
+  pub inline fn rotDeg( self : Angle, val : f64 ) Angle { return self.addDeg(  val ); }
+  pub inline fn addDeg( self : Angle, val : f64 ) Angle { return Angle.newRad( self.r + def.DtR( val )).norm(); }
+  pub inline fn subDeg( self : Angle, val : f64 ) Angle { return Angle.newRad( self.r - def.DtR( val )).norm(); }
 
-  pub inline fn mulVal( self : *const Angle, val : f64 ) Angle { return Angle.newRad( self.r * val ).norm(); }
-  pub inline fn divVal( self : *const Angle, val : f64 ) Angle
+  pub inline fn mulVal( self : Angle, val : f64 ) Angle { return Angle.newRad( self.r * val ).norm(); }
+  pub inline fn divVal( self : Angle, val : f64 ) Angle
   {
     if( def.isFltZr( val ) )
     {
       def.qlog( .ERROR, 0, @src(), "Division by zero in Angle.div()" );
-      return self.*;
+      return self;
     }
     return Angle.newRad( self.r / val ).norm();
   }
@@ -108,12 +108,12 @@ pub const Angle = struct
 
   // ================ TRIGONOMETRY ================
 
-  pub inline fn cos(   self : *const Angle ) f64 { return @cos( self.r ); }
-  pub inline fn sin(   self : *const Angle ) f64 { return @sin( self.r ); }
-  pub inline fn tan(   self : *const Angle ) f64 { return @tan( self.r ); }
-  pub inline fn slerp( self : *const Angle, other : Angle, t : f64 ) Angle
+  pub inline fn cos(   self : Angle ) f64 { return @cos( self.r ); }
+  pub inline fn sin(   self : Angle ) f64 { return @sin( self.r ); }
+  pub inline fn tan(   self : Angle ) f64 { return @tan( self.r ); }
+  pub inline fn slerp( self : Angle, other : Angle, t : f64 ) Angle
   {
-    const diff = other.sub( self.* );
+    const diff = other.sub( self );
     return self.add( diff.mulVal( def.clmp( t, 0.0, 1.0 )));
   }
 
