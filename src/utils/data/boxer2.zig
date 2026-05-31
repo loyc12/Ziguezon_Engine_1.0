@@ -5,6 +5,8 @@ const Angle = def.Angle;
 const Vec2  = def.Vec2;
 const VecA  = def.VecA;
 
+// TODO : review the logic in this file for issues, as I do not trust claude code
+
 // This is a simple AABB struct ( Axis-Aligned Bounding Box ) meant to ease collision checks and position clamping
 
 // NOTE : The orientations are defined as follows :
@@ -363,7 +365,7 @@ pub const Box2 = struct
     self.clampInXRange(  pMin.x, pMax.x );
     self.clampInYRange(  pMin.y, pMax.y );
   }
-  pub inline fn clampInBox2( self : *const Box2, zoneBox : *const Box2 ) void
+  pub inline fn clampInBox2( self : *Box2, zoneBox : *const Box2 ) void
   {
     self.clampInArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
@@ -451,7 +453,7 @@ pub const Box2 = struct
       .bottom => self.clampBelowY(   pMax.y ),
     }
   }
-  pub inline fn clampOutOfBox2( self : *const Box2, zoneBox : *const Box2 ) void
+  pub inline fn clampOutOfBox2( self : *Box2, zoneBox : *const Box2 ) void
   {
     self.clampOutOfArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
@@ -493,7 +495,7 @@ pub const Box2 = struct
     self.clampOnYRange(  pMin.y, pMax.y );
   }
 
-  pub inline fn clampOnBox2( self : *const Box2, zoneBox : *const Box2 ) void
+  pub inline fn clampOnBox2( self : *Box2, zoneBox : *const Box2 ) void
   {
     self.clampOnArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }

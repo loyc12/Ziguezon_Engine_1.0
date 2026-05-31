@@ -205,7 +205,7 @@ pub const Cam2D = struct
     self.pos = self.pos.add( screenOffset.mulVal( 1.0 / self.zoom ).toVecA( .{} ));
   }
 
-  pub inline fn rotBy(  self : *Cam2D, a      : Angle ) void { self.pos.a.rot( a ); }
+  pub inline fn rotBy(  self : *Cam2D, a      : Angle ) void { self.pos.a = self.pos.a.rot( a ); }
   pub inline fn zoomBy( self : *Cam2D, factor : f64   ) void { self.setZoom( self.zoom * factor ); }
 
   pub inline fn zoomOnMouseBy( self : *Cam2D, factor : f64 ) void
