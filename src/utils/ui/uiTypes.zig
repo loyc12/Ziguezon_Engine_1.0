@@ -27,23 +27,50 @@ pub const UiId = struct
 
 pub const UiNodeKind = enum( u8 )
 {
+  /// Top-level layout holder, usually for HUD-space UI.
   root,
+
+  /// Generic rectangular menu/container for debug panels and grouped controls.
   panel,
+
+  /// Non-interactive text widget; it draws text but does not capture pointer input.
   label,
+
+  /// Action widget; emits a clicked event on press-release over the same node.
   button,
+
+  /// Boolean widget; toggles valueBool and emits a changed event when clicked.
   checkbox,
+
+  /// Temporary menu/container styled and layered above normal panels.
   popup,
+
+  /// Independent menu/container styled as a window; optional flags define closability or movement.
   window,
+
+  /// Container that clips child rendering and offsets vertical child layout by scrollY.
   scrollArea,
+
+  /// Horizontal numeric widget; dragging updates valueFlt and emits changed events.
   slider,
 };
 
+/// Layer is the shared draw/input priority band. Higher layers draw later and hit-test first.
 pub const UiLayer = enum( u8 )
 {
+  /// Background UI/HUD layer.
   hud,
+
+  /// Normal panel/window/widget layer.
   panel,
+
+  /// Transient menu layer above normal panels.
   popup,
+
+  /// Blocking menu layer; modal nodes suppress unrelated lower UI interaction.
   modal,
+
+  /// Top visual-only layer for tooltip drawing; it never receives input.
   tooltip,
 
   pub const count = @typeInfo( UiLayer ).@"enum".fields.len;
@@ -79,9 +106,16 @@ pub const UiLayer = enum( u8 )
 
 pub const UiLayout = enum( u8 )
 {
+  /// Children use local Box2 positions relative to the parent's top-left corner.
   absolute,
+
+  /// Children stack top-to-bottom with padding and gap.
   vertical,
+
+  /// Children stack left-to-right with padding and gap.
   horizontal,
+
+  /// Currently equivalent to absolute; reserved for free-positioned child surfaces.
   floating,
 };
 
@@ -200,15 +234,28 @@ pub const UiStyle = struct
 
 pub const UiNodeOpts = struct
 {
+  /// Parent owns layout lifetime; closing the parent closes this child.
   parent    : ?UiId = null,
+
+  /// Dependency owns transient lifetime; closing the dependency closes this node.
   dependsOn : ?UiId = null,
 
+  /// Requested local rectangle. Roots use it directly; children use it relative to their parent.
   box         : def.Box2 = .{},
+
+  /// Preferred size used by parent layouts; <= 0 on the layout axis means fill available space.
   desiredSize : def.Vec2 = .new( 160.0, 32.0 ),
 
+  /// Layout rule this node applies to its direct children.
   layout : UiLayout = .absolute,
+
+  /// Optional explicit layer. Children inherit parent layer when this is omitted.
   layer  : ?UiLayer = null,
+
+  /// Fixed-buffer node text.
   text   : []const u8 = "",
+
+  /// Fixed-buffer hover text shown by the tooltip overlay after a short delay.
   tooltip : []const u8 = "",
 
   padding : f64 = 8.0,
@@ -216,21 +263,41 @@ pub const UiNodeOpts = struct
 
   isVisible      : bool = true,
   isEnabled      : bool = true,
+
+  /// Modal nodes block lower/non-descendant UI and set both wantsMouse and wantsKeyboard.
   isModal        : bool = false,
+
+  /// Movable nodes drag by mouseDelta while directly pressed.
+  isMovable      : bool = false,
+
+  /// Stored marker for independent root surfaces; no special core behavior yet.
   isDetachedRoot : bool = false,
 
+  /// If true, clicking outside this node and its descendants closes it.
   closeOnOutside : bool = false,
+
+  /// If true, Escape closes this node when it is the frontmost eligible transient.
   closeOnEscape  : bool = false,
 
+  /// Boolean widget state and bool event payload.
   valueBool : bool     = false,
+
+  /// Numeric widget state and float event payload.
   valueFlt  : f64      = 0.0,
 
+  /// Slider minimum value.
   sliderMin  : f64 = 0.0,
+
+  /// Slider maximum value.
   sliderMax  : f64 = 1.0,
+
+  /// Slider step size; <= 0 means continuous.
   sliderStep : f64 = 0.0,
 
+  /// Vertical scroll offset for scrollArea nodes.
   scrollY : f64 = 0.0,
 
+  /// Optional style override; otherwise UiStyle.forKind(kind) is used.
   style     : ?UiStyle = null,
 };
 

@@ -17,6 +17,7 @@ pub const UiNode = struct
   pub const textBufLen : usize = 128;
   pub const tooltipBufLen : usize = 160;
 
+  // Retained UI stores persistent nodes. Game code keeps UiId handles while the manager owns state.
   id  : UiId = .{},
   gen : u32  = 0,
 
@@ -24,6 +25,7 @@ pub const UiNode = struct
   parent    : UiId       = .{},
   dependsOn : UiId       = .{},
 
+  // localBox is requested/relative geometry; bounds is final screen-space geometry after layout.
   localBox    : def.Box2 = .{},
   bounds      : def.Box2 = .{},
   desiredSize : def.Vec2 = .new( 160.0, 30.0 ),
@@ -40,6 +42,7 @@ pub const UiNode = struct
   isPressed      : bool = false,
   isFocused      : bool = false,
   isModal        : bool = false,
+  isMovable      : bool = false,
   isDetachedRoot : bool = false,
 
   closeOnOutside : bool = false,
@@ -88,6 +91,7 @@ pub const UiNode = struct
       .isVisible      = opts.isVisible,
       .isEnabled      = opts.isEnabled,
       .isModal        = opts.isModal,
+      .isMovable      = opts.isMovable,
       .isDetachedRoot = opts.isDetachedRoot,
 
       .closeOnOutside = opts.closeOnOutside,

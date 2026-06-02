@@ -12,6 +12,8 @@ var CLICK_BUTTON   : def.UiId = .{};
 var CHECKBOX       : def.UiId = .{};
 var POPUP_BUTTON   : def.UiId = .{};
 var MODAL_BUTTON   : def.UiId = .{};
+var WINDOW_BUTTON  : def.UiId = .{};
+var DEBUG_MENU_BUTTON : def.UiId = .{};
 var DEBUG_CHECKBOX : def.UiId = .{};
 var SLIDER         : def.UiId = .{};
 var SLIDER_LABEL   : def.UiId = .{};
@@ -25,6 +27,10 @@ var SCROLL_AREA    : def.UiId = .{};
 
 var MODAL_PANEL    : def.UiId = .{};
 var MODAL_CLOSE    : def.UiId = .{};
+
+var DEBUG_MENU        : def.UiId = .{};
+var DEBUG_MOVE_TOGGLE : def.UiId = .{};
+var DEBUG_MENU_CLOSE  : def.UiId = .{};
 
 var CLICK_COUNT    : u32 = 0;
 var WINDOW_COUNT   : u32 = 0;
@@ -42,7 +48,7 @@ pub fn buildUi( ng : *def.Engine ) void
 
   MAIN_PANEL = ui.createPanel(
     .{
-      .box     = def.uiBoxFromTopLeft( .{ .x = 24.0, .y = 24.0 }, .{ .x = 372.0, .y = 500.0 }),
+      .box     = def.uiBoxFromTopLeft( .{ .x = 24.0, .y = 24.0 }, .{ .x = 372.0, .y = 584.0 }),
       .layout  = .vertical,
       .padding = 12.0,
       .gap     = 8.0,
@@ -126,7 +132,25 @@ pub fn buildUi( ng : *def.Engine ) void
       .parent      = MAIN_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Open modal blocker",
-      .tooltip     = "Modal nodes block lower-layer controls until they close.",
+      .tooltip     = "Modal nodes block lower-layer controls and do not close on outside click.",
+    }
+  ) orelse def.UiId.none();
+
+  WINDOW_BUTTON = ui.createButton(
+    .{
+      .parent      = MAIN_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 34.0 },
+      .text        = "Spawn independent window",
+      .tooltip     = "Creates a detached window without opening the dependent popup.",
+    }
+  ) orelse def.UiId.none();
+
+  DEBUG_MENU_BUTTON = ui.createButton(
+    .{
+      .parent      = MAIN_PANEL,
+      .desiredSize = .{ .x = 0.0, .y = 34.0 },
+      .text        = "Open movable debug menu",
+      .tooltip     = "The debug menu can toggle its own isMovable flag.",
     }
   ) orelse def.UiId.none();
 
@@ -274,7 +298,6 @@ fn openModal( ng : *def.Engine ) void
       .padding        = 12.0,
       .gap            = 8.0,
       .isModal        = true,
-      .closeOnOutside = true,
       .closeOnEscape  = true,
     }
   ) orelse return;
@@ -291,7 +314,7 @@ fn openModal( ng : *def.Engine ) void
     .{
       .parent      = MODAL_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 42.0 },
-      .text        = "Lower panels are blocked while this is open.",
+      .text        = "Lower panels are blocked. Outside click does not close this.",
     }
   );
 
@@ -300,7 +323,59 @@ fn openModal( ng : *def.Engine ) void
       .parent      = MODAL_PANEL,
       .desiredSize = .{ .x = 0.0, .y = 34.0 },
       .text        = "Close modal",
-      .tooltip     = "Escape or outside click also closes this modal.",
+      .tooltip     = "Escape also closes this modal.",
+    }
+  ) orelse def.UiId.none();
+}
+
+fn openDebugMenu( ng : *def.Engine ) void
+{
+  var ui = &ng.uiManager;
+
+  if( ui.isNodeAlive( DEBUG_MENU )){ return; }
+
+  DEBUG_MENU = ui.createWindow(
+    .{
+      .box           = def.uiBoxFromTopLeft( .{ .x = 812.0, .y = 72.0 }, .{ .x = 324.0, .y = 174.0 }),
+      .layout        = .vertical,
+      .padding       = 10.0,
+      .gap           = 8.0,
+      .isMovable     = false,
+      .closeOnEscape = true,
+      .tooltip       = "Click empty menu space and drag after movability is enabled.",
+    }
+  ) orelse return;
+
+  _ = ui.createLabel(
+    .{
+      .parent      = DEBUG_MENU,
+      .desiredSize = .{ .x = 0.0, .y = 24.0 },
+      .text        = "Movable debug menu",
+    }
+  );
+
+  _ = ui.createLabel(
+    .{
+      .parent      = DEBUG_MENU,
+      .desiredSize = .{ .x = 0.0, .y = 36.0 },
+      .text        = "Toggle movement, then drag empty menu space.",
+    }
+  );
+
+  DEBUG_MOVE_TOGGLE = ui.createButton(
+    .{
+      .parent      = DEBUG_MENU,
+      .desiredSize = .{ .x = 0.0, .y = 34.0 },
+      .text        = "Movable: off",
+      .tooltip     = "Toggles this menu's retained isMovable flag.",
+    }
+  ) orelse def.UiId.none();
+
+  DEBUG_MENU_CLOSE = ui.createButton(
+    .{
+      .parent      = DEBUG_MENU,
+      .desiredSize = .{ .x = 0.0, .y = 34.0 },
+      .text        = "Close debug menu",
     }
   ) orelse def.UiId.none();
 }
@@ -375,6 +450,16 @@ fn handleUiEvents( ng : *def.Engine ) void
           openModal( ng );
           ui.setText( STATUS_LABEL, "Modal opened; lower controls are blocked." );
         }
+        else if( event.node.isEq( WINDOW_BUTTON ))
+        {
+          spawnWindow( ng );
+          ui.setText( STATUS_LABEL, "Independent window spawned directly." );
+        }
+        else if( event.node.isEq( DEBUG_MENU_BUTTON ))
+        {
+          openDebugMenu( ng );
+          ui.setText( STATUS_LABEL, "Debug menu opened." );
+        }
         else if( event.node.isEq( POPUP_SPAWN ))
         {
           spawnWindow( ng );
@@ -389,6 +474,18 @@ fn handleUiEvents( ng : *def.Engine ) void
         {
           ui.closeNode( MODAL_PANEL );
           ui.setText( STATUS_LABEL, "Modal closed from button." );
+        }
+        else if( event.node.isEq( DEBUG_MOVE_TOGGLE ))
+        {
+          const isMovable = !ui.getMovable( DEBUG_MENU );
+          ui.setMovable( DEBUG_MENU, isMovable );
+          ui.setTextFmt( DEBUG_MOVE_TOGGLE, "Movable: {s}", .{ if( isMovable ) "on" else "off" });
+          ui.setTextFmt( STATUS_LABEL, "Debug menu movable: {s}", .{ if( isMovable ) "on" else "off" });
+        }
+        else if( event.node.isEq( DEBUG_MENU_CLOSE ))
+        {
+          ui.closeNode( DEBUG_MENU );
+          ui.setText( STATUS_LABEL, "Debug menu closed." );
         }
         else if( std.mem.eql( u8, ui.getText( event.node ), "Close window" ))
         {
@@ -427,6 +524,12 @@ fn handleUiEvents( ng : *def.Engine ) void
         {
           MODAL_PANEL = .{};
           MODAL_CLOSE = .{};
+        }
+        else if( event.node.isEq( DEBUG_MENU ))
+        {
+          DEBUG_MENU = .{};
+          DEBUG_MOVE_TOGGLE = .{};
+          DEBUG_MENU_CLOSE = .{};
         }
       },
     }

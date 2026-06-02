@@ -131,6 +131,28 @@ CONTEXT
   the work; the scroll / clip / focus / resize machinery around it is ~80%.
 
 
+1.4  Composable primitives, ergonomic archetypes
+--------------------------------------------------------------------------------
+
+  The UI should stay composable without making common menus annoying to
+  instantiate.
+
+   - Keep the primitive set small: node kinds should represent real behavior
+     differences, not every visual or naming variant.
+   - Prefer behavior data and flags for shared mechanics such as modal
+     blocking, movable windows, close policies, clipping, and delayed input.
+   - Preserve ease of use through archetype / template helpers. A caller
+     should be able to ask for a popup, modal, panel, or debug window without
+     manually setting ten low-level options every time.
+   - If two menu types differ only by defaults, layer, or style, they should
+     probably become one primitive with different archetype constructors.
+   - Add broad escape hatches such as a custom-draw node before adding
+     one-off chart, graph, table, or inspector node kinds.
+
+  Target shape: compact internal primitives, convenient external creation
+  helpers.
+
+
 
 ================================================================================
 2. ARCHITECTURE
@@ -191,7 +213,9 @@ CONTEXT
   Box2 and its style, and asks the renderer to draw it.
 
   Aim for ~10 node kinds, not 47. "Custom drawing" can be a single node
-  variant that holds a function pointer.
+  variant that holds a function pointer. When a difference is only defaults,
+  style, layer, or close behavior, prefer an archetype / template helper over
+  a new node kind.
 
 
 2.2.1  Parent ownership vs. dependency links
@@ -217,6 +241,31 @@ CONTEXT
    - close_dependent_chain(id)  - closes nodes that depend on id
    - detach_node(id)            - preserves a node by removing parent /
                                   dependency ownership
+
+
+2.2.2  Surfaces, archetypes, and menu semantics
+--------------------------------------------------------------------------------
+
+  Panel, popup, window, and modal should be treated first as surface
+  archetypes, not necessarily permanent primitive categories.
+
+   - A panel is an ordinary owned surface.
+   - A popup is a transient surface, usually dependent on an opener and
+     closeable by outside click or a close input.
+   - A window is a detached or independently owned surface, optionally
+     movable.
+   - A modal is a surface that blocks interaction below its modal scope.
+
+  Those distinctions are important for behavior, but they do not all need
+  separate internals if one surface primitive with behavior options can cover
+  them. The public API should still expose easy helpers for the common cases.
+
+  Future consolidation target:
+
+   - Keep current names where they help call-site readability.
+   - Move shared mechanics into a smaller surface/options model.
+   - Keep special node kinds only when they have distinct layout, input, or
+     render behavior.
 
 
 2.3  The UIRenderer interface
@@ -475,6 +524,43 @@ CONTEXT
   Keyboard capture is required for text input and command fields. Modal
   capture blocks interaction outside the modal subtree.
 
+  Close inputs must also be captured. If Escape closes a UI surface, the
+  game must not also use that same Escape press for pause/settings/etc. The
+  current implementation follows this pattern through `wants_keyboard()` when
+  a UI node consumes Escape; game code must query capture after UI dispatch.
+
+  Avoid accumulating one flag per close key (`close_on_escape`,
+  `close_on_enter`, etc.) if the set grows. Prefer a compact close-policy
+  representation that can describe triggers such as:
+
+   - Escape
+   - Enter
+   - outside click
+   - explicit close button / command
+   - future custom key or gamepad input
+
+  A close policy should close only the focused or topmost eligible UI surface
+  for that input, emit one close event, and consume that input for the frame.
+
+
+4.5.1  UI timebase and delayed activation
+--------------------------------------------------------------------------------
+
+  Transient UI should support a short activation delay. A newly opened popup,
+  modal, or menu should be able to ignore close inputs and interactions for a
+  configured number of UI frames or seconds. This prevents same-frame or
+  immediately repeated input from opening and closing a surface by accident.
+
+  Prefer a UI-local timebase:
+
+   - UI frame counter for frame-based guards.
+   - Optional elapsed seconds for hover delay, animation, and graph sampling.
+   - Stored on the UI manager / context, not duplicated per game.
+
+  The same timebase can later support animated graphs, transitions, and
+  richer tooltip timing. Keep the first version small: enough for delayed
+  activation and existing tooltip delay.
+
 
 4.6  Engine-owned frame surface
 --------------------------------------------------------------------------------
@@ -612,11 +698,16 @@ These were not resolved and may want further thought:
 
  - Focus model. Single global focus, or per-layer focus? How does
    keyboard navigation work? (Likely defer until a panel actually needs
-   keyboard input.)
+   keyboard input.) Also decide whether close inputs prefer strict focused
+   surfaces or the frontmost eligible transient when focus is absent.
 
  - Style / theming system. Hard-coded styles to start; eventually
    probably a style struct passed down the tree. Don't over-design
    early. def.Colour already exists with named constants.
+
+ - Surface consolidation. Should panel / popup / window remain separate node
+   kinds, or become archetypes around one surface primitive once their shared
+   behavior is clearer?
 
  - Animation / transition system. Tween library? Per-node animation
    state? Probably trivial easing curves on a few properties to start.

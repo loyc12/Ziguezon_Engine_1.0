@@ -36,6 +36,7 @@ pub const UiContext = struct
 
   input : UiInput = .{},
 
+  // Hover/focus/press are UI-local input ownership states used for routing and rendering.
   hovered : UiId = .{},
   pressed : UiId = .{},
   focused : UiId = .{},
@@ -47,6 +48,7 @@ pub const UiContext = struct
   wantsMouseFlag    : bool = false,
   wantsKeyboardFlag : bool = false,
 
+  // Debug overlay is a render-only diagnostic surface; it does not create nodes or capture input.
   debugOverlayEnabled : bool = false,
   debugOverlayBounds  : bool = true,
 
@@ -253,11 +255,13 @@ pub const UiContext = struct
       self.pressed = .{};
     }
 
+    // A pressed node has mouse capture until release; sliders and movable nodes update while captured.
     if( self.input.leftDown and self.pressed.isValid() )
     {
       if( self.getNode( self.pressed ))| uiNode |
       {
         if( uiNode.isSlider() ){ self.updateSliderFromMouse( self.pressed ); }
+        else if( uiNode.isMovable ){ self.moveNodeByMouseDelta( self.pressed ); }
       }
 
       self.wantsMouseFlag = true;
@@ -266,7 +270,12 @@ pub const UiContext = struct
     if( self.hovered.isValid() ){ self.wantsMouseFlag = true; }
 
     if( self.focused.isValid() ){ self.wantsKeyboardFlag = true; }
-    if( self.hasModalNode() ){ self.wantsKeyboardFlag = true; }
+    // Modal state captures game input even when the pointer is outside the modal surface.
+    if( self.hasModalNode() )
+    {
+      self.wantsMouseFlag    = true;
+      self.wantsKeyboardFlag = true;
+    }
   }
 
   pub fn endFrame( self : *UiContext ) void
@@ -451,6 +460,17 @@ pub const UiContext = struct
     if( self.getNodePtr( id ))| uiNode |{ uiNode.isVisible = isVisible; }
   }
 
+  pub fn setMovable( self : *UiContext, id : UiId, isMovable : bool ) void
+  {
+    if( self.getNodePtr( id ))| uiNode |{ uiNode.isMovable = isMovable; }
+  }
+
+  pub fn getMovable( self : *const UiContext, id : UiId ) bool
+  {
+    if( self.getNode( id ))| uiNode |{ return uiNode.isMovable; }
+    return false;
+  }
+
   pub fn getNodeKind( self : *const UiContext, id : UiId ) ?UiNodeKind
   {
     if( self.getNode( id ))| uiNode |{ return uiNode.kind; }
@@ -504,10 +524,12 @@ pub const UiContext = struct
   pub fn closeNode( self : *UiContext, id : UiId ) void
   {
     var valueBool : bool = false;
+    var valueFlt  : f64  = 0.0;
     {
       const uiNode = self.getNodePtr( id ) orelse return;
 
       valueBool = uiNode.valueBool;
+      valueFlt  = uiNode.valueFlt;
 
       uiNode.isAlive   = false;
       uiNode.isVisible = false;
@@ -520,7 +542,7 @@ pub const UiContext = struct
     self.closeChildrenOf(   id );
     self.closeDependentsOf( id );
 
-    self.pushEvent( .{ .eType = .closed, .node = id, .valueBool = valueBool });
+    self.pushEvent( .{ .eType = .closed, .node = id, .valueBool = valueBool, .valueFlt = valueFlt });
   }
 
   /// Closes layout-owned descendants of `parent`.
@@ -620,6 +642,7 @@ pub const UiContext = struct
       }
     }
 
+    // Scroll areas keep child bounds in normal layout space, then shift them vertically by scrollY.
     const scrollY = if( self.getNode( parentId ))| parent | parent.scrollY else 0.0;
     const childYOffset = if( isScrollArea ) -scrollY else 0.0;
 
@@ -759,6 +782,7 @@ pub const UiContext = struct
         if( uiNode.layer != layer ){ continue; }
         if( !uiNode.capturesPointer() ){ continue; }
         if( !self.isVisibleInTree( uiNode.id )){ continue; }
+        // Active modals block non-descendant hit tests behind them.
         if( activeModal.isValid() and !self.isDescOrSelf( uiNode.id, activeModal )){ continue; }
         if( !uiNode.bounds.isOnPoint( mousePos )){ continue; }
         if( !self.isPointInsideClipAncestors( uiNode.id, mousePos )){ continue; }
@@ -865,6 +889,7 @@ pub const UiContext = struct
 
     if( !self.hoverStarted.isSet() ){ self.hoverStarted = TimeVal.newNow(); }
 
+    // Tooltip readiness is render-only state; it does not create a node or consume input.
     self.tooltipHoverReady = self.hoverStarted.timeSince().value >= tooltipDelay.value;
   }
 
@@ -878,6 +903,28 @@ pub const UiContext = struct
 
     uiNode.valueFlt = nextValue;
     self.pushEvent( .{ .eType = .changed, .node = id, .valueFlt = nextValue });
+  }
+
+  fn moveNodeByMouseDelta( self : *UiContext, id : UiId ) void
+  {
+    if( self.input.mouseDelta.isZero() ){ return; }
+
+    {
+      const uiNode = self.getNodePtr( id ) orelse return;
+      if( !uiNode.isMovable ){ return; }
+
+      uiNode.localBox = uiNode.localBox.moveCenter( self.input.mouseDelta );
+      uiNode.bounds   = uiNode.bounds.moveCenter(   self.input.mouseDelta );
+
+      if( !uiNode.parent.isValid() )
+      {
+        // Top-level movable menus stay fully on-screen.
+        uiNode.localBox.clampInArea( .{}, def.getScreenSize() );
+        uiNode.bounds = uiNode.localBox;
+      }
+    }
+
+    self.layoutChildren( id );
   }
 
   fn sliderValueFromMouse( self : *const UiContext, uiNode : *const UiNode, mousePos : def.Vec2 ) f64
@@ -913,6 +960,8 @@ pub const UiContext = struct
   /// Closes transient nodes when a click lands outside them and outside their descendants.
   fn closeOutsideTransients( self : *UiContext, mousePos : def.Vec2, hoveredId : UiId ) void
   {
+    const activeModal = self.findActiveModal();
+
     // Close from front to back so nested transient menus disappear before their owners.
     var i = self.nodes.items.len;
     while( i > 0 )
@@ -922,6 +971,8 @@ pub const UiContext = struct
       const uiNode = &self.nodes.items[ i ];
       if( !uiNode.isAlive or !uiNode.isVisible     ){ continue; }
       if( !uiNode.closeOnOutside                   ){ continue; }
+      // A modal only permits outside-close checks inside its own subtree.
+      if( activeModal.isValid() and !self.isDescOrSelf( uiNode.id, activeModal )){ continue; }
       if( uiNode.bounds.isOnPoint( mousePos )      ){ continue; }
       if( self.isDescOrSelf( hoveredId, uiNode.id )){ continue; }
 

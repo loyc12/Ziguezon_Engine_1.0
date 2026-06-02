@@ -11,6 +11,7 @@ Action checklist for the retained-mode UI system. Design rationale lives in `ui_
 * UI frame processing runs in `engineStep.updateFrame`: `beginFrame`, `updateLayout`, `dispatchInput`, game `OnUpdateFrame`, then `endFrame`.
 * Screen UI render runs from `engineStep.renderAll` in the overlay phase after game `OnRenderOverlay` and before debug FPS / TPS text.
 * UI currently reads game state through direct sandbox updates and writes back through a UI-local event buffer.
+* Prefer composable internal primitives with ergonomic archetype / template helpers. Common panels, popups, modals, and windows should be easy to instantiate without turning every menu flavor into a separate primitive.
 * `interfacer.zig` is a deprecated/stub visual experiment for now. Ignore it for retained UI work until the user explicitly asks to revisit it.
 
 ## 1. Completed MVP
@@ -57,7 +58,16 @@ Passed as of 2026-05-31, 15:19 EDT
 
 ## 4. Active Next Slice
 
-No active retained UI implementation slice is defined after the v0.5 pass.
+Define and implement the next composability / input-policy slice:
+
+* Audit `panel`, `popup`, `window`, and `modal` behavior against a smaller surface/options model. Keep separate public helpers where they improve call-site readability, but avoid adding new node kinds for differences that are only defaults, style, layer, or close policy.
+* Add or sketch ergonomic archetype constructors / templates for common menu surfaces so the compact primitive model does not make instantiation burdensome.
+* Replace or extend the current close flags with a compact close-policy / closing-input model before adding more one-off flags such as `closeOnEnter`.
+* Ensure a consumed close input produces only one UI close action per frame and suppresses duplicate game handling through `wantsKeyboard`.
+* Decide the close target rule explicitly: focused surface first, frontmost eligible transient as fallback, or another documented policy.
+* Add UI-local time tracking for frame count and, if useful, elapsed seconds.
+* Add configurable delayed activation / input guard support for newly spawned popups, modals, and menus to prevent same-frame or repeated-input accidental closure.
+* Revisit whether `floating` layout and `isDetachedRoot` need concrete behavior now or should be removed / folded into the surface model.
 
 ## 5. Resolved Conflicts And Known Gaps
 
@@ -65,6 +75,9 @@ No active retained UI implementation slice is defined after the v0.5 pass.
 * Prefer Box2 `getSize` / `getSizeX` / `getSizeY` over ad hoc `scale * 2.0` math in new UI code.
 * `ui_roadmap.txt` recommends UI actions become engine events through `src/core/event`, but the current global `EventManager` is unused, lightly validated, and has uncompiled-risk code paths. Keep the UI-local event buffer for the next slice; revisit global event integration after the event manager has tests or a real non-UI consumer.
 * `ui_roadmap.txt` describes a renderer interface backed by `sDraw` plus the visual half of `interfacer.zig`; the current implementation directly renders in `uiContext.zig` through `sDraw`. Since `interfacer.zig` is treated as a stub, the next slice should ignore it entirely and extract a small render helper only if scroll clipping or layers make it clearly useful.
+* Escape currently closes the frontmost eligible `closeOnEscape` node and sets keyboard capture when a close is consumed. This prevents duplicated Escape handling as long as game code queries `wantsKeyboard` after UI dispatch. It is not yet a fully specified focused-menu close policy.
+* Avoid multiplying close booleans for every new trigger. A future close-policy / closing-input model should cover Escape, Enter, outside click, explicit close buttons, and later custom inputs.
+* Newly spawned popups / menus do not yet have delayed activation guards, so same-frame or repeated-input protection remains to be implemented.
 * There are no dedicated unit tests for retained UI behavior yet; current UI validation is build plus the `menuer` sandbox.
 
 ## 6. Later
@@ -79,6 +92,7 @@ No active retained UI implementation slice is defined after the v0.5 pass.
 * Property inspector.
 * Tree view.
 * Graph / debug plot custom draw node.
+* General custom-draw node before adding many bespoke visual widgets.
 * Keyboard navigation.
 * Gamepad navigation.
 * Clipboard.
