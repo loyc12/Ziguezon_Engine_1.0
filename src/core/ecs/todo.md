@@ -1,0 +1,58 @@
+Restructuring draft :
+
+src/
+  games/
+    orbiter/
+      gameDef.zig
+      gameConst.zig
+    debug/
+    ...
+  engine/
+    engineDef.zig
+    engineConst.zig
+    main.zig
+    ...
+    core/
+      engine.zig
+      engineState.zig
+      engineStep.zig
+      engineTime.zig
+      engineSettings.zig
+      gameHooks.zig
+      ...
+    world/
+      entity.zig # too small to necessitate a dedicated folder
+      worldManager.zig
+      ...
+      components/
+        componentManager.zig
+        ...
+      relations/
+        relationManager.zig
+        ...
+      traits/
+        traitManager.zig
+        ...
+      rules/
+        ruleManager.zig
+        ...
+      events/
+        eventManager.zig
+        ...
+    resources/
+      resourceManager.zig
+      ...
+    ???/
+      tilemapManager.zig # Bespoke container-like thing. maybe move this to utils ???
+      ...
+    ...
+  utils/
+    utilDefs.zig
+    ...
+    data/
+    io/
+    maths/
+    render/
+    rng/
+    ui/
+    ...
