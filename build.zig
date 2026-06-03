@@ -157,8 +157,8 @@ pub fn build( b : *std.Build ) void
 
   // ================================ COMMANDS ================================
 
-  // These create steps in the build graph, to be executed when called, or if
-  // another step is evaluated that depends on it ( similar to Makefile targets ).
+  // These create steps in the build graph, to be executed when called, or when
+  // another step is evaluated that depends on them ( similar to Makefile targets ).
 
 
   // ================ GENERIC COMANDS ================
@@ -167,10 +167,6 @@ pub fn build( b : *std.Build ) void
   const run_cmd  = b.addRunArtifact( exe );
   run_step.dependOn( &run_cmd.step );
   if( b.args )| args |{ run_cmd.addArgs( args ); }
-
-  //const all_step = b.step( "all", "Compiles all predefined executables in ther debug versions" );
-  //const all_cmd  = b.addSystemCommand(
-  //all_step.dependOn( &all_cmd.step );
 
 
   // ================ SPECIFIC COMMANDS ================
