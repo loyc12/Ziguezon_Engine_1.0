@@ -3,12 +3,12 @@ const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const Engine     = eng.Engine;
-const e_ng_state = eng.eng_c.e_ng_state;
+const EngineState = eng.engineCore.EngineState;
 
 
 // ================================ ENGINE STATE FUNCTIONS ================================
 
-pub fn changeState( ng : *Engine, targetState : e_ng_state ) void
+pub fn changeState( ng : *Engine, targetState : EngineState ) void
 {
   if( targetState == ng.state )
   {
@@ -64,9 +64,9 @@ pub fn start( ng : *Engine ) void
   // Initialize relevant raylib components
   {
     eng.G_ENG.camera.configZoom(
-      @floatCast( eng.CNFGS.Camera_Zoom_Min  ),
-      @floatCast( eng.CNFGS.Camera_Zoom_Max  ),
-      @floatCast( eng.CNFGS.Camera_Zoom_Init ),
+      @floatCast( eng.G_CNFGS.Camera_Zoom_Min  ),
+      @floatCast( eng.G_CNFGS.Camera_Zoom_Max  ),
+      @floatCast( eng.G_CNFGS.Camera_Zoom_Init ),
     );
 
     if( !utl.ray.isAudioDeviceReady() )
@@ -160,13 +160,13 @@ pub fn open( ng : *Engine ) void
       utl.qlog( .INFO, 0, @src(), "& Opening the window..." );
 
       utl.ray.initWindow(
-        @intCast( eng.CNFGS.Startup_Window_Width  ),
-        @intCast( eng.CNFGS.Startup_Window_Height ),
-        eng.CNFGS.Startup_Window_Title
+        @intCast( eng.G_CNFGS.Startup_Window_Width  ),
+        @intCast( eng.G_CNFGS.Startup_Window_Height ),
+        eng.G_CNFGS.Startup_Window_Title
       );
 
       // TODO : Check if this font leaks
-      _ = utl.sDraw.setDefaultFont( eng.CNFGS.Graphic_Default_Font );
+      _ = utl.sDraw.setDefaultFont( eng.G_CNFGS.Graphic_Default_Font );
     }
   }
   eng.tryHook( .OnGameOpen, ng );

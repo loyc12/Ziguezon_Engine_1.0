@@ -15,7 +15,7 @@ const ecn = gdf.econ;
 
 pub const OrbitComp = struct
 {
-  pub inline fn getStoreType() type { return eng.componentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
 
   const G : f64 = gdf.G_CONSTS.gravFactor;
   const N : u32 = 256; // number of segments used to render orbital path
@@ -393,7 +393,7 @@ pub const OrbitComp = struct
 
       eng.wDraw.basicLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, zoomedWidth );
 
-      pathCol = pathCol.subA( gdf.G_CONSTS.orbitFadeStrenght ); // Fading-out path's alpha
+      pathCol = pathCol.subA( gdf.G_CONSTS.orbitFadeStrength ); // Fading-out path's alpha
 
       if( pathCol.a == 0 ){ break; }
 

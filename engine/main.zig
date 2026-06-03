@@ -45,7 +45,7 @@ pub fn main() !void
 
   eng.G_ENG.changeState( .OPENED );
 
-  if( eng.CNFGS.AutoApply_State_Playing ){ eng.G_ENG.changeState( .PLAYING ); }
+  if( eng.G_CNFGS.AutoApply_State_Playing ){ eng.G_ENG.changeState( .PLAYING ); }
 
   eng.G_ENG.loopLogic();
 

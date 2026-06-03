@@ -14,12 +14,12 @@ pub var DISK_ID : eng.EntityId = 0;
 //  col   : utl.Colour = utl.Colour.white,
 //};
 //
-//pub const MobileStore = eng.componentStoreFactory( Mobile );
+//pub const MobileStore = eng.ComponentStoreFactory( Mobile );
 //
 //pub var mobileStore : MobileStore = .{};
 
-pub const TransformStore = eng.TransComp.getStoreType();
-pub const ShapeStore     = eng.ShapeComp.getStoreType();
+pub const TransformStore = eng.TransComp.StoreType();
+pub const ShapeStore     = eng.ShapeComp.StoreType();
 
 var transformStore : TransformStore = .{};
 var shapeStore     : ShapeStore = .{};

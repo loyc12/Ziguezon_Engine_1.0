@@ -7,10 +7,10 @@ const tlmpFlood        = @import( "tilemapFlood.zig" );
 const tlmpShape        = @import( "tilemapShape.zig" );
 
 pub const Tile         = tileCore.Tile;
-pub const e_tile_type  = tileCore.e_tile_type;
-pub const e_tile_flags = tileCore.e_tile_flags;
-pub const e_tlmp_shape = tlmpShape.e_tlmp_shape;
-pub const e_flood_rule = tlmpFlood.e_flood_rule;
+pub const TileType  = tileCore.TileType;
+pub const TileFlags = tileCore.TileFlags;
+pub const TilemapShape = tlmpShape.TilemapShape;
+pub const FloodRule = tlmpFlood.FloodRule;
 
 const Box2             = utl.Box2;
 const Coords2          = utl.Coords2;
@@ -21,7 +21,7 @@ const DEF_GRID_SIZE    = Coords2{ .x = 32, .y = 32 };
 const DEF_TILE_SCALE   = Vec2{    .x = 32, .y = 32 };
 
 
-pub const e_tlmp_flags = enum( u8 )
+pub const TilemapFlags = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -44,18 +44,18 @@ pub const e_tlmp_flags = enum( u8 )
 pub const Tilemap = struct
 {
   // ================ PROPERTIES ================
-  id     : u32 = 0,
-  flags  : utl.BitField8 = utl.BitField8.new( e_tlmp_flags.DEFAULT ),
+  id    : u32 = 0,
+  flags : utl.BitField8 = utl.BitField8.new( TilemapFlags.DEFAULT ),
 
   // ======== GRID DATA ========
-  mapPos    : VecA    = .{},
-  mapSize   : Coords2 = DEF_GRID_SIZE,
+  mapPos  : VecA    = .{},
+  mapSize : Coords2 = DEF_GRID_SIZE,
 
-  tileArray  : std.ArrayList( Tile ) = undefined,
+  tileArray : std.ArrayList( Tile ) = undefined,
 
   // ======= TILE DATA ========
-  tileScale  : Vec2         = DEF_TILE_SCALE,
-  tileShape  : e_tlmp_shape = .RECT,
+  tileScale : Vec2         = DEF_TILE_SCALE,
+  tileShape : TilemapShape = .RECT,
 
   // ======= CUSTOM BEHAVIOUR ========
   script : eng.Scripter = .{},
@@ -63,18 +63,18 @@ pub const Tilemap = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Tilemap, flag : e_tlmp_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
+  pub inline fn hasFlag( self : *const Tilemap, flag : TilemapFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
   pub inline fn setAllFlags( self : *Tilemap, flags : u8 )                       void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Tilemap, flag  : e_tlmp_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Tilemap, flag  : e_tlmp_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Tilemap, flag  : e_tlmp_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setFlag(     self : *Tilemap, flag  : TilemapFlags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
 
-  pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DELETE  ); }
-  pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.IS_INIT ); }
-  pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.ACTIVE  ); }
+  pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.DELETE  ); }
+  pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.IS_INIT ); }
+  pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.ACTIVE  ); }
 
-  pub inline fn viewDBG(  self : *const Tilemap ) bool { return self.hasFlag( e_tlmp_flags.DEBUG   ); }
+  pub inline fn viewDBG(  self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.DEBUG   ); }
 
 
   // ================ CHECKERS ================
@@ -99,7 +99,7 @@ pub const Tilemap = struct
 
   pub fn areCoordsNeighbours( self : *const Tilemap, c1 : Coords2, c2 : Coords2 ) bool
   {
-    for( utl.e_dir_2.arr )| dir |
+    for( utl.Dir2.arr )| dir |
     {
       const nCoords = self.getNeighbourCoords( c1, dir ) orelse
       {
@@ -117,7 +117,7 @@ pub const Tilemap = struct
 
   // ================ INITIALIZATION FUNCTIONS ================
 
-  pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : e_tile_type ) void
+  pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : TileType ) void
   {
     utl.log( .TRACE, 0, @src(), "Initializing Tilemap {d}", .{ self.id });
 
@@ -143,8 +143,8 @@ pub const Tilemap = struct
       return;
     };
 
-    self.setFlag( e_tlmp_flags.IS_INIT, true );
-    self.setFlag( e_tlmp_flags.ACTIVE,  true );
+    self.setFlag( TilemapFlags.IS_INIT, true );
+    self.setFlag( TilemapFlags.ACTIVE,  true );
 
     self.fillWithType( fillType );
   }
@@ -159,17 +159,17 @@ pub const Tilemap = struct
       return;
     }
     self.tileArray.deinit( allocator );
-    self.setFlag( e_tlmp_flags.DELETE,  true );
-    self.setFlag( e_tlmp_flags.IS_INIT, false );
-    self.setFlag( e_tlmp_flags.ACTIVE,  false );
+    self.setFlag( TilemapFlags.DELETE,  true );
+    self.setFlag( TilemapFlags.IS_INIT, false );
+    self.setFlag( TilemapFlags.ACTIVE,  false );
   }
 
-  pub fn createTilemapFromParams( params : Tilemap, fillType : e_tile_type, allocator : std.mem.Allocator ) ?Tilemap
+  pub fn createTilemapFromParams( params : Tilemap, fillType : TileType, allocator : std.mem.Allocator ) ?Tilemap
   {
     if( params.isInit() ){ utl.qlog( .WARN, 0, @src(), "Params shoul not be an initialized tilemap"); }
 
     var tmp      = Tilemap{
-      .flags     = params.flags.filterField( e_tlmp_flags.TO_CPY ),
+      .flags     = params.flags.filterField( TilemapFlags.TO_CPY ),
       .mapPos    = params.mapPos,
       .mapSize   = params.mapSize,
       .tileScale = params.tileScale,
@@ -231,7 +231,7 @@ pub const Tilemap = struct
     return &self.tileArray.items.ptr[ index ];
   }
 
-  pub inline fn getNeighbourTile( self : *const Tilemap, mapCoords : Coords2, dir : utl.e_dir_2 ) ?*Tile
+  pub inline fn getNeighbourTile( self : *const Tilemap, mapCoords : Coords2, dir : utl.Dir2 ) ?*Tile
   {
     const nCoords : Coords2 = self.getNeighbourCoords( mapCoords, dir ) orelse
     {
@@ -273,7 +273,7 @@ pub const Tilemap = struct
 
   // ================ GRID FUNCTIONS ================
 
-  pub fn setTileShape( self : *Tilemap, shape : e_tlmp_shape ) void
+  pub fn setTileShape( self : *Tilemap, shape : TilemapShape ) void
   {
     if( self.tileShape == shape )
     {
@@ -296,7 +296,7 @@ pub const Tilemap = struct
 
   // ================ FILL FUNCTIONS ================
 
-  pub fn fillWithTileFlagVal( self : *Tilemap, flag : e_tile_flags, val : bool ) void
+  pub fn fillWithTileFlagVal( self : *Tilemap, flag : TileFlags, val : bool ) void
   {
     utl.log( .DEBUG, 0, @src(), "@ Mass changing tile flags for tilemap {d}", .{ self.id });
 
@@ -312,7 +312,7 @@ pub const Tilemap = struct
     }
   }
 
-  pub fn fillWithType( self : *Tilemap, tileType : e_tile_type ) void
+  pub fn fillWithType( self : *Tilemap, tileType : TileType ) void
   {
     if( !self.isInit() )
     {
@@ -328,7 +328,7 @@ pub const Tilemap = struct
         continue;
       };
 
-      var tmpType : e_tile_type = undefined;
+      var tmpType : TileType = undefined;
 
       if( tileType != .RANDOM ){ tmpType = tileType; }
       else switch( eng.G_ENG.rng.getClampedInt( 1, 8 ))
@@ -377,16 +377,16 @@ pub const Tilemap = struct
   // ======== FLOOD FILL FUNCTIONS ========
 
   pub inline fn resetFloodFillFlags( self : *Tilemap ) void { tlmpFlood.resetFloodFillFlags( self ); }
-  pub inline fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, rules : *e_flood_rule ) void
+  pub inline fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, rules : *FloodRule ) void
   {
     tlmpFlood.floodFillWithParams( self, start, expectedIter, rules );
   }
 
-  pub inline fn floodFillWithType( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : e_tile_type, newType : e_tile_type ) void
+  pub inline fn floodFillWithType( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : TileType, newType : TileType ) void
   {
     tlmpFlood.floodFillWithType( self, start, expectedIter, targetType, newType );
   }
-  pub inline fn floodFillWithColour( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : e_tile_type, newCol : utl.Colour ) void
+  pub inline fn floodFillWithColour( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : TileType, newCol : utl.Colour ) void
   {
     tlmpFlood.floodFillWithColour( self, start, expectedIter, targetType, newCol );
   }
@@ -400,7 +400,7 @@ pub const Tilemap = struct
   pub inline fn getAbsTilePos( self : *const Tilemap, mapCoords : Coords2 ) VecA { return tlmpShape.getAbsTilePos( self, mapCoords ); }
   pub inline fn getRelTilePos( self : *const Tilemap, mapCoords : Coords2 ) Vec2 { return tlmpShape.getRelTilePos( self, mapCoords ); }
 
-  pub inline fn getNeighbourCoords( self : *const Tilemap, mapCoords : Coords2, direction : utl.e_dir_2 ) ?Coords2 { return tlmpShape.getNeighbourCoords( self, mapCoords, direction ); }
+  pub inline fn getNeighbourCoords( self : *const Tilemap, mapCoords : Coords2, direction : utl.Dir2 ) ?Coords2 { return tlmpShape.getNeighbourCoords( self, mapCoords, direction ); }
 
   // =============== DRAW FUNCTIONS ================
 

@@ -5,16 +5,16 @@ const Vec2 = utl.Vec2;
 const VecA = utl.VecA;
 const Vec3 = utl.Vec3;
 
-pub const e_dir_2 = enum( u8 )
+pub const Dir2 = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
   SE, EA, NE, SO,
   NO, SW, WE, NW,
 
-  pub const arr = [_]utl.e_dir_2{ .NO, .NE, .EA, .SE, .SO, .SW, .WE, .NW };
+  pub const arr = [_]utl.Dir2{ .NO, .NE, .EA, .SE, .SO, .SW, .WE, .NW };
 
-  pub fn getDebugColour( self : e_dir_2 ) utl.Colour
+  pub fn getDebugColour( self : Dir2 ) utl.Colour
   {
     return switch( self )
     {
@@ -29,7 +29,7 @@ pub const e_dir_2 = enum( u8 )
     };
   }
 
-  pub fn getOpposite( self : e_dir_2 ) e_dir_2
+  pub fn getOpposite( self : Dir2 ) Dir2
   {
     return switch( self )
     {
@@ -40,7 +40,7 @@ pub const e_dir_2 = enum( u8 )
     };
   }
 
-  pub fn getNextClockwise( self : e_dir_2 ) e_dir_2
+  pub fn getNextClockwise( self : Dir2 ) Dir2
   {
     return switch( self )
     {
@@ -55,7 +55,7 @@ pub const e_dir_2 = enum( u8 )
     };
   }
 
-  pub fn getNextCounterClockwise( self : e_dir_2 ) e_dir_2
+  pub fn getNextCounterClockwise( self : Dir2 ) Dir2
   {
     return switch( self )
     {
@@ -129,7 +129,7 @@ pub const Coords2 = struct
 
   // ================= CONVERSION ================
 
-  pub fn getNeighbour( self : Coords2, direction : e_dir_2 ) Coords2
+  pub fn getNeighbour( self : Coords2, direction : Dir2 ) Coords2
   {
     return switch( direction )
     {

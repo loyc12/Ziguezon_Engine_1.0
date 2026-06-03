@@ -59,7 +59,7 @@ pub const ComponentRegistry = struct
   {
     // storePtr is a pointer to an instance of a ComponentStore
     // this ptr is then wrapped in a generic RegistryEntry
-    // ComponentStore is user-managed, and of a type generated via componentStoreFactory()
+    // ComponentStore is user-managed, and of a type generated via ComponentStoreFactory()
 
     if( !self.isInit )
     {
@@ -139,7 +139,7 @@ pub const ComponentRegistry = struct
 
 // ================ COMPONENT STORE FUNCTIONS ================
 
-pub fn componentStoreFactory( comptime ComponentType : type ) type
+pub fn ComponentStoreFactory( comptime ComponentType : type ) type
 {
   return struct
   {

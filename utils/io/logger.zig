@@ -97,7 +97,7 @@ var       G_IsFileOpened : bool        = false;              // Flag to check if
 //
 //  pub inline fn flush( self : *LogStream ) void
 //  {
-//    const col = if( comptime !USE_LOG_FILE ) utl.tcl_u.RESET else "";
+//    const col = if( comptime !USE_LOG_FILE ) utl.termColour.RESET else "";
 //
 //    std.debug.print( "{s}{s}", .{ self.buff[ 0..self.idx ], col });
 //    self.idx = 0;
@@ -159,7 +159,7 @@ fn _log( level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, compt
   }
 
   std.debug.print( message ++ "\n", args ); // Prints the actual message
-  try setCol( utl.tcl_u.RESET );
+  try setCol( utl.termColour.RESET );
   //stream.flush();
 
   LoggedLastMsg = true;
@@ -179,7 +179,7 @@ pub fn initFile() void
 //  std.debug.print( "Failed to create or open log file '{s}': {}\nLogging to stderr isntead\n", .{ LOG_FILE_NAME, err });
 //  return;
 //};
-//std.debug.print( utl.tcl_u.YELLOW ++ "Logging to file '{s}'\n" ++ utl.tcl_u.RESET, .{ LOG_FILE_NAME });
+//std.debug.print( utl.termColour.YELLOW ++ "Logging to file '{s}'\n" ++ utl.termColour.RESET, .{ LOG_FILE_NAME });
 //
 //G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
 //
@@ -213,12 +213,12 @@ fn logLevel( level : LogLevel ) !void
 {
   switch ( level )
   {
-    LogLevel.NONE  => try setCol( utl.tcl_u.RESET  ),
-    LogLevel.ERROR => try setCol( utl.tcl_u.RED    ),
-    LogLevel.WARN  => try setCol( utl.tcl_u.MAGEN ),
-    LogLevel.INFO  => try setCol( utl.tcl_u.GREEN  ),
-    LogLevel.DEBUG => try setCol( utl.tcl_u.CYAN   ),
-    LogLevel.TRACE => try setCol( utl.tcl_u.GRAY   ),
+    LogLevel.NONE  => try setCol( utl.termColour.RESET  ),
+    LogLevel.ERROR => try setCol( utl.termColour.RED    ),
+    LogLevel.WARN  => try setCol( utl.termColour.MAGEN  ),
+    LogLevel.INFO  => try setCol( utl.termColour.GREEN  ),
+    LogLevel.DEBUG => try setCol( utl.termColour.CYAN   ),
+    LogLevel.TRACE => try setCol( utl.termColour.GRAY   ),
     else => {},
   }
 
@@ -253,7 +253,7 @@ fn logTime() !void
   const sec  : u64 = @intCast( prog.toSec() );
   const nano : u64 = @intCast( @mod( prog.value, TimeVal.nsPerSec() ));
 
-  try setCol( utl.tcl_u.GRAY );
+  try setCol( utl.termColour.GRAY );
 
   //try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
   std.debug.print( "{d}.{d:0>9} : ", .{ sec, nano });
@@ -265,15 +265,15 @@ fn logLocation( logloc : ?std.builtin.SourceLocation ) !void
 
   if( logloc )| loc | // If the call location is defined, print the file, line, and function name
   {
-    try setCol( utl.tcl_u.BLUE );
+    try setCol( utl.termColour.BLUE );
     std.debug.print( "{s}:{d} ", .{ loc.file, loc.line });
 
-    try setCol( utl.tcl_u.GRAY );
+    try setCol( utl.termColour.GRAY );
     std.debug.print( "| {s}() :", .{ loc.fn_name });
   }
   else
   {
-    try setCol( utl.tcl_u.YELLOW );
+    try setCol( utl.termColour.YELLOW );
     std.debug.print( "{s} : ", .{ "UNLOCATED" });
   }
 }
@@ -284,13 +284,13 @@ fn setMsgColour( message : [] const u8 ) !void
   {
     switch ( message[ 0 ])
     {
-      '!'  => try setCol( utl.tcl_u.RED    ),
-      '@'  => try setCol( utl.tcl_u.MAGEN  ),
-      '#'  => try setCol( utl.tcl_u.YELLOW ),
-      '$'  => try setCol( utl.tcl_u.GREEN  ),
-      '%'  => try setCol( utl.tcl_u.BLUE   ),
-      '&'  => try setCol( utl.tcl_u.CYAN   ),
-      else => try setCol( utl.tcl_u.RESET  ),
+      '!'  => try setCol( utl.termColour.RED    ),
+      '@'  => try setCol( utl.termColour.MAGEN  ),
+      '#'  => try setCol( utl.termColour.YELLOW ),
+      '$'  => try setCol( utl.termColour.GREEN  ),
+      '%'  => try setCol( utl.termColour.BLUE   ),
+      '&'  => try setCol( utl.termColour.CYAN   ),
+      else => try setCol( utl.termColour.RESET  ),
     }
   }
 }

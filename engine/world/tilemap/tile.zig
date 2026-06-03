@@ -4,7 +4,7 @@ const utl = @import( "utils" );
 
 const Coords2 = utl.Coords2;
 
-pub const e_tile_flags = enum( u8 )
+pub const TileFlags = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -24,7 +24,7 @@ pub const e_tile_flags = enum( u8 )
 };
 
 
-pub const e_tile_type = enum( u8 )
+pub const TileType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -46,7 +46,7 @@ pub const e_tile_type = enum( u8 )
   RANDOM = 255, // For random tile generation only
 
   // an enum method... ? in THIS economy ?!
-  pub fn getTileTypeColour( self : e_tile_type ) utl.Colour
+  pub fn getTileTypeColour( self : TileType ) utl.Colour
   {
     return switch( self )
     {
@@ -64,8 +64,8 @@ pub const e_tile_type = enum( u8 )
 pub const Tile = struct
 {
   // ================ PROPERTIES ================
-  tType     : e_tile_type = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
-  flags     : utl.BitField8 = utl.BitField8.new( e_tile_flags.DEFAULT ),
+  tType     : TileType = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
+  flags     : utl.BitField8 = utl.BitField8.new( TileFlags.DEFAULT ),
 
   // ======== GRID POS DATA ========
   mapCoords : Coords2     = .{},
@@ -80,19 +80,19 @@ pub const Tile = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Tile, flag : e_tile_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
+  pub inline fn hasFlag( self : *const Tile, flag : TileFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
   pub inline fn setAllFlags( self : *Tile, flags : u8 )                       void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Tile, flag  : e_tile_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Tile, flag  : e_tile_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Tile, flag  : e_tile_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setFlag(     self : *Tile, flag  : TileFlags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Tile, flag  : TileFlags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Tile, flag  : TileFlags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
 
-//pub inline fn canBeDel( self : *const Tile ) bool { return self.hasFlag( e_tile_flags.DELETE  ); }
-//pub inline fn isInit(   self : *const Tile ) bool { return self.hasFlag( e_tile_flags.IS_INIT ); }
-//pub inline fn isActive( self : *const Tile ) bool { return self.hasFlag( e_tile_flags.ACTIVE  ); }
+//pub inline fn canBeDel( self : *const Tile ) bool { return self.hasFlag( TileFlags.DELETE  ); }
+//pub inline fn isInit(   self : *const Tile ) bool { return self.hasFlag( TileFlags.IS_INIT ); }
+//pub inline fn isActive( self : *const Tile ) bool { return self.hasFlag( TileFlags.ACTIVE  ); }
 
-  pub inline fn isFlooded( self : *const Tile ) bool { return self.hasFlag( e_tile_flags.FLOODED ); }
-  pub inline fn viewDBG(   self : *const Tile ) bool { return self.hasFlag( e_tile_flags.DEBUG   ); }
+  pub inline fn isFlooded( self : *const Tile ) bool { return self.hasFlag( TileFlags.FLOODED ); }
+  pub inline fn viewDBG(   self : *const Tile ) bool { return self.hasFlag( TileFlags.DEBUG   ); }
 
 
 };

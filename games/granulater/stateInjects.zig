@@ -20,7 +20,7 @@ pub var NOISE_GEN : utl.Noise2D =
   .seed = 0,
 
   .warpCount    = 1,
-  .warpStrenght = 1.5,
+  .warpStrength = 1.5,
 
   .octaveCount = 6,
 };

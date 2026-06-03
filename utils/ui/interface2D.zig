@@ -46,14 +46,14 @@ pub const InterfaceShape = enum( u8 )
   pub const maxCornerCount = 8;
 };
 
-const BevelArray = [ InterfaceShape.maxCornerCount ]f64;
+pub const BevelArray = [ InterfaceShape.maxCornerCount ]f64;
 
 fn getEmptyBevelArray() BevelArray { comptime return [_]f64{ 1.0 } ** InterfaceShape.maxCornerCount; }
 
-fn getBevelDir( strenght : f64 ) i2
+fn getBevelDir( strength : f64 ) i2
 {
-  if( strenght >  utl.EPS ){ return  1; } // Standard bevel (  1.0 = squared  special case )
-  if( strenght < -utl.EPS ){ return -1; } // Inverted bevel ( -1.0 = diagonal special case )
+  if( strength >  utl.EPS ){ return  1; } // Standard bevel (  1.0 = squared  special case )
+  if( strength < -utl.EPS ){ return -1; } // Inverted bevel ( -1.0 = diagonal special case )
   return 0;                               // No bevel ( cutout )
 }
 
@@ -83,7 +83,7 @@ pub const Interface2D = struct
   edgeCol : utl.Colour = .lGray,
   lineCol : utl.Colour = .nBlack,
 
-  bevelStrenght : BevelArray = getEmptyBevelArray(),
+  bevelStrength : BevelArray = getEmptyBevelArray(),
 
   bevelVertsO : VertexArray  = getEmptyVertexArray(), // Outer corners
   bevelVertsL : VertexArray  = getEmptyVertexArray(), // Bevel start point
@@ -97,13 +97,13 @@ pub const Interface2D = struct
     self.shape = newShape;
   }
 
-  pub inline fn setBevelStrenght( self : *Interface2D, bevelIdx : usize, newStrenght : f64 ) void
+  pub inline fn setBevelStrength( self : *Interface2D, bevelIdx : usize, newStrength : f64 ) void
   {
-    const oldBevelStrenght = self.bevelStrenght[ bevelIdx ];
+    const oldBevelStrength = self.bevelStrength[ bevelIdx ];
 
-    if( !utl.isFltEq( oldBevelStrenght, newStrenght )){ self.isInit = false; }
+    if( !utl.isFltEq( oldBevelStrength, newStrength )){ self.isInit = false; }
 
-    self.bevelStrenght[ bevelIdx ] = newStrenght;
+    self.bevelStrength[ bevelIdx ] = newStrength;
   }
 
   pub inline fn getCornerCount( self : *const Interface2D ) u8 { return self.shape.getCornerCount(); }
@@ -115,7 +115,7 @@ pub const Interface2D = struct
 
     for( 0..self.shape.getCornerCount() )| b |
     {
-      if( !utl.isFltEq( self.bevelStrenght[ b ], 1.0 )){ return true; }
+      if( !utl.isFltEq( self.bevelStrength[ b ], 1.0 )){ return true; }
     }
 
     return false;
@@ -233,9 +233,9 @@ pub const Interface2D = struct
     {
       const innerScale : Vec2 = self.scale.subVal( self.edgeWidth );
 
-      drawer.poly(      pos, self.scale, ang, self.edgeCol, eng.CNFGS.Graphic_Ellipse_Facets                 );
-      drawer.poly(      pos, innerScale, ang, self.fillCol, eng.CNFGS.Graphic_Ellipse_Facets                 );
-      drawer.polyPerim( pos, self.scale, ang, self.lineCol, eng.CNFGS.Graphic_Ellipse_Facets, self.lineWidth );
+      drawer.poly(      pos, self.scale, ang, self.edgeCol, eng.G_CNFGS.Graphic_Ellipse_Facets                 );
+      drawer.poly(      pos, innerScale, ang, self.fillCol, eng.G_CNFGS.Graphic_Ellipse_Facets                 );
+      drawer.polyPerim( pos, self.scale, ang, self.lineCol, eng.G_CNFGS.Graphic_Ellipse_Facets, self.lineWidth );
 
       return;
     }
@@ -297,7 +297,7 @@ pub const Interface2D = struct
         const v2  = self.bevelVertsR[ i ]; // Corner's right vertex
         const v12 = self.bevelVertsO[ i ]; // Corner's outer vertex
 
-        if( utl.isFltEq( self.bevelStrenght[ i ], 1.0 )) // Squared bevel
+        if( utl.isFltEq( self.bevelStrength[ i ], 1.0 )) // Squared bevel
         {
           drawer.basicQuad( v1, v0, v2, v12,  self.edgeCol   );
           drawer.basicLine( v1, v12, self.lineCol, self.lineWidth );
@@ -305,7 +305,7 @@ pub const Interface2D = struct
 
           continue;
         }
-        if( utl.isFltEq( self.bevelStrenght[ i ], -1.0 )) // Diagonal bevel
+        if( utl.isFltEq( self.bevelStrength[ i ], -1.0 )) // Diagonal bevel
         {
           drawer.basicTria( v1, v0, v2,      self.edgeCol   );
           drawer.basicLine( v1, v2, self.lineCol, self.lineWidth );
@@ -313,9 +313,9 @@ pub const Interface2D = struct
           continue;
         }
 
-        const t : f64 = @abs( self.bevelStrenght[ i ]); // NOTE : Can make lerp go past 1.0 strenght. This is intended
+        const t : f64 = @abs( self.bevelStrength[ i ]); // NOTE : Can make lerp go past 1.0 strength. This is intended
 
-        switch( getBevelDir( self.bevelStrenght[ i ]))
+        switch( getBevelDir( self.bevelStrength[ i ]))
         {
           1 => // Standard bevel ( notched )
           {

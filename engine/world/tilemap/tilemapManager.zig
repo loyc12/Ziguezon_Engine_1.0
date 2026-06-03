@@ -2,8 +2,8 @@ const std     = @import( "std" );
 const eng     = @import( "engine" );
 const utl = @import( "utils" );
 
-const Tile    = eng.tlm.Tile;
-const Tilemap = eng.tlm.Tilemap;
+const Tile    = eng.tilemap.Tile;
+const Tilemap = eng.tilemap.Tilemap;
 const Vec2    = utl.Vec2;
 const VecA    = utl.VecA;
 
@@ -142,7 +142,7 @@ pub const TilemapManager = struct
     self.tilemapList = std.ArrayList( Tilemap ).empty;
     //self.tilemapList = std.ArrayList( Tilemap ).initCapacity( self.allocator, 4 ) catch
     //{
-    //  utl.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList to proper default lenght" );
+    //  utl.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList to proper default length" );
     //  return;
     //};
 
@@ -173,7 +173,7 @@ pub const TilemapManager = struct
 
   // ================================ TILEMAP MANAGEMENT FUNCTIONS ================================
 
-  pub fn loadTilemapFromParams( self : *TilemapManager, params : Tilemap, fillType : eng.tlm.e_tile_type ) ?*Tilemap
+  pub fn loadTilemapFromParams( self : *TilemapManager, params : Tilemap, fillType : eng.tilemap.TileType ) ?*Tilemap
   {
     utl.qlog( .TRACE, 0, @src(), "Adding new Tilemap" );
 
@@ -292,7 +292,7 @@ pub const TilemapManager = struct
       const mapBox = tlmp.getMapBoundingBox();
       eng.wDraw.rect( mapBox.center, mapBox.scale, .{}, utl.Colour.yellow.setA( 32 ));
 
-      if( eng.CNFGS.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
+      if( eng.G_CNFGS.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
       {
         const tile = tlmp.tileArray.items.ptr[ index ];
         const tilePos = tlmp.getRelTilePos( tile.mapCoords );

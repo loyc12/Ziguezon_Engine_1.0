@@ -2,7 +2,7 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-const Body = eng.bdy.Body;
+const Body = eng.bodyCore.Body;
 const Vec2 = utl.Vec2;
 
 // ================ HELPER FUNCTIONS ================

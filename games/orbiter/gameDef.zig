@@ -11,11 +11,11 @@ pub const ecn = @import( "econ/economy.zig"   );
 pub const trvlSlvr = @import( "econ/travelSolver.zig"  );
 
 
-pub const TransStore  = eng.TransComp.getStoreType();
-pub const ShapeStore  = eng.ShapeComp.getStoreType();
-pub const SpriteStore = eng.SpriteComp.getStoreType();
-pub const OrbitStore  = orb.OrbitComp.getStoreType();
-pub const BodyStore   = bdy.BodyComp.getStoreType();
+pub const TransStore  = eng.TransComp.StoreType();
+pub const ShapeStore  = eng.ShapeComp.StoreType();
+pub const SpriteStore = eng.SpriteComp.StoreType();
+pub const OrbitStore  = orb.OrbitComp.StoreType();
+pub const BodyStore   = bdy.BodyComp.StoreType();
 
 
 // ================ UNITS AND CONSTANTS ================
@@ -57,8 +57,8 @@ pub const GameConsts = struct
 
   renderScale : f64  = 0.000_001,
 
-  orbitPathLenFactor : f32 = 1.0, // 0.0 - 1.0 // Controls orbital path lenght
-  orbitFadeStrenght  : u8  = 1,   // 0 - 255   // Controls orbital path fading
+  orbitPathLenFactor : f32 = 1.0, // 0.0 - 1.0 // Controls orbital path length
+  orbitFadeStrength  : u8  = 1,   // 0 - 255   // Controls orbital path fading
 
   backColour : utl.Colour = .dIndigo,
   foreColour : utl.Colour = .dCrimson,

@@ -66,10 +66,10 @@ pub const Noise2D = struct
   seed : u64,
 
   warpCount    : u32 = 1,   // >= 0   : The amount of successive warp passes
-  warpStrenght : f32 = 1.0, // >= 0.0 : The strenght of the input position warping
+  warpStrength : f32 = 1.0, // >= 0.0 : The strength of the input position warping
 
   octaveCount : u32 = 4,   // > 0       : The amount of fractal layer                    ( layerCount      )
-  persistence : f32 = 0.5, // 0.0 - 1.0 : The relative strenght of each successive layer ( amplitudeFactor )
+  persistence : f32 = 0.5, // 0.0 - 1.0 : The relative strength of each successive layer ( amplitudeFactor )
   lacunarity  : f32 = 2.0, // > 1.0     : The relative scale of each successive layer    ( frequencyFactor )
 
   pub fn simpleSample( self : Noise2D, pos : Vec2 ) f32
@@ -124,12 +124,12 @@ pub const Noise2D = struct
 
   inline fn baseWarpPos( self : Noise2D, pos : Vec2 ) Vec2
   {
-    if( utl.isFltZr( self.warpStrenght )){ return pos; }
+    if( utl.isFltZr( self.warpStrength )){ return pos; }
 
     const wx = self.baseSample( pos.add( .{ .x = 79.0, .y = 67.0 }));
     const wy = self.baseSample( pos.add( .{ .x = 53.0, .y = 97.0 }));
 
-    return pos.add( .{ .x = wx * self.warpStrenght, .y = wy * self.warpStrenght });
+    return pos.add( .{ .x = wx * self.warpStrength, .y = wy * self.warpStrength });
   }
 
 

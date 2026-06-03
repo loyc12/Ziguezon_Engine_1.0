@@ -337,7 +337,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
     // Migrating populations to richer neighbours
 
-    for( utl.e_dir_2.arr )| dir |
+    for( utl.Dir2.arr )| dir |
     {
       const n = worldGrid.getNeighbourTile( tile.mapCoords, dir ) orelse
       {

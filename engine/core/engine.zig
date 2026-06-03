@@ -10,7 +10,7 @@ const Angle = utl.Angle;
 
 // ================================ DEFINITIONS ================================
 
-pub const e_ng_state = enum( u4 )
+pub const EngineState = enum( u4 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -26,16 +26,16 @@ pub const Engine = struct
   const ngnTime = @import( "engineTime.zig" );
 
   // Engine Variables
-  state  : e_ng_state         = .OFF,
+  state  : EngineState         = .OFF,
   times  : ngnTime.EngineTime = .{},
   rng    : utl.Randomiser     = .{},
   camera : eng.WorldCam       = .{},
 
   // Engine Managers
-  resourceManager   : eng.res_m.ResourceManager = .{},
-  bodyManager       : eng.bdy_m.BodyManager     = .{},
-  tilemapManager    : eng.tlm_m.TilemapManager  = .{},
-  eventManager      : eng.vnt_m.EventManager    = .{},
+  resourceManager   : eng.resMgr.ResourceManager = .{},
+  bodyManager       : eng.bodyMgr.BodyManager     = .{},
+  tilemapManager    : eng.tilemapMgr.TilemapManager  = .{},
+  eventManager      : eng.eventMgr.EventManager    = .{},
   uiManager         : utl.UiManager             = .{},
 
   // ECS Management
@@ -46,10 +46,10 @@ pub const Engine = struct
 
   // ================================ UTILS FUNCTIONS ================================
 
-  pub inline fn isStarted( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.STARTED )); }
-  pub inline fn isOpened(  ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.OPENED  )); }
-  pub inline fn isPaused(  ng : *const Engine ) bool { return( @intFromEnum( ng.state ) == @intFromEnum( e_ng_state.OPENED  )); }
-  pub inline fn isPlaying( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.PLAYING )); }
+  pub inline fn isStarted( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( EngineState.STARTED )); }
+  pub inline fn isOpened(  ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( EngineState.OPENED  )); }
+  pub inline fn isPaused(  ng : *const Engine ) bool { return( @intFromEnum( ng.state ) == @intFromEnum( EngineState.OPENED  )); }
+  pub inline fn isPlaying( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( EngineState.PLAYING )); }
 
   pub inline fn initTimers( self : *Engine ) void
   {
@@ -70,7 +70,7 @@ pub const Engine = struct
 
   const ngnState = @import( "engineState.zig" );
 
-  pub inline fn changeState( self : *Engine, targetState : e_ng_state ) void { ngnState.changeState( self, targetState ); }
+  pub inline fn changeState( self : *Engine, targetState : EngineState ) void { ngnState.changeState( self, targetState ); }
   pub inline fn togglePause( self : *Engine ) void {                           ngnState.togglePause( self );              }
 
 

@@ -3,37 +3,37 @@
 // ================ ENGINE SETTINGS ================
 
 const  cnfg_i = @import( "interface/configs.zig" );
-pub var CNFGS : cnfg_i.EngineConfigs = .{};
+pub var G_CNFGS : cnfg_i.EngineConfigs = .{};
 
-pub inline fn loadConfigs( module : anytype ) void { CNFGS.loadConfigs( module ); }
+pub inline fn loadConfigs( module : anytype ) void { G_CNFGS.loadConfigs( module ); }
 
 
 // ================ GAME HOOKS ================
 
 const  hook_i = @import( "interface/hooks.zig" );
-pub var HOOKS : hook_i.GameHooks = .{};
+pub var G_HOOKS : hook_i.GameHooks = .{};
 
 pub const HookCntx = hook_i.HookCntx;
 pub const HookFunc = hook_i.HookFunc;
 
-pub inline fn loadHooks( module : anytype ) void                       { HOOKS.loadHooks( module  ); }
-pub inline fn tryHook( tag : hook_i.e_hook_tag, cntx : HookCntx ) void { HOOKS.tryHook( tag, cntx ); }
+pub inline fn loadHooks( module : anytype ) void                       { G_HOOKS.loadHooks( module  ); }
+pub inline fn tryHook( tag : hook_i.HookTag, cntx : HookCntx ) void    { G_HOOKS.tryHook( tag, cntx ); }
 
 
 
 // ================================ ENGINE SYSTEMS ================================
 
-pub const eng_c  = @import( "core/engine.zig" );
-pub const Engine = eng_c.Engine;
+pub const engineCore = @import( "core/engine.zig" );
+pub const Engine     = engineCore.Engine;
 
 pub var G_ENG : Engine = .{};
 
 // ================ MANAGERS ================
 
-pub const res_m = @import( "resources/resourceManager.zig" );
-pub const vnt_m = @import( "world/events/eventManager.zig" );
-pub const tlm_m = @import( "world/tilemap/tilemapManager.zig" );
-pub const bdy_m = @import( "legacy/body/bodyManager.zig" );
+pub const resMgr     = @import( "resources/resourceManager.zig" );
+pub const eventMgr   = @import( "world/events/eventManager.zig" );
+pub const tilemapMgr = @import( "world/tilemap/tilemapManager.zig" );
+pub const bodyMgr    = @import( "legacy/body/bodyManager.zig" );
 
 
 // ================ RENDER ================
@@ -47,66 +47,69 @@ pub const WorldCam = wCam.WorldCam;
 
 // ================ BODY ================
 
-pub const bdy         = @import( "legacy/body/bodyCore.zig" );
-pub const Body        = bdy.Body;
+pub const bodyCore = @import( "legacy/body/bodyCore.zig" );
+pub const Body     = bodyCore.Body;
 
-pub const e_bdy_flags = bdy.e_bdy_flags;
+pub const BodyFlags = bodyCore.BodyFlags;
 
 
 // ================ TILEMAP ================
 
-pub const tlm          = @import( "world/tilemap/tilemap.zig" );
+pub const tilemap = @import( "world/tilemap/tilemap.zig" );
 
-pub const Tile         = tlm.Tile;
-pub const e_tile_type  = tlm.e_tile_type;
+pub const Tile      = tilemap.Tile;
+pub const TileType  = tilemap.TileType;
+pub const TileFlags = tilemap.TileFlags;
 
-pub const Tilemap      = tlm.Tilemap;
-pub const e_tlmp_shape = tlm.e_tlmp_shape;
+pub const Tilemap      = tilemap.Tilemap;
+pub const TilemapShape = tilemap.TilemapShape;
+pub const TilemapFlags = tilemap.TilemapFlags;
+pub const FloodRule    = tilemap.FloodRule;
 
 
 // ================ SCRIPT ================
 
-pub const spt        = @import( "legacy/script/scripter.zig" );
+pub const scripter = @import( "legacy/script/scripter.zig" );
 
-pub const Scripter   = spt.Scripter;
-pub const ScriptData = spt.ScriptData;
-pub const ScriptCntx = spt.ScriptCntx;
-pub const ScriptFunc = spt.ScriptFunc;
+pub const Scripter   = scripter.Scripter;
+pub const ScriptData = scripter.ScriptData;
+pub const ScriptCntx = scripter.ScriptCntx;
+pub const ScriptFunc = scripter.ScriptFunc;
 
 
 // ================ ECS ================
 
-pub const ntt              = @import( "world/entity.zig" );
+pub const entity = @import( "world/entity.zig" );
 
-pub const Entity           = ntt.Entity;
-pub const EntityId         = ntt.EntityId;
-pub const EntityIdRegistry = ntt.EntityIdRegistry;
-
-
-pub const cmp                   = @import( "world/components/component.zig" );
-
-pub const ComponentRegistry     = cmp.ComponentRegistry;
-pub const componentStoreFactory = cmp.componentStoreFactory;
+pub const Entity           = entity.Entity;
+pub const EntityId         = entity.EntityId;
+pub const EntityIdRegistry = entity.EntityIdRegistry;
 
 
-pub const cmp2 = @import( "world/components/baseComponents.zig" );
+pub const component = @import( "world/components/component.zig" );
 
-pub const TransComp  = cmp2.TransComp;
-pub const ShapeComp  = cmp2.ShapeComp;
-pub const SpriteComp = cmp2.SpriteComp;
+pub const ComponentRegistry     = component.ComponentRegistry;
+pub const ComponentStoreFactory = component.ComponentStoreFactory;
+
+
+pub const baseComp = @import( "world/components/baseComponents.zig" );
+
+pub const TransComp  = baseComp.TransComp;
+pub const ShapeComp  = baseComp.ShapeComp;
+pub const SpriteComp = baseComp.SpriteComp;
 
 
 // ================ EVENT ================
 
-pub const vnt = @import( "world/events/event.zig" );
+pub const eventCore = @import( "world/events/event.zig" );
 
-pub const Event = vnt.Event;
+pub const Event = eventCore.Event;
 
-pub const EventType          = vnt.EventType;
-pub const EventPhase         = vnt.EventPhase;
-pub const EventData          = vnt.EventData;
-pub const EventFunc          = vnt.EventFunc;
+pub const EventType          = eventCore.EventType;
+pub const EventPhase         = eventCore.EventPhase;
+pub const EventData          = eventCore.EventData;
+pub const EventFunc          = eventCore.EventFunc;
 
-pub const EventListener      = vnt.EventListener;
-pub const EventListenerArray = vnt.EventListenerArray;
-pub const EventQueue         = vnt.EventQueue;
+pub const EventListener      = eventCore.EventListener;
+pub const EventListenerArray = eventCore.EventListenerArray;
+pub const EventQueue         = eventCore.EventQueue;

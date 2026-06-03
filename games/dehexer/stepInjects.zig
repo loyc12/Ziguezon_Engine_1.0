@@ -35,10 +35,10 @@ var shake_force : f32 = 0.0;
 
 var end_text_scale : f64 = 0;
 
-const shaker : utl.Shaker2D = .{
-  .beg_lenght = 0.03,
-  .mid_lenght = 0.04,
-  .end_lenght = 0.03,
+const shaker : utl.Shake2D = .{
+  .beg_length = 0.03,
+  .mid_length = 0.04,
+  .end_length = 0.03,
 };
 
 
@@ -105,7 +105,7 @@ fn getNeighbourMineCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Til
 
   var res : u32 = 0;
 
-  for( utl.e_dir_2.arr )| dir |
+  for( utl.Dir2.arr )| dir |
   {
     const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
@@ -126,7 +126,7 @@ fn getNeighbourFlagCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Til
 
   var res : u32 = 0;
 
-  for( utl.e_dir_2.arr )| dir |
+  for( utl.Dir2.arr )| dir |
   {
     const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
@@ -228,7 +228,7 @@ fn leftCLickTile( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) void
 
     if( tileFlagCount > 0 and tileFlagCount == tileMineCount )
     {
-      for( utl.e_dir_2.arr )| dir |
+      for( utl.Dir2.arr )| dir |
       {
         const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
         {
@@ -302,7 +302,7 @@ fn floodDiscoverCheck( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile )
   if( nMineCount > 0 ){ return; }
 
   // Recursively check all neighbours
-  for( utl.e_dir_2.arr )| dir |
+  for( utl.Dir2.arr )| dir |
   {
     const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {

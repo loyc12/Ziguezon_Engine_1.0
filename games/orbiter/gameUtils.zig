@@ -353,7 +353,7 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
 pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
 {
-  const col   = eng.CNFGS.Graphic_Metrics_Colour.?;
+  const col   = eng.G_CNFGS.Graphic_Metrics_Colour.?;
   const posX  = utl.getScreenWidth() - 16.0;
   const id    = target.targetId;
 
@@ -395,7 +395,7 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
     if( target.targetId == gdf.G_CONSTS.starId )
     {
-      utl.sDraw.textRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrenght }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+      utl.sDraw.textRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrength }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     }
 
     lineCount += 0.5;

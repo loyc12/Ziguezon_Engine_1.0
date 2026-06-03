@@ -15,13 +15,13 @@ pub const Shake2D = struct
   end_factor : VecA = .{ .x = 0.0, .y = 0.0, .a = .{} },
 
   // Duration of each phase in seconds ( b-m-e)
-  beg_lenght : f32 = 0.25,
-  mid_lenght : f32 = 0.50,
-  end_lenght : f32 = 0.25,
+  beg_length : f32 = 0.25,
+  mid_length : f32 = 0.50,
+  end_length : f32 = 0.25,
 
   // Noise scalers
   shake_speed   : f32 = 32.0, // 0.0 <      Global shake speed multiplier
-  octave_freq_f : f32 = 2.00, // 1.0 <      Relative lenght of successive octaves
+  octave_freq_f : f32 = 2.00, // 1.0 <      Relative length of successive octaves
   octave_amp_f  : f32 = 0.80, // 0.0 - 1.0  Relative height of successive octaves
   octave_depth  : u32 = 8,    // 1 - ~16    Total number of octaves layered
 
@@ -34,13 +34,13 @@ pub const Shake2D = struct
 
   pub fn isValid( self : *const Shake2D ) bool
   {
-    if( self.beg_lenght < 0 or self.mid_lenght < 0 or self.end_lenght < 0 )
+    if( self.beg_length < 0 or self.mid_length < 0 or self.end_length < 0 )
     {
       utl.qlog( .WARN, 0, @src(), "Trying to use a Shake2D with negative duration(s)" );
       return false;
     }
 
-    if( self.beg_lenght <= 0 and self.mid_lenght <= 0 and self.end_lenght <= 0 )
+    if( self.beg_length <= 0 and self.mid_length <= 0 and self.end_length <= 0 )
     {
       utl.qlog( .WARN, 0, @src(), "Trying to use a Shake2D without any durations" );
       return false;
@@ -67,21 +67,21 @@ pub const Shake2D = struct
     return true;
   }
 
-  pub inline fn getTotalLenght( self : *const Shake2D ) f32 { return self.beg_lenght + self.mid_lenght + self.end_lenght; }
+  pub inline fn getTotalLength( self : *const Shake2D ) f32 { return self.beg_length + self.mid_length + self.end_length; }
 
 
   // ================ FACTOR ================
 
   // Progress is mesured between 0.0 and 1.0,
-  pub fn getFactorAtProg( self : *const Shake2D, prog : f32 ) VecA { return self.getFactorAtTime( prog * self.getTotalLenght() ); }
+  pub fn getFactorAtProg( self : *const Shake2D, prog : f32 ) VecA { return self.getFactorAtTime( prog * self.getTotalLength() ); }
   pub fn getFactorAtTime( self : *const Shake2D, time : f32 ) VecA
   {
-    const tot_lenght = self.getTotalLenght();
-    if( !self.isValid() or time < 0.0 or time > tot_lenght ){ return .{}; }
+    const tot_length = self.getTotalLength();
+    if( !self.isValid() or time < 0.0 or time > tot_length ){ return .{}; }
 
-    if( time < self.beg_lenght )
+    if( time < self.beg_length )
     {
-      const prog = time / self.beg_lenght;
+      const prog = time / self.beg_length;
       return .{ // In first phase
         .x =         utl.lerp( self.beg_factor.x,   self.mid_factor.x,   prog ),
         .y =         utl.lerp( self.beg_factor.y,   self.mid_factor.y,   prog ),
@@ -89,9 +89,9 @@ pub const Shake2D = struct
       };
     }
 
-    else if( time > tot_lenght - self.end_lenght )
+    else if( time > tot_length - self.end_length )
     {
-      const prog = ( time - self.beg_lenght - self.mid_lenght ) / self.end_lenght;
+      const prog = ( time - self.beg_length - self.mid_length ) / self.end_length;
       return .{ // In third phase
         .x =         utl.lerp( self.mid_factor.x,   self.end_factor.x,   prog ),
         .y =         utl.lerp( self.mid_factor.y,   self.end_factor.y,   prog ),
@@ -105,12 +105,12 @@ pub const Shake2D = struct
 
   // ================ NOISE ================
 
-  pub fn getNoiseAtProg( self : *const Shake2D, prog : f32 ) VecA { return self.getNoiseValAtTime( prog * self.getTotalLenght()); }
+  pub fn getNoiseAtProg( self : *const Shake2D, prog : f32 ) VecA { return self.getNoiseValAtTime( prog * self.getTotalLength()); }
   pub fn getNoiseAtTime( self : *const Shake2D, time : f32 ) VecA
   {
-    const tot_lenght = self.getTotalLenght();
+    const tot_length = self.getTotalLength();
 
-    if( !self.isValid() or time < 0.0 or time > tot_lenght ){ return .{}; }
+    if( !self.isValid() or time < 0.0 or time > tot_length ){ return .{}; }
 
     var nx : f32 = 0.0;
     var ny : f32 = 0.0;
@@ -143,7 +143,7 @@ pub const Shake2D = struct
 
   // ================ Offset ================
 
-  pub fn getOffsetAtProg( self : *const Shake2D, prog : f32 ) VecA { return self.getOffsetAtTime( prog * self.getTotalLenght()); }
+  pub fn getOffsetAtProg( self : *const Shake2D, prog : f32 ) VecA { return self.getOffsetAtTime( prog * self.getTotalLength()); }
   pub fn getOffsetAtTime( self : *const Shake2D, time : f32 ) VecA
   {
     const factor = self.getFactorAtTime( time );

@@ -9,12 +9,12 @@ const RayCam = utl.RayCam;
 
 // ================================ WORLD CAMERA ================================
 
-// Engine-owned wrapper around the generic Cam2D primitive. WorldCam is the place
+// Engine-owned wrapper around the generic Cam2 primitive. WorldCam is the place
 // where camera state becomes world-relative and where engine zoom limits apply.
 
 pub const WorldCam = struct
 {
-  cam     : utl.Cam2D = .{},
+  cam     : utl.Cam2 = .{},
   zoomMin : f64       = 0.1,
   zoomMax : f64       = 10.0,
 
@@ -66,7 +66,7 @@ pub const WorldCam = struct
 
   pub inline fn toRayCam( self : *const WorldCam ) RayCam
   {
-    var tmp : utl.Cam2D = self.cam;
+    var tmp : utl.Cam2 = self.cam;
     tmp.updateView();
 
     const rayCam = RayCam{
@@ -82,7 +82,7 @@ pub const WorldCam = struct
 
   pub inline fn fromViewBox( vb : Box2 ) WorldCam
   {
-    return WorldCam{ .cam = utl.Cam2D.fromViewBox( vb ) };
+    return WorldCam{ .cam = utl.Cam2.fromViewBox( vb ) };
   }
   pub inline fn toViewBox( self : *const WorldCam ) Box2
   {

@@ -31,99 +31,99 @@ pub const zeroRayVec4 = RayVec4{ .x = 0, .y = 0, .z = 0, .w = 0 };
 
 // ======== ANGLES ========
 
-pub const ngl_u = @import( "data/angler.zig" );
+pub const angle = @import( "data/angle.zig" );
 
-pub const Angle = ngl_u.Angle;
+pub const Angle = angle.Angle;
 
 
 // ======== BOXES ========
 
-pub const box2_u = @import( "data/boxer2.zig" );
+pub const box2 = @import( "data/box2.zig" );
 
-pub const Box2 = box2_u.Box2;
+pub const Box2 = box2.Box2;
 
-pub const isLeftOf  = box2_u.isLeftOf;
-pub const isRightOf = box2_u.isRightOf;
-pub const isAbove   = box2_u.isAbove;   // NOTE : Y axis is inverted in raylib rendering
-pub const isBelow   = box2_u.isBelow;   // NOTE : Y axis is inverted in raylib rendering
+pub const isLeftOf  = box2.isLeftOf;
+pub const isRightOf = box2.isRightOf;
+pub const isAbove   = box2.isAbove;   // NOTE : Y axis is inverted in raylib rendering
+pub const isBelow   = box2.isBelow;   // NOTE : Y axis is inverted in raylib rendering
 
-pub const getCenterXFromLeftX      = box2_u.getCenterXFromLeftX;
-pub const getCenterXFromRightX     = box2_u.getCenterXFromRightX;
-pub const getCenterYFromTopY       = box2_u.getCenterYFromTopY;
-pub const getCenterYFromBottomY    = box2_u.getCenterYFromBottomY;
+pub const getCenterXFromLeftX      = box2.getCenterXFromLeftX;
+pub const getCenterXFromRightX     = box2.getCenterXFromRightX;
+pub const getCenterYFromTopY       = box2.getCenterYFromTopY;
+pub const getCenterYFromBottomY    = box2.getCenterYFromBottomY;
 
-pub const getCenterFromTopLeft     = box2_u.getCenterFromTopLeft;
-pub const getCenterFromTopRight    = box2_u.getCenterFromTopRight;
-pub const getCenterFromBottomLeft  = box2_u.getCenterFromBottomLeft;
-pub const getCenterFromBottomRight = box2_u.getCenterFromBottomRight;
+pub const getCenterFromTopLeft     = box2.getCenterFromTopLeft;
+pub const getCenterFromTopRight    = box2.getCenterFromTopRight;
+pub const getCenterFromBottomLeft  = box2.getCenterFromBottomLeft;
+pub const getCenterFromBottomRight = box2.getCenterFromBottomRight;
 
 
 // ======== COORDS ========
 
-pub const cor2_u  = @import( "data/coorder2.zig" );
-pub const cor3_u  = @import( "data/coorder3.zig" );
+pub const coords2 = @import( "data/coords2.zig" );
+pub const coords3 = @import( "data/coords3.zig" );
 
-pub const e_dir_2 = cor2_u.e_dir_2;
-pub const e_dir_3 = cor3_u.e_dir_3;
+pub const Dir2 = coords2.Dir2;
+pub const Dir3 = coords3.Dir3;
 
-pub const Coords2 = cor2_u.Coords2;
-pub const Coords3 = cor3_u.Coords3;
+pub const Coords2 = coords2.Coords2;
+pub const Coords3 = coords3.Coords3;
 
 
 // ======== DATA MATRICES ========
 
-pub const d1d_u  = @import( "data/data1D.zig" );
-pub const d2d_u  = @import( "data/data2D.zig" );
-pub const d3d_u  = @import( "data/data3D.zig" );
-pub const d4d_u  = @import( "data/data4D.zig" );
+pub const data1D = @import( "data/data1D.zig" );
+pub const data2D = @import( "data/data2D.zig" );
+pub const data3D = @import( "data/data3D.zig" );
+pub const data4D = @import( "data/data4D.zig" );
 
-pub const GenDataLine     = d1d_u.GenDataLine;
-pub const GenDataGrid     = d2d_u.GenDataGrid;
-pub const GenDataCube     = d3d_u.GenDataCube;
-pub const GenDataMatrix4  = d3d_u.GenDataMatrix4;
+pub const GenDataLine     = data1D.GenDataLine;
+pub const GenDataGrid     = data2D.GenDataGrid;
+pub const GenDataCube     = data3D.GenDataCube;
+pub const GenDataMatrix4  = data3D.GenDataMatrix4;
 
 
 // ======== BITFLAGS ========
 
-pub const flg_u = @import( "data/flagger.zig" );
+pub const bitField = @import( "data/flagger.zig" );
 
-pub const BitField8  = flg_u.BitField8;
-pub const BitField16 = flg_u.BitField16;
-pub const BitField32 = flg_u.BitField32;
-pub const BitField64 = flg_u.BitField64;
+pub const BitField8  = bitField.BitField8;
+pub const BitField16 = bitField.BitField16;
+pub const BitField32 = bitField.BitField32;
+pub const BitField64 = bitField.BitField64;
 
 
 // ======== TIMING ========
 
-pub const tmr_u = @import( "data/timer.zig" );
+pub const timer = @import( "data/timer.zig" );
 
-pub const TimeVal       = tmr_u.TimeVal;
-pub const Timer         = tmr_u.Timer;
-pub const e_timer_flags = tmr_u.e_timer_flags;
+pub const TimeVal    = timer.TimeVal;
+pub const Timer      = timer.Timer;
+pub const TimerFlags = timer.TimerFlags;
 
-pub const getNow        = tmr_u.getNow;
+pub const getNow     = timer.getNow;
 
 
 // ======== TYPING ========
 
-pub const tpr_u = @import( "data/typer.zig" );
+pub const typer = @import( "data/typer.zig" );
 
-pub const GenPairedEnum = tpr_u.GenPairedEnum;
-pub const GenSplitEnum  = tpr_u.GenSplitEnum;
+pub const GenPairedEnum = typer.GenPairedEnum;
+pub const GenSplitEnum  = typer.GenSplitEnum;
 
-pub const pairEnums     = tpr_u.pairEnums;
-pub const splitEnums    = tpr_u.splitEnums;
+pub const pairEnums     = typer.pairEnums;
+pub const splitEnums    = typer.splitEnums;
 
 
 // ======== VECTORS ========
 
-pub const vec2_u = @import( "data/vecter2.zig" );
-pub const vec3_u = @import( "data/vecter3.zig" );
-pub const vecA_u = @import( "data/vecterA.zig" );
+pub const vec2 = @import( "data/vec2.zig" );
+pub const vec3 = @import( "data/vec3.zig" );
+pub const vecA = @import( "data/vecA.zig" );
 
-pub const Vec2 = vec2_u.Vec2;
-pub const Vec3 = vec3_u.Vec3;
-pub const VecA = vecA_u.VecA;
+pub const Vec2 = vec2.Vec2;
+pub const Vec3 = vec3.Vec3;
+pub const VecA = vecA.VecA;
 
 
 
@@ -131,18 +131,18 @@ pub const VecA = vecA_u.VecA;
 
 // ================ LOGGING ================
 
-pub const log_u = @import( "io/logger.zig" );
+pub const logger = @import( "io/logger.zig" );
 
-pub const log   = log_u.log;  // for argument-formatting logging
-pub const qlog  = log_u.qlog; // for quick logging ( no args )
+pub const log   = logger.log;  // for argument-formatting logging
+pub const qlog  = logger.qlog; // for quick logging ( no args )
 
-pub const resetTmpTimer = log_u.resetTmpTimer;
-pub const logTmpTimer   = log_u.logTmpTimer;
+pub const resetTmpTimer = logger.resetTmpTimer;
+pub const logTmpTimer   = logger.logTmpTimer;
 
 
 // ================ CLI COLOURS ================
 
-pub const tcl_u  = @import( "io/termColourer.zig" );
+pub const termColour = @import( "io/termColourer.zig" );
 
 
 
@@ -150,71 +150,71 @@ pub const tcl_u  = @import( "io/termColourer.zig" );
 
 // ======== ARITHMETICS ========
 
-pub const mth_u = @import( "maths/mather.zig" );
+pub const maths = @import( "maths/mather.zig" );
 
 // Constants
 
-pub const E    = mth_u.E;
-pub const PI   = mth_u.PI;
-pub const TAU  = mth_u.TAU;
-pub const PHI  = mth_u.PHI;
-pub const EPS  = mth_u.EPS;
+pub const E    = maths.E;
+pub const PI   = maths.PI;
+pub const TAU  = maths.TAU;
+pub const PHI  = maths.PHI;
+pub const EPS  = maths.EPS;
 
-pub const R2   = mth_u.R2;
-pub const HR2  = mth_u.HR2;
-pub const IR2  = mth_u.IR2;
+pub const R2   = maths.R2;
+pub const HR2  = maths.HR2;
+pub const IR2  = maths.IR2;
 
-pub const R3   = mth_u.R3;
-pub const HR3  = mth_u.HR3;
-pub const IR3  = mth_u.IR3;
+pub const R3   = maths.R3;
+pub const HR3  = maths.HR3;
+pub const IR3  = maths.IR3;
 
 // Builtins
 
-pub const atan2   = mth_u.atan2;
-pub const DtR     = mth_u.DtR;
-pub const RtD     = mth_u.RtD;
+pub const atan2   = maths.atan2;
+pub const DtR     = maths.DtR;
+pub const RtD     = maths.RtD;
 
-pub const clmp    = mth_u.clmp;
-pub const lerp    = mth_u.lerp;
+pub const clmp    = maths.clmp;
+pub const lerp    = maths.lerp;
 
-pub const pow     = mth_u.pow;
-pub const exp     = mth_u.exp;
+pub const pow     = maths.pow;
+pub const exp     = maths.exp;
 
-pub const sqrt    = mth_u.sqrt;
-pub const cbrt    = mth_u.cbrt;
+pub const sqrt    = maths.sqrt;
+pub const cbrt    = maths.cbrt;
 
-pub const gcd     = mth_u.gcd;
+pub const gcd     = maths.gcd;
 
 // Custom
 
-pub const isFltZr = mth_u.isFltZr;
-pub const isFltEq = mth_u.isFltEq;
+pub const isFltZr = maths.isFltZr;
+pub const isFltEq = maths.isFltEq;
 
-pub const sign    = mth_u.getSign;
-pub const inv1    = mth_u.inv1;
-pub const pow2    = mth_u.pow2;
+pub const sign    = maths.getSign;
+pub const inv1    = maths.inv1;
+pub const pow2    = maths.pow2;
 
-pub const sigmoid = mth_u.sigmoid;
-pub const softCap = mth_u.softCap;
+pub const sigmoid = maths.sigmoid;
+pub const softCap = maths.softCap;
 
-pub const med3    = mth_u.med3;
-pub const wrap    = mth_u.wrap;
+pub const med3    = maths.med3;
+pub const wrap    = maths.wrap;
 
-pub const norm    = mth_u.norm;
-pub const denorm  = mth_u.denorm;
-pub const renorm  = mth_u.renorm;
+pub const norm    = maths.norm;
+pub const denorm  = maths.denorm;
+pub const renorm  = maths.renorm;
 
-pub const getPolyCircumRad = mth_u.getPolyCircumRad;
-pub const getPolyArea      = mth_u.getPolyArea;
+pub const getPolyCircumRad = maths.getPolyCircumRad;
+pub const getPolyArea      = maths.getPolyArea;
 
 
 // ======== SHAPES ========
 
-pub const shp2_u = @import( "maths/shape2.zig" );
-pub const shp3_u = @import( "maths/shape3.zig" );
+pub const shape2D = @import( "maths/shape2.zig" );
+pub const shape3D = @import( "maths/shape3.zig" );
 
-pub const Shape2D = shp2_u.Shape2D;
-pub const Shape3D = shp3_u.Shape3D;
+pub const Shape2D = shape2D.Shape2D;
+pub const Shape3D = shape3D.Shape3D;
 
 
 
@@ -222,100 +222,99 @@ pub const Shape3D = shp3_u.Shape3D;
 
 // ======== SCREEN ========
 
-pub const scr_u = @import( "render/screener.zig" );
+pub const screen = @import( "render/screener.zig" );
 
-pub const getScreenWidth      = scr_u.getScreenWidth;
-pub const getScreenHeight     = scr_u.getScreenHeight;
-pub const getScreenSize       = scr_u.getScreenSize;
+pub const getScreenWidth      = screen.getScreenWidth;
+pub const getScreenHeight     = screen.getScreenHeight;
+pub const getScreenSize       = screen.getScreenSize;
 
-pub const getHalfScreenWidth  = scr_u.getHalfScreenWidth;
-pub const getHalfScreenHeight = scr_u.getHalfScreenHeight;
-pub const getHalfScreenSize   = scr_u.getHalfScreenSize;
+pub const getHalfScreenWidth  = screen.getHalfScreenWidth;
+pub const getHalfScreenHeight = screen.getHalfScreenHeight;
+pub const getHalfScreenSize   = screen.getHalfScreenSize;
 
-pub const getMouseScreenPos   = scr_u.getMouseScreenPos;
+pub const getMouseScreenPos   = screen.getMouseScreenPos;
 
 
 // ======== CAMERA ========
 
-pub const cmr_u = @import( "render/camer.zig" );
+pub const cam2 = @import( "render/cam2.zig" );
 
-pub const Cam2D = cmr_u.Cam2D;
+pub const Cam2 = cam2.Cam2;
 
 
 // ======== COLOURS ========
 
-pub const col_u  = @import( "render/colourer.zig" );
+pub const colour = @import( "render/colour.zig" );
 
-pub const Colour = col_u.Colour;
+pub const Colour = colour.Colour;
 
 
 // ======== DRAWERS ========
 
-pub const drw_c = @import( "render/drawerCore.zig" );
+pub const drawerCore = @import( "render/drawerCore.zig" );
 pub const sDraw = @import( "render/drawerScreen.zig" );
 
 
 // ======== SPRITEMAPS ========
 
-pub const spm_u = @import( "render/spritemap.zig" );
+pub const spritemap = @import( "render/spritemap.zig" );
 
-pub const Spritemap = spm_u.Spritemap;
-pub const Sprite    = spm_u.Sprite;
+pub const Spritemap = spritemap.Spritemap;
+pub const Sprite    = spritemap.Sprite;
 
 
 // ================================ RNG SHORTHANDS ================================
 
 // ======== NOISE ========
 
-pub const nsr_u = @import( "rng/noiser2.zig" );
+pub const noise2D = @import( "rng/noise2D.zig" );
 
-pub const Noise2D = nsr_u.Noise2D;
+pub const Noise2D = noise2D.Noise2D;
 
 
 // ======== RANDOMNESS ========
 
-pub const rng_u = @import( "rng/randomer.zig" );
+pub const random = @import( "rng/randomiser.zig" );
 
-pub const Randomiser = rng_u.Randomiser;
+pub const Randomiser = random.Randomiser;
 
 
 // ======== SHAKE ========
 
-pub const shk_u = @import( "rng/shaker2.zig" );
+pub const shake2D = @import( "rng/shake2D.zig" );
 
-pub const Shaker2D = shk_u.Shake2D;
+pub const Shake2D = shake2D.Shake2D;
 
 
 // ================================ UI SHORTHANDS ================================
 
 // ======== RETAINED UI ========
 
-pub const ui_m = @import( "ui/uiContext.zig" );
-pub const ui_t = @import( "ui/uiTypes.zig" );
+pub const uiContext = @import( "ui/uiContext.zig" );
+pub const uiTypes   = @import( "ui/uiTypes.zig" );
 
-pub const UiManager   = ui_m.UiManager;
-pub const UiContext   = ui_m.UiContext;
-pub const UiId        = ui_m.UiId;
-pub const UiNodeKind  = ui_m.UiNodeKind;
-pub const UiLayer     = ui_m.UiLayer;
-pub const UiLayout    = ui_m.UiLayout;
-pub const UiEvent     = ui_m.UiEvent;
-pub const UiEventType = ui_m.UiEventType;
-pub const UiStyle     = ui_m.UiStyle;
-pub const UiNodeOpts  = ui_m.UiNodeOpts;
-pub const UiInput     = ui_m.UiInput;
+pub const UiManager   = uiContext.UiManager;
+pub const UiContext   = uiContext.UiContext;
+pub const UiId        = uiContext.UiId;
+pub const UiNodeKind  = uiContext.UiNodeKind;
+pub const UiLayer     = uiContext.UiLayer;
+pub const UiLayout    = uiContext.UiLayout;
+pub const UiEvent     = uiContext.UiEvent;
+pub const UiEventType = uiContext.UiEventType;
+pub const UiStyle     = uiContext.UiStyle;
+pub const UiNodeOpts  = uiContext.UiNodeOpts;
+pub const UiInput     = uiContext.UiInput;
 
-pub const uiBoxFromTopLeft = ui_m.boxFromTopLeft;
+pub const uiBoxFromTopLeft = uiContext.boxFromTopLeft;
 
 
 // ======== INTERFACER ========
 
-pub const ntf_u = @import( "ui/interfacer.zig" );
+pub const interface2D = @import( "ui/interface2D.zig" );
 
-pub const InterfaceShape = ntf_u.InterfaceShape;
-pub const BevelType      = ntf_u.BevelType;
-pub const BevelArray     = ntf_u.BevelArray;
-pub const Interface2D    = ntf_u.Interface2D;
+pub const InterfaceShape = interface2D.InterfaceShape;
+pub const BevelArray     = interface2D.BevelArray;
+pub const Interface2D    = interface2D.Interface2D;
 
 
 
@@ -331,7 +330,7 @@ pub const areContEqual = std.meta.eql;
 
 pub inline fn initAllUtils() void
 {
-  log_u.initFile();
+  logger.initFile();
 }
 
 pub inline fn deinitAllUtils() void
@@ -344,11 +343,10 @@ pub inline fn deinitAllUtils() void
     .leak => log(  .WARN, 0, @src(), "@ Default allocator detected leaked memory : {d} bytes still in use", .{ bytesInUse } ),
   }
 
-  log_u.deinitFile();
+  logger.deinitFile();
 }
 
 pub var G_ALLOC : std.heap.DebugAllocator(.{ .enable_memory_limit = true }) = .init;
 
 pub inline fn getDefaultAlloc() std.mem.Allocator { return G_ALLOC.allocator(); }
 pub inline fn getBytesInUse() usize { return G_ALLOC.total_requested_bytes; }
-

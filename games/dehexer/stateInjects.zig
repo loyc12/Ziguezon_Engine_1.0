@@ -9,11 +9,11 @@ pub var GRID_HEIGHT : i32 = 25;
 
 pub var GRID_SCALE  : f64 = 50; // NOTE : Will be overwritten
 
-pub const TILE_MINE_1 = eng.e_tile_type.T1;
-pub const TILE_MINE_2 = eng.e_tile_type.T2;
-pub const TILE_MINE_3 = eng.e_tile_type.T3;
-pub const TILE_HIDDEN = eng.e_tile_type.T4;
-pub const TILE_SHOWN  = eng.e_tile_type.T5;
+pub const TILE_MINE_1 = eng.TileType.T1;
+pub const TILE_MINE_2 = eng.TileType.T2;
+pub const TILE_MINE_3 = eng.TileType.T3;
+pub const TILE_HIDDEN = eng.TileType.T4;
+pub const TILE_SHOWN  = eng.TileType.T5;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 

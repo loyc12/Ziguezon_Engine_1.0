@@ -39,7 +39,7 @@ pub const GameTimes = struct
   {
     if( eng.G_ENG.isPaused() ){ return; }
 
-    const tickPerSec : i128 = @intCast( eng.CNFGS.Startup_Target_TickRate );
+    const tickPerSec : i128 = @intCast( eng.G_CNFGS.Startup_Target_TickRate );
 
     self.bodyStepOffset += @divFloor( self.secsPerStep, tickPerSec );
     self.econStepOffset += @divFloor( self.secsPerStep, tickPerSec );

@@ -28,7 +28,7 @@ const DIAM_FACTOR = utl.getPolyCircumRad( 1.0, 4 ); // R = 1.0
 const HEXA_FACTOR = utl.getPolyCircumRad( 1.0, 6 );
 //const PENT_FACTOR = SIZE_FACTOR * utl.getPolyCircumRad( SIZE_FACTOR, 5 );
 
-pub const e_tlmp_shape = enum( u8 )
+pub const TilemapShape = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -44,7 +44,7 @@ pub const e_tlmp_shape = enum( u8 )
 //PEN1, // ( upright ) // TODO : implement me
 //PEN2, // ( sideway )
 
-  pub inline fn getEdgeCount( self : e_tlmp_shape ) u8
+  pub inline fn getEdgeCount( self : TilemapShape ) u8
   {
     return switch( self )
     {
@@ -54,7 +54,7 @@ pub const e_tlmp_shape = enum( u8 )
     };
   }
 
-  pub inline fn getTileScaleFactor( self : e_tlmp_shape ) f32
+  pub inline fn getTileScaleFactor( self : TilemapShape ) f32
   {
     return switch( self )
     {
@@ -65,7 +65,7 @@ pub const e_tlmp_shape = enum( u8 )
     };
   }
 
-  pub inline fn getGridScaleFactors( self : e_tlmp_shape ) Vec2
+  pub inline fn getGridScaleFactors( self : TilemapShape ) Vec2
   {
     const tmp = switch( self )
     {
@@ -79,7 +79,7 @@ pub const e_tlmp_shape = enum( u8 )
     return tmp.mulVal( 0.5 ).mulVal( self.getTileScaleFactor() );
   }
 
-  pub fn getParityOffset( self : e_tlmp_shape, coords : Coords2 ) Vec2
+  pub fn getParityOffset( self : TilemapShape, coords : Coords2 ) Vec2
   {
     switch( self )
     {
@@ -219,7 +219,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       {
         const gridY = @round( rawGridY );
 
-        const offset = e_tlmp_shape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridY )));
+        const offset = TilemapShape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridY )));
 
         const gridX = @round( descaledX + offset.x );
 
@@ -234,7 +234,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         // ======== TILE A ========
         const gridYA = @floor( rawGridY );
 
-        const offsetA = e_tlmp_shape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridYA )));
+        const offsetA = TilemapShape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridYA )));
 
         const gridXA = @round( descaledX + offsetA.x );
 
@@ -277,7 +277,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       {
         const gridX = @round( rawGridX );
 
-        const offset = e_tlmp_shape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridX ), 0.0 ));
+        const offset = TilemapShape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridX ), 0.0 ));
 
         const gridY = @round( descaledY + offset.y);
 
@@ -292,7 +292,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
         // ======== TILE A ========
         const gridXA = @floor( rawGridX );
 
-        const offsetA = e_tlmp_shape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridXA ), 0.0 ));
+        const offsetA = TilemapShape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridXA ), 0.0 ));
 
         const gridYA = @round( descaledY + offsetA.y );
 
@@ -380,7 +380,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
 // ================================ COORDS TO COORDS ================================
 
-pub fn getNeighbourCoords( tlmp : *const Tilemap, mapCoords : Coords2, direction : utl.e_dir_2 ) ?Coords2
+pub fn getNeighbourCoords( tlmp : *const Tilemap, mapCoords : Coords2, direction : utl.Dir2 ) ?Coords2
 {
   const xMod2 = @mod( mapCoords.x, 2 );
   const yMod2 = @mod( mapCoords.y, 2 );

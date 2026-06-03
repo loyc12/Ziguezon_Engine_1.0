@@ -15,10 +15,10 @@ const SHOW_SHAKE_GRAPHS = true;
 
 var s_time : f32 = 0.0;
 
-const shaker : utl.Shaker2D = .{
-  .beg_lenght    = 0.03,
-  .mid_lenght    = 0.04,
-  .end_lenght    = 0.03,
+const shaker : utl.Shake2D = .{
+  .beg_length    = 0.03,
+  .mid_length    = 0.04,
+  .end_length    = 0.03,
 };
 
 
@@ -85,23 +85,23 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.v ))
   {
-    const s = ui.bevelStrenght[ 0 ] + 0.1;
+    const s = ui.bevelStrength[ 0 ] + 0.1;
     const n = utl.InterfaceShape.maxCornerCount;
 
     for( 0..n )| i |
     {
-       ui.setBevelStrenght( i, s );
+       ui.setBevelStrength( i, s );
     }
   }
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.b ))
   {
-    const s = ui.bevelStrenght[ 0 ] - 0.1;
+    const s = ui.bevelStrength[ 0 ] - 0.1;
     const n = utl.InterfaceShape.maxCornerCount;
 
     for( 0..n )| i |
     {
-      ui.setBevelStrenght( i, s );
+      ui.setBevelStrength( i, s );
     }
   }
 
@@ -267,8 +267,8 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
     utl.sDraw.basicLine( .{ .x = 0, .y = height * 0.625 }, .{ .x = width, .y = height * 0.625 }, .nBlack, 4 );
     utl.sDraw.basicLine( .{ .x = 0, .y = height * 0.875 }, .{ .x = width, .y = height * 0.875 }, .nBlack, 4 );
 
-    const l1 = width *           shaker.beg_lenght / shaker.getTotalLenght();
-    const l2 = width * ( 1.0 - ( shaker.end_lenght / shaker.getTotalLenght() ));
+    const l1 = width *           shaker.beg_length / shaker.getTotalLength();
+    const l2 = width * ( 1.0 - ( shaker.end_length / shaker.getTotalLength() ));
 
     // Vertical phase divider lines
     utl.sDraw.basicLine( .{ .x = l1, .y = 0 }, .{ .x = l1, .y = height }, .nBlack, 4 );

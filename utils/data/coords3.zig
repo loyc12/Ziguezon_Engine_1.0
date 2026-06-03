@@ -6,7 +6,7 @@ const VecA = utl.VecA;
 const Vec3 = utl.Vec3;
 
 
-pub const e_dir_3 = enum( u8 )
+pub const Dir3 = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -21,7 +21,7 @@ pub const e_dir_3 = enum( u8 )
 
   TOP, BOT,
 
-  pub fn getOpposite( self : e_dir_3 ) e_dir_3
+  pub fn getOpposite( self : Dir3 ) Dir3
   {
     return switch( self )
     {
@@ -107,7 +107,7 @@ pub const Coords3 = struct
 
   // ================= CONVERSION ================
 
-  pub fn getNeighbour( self : Coords3, direction : e_dir_3 ) Coords3
+  pub fn getNeighbour( self : Coords3, direction : Dir3 ) Coords3
   {
     return switch( direction )
     {

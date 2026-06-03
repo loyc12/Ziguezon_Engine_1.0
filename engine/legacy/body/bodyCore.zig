@@ -10,7 +10,7 @@ const Vec2   = utl.Vec2;
 const VecA   = utl.VecA;
 
 
-pub const e_bdy_flags = enum( u8 )
+pub const BodyFlags = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -33,7 +33,7 @@ pub const Body = struct
 {
   // ================ PROPERTIES ================
   id     : u32           = 0,
-  flags  : utl.BitField8 = utl.BitField8.new( e_bdy_flags.DEFAULT ),
+  flags  : utl.BitField8 = utl.BitField8.new( BodyFlags.DEFAULT ),
 
   // ======== TRANSFORM DATA ========
   pos    : VecA = .{}, // subsequent position. will be applied to hitbox on update
@@ -54,21 +54,21 @@ pub const Body = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Body, flag : e_bdy_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
+  pub inline fn hasFlag( self : *const Body, flag : BodyFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
   pub inline fn setAllFlags( self : *Body, flags : u8 )                      void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Body, flag  : e_bdy_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Body, flag  : e_bdy_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Body, flag  : e_bdy_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setFlag(     self : *Body, flag  : BodyFlags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Body, flag  : BodyFlags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Body, flag  : BodyFlags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
 
-  pub inline fn canBeDel(  self : *const Body ) bool { return self.hasFlag( e_bdy_flags.DELETE  ); }
-  pub inline fn isActive(  self : *const Body ) bool { return self.hasFlag( e_bdy_flags.ACTIVE  ); }
-  pub inline fn isMobile(  self : *const Body ) bool { return self.hasFlag( e_bdy_flags.MOBILE  ); }
-  pub inline fn isSolid(   self : *const Body ) bool { return self.hasFlag( e_bdy_flags.SOLID   ); }
-  pub inline fn isVisible( self : *const Body ) bool { return self.hasFlag( e_bdy_flags.VISIBLE ); }
-//pub inline fn isRound(   self : *const Body ) bool { return self.hasFlag( e_bdy_flags.ROUND   ); }
-//pub inline fn isAnimate( self : *const Body ) bool { return self.hasFlag( e_bdy_flags.ANIMATE ); }
-  pub inline fn viewDBG(   self : *const Body ) bool { return self.hasFlag( e_bdy_flags.DEBUG   ); }
+  pub inline fn canBeDel(  self : *const Body ) bool { return self.hasFlag( BodyFlags.DELETE  ); }
+  pub inline fn isActive(  self : *const Body ) bool { return self.hasFlag( BodyFlags.ACTIVE  ); }
+  pub inline fn isMobile(  self : *const Body ) bool { return self.hasFlag( BodyFlags.MOBILE  ); }
+  pub inline fn isSolid(   self : *const Body ) bool { return self.hasFlag( BodyFlags.SOLID   ); }
+  pub inline fn isVisible( self : *const Body ) bool { return self.hasFlag( BodyFlags.VISIBLE ); }
+//pub inline fn isRound(   self : *const Body ) bool { return self.hasFlag( BodyFlags.ROUND   ); }
+//pub inline fn isAnimate( self : *const Body ) bool { return self.hasFlag( BodyFlags.ANIMATE ); }
+  pub inline fn viewDBG(   self : *const Body ) bool { return self.hasFlag( BodyFlags.DEBUG   ); }
 
 
   // ================ INITIALIZATION ================
@@ -78,7 +78,7 @@ pub const Body = struct
     if( params.canBeDel() ){ utl.qlog( .WARN, 0, @src(), "Params should not be a deleted body" ); }
 
     const tmp = Body{
-      .flags  = params.flags.filterField( e_bdy_flags.TO_CPY ),
+      .flags  = params.flags.filterField( BodyFlags.TO_CPY ),
       .pos    = params.pos,
       .vel    = params.vel,
       .acc    = params.acc,
@@ -263,7 +263,7 @@ pub const Body = struct
   // ================ HITBOX COLLISION FUNCTIONS ================
   // Assumes AABB hitboxes for all shapes and orientations
 
-  const bdyCld = @import( "bodyColide.zig" );
+  const bdyCld = @import( "bodyCollide.zig" );
 
   // COLLISION FUNCTIONS
 

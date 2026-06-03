@@ -39,8 +39,8 @@ pub const EngineTime = struct
 
   pub inline fn init( self : *EngineTime ) void
   {
-  //const spt : f32 = @floatFromInt( eng.CNFGS.Startup_Target_TickRate );
-  //const spf : f32 = @floatFromInt( eng.CNFGS.Startup_Target_FrameRate );
+  //const spt : f32 = @floatFromInt( eng.G_CNFGS.Startup_Target_TickRate );
+  //const spf : f32 = @floatFromInt( eng.G_CNFGS.Startup_Target_FrameRate );
 
     const now : TimeVal   = .newNow();
 
@@ -49,8 +49,8 @@ pub const EngineTime = struct
     self.frameEpoch = now;
 
 
-    const tps : TimeVal = .fromRayDeltaTime( @floatCast( utl.inv1( eng.CNFGS.Startup_Target_TickRate  ))); // == 1.0 / spt
-    const fps : TimeVal = .fromRayDeltaTime( @floatCast( utl.inv1( eng.CNFGS.Startup_Target_FrameRate ))); // == 1.0 / spf
+    const tps : TimeVal = .fromRayDeltaTime( @floatCast( utl.inv1( eng.G_CNFGS.Startup_Target_TickRate  ))); // == 1.0 / spt
+    const fps : TimeVal = .fromRayDeltaTime( @floatCast( utl.inv1( eng.G_CNFGS.Startup_Target_FrameRate ))); // == 1.0 / spf
 
     self.targetTickDelta  = tps;
     self.lastTickDelta    = tps;

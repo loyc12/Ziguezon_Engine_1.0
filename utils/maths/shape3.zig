@@ -14,7 +14,7 @@ const PI = utl.PI;
 
 // ================================ 3D SHAPES ================================
 
-const Shape3D = enum( u8 )
+pub const Shape3D = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 

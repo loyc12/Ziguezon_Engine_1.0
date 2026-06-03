@@ -168,7 +168,7 @@ pub const TimeVal = struct
 
 // ================================ TIMER FLAGS ================================pub inline fn hasTrueLoop( self : *const timer ) bool { return self.canLoop() and self.loopLimit != 0; }pub inline fn hasTrueLoop( self : *const timer ) bool { return self.canLoop() and self.loopLimit != 0; }
 
-pub const e_timer_flags = enum( u8 )
+pub const TimerFlags = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -192,7 +192,7 @@ pub const e_timer_flags = enum( u8 )
 pub const Timer = struct
 {
   // All times are in nanoseconds
-  flags  : utl.BitField8 = utl.BitField8.new( e_timer_flags.NONE ),
+  flags  : utl.BitField8 = utl.BitField8.new( TimerFlags.NONE ),
 
   progress : TimeVal = .{}, // current progress ( where between 0 and duration )
   duration : TimeVal = .{}, // End time ( 0 means no duration )
@@ -203,25 +203,25 @@ pub const Timer = struct
 
   // ================ FLAG MANAGEMENT ================
 
-  pub inline fn hasFlag( self : *const Timer, flag : e_timer_flags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
+  pub inline fn hasFlag( self : *const Timer, flag : TimerFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
   pub inline fn setAllFlags( self : *Timer, flags : u8 )                        void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Timer, flag  : e_timer_flags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Timer, flag  : e_timer_flags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Timer, flag  : e_timer_flags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setFlag(     self : *Timer, flag  : TimerFlags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Timer, flag  : TimerFlags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Timer, flag  : TimerFlags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
 
-  pub inline fn pause(       self : *Timer ) void { self.addFlag( e_timer_flags.PAUSED ); }
-  pub inline fn play(        self : *Timer ) void { self.delFlag( e_timer_flags.PAUSED ); }
+  pub inline fn pause(       self : *Timer ) void { self.addFlag( TimerFlags.PAUSED ); }
+  pub inline fn play(        self : *Timer ) void { self.delFlag( TimerFlags.PAUSED ); }
   pub inline fn togglePause( self : *Timer ) void
   {
     if( self.isPaused() ){ self.play(); } else { self.pause(); }
   }
-  pub inline fn canBeDel(  self : *const Timer ) bool { return self.hasFlag( e_timer_flags.DELETE  ); }
-  pub inline fn isStarted( self : *const Timer ) bool { return self.hasFlag( e_timer_flags.STARTED ); }
-  pub inline fn isPaused(  self : *const Timer ) bool { return self.hasFlag( e_timer_flags.PAUSED  ); }
-  pub inline fn isStopped( self : *const Timer ) bool { return self.hasFlag( e_timer_flags.STOPPED ); }
-  pub inline fn canLoop(   self : *const Timer ) bool { return self.hasFlag( e_timer_flags.LOOP    ); }
-  pub inline fn isDebug(   self : *const Timer ) bool { return self.hasFlag( e_timer_flags.DEBUG   ); }
+  pub inline fn canBeDel(  self : *const Timer ) bool { return self.hasFlag( TimerFlags.DELETE  ); }
+  pub inline fn isStarted( self : *const Timer ) bool { return self.hasFlag( TimerFlags.STARTED ); }
+  pub inline fn isPaused(  self : *const Timer ) bool { return self.hasFlag( TimerFlags.PAUSED  ); }
+  pub inline fn isStopped( self : *const Timer ) bool { return self.hasFlag( TimerFlags.STOPPED ); }
+  pub inline fn canLoop(   self : *const Timer ) bool { return self.hasFlag( TimerFlags.LOOP    ); }
+  pub inline fn isDebug(   self : *const Timer ) bool { return self.hasFlag( TimerFlags.DEBUG   ); }
 
 
   // ================ ACCESSORS & MUTATORS ================
@@ -243,7 +243,7 @@ pub const Timer = struct
 
   pub fn copyTimerSettings( self : *Timer, params : Timer ) void
   {
-    self.flags    = params.flags.filterField( e_timer_flags.TO_CPY );
+    self.flags    = params.flags.filterField( TimerFlags.TO_CPY );
 
     self.progress = .{};
     self.duration = params.duration;
@@ -255,7 +255,7 @@ pub const Timer = struct
   pub fn getDefaultTimer() Timer
   {
     return Timer{
-      .flags    = utl.BitField8.new( e_timer_flags.NONE ),
+      .flags    = utl.BitField8.new( TimerFlags.NONE ),
 
       .progress = .{},
       .duration = .{},
@@ -270,11 +270,11 @@ pub const Timer = struct
     var tmp : Timer = .{};
 
     tmp.duration = duration;
-    tmp.addFlag( e_timer_flags.STARTED );
+    tmp.addFlag( TimerFlags.STARTED );
 
     if( maxLoopCount > 0 )
     {
-      tmp.addFlag( e_timer_flags.LOOP );
+      tmp.addFlag( TimerFlags.LOOP );
       tmp.lapLimit = maxLoopCount;
     }
     return tmp;
@@ -288,9 +288,9 @@ pub const Timer = struct
     self.progress = .{};
     self.lapCount = 0;
 
-    self.delFlag( e_timer_flags.STARTED );
-    self.delFlag( e_timer_flags.STOPPED );
-    self.delFlag( e_timer_flags.PAUSED  );
+    self.delFlag( TimerFlags.STARTED );
+    self.delFlag( TimerFlags.STOPPED );
+    self.delFlag( TimerFlags.PAUSED  );
   }
 
   pub fn startSelf( self : *Timer ) void
@@ -300,18 +300,18 @@ pub const Timer = struct
     self.progress = .{};
     self.lapCount = 0;
 
-    self.addFlag( e_timer_flags.STARTED );
-    self.delFlag( e_timer_flags.STOPPED );
-    self.delFlag( e_timer_flags.PAUSED  );
+    self.addFlag( TimerFlags.STARTED );
+    self.delFlag( TimerFlags.STOPPED );
+    self.delFlag( TimerFlags.PAUSED  );
   }
 
   pub fn stopSelf( self : *Timer ) void
   {
     if( !self.isStarted() ){ return; }
 
-    self.delFlag( e_timer_flags.STARTED );
-    self.addFlag( e_timer_flags.STOPPED );
-    self.delFlag( e_timer_flags.PAUSED  );
+    self.delFlag( TimerFlags.STARTED );
+    self.addFlag( TimerFlags.STOPPED );
+    self.delFlag( TimerFlags.PAUSED  );
   }
 
   // Returns true if the Timer lapped or ended
@@ -355,7 +355,7 @@ pub const Timer = struct
     if( lapped and self.lapLimit != 0 and self.lapCount >= self.lapLimit )
     {
       if( self.isDebug() ){ utl.log( .DEBUG, 0, @src(), "Timer reached its lap limit of {d}", .{ self.lapLimit }); }
-      self.addFlag( e_timer_flags.STOPPED );
+      self.addFlag( TimerFlags.STOPPED );
     }
     return lapped;
   }
@@ -385,7 +385,7 @@ pub const Timer = struct
     if( self.hasLapLimit() and self.lapCount >= self.lapLimit )
     {
       if( self.isDebug() ){ utl.log( .DEBUG, 0, @src(), "Timer reached its lap limit of {d}", .{ self.lapLimit }); }
-      self.addFlag( e_timer_flags.STOPPED );
+      self.addFlag( TimerFlags.STOPPED );
     }
   }
 

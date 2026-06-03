@@ -6,7 +6,7 @@ const utl = @import( "utils" );
 
 // This enum defines the tags for each game hook
 // These tags are used to identify which hook to call in the GameHooks struct
-pub const e_hook_tag = enum( u8 )
+pub const HookTag = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -160,7 +160,7 @@ pub const GameHooks = struct
     }
   }
 
-  pub fn tryHook( self : *const GameHooks, tag : e_hook_tag, cntx : HookCntx ) void
+  pub fn tryHook( self : *const GameHooks, tag : HookTag, cntx : HookCntx ) void
   {
     const hookFunct = switch( tag )
     {

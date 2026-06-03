@@ -1,6 +1,6 @@
 const eng  = @import( "engine" );
 const utl = @import( "utils" );
-const core = utl.drw_c;
+const core = utl.drawerCore;
 
 const Vec2 = utl.Vec2;
 

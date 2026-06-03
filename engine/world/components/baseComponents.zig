@@ -16,7 +16,7 @@ const Angle = utl.Angle;
 
 pub const TransComp = struct
 {
-  pub inline fn getStoreType() type { return eng.componentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
 
   pos : VecA,
   vel : VecA = .{},
@@ -45,7 +45,7 @@ pub const TransComp = struct
 
 pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 {
-  pub inline fn getStoreType() type { return eng.componentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
 
   scale   : Vec2,
   minSize : Vec2        = .{}, // Minimum screen-space size, inactive if 0
@@ -55,8 +55,8 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 //minScale : Vec2 = .{},
 
 
-  pub inline fn setscale( self : *HitboxComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
-  pub inline fn getscale( self : *const HitboxComp     ) Vec2 { return self.sprite.scale; }
+  pub inline fn setScale( self : *ShapeComp, newScale : Vec2 ) void { self.scale = newScale; }
+  pub inline fn getScale( self : *const ShapeComp     ) Vec2 { return self.scale; }
 
   // Returns the effective render scale, clamping to minSize in screen space if set
   inline fn getRenderScale( self : *const ShapeComp ) Vec2
@@ -104,20 +104,20 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 
 pub const HitboxComp = struct
 {
-  pub inline fn getStoreType() type { return eng.componentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
 
   hitbox : Box2 = .{},
 
 
-  pub inline fn setPos(   self : *HitboxComp, newPos   : VecA ) void { self.sprite.pos   = newPos;   }
-  pub inline fn setscale( self : *HitboxComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
+  pub inline fn setPos(   self : *HitboxComp, newPos   : VecA ) void { self.hitbox.center = newPos.toVec2(); }
+  pub inline fn setScale( self : *HitboxComp, newScale : Vec2 ) void { self.hitbox.scale  = newScale;         }
 
-  pub inline fn getPos(   self : *const HitboxComp ) VecA { return self.sprite.pos;   }
-  pub inline fn getscale( self : *const HitboxComp ) Vec2 { return self.sprite.scale; }
+  pub inline fn getPos(   self : *const HitboxComp ) VecA { return self.hitbox.center.toVecA( .{} ); }
+  pub inline fn getScale( self : *const HitboxComp ) Vec2 { return self.hitbox.scale;                }
 
-  pub inline fn isOverlaping( self : *const HitboxComp, other : *const HitboxComp ) bool
+  pub inline fn isOverlapping( self : *const HitboxComp, other : *const HitboxComp ) bool
   {
-    return self.hitbox.isOverlaping( other.hitbox );
+    return self.hitbox.doesOverlap( other.hitbox );
   }
 
   pub inline fn getOverlap( self : *const HitboxComp, other : *const HitboxComp ) ?Vec2
@@ -131,7 +131,7 @@ pub const HitboxComp = struct
 
 pub const SpriteComp = struct
 {
-  pub inline fn getStoreType() type { return eng.componentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
 
   sprite      : utl.Sprite,
   frameTime   : u32 = 1.0,  // How long to show each frame for
@@ -157,6 +157,6 @@ pub const SpriteComp = struct
   }
 
   pub inline fn setPos(   self : *SpriteComp, newPos   : VecA ) void { self.sprite.pos   = newPos;   }
-  pub inline fn setscale( self : *SpriteComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
+  pub inline fn setScale( self : *SpriteComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
   pub inline fn render(   self : *const SpriteComp            ) void { eng.wSprite.drawSprite( &self.sprite ); }
 };

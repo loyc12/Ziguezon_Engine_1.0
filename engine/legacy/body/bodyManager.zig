@@ -2,7 +2,7 @@ const std  = @import( "std" );
 const eng  = @import( "engine" );
 const utl = @import( "utils" );
 
-const Body = eng.bdy.Body;
+const Body = eng.bodyCore.Body;
 const Vec2 = utl.Vec2;
 const VecA = utl.VecA;
 
@@ -145,7 +145,7 @@ pub const BodyManager = struct
     self.bodyList = std.ArrayList( Body ).empty;
     //self.bodyList = std.ArrayList( Body ).initCapacity( allocator, 64 ) catch
     //{
-    //  utl.qlog( .ERROR, 0, @src(), "Failed to initialize bodyList to proper default lenght" );
+    //  utl.qlog( .ERROR, 0, @src(), "Failed to initialize bodyList to proper default length" );
     //  return;
     //};
 
@@ -310,7 +310,7 @@ pub const BodyManager = struct
 
     const sdt = ng.times.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
 
-    if( eng.CNFGS.AutoApply_Body_Movement ){ for( self.bodyList.items )| *e |
+    if( eng.G_CNFGS.AutoApply_Body_Movement ){ for( self.bodyList.items )| *e |
     {
       if( e.isActive() )
       {
@@ -329,7 +329,7 @@ pub const BodyManager = struct
     const sdt = ng.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
     _ = sdt;
 
-    if( eng.CNFGS.AutoApply_Body_Collision ){ for( self.bodyList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
+    if( eng.G_CNFGS.AutoApply_Body_Collision ){ for( self.bodyList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
     {
       if( index + 1 >= self.bodyList.items.len ){ continue; } // Prevents out of bounds access
 

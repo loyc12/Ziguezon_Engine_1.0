@@ -97,7 +97,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
     clickedTile.colour = eng.G_ENG.rng.getColour();
 
     // Set the colour of all neighbouring tiles to their direction's debug colour
-    for( utl.e_dir_2.arr )| dir |
+    for( utl.Dir2.arr )| dir |
     {
       const n = mazeMap.getNeighbourTile( clickedTile.mapCoords, dir ) orelse
       {
