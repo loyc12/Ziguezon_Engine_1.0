@@ -216,8 +216,7 @@ pub fn build( b : *std.Build ) void
     const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode" );
     const game_cmd  = b.addSystemCommand(
       &.{
-        "zig",
-        "build",
+        "zig build",
         "--release="               ++ "off",
         "-Dexecutable_name="       ++ dbg_exe_name,
         "-Dengine_interface_path=" ++ path,
@@ -229,9 +228,7 @@ pub fn build( b : *std.Build ) void
     const game_run_step = b.step( n1 ++ "_run", "Compiles " ++ n1 ++ " in debug mode and runs it" );
     const game_run_cmd  = b.addSystemCommand(
       &.{
-        "zig",
-        "build",
-        "run",
+        "zig build run",
         "--release="               ++ "off",
         "-Dexecutable_name="       ++ dbg_exe_name,
         "-Dengine_interface_path=" ++ path,
@@ -252,8 +249,7 @@ pub fn build( b : *std.Build ) void
       const mode_step = b.step( n1 ++ "_" ++ n2, "- Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform" );
       const mode_cmd  = b.addSystemCommand(
         &.{
-          "zig",
-          "build",
+          "zig build",
           "--release="               ++ n2,
           "-Dexecutable_name="       ++ opt_exe_name,
           "-Dengine_interface_path=" ++ path,
@@ -265,8 +261,7 @@ pub fn build( b : *std.Build ) void
       const mode_run_step = b.step( n1 ++ "_" ++ n2 ++ "_run", "- Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform and runs it" );
       const mode_run_cmd  = b.addSystemCommand(
         &.{
-          "zig",
-          "build",
+          "zig build",
           "run",
           "--release="               ++ n2,
           "-Dexecutable_name="       ++ opt_exe_name,
@@ -286,8 +281,7 @@ pub fn build( b : *std.Build ) void
         const targ_step = b.step( n1 ++ "_" ++ n2 ++ "_" ++ n3, "-   Compiles " ++ n1 ++ " in " ++ mode ++ " for " ++ targ );
         const targ_cmd  = b.addSystemCommand(
           &.{
-            "zig",
-            "build",
+            "zig build",
             "--release="               ++ n2,
             "-Dexecutable_name="       ++ plt_exe_name,
             "-Dengine_interface_path=" ++ path,
@@ -308,8 +302,7 @@ pub fn build( b : *std.Build ) void
       const targ_step = b.step( n1 ++ "_" ++ n3, "- Compiles " ++ n1 ++ " in debug mode for " ++ targ );
       const targ_cmd  = b.addSystemCommand(
         &.{
-          "zig",
-          "build",
+          "zig build",
           "--release="               ++ "off",
           "-Dexecutable_name="       ++ plt_exe_name,
           "-Dengine_interface_path=" ++ path,
