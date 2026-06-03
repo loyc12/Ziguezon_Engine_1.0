@@ -1,5 +1,110 @@
 const std = @import( "std" );
-const rlz = @import( "raylib_zig" );
+
+
+fn getLinkMode( target : std.Build.ResolvedTarget, optimize : std.builtin.OptimizeMode ) std.builtin.LinkMode
+{
+  switch( optimize )
+  {
+    .Debug => return .dynamic,
+
+    else => switch( target.result.os.tag )
+    {
+      .linux   => return .static,
+      .macos   => return .static,
+      .windows => return .static, // windows being windows, not willing to play ball with dynamic for now
+      else     => return .static,
+    },
+  }
+}
+
+fn shouldUseLlvm( target : std.Build.ResolvedTarget ) bool
+{
+  return switch( target.result.os.tag )
+  {
+    .windows => true,  // NOTE : Zig's built-in compiler backend cannot properly handle windows builds yet
+    else     => false,
+  };
+}
+
+fn getRaylibOptimize( optimize : std.builtin.OptimizeMode ) std.builtin.OptimizeMode
+{
+  return switch( optimize )
+  {
+    .Debug        => .ReleaseFast,
+    .ReleaseSafe  => .ReleaseFast,
+    else          => optimize,
+  };
+}
+
+fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath : []const u8, target : std.Build.ResolvedTarget, optimize : std.builtin.OptimizeMode ) *std.Build.Step.Compile
+{
+  const exeMod = b.createModule(
+  .{
+    .root_source_file = b.path( "engine/main.zig" ),
+    .target           = target,
+    .optimize         = optimize,
+  });
+
+  const exe = b.addExecutable(
+  .{
+    .name        = executableName,
+    .root_module = exeMod,
+    .use_llvm    = shouldUseLlvm( target ),
+  });
+
+  exe.root_module.link_libc = true;
+  exe.bundle_compiler_rt    = true;
+
+  const raylibDep = b.dependency( "raylib_zig",
+  .{
+    .target   = target,
+    .optimize = getRaylibOptimize( optimize ),
+    .linkage  = getLinkMode( target, optimize ),
+  });
+
+  const raylib  = raylibDep.module(   "raylib" ); // main raylib module
+  const raylibC = raylibDep.artifact( "raylib" ); // raylib C library
+
+  exe.linkLibrary( raylibC );
+
+  const utils = b.createModule(
+  .{
+    .root_source_file = b.path( "utils/utilsDef.zig" ),
+    .target           = target,
+    .optimize         = optimize,
+  });
+
+  const engine = b.createModule(
+  .{
+    .root_source_file = b.path( "engine/engineDef.zig" ),
+    .target           = target,
+    .optimize         = optimize,
+  });
+
+  const interface = b.createModule(
+  .{
+    .root_source_file = b.path( interfacePath ),
+    .target           = target,
+    .optimize         = optimize,
+  });
+
+  exe.root_module.addImport( "utils",     utils     );
+  exe.root_module.addImport( "engine",    engine    );
+  exe.root_module.addImport( "interface", interface ); // Public engine interface // TODO : review naming convention for it
+
+  utils.addImport( "raylib", raylib );
+  utils.addImport( "utils",  utils  );
+  utils.addImport( "engine", engine );
+
+  engine.addImport( "utils",  utils  );
+  engine.addImport( "engine", engine );
+
+  interface.addImport( "engine", engine );
+  interface.addImport( "utils",  utils  );
+
+  return exe;
+}
+
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -29,129 +134,9 @@ pub fn build( b : *std.Build ) void
   const executable_name = if( tmp_executable_name )| name | name else "ZE_Game";
 
 
-  const link_mode :std.builtin.LinkMode = switch( optimize )
-  {
-    .Debug => .dynamic,
+  const exe = addGameExecutable( b, executable_name, interface_path, target, optimize );
 
-    else => switch( target.result.os.tag )
-    {
-      .linux   => .static,
-      .macos   => .static,
-      .windows => .static, // windows being windows, not willing to play ball with dynamic for now
-      else     => .static,
-    },
-  };
-
-  const use_llvm = switch( target.result.os.tag )
-  {
-    .windows => true,  // NOTE : Zig's built-in compiler backend cannot properly handle windows builds yet
-    else     => false,
-  };
-
-
-
-  // ================================ LIBRARIES AND MODULES  ================================
-
-  // ================ EXECUTABLE ================
-
-  // This creates a module for the executable itself
-  const exe_mod = b.createModule(
-  .{
-    .root_source_file = b.path( "engine/main.zig" ),
-    .target           = target,
-    .optimize         = optimize,
-  });
-
-  // This adds the executable module to the build graph, which is the main entry point of the application.
-  const exe = b.addExecutable(
-  .{
-    .name        = executable_name,
-    .root_module = exe_mod,
-    .use_llvm    = use_llvm,
-  });
-
-  exe.root_module.link_libc = true;
-  exe.bundle_compiler_rt    = true;
-
-  // This declares the intent to install the executable artifact, which is the binary that will be built by the build system.
   b.installArtifact( exe );
-
-
-  // ================ RAYLIB ================
-
-  // This creates a dependency on the raylib_zig package, which is a
-  // Zig wrapper around the raylib C library. The `raylib_zig` package
-  // is expected to be available in the Zig package registry, or in the
-  // local filesystem if the user has specified a local path to it.
-
-  const raylib_optimize : std.builtin.OptimizeMode = switch( optimize )
-  {
-    .Debug        => .ReleaseFast,
-    .ReleaseSafe  => .ReleaseFast,
-    else          => optimize,
-  };
-
-  const raylib_dep = b.dependency( "raylib_zig",
-  .{
-    .target   = target,
-    .optimize = raylib_optimize,
-    .linkage  = link_mode,
-  });
-
-  const raylib  = raylib_dep.module(   "raylib" ); // main raylib module
-  const raylibC = raylib_dep.artifact( "raylib" ); // raylib C library
-
-  exe.linkLibrary( raylibC );
-
-
-  // ================ UTILITIES ================
-
-  const utils = b.createModule(
-  .{
-    .root_source_file = b.path( "utils/utilsDef.zig" ),
-    .target   = target,
-    .optimize = optimize,
-  });
-
-  exe.root_module.addImport( "utils", utils );
-
-
-  // ================ ENGINE ================
-
-  const engine = b.createModule(
-  .{
-    .root_source_file = b.path( "engine/engineDef.zig" ),
-    .target   = target,
-    .optimize = optimize,
-  });
-
-  exe.root_module.addImport( "engine", engine );
-
-
-  // ================ INTERFACE ================
-
-  // This adds the engine interface module, which is expected to contain the game-specific gameHooks & engineSettings implementations.
-  const interface = b.createModule(
-  .{
-    .root_source_file = b.path( interface_path ), // NOTE : This path is user defined at build time
-    .target           = target,
-    .optimize         = optimize,
-  });
-
-  exe.root_module.addImport( "interface", interface ); // Public engine interface // TOOD : review naming convention for it
-
-
-  // ================ LINKAGE ================
-
-  utils.addImport( "raylib", raylib ); // Should only be accessed through utils
-  utils.addImport( "utils",  utils  ); // Allows utils to call import itself
-  utils.addImport( "engine", engine );
-
-  engine.addImport( "utils",  utils  );
-  engine.addImport( "engine", engine ); // Allows engine to call import itself
-
-  interface.addImport( "engine", engine );
-  interface.addImport( "utils",  utils  );
 
 
 
@@ -161,7 +146,7 @@ pub fn build( b : *std.Build ) void
   // another step is evaluated that depends on them ( similar to Makefile targets ).
 
 
-  // ================ GENERIC COMANDS ================
+  // ================ GENERIC COMMANDS ================
 
   const run_step = b.step( "run", "Use [game]_run instead, e.g. debug_run or orbiter_run" );
   const run_fail = b.addFail( "Bare `zig build run` is ambiguous. Use `zig build debug_run`, `zig build orbiter_run`, etc." );
@@ -206,10 +191,10 @@ pub fn build( b : *std.Build ) void
 
   const optimizations =
   .{
-  //.{ "dbg",   "Debug"         }, // Default
-    .{ "fast",  "Release Fast"  },
-    .{ "safe",  "Release Safe"  },
-    .{ "small", "Release Small" },
+  //.{ "dbg",   "Debug",         std.builtin.OptimizeMode.Debug        }, // Default
+    .{ "fast",  "Release Fast",  std.builtin.OptimizeMode.ReleaseFast  },
+    .{ "safe",  "Release Safe",  std.builtin.OptimizeMode.ReleaseSafe  },
+    .{ "small", "Release Small", std.builtin.OptimizeMode.ReleaseSmall },
   };
 
   const platforms =
@@ -219,34 +204,28 @@ pub fn build( b : *std.Build ) void
     .{ "mac", "x86_64-macos"       },
   };
 
+  const check_games_step = b.step( "check_games", "Compiles every listed game in debug mode" );
+
   inline for( games )| game |
   {
     const n1   = game[ 0 ];
     const path = game[ 1 ];
 
     const dbg_exe_name = n1;
+    const game_exe     = addGameExecutable( b, dbg_exe_name, path, target, .Debug );
+    const game_install = b.addInstallArtifact( game_exe, .{} );
 
     const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode" );
-    const game_cmd  = b.addSystemCommand(
-      &.{
-        "zig",
-        "build",
-        "--release="               ++ "off",
-        "-Dexecutable_name="       ++ dbg_exe_name,
-        "-Dengine_interface_path=" ++ path,
-      });
+    game_step.dependOn( &game_install.step );
 
-    game_step.dependOn( &game_cmd.step );
+    check_games_step.dependOn( &game_exe.step );
 
 
     const game_run_step = b.step( n1 ++ "_run", "Compiles " ++ n1 ++ " in debug mode and runs it" );
-    const game_run_cmd  = b.addSystemCommand(
-      &.{
-        "zig-out/bin/" ++ dbg_exe_name,
-      });
+    const game_run_cmd  = b.addRunArtifact( game_exe );
 
 
-    game_run_cmd.step.dependOn( &game_cmd.step );
+    game_run_cmd.step.dependOn( &game_install.step );
     game_run_step.dependOn( &game_run_cmd.step );
 
 
@@ -254,30 +233,21 @@ pub fn build( b : *std.Build ) void
     {
       const n2   = opt[ 0 ];
       const mode = opt[ 1 ];
+      const opti = opt[ 2 ];
 
       const opt_exe_name = n1 ++ "_" ++ n2;
+      const opt_exe      = addGameExecutable( b, opt_exe_name, path, target, opti );
+      const opt_install  = b.addInstallArtifact( opt_exe, .{} );
 
 
       const mode_step = b.step( n1 ++ "_" ++ n2, "- Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform" );
-      const mode_cmd  = b.addSystemCommand(
-        &.{
-          "zig",
-          "build",
-          "--release="               ++ n2,
-          "-Dexecutable_name="       ++ opt_exe_name,
-          "-Dengine_interface_path=" ++ path,
-        });
-
-      mode_step.dependOn( &mode_cmd.step );
+      mode_step.dependOn( &opt_install.step );
 
 
       const mode_run_step = b.step( n1 ++ "_" ++ n2 ++ "_run", "- Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform and runs it" );
-      const mode_run_cmd  = b.addSystemCommand(
-        &.{
-          "zig-out/bin/" ++ opt_exe_name,
-        });
+      const mode_run_cmd  = b.addRunArtifact( opt_exe );
 
-      mode_run_cmd.step.dependOn( &mode_cmd.step );
+      mode_run_cmd.step.dependOn( &opt_install.step );
       mode_run_step.dependOn( &mode_run_cmd.step );
 
 
@@ -287,19 +257,13 @@ pub fn build( b : *std.Build ) void
         const targ = plat[ 1 ];
 
         const plt_exe_name = n1 ++ "_" ++ n2 ++ "_" ++ n3;
+        const plt_query    = std.Target.Query.parse( .{ .arch_os_abi = targ } ) catch @panic( "Invalid platform target" );
+        const plt_target   = b.resolveTargetQuery( plt_query );
+        const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, opti );
+        const plt_install  = b.addInstallArtifact( plt_exe, .{} );
 
         const targ_step = b.step( n1 ++ "_" ++ n2 ++ "_" ++ n3, "-   Compiles " ++ n1 ++ " in " ++ mode ++ " for " ++ targ );
-        const targ_cmd  = b.addSystemCommand(
-          &.{
-            "zig",
-            "build",
-            "--release="               ++ n2,
-            "-Dexecutable_name="       ++ plt_exe_name,
-            "-Dengine_interface_path=" ++ path,
-            "-Dtarget="                ++ targ,
-          });
-
-        targ_step.dependOn( &targ_cmd.step );
+        targ_step.dependOn( &plt_install.step );
       }
     }
 
@@ -309,62 +273,24 @@ pub fn build( b : *std.Build ) void
       const targ = plat[ 1 ];
 
       const plt_exe_name = n1 ++ "_" ++ n3;
+      const plt_query    = std.Target.Query.parse( .{ .arch_os_abi = targ } ) catch @panic( "Invalid platform target" );
+      const plt_target   = b.resolveTargetQuery( plt_query );
+      const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, .Debug );
+      const plt_install  = b.addInstallArtifact( plt_exe, .{} );
 
       const targ_step = b.step( n1 ++ "_" ++ n3, "- Compiles " ++ n1 ++ " in debug mode for " ++ targ );
-      const targ_cmd  = b.addSystemCommand(
-        &.{
-          "zig",
-          "build",
-          "--release="               ++ "off",
-          "-Dexecutable_name="       ++ plt_exe_name,
-          "-Dengine_interface_path=" ++ path,
-          "-Dtarget="                ++ targ,
-        });
-
-      targ_step.dependOn( &targ_cmd.step );
+      targ_step.dependOn( &plt_install.step );
     }
   }
 
 
-  // ================ BUILD CHECK COMMANDS ================
+  // ================ TEST COMMANDS ================
 
-  const check_games_step = b.step( "check_games", "Builds every listed game sequentially, deleting executables after each build" );
-
-  var prev_game_check_step : ?*std.Build.Step = null;
-
-  inline for( games )| game |
-  {
-    const n1   = game[ 0 ];
-    const path = game[ 1 ];
-
-    const game_check_cmd = b.addSystemCommand(
-      &.{
-        "zig",
-        "build",
-        "--release="               ++ "off",
-        "-Dexecutable_name="       ++ n1,
-        "-Dengine_interface_path=" ++ path,
-      });
-
-    if( prev_game_check_step )| prev |{ game_check_cmd.step.dependOn( prev ); }
-
-    const game_clean_cmd = b.addRemoveDirTree( b.path( "zig-out/bin" ) );
-    game_clean_cmd.step.dependOn( &game_check_cmd.step );
-
-    prev_game_check_step = &game_clean_cmd.step;
-  }
-
-  if( prev_game_check_step )| last |{ check_games_step.dependOn( last ); }
-
-
-  // ================ TEST COMANDS ================
-  // NOTE : NOT IN CURRENT USE
-
-  const exe_unit_tests     = b.addTest(.{ .root_module = exe_mod });
+  const exe_unit_tests     = b.addTest(.{ .root_module = exe.root_module });
   const run_exe_unit_tests = b.addRunArtifact( exe_unit_tests );
 
   // Similar to creating the run step earlier, this exposes a `test` step to the `zig build --help` menu,
   // providing a way for the user to request running the unit tests instead of the main application.
-  const test_step = b.step( "test", "Runs unit tests (N/A)" );
+  const test_step = b.step( "test", "Runs unit tests" );
   test_step.dependOn( &run_exe_unit_tests.step );
 }
