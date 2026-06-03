@@ -46,8 +46,6 @@ pub const Cam2D = struct
   zoom  : f64  = 1.0,
   view  : Vec2 = .{},
 
-  track : ?*eng.Body = null, // body to track ( if any )
-
 
   // ================ GENERATION ================
 
@@ -58,6 +56,11 @@ pub const Cam2D = struct
     tmp.updateView();
     return tmp;
   }
+
+
+  // ================ UPDATING ================
+
+  pub inline fn updateView(  self : *Cam2D ) void { self.view = getViewFromZoom( self.zoom ); }
 
 
   // ================ CONVERSION ================
@@ -140,6 +143,7 @@ pub const Cam2D = struct
     };
   }
 
+
   // ================ ACCESSORS & MUTATORS ================
 
   pub inline fn getCenter( self : *const Cam2D ) Vec2  { return self.pos.toVec2(); }
@@ -180,22 +184,6 @@ pub const Cam2D = struct
     self.updateView();
   }
 
-  // ================ UPDATING ================
-
-  pub inline fn updateView(  self : *Cam2D ) void { self.view = getViewFromZoom( self.zoom ); }
-  pub inline fn updateTrack( self : *Cam2D ) void
-  {
-    if( self.track )| *e |
-    {
-      if( !e.isActive() or e.canBeDel() )
-      {
-        utl.qlog( .WARN, 0, @src(), "Tracked body ( Id : {d} ) either inactive or deleted : stopping tracking", .{ e.id });
-        self.track = null;
-        return;
-      }
-      self.pos = e.pos;
-    }
-  }
 
   // ================ MOVEMENT ================
 

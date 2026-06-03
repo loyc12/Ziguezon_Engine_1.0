@@ -19,7 +19,7 @@ pub fn build( b : *std.Build ) void
     "engine_interface_path",
     "Path to a game's engineInterface implementations ( default : games/gameFolder/engineInterface.zig )"
   );
-  const engine_interface_path = if( tmp_engine_interface_path )| path | path else "games/debug/engineInterface.zig";
+  const interface_path = if( tmp_engine_interface_path )| path | path else "games/debug/engineInterface.zig";
 
   const tmp_executable_name = b.option(
     []const u8,
@@ -50,7 +50,9 @@ pub fn build( b : *std.Build ) void
 
 
 
-  // ================================ EXECUTABLE ============ ====================
+  // ================================ LIBRARIES AND MODULES  ================================
+
+  // ================ EXECUTABLE ================
 
   // This creates a module for the executable itself
   const exe_mod = b.createModule(
@@ -75,45 +77,34 @@ pub fn build( b : *std.Build ) void
   b.installArtifact( exe );
 
 
+  // ================ RAYLIB ================
 
-  // ================================ LIBRARIES ================================
+  // This creates a dependency on the raylib_zig package, which is a
+  // Zig wrapper around the raylib C library. The `raylib_zig` package
+  // is expected to be available in the Zig package registry, or in the
+  // local filesystem if the user has specified a local path to it.
 
-  // This creates a dependency on the raylib_zig package, which is a Zig wrapper
-  // around the raylib C library. The `raylib_zig` package is expected to be
-  // available in the Zig package registry, or in the local filesystem if the
-  // user has specified a local path to it.
-  //const raylib_zig = b.dependency( "raylib_zig_url",
-  //.{
-  //  .target   = target,
-  //  .optimize = optimize,
-  //  .linkage  = link_mode,
-  //});
-
-  // This imports the raylib module from the raylib_zig package
-  //const raylib = raylib_zig.module( "raylib" );
-
-  // This links the raylib library to the executable,
-  // allowing it to use the raylib functions and types.
-  //exe.root_module.linkLibrary( raylib_zig.artifact( "raylib" ) );
-  //exe.root_module.addImport( "raylib", raylib );
-
+  const raylib_optimize : std.builtin.OptimizeMode = switch( optimize )
+  {
+    .Debug        => .ReleaseFast,
+    .ReleaseSafe  => .ReleaseFast,
+    else          => optimize,
+  };
 
   const raylib_dep = b.dependency( "raylib_zig",
   .{
     .target   = target,
-    .optimize = optimize,
+    .optimize = raylib_optimize,
     .linkage  = link_mode,
   });
 
-  const raylibC = raylib_dep.artifact( "raylib" ); // raylib C library
   const raylib  = raylib_dep.module(   "raylib" ); // main raylib module
-//const raygui  = raylib_dep.module(   "raygui" ); // raygui module
+  const raylibC = raylib_dep.artifact( "raylib" ); // raylib C library
 
   exe.linkLibrary( raylibC );
-//exe.root_module.addImport( "raygui", raygui );
 
 
-  // ================================ INTERNAL MODULES ================================
+  // ================ UTILITIES ================
 
   const utils = b.createModule(
   .{
@@ -121,46 +112,53 @@ pub fn build( b : *std.Build ) void
     .target   = target,
     .optimize = optimize,
   });
-  utils.addImport( "raylib", raylib );
 
-  // This adds engineDef.zig as a module, which contains common definitions and utilities
-  // used throughout the project. This module is expected to be in the `engine/` directory,
-  // and it is used to provide a simple way to access commonly used src definitions
+  exe.root_module.addImport( "utils", utils );
+
+
+  // ================ ENGINE ================
+
   const engine = b.createModule(
   .{
     .root_source_file = b.path( "engine/engineDef.zig" ),
     .target   = target,
     .optimize = optimize,
   });
-  engine.addImport( "engine", engine ); // Allows engine to call import itself
-  engine.addImport( "utils",  utils   );
-//defs.addImport( "raygui", raygui );
-
-  utils.addImport( "utils",  utils  ); // Allows utils to call import itself
-  utils.addImport( "engine", engine );
-
 
   exe.root_module.addImport( "engine", engine );
-  exe.root_module.addImport( "utils",  utils  );
+
+
+  // ================ INTERFACE ================
 
   // This adds the engine interface module, which is expected to contain the game-specific gameHooks & engineSettings implementations.
-  const engine_interface = b.createModule(
+  const interface = b.createModule(
   .{
-    .root_source_file = b.path( engine_interface_path ), // NOTE : This path is user defined at build time
+    .root_source_file = b.path( interface_path ), // NOTE : This path is user defined at build time
     .target           = target,
     .optimize         = optimize,
   });
-  engine_interface.addImport( "engine", engine );
-  engine_interface.addImport( "utils",  utils  );
 
-  exe.root_module.addImport(  "engineInterface", engine_interface );
+  exe.root_module.addImport( "interface", interface ); // Public engine interface // TOOD : review naming convention for it
 
+
+  // ================ LINKAGE ================
+
+  utils.addImport( "raylib", raylib ); // Should only be accessed through utils
+  utils.addImport( "utils",  utils  ); // Allows utils to call import itself
+  utils.addImport( "engine", engine );
+
+  engine.addImport( "utils",  utils  );
+  engine.addImport( "engine", engine ); // Allows engine to call import itself
+
+  interface.addImport( "engine", engine );
+  interface.addImport( "utils",  utils  );
 
 
 
   // ================================ COMMANDS ================================
 
-  // These create steps in the build graph, to be executed when called, or if another step is evaluated that depends on it ( similar to Makefile targets ).
+  // These create steps in the build graph, to be executed when called, or if
+  // another step is evaluated that depends on it ( similar to Makefile targets ).
 
 
   // ================ GENERIC COMANDS ================
@@ -179,8 +177,9 @@ pub fn build( b : *std.Build ) void
 
   const games =
   .{
-    .{ "ping",        "games/ping/engineInterface.zig"        },
     .{ "debug",       "games/debug/engineInterface.zig"       }, // Default
+
+    .{ "ping",        "games/ping/engineInterface.zig"        },
     .{ "floppy",      "games/floppy/engineInterface.zig"      },
     .{ "dehexer",     "games/dehexer/engineInterface.zig"     },
     .{ "isofloor",    "games/isofloor/engineInterface.zig"    },
@@ -212,14 +211,13 @@ pub fn build( b : *std.Build ) void
     const n1   = game[ 0 ];
     const path = game[ 1 ];
 
-    const dbg_exe_name = "lnx_dbg_" ++ n1;
+    const dbg_exe_name = n1;
 
-    const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode and runs it" );
+    const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode" );
     const game_cmd  = b.addSystemCommand(
       &.{
         "zig",
         "build",
-        "run", // NOTE : comment "run" out to avoid launching debug ver on build
         "--release="               ++ "off",
         "-Dexecutable_name="       ++ dbg_exe_name,
         "-Dengine_interface_path=" ++ path,
@@ -227,14 +225,31 @@ pub fn build( b : *std.Build ) void
 
     game_step.dependOn( &game_cmd.step );
 
+
+    const game_run_step = b.step( n1 ++ "_run", "Compiles " ++ n1 ++ " in debug mode and runs it" );
+    const game_run_cmd  = b.addSystemCommand(
+      &.{
+        "zig",
+        "build",
+        "run",
+        "--release="               ++ "off",
+        "-Dexecutable_name="       ++ dbg_exe_name,
+        "-Dengine_interface_path=" ++ path,
+      });
+
+
+    game_run_step.dependOn( &game_run_cmd.step );
+
+
     inline for( optimizations )| opt |
     {
       const n2   = opt[ 0 ];
       const mode = opt[ 1 ];
 
-      const opt_exe_name = "lnx_" ++ n2 ++ "_" ++ n1;
+      const opt_exe_name = n1 ++ "_" ++ n2;
 
-      const mode_step = b.step( n2 ++ "_" ++ n1, "  Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform" );
+
+      const mode_step = b.step( n1 ++ "_" ++ n2, "- Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform" );
       const mode_cmd  = b.addSystemCommand(
         &.{
           "zig",
@@ -246,14 +261,29 @@ pub fn build( b : *std.Build ) void
 
       mode_step.dependOn( &mode_cmd.step );
 
+
+      const mode_run_step = b.step( n1 ++ "_" ++ n2 ++ "_run", "- Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform and runs it" );
+      const mode_run_cmd  = b.addSystemCommand(
+        &.{
+          "zig",
+          "build",
+          "run",
+          "--release="               ++ n2,
+          "-Dexecutable_name="       ++ opt_exe_name,
+          "-Dengine_interface_path=" ++ path,
+        });
+
+      mode_run_step.dependOn( &mode_run_cmd.step );
+
+
       inline for( platforms )| plat |
       {
         const n3   = plat[ 0 ];
         const targ = plat[ 1 ];
 
-        const plt_exe_name = n3 ++ "_" ++ n2 ++ "_" ++ n1;
+        const plt_exe_name = n1 ++ "_" ++ n2 ++ "_" ++ n3;
 
-        const targ_step = b.step( plt_exe_name, "    Compiles " ++ n1 ++ " in " ++ mode ++ " for " ++ targ );
+        const targ_step = b.step( n1 ++ "_" ++ n2 ++ "_" ++ n3, "-   Compiles " ++ n1 ++ " in " ++ mode ++ " for " ++ targ );
         const targ_cmd  = b.addSystemCommand(
           &.{
             "zig",
@@ -266,6 +296,27 @@ pub fn build( b : *std.Build ) void
 
         targ_step.dependOn( &targ_cmd.step );
       }
+    }
+
+    inline for( platforms )| plat |
+    {
+      const n3   = plat[ 0 ];
+      const targ = plat[ 1 ];
+
+      const plt_exe_name = n1 ++ "_" ++ n3;
+
+      const targ_step = b.step( n1 ++ "_" ++ n3, "- Compiles " ++ n1 ++ " in debug mode for " ++ targ );
+      const targ_cmd  = b.addSystemCommand(
+        &.{
+          "zig",
+          "build",
+          "--release="               ++ "off",
+          "-Dexecutable_name="       ++ plt_exe_name,
+          "-Dengine_interface_path=" ++ path,
+          "-Dtarget="                ++ targ,
+        });
+
+      targ_step.dependOn( &targ_cmd.step );
     }
   }
 

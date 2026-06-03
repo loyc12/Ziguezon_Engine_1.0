@@ -4,7 +4,7 @@ const utl = @import( "utils" );
 
 
 // ================================ INITIALIZATION ================================
-const ngi = @import( "engineInterface" );
+const ngi = @import( "interface" );
 
 pub fn initCriticals() void
 {
