@@ -1,0 +1,581 @@
+const std     = @import( "std" );
+const eng     = @import( "engine" );
+const utl = @import( "utils" );
+
+const Tile    = eng.Tile;
+const Tilemap = eng.Tilemap;
+
+const Angle   = utl.Angle;
+const Box2    = utl.Box2;
+const Coords2 = utl.Coords2;
+const Vec2    = utl.Vec2;
+const VecA    = utl.VecA;
+
+const R2      = utl.R3;
+const R3      = utl.R3;
+
+const IR2     = 1.0 / R2;
+const IR3     = utl.IR3;
+
+const HR2     = utl.HR2;
+const HR3     = utl.HR3;
+
+const MARGIN_FACTOR = 0.96; // Factor to scale down tiles, leaving a margin between them // TODO : move this to engineSettings
+
+const RECT_FACTOR = 1.0; // 1x1 square              R = HR2
+const TRIA_FACTOR = utl.getPolyCircumRad( 1.0, 3 );
+const DIAM_FACTOR = utl.getPolyCircumRad( 1.0, 4 ); // R = 1.0
+const HEXA_FACTOR = utl.getPolyCircumRad( 1.0, 6 );
+//const PENT_FACTOR = SIZE_FACTOR * utl.getPolyCircumRad( SIZE_FACTOR, 5 );
+
+pub const e_tlmp_shape = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  TRI1, // A V ( upright )
+  TRI2, // > < ( sideway )
+
+  RECT, // []
+  DIAM, // <>
+
+  HEX1, // <_> ( pointy top )
+  HEX2, // <_> (  flat top  )
+
+//PEN1, // ( upright ) // TODO : implement me
+//PEN2, // ( sideway )
+
+  pub inline fn getEdgeCount( self : e_tlmp_shape ) u8
+  {
+    return switch( self )
+    {
+      .TRI1, .TRI2 => 3,
+      .RECT, .DIAM => 4,
+      .HEX1, .HEX2 => 6,
+    };
+  }
+
+  pub inline fn getTileScaleFactor( self : e_tlmp_shape ) f32
+  {
+    return switch( self )
+    {
+      .RECT        => RECT_FACTOR,
+      .DIAM        => DIAM_FACTOR,
+      .HEX1, .HEX2 => HEXA_FACTOR,
+      .TRI1, .TRI2 => TRIA_FACTOR,
+    };
+  }
+
+  pub inline fn getGridScaleFactors( self : e_tlmp_shape ) Vec2
+  {
+    const tmp = switch( self )
+    {
+      .RECT => comptime Vec2.new( 1.0, 1.0 ),
+      .DIAM => comptime Vec2.new( 1.0, 1.0 ),
+      .HEX1 => comptime Vec2.new( R3,  1.5 ),
+      .HEX2 => comptime Vec2.new( 1.5, R3  ),
+      .TRI1 => comptime Vec2.new( HR3, 1.5 ),
+      .TRI2 => comptime Vec2.new( 1.5, HR3 ),
+    };
+    return tmp.mulVal( 0.5 ).mulVal( self.getTileScaleFactor() );
+  }
+
+  pub fn getParityOffset( self : e_tlmp_shape, coords : Coords2 ) Vec2
+  {
+    switch( self )
+    {
+      .RECT => return .{},
+      .DIAM => return .{},
+      .HEX1 =>
+      {
+        const yParity : f32 = @floatFromInt( @mod( coords.y, 2 ));
+        const xOffset : f32 = ( yParity - 0.5 ) / 2.0;
+        return Vec2.new( xOffset, 0.0 );
+      },
+      .HEX2 =>
+      {
+        const xParity : f32 = @floatFromInt( @mod( coords.x, 2 ));
+        const yOffset : f32 = ( xParity - 0.5 ) / 2.0;
+        return Vec2.new( 0.0, yOffset );
+      },
+      .TRI1 =>
+      {
+        const tParity : f32 = @floatFromInt( @mod( coords.x + coords.y, 2 ));
+        const yOffset : f32 = ( tParity - 0.5 ) / 3.0;
+        return Vec2.new( 0.0, yOffset );
+      },
+      .TRI2 =>
+      {
+        const tParity : f32 = @floatFromInt( @mod( coords.x + coords.y, 2 ));
+        const xOffset : f32 = ( tParity - 0.5 ) / 3.0;
+        return Vec2.new( xOffset, 0.0 );
+      },
+    }
+  }
+};
+
+
+// ================================ COORDS TO POS ================================
+
+pub fn getAbsTilePos( tlmp : *const Tilemap, mapCoords : Coords2 ) VecA
+{
+  const  tilePos = getRelTilePos( tlmp, mapCoords ).toVecA( .{} );
+  return tilePos.rot( tlmp.mapPos.a ).add( .new( tlmp.mapPos.x, tlmp.mapPos.y, .{} )); // Prevents adding .a twice
+}
+
+pub fn getRelTilePos( tlmp : *const Tilemap, mapCoords : Coords2 ) Vec2
+{
+  const baseX = @as( f32, @floatFromInt( mapCoords.x )) - ( @as( f32, @floatFromInt( tlmp.mapSize.x - 1 )) / 2.0 );
+  const baseY = @as( f32, @floatFromInt( mapCoords.y )) - ( @as( f32, @floatFromInt( tlmp.mapSize.y - 1 )) / 2.0 );
+
+  var tile = tlmp.getTile( mapCoords );
+
+  if( tile != null ) // Return cached position if available
+  {
+    if( tile.?.relPos )| pos |{ return pos; }
+  }
+
+  var basePos = Vec2.new( baseX, baseY );
+
+  if( tlmp.tileShape == .DIAM )
+  {
+    basePos.x -= baseY;
+    basePos.y += baseX;
+  }
+
+  basePos = basePos.sub( tlmp.tileShape.getParityOffset( mapCoords ));
+  basePos = basePos.mul( tlmp.tileShape.getGridScaleFactors() );
+  basePos = basePos.mul( tlmp.tileScale );
+  basePos = basePos.mulVal( 2.0 );
+
+  if( tile != null ){ tile.?.relPos = basePos; }
+
+  return basePos;
+}
+
+// ================================ POS TO COORDS ================================
+
+pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
+{
+  const area = tlmp.getMapBoundingBox();
+
+  if( !area.isOnPoint( pos )) // Quick check to see if pos is even in tilemap bounds
+  {
+    utl.log( .TRACE, 0, @src(), "Position {d},{d} is out of tilemap bounding box", .{ pos.x, pos.y });
+    return null;
+  }
+
+  const relPos = pos.sub( tlmp.mapPos.toVec2() ).rot( tlmp.mapPos.a.neg() );
+  return getCoordsFromRelPos( tlmp, relPos );
+}
+
+pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
+{
+  const baseX = pos.x / tlmp.tileScale.x;
+  const baseY = pos.y / tlmp.tileScale.y;
+
+  const centerOffsetX = @as( f32, @floatFromInt( tlmp.mapSize.x - 1 )) * 0.5;
+  const centerOffsetY = @as( f32, @floatFromInt( tlmp.mapSize.y - 1 )) * 0.5;
+
+  switch( tlmp.tileShape )
+  {
+    .RECT =>
+    {
+      const gridX = @round(( baseX * RECT_FACTOR ) + centerOffsetX );
+      const gridY = @round(( baseY * RECT_FACTOR ) + centerOffsetY );
+
+      const coords = Coords2{
+        .x = @intFromFloat( gridX ),
+        .y = @intFromFloat( gridY ),
+      };
+
+      if( !tlmp.isCoordsValid( coords )){ return null; }
+      return coords;
+    },
+
+    .DIAM =>
+    {
+      const gridX = @round((( baseX + baseY ) * DIAM_FACTOR ) + centerOffsetX );
+      const gridY = @round((( baseY - baseX ) * DIAM_FACTOR ) + centerOffsetY );
+
+      const coords = Coords2{
+        .x = @intFromFloat( gridX ),
+        .y = @intFromFloat( gridY ),
+      };
+
+      if( !tlmp.isCoordsValid( coords )){ return null; }
+      return coords;
+    },
+
+    .HEX1 =>
+    {
+      const descaledX  = ( baseX / ( HEXA_FACTOR * R3  )) + centerOffsetX;
+      const rawGridY   = ( baseY / ( HEXA_FACTOR * 1.5 )) + centerOffsetY;
+
+      const gridYFract = rawGridY - @floor( rawGridY );
+
+      var coords : Coords2 = undefined;
+
+      if( gridYFract < ( 1.0 / 3.0 ) or gridYFract > ( 2.0 / 3.0 )) // NOTE : not in danger zone : approximation permissible
+      {
+        const gridY = @round( rawGridY );
+
+        const offset = e_tlmp_shape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridY )));
+
+        const gridX = @round( descaledX + offset.x );
+
+        coords = Coords2{
+          .x = @intFromFloat( gridX ),
+          .y = @intFromFloat( gridY ),
+        };
+      }
+
+      else // NOTE : in the danger zone ( tip of the hex ) : need to check distances to centers
+      {
+        // ======== TILE A ========
+        const gridYA = @floor( rawGridY );
+
+        const offsetA = e_tlmp_shape.HEX1.getParityOffset( Coords2.new( 0.0, @intFromFloat( gridYA )));
+
+        const gridXA = @round( descaledX + offsetA.x );
+
+        const coordsA = Coords2{
+          .x = @intFromFloat( gridXA ),
+          .y = @intFromFloat( gridYA ),
+        };
+
+        // ======== TILE B ========
+        const gridYB = @ceil( rawGridY );
+
+        const gridXB = @round( descaledX - offsetA.x );
+
+        const coordsB = Coords2{
+          .x = @intFromFloat( gridXB ),
+          .y = @intFromFloat( gridYB ),
+        };
+
+        // ======== DISTANCE COMPARISON ========
+        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ));
+        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ));
+
+        coords = if( distToA < distToB ) coordsA else coordsB;
+      }
+
+      if ( !tlmp.isCoordsValid( coords )){ return null; }
+      return coords;
+    },
+
+    .HEX2 =>
+    {
+      const descaledY = ( baseY / ( HEXA_FACTOR * R3  )) + centerOffsetY;
+      const rawGridX  = ( baseX / ( HEXA_FACTOR * 1.5 )) + centerOffsetX;
+
+      const gridXFract = rawGridX - @floor( rawGridX );
+
+      var coords : Coords2 = undefined;
+
+      if( gridXFract < ( 1.0 / 3.0 ) or gridXFract > ( 2.0 / 3.0 )) // NOTE : not in danger zone : approximation permissible
+      {
+        const gridX = @round( rawGridX );
+
+        const offset = e_tlmp_shape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridX ), 0.0 ));
+
+        const gridY = @round( descaledY + offset.y);
+
+        coords = Coords2{
+          .x = @intFromFloat( gridX ),
+          .y = @intFromFloat( gridY ),
+        };
+      }
+
+      else // NOTE : in the danger zone ( tip of the hex ) : need to check distances to centers
+      {
+        // ======== TILE A ========
+        const gridXA = @floor( rawGridX );
+
+        const offsetA = e_tlmp_shape.HEX2.getParityOffset( Coords2.new( @intFromFloat( gridXA ), 0.0 ));
+
+        const gridYA = @round( descaledY + offsetA.y );
+
+        const coordsA = Coords2{
+          .x = @intFromFloat( gridXA ),
+          .y = @intFromFloat( gridYA ),
+        };
+
+        // ======== TILE B ========
+        const gridXB = @ceil( rawGridX );
+
+        const gridYB = @round( descaledY - offsetA.y );
+
+        const coordsB = Coords2{
+          .x = @intFromFloat( gridXB ),
+          .y = @intFromFloat( gridYB ),
+        };
+
+        // ======== DISTANCE COMPARISON ========
+        const distToA = pos.getDistSqr( tlmp.getRelTilePos( coordsA ));
+        const distToB = pos.getDistSqr( tlmp.getRelTilePos( coordsB ));
+
+        coords = if( distToA < distToB ) coordsA else coordsB;
+      }
+
+      if ( !tlmp.isCoordsValid( coords )){ return null; }
+      return coords;
+    },
+
+    .TRI1 =>
+    {
+      const rawGridX = ( baseX / ( TRIA_FACTOR * HR3 )) + centerOffsetX;
+      const rawGridY = ( baseY / ( TRIA_FACTOR * 1.5 )) + centerOffsetY;
+
+      var   gridX = @floor( rawGridX );
+      const gridY = @round( rawGridY );
+
+      const sumOfParities = @mod( gridY, 2 ) + @mod( gridX, 2 );
+      const pointsDown    = ( utl.isFltEq( sumOfParities, 1.0 ));
+
+      const fracX = rawGridX - gridX;
+      const fracY = rawGridY - gridY + 0.5; // + 0.5 to offset the origin of the line ( 0.0 : 0.5 )
+
+      const outsideTri : bool = switch( pointsDown )
+      {
+        false => fracX - fracY > 0.0,
+        true  => fracX + fracY > 1.0,
+      };
+
+      if( outsideTri ) { gridX += 1; }
+
+      return .{ .x = @intFromFloat( gridX ), .y = @intFromFloat( gridY )};
+    },
+
+    .TRI2 =>
+    {
+      const rawGridY = ( baseY / ( TRIA_FACTOR * HR3 )) + centerOffsetX;
+      const rawGridX = ( baseX / ( TRIA_FACTOR * 1.5 )) + centerOffsetY;
+
+      var   gridY = @floor( rawGridY );
+      const gridX = @round( rawGridX );
+
+      const sumOfParities = @mod( gridY, 2 ) + @mod( gridX, 2 );
+      const pointsRight   = ( utl.isFltEq( sumOfParities, 1.0 ));
+
+      const fracY = rawGridY - gridY;
+      const fracX = rawGridX - gridX + 0.5; // + 0.5 to offset the origin of the line ( 0.5 : 0.0 )
+
+      const outsideTri : bool = switch( pointsRight )
+      {
+        false => fracY - fracX > 0.0,
+        true  => fracY + fracX > 1.0,
+      };
+
+      if( outsideTri ) { gridY += 1; }
+
+      return .{ .x = @intFromFloat( gridX ), .y = @intFromFloat( gridY )};
+    },
+
+    //else => utl.log( .WARN, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
+  }
+
+  return null;
+}
+
+// ================================ COORDS TO COORDS ================================
+
+pub fn getNeighbourCoords( tlmp : *const Tilemap, mapCoords : Coords2, direction : utl.e_dir_2 ) ?Coords2
+{
+  const xMod2 = @mod( mapCoords.x, 2 );
+  const yMod2 = @mod( mapCoords.y, 2 );
+
+  const xParity  = ( xMod2 == 1 );
+  const yParity  = ( yMod2 == 1 );
+  const xyParity = ( xMod2 + yMod2 == 1 ); // specifies which direction a triangle points towards
+
+  const coords = switch( tlmp.tileShape )
+  {
+    .RECT => switch( direction )
+    {
+      .NW => mapCoords.add( Coords2.new( -1, -1 )),
+      .NO => mapCoords.add( Coords2.new(  0, -1 )),
+      .NE => mapCoords.add( Coords2.new(  1, -1 )),
+      .EA => mapCoords.add( Coords2.new(  1,  0 )),
+      .SE => mapCoords.add( Coords2.new(  1,  1 )),
+      .SO => mapCoords.add( Coords2.new(  0,  1 )),
+      .SW => mapCoords.add( Coords2.new( -1,  1 )),
+      .WE => mapCoords.add( Coords2.new( -1,  0 )),
+    },
+
+    .DIAM => switch( direction )
+    {
+      .NW => mapCoords.add( Coords2.new( -1,  0 )),
+      .NO => mapCoords.add( Coords2.new( -1, -1 )),
+      .NE => mapCoords.add( Coords2.new(  0, -1 )),
+      .EA => mapCoords.add( Coords2.new(  1, -1 )),
+      .SE => mapCoords.add( Coords2.new(  1,  0 )),
+      .SO => mapCoords.add( Coords2.new(  1,  1 )),
+      .SW => mapCoords.add( Coords2.new(  0,  1 )),
+      .WE => mapCoords.add( Coords2.new( -1,  1 )),
+    },
+
+    .HEX1 => switch( direction )
+    {
+      .NO, .SO => null,
+
+      .WE => mapCoords.add( Coords2.new( -1,  0 )),
+      .EA => mapCoords.add( Coords2.new(  1,  0 )),
+
+      .NW => if( yParity ) mapCoords.add( Coords2.new( -1, -1 )) else mapCoords.add( Coords2.new(  0, -1 )),
+      .NE => if( yParity ) mapCoords.add( Coords2.new(  0, -1 )) else mapCoords.add( Coords2.new(  1, -1 )),
+
+      .SW => if( yParity ) mapCoords.add( Coords2.new( -1,  1 )) else mapCoords.add( Coords2.new(  0,  1 )),
+      .SE => if( yParity ) mapCoords.add( Coords2.new(  0,  1 )) else mapCoords.add( Coords2.new(  1,  1 )),
+    },
+
+    .HEX2 => switch( direction )
+    {
+      .WE, .EA => null,
+
+      .NO => mapCoords.add( Coords2.new(  0, -1 )),
+      .SO => mapCoords.add( Coords2.new(  0,  1 )),
+
+      .NW => if( xParity ) mapCoords.add( Coords2.new( -1, -1 )) else mapCoords.add( Coords2.new( -1,  0 )),
+      .SW => if( xParity ) mapCoords.add( Coords2.new( -1,  0 )) else mapCoords.add( Coords2.new( -1,  1 )),
+
+      .NE => if( xParity ) mapCoords.add( Coords2.new(  1, -1 )) else mapCoords.add( Coords2.new(  1,  0 )),
+      .SE => if( xParity ) mapCoords.add( Coords2.new(  1,  0 )) else mapCoords.add( Coords2.new(  1,  1 )),
+    },
+
+    .TRI1 => switch( xyParity ) // NOTE : could add true diagonals as neighbours
+    {
+      false => switch( direction ) // points up
+      {
+        .NO, .EA, .SE, .SW, .WE => null,
+
+        .NE => mapCoords.add( Coords2.new(  1,  0 )),
+        .SO => mapCoords.add( Coords2.new(  0,  1 )),
+        .NW => mapCoords.add( Coords2.new( -1,  0 )),
+      },
+      true => switch( direction ) // points down
+      {
+        .NE, .EA, .SO, .WE, .NW => null,
+
+        .SE => mapCoords.add( Coords2.new(  1,  0 )),
+        .NO => mapCoords.add( Coords2.new(  0, -1 )),
+        .SW => mapCoords.add( Coords2.new( -1,  0 )),
+      },
+    },
+
+    .TRI2 => switch( xyParity ) // NOTE : could add true diagonals as neighbours
+    {
+      false => switch( direction ) // points left
+      {
+        .NO, .NE, .SE, .SO, .WE => null,
+
+        .SW => mapCoords.add( Coords2.new(  0,  1 )),
+        .EA => mapCoords.add( Coords2.new(  1,  0 )),
+        .NW => mapCoords.add( Coords2.new(  0, -1 )),
+      },
+      true => switch( direction ) // points right
+      {
+        .NO, .EA, .SO, .SW, .NW => null,
+
+        .SE => mapCoords.add( Coords2.new(  0,  1 )),
+        .WE => mapCoords.add( Coords2.new( -1,  0 )),
+        .NE => mapCoords.add( Coords2.new(  0, -1 )),
+      },
+    },
+  }
+  orelse
+  {
+    utl.log( .TRACE, 0, @src(), "Tilemap shape {s} does not support direction {s}", .{ @tagName( tlmp.tileShape ), @tagName( direction )});
+    return null;
+  };
+
+  if( !tlmp.isCoordsValid( coords )){ return null; }
+  return coords;
+}
+
+// ================================ TILE DRAWING ================================
+
+pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the visuals better ( especially for DIAMS )
+{
+
+  var viewableScale = tlmp.mapSize.toVec2();
+      viewableScale = viewableScale.mul( tlmp.tileScale );
+      viewableScale = viewableScale.mul( tlmp.tileShape.getGridScaleFactors());
+
+  if( tlmp.tileShape == .DIAM ){ return Box2.newPolyAABB( tlmp.mapPos.toVec2(), viewableScale.mulVal( 2.0 ), tlmp.mapPos.a, 4 ); }
+
+  viewableScale = switch( tlmp.tileShape )
+  {
+    .HEX1 => .{ .x = viewableScale.x + tlmp.tileScale.x / 4.2, .y = viewableScale.y + tlmp.tileScale.y / 7.2 },
+    .HEX2 => .{ .x = viewableScale.x + tlmp.tileScale.x / 7.2, .y = viewableScale.y + tlmp.tileScale.y / 4.2 },
+
+    .TRI1 => .{ .x = viewableScale.x + tlmp.tileScale.x / 3.0, .y = viewableScale.y },
+    .TRI2 => .{ .x = viewableScale.x, .y = viewableScale.y + tlmp.tileScale.y / 3.0 },
+
+    else => viewableScale,
+  };
+
+
+  return( Box2.newRectAABB( tlmp.mapPos.toVec2(), viewableScale, tlmp.mapPos.a ));
+}
+
+pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2
+{
+  const absPos = relPos.rot( tlmp.mapPos.a ).add( tlmp.mapPos.toVec2() );
+  const radii  = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() );
+
+  return Box2.newRectAABB( absPos, radii, tlmp.mapPos.a ); // NOTE : gross approximation for the sake of performance
+
+  //const angle = tlmp.mapPos.a;
+  //return switch( tlmp.tileShape ) // NOTE : slow af
+  //{
+  //  .RECT => return Box2.newRectAABB( absPos, radii, angle                                 ),
+  //  .DIAM => return Box2.newPolyAABB( absPos, radii, angle,                              4 ),
+  //  .HEX1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg( 90 ),                 6 ),
+  //  .HEX2 => return Box2.newPolyAABB( absPos, radii, angle,                              6 ),
+  //  .TRI1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg(  1.0 * 90.0 ),        3 ), // TODO : handle triangle orientation
+  //  .TRI2 => return Box2.newPolyAABB( absPos, radii, angle.subDeg(( 1.0 * 90.0 ) - 90 ), 3 ), // TODO : handle triangle orientation
+  //};
+}
+
+pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *const Box2) void
+{
+  if( !tlmp.isCoordsValid( tile.mapCoords ))
+  {
+    utl.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.mapCoords.x, tile.mapCoords.y, tlmp.id });
+    return;
+  }
+
+  const relPos  = tile.relPos orelse getRelTilePos( tlmp, tile.mapCoords );
+  const tileBox = getTileBoundingBox( tlmp, relPos );
+
+  if( tile.tType == .EMPTY )
+  {
+    utl.qlog( .TRACE, 0, @src(), "Cannot draw an empty tile : returning" );
+    return;
+  }
+
+  if( !viewBox.doesOverlap( tileBox ))
+  {
+    utl.qlog( .TRACE, 0, @src(), "not drawing tiles outside of viewbox : returning" );
+    return;
+  }
+
+  const absPos = getAbsTilePos( tlmp, tile.mapCoords );
+  const dParity : f32 = @floatFromInt(( 2 * @mod( tile.mapCoords.x + tile.mapCoords.y, 2 )) - 1 );
+
+  var displayRadii = tlmp.tileScale.mulVal( tlmp.tileShape.getTileScaleFactor() * MARGIN_FACTOR ); // NOTE : Scales down render shape to let background show in between tiles
+  if( tlmp.tileShape == .RECT ){ displayRadii = displayRadii.mulVal( 0.5 ); }
+
+  switch( tlmp.tileShape )
+  {
+    .RECT => utl.wDraw.rect( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
+    .DIAM => utl.wDraw.diam( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
+
+    .HEX1 => utl.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a.addDeg( 90.0 ), tile.colour ),
+    .HEX2 => utl.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a,                tile.colour ),
+
+    .TRI1 => utl.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
+    .TRI2 => utl.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
+  }
+}

@@ -17,9 +17,9 @@ pub fn build( b : *std.Build ) void
   const tmp_engine_interface_path = b.option(
     []const u8,
     "engine_interface_path",
-    "Path to a game's engineInterface implementations ( default : exampleGames/gameFolder/engineInterface.zig )"
+    "Path to a game's engineInterface implementations ( default : games/gameFolder/engineInterface.zig )"
   );
-  const engine_interface_path = if( tmp_engine_interface_path )| path | path else "exampleGames/debug/engineInterface.zig";
+  const engine_interface_path = if( tmp_engine_interface_path )| path | path else "games/debug/engineInterface.zig";
 
   const tmp_executable_name = b.option(
     []const u8,
@@ -55,7 +55,7 @@ pub fn build( b : *std.Build ) void
   // This creates a module for the executable itself
   const exe_mod = b.createModule(
   .{
-    .root_source_file = b.path( "src/main.zig" ),
+    .root_source_file = b.path( "engine/main.zig" ),
     .target           = target,
     .optimize         = optimize,
   });
@@ -110,27 +110,38 @@ pub fn build( b : *std.Build ) void
 //const raygui  = raylib_dep.module(   "raygui" ); // raygui module
 
   exe.linkLibrary( raylibC );
-  exe.root_module.addImport( "raylib", raylib );
 //exe.root_module.addImport( "raygui", raygui );
 
 
   // ================================ INTERNAL MODULES ================================
 
-  // This adds defs.zig as a module, which contains common definitions and utilities
-  // used throughout the project. This module is expected to be in the `src/` directory,
-  // and it is used to provide a simple way to access commonly used src definitions
-  const defs = b.createModule(
+  const utils = b.createModule(
   .{
-    .root_source_file = b.path( "./src/defs.zig" ),
+    .root_source_file = b.path( "utils/utilsDef.zig" ),
     .target   = target,
     .optimize = optimize,
   });
-  defs.addImport( "defs",   defs   ); // Allows def to call import itself
-  defs.addImport( "raylib", raylib );
+  utils.addImport( "raylib", raylib );
+
+  // This adds engineDef.zig as a module, which contains common definitions and utilities
+  // used throughout the project. This module is expected to be in the `engine/` directory,
+  // and it is used to provide a simple way to access commonly used src definitions
+  const engine = b.createModule(
+  .{
+    .root_source_file = b.path( "engine/engineDef.zig" ),
+    .target   = target,
+    .optimize = optimize,
+  });
+  engine.addImport( "engine", engine ); // Allows engine to call import itself
+  engine.addImport( "utils",  utils   );
 //defs.addImport( "raygui", raygui );
 
+  utils.addImport( "utils",  utils  ); // Allows utils to call import itself
+  utils.addImport( "engine", engine );
 
-  exe.root_module.addImport( "defs", defs );
+
+  exe.root_module.addImport( "engine", engine );
+  exe.root_module.addImport( "utils",  utils  );
 
   // This adds the engine interface module, which is expected to contain the game-specific gameHooks & engineSettings implementations.
   const engine_interface = b.createModule(
@@ -139,7 +150,8 @@ pub fn build( b : *std.Build ) void
     .target           = target,
     .optimize         = optimize,
   });
-  engine_interface.addImport( "defs",   defs   );
+  engine_interface.addImport( "engine", engine );
+  engine_interface.addImport( "utils",  utils  );
 
   exe.root_module.addImport(  "engineInterface", engine_interface );
 
@@ -167,16 +179,16 @@ pub fn build( b : *std.Build ) void
 
   const games =
   .{
-    .{ "ping",        "exampleGames/ping/engineInterface.zig"        },
-    .{ "debug",       "exampleGames/debug/engineInterface.zig"       }, // Default
-    .{ "floppy",      "exampleGames/floppy/engineInterface.zig"      },
-    .{ "dehexer",     "exampleGames/dehexer/engineInterface.zig"     },
-    .{ "isofloor",    "exampleGames/isofloor/engineInterface.zig"    },
-    .{ "politator",   "exampleGames/politator/engineInterface.zig"   },
-    .{ "granulater",  "exampleGames/granulater/engineInterface.zig"  },
-    .{ "labyrinther", "exampleGames/labyrinther/engineInterface.zig" },
+    .{ "ping",        "games/ping/engineInterface.zig"        },
+    .{ "debug",       "games/debug/engineInterface.zig"       }, // Default
+    .{ "floppy",      "games/floppy/engineInterface.zig"      },
+    .{ "dehexer",     "games/dehexer/engineInterface.zig"     },
+    .{ "isofloor",    "games/isofloor/engineInterface.zig"    },
+    .{ "politator",   "games/politator/engineInterface.zig"   },
+    .{ "granulater",  "games/granulater/engineInterface.zig"  },
+    .{ "labyrinther", "games/labyrinther/engineInterface.zig" },
 
-    .{ "orbiter",     "exampleGames/orbiter/engineInterface.zig"     },
+    .{ "orbiter",     "games/orbiter/engineInterface.zig"     },
 
   };
 

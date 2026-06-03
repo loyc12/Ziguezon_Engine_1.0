@@ -1,0 +1,33 @@
+const std = @import( "std" );
+const eng = @import( "engine" );
+const utl = @import( "utils" );
+
+pub var MAZE_ID : u32 = 0;
+
+// ================================ STATE INJECTION FUNCTIONS ================================
+// These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
+
+pub fn OnStart( ng : *eng.Engine ) void
+{
+  _ = ng; // Prevent unused variable warning
+}
+
+pub fn OnOpen( ng : *eng.Engine ) void
+{
+  const tlm = ng.tilemapManager.loadTilemapFromParams(
+  .{
+    .mapPos    = .{ .x = 0, .y = 0 },
+    .mapSize   = .{ .x = 256, .y = 256  },
+    .tileScale = .{ .x = 64, .y = 64 },
+    .tileShape = .RECT,
+  }, .T1 );
+
+  if( tlm == null ){ utl.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
+
+  var grid : *eng.Tilemap = tlm.?;
+
+  MAZE_ID = grid.id;
+
+  grid.fillWithColour( .lGray );
+}
+

@@ -1,0 +1,185 @@
+const std  = @import( "std" );
+const eng  = @import( "engine" );
+const utl = @import( "utils" );
+
+const Angle = utl.Angle;
+
+const VecA = utl.VecA;
+const Vec3 = utl.Vec3;
+
+const RayVec2 = utl.RayVec2;
+const RayVec3 = utl.RayVec3;
+//const RayVec4 = utl.RayVec4;
+
+const Coords2 = utl.Coords2;
+const Coords3 = utl.Coords3;
+
+
+// ================================ VEC2 STRUCT ================================
+
+pub const Vec2 = struct
+{
+  x : f64 = 0,
+  y : f64 = 0,
+
+
+  // ================ GENERATION ================
+
+  pub inline fn new( x : f64, y : f64 ) Vec2 { return Vec2{ .x = x, .y = y }; }
+
+  pub inline fn fromRayVec2( rv : RayVec2 ) Vec2
+  {
+    return Vec2{ .x = @floatCast( rv.x ), .y = @floatCast( rv.y ) };
+  }
+
+  pub inline fn fromAngleDeg( a : Angle ) Vec2 { return fromAngle( utl.DtR( a )); }
+  pub inline fn fromAngle(    a : Angle ) Vec2
+  {
+    return Vec2{
+      .x = a.cos(),
+      .y = a.sin(),
+    };
+  }
+
+  pub inline fn fromAngleDegScaled( a : Angle, scale : Vec2 ) Vec2 { return fromAngleScaled( utl.DtR( a ), scale ); }
+  pub inline fn fromAngleScaled(    a : Angle, scale : Vec2 ) Vec2
+  {
+    return Vec2{
+      .x = a.cos() * scale.x,
+      .y = a.sin() * scale.y,
+    };
+  }
+
+  // ================ CONVERSIONS ================
+
+  pub inline fn toRayVec2( self : Vec2 ) RayVec2 { return RayVec2{ .x = @floatCast( self.x ), .y = @floatCast( self.y )}; }
+  pub inline fn toVecA(    self : Vec2, a : ?Angle ) VecA // NOTE : null means "use the vector direction as angle"
+  {
+    if( a == null ){ return VecA{ .x = self.x, .y = self.y, .a = self.toAngle() }; }
+    else           { return VecA{ .x = self.x, .y = self.y, .a = a.? }; }
+  }
+  pub inline fn toCoords2( self : Vec2 ) Coords2
+  {
+    return Coords2{
+      .x = @intFromFloat( @trunc( self.x )),
+      .y = @intFromFloat( @trunc( self.y )),
+    };
+  }
+  pub inline fn swap( self : Vec2 ) Vec2
+  {
+    return .{ .x = self.y, .y = self.x };
+  }
+
+  // ================ COMPARISONS ================ // TODO : add EPS ranges to accout for fp errors
+
+  pub inline fn isPosi( self : Vec2 ) bool { return self.x >= 0 and self.y >= 0; }
+  pub inline fn isZero( self : Vec2 ) bool { return utl.isFltZr( self.x ) and utl.isFltZr( self.y ); }
+  pub inline fn isIso(  self : Vec2 ) bool { return utl.isFltEq( self.x, self.y ); }
+
+  pub inline fn isEq(   self : Vec2, other : Vec2 ) bool { return utl.isFltEq( self.x, other.x ) and utl.isFltEq( self.y, other.y ); }
+  pub inline fn isDiff( self : Vec2, other : Vec2 ) bool { return !self.isEq( other ); }
+
+
+  // ================ BACIS MATHS ================
+
+  pub inline fn abs( self : Vec2 ) Vec2 { return Vec2{ .x =  @abs( self.x ), .y =  @abs( self.y ) }; }
+  pub inline fn neg( self : Vec2 ) Vec2 { return Vec2{ .x = -@abs( self.x ), .y = -@abs( self.y ) }; }
+  pub inline fn flp( self : Vec2 ) Vec2 { return Vec2{ .x = -self.x,         .y = -self.y }; }
+
+  pub inline fn add( self : Vec2, other : Vec2 ) Vec2 { return Vec2{ .x = self.x + other.x, .y = self.y + other.y }; }
+  pub inline fn sub( self : Vec2, other : Vec2 ) Vec2 { return Vec2{ .x = self.x - other.x, .y = self.y - other.y }; }
+  pub inline fn mul( self : Vec2, other : Vec2 ) Vec2 { return Vec2{ .x = self.x * other.x, .y = self.y * other.y }; }
+  pub inline fn div( self : Vec2, other : Vec2 ) ?Vec2
+  {
+    if( utl.isFltZr( other.x ) or utl.isFltZr( other.y ))
+    {
+      utl.qlog( .ERROR, 0, @src(), "Division by zero in Vec2.div()" );
+      return null;
+    }
+    return Vec2{ .x = self.x / other.x, .y = self.y / other.y };
+  }
+
+  pub inline fn addVal( self : Vec2, val : f64 ) Vec2 { return Vec2{ .x = self.x + val, .y = self.y + val }; }
+  pub inline fn subVal( self : Vec2, val : f64 ) Vec2 { return Vec2{ .x = self.x - val, .y = self.y - val }; }
+  pub inline fn mulVal( self : Vec2, val : f64 ) Vec2 { return Vec2{ .x = self.x * val, .y = self.y * val }; }
+  pub inline fn divVal( self : Vec2, val : f64 ) ?Vec2
+  {
+    if( utl.isFltZr( val ))
+    {
+      utl.qlog( .ERROR, 0, @src(), "Division by zero in Vec2.divVal()" );
+      return null;
+    }
+    return Vec2{ .x = self.x / val, .y = self.y / val };
+  }
+
+  pub inline fn getDist(    self : Vec2, other : Vec2 ) f64 { return @sqrt( self.getDistSqr( other )); }
+  pub inline fn getDistSqr( self : Vec2, other : Vec2 ) f64
+  {
+    const dx = self.x - other.x;
+    const dy = self.y - other.y;
+    return ( dx * dx ) + ( dy * dy );
+  }
+
+  pub inline fn getDistM( self : Vec2, other : Vec2 ) f64 { return self.getDistX( other ) + self.getDistY( other ); }
+  pub inline fn getDistX( self : Vec2, other : Vec2 ) f64 { return @abs( self.x - other.x ); }
+  pub inline fn getDistY( self : Vec2, other : Vec2 ) f64 { return @abs( self.y - other.y ); }
+
+  pub inline fn getMaxLinDist( self : Vec2, other : Vec2 ) f64 { return @max( self.getDistX( other ), self.getDistY( other )); }
+  pub inline fn getMinLinDist( self : Vec2, other : Vec2 ) f64 { return @min( self.getDistX( other ), self.getDistY( other )); }
+  pub inline fn getAvgLinDist( self : Vec2, other : Vec2 ) f64 { return ( self.getDistX( other ) + self.getDistY( other )) / 2.0; }
+
+
+  // ================ VECTOR MATHS ================
+
+  pub inline fn lerp(  self : Vec2, other : Vec2, t : f64 ) Vec2
+  {
+    const x : f64 = utl.lerp( self.x, other.x, t );
+    const y : f64 = utl.lerp( self.y, other.y, t );
+
+    return .new( x, y );
+  }
+
+  pub inline fn norm(  self : Vec2               ) Vec2 { return self.normToLen( 1.0 ); }
+  pub inline fn dot(   self : Vec2, other : Vec2 ) f64  { return ( self.x * other.x ) + ( self.y * other.y ); }
+  pub inline fn cross( self : Vec2, other : Vec2 ) f64  { return ( self.x * other.y ) - ( self.y * other.x ); }
+
+  // Normalizes a vector to a new length, returns null if the vector is zero'd
+  pub fn normToLen( self : Vec2, newLen : f64 ) Vec2
+  {
+    if( utl.isFltZr( newLen ))
+    {
+      utl.qlog( .TRACE, 0, @src(), "Normalizing a Vec2 to 0" );
+      return .{};
+    }
+
+    const oldLenSqr = self.lenSqr();
+    if( utl.isFltZr( oldLenSqr ))
+    {
+      utl.qlog( .TRACE, 0, @src(), "Normalizing a 0:0 Vec2" );
+      return .{};
+    }
+
+    if( utl.isFltEq( oldLenSqr, newLen * newLen )){ return self; }
+    const factor = newLen / @sqrt( oldLenSqr );
+
+    return self.mulVal( factor );
+  }
+
+  pub inline fn len(    self : Vec2 ) f64 { return @sqrt( self.lenSqr() ); }
+  pub inline fn lenSqr( self : Vec2 ) f64 { return ( self.x * self.x ) + ( self.y * self.y ); }
+
+  pub inline fn rotDeg( self : Vec2, d : f64   ) Vec2 { return self.rot( .{ .r = utl.DtR( d )}); }
+  pub inline fn rot(    self : Vec2, a : Angle ) Vec2
+  {
+    if( a.isZero() ){ return .{ .x = self.x, .y = self.y }; }
+    const cosA = a.cos();
+    const sinA = a.sin();
+
+    return Vec2{
+      .x = ( self.x * cosA ) - ( self.y * sinA ),
+      .y = ( self.x * sinA ) + ( self.y * cosA ),
+    };
+  }
+
+  pub inline fn toAngle( self : Vec2 ) Angle { return Angle.atan2( @floatCast( self.y ), @floatCast( self.x )); }
+};
