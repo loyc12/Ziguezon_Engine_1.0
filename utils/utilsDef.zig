@@ -317,13 +317,12 @@ pub const Interface2D    = ntf_u.Interface2D;
 
 
 
-
-// ================================ MINOR HELPER FUNCTIONS ================================
+// ================================ HELPER FUNCTIONS ================================
 
 pub const areContEqual = std.meta.eql;
 
 
-// ================================ (DE)INITIALISATION FUNCTIONS  ================================
+// ================ (DE) INITIALISATION =================
 
 pub inline fn initAllUtils() void
 {
