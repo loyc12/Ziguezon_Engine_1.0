@@ -52,14 +52,14 @@ pub fn renderBody( e1 : *const Body ) void
 
   if( e1.shape == .RECT )
   {
-    utl.wDraw.rect( p, s, a, c );
+    eng.wDraw.rect( p, s, a, c );
   }
   else if( e1.shape.isStar() )
   {
-    utl.wDraw.star( p, s, a, c, e1.shape.getEdgeCount(), e1.shape.getSkipFactor() );
+    eng.wDraw.star( p, s, a, c, e1.shape.getEdgeCount(), e1.shape.getSkipFactor() );
   }
   else // Lines can be handled by drawPoly()
   {
-    utl.wDraw.poly( p, s, a, c, e1.shape.getEdgeCount() );
+    eng.wDraw.poly( p, s, a, c, e1.shape.getEdgeCount() );
   }
 }

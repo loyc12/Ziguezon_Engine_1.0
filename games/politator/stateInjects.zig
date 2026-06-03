@@ -64,9 +64,9 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
     TILEMAP_DATA[ index ] =
     .{
-      .popCount = @intCast( eng.G_RNG.getClampedInt( 0, 256 )),
-      .infCount = @intCast( eng.G_RNG.getClampedInt( 0, 128 )),
-      .resCount = @intCast( eng.G_RNG.getClampedInt( 0, 512 )),
+      .popCount = @intCast( eng.G_ENG.rng.getClampedInt( 0, 256 )),
+      .infCount = @intCast( eng.G_ENG.rng.getClampedInt( 0, 128 )),
+      .resCount = @intCast( eng.G_ENG.rng.getClampedInt( 0, 512 )),
     };
 
     tile.colour = .{ .r = 0, .g = 0, .b = 0, .a = 255 };

@@ -54,7 +54,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   var min_noise : f32 = 1.0;
   var max_noise : f32 = 0.0;
 
-  NOISE_GEN.seed = eng.G_RNG.getInt( u64 );
+  NOISE_GEN.seed = eng.G_ENG.rng.getInt( u64 );
   utl.log( .INFO, 0, @src(), "Generating world with seed '{}'", .{ NOISE_GEN.seed });
 
   for( 0 .. worldGrid.getTileCount() )| index |

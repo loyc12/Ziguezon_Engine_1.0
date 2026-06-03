@@ -1,12 +1,3 @@
-const std = @import( "std"   );
-const utl = @import( "utils" );
-
-
-// ================================ GLOBAL VARS ================================
-
-pub var G_RNG   : utl.Randomiser = .{};
-pub var G_CAM   : utl.Cam2D      = .{};
-
 // ================================ GAME INTERFACES ================================
 
 // ================ ENGINE SETTINGS ================
@@ -43,6 +34,15 @@ pub const res_m = @import( "resources/resourceManager.zig" );
 pub const vnt_m = @import( "world/events/eventManager.zig" );
 pub const tlm_m = @import( "world/tilemap/tilemapManager.zig" );
 pub const bdy_m = @import( "legacy/body/bodyManager.zig" );
+
+
+// ================ RENDER ================
+
+pub const wCam    = @import( "render/worldCamera.zig" );
+pub const wDraw   = @import( "render/drawerWorld.zig" );
+pub const wSprite = @import( "render/spriteWorld.zig" );
+
+pub const WorldCam = wCam.WorldCam;
 
 
 // ================ BODY ================

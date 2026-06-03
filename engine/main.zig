@@ -17,7 +17,7 @@ pub fn initCriticals() void
   utl.qlog( .TRACE, 0, @src(), "# Initializing all subsystems..." );
 
   utl.G_EPOCH = utl.getNow();
-  eng.G_RNG.randInit();
+  eng.G_ENG.rng.randInit();
   eng.G_ENG.initTimers();
 
   utl.initAllUtils();

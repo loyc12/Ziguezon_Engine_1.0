@@ -163,10 +163,26 @@ pub fn build( b : *std.Build ) void
 
   // ================ GENERIC COMANDS ================
 
-  const run_step = b.step( "run", "Runs the engine with the provided game path" );
-  const run_cmd  = b.addRunArtifact( exe );
-  run_step.dependOn( &run_cmd.step );
-  if( b.args )| args |{ run_cmd.addArgs( args ); }
+  const run_step = b.step( "run", "Use [game]_run instead, e.g. debug_run or orbiter_run" );
+  const run_fail = b.addFail( "Bare `zig build run` is ambiguous. Use `zig build debug_run`, `zig build orbiter_run`, etc." );
+  run_step.dependOn( &run_fail.step );
+
+
+  const clean_exe_step = b.step( "clean_exe", "Deletes installed executables from zig-out/bin" );
+  const clean_exe_cmd  = b.addRemoveDirTree( b.path( "zig-out/bin" ) );
+  clean_exe_step.dependOn( &clean_exe_cmd.step );
+
+  const clean_artifacts_step = b.step( "clean_artifacts", "Deletes build artifacts from zig-out" );
+  const clean_artifacts_cmd  = b.addRemoveDirTree( b.path( "zig-out" ) );
+  clean_artifacts_step.dependOn( &clean_artifacts_cmd.step );
+
+  const clean_cache_step = b.step( "clean_cache", "Deletes the local Zig build cache from .zig-cache" );
+  const clean_cache_cmd  = b.addRemoveDirTree( b.path( ".zig-cache" ) );
+  clean_cache_step.dependOn( &clean_cache_cmd.step );
+
+  const clean_all_step = b.step( "clean_all", "Deletes build artifacts and the local Zig build cache" );
+  clean_all_step.dependOn( &clean_artifacts_cmd.step );
+  clean_all_step.dependOn( &clean_cache_cmd.step );
 
 
   // ================ SPECIFIC COMMANDS ================
@@ -175,6 +191,7 @@ pub fn build( b : *std.Build ) void
   .{
     .{ "debug",       "games/debug/engineInterface.zig"       }, // Default
 
+    .{ "menuer",      "games/menuer/engineInterface.zig"      },
     .{ "ping",        "games/ping/engineInterface.zig"        },
     .{ "floppy",      "games/floppy/engineInterface.zig"      },
     .{ "dehexer",     "games/dehexer/engineInterface.zig"     },
@@ -225,12 +242,7 @@ pub fn build( b : *std.Build ) void
     const game_run_step = b.step( n1 ++ "_run", "Compiles " ++ n1 ++ " in debug mode and runs it" );
     const game_run_cmd  = b.addSystemCommand(
       &.{
-        "zig",
-        "build",
-        "run",
-        "--release="               ++ "off",
-        "-Dexecutable_name="       ++ dbg_exe_name,
-        "-Dengine_interface_path=" ++ path,
+        "zig-out/bin/" ++ dbg_exe_name,
       });
 
 
@@ -262,12 +274,7 @@ pub fn build( b : *std.Build ) void
       const mode_run_step = b.step( n1 ++ "_" ++ n2 ++ "_run", "- Compiles " ++ n1 ++ " in " ++ mode ++ " for native platform and runs it" );
       const mode_run_cmd  = b.addSystemCommand(
         &.{
-          "zig",
-          "build",
-          "run",
-          "--release="               ++ n2,
-          "-Dexecutable_name="       ++ opt_exe_name,
-          "-Dengine_interface_path=" ++ path,
+          "zig-out/bin/" ++ opt_exe_name,
         });
 
       mode_run_cmd.step.dependOn( &mode_cmd.step );
@@ -317,6 +324,37 @@ pub fn build( b : *std.Build ) void
       targ_step.dependOn( &targ_cmd.step );
     }
   }
+
+
+  // ================ BUILD CHECK COMMANDS ================
+
+  const check_games_step = b.step( "check_games", "Builds every listed game sequentially, deleting executables after each build" );
+
+  var prev_game_check_step : ?*std.Build.Step = null;
+
+  inline for( games )| game |
+  {
+    const n1   = game[ 0 ];
+    const path = game[ 1 ];
+
+    const game_check_cmd = b.addSystemCommand(
+      &.{
+        "zig",
+        "build",
+        "--release="               ++ "off",
+        "-Dexecutable_name="       ++ n1,
+        "-Dengine_interface_path=" ++ path,
+      });
+
+    if( prev_game_check_step )| prev |{ game_check_cmd.step.dependOn( prev ); }
+
+    const game_clean_cmd = b.addRemoveDirTree( b.path( "zig-out/bin" ) );
+    game_clean_cmd.step.dependOn( &game_check_cmd.step );
+
+    prev_game_check_step = &game_clean_cmd.step;
+  }
+
+  if( prev_game_check_step )| last |{ check_games_step.dependOn( last ); }
 
 
   // ================ TEST COMANDS ================

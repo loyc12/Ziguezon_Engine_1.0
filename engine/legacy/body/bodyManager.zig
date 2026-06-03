@@ -282,8 +282,8 @@ pub const BodyManager = struct
 
     for( self.bodyList.items )| *e |{ if( e.isActive() )
     {
-      if( e.isSolid() ){ e.hitbox.drawSelf( utl.Colour.blue.setA( 32 )); }
-      else             { e.hitbox.drawSelf( utl.Colour.red.setA(  32 )); }
+      if( e.isSolid() ){ eng.wDraw.rect( e.hitbox.center, e.hitbox.scale, .{}, utl.Colour.blue.setA( 32 )); }
+      else             { eng.wDraw.rect( e.hitbox.center, e.hitbox.scale, .{}, utl.Colour.red.setA(  32 )); }
 
     }}
   }

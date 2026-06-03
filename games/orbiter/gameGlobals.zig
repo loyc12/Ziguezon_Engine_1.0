@@ -185,7 +185,7 @@ pub const TargetInfo = struct
 
       if( targetTrans )| trans |
       {
-        eng.G_CAM.pos = trans.pos;
+        eng.G_ENG.camera.cam.pos = trans.pos;
         utl.qlog( .TRACE, 0, @src(), "View centered on target" );
       }
       else

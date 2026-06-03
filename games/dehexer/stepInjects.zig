@@ -168,7 +168,7 @@ fn initGrid( ng : *eng.Engine, grid : *eng.Tilemap, startTile : *eng.Tile ) void
     tile.colour = .mGray;
 
     // getting a random value between 0.0 and 1.0
-    const noiseVal = eng.G_RNG.getFloat( f32 );
+    const noiseVal = eng.G_ENG.rng.getFloat( f32 );
 
     // determining the odds of this tile being a mine
     var threshold : f32 = @floatFromInt( remaingingMineCount );
@@ -178,7 +178,7 @@ fn initGrid( ng : *eng.Engine, grid : *eng.Tilemap, startTile : *eng.Tile ) void
     if( remaingingMineCount > 0 and noiseVal < threshold )
     {
       remaingingMineCount -= 1;
-      const mineTypeNoiseVal = eng.G_RNG.getFloat( f32 );
+      const mineTypeNoiseVal = eng.G_ENG.rng.getFloat( f32 );
 
       if(      mineTypeNoiseVal < 0.5 ){ tile.tType  = TILE_MINE_1; } //tile.colour = .lGreen; }
       else if( mineTypeNoiseVal < 0.8 ){ tile.tType  = TILE_MINE_2; } //tile.colour = .mGreen; }
@@ -354,7 +354,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
   {
     const offset = shaker.getOffsetAtTime( shake_prog );
 
-    eng.G_CAM.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 0.1, }};
+    eng.G_ENG.camera.cam.pos = .{ .x = offset.x * shake_force * 16, .y = offset.y * shake_force * 16, .a = .{ .r = offset.a.r * shake_force * 0.1, }};
 
     shake_prog += ( 1.0 / 120.0 );
   }
@@ -381,7 +381,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
 
   if( utl.ray.isMouseButtonPressed( utl.ray.MouseButton.left ) or utl.ray.isMouseButtonPressed( utl.ray.MouseButton.right ))
   {
-    const mouseWorldPos = utl.getMouseWorldPos();
+    const mouseWorldPos = eng.G_ENG.camera.getMouseWorldPos();
 
     const worldCoords = grid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
@@ -499,7 +499,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   }
 
 
-  const screenCenter = utl.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, eng.G_CAM.toRayCam() );
+  const screenCenter = utl.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, eng.G_ENG.camera.toRayCam() );
 
 
   var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
@@ -531,7 +531,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   {
     const tile : *eng.Tile = &grid.tileArray.items.ptr[ index ];
 
-    const tileCenter = eng.G_CAM.worldToScreen( grid.getAbsTilePos( tile.mapCoords ).toVec2() );
+    const tileCenter = eng.G_ENG.camera.worldToScreen( grid.getAbsTilePos( tile.mapCoords ).toVec2() );
 
     if(      tile.colour.isEq( .blue   )){ utl.sDraw.textCenter( "1", tileCenter, text_scale, .white ); }
     else if( tile.colour.isEq( .lBlue  )){ utl.sDraw.textCenter( "2", tileCenter, text_scale, .white ); }
@@ -610,7 +610,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 //{
 //  const offset = shaker.getOffsetAtTime( shake_prog );
 
-//  eng.G_CAM.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
+//  eng.G_ENG.camera.cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 4, }};
 
 //  shake_prog += ( 1.0 / 120.0 );
 //}

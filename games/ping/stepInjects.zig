@@ -40,15 +40,15 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
   {
     _ = i; // Ignore the index, we don't need it
 
-    const size = eng.G_RNG.getScaledFloat( 2.0, 7.0 );
+    const size = eng.G_ENG.rng.getScaledFloat( 2.0, 7.0 );
 
     _ = ng.bodyManager.loadBodyFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
     .{
-      .pos    = eng.G_RNG.getScaledVecA( dPos, pos ),
-      .vel    = eng.G_RNG.getScaledVecA( dVel, vel ),
+      .pos    = eng.G_ENG.rng.getScaledVecA( dPos, pos ),
+      .vel    = eng.G_ENG.rng.getScaledVecA( dVel, vel ),
       .scale  = Vec2.new( size, size ),
 
-      .shape  = eng.G_RNG.getVal( utl.Shape2D ),
+      .shape  = eng.G_ENG.rng.getVal( utl.Shape2D ),
       .colour = colour,
     });
   }
@@ -150,16 +150,16 @@ pub fn OnFrameUpdate( ng : *Engine ) void
     if( utl.ray.isKeyDown( utl.ray.KeyboardKey.down  ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_enter )){ P2_MV_FAC = 0; }
 
     // Move the camera with the numpad keys
-    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_8 )){ eng.G_CAM.moveByS( Vec2.new(  0, -8 )); }
-    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_2 )){ eng.G_CAM.moveByS( Vec2.new(  0,  8 )); }
-    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_4 )){ eng.G_CAM.moveByS( Vec2.new( -8,  0 )); }
-    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_6 )){ eng.G_CAM.moveByS( Vec2.new(  8,  0 )); }
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_8 )){ eng.G_ENG.camera.moveByS( Vec2.new(  0, -8 )); }
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_2 )){ eng.G_ENG.camera.moveByS( Vec2.new(  0,  8 )); }
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_4 )){ eng.G_ENG.camera.moveByS( Vec2.new( -8,  0 )); }
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.kp_6 )){ eng.G_ENG.camera.moveByS( Vec2.new(  8,  0 )); }
 
     // Reset the camera zoom and position when r is pressed
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
     {
-      eng.G_CAM.setZoom( 1.0 );
-      eng.G_CAM.pos = .{};
+      eng.G_ENG.camera.setZoom( 1.0 );
+      eng.G_ENG.camera.cam.pos = .{};
       utl.qlog( .INFO, 0, @src(), "Camera reseted" );
     }
   }
@@ -300,7 +300,7 @@ pub fn OffTickUpdate( ng : *Engine ) void
     else // If the ball is in the middle of the screen, reset its horizontal position
     {
       utl.qlog( .WARN, 0, @src(), "No player scored, throwing ball to Player 1" );
-      if( eng.G_RNG.getVal( bool ))
+      if( eng.G_ENG.rng.getVal( bool ))
       {
         ball.vel.x =  B_BASE_VEL;
         ball.pos.x = -hWidth / 2;

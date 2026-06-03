@@ -72,7 +72,7 @@ inline fn updateFrame( ng : *Engine ) void
     if( utl.ray.isWindowResized() )
     {
       utl.qlog( .TRACE, 0, @src(), "Updating camera dimensions" );
-      eng.G_CAM.updateView();
+      eng.G_ENG.camera.updateView();
     }
   }
 
@@ -180,7 +180,7 @@ inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instea
   eng.tryHook( .OnRenderBckgrnd, ng );
 
 
-  utl.ray.beginMode2D( eng.G_CAM.toRayCam() );
+  utl.ray.beginMode2D( eng.G_ENG.camera.toRayCam() );
   {
     eng.tryHook( .OnRenderWorld, ng );
 

@@ -63,7 +63,11 @@ pub fn start( ng : *Engine ) void
 
   // Initialize relevant raylib components
   {
-    eng.G_CAM.zoom = eng.CNFGS.Camera_Zoom_Init;
+    eng.G_ENG.camera.configZoom(
+      @floatCast( eng.CNFGS.Camera_Zoom_Min  ),
+      @floatCast( eng.CNFGS.Camera_Zoom_Max  ),
+      @floatCast( eng.CNFGS.Camera_Zoom_Init ),
+    );
 
     if( !utl.ray.isAudioDeviceReady() )
     {

@@ -1,5 +1,4 @@
 const std = @import( "std" );
-const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const Angle = utl.Angle;
@@ -543,10 +542,6 @@ pub const Box2 = struct
     self.clampOnArea( zoneBox.getTopLeft(), zoneBox.getBottomRight() );
   }
 
-
-  // ================ DEBUG METHODS ================
-
-  pub fn drawSelf( self : Box2, color : utl.Colour ) void { utl.wDraw.rect( self.center, self.scale, .{}, color ); }
 };
 
 
@@ -618,6 +613,5 @@ test "Box2 clampOut moves by the shallowest separating side" {
   try std.testing.expect( areaBox.isOutOfArea( Vec2.new( -1.0, -1.0 ), Vec2.new( 3.0, 3.0 )));
   try std.testing.expect( areaBox.getMaxX() == -1.0 );
 }
-
 
 

@@ -285,11 +285,11 @@ pub const OrbitComp = struct
   {
     const scaledAbsVel = self.getAbsVel( orbitedVel ).normToLen( selfRadius * 3.0 );
     const scaledRelVel = self.getRelVel(            ).normToLen( selfRadius * 3.0 );
-    const zoomedWidth  = 1.0 / eng.G_CAM.getZoom();
+    const zoomedWidth  = 1.0 / eng.G_ENG.camera.getZoom();
 
 
-    utl.wDraw.basicLine( selfPos, selfPos.add( scaledAbsVel ), .blue, zoomedWidth * 2.0 ); // Velocity Vector ( absolute )
-    utl.wDraw.basicLine( selfPos, selfPos.add( scaledRelVel ), .red,  zoomedWidth * 2.0 ); // Velocity Vector ( relative )
+    eng.wDraw.basicLine( selfPos, selfPos.add( scaledAbsVel ), .blue, zoomedWidth * 2.0 ); // Velocity Vector ( absolute )
+    eng.wDraw.basicLine( selfPos, selfPos.add( scaledRelVel ), .red,  zoomedWidth * 2.0 ); // Velocity Vector ( relative )
 
     const minRad = self.getHillRadius();
     const maxRad = self.getRocheLimit( selfRadius, moonDensity, 0.25 ); // Assumes a near-solid moon
@@ -312,13 +312,13 @@ pub const OrbitComp = struct
         vecMin1 = vecMin1.rot( a );
         vecMax1 = vecMax1.rot( a );
 
-        utl.wDraw.basicLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
-        utl.wDraw.basicLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
+        eng.wDraw.basicLine( selfPos.add( vecMin2 ), selfPos.add( vecMin1 ), .red,    zoomedWidth );
+        eng.wDraw.basicLine( selfPos.add( vecMax2 ), selfPos.add( vecMax1 ), .yellow, zoomedWidth );
       }
     }
 
-    utl.wDraw.hexa( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange );
-    utl.wDraw.hexa( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple );
+    eng.wDraw.hexa( orbitedPos.add( self.getPeriapsisRelPos() ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .orange );
+    eng.wDraw.hexa( orbitedPos.add( self.getApoapsisRelPos()  ), Vec2.new( 1, 1 ).mulVal( zoomedWidth * 4.0 ), .{}, .purple );
   }
 
   pub fn renderPath( self : *const OrbitComp, orbitedPos : Vec2 ) void
@@ -332,7 +332,7 @@ pub const OrbitComp = struct
 
     if( !doDraw ){ return; }
 
-    const zoomedWidth : f64 = 1.0 / eng.G_CAM.getZoom();
+    const zoomedWidth : f64 = 1.0 / eng.G_ENG.camera.getZoom();
     const N_f         : f64 = @floatFromInt( N );
     const ecc         : f64 = self.getEccentricity();
     const semiMajor   : f64 = self.getSemiMajor();
@@ -391,7 +391,7 @@ pub const OrbitComp = struct
       p2 = p1;
       p1 = self.getRelPosAtAngle( drawAngle );
 
-      utl.wDraw.basicLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, zoomedWidth );
+      eng.wDraw.basicLine( orbitedPos.add( p1 ), orbitedPos.add( p2 ), pathCol, zoomedWidth );
 
       pathCol = pathCol.subA( gdf.G_CONSTS.orbitFadeStrenght ); // Fading-out path's alpha
 
@@ -407,7 +407,7 @@ pub const OrbitComp = struct
 
   pub fn renderLPs( self : *const OrbitComp, orbitedPos : Vec2, maxLP : usize ) void
   {
-    const zoomedWidth = 1.0 / eng.G_CAM.getZoom();
+    const zoomedWidth = 1.0 / eng.G_ENG.camera.getZoom();
 
     const LPcount = @min( 5, maxLP ) + 1;
 
@@ -420,7 +420,7 @@ pub const OrbitComp = struct
     {
       const pos = self.getAbsLpPos( orbitedPos, @intCast( i ));
 
-      utl.wDraw.hexa( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3.0 ), .{}, .red );
+      eng.wDraw.hexa( pos, Vec2.new( 1, 1 ).mulVal( zoomedWidth * 3.0 ), .{}, .red );
     }
   }
 

@@ -50,20 +50,20 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.up    )){ eng.G_CAM.moveByS( Vec2.new(  0, -8 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.down  )){ eng.G_CAM.moveByS( Vec2.new(  0,  8 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.left  )){ eng.G_CAM.moveByS( Vec2.new( -8,  0 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right )){ eng.G_CAM.moveByS( Vec2.new(  8,  0 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.up    )){ eng.G_ENG.camera.moveByS( Vec2.new(  0, -8 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.down  )){ eng.G_ENG.camera.moveByS( Vec2.new(  0,  8 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.left  )){ eng.G_ENG.camera.moveByS( Vec2.new( -8,  0 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right )){ eng.G_ENG.camera.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( utl.ray.getMouseWheelMove() > 0.0 ){ eng.G_CAM.zoomBy( 11.0 / 10.0 ); }
-  if( utl.ray.getMouseWheelMove() < 0.0 ){ eng.G_CAM.zoomBy(  9.0 / 10.0 ); }
+  if( utl.ray.getMouseWheelMove() > 0.0 ){ eng.G_ENG.camera.zoomBy( 11.0 / 10.0 ); }
+  if( utl.ray.getMouseWheelMove() < 0.0 ){ eng.G_ENG.camera.zoomBy(  9.0 / 10.0 ); }
 
   // Reset the camera zoom and position when r is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
   {
-    eng.G_CAM.setZoom(   1.0 );
-    eng.G_CAM.pos = .{};
+    eng.G_ENG.camera.setZoom(   1.0 );
+    eng.G_ENG.camera.cam.pos = .{};
     utl.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 
@@ -74,9 +74,9 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
   };
 
   // Keep the camera looking over the map area
-  eng.G_CAM.clampCenterInArea( worldGrid.getMapBoundingBox() );
+  eng.G_ENG.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
 
-  const mouseWorldPos = utl.getMouseWorldPos();
+  const mouseWorldPos = eng.G_ENG.camera.getMouseWorldPos();
 
   const worldCoords = worldGrid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 

@@ -26,8 +26,10 @@ pub const Engine = struct
   const ngnTime = @import( "engineTime.zig" );
 
   // Engine Variables
-  state : e_ng_state         = .OFF,
-  times : ngnTime.EngineTime = .{},
+  state  : e_ng_state         = .OFF,
+  times  : ngnTime.EngineTime = .{},
+  rng    : utl.Randomiser     = .{},
+  camera : eng.WorldCam       = .{},
 
   // Engine Managers
   resourceManager   : eng.res_m.ResourceManager = .{},
@@ -63,9 +65,6 @@ pub const Engine = struct
   pub inline fn getRealFrameSDT(   self : *Engine ) f32 { return( self.times.getScaledLastFrameDeltaFloat()   ); }
   pub inline fn getTargetTickSDT(  self : *Engine ) f32 { return( self.times.getScaledTargetTickDeltaFloat()  ); }
   pub inline fn getRealTickSDT(    self : *Engine ) f32 { return( self.times.getScaledLastTickDeltaFloat()    ); }
-
-  pub inline fn getCamera( self : *Engine ) *utl.Cam2D { _ = self; return eng.G_CAM; } // Shortcut
-
 
   // ================================ ENGINE STATE FUNCTIONS ================================
 

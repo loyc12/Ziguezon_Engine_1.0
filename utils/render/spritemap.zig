@@ -1,5 +1,4 @@
 const std  = @import( "std" );
-const eng  = @import( "engine" );
 const utl = @import( "utils" );
 
 const Vec2   = utl.Vec2;
@@ -26,11 +25,6 @@ pub const Sprite = struct
   scale  : Vec2,
   colour : Colour = .white,
 
-
-  pub inline fn drawSelf( self : *Sprite ) void
-  {
-    self.spritemapPtr.drawSprite( self.spritemapIdx, self.pos, self.scale, self.colour );
-  }
 
   pub fn tickAnimation( self : *Sprite ) void
   {
@@ -145,7 +139,7 @@ pub const Spritemap = struct
     utl.qlog( .DEBUG, 0, @src(), "$ spritemap initialized !" );
   }
 
-  fn getSpriteRect( self : *const Spritemap, index : u32 ) RayRect
+  pub fn getSpriteRect( self : *const Spritemap, index : u32 ) RayRect
   {
     const i : u32 = @mod( index, self.frameCount );
 
@@ -156,31 +150,6 @@ pub const Spritemap = struct
     const y : f32 = @floatFromInt( @divFloor( i, self.layoutHeight ));
 
     return .{ .x = x * w, .y = y * h, .width = w, .height = h };
-  }
-
-  pub fn drawSprite( self : *const Spritemap, index : u32, pos : VecA, scale : Vec2, col : utl.Colour ) void
-  {
-    utl.log( .TRACE, 0, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
-
-    const screenPos = eng.G_CAM.worldToRender( pos.toVec2() );
-
-
-    if( self.atlas == null )
-    {
-      utl.qlog( .ERROR, 0, @src(), "Trying to draw from uninitialized spritemap" );
-      return;
-    }
-
-    const src : RayRect = self.getSpriteRect( index );
-    const dst : RayRect =
-    .{
-      .x      = @floatCast( screenPos.x ),
-      .y      = @floatCast( screenPos.y ),
-      .width  = @floatCast( self.frameSize.x * scale.x ),
-      .height = @floatCast( self.frameSize.y * scale.y ),
-    };
-
-    self.atlas.?.drawPro( src, dst, self.frameSize.mul( scale ).mulVal( 0.5 ).toRayVec2(), @floatCast( pos.a.toDeg() ), col.toRayCol() );
   }
 
   pub fn drawScreenSprite( self : *const Spritemap, index : u32, pos : VecA, scale : Vec2, col : utl.Colour ) void

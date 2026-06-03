@@ -61,7 +61,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
   // Returns the effective render scale, clamping to minSize in screen space if set
   inline fn getRenderScale( self : *const ShapeComp ) Vec2
   {
-    const zoom = eng.G_CAM.getZoom(); // fetch current zoom factor
+    const zoom = eng.G_ENG.camera.getZoom(); // fetch current zoom factor
 
     var renderScale = self.scale.mulVal( zoom );
 
@@ -85,18 +85,18 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
     const a = selfPos.a;
     const c = self.colour;
 
-  if( self.shape == .RECT )
-  {
-    utl.wDraw.rect( p, s, a, c );
-  }
-  else if( self.shape.isStar() )
-  {
-    utl.wDraw.star( p, s, a, c, self.shape.getEdgeCount(), self.shape.getSkipFactor() );
-  }
-  else // Lines can be handled by drawPoly()
-  {
-    utl.wDraw.poly( p, s, a, c, self.shape.getEdgeCount() );
-  }
+    if( self.shape == .RECT )
+    {
+      eng.wDraw.rect( p, s, a, c );
+    }
+    else if( self.shape.isStar() )
+    {
+      eng.wDraw.star( p, s, a, c, self.shape.getEdgeCount(), self.shape.getSkipFactor() );
+    }
+    else // Lines can be handled by drawPoly()
+    {
+      eng.wDraw.poly( p, s, a, c, self.shape.getEdgeCount() );
+    }
   }
 };
 
@@ -158,5 +158,5 @@ pub const SpriteComp = struct
 
   pub inline fn setPos(   self : *SpriteComp, newPos   : VecA ) void { self.sprite.pos   = newPos;   }
   pub inline fn setscale( self : *SpriteComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
-  pub inline fn render(   self : *const SpriteComp            ) void { self.sprite.drawSelf();       }
+  pub inline fn render(   self : *const SpriteComp            ) void { eng.wSprite.drawSprite( &self.sprite ); }
 };

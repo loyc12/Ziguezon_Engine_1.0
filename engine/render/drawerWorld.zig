@@ -1,6 +1,6 @@
 const eng  = @import( "engine" );
 const utl = @import( "utils" );
-const core = @import( "drawerCore.zig" );
+const core = utl.drw_c;
 
 const Vec2 = utl.Vec2;
 
@@ -12,7 +12,7 @@ const WorldTransform = struct
   // Used in world render to cancel-out camera position
   pub inline fn toRay( worldPos : Vec2 ) utl.RayVec2
   {
-    return eng.G_CAM.worldToRender( worldPos ).toRayVec2();
+    return eng.G_ENG.camera.worldToRender( worldPos ).toRayVec2();
   }
 };
 

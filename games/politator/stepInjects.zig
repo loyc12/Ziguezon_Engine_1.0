@@ -60,20 +60,20 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.p )){ ng.togglePause(); }
 
   // Move the camera with the WASD or arrow keys
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w )){ eng.G_CAM.moveByS( Vec2.new(  0, -8 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s )){ eng.G_CAM.moveByS( Vec2.new(  0,  8 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a )){ eng.G_CAM.moveByS( Vec2.new( -8,  0 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d )){ eng.G_CAM.moveByS( Vec2.new(  8,  0 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w )){ eng.G_ENG.camera.moveByS( Vec2.new(  0, -8 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s )){ eng.G_ENG.camera.moveByS( Vec2.new(  0,  8 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a )){ eng.G_ENG.camera.moveByS( Vec2.new( -8,  0 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d )){ eng.G_ENG.camera.moveByS( Vec2.new(  8,  0 )); }
 
   // Zoom in and out with the mouse wheel
-  if( utl.ray.getMouseWheelMove() > 0.0 ){ eng.G_CAM.zoomBy( 1.1 ); }
-  if( utl.ray.getMouseWheelMove() < 0.0 ){ eng.G_CAM.zoomBy( 0.9 ); }
+  if( utl.ray.getMouseWheelMove() > 0.0 ){ eng.G_ENG.camera.zoomBy( 1.1 ); }
+  if( utl.ray.getMouseWheelMove() < 0.0 ){ eng.G_ENG.camera.zoomBy( 0.9 ); }
 
   // Reset the camera zoom and position when r is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
   {
-    eng.G_CAM.setZoom(   1.0 );
-    eng.G_CAM.pos = .{};
+    eng.G_ENG.camera.setZoom(   1.0 );
+    eng.G_ENG.camera.cam.pos = .{};
     utl.qlog( .INFO, 0, @src(), "Camera reset" );
   }
 
@@ -96,11 +96,11 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
   };
 
   // Keep the camera over the world grid
-  eng.G_CAM.clampCenterInArea( worldGrid.getMapBoundingBox() );
+  eng.G_ENG.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
 
   if( utl.ray.isMouseButtonPressed( utl.ray.MouseButton.left ))
   {
-    const mouseWorldPos = utl.getMouseWorldPos();
+    const mouseWorldPos = eng.G_ENG.camera.getMouseWorldPos();
 
     const worldCoords = worldGrid.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 

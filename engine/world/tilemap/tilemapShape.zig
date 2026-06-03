@@ -569,13 +569,13 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
 
   switch( tlmp.tileShape )
   {
-    .RECT => utl.wDraw.rect( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
-    .DIAM => utl.wDraw.diam( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
+    .RECT => eng.wDraw.rect( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
+    .DIAM => eng.wDraw.diam( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
 
-    .HEX1 => utl.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a.addDeg( 90.0 ), tile.colour ),
-    .HEX2 => utl.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a,                tile.colour ),
+    .HEX1 => eng.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a.addDeg( 90.0 ), tile.colour ),
+    .HEX2 => eng.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a,                tile.colour ),
 
-    .TRI1 => utl.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
-    .TRI2 => utl.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
+    .TRI1 => eng.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
+    .TRI2 => eng.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
   }
 }

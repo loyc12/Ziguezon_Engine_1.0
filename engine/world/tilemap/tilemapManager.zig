@@ -289,13 +289,15 @@ pub const TilemapManager = struct
 
     for( self.tilemapList.items )| *tlmp  |{ if( tlmp.isActive() )
     {
-      tlmp.getMapBoundingBox().drawSelf( utl.Colour.yellow.setA( 32 ));
+      const mapBox = tlmp.getMapBoundingBox();
+      eng.wDraw.rect( mapBox.center, mapBox.scale, .{}, utl.Colour.yellow.setA( 32 ));
 
       if( eng.CNFGS.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
       {
         const tile = tlmp.tileArray.items.ptr[ index ];
         const tilePos = tlmp.getRelTilePos( tile.mapCoords );
-        tlmp.getTileBoundingBox( tilePos ).drawSelf( utl.Colour.green.setA( 32 ));
+        const tileBox = tlmp.getTileBoundingBox( tilePos );
+        eng.wDraw.rect( tileBox.center, tileBox.scale, .{}, utl.Colour.green.setA( 32 ));
       }}
     }}
   }

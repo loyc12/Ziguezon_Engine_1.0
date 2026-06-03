@@ -47,7 +47,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
   {
     const offset = shaker.getOffsetAtTime( s_time );
 
-    eng.G_CAM.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 0.2, }};
+    eng.G_ENG.camera.cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 0.2, }};
     s_time += ( 1.0 / 120.0 );
 
     utl.log( .INFO, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
@@ -55,22 +55,22 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
 
 
   // Move the camera with the WASD or arrow keys
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.up    )){ eng.G_CAM.moveByS( Vec2.new(  0, -8 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.down  )){ eng.G_CAM.moveByS( Vec2.new(  0,  8 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.left  )){ eng.G_CAM.moveByS( Vec2.new( -8,  0 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right )){ eng.G_CAM.moveByS( Vec2.new(  8,  0 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.up    )){ eng.G_ENG.camera.moveByS( Vec2.new(  0, -8 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.down  )){ eng.G_ENG.camera.moveByS( Vec2.new(  0,  8 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.left  )){ eng.G_ENG.camera.moveByS( Vec2.new( -8,  0 )); }
+  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right )){ eng.G_ENG.camera.moveByS( Vec2.new(  8,  0 )); }
 
 
   // Zoom in and out with the mouse wheel
-  if( utl.ray.getMouseWheelMove() > 0.0 ){ eng.G_CAM.zoomBy( 11.0 / 10.0 ); }
-  if( utl.ray.getMouseWheelMove() < 0.0 ){ eng.G_CAM.zoomBy(  9.0 / 10.0 ); }
+  if( utl.ray.getMouseWheelMove() > 0.0 ){ eng.G_ENG.camera.zoomBy( 11.0 / 10.0 ); }
+  if( utl.ray.getMouseWheelMove() < 0.0 ){ eng.G_ENG.camera.zoomBy(  9.0 / 10.0 ); }
 
 
   // Reset the camera zoom and position when r is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
   {
-    eng.G_CAM.setZoom(   1.0 );
-    eng.G_CAM.pos = .{};
+    eng.G_ENG.camera.setZoom(   1.0 );
+    eng.G_ENG.camera.cam.pos = .{};
     utl.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 
@@ -132,7 +132,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
   if( utl.ray.isMouseButtonPressed( utl.ray.MouseButton.left ))
   {
     const mouseScreenPos = utl.getMouseScreenPos();
-    const mouseWorldPos  = utl.getMouseWorldPos();
+    const mouseWorldPos  = eng.G_ENG.camera.getMouseWorldPos();
 
     utl.log( .INFO, 0, @src(), "Mouse clicked at screen pos {d}:{d}, world pos {d}:{d}", .{ mouseScreenPos.x, mouseScreenPos.y, mouseWorldPos.x, mouseWorldPos.y });
 
@@ -151,7 +151,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
       utl.log( .INFO, 0, @src(), "Clicked on tile with coords {d}:{d} in tilemap {d}", .{ clickedTile.mapCoords.x, clickedTile.mapCoords.y, exampleTilemap.id });
 
       // Change the tile color to a random color
-      clickedTile.colour = eng.G_RNG.getColour();
+      clickedTile.colour = eng.G_ENG.rng.getColour();
     }
     else
     {

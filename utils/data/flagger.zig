@@ -1,5 +1,4 @@
 const std = @import( "std" );
-const eng = @import( "engine" );
 
 // Generates a new BitField of a given size from either an unsigned Int or Enum
 fn newBitField( BitFieldType : type, value : anytype ) BitFieldType

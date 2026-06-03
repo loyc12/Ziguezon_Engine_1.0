@@ -331,7 +331,7 @@ pub const Tilemap = struct
       var tmpType : e_tile_type = undefined;
 
       if( tileType != .RANDOM ){ tmpType = tileType; }
-      else switch( eng.G_RNG.getClampedInt( 1, 8 ))
+      else switch( eng.G_ENG.rng.getClampedInt( 1, 8 ))
       {
         1    => tmpType = .T1,
         2    => tmpType = .T2,
@@ -460,7 +460,7 @@ pub const Tilemap = struct
       return;
     }
 
-    const viewBox = eng.G_CAM.toViewBox();
+    const viewBox = eng.G_ENG.camera.toViewBox();
 
     if( !viewBox.doesOverlap( self.getMapBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
 

@@ -180,7 +180,7 @@ pub const ResourceManager = struct
     };
 
     utl.log( .TRACE, 0, @src(), "Drawing from sprite '{s}'", .{ name });
-    spritemap.drawSprite( index, pos, scale, col );
+    eng.wSprite.drawSpritemap( &spritemap, index, pos, scale, col );
   }
 
   pub fn drawScreenFromSprite( self : *ResourceManager, name : [ :0 ]const u8, index : u32, pos : utl.VecA, scale : utl.Vec2, col : utl.Colour ) void

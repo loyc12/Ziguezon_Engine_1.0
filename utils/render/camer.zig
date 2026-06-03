@@ -1,44 +1,16 @@
-const std  = @import( "std" );
-const eng  = @import( "engine" );
 const utl = @import( "utils" );
+const scr = @import( "screener.zig" );
 
-const Box2    = utl.Box2;
-const Vec2    = utl.Vec2;
-const VecA    = utl.VecA;
-const Angle   = utl.Angle;
-
-const RayVec2 = utl.RayVec2;
-const RayCam  = utl.RayCam;
-
-
-
-// ================================ HELPER FUNCTIONS ================================
-
-pub inline fn getScreenWidth()  f64 { return @floatFromInt( utl.ray.getScreenWidth()  ); }
-pub inline fn getScreenHeight() f64 { return @floatFromInt( utl.ray.getScreenHeight() ); }
-pub inline fn getScreenSize()  Vec2
-{
-  return Vec2{ .x = getScreenWidth(), .y = getScreenHeight(), };
-}
-
-pub inline fn getHalfScreenWidth()  f64 { return getScreenWidth()  * 0.5; }
-pub inline fn getHalfScreenHeight() f64 { return getScreenHeight() * 0.5; }
-pub inline fn getHalfScreenSize()  Vec2
-{
-  return Vec2{ .x = getHalfScreenWidth(), .y = getHalfScreenHeight(), };
-}
-
-pub inline fn getMouseScreenPos() Vec2 { return .fromRayVec2( utl.ray.getMousePosition() ); }
-pub inline fn getMouseWorldPos()  Vec2
-{
-  return eng.G_CAM.screenToWorld( getMouseScreenPos() );
-}
-
-inline fn getViewFromZoom( zoom : f64  ) Vec2 { return getHalfScreenSize().mulVal( 1.0 / zoom ); }
-inline fn getZoomFromView( view : Vec2 ) f64  { return getHalfScreenWidth() / ( view.x ); }
+const Box2  = utl.Box2;
+const Vec2  = utl.Vec2;
+const VecA  = utl.VecA;
+const Angle = utl.Angle;
 
 
 // ================================ CAMERA STRUCT ================================
+
+// Generic 2D camera state. This struct intentionally does not import engine code
+// or raylib camera types; engine/world rendering semantics live in WorldCam.
 
 pub const Cam2D = struct
 {
@@ -60,76 +32,17 @@ pub const Cam2D = struct
 
   // ================ UPDATING ================
 
-  pub inline fn updateView(  self : *Cam2D ) void { self.view = getViewFromZoom( self.zoom ); }
+  pub inline fn updateView(  self : *Cam2D ) void { self.view = scr.getViewFromZoom( self.zoom ); }
 
 
   // ================ CONVERSION ================
-
-  // Used by drawer.zig / wtsRay : raylib camera handles zoom and offset
-  // Precision fix only : subtract cam pos in f64 BEFORE cast
-  // This is to cancel-out the fact the camera target is clamped at 0:0, to avoid float-point issues
-  pub inline fn worldToRender( self : *const Cam2D, worldPos : Vec2 ) Vec2
-  {
-    return worldPos.sub( self.pos.toVec2() );
-  }
-//pub inline fn renderToWorld( self : *const Cam2D, screenPos : Vec2 ) Vec2
-//{
-//  return screenPos.add( self.pos.toVec2() );
-//}
-
-  // Used when you need a true screen-space coordinate ( UI overlay, hit detection, etc )
-  // Matches what raylib's getWorldToScreen2D() and getScreenToWorld2D()
-  pub inline fn worldToScreen( self : *const Cam2D, worldPos : Vec2 ) Vec2
-  {
-    return worldPos
-      .sub( self.pos.toVec2()   )  // make  camera-relative
-      .rot( self.pos.a          )  // apply zoom
-      .mulVal( self.zoom        )  // apply rotation around camera center
-      .add( getHalfScreenSize() ); // apply screen offset
-  }
-  pub inline fn screenToWorld( self : *const Cam2D, screenPos : Vec2 ) Vec2
-  {
-    return screenPos
-      .sub( getHalfScreenSize() )  // undo screen offset
-      .rot( self.pos.a.neg()    )  // undo rotation around camera center
-      .mulVal( 1.0 / self.zoom  )  // undo zoom
-      .add( self.pos.toVec2()   ); // restore world position
-  }
-
-// NOTE : Validate .pos conversion before using
-//pub inline fn fromRayCam( rc : RayCam ) Cam2D
-//{
-//  var tmp = Cam2D{
-//    .pos  = VecA{ .x = rc.target.x, .y = rc.target.y, .a = .newDeg( rc.rotation )},
-//    .zoom = rc.zoom,
-//    .view = .{},
-//  };
-//
-//  tmp.updateView();
-//  return tmp;
-//}
-  pub inline fn toRayCam( self : *const Cam2D ) RayCam
-  {
-    var tmp : Cam2D = self.*;
-    tmp.updateView();
-
-    const cam = RayCam{
-    //.target   = tmp.pos.toRayVec2(),
-      .target   = .{ .x = 0.0, .y = 0.0 }, // Always zero - we handle world offset manually during worldRender step
-      .offset   = getHalfScreenSize().toRayVec2(),
-      .rotation = @floatCast( tmp.pos.a.toDeg() ),
-      .zoom     = @floatCast( tmp.zoom ),
-    };
-
-  return cam;
-  }
 
   pub inline fn fromViewBox( vb : Box2 ) Cam2D
   {
     return Cam2D{
       .pos  = VecA{ .x = vb.center.x, .y = vb.center.y, .a = Angle{ .r = 0.0 } },
-      .zoom = getZoomFromView( vb.scale ),
-      .view = vb,
+      .zoom = scr.getZoomFromView( vb.scale ),
+      .view = vb.scale,
     };
   }
   pub inline fn toViewBox( self : *const Cam2D ) Box2
@@ -150,36 +63,11 @@ pub const Cam2D = struct
   pub inline fn getRot(    self : *const Cam2D ) Angle { return self.pos.a; }
   pub inline fn getZoom(   self : *const Cam2D ) f64   { return self.zoom; }
 
-  pub inline fn setCenter( self : *Cam2D, worldPos : Vec2  ) void { self.pos.x = worldPos.x; self.pos.y = worldPos.y; }
-  pub inline fn setRot(    self : *Cam2D, a        : Angle ) void { self.pos.a = a; }
-  pub inline fn setZoom(   self : *Cam2D, zoom     : f64   ) void
+  pub inline fn setCenter( self : *Cam2D, pos  : Vec2  ) void { self.pos.x = pos.x; self.pos.y = pos.y; }
+  pub inline fn setRot(    self : *Cam2D, a    : Angle ) void { self.pos.a = a; }
+  pub inline fn setZoom(   self : *Cam2D, zoom : f64   ) void
   {
-    self.zoom = utl.clmp( zoom, eng.CNFGS.Camera_Zoom_Min, eng.CNFGS.Camera_Zoom_Max );
-
-    self.updateView();
-  }
-
-  pub inline fn setMouseRelZoom( self : *Cam2D, z : f64 ) void
-  {
-    self.setWorldRelZoom( z, getMouseWorldPos() );
-  }
-  pub inline fn setScreenRelZoom( self : *Cam2D, z : f64, screenPos : Vec2 ) void
-  {
-    self.setWorldRelZoom( z, self.screenToWorld( screenPos ) );
-  }
-  pub fn setWorldRelZoom( self : *Cam2D, z : f64, worldPos : Vec2 ) void
-  {
-    const newZoom = utl.clmp( z, eng.CNFGS.Camera_Zoom_Min, eng.CNFGS.Camera_Zoom_Max );
-    const ratio   = self.zoom / newZoom;
-
-    // Vector from anchor point to current cam center, scaled by zoom ratio
-    // This keeps worldPos at the same screen-space position after the zoom
-    const oldCenter = self.pos.toVec2();
-    const newCenter = worldPos.add( oldCenter.sub( worldPos ).mulVal( ratio ) );
-
-    self.zoom  = newZoom;
-    self.pos.x = newCenter.x;
-    self.pos.y = newCenter.y;
+    self.zoom = zoom;
 
     self.updateView();
   }
@@ -196,49 +84,5 @@ pub const Cam2D = struct
 
   pub inline fn rotBy(  self : *Cam2D, a      : Angle ) void { self.pos.a = self.pos.a.rot( a ); }
   pub inline fn zoomBy( self : *Cam2D, factor : f64   ) void { self.setZoom( self.zoom * factor ); }
-
-  pub inline fn zoomOnMouseBy( self : *Cam2D, factor : f64 ) void
-  {
-    self.setMouseRelZoom( self.zoom * factor );
-  }
-
-
-  pub fn clampOnArea( self : *Cam2D, area : Box2 ) void
-  {
-    utl.log( .TRACE, 0, @src(), "Clamping Cam2D on area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
-
-    var viewBox = self.toViewBox();
-    viewBox.clampOnArea( area.getTopLeft(), area.getBottomRight() );
-
-    self.pos.x = viewBox.center.x;
-    self.pos.y = viewBox.center.y;
-  }
-  pub fn clampInArea( self : *Cam2D, area : Box2 ) void
-  {
-    utl.log( .TRACE, 0, @src(), "Clamping Cam2D in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
-
-    var viewBox = self.toViewBox();
-    viewBox.clampInArea( area.getTopLeft(), area.getBottomRight() );
-
-    self.pos.x = viewBox.center.x;
-    self.pos.y = viewBox.center.y;
-  }
-  pub fn clampOnPoint( self : *Cam2D, point : Vec2 ) void
-  {
-    utl.log( .TRACE, 0, @src(), "Clamping Cam2D on point ( {d}:{d} )", .{ point.x, point.y });
-
-    var viewBox = self.toViewBox();
-    viewBox.clampOnPoint( point );
-
-    self.pos.x = viewBox.center.x;
-    self.pos.y = viewBox.center.y;
-  }
-  pub fn clampCenterInArea( self : *Cam2D, area : Box2 ) void
-  {
-    utl.log( .TRACE, 0, @src(), "Clamping Cam2D center in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
-
-    self.pos.x = utl.clmp( self.pos.x, area.getMinX(), area.getMaxX() );
-    self.pos.y = utl.clmp( self.pos.y, area.getMinY(), area.getMaxY() );
-  }
 
 };

@@ -1,7 +1,5 @@
-const std = @import( "std"    );
-
-
 pub var G_EPOCH : TimeVal = .{};
+
 
 // ================================ RAYLIB SHORTHANDS ================================
 
@@ -222,22 +220,26 @@ pub const Shape3D = shp3_u.Shape3D;
 
 // ================================ RENDER SHORTHANDS ================================
 
+// ======== SCREEN ========
+
+pub const scr_u = @import( "render/screener.zig" );
+
+pub const getScreenWidth      = scr_u.getScreenWidth;
+pub const getScreenHeight     = scr_u.getScreenHeight;
+pub const getScreenSize       = scr_u.getScreenSize;
+
+pub const getHalfScreenWidth  = scr_u.getHalfScreenWidth;
+pub const getHalfScreenHeight = scr_u.getHalfScreenHeight;
+pub const getHalfScreenSize   = scr_u.getHalfScreenSize;
+
+pub const getMouseScreenPos   = scr_u.getMouseScreenPos;
+
+
 // ======== CAMERA ========
 
 pub const cmr_u = @import( "render/camer.zig" );
 
 pub const Cam2D = cmr_u.Cam2D;
-
-pub const getScreenWidth      = cmr_u.getScreenWidth;
-pub const getScreenHeight     = cmr_u.getScreenHeight;
-pub const getScreenSize       = cmr_u.getScreenSize;
-
-pub const getHalfScreenWidth  = cmr_u.getHalfScreenWidth;
-pub const getHalfScreenHeight = cmr_u.getHalfScreenHeight;
-pub const getHalfScreenSize   = cmr_u.getHalfScreenSize;
-
-pub const getMouseScreenPos   = cmr_u.getMouseScreenPos;
-pub const getMouseWorldPos    = cmr_u.getMouseWorldPos;
 
 
 // ======== COLOURS ========
@@ -249,7 +251,7 @@ pub const Colour = col_u.Colour;
 
 // ======== DRAWERS ========
 
-pub const wDraw = @import( "render/drawerWorld.zig" );
+pub const drw_c = @import( "render/drawerCore.zig" );
 pub const sDraw = @import( "render/drawerScreen.zig" );
 
 
@@ -319,6 +321,9 @@ pub const Interface2D    = ntf_u.Interface2D;
 
 // ================================ HELPER FUNCTIONS ================================
 
+const std = @import( "std" );
+
+
 pub const areContEqual = std.meta.eql;
 
 
@@ -346,6 +351,4 @@ pub var G_ALLOC : std.heap.DebugAllocator(.{ .enable_memory_limit = true }) = .i
 
 pub inline fn getDefaultAlloc() std.mem.Allocator { return G_ALLOC.allocator(); }
 pub inline fn getBytesInUse() usize { return G_ALLOC.total_requested_bytes; }
-
-
 

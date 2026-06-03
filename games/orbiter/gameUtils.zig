@@ -170,7 +170,7 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
 
 pub fn updateCameraLogic() void
 {
-  var cam = &eng.G_CAM;
+  var cam = &eng.G_ENG.camera;
 
   const scrollSpeed = gdf.G_CONSTS.scrollSpeed;
   const zoomSpeed   = gdf.G_CONSTS.zoomSpeed;
@@ -197,7 +197,7 @@ pub fn updateCameraLogic() void
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
   {
     cam.setZoom( 1.0 );
-    cam.pos = .{};
+    cam.cam.pos = .{};
     utl.qlog( .INFO, 0, @src(), "Camera reset" );
   }
 }

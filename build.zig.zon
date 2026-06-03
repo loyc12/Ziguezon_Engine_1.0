@@ -42,10 +42,12 @@
         },
     },
     .paths = .{
-        "src",
         "build.zig",
         "build.zig.zon",
         "LICENSE",
         "README.md",
+        "utils",
+        "engine",
+        "games",
     },
 }
