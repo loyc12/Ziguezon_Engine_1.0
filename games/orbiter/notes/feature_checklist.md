@@ -29,7 +29,7 @@ For implementation strategy and ordering, see the [roadmaps](roadmaps/) folder. 
 * `[ x ]` Debug spawn hotkeys (Shift+digit injects POP / res into TERRA)
 * `[ x ]` Camera: WASD + arrow-key panning, mouse-wheel zoom, reset (`R`), follow-mode aware zoom-on-mouse
 * `[ x ]` Debug target HUD (entity id, pos, scale, mass, radius, density, sunshine, periap / apoap, tracking flag)
-* `[ x ]` Static data matrix loading on `OnStart` (`loadStaticDataMatrices` covers stellar / power / vessel / resource / pop / inf / ind)
+* `[ x ]` Static data matrix loading on `OnGameStart` (`loadStaticDataMatrices` covers stellar / power / vessel / resource / pop / inf / ind)
 
 ---
 

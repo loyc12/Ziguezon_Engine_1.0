@@ -1,6 +1,5 @@
 const std    = @import( "std" );
-const eng    = @import( "engine" );
-const utl = @import( "utils" );
+const utl    = @import( "utils" );
 //const stdOut = @import( "./outputer.zig" ).demoStdout;
 
 const TimeVal = utl.TimeVal;
@@ -160,6 +159,7 @@ fn _log( level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, compt
   }
 
   std.debug.print( message ++ "\n", args ); // Prints the actual message
+  try setCol( utl.tcl_u.RESET );
   //stream.flush();
 
   LoggedLastMsg = true;
@@ -248,7 +248,7 @@ fn logTime() !void
 {
   if( comptime !SHOW_TIMESTAMP ) return;
 
-  const prog = eng.GLOBAL_EPOCH.timeSince();
+  const prog = utl.G_EPOCH.timeSince();
 
   const sec  : u64 = @intCast( prog.toSec() );
   const nano : u64 = @intCast( @mod( prog.value, TimeVal.nsPerSec() ));

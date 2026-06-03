@@ -17,12 +17,12 @@ pub const TILE_SHOWN  = eng.e_tile_type.T5;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnStart( ng : *eng.Engine ) void
+pub fn OnGameStart( ng : *eng.Engine ) void
 {
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OnOpen( ng : *eng.Engine ) void
+pub fn OnGameOpen( ng : *eng.Engine ) void
 {
   // Adjusting grid scalling to fit the screen
   const scaleFactor : f64 = @floatFromInt( 1 + @max( GRID_WIDTH, GRID_HEIGHT * 2 ));

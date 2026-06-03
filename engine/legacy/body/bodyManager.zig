@@ -310,7 +310,7 @@ pub const BodyManager = struct
 
     const sdt = ng.times.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
 
-    if( eng.G_ST.AutoApply_Body_Movement ){ for( self.bodyList.items )| *e |
+    if( eng.CNFGS.AutoApply_Body_Movement ){ for( self.bodyList.items )| *e |
     {
       if( e.isActive() )
       {
@@ -329,7 +329,7 @@ pub const BodyManager = struct
     const sdt = ng.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
     _ = sdt;
 
-    if( eng.G_ST.AutoApply_Body_Collision ){ for( self.bodyList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
+    if( eng.CNFGS.AutoApply_Body_Collision ){ for( self.bodyList.items, 0 .. )| *e1, index |{ if( e1.isActive() )
     {
       if( index + 1 >= self.bodyList.items.len ){ continue; } // Prevents out of bounds access
 

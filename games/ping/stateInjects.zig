@@ -10,7 +10,7 @@ pub var BALL_ID            : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnStart( ng : *eng.Engine ) void
+pub fn OnGameStart( ng : *eng.Engine ) void
 {
   ng.resourceManager.addAudioFromFile( "hit_1", "assets/sounds/Boop_1.wav" ) catch | err |
   {
@@ -22,7 +22,7 @@ pub fn OnStart( ng : *eng.Engine ) void
   };
 }
 
-pub fn OnOpen( ng : *eng.Engine ) void
+pub fn OnGameOpen( ng : *eng.Engine ) void
 {
   if( ng.bodyManager.loadBodyFromParams( // player 1
   .{

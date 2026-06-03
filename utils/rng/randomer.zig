@@ -10,23 +10,6 @@ const Vec3  = utl.Vec3;
 const RandType : type = std.Random.Xoshiro256;
 
 
-// ================================ GLOBAL RANDOM NUMBER GENERATOR ================================
-
-pub var G_RNG : Randomiser = .{};
-
-pub fn initGlobalRNG() void
-{
-  G_RNG.randInit();
-  utl.qlog( .INFO, 0, @src(), "Random number generator initialized\n" );
-}
-
-pub fn seedGlobalRNG( seed : i128 ) void
-{
-  G_RNG.seedInit( seed );
-  utl.qlog( .INFO, 0, @src(), "Random number generator seeded with {d}", .{ seed });
-}
-
-
 // ================================ RANDOMISER STRUCT ================================
 
 pub const Randomiser = struct

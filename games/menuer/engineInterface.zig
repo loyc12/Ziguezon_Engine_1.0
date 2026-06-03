@@ -49,19 +49,19 @@ const utl = @import( "utils" );
 // ================================ GAME HOOKS ================================
 // NOTE : You can leave any number of these undefined and the game will still compile
 //      : The engine will simply not call the corresponding hook function
-//      : The most common hooks to use are OnStart, OnOpen, and the Update/Tick/Render hooks
+//      : The most common hooks to use are OnGameStart, OnGameOpen, and the Update/Tick/Render hooks
 
 
 const gameState = @import( "stateInjects.zig" );
 
-  pub const OnStart = gameState.OnStart; // NOTE : Initialize resources in the OnStart Hook
-  pub const OnStop  = gameState.OnStop;
+  pub const OnGameStart = gameState.OnGameStart; // NOTE : Initialize resources in the OnGameStart Hook
+  pub const OnGameStop  = gameState.OnGameStop;
 
-  pub const OnOpen  = gameState.OnOpen;  // NOTE : Instanciate bodies in the OnOpen Hook
-  pub const OnClose = gameState.OnClose;
+  pub const OnGameOpen  = gameState.OnGameOpen;  // NOTE : Instanciate bodies in the OnGameOpen Hook
+  pub const OnGameClose = gameState.OnGameClose;
 
-  pub const OnPlay  = gameState.OnPlay;
-  pub const OnPause = gameState.OnPause;
+  pub const OnGameResume  = gameState.OnGameResume;
+  pub const OnGamePause = gameState.OnGamePause;
 
 
 const gameStep  = @import( "stepInjects.zig" );
@@ -71,9 +71,9 @@ const gameStep  = @import( "stepInjects.zig" );
   pub const OnLoopCycle      = gameStep.OnLoopCycle;
 
 
-  pub const OnUpdateFrame   = gameStep.OnUpdateFrame;
+  pub const OnFrameUpdate   = gameStep.OnFrameUpdate;
 
-  pub const OnTickWorld      = gameStep.OnTickWorld;
+  pub const OnTickUpdate      = gameStep.OnTickUpdate;
 
 
   pub const OnRenderBckgrnd  = gameStep.OnRenderBckgrnd;

@@ -154,7 +154,7 @@ pub const Cam2D = struct
   pub inline fn setRot(    self : *Cam2D, a        : Angle ) void { self.pos.a = a; }
   pub inline fn setZoom(   self : *Cam2D, zoom     : f64   ) void
   {
-    self.zoom = utl.clmp( zoom, eng.G_ST.Camera_Zoom_Min, eng.G_ST.Camera_Zoom_Max );
+    self.zoom = utl.clmp( zoom, eng.CNFGS.Camera_Zoom_Min, eng.CNFGS.Camera_Zoom_Max );
 
     self.updateView();
   }
@@ -169,7 +169,7 @@ pub const Cam2D = struct
   }
   pub fn setWorldRelZoom( self : *Cam2D, z : f64, worldPos : Vec2 ) void
   {
-    const newZoom = utl.clmp( z, eng.G_ST.Camera_Zoom_Min, eng.G_ST.Camera_Zoom_Max );
+    const newZoom = utl.clmp( z, eng.CNFGS.Camera_Zoom_Min, eng.CNFGS.Camera_Zoom_Max );
     const ratio   = self.zoom / newZoom;
 
     // Vector from anchor point to current cam center, scaled by zoom ratio

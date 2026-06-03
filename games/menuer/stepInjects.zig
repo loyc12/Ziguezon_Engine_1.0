@@ -575,7 +575,7 @@ pub fn OnLoopCycle( ng : *eng.Engine ) void // Called by engine.loopLogic() ( ev
 
 
 // NOTE : This is where you should capture inputs to update global flags
-pub fn OnUpdateFrame( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnFrameUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   handleUiEvents( ng );
   updateCaptureLabel( ng );
@@ -613,7 +613,7 @@ pub fn OnUpdateFrame( ng : *eng.Engine ) void // Called by engine.updateInputs()
 
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTickWorld( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
+pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
   _ = ng; // Prevent unused variable warning
 }

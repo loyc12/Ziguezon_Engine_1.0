@@ -13,14 +13,14 @@ pub const e_hook_tag = enum( u8 )
 
   // Engine State Hooks
 
-  OnStart = 0, // Called when the engine starts
-  OnStop  = 1, // Called when the engine is closed
+  OnGameStart = 0, // Called when the engine starts
+  OnGameStop  = 1, // Called when the engine is closed
 
-  OnOpen  = 2, // Called when the engine is launched
-  OnClose = 3, // Called when the engine stops
+  OnGameOpen  = 2, // Called when the engine is launched
+  OnGameClose = 3, // Called when the engine stops
 
-  OnPlay  = 4, // Called when the engine starts playing
-  OnPause = 5, // Called when the engine is paused
+  OnGameResume  = 4, // Called when the engine starts playing
+  OnGamePause = 5, // Called when the engine is paused
 
 
   // Engine Step Hooks
@@ -32,11 +32,11 @@ pub const e_hook_tag = enum( u8 )
 
   // Update and Tick Hooks
 
-  OnUpdateFrame   = 20, // Called every frame for updates ( at the start )
-//OffUpdateFrame  = 21, // Called every frame for updates ( at the end )
+  OnFrameUpdate   = 20, // Called every frame for updates ( at the start )
+//OffFrameUpdate  = 21, // Called every frame for updates ( at the end )
 
-  OnTickWorld      = 22, // Called every tick for logic updates ( at the start )
-  OffTickWorld     = 23, // Called every tick for logic updates ( at the end )
+  OnTickUpdate      = 22, // Called every tick for logic updates ( at the start )
+  OffTickUpdate     = 23, // Called every tick for logic updates ( at the end )
 
 
   // Rendering Hooks
@@ -64,41 +64,32 @@ pub const GameHooks = struct
 {
   // Engine State Hooks
 
-  OnStart : ?HookFunc = null,
-  OnStop  : ?HookFunc = null,
+  OnGameStart  : ?HookFunc = null,
+  OnGameStop   : ?HookFunc = null,
 
-  OnOpen  : ?HookFunc = null,
-  OnClose : ?HookFunc = null,
+  OnGameOpen   : ?HookFunc = null,
+  OnGameClose  : ?HookFunc = null,
 
-  OnPlay  : ?HookFunc = null,
-  OnPause : ?HookFunc = null,
-
+  OnGameResume : ?HookFunc = null,
+  OnGamePause  : ?HookFunc = null,
 
   // Engine Step Hooks
 
-  OnLoopStart : ?HookFunc = null,
-  OnLoopEnd   : ?HookFunc = null,
-  OnLoopCycle : ?HookFunc = null,
+  OnLoopStart  : ?HookFunc = null,
+  OnLoopEnd    : ?HookFunc = null,
+  OnLoopCycle  : ?HookFunc = null,
 
+  OnFrameUpdate   : ?HookFunc = null,
+//OffFrameUpdate  : ?HookFunc = null,
 
-  // Update and Tick Hooks
+  OnTickUpdate    : ?HookFunc = null,
+  OffTickUpdate   : ?HookFunc = null,
 
-  OnUpdateFrame   : ?HookFunc = null,
-//OffUpdateFrame  : ?HookFunc = null,
+  OnRenderBckgrnd : ?HookFunc = null,
+  OnRenderOverlay : ?HookFunc = null,
 
-  OnTickWorld      : ?HookFunc = null,
-  OffTickWorld     : ?HookFunc = null,
-
-
-  // Rendering Hooks
-
-  OnRenderBckgrnd  : ?HookFunc = null,
-
-  OnRenderWorld    : ?HookFunc = null,
-  OffRenderWorld   : ?HookFunc = null,
-
-  OnRenderOverlay  : ?HookFunc = null,
-//OffRenderOverlay : ?HookFunc = null,
+  OnRenderWorld   : ?HookFunc = null,
+  OffRenderWorld  : ?HookFunc = null,
 
 
   // ================================ GAME HOOKS FUNCTIONS ================================
@@ -114,43 +105,43 @@ pub const GameHooks = struct
     }
 
     // Engine State hooks
-    if( @hasDecl( module, "OnStart" )) self.OnStart = @field( module, "OnStart" );
-    if( @hasDecl( module, "OnStop"  )) self.OnStop  = @field( module, "OnStop"  );
+    if( @hasDecl( module, "OnGameStart"  )) self.OnGameStart  = @field( module, "OnGameStart"  );
+    if( @hasDecl( module, "OnGameStop"   )) self.OnGameStop   = @field( module, "OnGameStop"   );
 
-    if( @hasDecl( module, "OnOpen"  )) self.OnOpen  = @field( module, "OnOpen"  );
-    if( @hasDecl( module, "OnClose" )) self.OnClose = @field( module, "OnClose" );
+    if( @hasDecl( module, "OnGameOpen"   )) self.OnGameOpen   = @field( module, "OnGameOpen"   );
+    if( @hasDecl( module, "OnGameClose"  )) self.OnGameClose  = @field( module, "OnGameClose"  );
 
-    if( @hasDecl( module, "OnPlay"  )) self.OnPlay  = @field( module, "OnPlay"  );
-    if( @hasDecl( module, "OnPause" )) self.OnPause = @field( module, "OnPause" );
+    if( @hasDecl( module, "OnGameResume" )) self.OnGameResume = @field( module, "OnGameResume" );
+    if( @hasDecl( module, "OnGamePause"  )) self.OnGamePause  = @field( module, "OnGamePause"  );
 
     // Engine Step Hooks
-    if( @hasDecl( module, "OnLoopStart" )) self.OnLoopStart = @field( module, "OnLoopStart" );
-    if( @hasDecl( module, "OnLoopEnd"   )) self.OnLoopEnd   = @field( module, "OnLoopEnd"   );
-    if( @hasDecl( module, "OnLoopCycle" )) self.OnLoopCycle = @field( module, "OnLoopCycle" );
+    if( @hasDecl( module, "OnLoopStart"  )) self.OnLoopStart  = @field( module, "OnLoopStart"  );
+    if( @hasDecl( module, "OnLoopEnd"    )) self.OnLoopEnd    = @field( module, "OnLoopEnd"    );
+    if( @hasDecl( module, "OnLoopCycle"  )) self.OnLoopCycle  = @field( module, "OnLoopCycle"  );
 
     // Update and Tick Hooks
-    if( @hasDecl( module, "OnUpdateFrame"  )) self.OnUpdateFrame  = @field( module, "OnUpdateFrame"  );
-  //if( @hasDecl( module, "OffUpdateFrame" )) self.OffUpdateFrame = @field( module, "OffUpdateFrame" );
-    if( @hasDecl( module, "OnTickWorld"    )) self.OnTickWorld    = @field( module, "OnTickWorld"    );
-    if( @hasDecl( module, "OffTickWorld"   )) self.OffTickWorld   = @field( module, "OffTickWorld"   );
+    if( @hasDecl( module, "OnFrameUpdate"  )) self.OnFrameUpdate  = @field( module, "OnFrameUpdate"  );
+  //if( @hasDecl( module, "OffFrameUpdate" )) self.OffFrameUpdate = @field( module, "OffFrameUpdate" );
+    if( @hasDecl( module, "OnTickUpdate"   )) self.OnTickUpdate   = @field( module, "OnTickUpdate"   );
+    if( @hasDecl( module, "OffTickUpdate"  )) self.OffTickUpdate  = @field( module, "OffTickUpdate"  );
 
     // Rendering Hooks
-    if( @hasDecl( module, "OnRenderBckgrnd"  )) self.OnRenderBckgrnd  = @field( module, "OnRenderBckgrnd" );
+    if( @hasDecl( module, "OnRenderBckgrnd" )) self.OnRenderBckgrnd = @field( module, "OnRenderBckgrnd" );
+    if( @hasDecl( module, "OnRenderOverlay" )) self.OnRenderOverlay = @field( module, "OnRenderOverlay" );
 
-    if( @hasDecl( module, "OnRenderWorld"    )) self.OnRenderWorld    = @field( module, "OnRenderWorld"  );
-    if( @hasDecl( module, "OffRenderWorld"   )) self.OffRenderWorld   = @field( module, "OffRenderWorld" );
+    if( @hasDecl( module, "OnRenderWorld"   )) self.OnRenderWorld   = @field( module, "OnRenderWorld"   );
+    if( @hasDecl( module, "OffRenderWorld"  )) self.OffRenderWorld  = @field( module, "OffRenderWorld"  );
 
-    if( @hasDecl( module, "OnRenderOverlay"  )) self.OnRenderOverlay  = @field( module, "OnRenderOverlay"  );
-  //if( @hasDecl( module, "OffRenderOverlay" )) self.OffRenderOverlay = @field( module, "OffRenderOverlay" );
 
     self.checkHookValidities();
+    utl.qlog( .CONT, 0, @src(), "" );
     utl.qlog( .INFO, 0, @src(), "$ Available game hooks initialized\n" );
   }
 
 
   pub fn checkHookValidities( self : *const GameHooks ) void
   {
-    utl.qlog( .DEBUG, 0, @src(), "Checking game hook validity..." );
+    utl.qlog( .DEBUG, 0, @src(), "# Checking game hook validity...\n" );
 
     inline for ( @typeInfo( GameHooks ).@"struct".fields )| field |
     {
@@ -160,11 +151,11 @@ pub const GameHooks = struct
       if( fieldPtr )| func |
       {
         _ = func;
-        utl.log( .CONT, 0, @src(), "$ Game hook for '{s}' is set", .{ fieldName });
+        utl.log( .CONT, 0, @src(), "$ '{s}'\tGame hook WAS set", .{ fieldName });
       }
       else
       {
-        utl.log( .CONT, 0, @src(), "@ Game hook for '{s}' is NOT set", .{ fieldName });
+        utl.log( .CONT, 0, @src(), "@ '{s}'\tGame hook NOT set", .{ fieldName });
       }
     }
   }
@@ -174,14 +165,14 @@ pub const GameHooks = struct
     const hookFunct = switch( tag )
     {
     // Engine State Hooks
-      .OnStart => self.OnStart,
-      .OnStop  => self.OnStop,
+      .OnGameStart => self.OnGameStart,
+      .OnGameStop  => self.OnGameStop,
 
-      .OnOpen  => self.OnOpen,
-      .OnClose => self.OnClose,
+      .OnGameOpen  => self.OnGameOpen,
+      .OnGameClose => self.OnGameClose,
 
-      .OnPlay  => self.OnPlay,
-      .OnPause => self.OnPause,
+      .OnGameResume  => self.OnGameResume,
+      .OnGamePause => self.OnGamePause,
 
     // Engine Step Hooks
       .OnLoopStart => self.OnLoopStart,
@@ -189,11 +180,11 @@ pub const GameHooks = struct
       .OnLoopCycle => self.OnLoopCycle,
 
     // Update and Tick Hooks
-      .OnUpdateFrame  => self.OnUpdateFrame,
-    //.OffUpdateFrame => self.OffUpdateFrame,
+      .OnFrameUpdate  => self.OnFrameUpdate,
+    //.OffFrameUpdate => self.OffFrameUpdate,
 
-      .OnTickWorld    => self.OnTickWorld,
-      .OffTickWorld   => self.OffTickWorld,
+      .OnTickUpdate    => self.OnTickUpdate,
+      .OffTickUpdate   => self.OffTickUpdate,
 
     // Rendering Hooks
       .OnRenderBckgrnd  => self.OnRenderBckgrnd,

@@ -291,7 +291,7 @@ pub const TilemapManager = struct
     {
       tlmp.getMapBoundingBox().drawSelf( utl.Colour.yellow.setA( 32 ));
 
-      if( eng.G_ST.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
+      if( eng.CNFGS.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
       {
         const tile = tlmp.tileArray.items.ptr[ index ];
         const tilePos = tlmp.getRelTilePos( tile.mapCoords );

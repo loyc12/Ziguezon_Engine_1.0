@@ -58,7 +58,7 @@ The frame sequence should stay:
 * `beginFrame`
 * `updateLayout`
 * `dispatchInput`
-* game `OnUpdateFrame`
+* game `OnFrameUpdate`
 * `endFrame`
 * game `OnRenderOverlay`
 * UI screen draw

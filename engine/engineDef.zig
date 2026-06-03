@@ -2,79 +2,47 @@ const std = @import( "std"   );
 const utl = @import( "utils" );
 
 
-pub var G_RNG : utl.rng_u.Randomiser = .{};
-pub var G_NG  : Engine = .{}; // Global game engine instance
-pub var G_CAM : utl.Cam2D = .{}; // Global camera2D instance
+// ================================ GLOBAL VARS ================================
 
-// TODO : split engineDef from utilsDef further once engine globals have clear ownership.
+pub var G_RNG   : utl.Randomiser = .{};
+pub var G_CAM   : utl.Cam2D      = .{};
 
-
-// ================================ GLOBAL INITIALIZATION / DEINITIALIZATION ================================
-
-pub fn getAlloc() std.mem.Allocator { return std.heap.page_allocator; }
-
-pub var GLOBAL_EPOCH : utl.TimeVal = .{};
-
-
-pub fn initAllUtils( allocator : std.mem.Allocator ) void
-{
-  //GLOBAL_EPOCH = getNow();
-
-  std.debug.print( "allocator.ptr    = {}\n", .{ allocator.ptr } );
-  std.debug.print( "allocater.vtable = {}\n", .{ allocator.vtable } );
-
-  utl.log_u.initFile();
-
-  utl.rng_u.initGlobalRNG();
-  G_RNG = utl.rng_u.G_RNG;
-}
-
-pub fn deinitAllUtils() void
-{
-  utl.log_u.deinitFile();
-
-  G_RNG = undefined;
-}
-
-
-
-// ================================ INTERFACER HANDLERS ================================
+// ================================ GAME INTERFACES ================================
 
 // ================ ENGINE SETTINGS ================
-// NOTE : Do not forget to call eng.Settings( SpecificGameInterface ) in your main function
 
-const  ngs_h = @import( "interface/configs.zig" );
-pub var G_ST : ngs_h.EngineSettings = .{}; // NOTE : Global engineSettings struct instance
+const  cnfg_i = @import( "interface/configs.zig" );
+pub var CNFGS : cnfg_i.EngineConfigs = .{};
 
-pub inline fn loadSettings( module : anytype ) void { G_ST.loadSettings( module ); }
+pub inline fn loadConfigs( module : anytype ) void { CNFGS.loadConfigs( module ); }
 
 
 // ================ GAME HOOKS ================
-// NOTE : Do not forget to call eng.loadHooks( SpecificGameInterface ) in your main function
 
-const  ghk_h = @import( "interface/hooks.zig" );
-pub var G_HK : ghk_h.GameHooks = .{}; // NOTE : Global gameHooks struct instance
+const  hook_i = @import( "interface/hooks.zig" );
+pub var HOOKS : hook_i.GameHooks = .{};
 
-pub const HookCntx = ghk_h.HookCntx;
-pub const HookFunc = ghk_h.HookFunc;
+pub const HookCntx = hook_i.HookCntx;
+pub const HookFunc = hook_i.HookFunc;
 
-pub inline fn loadHooks( module : anytype ) void                      { G_HK.loadHooks( module  ); }
-pub inline fn tryHook( tag : ghk_h.e_hook_tag, cntx : HookCntx ) void { G_HK.tryHook( tag, cntx ); }
+pub inline fn loadHooks( module : anytype ) void                       { HOOKS.loadHooks( module  ); }
+pub inline fn tryHook( tag : hook_i.e_hook_tag, cntx : HookCntx ) void { HOOKS.tryHook( tag, cntx ); }
 
 
 
 // ================================ ENGINE SYSTEMS ================================
 
-pub const ng            = @import( "core/engine.zig" );
-pub const Engine        = ng.Engine;
+pub const eng_c  = @import( "core/engine.zig" );
+pub const Engine = eng_c.Engine;
 
+pub var G_ENG : Engine = .{};
 
 // ================ MANAGERS ================
 
 pub const res_m = @import( "resources/resourceManager.zig" );
-pub const bdy_m = @import( "legacy/body/bodyManager.zig" );
-pub const tlm_m = @import( "world/tilemap/tilemapManager.zig" );
 pub const vnt_m = @import( "world/events/eventManager.zig" );
+pub const tlm_m = @import( "world/tilemap/tilemapManager.zig" );
+pub const bdy_m = @import( "legacy/body/bodyManager.zig" );
 
 
 // ================ BODY ================
@@ -130,14 +98,14 @@ pub const SpriteComp = cmp2.SpriteComp;
 
 // ================ EVENT ================
 
-pub const vnt        = @import( "world/events/event.zig" );
+pub const vnt = @import( "world/events/event.zig" );
 
-pub const Event      = vnt.Event;
+pub const Event = vnt.Event;
 
-pub const EventType  = vnt.EventType;
-pub const EventPhase = vnt.EventPhase;
-pub const EventData  = vnt.EventData;
-pub const EventFunc  = vnt.EventFunc;
+pub const EventType          = vnt.EventType;
+pub const EventPhase         = vnt.EventPhase;
+pub const EventData          = vnt.EventData;
+pub const EventFunc          = vnt.EventFunc;
 
 pub const EventListener      = vnt.EventListener;
 pub const EventListenerArray = vnt.EventListenerArray;

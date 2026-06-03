@@ -233,9 +233,9 @@ pub const Interface2D = struct
     {
       const innerScale : Vec2 = self.scale.subVal( self.edgeWidth );
 
-      drawer.poly(      pos, self.scale, ang, self.edgeCol, eng.G_ST.Graphic_Ellipse_Facets                 );
-      drawer.poly(      pos, innerScale, ang, self.fillCol, eng.G_ST.Graphic_Ellipse_Facets                 );
-      drawer.polyPerim( pos, self.scale, ang, self.lineCol, eng.G_ST.Graphic_Ellipse_Facets, self.lineWidth );
+      drawer.poly(      pos, self.scale, ang, self.edgeCol, eng.CNFGS.Graphic_Ellipse_Facets                 );
+      drawer.poly(      pos, innerScale, ang, self.fillCol, eng.CNFGS.Graphic_Ellipse_Facets                 );
+      drawer.polyPerim( pos, self.scale, ang, self.lineCol, eng.CNFGS.Graphic_Ellipse_Facets, self.lineWidth );
 
       return;
     }

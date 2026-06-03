@@ -114,7 +114,7 @@ pub fn GetDrawer( comptime Transform : type ) type
     pub inline fn pent( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { Self.poly( pos, radii, a, col, 5 ); }
     pub inline fn hexa( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { Self.poly( pos, radii, a, col, 6 ); }
     pub inline fn octa( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { Self.poly( pos, radii, a, col, 8 ); }
-    pub inline fn elli( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { Self.poly( pos, radii, a, col, eng.G_ST.Graphic_Ellipse_Facets ); }
+    pub inline fn elli( pos : Vec2, radii : Vec2, a : Angle, col : Colour ) void { Self.poly( pos, radii, a, col, eng.CNFGS.Graphic_Ellipse_Facets ); }
 
 
     // Draws a rectangle centered at a given position with specified rotation (rad), colour and size, and scaled in x/y by radii

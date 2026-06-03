@@ -353,7 +353,7 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
 pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
 {
-  const col   = eng.G_ST.Graphic_Metrics_Colour.?;
+  const col   = eng.CNFGS.Graphic_Metrics_Colour.?;
   const posX  = utl.getScreenWidth() - 16.0;
   const id    = target.targetId;
 

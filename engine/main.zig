@@ -3,21 +3,27 @@ const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 
-// ================================ INITIALIZATION ================================
+// ================================ INITIALIZATION / DEINITIALIZATION ================================
+
 const ngi = @import( "interface" );
 
 pub fn initCriticals() void
 {
-  eng.GLOBAL_EPOCH = utl.getNow();
+//const alloc = utl.getDefaultAlloc();
+//
+//std.debug.print( "allocator.ptr    = {}\n", .{ alloc.ptr    });
+//std.debug.print( "allocater.vtable = {}\n", .{ alloc.vtable });
 
   utl.qlog( .TRACE, 0, @src(), "# Initializing all subsystems..." );
 
-  eng.initAllUtils( eng.getAlloc() );
+  utl.G_EPOCH = utl.getNow();
+  eng.G_RNG.randInit();
+  eng.G_ENG.initTimers();
 
-  eng.loadHooks(    ngi );
-  eng.loadSettings( ngi );
+  utl.initAllUtils();
 
-  eng.G_NG.times.init();
+  eng.loadConfigs( ngi );
+  eng.loadHooks(   ngi );
 
   utl.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
 }
@@ -26,26 +32,24 @@ pub fn deinitCriticals() void
 {
   utl.qlog( .TRACE, 0, @src(), "# Deinitializing all subsystems..." );
 
-  eng.deinitAllUtils();
+  utl.deinitAllUtils();
 
   utl.qlog( .INFO, 0, @src(), "$ Deinitialized all subsystems !\n" );
 }
 
-// ================================ MAIN FUNCTION ================================
-// This is the entry point of the application
 
 pub fn main() !void
 {
   initCriticals();
   defer deinitCriticals();
 
-  eng.G_NG.changeState( .OPENED );
+  eng.G_ENG.changeState( .OPENED );
 
-  if( eng.G_ST.AutoApply_State_Playing ){ eng.G_NG.changeState( .PLAYING ); }
+  if( eng.CNFGS.AutoApply_State_Playing ){ eng.G_ENG.changeState( .PLAYING ); }
 
-  eng.G_NG.loopLogic();
+  eng.G_ENG.loopLogic();
 
-  eng.G_NG.changeState( .OFF );
+  eng.G_ENG.changeState( .OFF );
 }
 
 test "example test"

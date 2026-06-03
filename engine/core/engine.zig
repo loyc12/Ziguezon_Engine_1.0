@@ -49,6 +49,10 @@ pub const Engine = struct
   pub inline fn isPaused(  ng : *const Engine ) bool { return( @intFromEnum( ng.state ) == @intFromEnum( e_ng_state.OPENED  )); }
   pub inline fn isPlaying( ng : *const Engine ) bool { return( @intFromEnum( ng.state ) >= @intFromEnum( e_ng_state.PLAYING )); }
 
+  pub inline fn initTimers( self : *Engine ) void
+  {
+    self.times.init();
+  }
 
   pub inline fn simTimeUpdate( self : *Engine ) void
   {

@@ -17,12 +17,12 @@ pub var EXAMPLE_ELLI_ID : u32 = 0;
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnStart( ng : *eng.Engine ) void
+pub fn OnGameStart( ng : *eng.Engine ) void
 {
   _ = ng;
 }
 
-pub fn OnOpen( ng : *eng.Engine ) void
+pub fn OnGameOpen( ng : *eng.Engine ) void
 {
   ng.resourceManager.addAudioFromFile( "hit_1", "assets/sounds/Boop_2.wav" ) catch | err |
   {

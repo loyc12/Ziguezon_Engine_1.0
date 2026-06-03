@@ -70,7 +70,7 @@ pub const EventManager = struct
     self.listeners.deinit();
     self.isInit = false;
 
-    utl.qlog( .INFO, 0, @src(), "& EventManager denitialized !" );
+    utl.qlog( .INFO, 0, @src(), "$ EventManager denitialized !" );
   }
 
   pub fn subscribe( self : *EventManager, eventType : EventType, callerId : EntityId, callback : EventFunc ) !void

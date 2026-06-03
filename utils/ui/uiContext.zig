@@ -129,7 +129,7 @@ pub const UiContext = struct
     self.isInit = false;
     self.alloc  = undefined;
 
-    utl.qlog( .INFO, 0, @src(), "& UI manager deinitialized !" );
+    utl.qlog( .INFO, 0, @src(), "$ UI manager deinitialized !" );
   }
 
 

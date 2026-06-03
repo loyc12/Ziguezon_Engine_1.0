@@ -52,7 +52,7 @@ pub const ComponentRegistry = struct
     self.data.deinit();
     self.isInit = false;
 
-    utl.qlog( .INFO, 0, @src(), "& ComponentRegistry denitialized !" );
+    utl.qlog( .INFO, 0, @src(), "$ ComponentRegistry denitialized !" );
   }
 
   pub fn register( self : *ComponentRegistry, name : []const u8, storePtr : *anyopaque ) bool
@@ -63,7 +63,7 @@ pub const ComponentRegistry = struct
 
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot register in ComponentRegistry : uninitialized" );
+      utl.qlog( .WARN, 0, @src(), "@ Cannot register in ComponentRegistry : uninitialized" );
       return false;
     }
 
@@ -77,7 +77,7 @@ pub const ComponentRegistry = struct
       }
       else
       {
-        utl.log( .WARN, 0, @src(), "Cannot register ComponentStore {s} in ComponentRegistry : key already in use", .{ name } );
+        utl.log( .WARN, 0, @src(), "@ Cannot register ComponentStore {s} in ComponentRegistry : key already in use", .{ name } );
         return false;
       }
     }
@@ -87,7 +87,7 @@ pub const ComponentRegistry = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot unregister from ComponentRegistry : uninitialized" );
+      utl.qlog( .WARN, 0, @src(), "@ Cannot unregister from ComponentRegistry : uninitialized" );
       return false;
     }
 

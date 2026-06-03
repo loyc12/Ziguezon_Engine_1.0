@@ -31,10 +31,10 @@ pub const diskStartVel = utl.VecA.new(    0, -4000, .{} );
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnOpen( ng : *eng.Engine ) void // Init and register ComponentStores here
+pub fn OnGameOpen( ng : *eng.Engine ) void // Init and register ComponentStores here
 {
-  transformStore.init( eng.getAlloc() );
-  shapeStore.init(     eng.getAlloc() );
+  transformStore.init( utl.getDefaultAlloc() );
+  shapeStore.init(     utl.getDefaultAlloc() );
 
 
   if( !ng.componentRegistry.register( "transformStore", &transformStore ))
@@ -81,7 +81,7 @@ pub fn OnOpen( ng : *eng.Engine ) void // Init and register ComponentStores here
 }
 
 
-pub fn OnClose( ng : *eng.Engine ) void // Deinit ComponentStores here
+pub fn OnGameClose( ng : *eng.Engine ) void // Deinit ComponentStores here
 {
   _ = ng;
 

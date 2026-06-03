@@ -37,12 +37,12 @@ pub var TILEMAP_DATA_NEXT = std.mem.zeroes([ GRID_WIDTH * GRID_HEIGHT ] TileData
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
 
-pub fn OnStart( ng : *eng.Engine ) void
+pub fn OnGameStart( ng : *eng.Engine ) void
 {
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OnOpen( ng : *eng.Engine ) void
+pub fn OnGameOpen( ng : *eng.Engine ) void
 {
   const tlm = ng.tilemapManager.loadTilemapFromParams(
   .{

@@ -31,18 +31,18 @@ const utl = @import( "utils" );
 
 const gameState = @import( "stateInjects.zig" );
 
-  pub const OnStart = gameState.OnStart;
-  pub const OnOpen  = gameState.OnOpen;
+  pub const OnGameStart = gameState.OnGameStart;
+  pub const OnGameOpen  = gameState.OnGameOpen;
 
 
 const gameStep  = @import( "stepInjects.zig" );
 
   pub const OnLoopStart      = gameStep.OnLoopStart;
 
-  pub const OnUpdateFrame   = gameStep.OnUpdateFrame;
-  pub const OffUpdateFrame  = gameStep.OffUpdateFrame;
+  pub const OnFrameUpdate   = gameStep.OnFrameUpdate;
+  pub const OffFrameUpdate  = gameStep.OffFrameUpdate;
 
-  pub const OnTickWorld      = gameStep.OnTickWorld;
+  pub const OnTickUpdate      = gameStep.OnTickUpdate;
 
   pub const OnRenderWorld    = gameStep.OnRenderWorld;
   pub const OffRenderWorld   = gameStep.OffRenderWorld;

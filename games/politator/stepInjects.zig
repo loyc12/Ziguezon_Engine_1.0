@@ -54,7 +54,7 @@ const RES_GROWTH_BONUS    : f32 = 4.00; // > 0 to avoid total resource collapse
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateFrame( ng : *eng.Engine ) void
+pub fn OnFrameUpdate( ng : *eng.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.p )){ ng.togglePause(); }
@@ -188,7 +188,7 @@ pub fn OnUpdateFrame( ng : *eng.Engine ) void
 }
 
 
-pub fn OnTickWorld( ng : *eng.Engine ) void
+pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {

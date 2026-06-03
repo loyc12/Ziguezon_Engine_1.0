@@ -133,7 +133,7 @@ pub const Shape2D = enum( u8 )
       .OCTA => 8,
       .DECA => 10,
       .DODE => 12,
-      .ELLI => eng.G_ST.Graphic_Ellipse_Facets, // 64 by default
+      .ELLI => eng.CNFGS.Graphic_Ellipse_Facets, // 64 by default
 
       // Star shapes
       .STR5  => 5,

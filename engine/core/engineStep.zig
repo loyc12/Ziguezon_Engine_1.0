@@ -80,9 +80,9 @@ inline fn updateFrame( ng : *Engine ) void
   ng.uiManager.updateLayout();
   ng.uiManager.dispatchInput();
 
-  eng.tryHook( .OnUpdateFrame, ng );
+  eng.tryHook( .OnFrameUpdate, ng );
   ng.uiManager.endFrame();
-  //eng.tryHook( .OffUpdateFrame, ng );
+  //eng.tryHook( .OffFrameUpdate, ng );
 }
 
 
@@ -117,12 +117,12 @@ inline fn tickAll( ng : *Engine ) void
 {
   utl.qlog( .TRACE, 0, @src(), "Ticking..." );
 
-  eng.tryHook( .OnTickWorld, ng );
+  eng.tryHook( .OnTickUpdate, ng );
   {
     tickTilemaps( ng );
     tickBodies( ng );
   }
-  eng.tryHook( .OffTickWorld, ng );
+  eng.tryHook( .OffTickUpdate, ng );
 }
 
 inline fn tickTilemaps( ng : *Engine ) void
@@ -175,7 +175,7 @@ inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instea
   defer utl.ray.endDrawing();
 
   // NOTE : set Graphic_Bckgrd_Colour to null in settings to skip this step
-  if( eng.G_ST.Graphic_Bckgrd_Colour != null ){ utl.sDraw.clearBackground( eng.G_ST.Graphic_Bckgrd_Colour.? ); }
+  if( eng.CNFGS.Graphic_Bckgrd_Colour != null ){ utl.sDraw.clearBackground( eng.CNFGS.Graphic_Bckgrd_Colour.? ); }
 
   eng.tryHook( .OnRenderBckgrnd, ng );
 
@@ -208,7 +208,7 @@ inline fn renderTilemaps( ng : *Engine ) void
 
   ng.tilemapManager.renderActiveTilemaps( ng );
 
-  if( eng.G_ST.DebugDraw_Tilemap )
+  if( eng.CNFGS.DebugDraw_Tilemap )
   {
     ng.tilemapManager.renderTilemapHitboxes();
   }
@@ -220,7 +220,7 @@ inline fn renderBodies( ng : *Engine ) void
 
   ng.bodyManager.renderActiveBodies( ng );
 
-  if( eng.G_ST.DebugDraw_Body )
+  if( eng.CNFGS.DebugDraw_Body )
   {
     ng.bodyManager.renderBodyHitboxes();
   }
@@ -233,27 +233,27 @@ inline fn renderBodies( ng : *Engine ) void
 
 inline fn drawDebugFpsCount( ng : *Engine ) void
 {
-  if( eng.G_ST.DebugDraw_FPS and eng.G_ST.Graphic_Metrics_Colour != null )
+  if( eng.CNFGS.DebugDraw_FPS and eng.CNFGS.Graphic_Metrics_Colour != null )
   {
     const frameTime = ng.times.buffFrameDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), utl.TimeVal.usPerSec() ));
 
-    utl.sDraw.textLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 24.0 ), 16, eng.G_ST.Graphic_Metrics_Colour.? );
+    utl.sDraw.textLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 24.0 ), 16, eng.CNFGS.Graphic_Metrics_Colour.? );
   }
 }
 
 
 inline fn drawDebugTpsCount( ng : *Engine ) void
 {
-  if( eng.G_ST.DebugDraw_FPS )
+  if( eng.CNFGS.DebugDraw_FPS )
   {
     const tickTime = ng.times.buffTickDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( tickTime.toSec() );
     const mic : u64 = @intCast( @rem( tickTime.toUs(), utl.TimeVal.usPerSec() ));
 
-    utl.sDraw.textLeftFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 56.0 ), 16, eng.G_ST.Graphic_Metrics_Colour.? );
+    utl.sDraw.textLeftFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 56.0 ), 16, eng.CNFGS.Graphic_Metrics_Colour.? );
   }
 }

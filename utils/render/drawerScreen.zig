@@ -112,7 +112,7 @@ pub fn setDefaultFont( fontPath : ?[:0] const u8 ) bool
     if( result )| font |
     {
 
-      utl.log( .DEBUG, 0, @src(), "Default font params : baseSize = {}, glyphCount = {}, texture id = {}", .{ font.baseSize, font.glyphCount, font.texture.id });
+      utl.log( .DEBUG, 0, @src(), "& Default font params : baseSize = {}, glyphCount = {}, texture id = {}", .{ font.baseSize, font.glyphCount, font.texture.id });
 
       if( font.isReady() )
       {

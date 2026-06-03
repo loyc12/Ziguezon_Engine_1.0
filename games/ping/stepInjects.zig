@@ -108,7 +108,7 @@ pub fn ensureBallMinSpeeds( ball : *Body ) void
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateFrame( ng : *Engine ) void
+pub fn OnFrameUpdate( ng : *Engine ) void
 {
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.p ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ))
   {
@@ -181,7 +181,7 @@ pub fn OnUpdateFrame( ng : *Engine ) void
   }
 }
 
-pub fn OnTickWorld( ng : *Engine ) void
+pub fn OnTickUpdate( ng : *Engine ) void
 {
   var ball = ng.bodyManager.getBody( stateInj.BALL_ID ) orelse
   {
@@ -217,7 +217,7 @@ pub fn OnTickWorld( ng : *Engine ) void
   }
 }
 
-pub fn OffTickWorld( ng : *Engine ) void
+pub fn OffTickUpdate( ng : *Engine ) void
 {
   // ================ VARIABLES AND CONSTANTS ================
 

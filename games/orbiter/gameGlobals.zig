@@ -37,9 +37,9 @@ pub const GameTimes = struct
   }
   pub inline fn stepTime( self : *GameTimes ) void // Run every tick
   {
-    if( eng.G_NG.isPaused() ){ return; }
+    if( eng.G_ENG.isPaused() ){ return; }
 
-    const tickPerSec : i128 = @intCast( eng.G_ST.Startup_Target_TickRate );
+    const tickPerSec : i128 = @intCast( eng.CNFGS.Startup_Target_TickRate );
 
     self.bodyStepOffset += @divFloor( self.secsPerStep, tickPerSec );
     self.econStepOffset += @divFloor( self.secsPerStep, tickPerSec );
@@ -47,7 +47,7 @@ pub const GameTimes = struct
 
   pub inline fn shouldBodyTick( self : *GameTimes ) bool
   {
-    if( eng.G_NG.isPaused() ){ return false; }
+    if( eng.G_ENG.isPaused() ){ return false; }
 
     return( self.bodyStepOffset >= gdf.G_CONSTS.bodyStepLen );
   }
@@ -58,7 +58,7 @@ pub const GameTimes = struct
 
   pub inline fn shouldEconTick( self : *GameTimes ) bool
   {
-    if( eng.G_NG.isPaused() ){ return false; }
+    if( eng.G_ENG.isPaused() ){ return false; }
 
     return( self.econStepOffset >= gdf.G_CONSTS.econStepLen );
   }
@@ -81,7 +81,7 @@ pub const CompStores = struct
   /// Returns true if the registry process failed somewhere
   pub inline fn registerAllStores( self : *CompStores, ng : *eng.Engine ) bool
   {
-    const alloc = eng.getAlloc();
+    const alloc = utl.getDefaultAlloc();
 
     var hasError : bool = false;
 

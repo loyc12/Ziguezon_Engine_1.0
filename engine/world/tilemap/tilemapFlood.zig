@@ -1,5 +1,5 @@
-const std          = @import( "std" );
-const eng          = @import( "engine" );
+const std = @import( "std" );
+const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const Tile         = eng.Tile;
@@ -44,7 +44,7 @@ pub inline fn resetFloodFillFlags( tlmp : *Tilemap ) void { tlmp.fillWithTileFla
 
 pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, expectedIter : u32, rules : *e_flood_rule ) void
 {
-  const alloc = eng.getAlloc();
+  const alloc = utl.getDefaultAlloc();
 
   // Using a stack to avoid Depth-First Search, thus avoiding stack overflows due to recursivity
   var stack = std.ArrayList( *Tile ).initCapacity( alloc, expectedIter ) catch | err |

@@ -341,7 +341,7 @@ pub fn OnLoopStart( ng : *eng.Engine ) void
 }
 
 
-pub fn OnUpdateFrame( ng : *eng.Engine ) void
+pub fn OnFrameUpdate( ng : *eng.Engine ) void
 {
   var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
@@ -424,7 +424,7 @@ pub fn OnUpdateFrame( ng : *eng.Engine ) void
 
 }
 
-pub fn OnTickWorld( ng : *eng.Engine ) void
+pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   const grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {

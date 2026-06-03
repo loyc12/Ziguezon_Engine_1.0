@@ -27,7 +27,7 @@ const ShapeStore     = stateInj.ShapeStore;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnUpdateFrame( ng : *eng.Engine ) void
+pub fn OnFrameUpdate( ng : *eng.Engine ) void
 {
 
   // Toggle pause if the P key is pressed
@@ -71,7 +71,7 @@ pub fn OnUpdateFrame( ng : *eng.Engine ) void
 }
 
 
-pub fn OnTickWorld( ng : *eng.Engine ) void
+pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   const transformStore : *TransformStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transformStore" )));
 
@@ -143,7 +143,7 @@ pub fn OnTickWorld( ng : *eng.Engine ) void
 
 }
 
-pub fn OffTickWorld( ng : *eng.Engine ) void
+pub fn OffTickUpdate( ng : *eng.Engine ) void
 {
   _ = ng;
 }

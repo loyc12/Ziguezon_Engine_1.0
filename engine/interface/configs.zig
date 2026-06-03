@@ -2,10 +2,10 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-// ================================ ENGINE SETTINGS ================================
+// ================================ ENGINE CONFIGS ================================
 
 
-pub const EngineSettings = struct
+pub const EngineConfigs = struct
 {
   // Debug Flags
 
@@ -49,49 +49,49 @@ pub const EngineSettings = struct
 
 
 
-  // ================================ ENGINE SETTINGS FUNCTIONS ================================
+  // ================================ ENGINE CONFIGURATION FUNCTIONS ================================
 
-  pub fn loadSettings( self : *EngineSettings, module : anytype ) void
+  pub fn loadConfigs( self : *EngineConfigs, module : anytype ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "Initializing engine settings..." );
+    utl.qlog( .TRACE, 0, @src(), "Initializing engine configs..." );
 
-    var hasFoundSettings : bool = false;
+    var foundConfigs : bool = false;
 
     if( @typeInfo( module ) != .@"struct" )
     {
-      utl.log( .ERROR, 0, @src(), "EngineSettings.loadSettings() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
+      utl.log( .ERROR, 0, @src(), "EngineConfigs.loadConfigs() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
       return;
     }
 
     // Debug Flags
-    if( @hasDecl( module, "DebugDraw_Body"           )){ self.DebugDraw_Body           = @field( module, "DebugDraw_Body"           ); hasFoundSettings = true; }
-    if( @hasDecl( module, "DebugDraw_Tilemap"        )){ self.DebugDraw_Tilemap        = @field( module, "DebugDraw_Tilemap"        ); hasFoundSettings = true; }
-    if( @hasDecl( module, "DebugDraw_Tile"           )){ self.DebugDraw_Tile           = @field( module, "DebugDraw_Tile"           ); hasFoundSettings = true; }
-    if( @hasDecl( module, "DebugDraw_FPS"            )){ self.DebugDraw_FPS            = @field( module, "DebugDraw_FPS"            ); hasFoundSettings = true; }
+    if( @hasDecl( module, "DebugDraw_Body"           )){ self.DebugDraw_Body           = @field( module, "DebugDraw_Body"           ); foundConfigs = true; }
+    if( @hasDecl( module, "DebugDraw_Tilemap"        )){ self.DebugDraw_Tilemap        = @field( module, "DebugDraw_Tilemap"        ); foundConfigs = true; }
+    if( @hasDecl( module, "DebugDraw_Tile"           )){ self.DebugDraw_Tile           = @field( module, "DebugDraw_Tile"           ); foundConfigs = true; }
+    if( @hasDecl( module, "DebugDraw_FPS"            )){ self.DebugDraw_FPS            = @field( module, "DebugDraw_FPS"            ); foundConfigs = true; }
 
     // Feature Flags
-    if( @hasDecl( module, "AutoApply_Body_Movement"  )){ self.AutoApply_Body_Movement  = @field( module, "AutoApply_Body_Movement"  ); hasFoundSettings = true; }
-    if( @hasDecl( module, "AutoApply_Body_Collision" )){ self.AutoApply_Body_Collision = @field( module, "AutoApply_Body_Collision" ); hasFoundSettings = true; }
-    if( @hasDecl( module, "AutoApply_State_Playing"  )){ self.AutoApply_State_Playing  = @field( module, "AutoApply_State_Playing"  ); hasFoundSettings = true; }
+    if( @hasDecl( module, "AutoApply_Body_Movement"  )){ self.AutoApply_Body_Movement  = @field( module, "AutoApply_Body_Movement"  ); foundConfigs = true; }
+    if( @hasDecl( module, "AutoApply_Body_Collision" )){ self.AutoApply_Body_Collision = @field( module, "AutoApply_Body_Collision" ); foundConfigs = true; }
+    if( @hasDecl( module, "AutoApply_State_Playing"  )){ self.AutoApply_State_Playing  = @field( module, "AutoApply_State_Playing"  ); foundConfigs = true; }
 
     // Global Values
-    if( @hasDecl( module, "Startup_Window_TargetFps" )){ self.Startup_Window_TargetFps = @field( module, "Startup_Window_TargetFps" ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Startup_Window_Width"     )){ self.Startup_Window_Width     = @field( module, "Startup_Window_Width"     ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Startup_Window_Height"    )){ self.Startup_Window_Height    = @field( module, "Startup_Window_Height"    ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Startup_Window_Title"     )){ self.Startup_Window_Title     = @field( module, "Startup_Window_Title"     ); hasFoundSettings = true; }
+    if( @hasDecl( module, "Startup_Window_TargetFps" )){ self.Startup_Window_TargetFps = @field( module, "Startup_Window_TargetFps" ); foundConfigs = true; }
+    if( @hasDecl( module, "Startup_Window_Width"     )){ self.Startup_Window_Width     = @field( module, "Startup_Window_Width"     ); foundConfigs = true; }
+    if( @hasDecl( module, "Startup_Window_Height"    )){ self.Startup_Window_Height    = @field( module, "Startup_Window_Height"    ); foundConfigs = true; }
+    if( @hasDecl( module, "Startup_Window_Title"     )){ self.Startup_Window_Title     = @field( module, "Startup_Window_Title"     ); foundConfigs = true; }
 
-    if( @hasDecl( module, "Graphic_Bckgrd_Colour"    )){ self.Graphic_Bckgrd_Colour    = @field( module, "Graphic_Bckgrd_Colour"    ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Graphic_Metrics_Colour"   )){ self.Graphic_Metrics_Colour   = @field( module, "Graphic_Metrics_Colour"   ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Graphic_Default_Font"     )){ self.Graphic_Default_Font     = @field( module, "Graphic_Default_Font"     ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Graphic_Ellipse_Facets"   )){ self.Graphic_Ellipse_Facets   = @field( module, "Graphic_Ellipse_Facets"   ); hasFoundSettings = true; }
+    if( @hasDecl( module, "Graphic_Bckgrd_Colour"    )){ self.Graphic_Bckgrd_Colour    = @field( module, "Graphic_Bckgrd_Colour"    ); foundConfigs = true; }
+    if( @hasDecl( module, "Graphic_Metrics_Colour"   )){ self.Graphic_Metrics_Colour   = @field( module, "Graphic_Metrics_Colour"   ); foundConfigs = true; }
+    if( @hasDecl( module, "Graphic_Default_Font"     )){ self.Graphic_Default_Font     = @field( module, "Graphic_Default_Font"     ); foundConfigs = true; }
+    if( @hasDecl( module, "Graphic_Ellipse_Facets"   )){ self.Graphic_Ellipse_Facets   = @field( module, "Graphic_Ellipse_Facets"   ); foundConfigs = true; }
 
-    if( @hasDecl( module, "Camera_Zoom_Max"          )){ self.Camera_Zoom_Max          = @field( module, "Camera_Zoom_Max"          ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Camera_Zoom_Min"          )){ self.Camera_Zoom_Min          = @field( module, "Camera_Zoom_Min"          ); hasFoundSettings = true; }
-    if( @hasDecl( module, "Camera_Zoom_Init"         )){ self.Camera_Zoom_Init         = @field( module, "Camera_Zoom_Init"         ); hasFoundSettings = true; }
+    if( @hasDecl( module, "Camera_Zoom_Max"          )){ self.Camera_Zoom_Max          = @field( module, "Camera_Zoom_Max"          ); foundConfigs = true; }
+    if( @hasDecl( module, "Camera_Zoom_Min"          )){ self.Camera_Zoom_Min          = @field( module, "Camera_Zoom_Min"          ); foundConfigs = true; }
+    if( @hasDecl( module, "Camera_Zoom_Init"         )){ self.Camera_Zoom_Init         = @field( module, "Camera_Zoom_Init"         ); foundConfigs = true; }
 
 
     // Logging the outcome
-    if( hasFoundSettings ){ utl.qlog( .INFO, 0, @src(), "$ Successfully initialized settings from given module\n" ); }
-    else {                  utl.qlog( .WARN, 0, @src(), "$ Failed to find any valid settings from given module\n" ); }
+    if( foundConfigs ){ utl.qlog( .INFO, 0, @src(), "$ Successfully initialized configs from given module\n" ); }
+    else {              utl.qlog( .WARN, 0, @src(), "$ Failed to find any valid configs from given module\n" ); }
   }
 };

@@ -29,12 +29,12 @@ pub var NOISE_GEN : utl.Noise2D =
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
 
-pub fn OnStart( ng : *eng.Engine ) void
+pub fn OnGameStart( ng : *eng.Engine ) void
 {
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OnOpen( ng : *eng.Engine ) void
+pub fn OnGameOpen( ng : *eng.Engine ) void
 {
   const tlm = ng.tilemapManager.loadTilemapFromParams(
   .{

@@ -1,6 +1,8 @@
 const std = @import( "std"    );
 
 
+pub var G_EPOCH : TimeVal = .{};
+
 // ================================ RAYLIB SHORTHANDS ================================
 
 pub const ray = @import( "raylib" );
@@ -270,7 +272,9 @@ pub const Noise2D = nsr_u.Noise2D;
 
 // ======== RANDOMNESS ========
 
-pub const rng_u  = @import( "rng/randomer.zig" );
+pub const rng_u = @import( "rng/randomer.zig" );
+
+pub const Randomiser = rng_u.Randomiser;
 
 
 // ======== SHAKE ========
@@ -316,5 +320,33 @@ pub const Interface2D    = ntf_u.Interface2D;
 
 // ================================ MINOR HELPER FUNCTIONS ================================
 
-
 pub const areContEqual = std.meta.eql;
+
+
+// ================================ (DE)INITIALISATION FUNCTIONS  ================================
+
+pub inline fn initAllUtils() void
+{
+  log_u.initFile();
+}
+
+pub inline fn deinitAllUtils() void
+{
+  const bytesInUse = getBytesInUse();
+
+  switch( G_ALLOC.deinit() )
+  {
+    .ok   => qlog( .INFO, 0, @src(), "$ Default allocator deinitialized without leaks" ),
+    .leak => log(  .WARN, 0, @src(), "@ Default allocator detected leaked memory : {d} bytes still in use", .{ bytesInUse } ),
+  }
+
+  log_u.deinitFile();
+}
+
+pub var G_ALLOC : std.heap.DebugAllocator(.{ .enable_memory_limit = true }) = .init;
+
+pub inline fn getDefaultAlloc() std.mem.Allocator { return G_ALLOC.allocator(); }
+pub inline fn getBytesInUse() usize { return G_ALLOC.total_requested_bytes; }
+
+
+
