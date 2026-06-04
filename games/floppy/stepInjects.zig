@@ -27,7 +27,7 @@ const ShapeStore     = stateInj.ShapeStore;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnFrameUpdate( ng : *eng.Engine ) void
+pub fn OnInputUpdate( ng : *eng.Engine ) void
 {
 
   // Toggle pause if the P key is pressed

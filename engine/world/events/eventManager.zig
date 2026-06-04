@@ -14,6 +14,8 @@ const EventListener      = eng.EventListener;
 const EventListenerArray = eng.EventListenerArray;
 pub const EventQueue     = eng.EventQueue;
 
+// NOTE : This entire file will need a decent rework
+
 
 // ================================ EVENT MANAGER ================================
 

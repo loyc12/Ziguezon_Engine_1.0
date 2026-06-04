@@ -29,7 +29,7 @@ Engine state validated against the codebase:
 - Hook system (src/core/interfacers/gameHooks.zig): robust, well-tested
    (one of the first features implemented). Provides phase tags consumed
    by the engine loop in src/core/engine/engineStep.zig. Key tags for UI:
-     .OnFrameUpdate   - frame-cadence update, before tick + render
+     .OnInputUpdate   - frame-cadence update, before tick + render
      .OnRenderOverlay - after world render, in screen space
      .OnRenderWorld   - during the camera-transformed render pass
    UI logic lives in the engine's updateFrame phase, not in tickAll.
@@ -111,7 +111,7 @@ Before any "chart widget", the system needs:
 - A font choice the user is happy with (sDraw already has
    getDefaultFont / setDefaultFont)
 - Input routing that knows which panel has focus (lives in
-   .OnFrameUpdate hook)
+   .OnInputUpdate hook)
 
 The classic trap is jumping to fancy widgets. Chart rendering is ~20% of
 the work; the scroll / clip / focus / resize machinery around it is ~80%.
@@ -165,7 +165,7 @@ Each frame, the UI system runs:
 
 Wiring into the engine loop:
 
-- Build + Layout + Input  ->  updateFrame / .OnFrameUpdate
+- Build + Layout + Input  ->  updateFrame / .OnInputUpdate
 - Render (screen layers)  ->  renderAll / .OnRenderOverlay
 - Render (world layer)    ->  renderAll / .OnRenderWorld
 
@@ -368,7 +368,7 @@ Different beasts.
  3. UI system iterates UIAnchor components, updates positions of
     world-space elements
  4. UI system runs its three passes (build, layout, render+input) over
-    each UIRoot's tree, in z-order, hooked into .OnFrameUpdate and
+    each UIRoot's tree, in z-order, hooked into .OnInputUpdate and
     .OnRenderOverlay (and .OnRenderWorld for the world-space layer)
  5. UI emits commands back to game via the engine event system when
     buttons clicked, etc. Game processes those events next frame.
@@ -540,7 +540,7 @@ testing it.
  6. PanelDefinition comptime struct + ui.show(def) / ui.hide(id).
 
  7. UI hooks wired: build / layout / input in updateFrame /
-    .OnFrameUpdate; screen render in renderAll / .OnRenderOverlay
+    .OnInputUpdate; screen render in renderAll / .OnRenderOverlay
     (and .OnRenderWorld for world layer).
 
  8. Event integration: button clicks emit engine Events the game polls.
@@ -650,7 +650,7 @@ several z-ordered layer trees. Each tree is built from declarative
 PanelDefinitions the game registers via ui.show(...). Each frame, the
 system runs build -> layout -> render+input over each tree:
 
- build / layout / input  ->  .OnFrameUpdate hook
+ build / layout / input  ->  .OnInputUpdate hook
  render (screen)         ->  .OnRenderOverlay hook
  render (world)          ->  .OnRenderWorld hook
 

@@ -319,14 +319,6 @@ games own domain-specific simulation content:
 
 The engine should make these easy to define, register, inspect, and run.
 
-### 3.6 engine/legacy
-
-engine/legacy exists only as a compatibility area.
-
-Moving legacy BodyManager and Script usage onto the current ECS/world path is
-the first blocker before deeper world simulation work. This migration is not
-elaborated here; it belongs in implementation planning.
-
 ## 4. DESIGN CONSTRAINTS
 
 ### 4.1 Save/load and replay are future concerns, but must not be blocked
@@ -394,7 +386,7 @@ Long-term conceptual shape:
      |-- Core runtime
      |-- Resources
      |-- Render
-     |-- UI
+     |-- UI ?
      |-- World
         |-- Entities
         |-- Components
@@ -408,11 +400,10 @@ Long-term conceptual shape:
 
 The near-term work should build toward this in small steps:
 
- 1. Clear legacy blockers.
- 2. Add World as the owner/interface for entity and component storage.
- 3. Rework component storage so users can choose dense/sparse policies.
- 4. Add relations as one of the first major World extensions.
- 5. Add events, rules, traits, archetypes, scheduler, and query helpers
+ 1. Add World as the owner/interface for entity and component storage.
+ 2. Rework component storage so users can choose dense/sparse policies.
+ 3. Add relations as one of the first major World extensions.
+ 4. Add events, rules, traits, archetypes, scheduler, and query helpers
     progressively, with minimal generic examples for each.
 
 The success condition is not "the engine has a pure ECS".

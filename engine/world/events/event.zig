@@ -4,6 +4,8 @@ const utl = @import( "utils" );
 
 const EntityId  = eng.EntityId;
 
+// NOTE : This entire file will need a heavy rework
+
 pub const EventType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;

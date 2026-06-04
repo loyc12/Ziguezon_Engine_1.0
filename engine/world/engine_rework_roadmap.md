@@ -1,62 +1,290 @@
 # ENGINE REWORK ROADMAP - ZIGUEZON ENGINE
 
 This file holds implementation sequencing and migration notes for the
-world/entity/simulation rework. The guiding principles live in
-`engine/world/entity_roadmap.txt`.
+world/entity/simulation rework.
+
+The guiding reference is:
+
+    engine/world/engine_rework_reference.md
+
+If this roadmap conflicts with the reference, the reference takes precedence.
 
 
-## Immediate Blocker
+## Current Starting Point
 
-Move legacy `BodyManager` and Script usage onto the current ECS/world direction
-before deeper simulation infrastructure work. This is a blocker, not the main
-design topic of the world reference document.
-
+Nothing implemented yet
 
 ## Build Direction
 
-1. Stabilize the current ECS path after legacy migration.
+The engine rework should build toward `World` as the central engine-owned
+simulation database.
 
-2. Add `engine/world/world.zig`.
+The target is not a pure ECS. The target is a data-oriented simulation layer
+where entity identity, components, relations, events, rules, traits,
+archetypes, schedules, queries, and views can be defined, stored, inspected,
+and run cleanly.
 
-3. Move entity and component access behind `World`.
+Near-term sequence:
 
-4. Rework the component system around user-selectable storage policies:
-   `storeType = .dense`, `storeType = .sparse`, and later other policies when
-   justified.
+1. Add `engine/world/worldManager.zig`.
+
+2. Move entity identity and component access behind `World`.
+
+3. Stabilize the current ECS/component path under `World`.
+
+4. Rework component storage around explicit user-selectable policies:
+
+       pub const storeType = .dense;
+
+   and:
+
+       pub const storeType = .sparse;
 
 5. Keep at least one minimal generic reference component in engine code.
 
-6. Add relation storage as the first major World extension after the World
-   wrapper and component rework.
+6. Add relation storage as the first major `World` extension after the world
+   wrapper and component ownership are clear.
 
 7. Keep at least one minimal generic reference relation in engine code.
 
-8. Add generic event records/queues after entity/component/relation changes have
-   clear ownership.
+8. Add generic event records/queues after entity, component, and relation
+   ownership is stable. This means reworking the current event system entirely.
 
 9. Keep at least one minimal generic reference event in engine code.
 
-10. Add rule/reaction support only after events exist.
+10. Add rule/reaction support after events exist.
 
 11. Keep at least one minimal generic reference rule/reaction in engine code.
 
-12. Add traits/metaproperties and archetypes/templates after the base world data
-    model is usable.
+12. Add traits/metaproperties after the base world data model is usable.
 
-13. Keep at least one minimal generic reference trait and archetype in engine
+13. Keep at least one minimal generic reference trait/metaproperty in engine
     code.
 
-14. Add scheduler/query/view helpers progressively, driven by real game needs.
+14. Add archetypes/templates for bundles of initial facts.
+
+15. Keep at least one minimal generic reference archetype/template in engine
+    code.
+
+16. Add scheduler support progressively, without assuming frame-rate timing.
+
+17. Add query/view helpers progressively, driven by real game and debug needs.
+
+
+## World Responsibilities
+
+`World` should eventually organize:
+
+- entity identity and lifecycle
+- component tables
+- relation tables
+- event records / event queues
+- rules and reactions
+- traits / metaproperties
+- archetypes / templates
+- simulation scheduling
+- query and view helpers
+
+Entities should remain identifiers. Components, relations, events, traits, and
+rules store the facts that make those identifiers meaningful.
+
+The user-facing API should let game code express common simulation operations
+without manually handling registry casts or container internals at every call
+site:
+
+- create entity
+- add component
+- add relation
+- emit event
+- apply trait
+- spawn archetype
+- run/query systems
+
+
+## Implementation Phases
+
+### 1. World Wrapper
+
+Add `World` as the owner/interface for entity and component storage.
+
+Keep this slice small:
+
+- entity lifecycle
+- component store ownership
+- component add/get/remove helpers
+- enough migration glue for existing games
+
+Avoid adding relations, rules, traits, or archetypes in this first slice unless
+they are required to prevent a bad ownership boundary.
+
+### 2. Component Storage Policies
+
+Rework component storage so users can choose dense or sparse storage where it
+matters.
+
+Default storage should stay sensible. Performance-relevant storage choices
+should be explicit on the data type passed to the store generator.
+
+Prefer dense arrays, sparse sets, hash maps, indexed tables, and
+relation-specific indexes unless profiling proves another structure is
+justified.
+
+### 3. Relations
+
+Add first-class relation storage for facts that connect entities.
+
+Initial engine examples should stay generic:
+
+- Owns
+- Contains
+- ParentOf
+- MemberOf
+- LinkedTo
+- DependsOn
+
+Relation storage should move toward:
+
+- source/target queries
+- reverse lookups
+- cardinality rules
+- cleanup behavior when entities are destroyed
+
+### 4. Events
+
+Add events as records that something happened, not only as callbacks.
+
+Initial engine examples should stay generic:
+
+- EntityCreated
+- EntityDestroyed
+- ComponentAdded
+- ComponentRemoved
+- RelationAdded
+- RelationRemoved
+- TraitApplied
+- TraitRemoved
+
+Support transient events first if that is the smallest useful slice, but do not
+block retained event history for debugging, UI, replay, audit, or future
+history systems.
+
+### 5. Rules And Reactions
+
+Add a minimal rule/reaction layer once events exist.
+
+Rules should be able to observe:
+
+- components
+- relations
+- events
+- traits
+- time/schedules
+
+Rules should be able to emit:
+
+- commands
+- events
+- component changes
+- relation changes
+- trait changes
+
+Keep the first engine example minimal and generic. Game-specific rule content
+belongs under `games/`.
+
+### 6. Traits And Archetypes
+
+Add traits/metaproperties for reusable classification and behavior/data flags.
+
+Initial engine examples should stay generic:
+
+- Selectable
+- Visible
+- Simulated
+- Container
+- Indexed
+
+Add archetypes/templates for bundles of initial facts after traits and the base
+world data model are usable.
+
+Avoid assuming a specific game genre in engine-level traits or archetypes.
+
+### 7. Scheduler
+
+Add scheduling support after the base world data model is stable enough to run
+systems cleanly.
+
+The design must leave room for:
+
+- frame update
+- fixed simulation tick
+- scheduled systems
+- delayed events
+- game-defined time scales
+- temporary time-bound rules
+
+The first scheduler can be simple. It should not assume simulation time is
+render time.
+
+### 8. Queries And Views
+
+Add query/view helpers so simulation-heavy games, debug tools, and UI can
+inspect the world without mutating internals directly.
+
+Queries should eventually cover:
+
+- components
+- relations
+- events
+- traits
+- archetypes
+
+UI and debug tools should read through queries/views and emit commands/events
+instead of reaching into storage internals.
+
+
+## Architectural Boundaries
+
+Keep ownership aligned with the reference document:
+
+- `utils` owns reusable primitives: data structures, math, timing, logging,
+  RNG, generic drawing helpers, generic camera primitives, and non-world UI
+  primitives.
+- `engine/core` owns runtime orchestration: `Engine`, lifecycle, timing loop,
+  hooks, configs, and phase order.
+- `engine/world` owns simulation infrastructure: `World`, entities,
+  components, relations, events, rules, traits, archetypes, scheduler, and
+  queries/views.
+- `engine/render` owns world-facing render adapters: `WorldCam`, world-space
+  drawing wrappers, sprite/world render helpers, and debug render systems.
+- `games` owns domain-specific simulation content.
+
+Simulation data should not depend on rendering. Render systems read simulation
+data and draw it.
 
 
 ## Implementation Constraints
 
-- Keep implementation details out of `entity_roadmap.txt`.
-- Keep engine-level examples generic.
-- Do not add specialized simulation content to engine/world.
+- Keep this file focused on build order, migration steps, API sketches,
+  compatibility notes, and unresolved implementation details.
+- Keep principles and architectural intent in
+  `engine/world/engine_rework_reference.md`.
+- Keep engine-level examples minimal and generic.
+- Do not add specialized simulation content to `engine/world`.
 - Do not grow a large built-in content library.
-- Prefer data tables, relation indexes, and explicit metadata over hidden object
-  graphs.
+- Prefer data tables, explicit metadata, relation indexes, and query/view
+  helpers over hidden object graphs.
 - Avoid linked-list storage unless a specific profile proves it is justified.
-- Preserve room for future save/load and deterministic replay without building
-  those systems yet.
+- Prefer ids over raw pointers as persistent truth.
+- Preserve room for future save/load, deterministic replay, debugging, and
+  event history without building those full systems yet.
+- Keep phase order and event ordering explicit.
+- Keep game-specific components, relations, events, traits, rules,
+  archetypes, views, and UI bindings under `games/`.
+
+
+## Success Condition
+
+A user can build a data-oriented simulation with many entities and many
+relationships, define their own simulation types cleanly, choose storage
+policies when needed, inspect what the world contains, and rely on a small set
+of generic engine examples as reference patterns.

@@ -184,7 +184,7 @@ pub fn ensureBallMinSpeeds( ball : BodyParts ) void
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnFrameUpdate( ng : *Engine ) void
+pub fn OnInputUpdate( ng : *Engine ) void
 {
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.p ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ))
   {

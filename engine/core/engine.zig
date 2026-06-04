@@ -60,24 +60,26 @@ pub const Engine = struct
     self.times.updateSimTime( self.isPlaying() );
   }
 
-  pub inline fn getTargetFrameSDT( self : *Engine ) f32 { return( self.times.getScaledTargetFrameDeltaFloat() ); }
-  pub inline fn getRealFrameSDT(   self : *Engine ) f32 { return( self.times.getScaledLastFrameDeltaFloat()   ); }
-  pub inline fn getTargetTickSDT(  self : *Engine ) f32 { return( self.times.getScaledTargetTickDeltaFloat()  ); }
-  pub inline fn getRealTickSDT(    self : *Engine ) f32 { return( self.times.getScaledLastTickDeltaFloat()    ); }
+  pub inline fn getTargetFrameDT( self : *Engine ) f32 { return( self.times.getTargetFrameDeltaFloat() ); }
+  pub inline fn getRealFrameDT(   self : *Engine ) f32 { return( self.times.getLastFrameDeltaFloat()   ); }
+  pub inline fn getTargetTickDT(  self : *Engine ) f32 { return( self.times.getTargetTickDeltaFloat()  ); }
+  pub inline fn getRealTickDT(    self : *Engine ) f32 { return( self.times.getLastTickDeltaFloat()    ); }
 
   // ================================ ENGINE STATE FUNCTIONS ================================
 
   const ngnState = @import( "engineState.zig" );
 
   pub inline fn changeState( self : *Engine, targetState : EngineState ) void { ngnState.changeState( self, targetState ); }
-  pub inline fn togglePause( self : *Engine ) void {                           ngnState.togglePause( self );              }
+  pub inline fn togglePause( self : *Engine ) void {                            ngnState.togglePause( self );              }
 
 
   // ================================ ENGINE STEP FUNCTIONS ================================
 
   const ngnStep = @import( "engineStep.zig" );
 
-  pub inline fn loopLogic(  self : *Engine ) void { ngnStep.loopLogic(   self ); }
-  pub inline fn forceTick(  self : *Engine ) void { ngnStep.forceTick(   self ); }
-  pub inline fn forceFrame( self : *Engine ) void { ngnStep.forceRender( self ); }
+  pub inline fn loopLogic( self : *Engine ) void { ngnStep.loopLogic( self ); }
+
+//pub inline fn forceUpdateIntpus( self : *Engine ) void { ngnStep.forceUpdateInputs( self ); } // TODO : validate this works properly
+  pub inline fn forceTickSim(      self : *Engine ) void { ngnStep.forceTickSim(      self ); } // TODO : validate this works properly
+  pub inline fn forceRenderFrame(  self : *Engine ) void { ngnStep.forceRenderFrame(  self ); } // TODO : validate this works properly
 };

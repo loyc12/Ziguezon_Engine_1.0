@@ -32,7 +32,7 @@ fn getTileData( worldGrid : *TileMap, tile : *Tile ) ?*TileData
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnFrameUpdate( ng : *eng.Engine ) void
+pub fn OnInputUpdate( ng : *eng.Engine ) void
 {
   // Toggle pause if the P key is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.p )){ ng.togglePause(); }

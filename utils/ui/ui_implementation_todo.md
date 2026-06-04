@@ -8,7 +8,7 @@ Action checklist for the retained-mode UI system. Design rationale lives in `ui_
 * No raygui dependency.
 * Use `Box2` as the final layout / hit-test rectangle.
 * Use `def.sDraw` for screen UI and `def.wDraw` only for separate world-space labels / markers.
-* UI frame processing runs in `engineStep.updateFrame`: `beginFrame`, `updateLayout`, `dispatchInput`, game `OnFrameUpdate`, then `endFrame`.
+* UI frame processing runs in `engineStep.updateFrame`: `beginFrame`, `updateLayout`, `dispatchInput`, game `OnInputUpdate`, then `endFrame`.
 * Screen UI render runs from `engineStep.renderAll` in the overlay phase after game `OnRenderOverlay` and before debug FPS / TPS text.
 * UI currently reads game state through direct sandbox updates and writes back through a UI-local event buffer.
 * Prefer composable internal primitives with ergonomic archetype / template helpers. Common panels, popups, modals, and windows should be easy to instantiate without turning every menu flavor into a separate primitive.

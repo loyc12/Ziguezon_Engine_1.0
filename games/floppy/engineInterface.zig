@@ -32,7 +32,7 @@ const gameState = @import( "stateInjects.zig" );
 
 const gameStep = @import( "stepInjects.zig" );
 
-  pub const OnFrameUpdate  = gameStep.OnFrameUpdate;
+  pub const OnInputUpdate  = gameStep.OnInputUpdate;
 
   pub const OnTickUpdate     = gameStep.OnTickUpdate;
   pub const OffTickUpdate    = gameStep.OffTickUpdate;

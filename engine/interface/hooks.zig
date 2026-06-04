@@ -27,13 +27,13 @@ pub const HookTag = enum( u8 )
 
   OnLoopStart  = 10, // Called at the start of the game loop
   OnLoopEnd    = 11, // Called at the end of the game loop
-  OnLoopCycle  = 12, // Called for each iteration of the game loop ( at the start )
+  OnLoopUpdate  = 12, // Called for each iteration of the game loop ( at the start )
 
 
   // Update and Tick Hooks
 
-  OnFrameUpdate   = 20, // Called every frame for updates ( at the start )
-//OffFrameUpdate  = 21, // Called every frame for updates ( at the end )
+  OnInputUpdate   = 20, // Called every frame for updates ( at the start )
+//OffInputUpdate  = 21, // Called every frame for updates ( at the end )
 
   OnTickUpdate      = 22, // Called every tick for logic updates ( at the start )
   OffTickUpdate     = 23, // Called every tick for logic updates ( at the end )
@@ -77,10 +77,10 @@ pub const GameHooks = struct
 
   OnLoopStart  : ?HookFunc = null,
   OnLoopEnd    : ?HookFunc = null,
-  OnLoopCycle  : ?HookFunc = null,
+  OnLoopUpdate  : ?HookFunc = null,
 
-  OnFrameUpdate   : ?HookFunc = null,
-//OffFrameUpdate  : ?HookFunc = null,
+  OnInputUpdate   : ?HookFunc = null,
+//OffInputUpdate  : ?HookFunc = null,
 
   OnTickUpdate    : ?HookFunc = null,
   OffTickUpdate   : ?HookFunc = null,
@@ -117,11 +117,11 @@ pub const GameHooks = struct
     // Engine Step Hooks
     if( @hasDecl( module, "OnLoopStart"  )) self.OnLoopStart  = @field( module, "OnLoopStart"  );
     if( @hasDecl( module, "OnLoopEnd"    )) self.OnLoopEnd    = @field( module, "OnLoopEnd"    );
-    if( @hasDecl( module, "OnLoopCycle"  )) self.OnLoopCycle  = @field( module, "OnLoopCycle"  );
+    if( @hasDecl( module, "OnLoopUpdate" )) self.OnLoopUpdate = @field( module, "OnLoopUpdate" );
 
     // Update and Tick Hooks
-    if( @hasDecl( module, "OnFrameUpdate"  )) self.OnFrameUpdate  = @field( module, "OnFrameUpdate"  );
-  //if( @hasDecl( module, "OffFrameUpdate" )) self.OffFrameUpdate = @field( module, "OffFrameUpdate" );
+    if( @hasDecl( module, "OnInputUpdate"  )) self.OnInputUpdate  = @field( module, "OnInputUpdate"  );
+  //if( @hasDecl( module, "OffInputUpdate" )) self.OffInputUpdate = @field( module, "OffInputUpdate" );
     if( @hasDecl( module, "OnTickUpdate"   )) self.OnTickUpdate   = @field( module, "OnTickUpdate"   );
     if( @hasDecl( module, "OffTickUpdate"  )) self.OffTickUpdate  = @field( module, "OffTickUpdate"  );
 
@@ -165,35 +165,31 @@ pub const GameHooks = struct
     const hookFunct = switch( tag )
     {
     // Engine State Hooks
-      .OnGameStart => self.OnGameStart,
-      .OnGameStop  => self.OnGameStop,
+      .OnGameStart  => self.OnGameStart,
+      .OnGameStop   => self.OnGameStop,
 
-      .OnGameOpen  => self.OnGameOpen,
-      .OnGameClose => self.OnGameClose,
+      .OnGameOpen   => self.OnGameOpen,
+      .OnGameClose  => self.OnGameClose,
 
-      .OnGameResume  => self.OnGameResume,
-      .OnGamePause => self.OnGamePause,
+      .OnGameResume => self.OnGameResume,
+      .OnGamePause  => self.OnGamePause,
 
     // Engine Step Hooks
-      .OnLoopStart => self.OnLoopStart,
-      .OnLoopEnd   => self.OnLoopEnd,
-      .OnLoopCycle => self.OnLoopCycle,
+      .OnLoopStart  => self.OnLoopStart,
+      .OnLoopEnd    => self.OnLoopEnd,
+      .OnLoopUpdate => self.OnLoopUpdate,
 
-    // Update and Tick Hooks
-      .OnFrameUpdate  => self.OnFrameUpdate,
-    //.OffFrameUpdate => self.OffFrameUpdate,
+      .OnInputUpdate  => self.OnInputUpdate,
+    //.OffInputUpdate => self.OffInputUpdate,
 
-      .OnTickUpdate    => self.OnTickUpdate,
-      .OffTickUpdate   => self.OffTickUpdate,
+      .OnTickUpdate   => self.OnTickUpdate,
+      .OffTickUpdate  => self.OffTickUpdate,
 
-    // Rendering Hooks
       .OnRenderBckgrnd  => self.OnRenderBckgrnd,
+      .OnRenderOverlay  => self.OnRenderOverlay,
 
       .OnRenderWorld    => self.OnRenderWorld,
       .OffRenderWorld   => self.OffRenderWorld,
-
-      .OnRenderOverlay  => self.OnRenderOverlay,
-    //.OffRenderOverlay => self.OffRenderOverlay,
     };
 
     if( hookFunct  )| f |

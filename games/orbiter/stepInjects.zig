@@ -25,21 +25,21 @@ pub fn OnLoopEnd( ng : *eng.Engine ) void // Called by engine.loopLogic()
   _ = ng; // Prevent unused variable warning
 }
 
-pub fn OnLoopCycle( ng : *eng.Engine ) void // Called by engine.loopLogic() ( every frame, no exception )
+pub fn OnLoopUpdate( ng : *eng.Engine ) void // Called by engine.loopLogic() ( every frame, no exception )
 {
   _ = ng; // Prevent unused variable warning
 }
 
 
 // NOTE : This is where you should capture inputs to update global flags
-pub fn OnFrameUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.space )){ ng.togglePause(); }
 
   if( ng.isPaused() and utl.ray.isKeyPressed( utl.ray.KeyboardKey.o ))
   {
     utl.qlog( .INFO, 0, @src(), "$ Forcing tick to occur" );
-    ng.forceTick();
+    ng.forceTickSim();
   }
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.j ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_subtract )){ target.changeTargetBy( -1 ); }

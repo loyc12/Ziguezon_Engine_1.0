@@ -26,14 +26,14 @@ pub fn loopLogic( ng : *Engine ) void
     ng.times.simTimeUpdate( ng.isPlaying() );
 
   //utl.logger.logLoopTime( ng.times.simDelta );
-    eng.tryHook( .OnLoopCycle, ng );
+    eng.tryHook( .OnLoopUpdate, ng );
 
   //var loopTime = utl.getNow();
     if( ng.isOpened() )
     {
-      _ = tryUpdate( ng ); // Inputs and Global Flags
-      _ = tryTick(   ng ); // Logic and Physics
-      _ = tryRender( ng ); // Visuals and UI
+      _ = tryUpdateInputs( ng ); // Inputs and Global Flags
+      _ = tryTickSim(   ng ); // Logic and Physics
+      _ = tryRenderFrame( ng ); // Visuals and UI
 
     //utl.logger.logDeltaTime( loopTime.timeSince(), @src(), "! Loop delta time" );
     //loopTime = utl.getNow();
@@ -47,15 +47,15 @@ pub fn loopLogic( ng : *Engine ) void
 
 // ================ LOOP EVENTS ================
 
-inline fn tryUpdate( ng : *Engine ) bool
+inline fn tryUpdateInputs( ng : *Engine ) bool
 {
 
   if( ng.times.shouldRender() ) // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
-  {                          // TODO : see if we can split them ( if that is even useful to begin with )
+  {                             // TODO : see if we can split them ( if that is even useful to begin with )
   //const tmpTime = utl.getNow();
 
   //utl.ray.pollInputEvents(); // Resets and fills the input "buffer" with the latest inputs (???)
-    updateFrame( ng );
+    updateInputs( ng );
 
   //utl.logger.logDeltaTime( tmpTime.timeSince(), @src(), "@ Input delta time" );
     return true;
@@ -63,7 +63,15 @@ inline fn tryUpdate( ng : *Engine ) bool
   return false;
 }
 
-inline fn updateFrame( ng : *Engine ) void
+pub inline fn forceUpdateInputs( ng : *Engine ) void
+{
+  ng.times.frameOffset.value += ng.times.targetFrameDelta.value;
+
+//ng.times.consumeUpdate();
+  updateInputs( ng );
+}
+
+inline fn updateInputs( ng : *Engine ) void
 {
 
   utl.qlog( .TRACE, 0, @src(), "Getting inputs..." );
@@ -80,15 +88,15 @@ inline fn updateFrame( ng : *Engine ) void
   ng.uiManager.updateLayout();
   ng.uiManager.dispatchInput();
 
-  eng.tryHook( .OnFrameUpdate, ng );
+  eng.tryHook( .OnInputUpdate, ng );
   ng.uiManager.endFrame();
-  //eng.tryHook( .OffFrameUpdate, ng );
+  //eng.tryHook( .OffInputUpdate, ng );
 }
 
 
 // ======== TICKING ========
 
-inline fn tryTick( ng : *Engine ) bool
+inline fn tryTickSim( ng : *Engine ) bool
 {
   if( ng.times.shouldTick() )
   {
@@ -96,7 +104,7 @@ inline fn tryTick( ng : *Engine ) bool
 
   //const tmpTime = utl.getNow();
     ng.times.consumeTick();
-    tickAll( ng );
+    tickSim( ng );
   //utl.logger.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick timelag" );
 
     return true;
@@ -104,16 +112,16 @@ inline fn tryTick( ng : *Engine ) bool
   return false;
 }
 
-pub inline fn forceTick( ng : *Engine ) void
+pub inline fn forceTickSim( ng : *Engine ) void
 {
   ng.times.tickOffset.value += ng.times.targetTickDelta.value;
 
   ng.times.consumeTick();
-  tickAll( ng );
+  tickSim( ng );
 }
 
 
-inline fn tickAll( ng : *Engine ) void
+inline fn tickSim( ng : *Engine ) void
 {
   utl.qlog( .TRACE, 0, @src(), "Ticking..." );
 
@@ -133,7 +141,7 @@ inline fn tickTilemaps( ng : *Engine ) void
 }
 // ======== RENDERING ========
 
-inline fn tryRender( ng : *Engine ) bool
+inline fn tryRenderFrame( ng : *Engine ) bool
 {
   if( ng.times.shouldRender() )
   {
@@ -141,7 +149,7 @@ inline fn tryRender( ng : *Engine ) bool
 
   //const tmpTime = utl.getNow();
     ng.times.consumeFrame();
-    renderAll( ng );
+    renderFrame( ng );
   //utl.logger.logDeltaTime( tmpTime.timeSince(), @src(), "& Render timelag" );
 
     return true;
@@ -149,15 +157,15 @@ inline fn tryRender( ng : *Engine ) bool
   return false;
 }
 
-pub inline fn forceRender( ng : *Engine ) void
+pub inline fn forceRenderFrame( ng : *Engine ) void
 {
   ng.times.frameOffset.value += ng.times.targetFrameDelta.value;
 
   ng.times.consumeFrame();
-  renderAll( ng );
+  renderFrame( ng );
 }
 
-inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instead
+inline fn renderFrame( ng : *Engine ) void    // TODO : use render textures instead
 {
   utl.qlog( .TRACE, 0, @src(), "Rendering..." );
 

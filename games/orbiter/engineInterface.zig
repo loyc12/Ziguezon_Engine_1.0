@@ -69,9 +69,9 @@ const gameStep = @import( "stepInjects.zig" );
 
   pub const OnLoopStart  = gameStep.OnLoopStart;
   pub const OnLoopEnd    = gameStep.OnLoopEnd;
-  pub const OnLoopCycle  = gameStep.OnLoopCycle;
+  pub const OnLoopUpdate  = gameStep.OnLoopUpdate;
 
-  pub const OnFrameUpdate   = gameStep.OnFrameUpdate;
+  pub const OnInputUpdate   = gameStep.OnInputUpdate;
   pub const OnTickUpdate    = gameStep.OnTickUpdate;
 
   pub const OnRenderBckgrnd = gameStep.OnRenderBckgrnd;
