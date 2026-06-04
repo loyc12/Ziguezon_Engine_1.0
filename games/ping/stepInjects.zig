@@ -1,40 +1,114 @@
-const std      = @import( "std" );
+const std      = @import( "std"    );
 const eng      = @import( "engine" );
-const utl = @import( "utils" );
+const utl      = @import( "utils"  );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = eng.Engine;
-const Body = eng.Body;
 const Angle  = utl.Angle;
 const Vec2   = utl.Vec2;
 const VecA   = utl.VecA;
+const Box2   = utl.Box2;
+
+const BodyParts = struct
+{
+  id     :  eng.EntityId,
+  trans  : *eng.TransComp,
+  shape  : *eng.ShapeComp,
+  hitbox : *eng.HitboxComp,
+};
 
 var pendingBallParticles : u32 = 0;
 
 // ================================ HELPER FUNCTIONS ================================
 
-pub fn cpyBodyPosViaId( ng : *Engine , dstId : u32, srcId : u32, ) void
+fn getBodyParts( id : eng.EntityId, name : []const u8 ) ?BodyParts
 {
-  const src = ng.bodyManager.getBody( srcId ) orelse
+  const trans = stateInj.getTransStore().get( id ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} not found", .{ srcId });
-    return;
+    utl.log( .WARN, 0, @src(), "Transform for Entity {d} ( {s} ) not found", .{ id, name });
+    return null;
   };
 
-  const dst = ng.bodyManager.getBody( dstId ) orelse
+  const shape = stateInj.getShapeStore().get( id ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} not found", .{ dstId });
-    return;
+    utl.log( .WARN, 0, @src(), "Shape for Entity {d} ( {s} ) not found", .{ id, name });
+    return null;
   };
 
-  dst.pos = src.pos;
+  const hitbox = stateInj.getHitboxStore().get( id ) orelse
+  {
+    utl.log( .WARN, 0, @src(), "Hitbox for Entity {d} ( {s} ) not found", .{ id, name });
+    return null;
+  };
+
+  return .{
+    .id     = id,
+    .trans  = trans,
+    .shape  = shape,
+    .hitbox = hitbox,
+  };
+}
+
+fn syncBodyHitbox( body : BodyParts ) void
+{
+  body.hitbox.hitbox = body.shape.getAABB( body.trans.pos );
+}
+
+fn cpyBodyPosViaId( dstId : eng.EntityId, srcId : eng.EntityId ) void
+{
+  const src = getBodyParts( srcId, "Source" ) orelse return;
+  const dst = getBodyParts( dstId, "Destination" ) orelse return;
+
+  dst.trans.pos = src.trans.pos;
+  syncBodyHitbox( dst );
+}
+
+fn setBodyBox( body : BodyParts, box : Box2 ) void
+{
+  body.trans.pos.x = box.center.x;
+  body.trans.pos.y = box.center.y;
+  body.hitbox.hitbox = body.shape.getAABB( body.trans.pos );
+}
+
+fn setBodyTopY( body : BodyParts, topY : f64 ) void
+{
+  var box = body.hitbox.hitbox;
+  box.setTopY( topY );
+  setBodyBox( body, box );
+}
+
+fn setBodyBottomY( body : BodyParts, bottomY : f64 ) void
+{
+  var box = body.hitbox.hitbox;
+  box.setBottomY( bottomY );
+  setBodyBox( body, box );
+}
+
+fn setBodyLeftX( body : BodyParts, leftX : f64 ) void
+{
+  var box = body.hitbox.hitbox;
+  box.setLeftX( leftX );
+  setBodyBox( body, box );
+}
+
+fn setBodyRightX( body : BodyParts, rightX : f64 ) void
+{
+  var box = body.hitbox.hitbox;
+  box.setRightX( rightX );
+  setBodyBox( body, box );
+}
+
+fn clampBodyInXRange( body : BodyParts, xMin : f64, xMax : f64 ) void
+{
+  var box = body.hitbox.hitbox;
+  box.clampInXRange( xMin, xMax );
+  setBodyBox( body, box );
 }
 
 // Emit particles in a given position and velocity range, with the given colour
 pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : utl.Colour ) void
 {
-  // NOTE : WILL POTENTIALLY INVALIDATE ALL BODY POINTERS AFTER USE
-  //        ONLY CALL AT THE END OF BODY POINTERS USAGE IN FUNCTION
+  // NOTE : Can invalidate component pointers after use. Call after body pointers are no longer needed.
 
   for( 0 .. amount )| i |
   {
@@ -42,7 +116,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
 
     const size = eng.G_ENG.rng.getScaledFloat( 2.0, 7.0 );
 
-    _ = ng.bodyManager.loadBodyFromParams( // NOTE : We do not care if this fails, as we are just emitting particles
+    _ = stateInj.createEntity( ng, // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .pos    = eng.G_ENG.rng.getScaledVecA( dPos, pos ),
       .vel    = eng.G_ENG.rng.getScaledVecA( dVel, vel ),
@@ -50,11 +124,13 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
 
       .shape  = eng.G_ENG.rng.getVal( utl.Shape2D ),
       .colour = colour,
+      .mobile = true,
+      .particle = true,
     });
   }
 }
 
-pub fn emitBounceParticles( ng : *Engine, ball : *Body ) void
+pub fn emitBounceParticles( ng : *Engine, ball : BodyParts ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
@@ -62,8 +138,8 @@ pub fn emitBounceParticles( ng : *Engine, ball : *Body ) void
   {
     emitParticles(
       ng,
-      ball.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
-      .{ .x = @divTrunc( ball.vel.x, 3 ), .y = @divTrunc( ball.vel.y, 3 ) },
+      ball.trans.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
+      .{ .x = @divTrunc( ball.trans.vel.x, 3 ), .y = @divTrunc( ball.trans.vel.y, 3 ) },
       .{ .x = 16,  .y = 16, .a = Angle.newRad( 1.0 )},
       .{ .x = 128, .y = 32, .a = Angle.newRad( 2.0 )},
       pendingBallParticles, utl.Colour.yellow );
@@ -96,13 +172,13 @@ const B_MIN_BOUNCE_SPEED_Y : f64 = 256.0; // Minimum perpendicular speed of the 
 const B_KIN_TRANS_FACTOR_X : f64 = 0.25; // How much of the player's velocity is given to the ball on bounce ( horizontal )
 const B_KIN_TRANS_FACTOR_Y : f64 = 0.25; // How much of the player's velocity is given to the ball on bounce ( vertical )
 
-pub fn ensureBallMinSpeeds( ball : *Body ) void
+pub fn ensureBallMinSpeeds( ball : BodyParts ) void
 {
-  if( ball.vel.x > 0 ){ ball.vel.x = @max( ball.vel.x,  B_MIN_BOUNCE_SPEED_X ); }
-  if( ball.vel.x < 0 ){ ball.vel.x = @min( ball.vel.x, -B_MIN_BOUNCE_SPEED_X ); }
+  if( ball.trans.vel.x > 0 ){ ball.trans.vel.x = @max( ball.trans.vel.x,  B_MIN_BOUNCE_SPEED_X ); }
+  if( ball.trans.vel.x < 0 ){ ball.trans.vel.x = @min( ball.trans.vel.x, -B_MIN_BOUNCE_SPEED_X ); }
 
-  if( ball.vel.y > 0 ){ ball.vel.y = @max( ball.vel.y,  B_MIN_BOUNCE_SPEED_Y ); }
-  if( ball.vel.y < 0 ){ ball.vel.y = @min( ball.vel.y, -B_MIN_BOUNCE_SPEED_Y ); }
+  if( ball.trans.vel.y > 0 ){ ball.trans.vel.y = @max( ball.trans.vel.y,  B_MIN_BOUNCE_SPEED_Y ); }
+  if( ball.trans.vel.y < 0 ){ ball.trans.vel.y = @min( ball.trans.vel.y, -B_MIN_BOUNCE_SPEED_Y ); }
 }
 
 
@@ -120,18 +196,15 @@ pub fn OnFrameUpdate( ng : *Engine ) void
       WINNER = 0;         // Reset winner
 
       // Reset the ball position and velocity
-      var ball = ng.bodyManager.getBody( stateInj.BALL_ID ) orelse
-      {
-        utl.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
-        return;
-      };
+      const ball = getBodyParts( stateInj.BALL_ID, "Ball" ) orelse return;
 
-      ball.pos = .{};
-      ball.vel = .{};
-      ball.acc = .{};
+      ball.trans.pos = .{};
+      ball.trans.vel = .{};
+      ball.trans.acc = .{};
+      syncBodyHitbox( ball );
 
       // Reset the positions of the ball shadows
-      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( ng, @intCast( i ), stateInj.BALL_ID ); }
+      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( @intCast( i ), stateInj.BALL_ID ); }
 
       utl.qlog( .INFO, 0, @src(), "Match reseted" );
     }
@@ -183,38 +256,36 @@ pub fn OnFrameUpdate( ng : *Engine ) void
 
 pub fn OnTickUpdate( ng : *Engine ) void
 {
-  var ball = ng.bodyManager.getBody( stateInj.BALL_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
-    return;
-  };
+  const ball = getBodyParts( stateInj.BALL_ID, "Ball" ) orelse return;
 
-  ball.acc.y = B_GRAVITY;
+  ball.trans.acc.y = B_GRAVITY;
 
   // Chainwap the positions of the ball shadows
-  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( ng, @intCast( i ), @intCast( i + 1 ) ); }
+  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( @intCast( i ), @intCast( i + 1 ) ); }
 
-  cpyBodyPosViaId( ng, @intCast( stateInj.SHADOW_RANGE_END ), @intCast( stateInj.BALL_ID ));
+  cpyBodyPosViaId( stateInj.SHADOW_RANGE_END, stateInj.BALL_ID );
 
-  if( ng.bodyManager.getMaxId() == stateInj.BALL_ID ){ return; }
-
-  // Looping on pseudio-particles
-  for( stateInj.BALL_ID + 1 .. 1 + ng.bodyManager.getMaxId() )| i |
+  var particleIndex : usize = 0;
+  while( particleIndex < stateInj.getParticleCount() )
   {
-    const part = ng.bodyManager.getBody( @intCast( i )) orelse continue;
-
-    if( part.canBeDel() ){ continue; } // skip pre-marked particles
+    const part = getBodyParts( stateInj.getParticleId( particleIndex ), "Particle" ) orelse
+    {
+      stateInj.removeParticleAt( particleIndex );
+      continue;
+    };
 
     // If the particle is below the screen, deactivate it and mark it for deletion
-    if( part.getTopY() >= utl.getScreenHeight() / 2 )
+    if( part.hitbox.hitbox.getTopY() >= utl.getScreenHeight() / 2 )
     {
-      part.delFlag( .ACTIVE );
-      part.addFlag( .DELETE );
+      stateInj.removeParticleAt( particleIndex );
       continue;
     }
 
-    part.acc.y = B_GRAVITY; // Apply gravity to all remaining particles
+    part.trans.acc.y = B_GRAVITY; // Apply gravity to all remaining particles
+    particleIndex += 1;
   }
+
+  stateInj.updateMobileEntities( ng.getTargetTickSDT() );
 }
 
 pub fn OffTickUpdate( ng : *Engine ) void
@@ -233,39 +304,25 @@ pub fn OffTickUpdate( ng : *Engine ) void
   const playerBounceFactorY : f64 = 0.80; // Perpendicular bounce factor for the ball when hitting players
   const playerBounceFactorX : f64 = 0.75; // Parallel bounce factor for the ball when hitting players
 
-  var p1 = ng.bodyManager.getBody( stateInj.P1_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( P1 ) not found", .{ stateInj.P1_ID } );
-    return;
-  };
-
-  var p2 = ng.bodyManager.getBody( stateInj.P2_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( P2 ) not found", .{ stateInj.P2_ID } );
-    return;
-  };
-
-  var ball = ng.bodyManager.getBody( stateInj.BALL_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Ball ) not found", .{ stateInj.BALL_ID });
-    return;
-  };
+  const p1   = getBodyParts( stateInj.P1_ID,   "P1"   ) orelse return;
+  const p2   = getBodyParts( stateInj.P2_ID,   "P2"   ) orelse return;
+  const ball = getBodyParts( stateInj.BALL_ID, "Ball" ) orelse return;
 
   // ================ CLAMPING THE PLAYER POSITIONS ================
 
-  p1.vel.x = P1_MV_FAC * playerSpeedFactor;
-  if( !p1.isInXRange( -hWidth, -barHalfWidth ))
+  p1.trans.vel.x = P1_MV_FAC * playerSpeedFactor;
+  if( !p1.hitbox.hitbox.isInXRange( -hWidth, -barHalfWidth ))
   {
-    p1.clampInXRange( -hWidth, -barHalfWidth );
-    p1.vel.x  = 0;
+    clampBodyInXRange( p1, -hWidth, -barHalfWidth );
+    p1.trans.vel.x = 0;
     P1_MV_FAC = 0;
   }
 
-  p2.vel.x = P2_MV_FAC * playerSpeedFactor;
-  if( !p2.isInXRange( barHalfWidth, hWidth ))
+  p2.trans.vel.x = P2_MV_FAC * playerSpeedFactor;
+  if( !p2.hitbox.hitbox.isInXRange( barHalfWidth, hWidth ))
   {
-    p2.clampInXRange( barHalfWidth, hWidth );
-    p2.vel.x  = 0;
+    clampBodyInXRange( p2, barHalfWidth, hWidth );
+    p2.trans.vel.x = 0;
     P2_MV_FAC = 0;
   }
 
@@ -273,82 +330,83 @@ pub fn OffTickUpdate( ng : *Engine ) void
   // ================ CLAMPING THE BALL POSITION ================
 
   // Clamping to top and bottom of the screen
-  if( ball.pos.y >= hHeight ) // Scoring a point if the ball goes below the bottom of the screen
+  if( ball.trans.pos.y >= hHeight ) // Scoring a point if the ball goes below the bottom of the screen
   {
     utl.qlog( .DEBUG, 0, @src(), "Ball hit the bottom edge" );
-    ball.vel.y = -B_BASE_VEL; // Reset ball vertical velocity to the base velocity
-    ball.pos.y =  0.0; // Reset ball height to the middle of the screen
+    ball.trans.vel.y = -B_BASE_VEL; // Reset ball vertical velocity to the base velocity
+    ball.trans.pos.y =  0.0; // Reset ball height to the middle of the screen
 
-    if( ball.pos.x < 0 ) // Player 2 scores a point
+    if( ball.trans.pos.x < 0 ) // Player 2 scores a point
     {
       utl.log( .INFO, 0, @src(), "Player 2 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
       SCORES[ 1 ] += 1;
 
       // Set the ball to be thrown towards player 1
-      ball.vel.x = -B_BASE_VEL;
-      ball.pos.x =  hWidth / 2;
+      ball.trans.vel.x = -B_BASE_VEL;
+      ball.trans.pos.x =  hWidth / 2;
     }
-    else if( ball.pos.x > 0 ) // Player 1 scores a point
+    else if( ball.trans.pos.x > 0 ) // Player 1 scores a point
     {
       utl.log( .INFO, 0, @src(), "Player 1 scores a point! : {d}:{d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
       SCORES[ 0 ] += 1;
 
       // Set the ball to be thrown towards player 2
-      ball.vel.x =  B_BASE_VEL;
-      ball.pos.x = -hWidth / 2;
+      ball.trans.vel.x =  B_BASE_VEL;
+      ball.trans.pos.x = -hWidth / 2;
     }
     else // If the ball is in the middle of the screen, reset its horizontal position
     {
       utl.qlog( .WARN, 0, @src(), "No player scored, throwing ball to Player 1" );
       if( eng.G_ENG.rng.getVal( bool ))
       {
-        ball.vel.x =  B_BASE_VEL;
-        ball.pos.x = -hWidth / 2;
+        ball.trans.vel.x =  B_BASE_VEL;
+        ball.trans.pos.x = -hWidth / 2;
       }
       else
       {
-        ball.vel.x = -B_BASE_VEL;
-        ball.pos.x =  hWidth / 2;
+        ball.trans.vel.x = -B_BASE_VEL;
+        ball.trans.pos.x =  hWidth / 2;
       }
     }
+    syncBodyHitbox( ball );
   }
-  else if( ball.getTopY() <= -hHeight ) // Bounce the ball if it goes above the top of the screen
+  else if( ball.hitbox.hitbox.getTopY() <= -hHeight ) // Bounce the ball if it goes above the top of the screen
   {
     utl.qlog( .DEBUG, 0, @src(), "Ball hit the top edge" );
-    ball.setTopY( -hHeight );
+    setBodyTopY( ball, -hHeight );
 
-    if( ball.vel.y < 0 )
+    if( ball.trans.vel.y < 0 )
     {
-      ball.vel.x *=  wallBounceFactorY; // Inverted X and Y because this is a horizontal wall
-      ball.vel.y *= -wallBounceFactorX; // Inverted X and Y because this is a horizontal wall
+      ball.trans.vel.x *=  wallBounceFactorY; // Inverted X and Y because this is a horizontal wall
+      ball.trans.vel.y *= -wallBounceFactorX; // Inverted X and Y because this is a horizontal wall
 
       pendingBallParticles += 6;
     }
   }
 
   // Clamping to left and right edges of the screen
-  if( ball.getRightX() >= hWidth ) // Bounce the ball if it goes past the right edge
+  if( ball.hitbox.hitbox.getRightX() >= hWidth ) // Bounce the ball if it goes past the right edge
   {
     utl.qlog( .DEBUG, 0, @src(), "Ball hit the right edge" );
-    ball.setRightX( hWidth );
+    setBodyRightX( ball, hWidth );
 
-    if( ball.vel.x > 0 )
+    if( ball.trans.vel.x > 0 )
     {
-      ball.vel.x *= -wallBounceFactorX;
-      ball.vel.y *=  wallBounceFactorY;
+      ball.trans.vel.x *= -wallBounceFactorX;
+      ball.trans.vel.y *=  wallBounceFactorY;
 
       pendingBallParticles += 12;
     }
   }
-  else if( ball.getLeftX() <= -hWidth ) // Bounce the ball if it goes past the left edge
+  else if( ball.hitbox.hitbox.getLeftX() <= -hWidth ) // Bounce the ball if it goes past the left edge
   {
     utl.qlog( .DEBUG, 0, @src(), "Ball hit the left edge" );
-    ball.setLeftX( -hWidth );
+    setBodyLeftX( ball, -hWidth );
 
-    if( ball.vel.x < 0 )
+    if( ball.trans.vel.x < 0 )
     {
-      ball.vel.x *= -wallBounceFactorX;
-      ball.vel.y *=  wallBounceFactorY;
+      ball.trans.vel.x *= -wallBounceFactorX;
+      ball.trans.vel.y *=  wallBounceFactorY;
 
       pendingBallParticles += 12;
     }
@@ -357,21 +415,21 @@ pub fn OffTickUpdate( ng : *Engine ) void
   // ================ BALL-PLAYER COLLISIONS ================
 
   // Check if the ball is overlapping with player 1
-  if( ball.isOverlapping( p1 ))
+  if( ball.hitbox.isOverlapping( p1.hitbox ))
   {
     utl.qlog( .DEBUG, 0, @src(), "Ball collided with player 1" );
 
-    ball.setBottomY( p1.getTopY() );
+    setBodyBottomY( ball, p1.hitbox.hitbox.getTopY() );
 
     //utl.qlog( .DEBUG, 0, @src(), "HERE" );
 
-    if( ball.vel.y > 0 )
+    if( ball.trans.vel.y > 0 )
     {
-      ball.vel.y  = -ball.vel.y * playerBounceFactorY;
-      ball.vel.y -= @abs( p1.vel.x ) * B_KIN_TRANS_FACTOR_Y;
+      ball.trans.vel.y  = -ball.trans.vel.y * playerBounceFactorY;
+      ball.trans.vel.y -= @abs( p1.trans.vel.x ) * B_KIN_TRANS_FACTOR_Y;
 
-      ball.vel.x *= playerBounceFactorX;
-      ball.vel.x += p1.vel.x * B_KIN_TRANS_FACTOR_X;
+      ball.trans.vel.x *= playerBounceFactorX;
+      ball.trans.vel.x += p1.trans.vel.x * B_KIN_TRANS_FACTOR_X;
 
       ensureBallMinSpeeds( ball );
       pendingBallParticles += 6;
@@ -379,19 +437,19 @@ pub fn OffTickUpdate( ng : *Engine ) void
   }
 
   // Check if the ball is overlapping with player 2
-  if( ball.isOverlapping( p2 ))
+  if( ball.hitbox.isOverlapping( p2.hitbox ))
   {
     utl.qlog( .DEBUG, 0, @src(), "Ball collided with player 2" );
 
-    ball.setBottomY( p2.getTopY() );
+    setBodyBottomY( ball, p2.hitbox.hitbox.getTopY() );
 
-    if( ball.vel.y > 0 )
+    if( ball.trans.vel.y > 0 )
     {
-      ball.vel.y  = -ball.vel.y * playerBounceFactorY;
-      ball.vel.y -= @abs( p2.vel.x ) * B_KIN_TRANS_FACTOR_Y;
+      ball.trans.vel.y  = -ball.trans.vel.y * playerBounceFactorY;
+      ball.trans.vel.y -= @abs( p2.trans.vel.x ) * B_KIN_TRANS_FACTOR_Y;
 
-      ball.vel.x *= playerBounceFactorX;
-      ball.vel.x += p2.vel.x * B_KIN_TRANS_FACTOR_X;
+      ball.trans.vel.x *= playerBounceFactorX;
+      ball.trans.vel.x += p2.trans.vel.x * B_KIN_TRANS_FACTOR_X;
 
       ensureBallMinSpeeds( ball );
       pendingBallParticles += 6;
@@ -399,6 +457,13 @@ pub fn OffTickUpdate( ng : *Engine ) void
   }
 
   emitBounceParticles( ng, ball );
+}
+
+pub fn OnRenderWorld( ng : *Engine ) void
+{
+  _ = ng;
+
+  stateInj.renderEntities();
 }
 
 

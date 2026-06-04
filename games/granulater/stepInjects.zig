@@ -4,7 +4,6 @@ const utl = @import( "utils" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine  = eng.Engine;
-const Body    = eng.Body;
 
 const Angle   = utl.Angle;
 const Vec2    = utl.Vec2;
@@ -25,6 +24,11 @@ var   NOISE_GEN    = &stateInj.NOISE_GEN;
 var SELECTED_TILE : ?*Tile = null;
 
 
+fn getTileData( worldGrid : *TileMap, tile : *Tile ) ?*TileData
+{
+  const index = worldGrid.getTileIndex( tile.mapCoords ) orelse return null;
+  return &TILEMAP_DATA[ index ];
+}
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
@@ -87,7 +91,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
 
   if( SELECTED_TILE )| tile |
   {
-    var data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    var data = getTileData( worldGrid, tile ) orelse return;
 
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.up ))
     {
@@ -110,7 +114,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
 
     for( 0 .. worldGrid.getTileCount() )| index |
     {
-      var tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+      const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
 
       const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 
@@ -118,7 +122,6 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
       if( noise > max_noise ){ max_noise = noise; }
 
       TILEMAP_DATA[ index ] = .{ .noiseVal = noise };
-      tile.script.data = &TILEMAP_DATA[ index ];
     }
   }
 
@@ -154,7 +157,7 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
   {
     const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
 
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data : *TileData = &TILEMAP_DATA[ index ];
 
     const shade : u8 = @intFromFloat( 128 + @floor( 128 * utl.clmp( data.noiseVal, -1.0, 1.0 - utl.EPS )));
 
@@ -208,7 +211,13 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   if( SELECTED_TILE )| tile |
   {
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
+    {
+      utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+      return;
+    };
+
+    const data = getTileData( worldGrid, tile ) orelse return;
 
     var noiseValBuff = std.mem.zeroes([ 32:0 ]u8 );
 

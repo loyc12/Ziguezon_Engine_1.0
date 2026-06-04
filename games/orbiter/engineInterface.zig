@@ -12,16 +12,12 @@ const gUtl = @import( "gameUtils.zig"   );
 
 // Debug Flags
 
-  pub const DebugDraw_Body    = true;
   pub const DebugDraw_Tilemap = true;
   pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
 
 
 // Feature Flag
-
-//pub const AutoApply_Body_Movement  : bool = true;
-//pub const AutoApply_Body_Collision : bool = true;
 
   pub const AutoApply_State_Playing  : bool = false;
 

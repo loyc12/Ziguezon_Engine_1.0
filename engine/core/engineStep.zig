@@ -120,7 +120,6 @@ inline fn tickAll( ng : *Engine ) void
   eng.tryHook( .OnTickUpdate, ng );
   {
     tickTilemaps( ng );
-    tickBodies( ng );
   }
   eng.tryHook( .OffTickUpdate, ng );
 }
@@ -132,15 +131,6 @@ inline fn tickTilemaps( ng : *Engine ) void
   ng.tilemapManager.tickActiveTilemaps( ng );
   ng.tilemapManager.deleteAllMarkedTilemaps();
 }
-inline
-fn tickBodies( ng : *Engine ) void
-{
-  utl.qlog( .TRACE, 0, @src(), "Updating Body game logic..." );
-
-  ng.bodyManager.tickActiveBodies( ng );
-  ng.bodyManager.deleteAllMarkedBodies();
-}
-
 // ======== RENDERING ========
 
 inline fn tryRender( ng : *Engine ) bool
@@ -185,7 +175,6 @@ inline fn renderAll( ng : *Engine ) void    // TODO : use render textures instea
     eng.tryHook( .OnRenderWorld, ng );
 
     renderTilemaps( ng );
-    renderBodies(   ng );
 
     eng.tryHook( .OffRenderWorld, ng );
   }
@@ -213,20 +202,6 @@ inline fn renderTilemaps( ng : *Engine ) void
     ng.tilemapManager.renderTilemapHitboxes();
   }
 }
-
-inline fn renderBodies( ng : *Engine ) void
-{
-  utl.qlog( .TRACE, 0, @src(), "Updating Body visuals..." );
-
-  ng.bodyManager.renderActiveBodies( ng );
-
-  if( eng.G_CNFGS.DebugDraw_Body )
-  {
-    ng.bodyManager.renderBodyHitboxes();
-  }
-}
-
-
 
 // ======== DEBUG INFO ========
 

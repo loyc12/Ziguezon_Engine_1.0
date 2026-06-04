@@ -4,7 +4,6 @@ const utl = @import( "utils" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = eng.Engine;
-const Body = eng.Body;
 const Angle  = utl.Angle;
 const Vec2   = utl.Vec2;
 const VecA   = utl.VecA;
@@ -163,16 +162,6 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
 
 pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
-  var exampleBody = ng.bodyManager.getBody( stateInj.EXAMPLE_BDY_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Example Body ) not found", .{ stateInj.EXAMPLE_BDY_ID });
-    return;
-  };
-
-  exampleBody.pos.a = exampleBody.pos.a.rotDeg( exampleBody.pos.a.cos() + 1.5 ); // Example of a simple variable rotation effect
-  exampleBody.pos.y = 256  * exampleBody.pos.a.sin();                              // Example of a simple variable vertical movement effect
-
-
   var exampleTilemap = ng.tilemapManager.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
     utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
@@ -180,60 +169,6 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
   };
 
   exampleTilemap.mapPos.a = exampleTilemap.mapPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
-
-
-  var exampleRLine = ng.bodyManager.getBody( stateInj.EXAMPLE_RLIN_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Example Radius Line ) not found", .{ stateInj.EXAMPLE_RLIN_ID });
-    return;
-  };
-
-  exampleRLine.pos.a = exampleTilemap.mapPos.a;
-
-
-  var exampleDLine = ng.bodyManager.getBody( stateInj.EXAMPLE_DLIN_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Example Diametre Line ) not found", .{ stateInj.EXAMPLE_DLIN_ID });
-    return;
-  };
-
-  exampleDLine.pos.a = exampleTilemap.mapPos.a;
-
-
-  var exampleTriangle = ng.bodyManager.getBody( stateInj.EXAMPLE_TRIA_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Example Triangle ) not found", .{ stateInj.EXAMPLE_TRIA_ID });
-    return;
-  };
-
-  exampleTriangle.pos.a = exampleTilemap.mapPos.a;
-
-
-  var exampleRectangle = ng.bodyManager.getBody( stateInj.EXAMPLE_RECT_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Example Rectangle ) not found", .{ stateInj.EXAMPLE_RECT_ID });
-    return;
-  };
-
-  exampleRectangle.pos.a = exampleTilemap.mapPos.a;
-
-
-  var exampleHexagon = ng.bodyManager.getBody( stateInj.EXAMPLE_HEXA_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Example Hexagon ) not found", .{ stateInj.EXAMPLE_HEXA_ID });
-    return;
-  };
-
-  exampleHexagon.pos.a = exampleTilemap.mapPos.a;
-
-
-  var exampleEllipse = ng.bodyManager.getBody( stateInj.EXAMPLE_ELLI_ID ) orelse
-  {
-    utl.log( .WARN, 0, @src(), "Body with Id {d} ( Example Ellipse ) not found", .{ stateInj.EXAMPLE_ELLI_ID });
-    return;
-  };
-
-  exampleEllipse.pos.a = exampleTilemap.mapPos.a;
 
   sprite_r = @mod( sprite_r + ( utl.TAU / ( 60.0 * 4.0 )), utl.TAU );
 }

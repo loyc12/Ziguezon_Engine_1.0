@@ -75,9 +75,6 @@ pub const Tile = struct
 
   relPos    : ?utl.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
 
-  // ======== CUSTOM BEHAVIOUR ========
-  script : eng.Scripter = .{},
-
   // ================ FLAG MANAGEMENT ================
 
   pub inline fn hasFlag( self : *const Tile, flag : TileFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }

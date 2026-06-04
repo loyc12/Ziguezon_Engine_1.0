@@ -57,10 +57,6 @@ pub const Tilemap = struct
   tileScale : Vec2         = DEF_TILE_SCALE,
   tileShape : TilemapShape = .RECT,
 
-  // ======= CUSTOM BEHAVIOUR ========
-  script : eng.Scripter = .{},
-
-
   // ================ FLAG MANAGEMENT ================
 
   pub inline fn hasFlag( self : *const Tilemap, flag : TilemapFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
@@ -492,4 +488,3 @@ pub const Tilemap = struct
     };
   }
 };
-

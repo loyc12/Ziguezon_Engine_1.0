@@ -5,7 +5,6 @@ const eng = @import( "engine" );
 
 // Engine Debug Flags
 
-//pub const DebugDraw_Body    = true;
 //pub const DebugDraw_Tilemap = true;
 //pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
@@ -13,8 +12,6 @@ const eng = @import( "engine" );
 
 // Engine Feature Flag
 
-  pub const AutoApply_Body_Movement  = true;
-  pub const AutoApply_Body_Collision = false;
 
 
 // Window Startup Values

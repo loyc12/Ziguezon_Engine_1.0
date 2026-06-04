@@ -4,7 +4,6 @@ const utl = @import( "utils" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = eng.Engine;
-const Body = eng.Body;
 
 const Angle  = utl.Angle;
 const Vec2   = utl.Vec2;

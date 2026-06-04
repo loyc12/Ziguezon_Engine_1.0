@@ -9,15 +9,11 @@ pub const EngineConfigs = struct
 {
   // Debug Flags
 
-  DebugDraw_Body    : bool = false,
   DebugDraw_Tilemap : bool = false,
   DebugDraw_Tile    : bool = false,
   DebugDraw_FPS     : bool = false,
 
   // Feature Flag
-
-  AutoApply_Body_Movement  : bool = true,
-  AutoApply_Body_Collision : bool = true,
 
   AutoApply_State_Playing  : bool = true,
 
@@ -64,14 +60,11 @@ pub const EngineConfigs = struct
     }
 
     // Debug Flags
-    if( @hasDecl( module, "DebugDraw_Body"           )){ self.DebugDraw_Body           = @field( module, "DebugDraw_Body"           ); foundConfigs = true; }
     if( @hasDecl( module, "DebugDraw_Tilemap"        )){ self.DebugDraw_Tilemap        = @field( module, "DebugDraw_Tilemap"        ); foundConfigs = true; }
     if( @hasDecl( module, "DebugDraw_Tile"           )){ self.DebugDraw_Tile           = @field( module, "DebugDraw_Tile"           ); foundConfigs = true; }
     if( @hasDecl( module, "DebugDraw_FPS"            )){ self.DebugDraw_FPS            = @field( module, "DebugDraw_FPS"            ); foundConfigs = true; }
 
     // Feature Flags
-    if( @hasDecl( module, "AutoApply_Body_Movement"  )){ self.AutoApply_Body_Movement  = @field( module, "AutoApply_Body_Movement"  ); foundConfigs = true; }
-    if( @hasDecl( module, "AutoApply_Body_Collision" )){ self.AutoApply_Body_Collision = @field( module, "AutoApply_Body_Collision" ); foundConfigs = true; }
     if( @hasDecl( module, "AutoApply_State_Playing"  )){ self.AutoApply_State_Playing  = @field( module, "AutoApply_State_Playing"  ); foundConfigs = true; }
 
     // Global Values

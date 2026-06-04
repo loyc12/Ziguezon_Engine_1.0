@@ -77,11 +77,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    var tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
-
     TILEMAP_DATA[ index ] = .{};
-
-    tile.script.data = &TILEMAP_DATA[ index ];
   }
 
   worldGrid.fillWithColour( .lGreen );

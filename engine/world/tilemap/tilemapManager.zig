@@ -203,8 +203,6 @@ pub const TilemapManager = struct
 
     const tlmp : *Tilemap = &self.tilemapList.items[ self.tilemapList.items.len - 1 ];
 
-    //if( tlmp.script.hasScript() ){ _ = tlmp.script.init( ng ); } // TODO : see if this needs implementing
-
     return tlmp;
   }
 
@@ -249,7 +247,6 @@ pub const TilemapManager = struct
 
     var tlmp = &self.tilemapList.items[ index ];
 
-    //if( tlmp.script.hasScript() ){ _ = tlmp.script.exit( ng ); } // TODO : see if this needs implementing
     tlmp.deinit( self.allocator );
     _ = self.tilemapList.swapRemove( index );
 
@@ -272,7 +269,6 @@ pub const TilemapManager = struct
       if( index >= self.tilemapList.items.len ){ break; }
       if( tlmp.canBeDel() )
       {
-      //if( tlmp.script.hasScript() ){ _ = tlmp.script.exit( ng ); } // TODO : see if this needs implementing
         tlmp.deinit( self.allocator );
         _ = self.tilemapList.swapRemove( index );
       }
@@ -304,12 +300,13 @@ pub const TilemapManager = struct
 
   pub fn renderActiveTilemaps( self : *TilemapManager, ng : *eng.Engine ) void // TODO : have this take in a renderer construct and pass it to Tilemap.renderGraphics()
   {
+    _ = ng;
+
     utl.qlog( .TRACE, 0, @src(), "Rendering active Tilemaps" );
 
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {
       tlmp.drawTilemap();
-      if( tlmp.script.hasScript() ){ _ = tlmp.script.rndr( ng ); }
     }}
   }
 
@@ -317,15 +314,11 @@ pub const TilemapManager = struct
 
   pub fn tickActiveTilemaps( self : *TilemapManager, ng : *eng.Engine ) void
   {
-    const sdt = ng.times.getScaledTargetTickDeltaFloat(); // NOTE : using target tick rate for consistency
+    _ = ng;
 
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {
-      if( tlmp.isActive() )
-      {
-      //tlmp.moveSelf( sdt ); // DNE
-        if( tlmp.script.hasScript() ){ _ = tlmp.script.tick( ng, sdt ); }
-      }
+      // Reserved for future tilemap-owned simulation.
     }}
   }
 };

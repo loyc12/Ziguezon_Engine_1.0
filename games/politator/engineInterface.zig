@@ -10,8 +10,6 @@ const eng = @import( "engine" );
 
 // Engine Feature Flag
 
-  pub const AutoApply_Body_Movement  = false;
-  pub const AutoApply_Body_Collision = false;
   pub const AutoApply_State_Playing    = false;
 
 // Engine Global Startup Values

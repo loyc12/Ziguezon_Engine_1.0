@@ -6,7 +6,6 @@ const utl = @import( "utils" );
 
 // Debug Flags
 
-  pub const DebugDraw_Body  = true;
   pub const DebugDraw_Tilemap = true;
   pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;

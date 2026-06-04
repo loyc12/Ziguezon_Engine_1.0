@@ -4,7 +4,6 @@ const utl = @import( "utils" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine  = eng.Engine;
-const Body  = eng.Body;
 
 const Angle   = utl.Angle;
 const Vec2    = utl.Vec2;
@@ -17,7 +16,7 @@ const TileMap = eng.Tilemap;
 
 const TileData = stateInj.TileData;
 
-var TILEMAP_DATA = stateInj.TILEMAP_DATA;
+var TILEMAP_DATA = &stateInj.TILEMAP_DATA;
 
 const dis_mode_e = enum( u2 )
 {
@@ -34,23 +33,28 @@ var SELECTED_TILE : ?*Tile = null;
 var POP_MAX_SEEN  : u32 = 0;
 
 const POP_MAX_SIZE        : u32 = 1024 * 1024; // > 0
-const POP_GROWTH_RATE     : f32 = 0.01; // < 1
-const POP_MIGRATION_RATE  : f32 = 0.01; // < 1/6
-const POP_DEATH_RATE      : f32 = 0.03; // < 1
+const POP_GROWTH_RATE     : f32 = 0.01;        // < 1
+const POP_MIGRATION_RATE  : f32 = 0.01;        // < 1/6
+const POP_DEATH_RATE      : f32 = 0.03;        // < 1
 
-const POP_RES_CONSUMPTION : f32 = 0.10; // > 0
-const POP_INF_PRODUCTION  : f32 = 0.02; // > 0
+const POP_RES_CONSUMPTION : f32 = 0.10;        // > 0
+const POP_INF_PRODUCTION  : f32 = 0.02;        // > 0
 
-const INF_MAX_SIZE        : u32 = 1024; // > 256
-const INF_DECAY_RATE      : f32 = 0.01; // < 1
-const INF_POP_DEMAND      : f32 = 1.00; // > 0
-const INF_RES_PRODUCTION  : f32 = 0.10; // > 0
+const INF_MAX_SIZE        : u32 = 1024;        // > 256
+const INF_DECAY_RATE      : f32 = 0.01;        // < 1
+const INF_POP_DEMAND      : f32 = 1.00;        // > 0
+const INF_RES_PRODUCTION  : f32 = 0.10;        // > 0
 
-const RES_MAX_SIZE        : u32 = 1024; // > 256
-const RES_GROWTH_RATE     : f32 = 0.04; // > 0
-const RES_GROWTH_BONUS    : f32 = 4.00; // > 0 to avoid total resource collapse
+const RES_MAX_SIZE        : u32 = 1024;        // > 256
+const RES_GROWTH_RATE     : f32 = 0.04;        // > 0
+const RES_GROWTH_BONUS    : f32 = 4.00;        // > 0 to avoid total resource collapse
 
 
+fn getTileData( worldGrid : *TileMap, tile : *Tile ) ?*TileData
+{
+  const index = worldGrid.getTileIndex( tile.mapCoords ) orelse return null;
+  return &TILEMAP_DATA[ index ];
+}
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
@@ -125,7 +129,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
 
   if( SELECTED_TILE )| tile |
   {
-    var data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    var data = getTileData( worldGrid, tile ) orelse return;
 
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.up ))
     {
@@ -201,9 +205,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
   // Reseting key tile values
   for( 0 .. tileCount )| index |
   {
-    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
-
-    var data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    var data : *TileData = &TILEMAP_DATA[ index ];
 
     data.nextPopCount = 0;
     data.nextResCount = 0;
@@ -227,7 +229,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
   {
     const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
 
-    var ownData : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    var ownData : *TileData = &TILEMAP_DATA[ index ];
 
 
     // Calculating tile resource & population availability
@@ -235,13 +237,13 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
         if( ownData.popCount > 1 ){ ownPopResAccess /= @floatFromInt( ownData.popCount ); }
 
-        ownPopResAccess      /= POP_RES_CONSUMPTION;
+        ownPopResAccess /= POP_RES_CONSUMPTION;
 
     var ownInfPopAccess : f32 = @floatFromInt( ownData.popCount );
 
         if( ownData.infCount > 1 ){ ownInfPopAccess /= @floatFromInt( ownData.infCount ); }
 
-        ownInfPopAccess      /= INF_POP_DEMAND;
+        ownInfPopAccess /= INF_POP_DEMAND;
 
 
     // Calculating size of migrant cohorts
@@ -345,7 +347,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
         continue;
       };
 
-      const nData : *TileData = @alignCast( @ptrCast( n.script.data.? ));
+      const nData = getTileData( worldGrid, n ) orelse continue;
 
       // Calculating neighbour resource availability
       var nPopResAccess : f32 = @floatFromInt( nData.resCount );
@@ -380,9 +382,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
   for( 0 .. tileCount )| index |
   {
-    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
-
-    var data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    var data : *TileData = &TILEMAP_DATA[ index ];
 
     data.popCount = utl.clmp( data.nextPopCount, 0, POP_MAX_SIZE );
     data.resCount = utl.clmp( data.nextResCount, 0, RES_MAX_SIZE );
@@ -405,9 +405,7 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
 
   for( 0 .. tileCount )| index |
   {
-    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
-
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data : *TileData = &TILEMAP_DATA[ index ];
 
     if( data.popCount > POP_MAX_SEEN ){ POP_MAX_SEEN = data.popCount; }
   }
@@ -416,7 +414,7 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
   {
     const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
 
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data : *TileData = &TILEMAP_DATA[ index ];
 
     var displayPop : f32 = @floatFromInt( data.popCount );
         displayPop      /= @floatFromInt( POP_MAX_SEEN );
@@ -462,7 +460,13 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   if( SELECTED_TILE )| tile |
   {
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
+    {
+      utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+      return;
+    };
+
+    const data = getTileData( worldGrid, tile ) orelse return;
 
     var popBuff  = std.mem.zeroes([ 32:0 ]u8 );
     var dPopBuff = std.mem.zeroes([ 32:0 ]u8 );

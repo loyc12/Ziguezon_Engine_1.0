@@ -70,12 +70,9 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     };
 
     tile.colour = .{ .r = 0, .g = 0, .b = 0, .a = 255 };
-
-    tile.script.data = &TILEMAP_DATA[ index ];
   }
 
 }
-
 
 
 

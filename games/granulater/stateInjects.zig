@@ -59,7 +59,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    var tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
 
     const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 
@@ -67,12 +67,10 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     if( noise > max_noise ){ max_noise = noise; }
 
     TILEMAP_DATA[ index ] = .{ .noiseVal = noise };
-    tile.script.data = &TILEMAP_DATA[ index ];
   }
 
   utl.log( .INFO, 0, @src(), "Min : {d}, Max : {d}", .{ min_noise, max_noise });
 }
-
 
 
 

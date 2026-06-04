@@ -4,7 +4,6 @@ const utl = @import( "utils" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = eng.Engine;
-const Body = eng.Body;
 
 const Angle  = utl.Angle;
 const Vec2   = utl.Vec2;
@@ -40,6 +39,12 @@ const ENEMY_ID  : u32 = (  7 * 16 ) + 1;
 
 const sScale  : f32 = 32 * 0.08839;
 const sOffset : f32 = sScale / 4;
+
+fn getTileData( worldGrid : *eng.Tilemap, tile : *eng.Tile ) ?*TileData
+{
+  const index = worldGrid.getTileIndex( tile.mapCoords ) orelse return null;
+  return &stateInj.TILEMAP_DATA[ index ];
+}
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -88,7 +93,7 @@ pub fn OnFrameUpdate( ng : *eng.Engine ) void
       return;
     };
 
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data = getTileData( worldGrid, tile ) orelse return;
 
     if( utl.ray.isMouseButtonPressed( utl.ray.MouseButton.left ))
     {
@@ -135,7 +140,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
 
     tile.colour.r = switch( data.ground )
@@ -181,7 +186,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.ground == .Empty ){ continue; }
 
@@ -196,7 +201,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.ground == .Empty or data.ground == .Floor ){ continue; }
 
@@ -220,7 +225,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   for( 0 .. worldGrid.getTileCount() )| index |
   {
     const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
-    const data : *TileData = @alignCast( @ptrCast( tile.script.data.? ));
+    const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.object == .Empty ){ continue; }
 

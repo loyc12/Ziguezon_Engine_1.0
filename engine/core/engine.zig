@@ -33,7 +33,6 @@ pub const Engine = struct
 
   // Engine Managers
   resourceManager   : eng.resMgr.ResourceManager = .{},
-  bodyManager       : eng.bodyMgr.BodyManager     = .{},
   tilemapManager    : eng.tilemapMgr.TilemapManager  = .{},
   eventManager      : eng.eventMgr.EventManager    = .{},
   uiManager         : utl.UiManager             = .{},

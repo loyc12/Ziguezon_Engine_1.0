@@ -6,7 +6,6 @@ const utl = @import( "utils" );
 
 // Engine Debug Flags
 
-//pub const DebugDraw_Body  = true;
 //pub const DebugDraw_Tilemap = true;
 //pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
@@ -14,8 +13,6 @@ const utl = @import( "utils" );
 
 // Engine Feature Flag
 
-  pub const AutoApply_Body_Movement  = true;
-  pub const AutoApply_Body_Collision = false;
   pub const AutoApply_State_Playing  = false;
 
 
@@ -31,13 +28,15 @@ const gameState = @import( "stateInjects.zig" );
 
   pub const OnGameStart = gameState.OnGameStart;
   pub const OnGameOpen  = gameState.OnGameOpen;
+  pub const OnGameClose = gameState.OnGameClose;
 
 
 const gameStep = @import( "stepInjects.zig" );
 
-  pub const OnFrameUpdate  = gameStep.OnFrameUpdate;
+  pub const OnFrameUpdate   = gameStep.OnFrameUpdate;
 
-  pub const OnTickUpdate     = gameStep.OnTickUpdate;
-  pub const OffTickUpdate    = gameStep.OffTickUpdate;
+  pub const OnTickUpdate    = gameStep.OnTickUpdate;
+  pub const OffTickUpdate   = gameStep.OffTickUpdate;
 
+  pub const OnRenderWorld   = gameStep.OnRenderWorld;
   pub const OnRenderOverlay = gameStep.OnRenderOverlay;

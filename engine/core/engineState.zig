@@ -83,7 +83,6 @@ pub fn start( ng : *Engine ) void
 
     ng.resourceManager.init(   utl.getDefaultAlloc() );
     ng.tilemapManager.init(    utl.getDefaultAlloc() );
-    ng.bodyManager.init(       utl.getDefaultAlloc() );
     ng.eventManager.init(      utl.getDefaultAlloc() );
     ng.uiManager.init(         utl.getDefaultAlloc() );
     ng.componentRegistry.init( utl.getDefaultAlloc() );
@@ -115,7 +114,6 @@ pub fn stop( ng : *Engine ) void
     ng.componentRegistry.deinit();
     ng.uiManager.deinit();
     ng.eventManager.deinit();
-    ng.bodyManager.deinit();
     ng.tilemapManager.deinit();
     ng.resourceManager.deinit();
 

@@ -33,7 +33,6 @@ pub var G_ENG : Engine = .{};
 pub const resMgr     = @import( "resources/resourceManager.zig" );
 pub const eventMgr   = @import( "world/events/eventManager.zig" );
 pub const tilemapMgr = @import( "world/tilemap/tilemapManager.zig" );
-pub const bodyMgr    = @import( "legacy/body/bodyManager.zig" );
 
 
 // ================ RENDER ================
@@ -43,14 +42,6 @@ pub const wDraw   = @import( "render/drawerWorld.zig" );
 pub const wSprite = @import( "render/spriteWorld.zig" );
 
 pub const WorldCam = wCam.WorldCam;
-
-
-// ================ BODY ================
-
-pub const bodyCore = @import( "legacy/body/bodyCore.zig" );
-pub const Body     = bodyCore.Body;
-
-pub const BodyFlags = bodyCore.BodyFlags;
 
 
 // ================ TILEMAP ================
@@ -65,16 +56,6 @@ pub const Tilemap      = tilemap.Tilemap;
 pub const TilemapShape = tilemap.TilemapShape;
 pub const TilemapFlags = tilemap.TilemapFlags;
 pub const FloodRule    = tilemap.FloodRule;
-
-
-// ================ SCRIPT ================
-
-pub const scripter = @import( "legacy/script/scripter.zig" );
-
-pub const Scripter   = scripter.Scripter;
-pub const ScriptData = scripter.ScriptData;
-pub const ScriptCntx = scripter.ScriptCntx;
-pub const ScriptFunc = scripter.ScriptFunc;
 
 
 // ================ ECS ================
@@ -96,6 +77,7 @@ pub const baseComp = @import( "world/components/baseComponents.zig" );
 
 pub const TransComp  = baseComp.TransComp;
 pub const ShapeComp  = baseComp.ShapeComp;
+pub const HitboxComp = baseComp.HitboxComp;
 pub const SpriteComp = baseComp.SpriteComp;
 
 
