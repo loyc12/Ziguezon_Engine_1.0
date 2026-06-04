@@ -116,10 +116,17 @@ pub const EngineTime = struct
   pub fn consumeTick( self: *EngineTime ) void
   {
     const now : utl.TimeVal    = .newNow();
-    const tickBuffLimit : i128 = @intCast( 1 +| eng.G_CNFGS.Engine_Limit_QueuedTicks );
+    const tickBuffLimit : i128 = @intCast( eng.G_CNFGS.Engine_Limit_QueuedTicks );
 
-    self.tickOffset.value -= self.targetTickDelta.value;
-    self.tickOffset.value =  utl.clmp( self.tickOffset.value, 0, tickBuffLimit * self.targetTickDelta.value );
+    if( tickBuffLimit == 0 )
+    {
+      self.tickOffset = .{};
+    }
+    else
+    {
+      self.tickOffset.value -= self.targetTickDelta.value;
+      self.tickOffset.value =  utl.clmp( self.tickOffset.value, 0, tickBuffLimit * self.targetTickDelta.value );
+    }
 
     if( self.tickEpoch.isSet() )
     {
@@ -159,9 +166,17 @@ pub const EngineTime = struct
   pub fn consumeFrame( self: *EngineTime ) void
   {
     const now : utl.TimeVal = .newNow();
+    const frameBuffLimit : i128 = @intCast( eng.G_CNFGS.Engine_Limit_QueuedFrames );
 
-    self.frameOffset.value -= self.targetFrameDelta.value;
-    self.frameOffset.value  = utl.clmp( self.frameOffset.value, 0, self.targetFrameDelta.value );
+    if( frameBuffLimit == 0 )
+    {
+      self.frameOffset = .{};
+    }
+    else
+    {
+      self.frameOffset.value -= self.targetFrameDelta.value;
+      self.frameOffset.value  = utl.clmp( self.frameOffset.value, 0, self.targetFrameDelta.value );
+    }
 
     if( self.frameEpoch.isSet() )
     {

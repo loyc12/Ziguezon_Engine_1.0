@@ -46,6 +46,11 @@ const g_utl = @import( "gameUtils.zig"   );
   pub const Camera_Zoom_Min  : f32 = 0.0000001;
   pub const Camera_Zoom_Init : f32 = 0.0000100;
 
+  // Engine Behaviour
+
+  pub const Engine_Limit_QueuedTicks  : u8 = 1; // Preventing storing more than a single full tick
+//pub const Engine_Limit_QueuedFrames : u8 = 1; //
+
 
 // ================================ GAME HOOKS ================================
 // NOTE : You can leave any number of these undefined and the game will still compile
