@@ -1,10 +1,11 @@
-const std = @import( "std"  );
-const eng = @import( "engine" );
-const utl = @import( "utils" );
+const std  = @import( "std"  );
+const eng  = @import( "engine" );
+const utl  = @import( "utils" );
 
-const gbl = @import( "gameGlobals.zig" );
-const gdf = @import( "gameDef.zig"    );
-const gUtl = @import( "gameUtils.zig"   );
+const g_gbl = @import( "gameGlobals.zig" );
+const g_def = @import( "gameDef.zig"    );
+const g_utl = @import( "gameUtils.zig"   );
+
 
 // ================================ ENGINE SETTINGS ================================
 // NOTE : All engine settings have a default value - see engineSettingHandler.zig for more info on those
@@ -35,8 +36,8 @@ const gUtl = @import( "gameUtils.zig"   );
 
 // Graphical Values
 
-  pub const Graphic_Bckgrd_Colour  : ?utl.Colour = gdf.G_CONSTS.backColour;
-  pub const Graphic_Metrics_Colour : ?utl.Colour = gdf.G_CONSTS.textColour;
+  pub const Graphic_Bckgrd_Colour  : ?utl.Colour = g_def.G_CONSTS.backColour;
+  pub const Graphic_Metrics_Colour : ?utl.Colour = g_def.G_CONSTS.textColour;
 //pub const Graphic_Default_Font   : ?[ :0 ] const u8 = "assets/fonts/F77MinecraftRegular.ttf";
 
   pub const Graphic_Ellipse_Facets : u16 = 255;
@@ -54,32 +55,28 @@ const gUtl = @import( "gameUtils.zig"   );
 
 const gameState = @import( "stateInjects.zig" );
 
-  pub const OnGameStart = gameState.OnGameStart; // NOTE : Initialize resources in the OnGameStart Hook
-  pub const OnGameStop  = gameState.OnGameStop;
+  pub const OnGameStart  = gameState.OnGameStart; // NOTE : Initialize resources in the OnGameStart Hook
+  pub const OnGameStop   = gameState.OnGameStop;
 
-  pub const OnGameOpen  = gameState.OnGameOpen;  // NOTE : Instanciate bodies in the OnGameOpen Hook
-  pub const OnGameClose = gameState.OnGameClose;
+  pub const OnGameOpen   = gameState.OnGameOpen;  // NOTE : Instanciate bodies in the OnGameOpen Hook
+  pub const OnGameClose  = gameState.OnGameClose;
 
-  pub const OnGameResume  = gameState.OnGameResume;
-  pub const OnGamePause = gameState.OnGamePause;
+  pub const OnGameResume = gameState.OnGameResume;
+  pub const OnGamePause  = gameState.OnGamePause;
 
 
-const gameStep  = @import( "stepInjects.zig" );
+const gameStep = @import( "stepInjects.zig" );
 
-  pub const OnLoopStart      = gameStep.OnLoopStart;
-  pub const OnLoopEnd        = gameStep.OnLoopEnd;
-  pub const OnLoopCycle      = gameStep.OnLoopCycle;
-
+  pub const OnLoopStart  = gameStep.OnLoopStart;
+  pub const OnLoopEnd    = gameStep.OnLoopEnd;
+  pub const OnLoopCycle  = gameStep.OnLoopCycle;
 
   pub const OnFrameUpdate   = gameStep.OnFrameUpdate;
-  pub const OffFrameUpdate  = gameStep.OffFrameUpdate;
+  pub const OnTickUpdate    = gameStep.OnTickUpdate;
 
-  pub const OnTickUpdate      = gameStep.OnTickUpdate;
+  pub const OnRenderBckgrnd = gameStep.OnRenderBckgrnd;
+  pub const OnRenderOverlay = gameStep.OnRenderOverlay;
 
+  pub const OnRenderWorld   = gameStep.OnRenderWorld;
+  pub const OffRenderWorld  = gameStep.OffRenderWorld;
 
-  pub const OnRenderBckgrnd  = gameStep.OnRenderBckgrnd;
-
-  pub const OnRenderWorld    = gameStep.OnRenderWorld;
-  pub const OffRenderWorld   = gameStep.OffRenderWorld;
-
-  pub const OnRenderOverlay  = gameStep.OnRenderOverlay;

@@ -50,31 +50,28 @@ const utl = @import( "utils" );
 
 const gameState = @import( "stateInjects.zig" );
 
-  pub const OnGameStart = gameState.OnGameStart; // NOTE : Initialize resources in the OnGameStart Hook
-  pub const OnGameStop  = gameState.OnGameStop;
+  pub const OnGameStart  = gameState.OnGameStart; // NOTE : Initialize resources in the OnGameStart Hook
+  pub const OnGameStop   = gameState.OnGameStop;
 
-  pub const OnGameOpen  = gameState.OnGameOpen;  // NOTE : Instanciate bodies in the OnGameOpen Hook
-  pub const OnGameClose = gameState.OnGameClose;
+  pub const OnGameOpen   = gameState.OnGameOpen;  // NOTE : Instanciate bodies in the OnGameOpen Hook
+  pub const OnGameClose  = gameState.OnGameClose;
 
-  pub const OnGameResume  = gameState.OnGameResume;
-  pub const OnGamePause = gameState.OnGamePause;
+  pub const OnGameResume = gameState.OnGameResume;
+  pub const OnGamePause  = gameState.OnGamePause;
 
 
 const gameStep  = @import( "stepInjects.zig" );
 
-  pub const OnLoopStart      = gameStep.OnLoopStart;
-  pub const OnLoopEnd        = gameStep.OnLoopEnd;
-  pub const OnLoopCycle      = gameStep.OnLoopCycle;
-
+  pub const OnLoopStart = gameStep.OnLoopStart;
+  pub const OnLoopEnd   = gameStep.OnLoopEnd;
+  pub const OnLoopCycle = gameStep.OnLoopCycle;
 
   pub const OnFrameUpdate   = gameStep.OnFrameUpdate;
+  pub const OnTickUpdate    = gameStep.OnTickUpdate;
 
-  pub const OnTickUpdate      = gameStep.OnTickUpdate;
+  pub const OnRenderBckgrnd = gameStep.OnRenderBckgrnd;
+  pub const OnRenderOverlay = gameStep.OnRenderOverlay;
 
+  pub const OnRenderWorld   = gameStep.OnRenderWorld;
+  pub const OffRenderWorld  = gameStep.OffRenderWorld;
 
-  pub const OnRenderBckgrnd  = gameStep.OnRenderBckgrnd;
-
-  pub const OnRenderWorld    = gameStep.OnRenderWorld;
-  pub const OffRenderWorld   = gameStep.OffRenderWorld;
-
-  pub const OnRenderOverlay  = gameStep.OnRenderOverlay;

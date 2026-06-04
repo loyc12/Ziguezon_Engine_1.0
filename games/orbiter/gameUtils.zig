@@ -148,7 +148,6 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
       _ = stores.orbit.add( id, orbitComp ); // SOL does not have an orbit comp
     }
 
-
     _ = stores.trans.add( id, .{ .pos = startPos.toVecA( .{} )});
     _ = stores.body.add(  id, bodyComp  );
     _ = stores.shape.add( id,
@@ -404,7 +403,7 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
   if( orbit != null )
   {
     utl.sDraw.textRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    utl.sDraw.textRightFmt( "{d:.3} :     maxR",  .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    utl.sDraw.textRightFmt( "{d:.3} :      maxR", .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }

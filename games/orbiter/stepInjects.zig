@@ -133,7 +133,8 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
     utl.sDraw.textTop( "Press P to resume", .{ .x = utl.getHalfScreenWidth(), .y = edgeWidth + 10.0 }, 24, .yellow );
   }
 
-  utl.sDraw.textOffsetFmt( "Speed : {s}", .{ @tagName( times.speedSetting )}, .{ .x = utl.getScreenWidth() - 10.0, .y = utl.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
+  utl.sDraw.textOffsetFmt( "Speed : {s}", .{ @tagName( times.speedSetting )},
+  .{ .x = utl.getScreenWidth() - 10.0, .y = utl.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
 
 
   const transStore : *gdf.TransStore = @ptrCast( @alignCast( ng.componentRegistry.get( "transStore" )));

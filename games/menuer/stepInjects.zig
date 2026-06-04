@@ -4,37 +4,37 @@ const utl = @import( "utils" );
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-var MAIN_PANEL     : utl.UiId = .{};
-var STATUS_LABEL   : utl.UiId = .{};
-var COUNTER_LABEL  : utl.UiId = .{};
-var CAPTURE_LABEL  : utl.UiId = .{};
+var MAIN_PANEL        : utl.UiId = .{};
+var STATUS_LABEL      : utl.UiId = .{};
+var COUNTER_LABEL     : utl.UiId = .{};
+var CAPTURE_LABEL     : utl.UiId = .{};
 
-var CLICK_BUTTON   : utl.UiId = .{};
-var CHECKBOX       : utl.UiId = .{};
-var POPUP_BUTTON   : utl.UiId = .{};
-var MODAL_BUTTON   : utl.UiId = .{};
-var WINDOW_BUTTON  : utl.UiId = .{};
+var CLICK_BUTTON      : utl.UiId = .{};
+var CHECKBOX          : utl.UiId = .{};
+var POPUP_BUTTON      : utl.UiId = .{};
+var MODAL_BUTTON      : utl.UiId = .{};
+var WINDOW_BUTTON     : utl.UiId = .{};
 var DEBUG_MENU_BUTTON : utl.UiId = .{};
-var DEBUG_CHECKBOX : utl.UiId = .{};
-var SLIDER         : utl.UiId = .{};
-var SLIDER_LABEL   : utl.UiId = .{};
+var DEBUG_CHECKBOX    : utl.UiId = .{};
+var SLIDER            : utl.UiId = .{};
+var SLIDER_LABEL      : utl.UiId = .{};
 
-var POPUP_PANEL    : utl.UiId = .{};
-var POPUP_SPAWN    : utl.UiId = .{};
-var POPUP_CLOSE    : utl.UiId = .{};
+var POPUP_PANEL       : utl.UiId = .{};
+var POPUP_SPAWN       : utl.UiId = .{};
+var POPUP_CLOSE       : utl.UiId = .{};
 
-var FEATURE_PANEL  : utl.UiId = .{};
-var SCROLL_AREA    : utl.UiId = .{};
+var FEATURE_PANEL     : utl.UiId = .{};
+var SCROLL_AREA       : utl.UiId = .{};
 
-var MODAL_PANEL    : utl.UiId = .{};
-var MODAL_CLOSE    : utl.UiId = .{};
+var MODAL_PANEL       : utl.UiId = .{};
+var MODAL_CLOSE       : utl.UiId = .{};
 
 var DEBUG_MENU        : utl.UiId = .{};
 var DEBUG_MOVE_TOGGLE : utl.UiId = .{};
 var DEBUG_MENU_CLOSE  : utl.UiId = .{};
 
-var CLICK_COUNT    : u32 = 0;
-var WINDOW_COUNT   : u32 = 0;
+var CLICK_COUNT       : u32 = 0;
+var WINDOW_COUNT      : u32 = 0;
 
 
 // ================================ UI SANDBOX ================================

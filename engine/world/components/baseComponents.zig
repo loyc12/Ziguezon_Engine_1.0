@@ -65,8 +65,8 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 
     var renderScale = self.scale.mulVal( zoom );
 
-    if( self.minSize.x < utl.EPS ) { renderScale.x = @max( renderScale.x, self.minSize.x ); }
-    if( self.minSize.y < utl.EPS ) { renderScale.y = @max( renderScale.y, self.minSize.y ); }
+    if( self.minSize.x > utl.EPS ) { renderScale.x = @max( renderScale.x, self.minSize.x ); }
+    if( self.minSize.y > utl.EPS ) { renderScale.y = @max( renderScale.y, self.minSize.y ); }
 
     // Convert back to world-space scale for the draw calls
     return renderScale.mulVal( 1.0 / zoom );
