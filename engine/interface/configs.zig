@@ -35,13 +35,13 @@ pub const EngineConfigs = struct
 
   Graphic_Ellipse_Facets   : u16 = 64,
 
-//Graphic_World_Scale      : f32 = 1.0, // How much to scale the world positioning by when rendering, to avoid floating points precision issues
-
   Camera_Zoom_Max          : f32 = 10.0,
   Camera_Zoom_Min          : f32 = 0.1,
   Camera_Zoom_Init         : f32 = 1.0,
 
+  // Engine Behaviour
 
+  Engine_Limit_QueuedTicks : u8 = 2,
 
 
 
@@ -67,12 +67,14 @@ pub const EngineConfigs = struct
     // Feature Flags
     if( @hasDecl( module, "AutoApply_State_Playing"  )){ self.AutoApply_State_Playing  = @field( module, "AutoApply_State_Playing"  ); foundConfigs = true; }
 
-    // Global Values
-    if( @hasDecl( module, "Startup_Window_TargetFps" )){ self.Startup_Window_TargetFps = @field( module, "Startup_Window_TargetFps" ); foundConfigs = true; }
+    // Window Startup Values
+    if( @hasDecl( module, "Startup_Target_TickRate"  )){ self.Startup_Target_TickRate  = @field( module, "Startup_Target_TickRate"  ); foundConfigs = true; }
+    if( @hasDecl( module, "Startup_Target_FrameRate" )){ self.Startup_Target_FrameRate = @field( module, "Startup_Target_FrameRate" ); foundConfigs = true; }
     if( @hasDecl( module, "Startup_Window_Width"     )){ self.Startup_Window_Width     = @field( module, "Startup_Window_Width"     ); foundConfigs = true; }
     if( @hasDecl( module, "Startup_Window_Height"    )){ self.Startup_Window_Height    = @field( module, "Startup_Window_Height"    ); foundConfigs = true; }
     if( @hasDecl( module, "Startup_Window_Title"     )){ self.Startup_Window_Title     = @field( module, "Startup_Window_Title"     ); foundConfigs = true; }
 
+    // Graphical Values
     if( @hasDecl( module, "Graphic_Bckgrd_Colour"    )){ self.Graphic_Bckgrd_Colour    = @field( module, "Graphic_Bckgrd_Colour"    ); foundConfigs = true; }
     if( @hasDecl( module, "Graphic_Metrics_Colour"   )){ self.Graphic_Metrics_Colour   = @field( module, "Graphic_Metrics_Colour"   ); foundConfigs = true; }
     if( @hasDecl( module, "Graphic_Default_Font"     )){ self.Graphic_Default_Font     = @field( module, "Graphic_Default_Font"     ); foundConfigs = true; }
@@ -81,6 +83,10 @@ pub const EngineConfigs = struct
     if( @hasDecl( module, "Camera_Zoom_Max"          )){ self.Camera_Zoom_Max          = @field( module, "Camera_Zoom_Max"          ); foundConfigs = true; }
     if( @hasDecl( module, "Camera_Zoom_Min"          )){ self.Camera_Zoom_Min          = @field( module, "Camera_Zoom_Min"          ); foundConfigs = true; }
     if( @hasDecl( module, "Camera_Zoom_Init"         )){ self.Camera_Zoom_Init         = @field( module, "Camera_Zoom_Init"         ); foundConfigs = true; }
+
+    // Engine Behaviour
+    if( @hasDecl( module, "Engine_Limit_QueuedTicks" )){ self.Engine_Limit_QueuedTicks = @field( module, "Engine_Limit_QueuedTicks" ); foundConfigs = true; }
+
 
 
     // Logging the outcome

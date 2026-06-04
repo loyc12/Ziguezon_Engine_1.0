@@ -213,6 +213,9 @@ pub fn play( ng : *Engine ) void
 
   eng.tryHook( .OnGameResume, ng );
   ng.state = .PLAYING;
+
+  // Prevent calculating pause time as tick delay
+  ng.times.resetTickTiming();
 }
 
 

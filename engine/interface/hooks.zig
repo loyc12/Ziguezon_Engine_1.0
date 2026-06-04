@@ -13,41 +13,35 @@ pub const HookTag = enum( u8 )
 
   // Engine State Hooks
 
-  OnGameStart = 0, // Called when the engine starts
-  OnGameStop  = 1, // Called when the engine is closed
+  OnGameStart  = 0, // Called when the engine starts
+  OnGameStop   = 1, // Called when the engine is closed
 
-  OnGameOpen  = 2, // Called when the engine is launched
-  OnGameClose = 3, // Called when the engine stops
+  OnGameOpen   = 2, // Called when the engine is launched
+  OnGameClose  = 3, // Called when the engine stops
 
-  OnGameResume  = 4, // Called when the engine starts playing
-  OnGamePause = 5, // Called when the engine is paused
+  OnGameResume = 4, // Called when the engine starts playing
+  OnGamePause  = 5, // Called when the engine is paused
 
 
   // Engine Step Hooks
 
   OnLoopStart  = 10, // Called at the start of the game loop
   OnLoopEnd    = 11, // Called at the end of the game loop
-  OnLoopUpdate  = 12, // Called for each iteration of the game loop ( at the start )
+  OnLoopUpdate = 12, // Called for each iteration of the game loop ( at the start )
 
 
-  // Update and Tick Hooks
+  OnInputUpdate  = 20, // Called every frame for updates ( at the start )
+//OffInputUpdate = 21, // Called every frame for updates ( at the end )
 
-  OnInputUpdate   = 20, // Called every frame for updates ( at the start )
-//OffInputUpdate  = 21, // Called every frame for updates ( at the end )
-
-  OnTickUpdate      = 22, // Called every tick for logic updates ( at the start )
-  OffTickUpdate     = 23, // Called every tick for logic updates ( at the end )
+  OnTickUpdate   = 22, // Called every tick for logic updates ( at the start )
+  OffTickUpdate  = 23, // Called every tick for logic updates ( at the end )
 
 
-  // Rendering Hooks
+  OnRenderBckgrnd = 30, // Called to render the background ( at the start )
+  OnRenderOverlay = 31, // Called to render overlays ( at the start )
 
-  OnRenderBckgrnd  = 30, // Called to render the background ( at the start )
-
-  OnRenderWorld    = 32, // Called to render the world ( at the start )
-  OffRenderWorld   = 33, // Called to render the world ( at the end )
-
-  OnRenderOverlay  = 34, // Called to render overlays ( at the start )
-//OffRenderOverlay = 35, // Called to render overlays ( at the end )
+  OnRenderWorld   = 32, // Called to render the world ( at the start )
+  OffRenderWorld  = 33, // Called to render the world ( at the end )
 
 };
 

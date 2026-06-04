@@ -4,9 +4,9 @@ const utl = @import( "utils" );
 
 const Engine = eng.Engine;
 
-// ================================ ENGINE STEP FUNCTIONS ================================
+// ================ LOOP EVENTS ================
 
-pub fn loopLogic( ng : *Engine ) void
+pub fn stepEngineLoop( ng : *Engine ) void
 {
   if( !ng.isOpened() )
   {
@@ -18,8 +18,6 @@ pub fn loopLogic( ng : *Engine ) void
   eng.tryHook( .OnLoopStart, ng );
   utl.qlog( .INFO, 0, @src(), "& Game loop started\n" );
 
-  // NOTE : this is a blocking loop, it will not return until the game is closed
-  // TODO : multitread if this becomes a bottleneck
 
   while( !utl.ray.windowShouldClose() )
   {
@@ -32,8 +30,8 @@ pub fn loopLogic( ng : *Engine ) void
     if( ng.isOpened() )
     {
       _ = tryUpdateInputs( ng ); // Inputs and Global Flags
-      _ = tryTickSim(   ng ); // Logic and Physics
-      _ = tryRenderFrame( ng ); // Visuals and UI
+      _ = tryTickWorld(    ng ); // Logic and Physics
+      _ = tryRenderFrame(  ng ); // Visuals and UI
 
     //utl.logger.logDeltaTime( loopTime.timeSince(), @src(), "! Loop delta time" );
     //loopTime = utl.getNow();
@@ -45,37 +43,25 @@ pub fn loopLogic( ng : *Engine ) void
 }
 
 
-// ================ LOOP EVENTS ================
+// ======== INPUT UPDATING ========
 
 inline fn tryUpdateInputs( ng : *Engine ) bool
 {
+  // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
+  // TODO : see if we can split the two rates ( if that is even useful to begin with )
+  if( !ng.isOpened() or !ng.times.shouldRender() ){ return false; }
 
-  if( ng.times.shouldRender() ) // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
-  {                             // TODO : see if we can split them ( if that is even useful to begin with )
-  //const tmpTime = utl.getNow();
+  // TODO : store transient inputs into an engine owned struct to avoid unwanted input state resets
+  //utl.ray.pollInputEvents(); // Resets and fills the input "buffer" with the latest inputs
 
-  //utl.ray.pollInputEvents(); // Resets and fills the input "buffer" with the latest inputs (???)
-    updateInputs( ng );
-
-  //utl.logger.logDeltaTime( tmpTime.timeSince(), @src(), "@ Input delta time" );
-    return true;
-  }
-  return false;
-}
-
-pub inline fn forceUpdateInputs( ng : *Engine ) void
-{
-  ng.times.frameOffset.value += ng.times.targetFrameDelta.value;
-
-//ng.times.consumeUpdate();
   updateInputs( ng );
+
+  return true;
 }
 
 inline fn updateInputs( ng : *Engine ) void
 {
-
   utl.qlog( .TRACE, 0, @src(), "Getting inputs..." );
-
   {
     if( utl.ray.isWindowResized() )
     {
@@ -90,38 +76,52 @@ inline fn updateInputs( ng : *Engine ) void
 
   eng.tryHook( .OnInputUpdate, ng );
   ng.uiManager.endFrame();
-  //eng.tryHook( .OffInputUpdate, ng );
 }
 
-
-// ======== TICKING ========
-
-inline fn tryTickSim( ng : *Engine ) bool
+pub inline fn forceUpdateInputs( ng : *Engine ) void
 {
-  if( ng.times.shouldTick() )
+  if( !ng.isOpened() )
   {
-    if( !ng.isPlaying() ){ return false; }
-
-  //const tmpTime = utl.getNow();
-    ng.times.consumeTick();
-    tickSim( ng );
-  //utl.logger.logDeltaTime( tmpTime.timeSince(), @src(), "# Tick timelag" );
-
-    return true;
+    utl.qlog( .WARN, 0, @src(), "@ Cannot force this step if the game is not opened yet" );
+    return;
   }
-  return false;
+
+  updateInputs( ng );
 }
 
-pub inline fn forceTickSim( ng : *Engine ) void
+
+// ======== WORLD TICKING ========
+
+inline fn tryTickWorld( ng : *Engine ) bool
 {
-  ng.times.tickOffset.value += ng.times.targetTickDelta.value;
+  if( !ng.isPlaying() or !ng.times.shouldTick() ){ return false; }
 
-  ng.times.consumeTick();
-  tickSim( ng );
+  var tickCount : u8 = 0;
+
+  while( ng.times.shouldTick() )
+  {
+    ng.times.consumeTick(); // Limits the number of queued ticks based on engineConfigs
+    tickWorld( ng );
+    tickCount += 1;
+  }
+
+  return tickCount > 0;
+}
+
+pub inline fn forceTickWorld( ng : *Engine ) void
+{
+  if( !ng.isOpened() )
+  {
+    utl.qlog( .WARN, 0, @src(), "@ Cannot force this step if the game is not opened yet" );
+    return;
+  }
+
+  ng.times.consumeForcedTick();
+  tickWorld( ng );
 }
 
 
-inline fn tickSim( ng : *Engine ) void
+inline fn tickWorld( ng : *Engine ) void
 {
   utl.qlog( .TRACE, 0, @src(), "Ticking..." );
 
@@ -139,33 +139,33 @@ inline fn tickTilemaps( ng : *Engine ) void
   ng.tilemapManager.tickActiveTilemaps( ng );
   ng.tilemapManager.deleteAllMarkedTilemaps();
 }
-// ======== RENDERING ========
+
+
+// ======== VISUAL RENDERING ========
 
 inline fn tryRenderFrame( ng : *Engine ) bool
 {
-  if( ng.times.shouldRender() )
-  {
-    if( !ng.isOpened() ){ return false; }
+  if( !ng.isOpened() or !ng.times.shouldRender() ){ return false; }
 
-  //const tmpTime = utl.getNow();
-    ng.times.consumeFrame();
-    renderFrame( ng );
-  //utl.logger.logDeltaTime( tmpTime.timeSince(), @src(), "& Render timelag" );
+  ng.times.consumeFrame(); // Limits the number of queued frame to 1
+  renderFrame( ng );
 
-    return true;
-  }
-  return false;
+  return true;
 }
 
 pub inline fn forceRenderFrame( ng : *Engine ) void
 {
-  ng.times.frameOffset.value += ng.times.targetFrameDelta.value;
+  if( !ng.isOpened() )
+  {
+    utl.qlog( .WARN, 0, @src(), "@ Cannot force this step if the game is not opened yet" );
+    return;
+  }
 
-  ng.times.consumeFrame();
+  ng.times.consumeForcedFrame();
   renderFrame( ng );
 }
 
-inline fn renderFrame( ng : *Engine ) void    // TODO : use render textures instead
+inline fn renderFrame( ng : *Engine ) void
 {
   utl.qlog( .TRACE, 0, @src(), "Rendering..." );
 
@@ -173,7 +173,7 @@ inline fn renderFrame( ng : *Engine ) void    // TODO : use render textures inst
   defer utl.ray.endDrawing();
 
   // NOTE : set Graphic_Bckgrd_Colour to null in settings to skip this step
-  if( eng.G_CNFGS.Graphic_Bckgrd_Colour != null ){ utl.sDraw.clearBackground( eng.G_CNFGS.Graphic_Bckgrd_Colour.? ); }
+  if( eng.G_CNFGS.Graphic_Bckgrd_Colour)| col |{ utl.sDraw.clearBackground( col ); }
 
   eng.tryHook( .OnRenderBckgrnd, ng );
 
@@ -196,7 +196,6 @@ inline fn renderFrame( ng : *Engine ) void    // TODO : use render textures inst
     drawDebugFpsCount( ng );
     drawDebugTpsCount( ng );
   }
-  //eng.tryHook( .OffRenderOverlay, ng );
 }
 
 inline fn renderTilemaps( ng : *Engine ) void
@@ -211,8 +210,8 @@ inline fn renderTilemaps( ng : *Engine ) void
   }
 }
 
-// ======== DEBUG INFO ========
 
+// ======== DEBUG INFO ========
 
 inline fn drawDebugFpsCount( ng : *Engine ) void
 {

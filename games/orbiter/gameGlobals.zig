@@ -212,7 +212,6 @@ pub const SpeedFactor = enum( i8 )
   WEEK,
   MONTH,
   YEAR,
-  DECADE,
 
 
   pub inline fn getStepLen( self : SpeedFactor ) i128
@@ -227,7 +226,6 @@ pub const SpeedFactor = enum( i8 )
       .WEEK   => utl.TimeVal.secPerDay() * 7,
       .MONTH  => utl.TimeVal.secPerDay() * 30,
       .YEAR   => utl.TimeVal.secPerDay() * 365,
-      .DECADE => utl.TimeVal.secPerDay() * 3652,
     };
   }
 

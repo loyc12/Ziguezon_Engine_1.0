@@ -115,19 +115,11 @@ pub const EngineTime = struct
 
   pub fn consumeTick( self: *EngineTime ) void
   {
-    const tickLagLimit : i128 = TICK_LAG_LIMIT * self.targetTickDelta.value;
-    const now : utl.TimeVal   = .newNow();
+    const now : utl.TimeVal    = .newNow();
+    const tickBuffLimit : i128 = @intCast( 1 +| eng.G_CNFGS.Engine_Limit_QueuedTicks );
 
     self.tickOffset.value -= self.targetTickDelta.value;
-
-    if( self.tickOffset.value < 0 )
-    {
-      self.tickOffset.value = 0;
-    }
-    else if( self.tickOffset.value > tickLagLimit )
-    {
-      self.tickOffset.value = tickLagLimit; // Clamping lag to N ticks or less
-    }
+    self.tickOffset.value =  utl.clmp( self.tickOffset.value, 0, tickBuffLimit * self.targetTickDelta.value );
 
     if( self.tickEpoch.isSet() )
     {
@@ -148,21 +140,28 @@ pub const EngineTime = struct
     self.buffTickDelta = TimeVal.fromRayDeltaTime( tmp );
   }
 
+  pub inline fn resetTickTiming( self : *EngineTime ) void
+  {
+    self.tickOffset.value = 0;
+    self.lastTickDelta    = self.targetTickDelta;
+    self.buffTickDelta    = self.targetTickDelta;
+    self.tickEpoch        = .newNow();
+
+    self.buffTickDelta = self.targetTickDelta;
+  }
+  pub inline fn consumeForcedTick( self : *EngineTime ) void
+  {
+    self.resetTickTiming();
+    self.tickCount += 1;
+  }
+
+
   pub fn consumeFrame( self: *EngineTime ) void
   {
-    const frameLagLimit : i128 = FRAME_LAG_LIMIT * self.targetFrameDelta.value;
-    const now : utl.TimeVal    = .newNow();
+    const now : utl.TimeVal = .newNow();
 
     self.frameOffset.value -= self.targetFrameDelta.value;
-
-    if( self.frameOffset.value < 0 )
-    {
-      self.frameOffset.value = 0;
-    }
-    else if( self.frameOffset.value > frameLagLimit ) // Clamping lag to N frames or less
-    {
-      self.frameOffset.value = frameLagLimit;
-    }
+    self.frameOffset.value  = utl.clmp( self.frameOffset.value, 0, self.targetFrameDelta.value );
 
     if( self.frameEpoch.isSet() )
     {
@@ -181,6 +180,19 @@ pub const EngineTime = struct
     const tmp        : f32 = utl.lerp( self.buffFrameDelta.toRayDeltaTime(), self.lastFrameDelta.toRayDeltaTime(), frameAlpha );
 
     self.buffFrameDelta = TimeVal.fromRayDeltaTime( tmp );
+  }
+
+  pub inline fn resetFrameTiming( self : *EngineTime ) void
+  {
+    self.frameOffset.value = 0;
+    self.lastFrameDelta    = self.targetFrameDelta;
+    self.buffFrameDelta    = self.targetFrameDelta;
+    self.frameEpoch        = .newNow();
+  }
+  pub inline fn consumeForcedFrame( self : *EngineTime ) void
+  {
+    self.resetFrameTiming();
+    self.frameCount += 1;
   }
 
 
@@ -226,14 +238,14 @@ pub const EngineTime = struct
   pub inline fn getTargetFrameDeltaTime( self : *const EngineTime ) TimeVal { return self.targetFrameDelta; }
 
 
-  pub inline fn getTickOffsetFloat(       self : *const EngineTime ) f32 { return self.tickOffset.toRayDeltaTime(); }
-  pub inline fn getFrameOffsetFloat(      self : *const EngineTime ) f32 { return self.frameOffset.toRayDeltaTime(); }
+  pub inline fn getTickOffsetFlt(        self : *const EngineTime ) f32 { return self.tickOffset.toRayDeltaTime(); }
+  pub inline fn getFrameOffsetFlt(       self : *const EngineTime ) f32 { return self.frameOffset.toRayDeltaTime(); }
 
-  pub inline fn getLastTickDeltaFloat(    self : *const EngineTime ) f32 { return self.lastTickDelta.toRayDeltaTime(); }
-  pub inline fn getLastFrameDeltaFloat(   self : *const EngineTime ) f32 { return self.lastFrameDelta.toRayDeltaTime(); }
+  pub inline fn getLastTickDeltaFlt(     self : *const EngineTime ) f32 { return self.lastTickDelta.toRayDeltaTime(); }
+  pub inline fn getLastFrameDeltaFlt(    self : *const EngineTime ) f32 { return self.lastFrameDelta.toRayDeltaTime(); }
 
-  pub inline fn getTargetTickDeltaFloat(  self : *const EngineTime ) f32 { return self.targetTickDelta.toRayDeltaTime(); }
-  pub inline fn getTargetFrameDeltaFloat( self : *const EngineTime ) f32 { return self.targetFrameDelta.toRayDeltaTime(); }
+  pub inline fn getTargetTickDeltaFlt(   self : *const EngineTime ) f32 { return self.targetTickDelta.toRayDeltaTime(); }
+  pub inline fn getTargetFrameDeltaFlt(  self : *const EngineTime ) f32 { return self.targetFrameDelta.toRayDeltaTime(); }
 
 
 //pub inline fn getScaledTickOffsetTime(       self : *const EngineTime ) TimeVal { return self.tickOffset.scaleByFloat( self.simScale ); }

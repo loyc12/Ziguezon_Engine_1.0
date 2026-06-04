@@ -39,7 +39,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   if( ng.isPaused() and utl.ray.isKeyPressed( utl.ray.KeyboardKey.o ))
   {
     utl.qlog( .INFO, 0, @src(), "$ Forcing tick to occur" );
-    ng.forceTickSim();
+    ng.forceTickWorld();
   }
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.j ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_subtract )){ target.changeTargetBy( -1 ); }

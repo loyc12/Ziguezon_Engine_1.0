@@ -57,13 +57,13 @@ pub const Engine = struct
 
   pub inline fn simTimeUpdate( self : *Engine ) void
   {
-    self.times.updateSimTime( self.isPlaying() );
+    self.times.simTimeUpdate( self.isPlaying() );
   }
 
-  pub inline fn getTargetFrameDT( self : *Engine ) f32 { return( self.times.getTargetFrameDeltaFloat() ); }
-  pub inline fn getRealFrameDT(   self : *Engine ) f32 { return( self.times.getLastFrameDeltaFloat()   ); }
-  pub inline fn getTargetTickDT(  self : *Engine ) f32 { return( self.times.getTargetTickDeltaFloat()  ); }
-  pub inline fn getRealTickDT(    self : *Engine ) f32 { return( self.times.getLastTickDeltaFloat()    ); }
+  pub inline fn getTargetFrameDelta( self : *Engine ) f32 { return( self.times.getTargetFrameDeltaFlt() ); }
+  pub inline fn getRealFrameDelta(   self : *Engine ) f32 { return( self.times.getLastFrameDeltaFlt()   ); }
+  pub inline fn getTargetTickDelta(  self : *Engine ) f32 { return( self.times.getTargetTickDeltaFlt()  ); }
+  pub inline fn getRealTickDelta(    self : *Engine ) f32 { return( self.times.getLastTickDeltaFlt()    ); }
 
   // ================================ ENGINE STATE FUNCTIONS ================================
 
@@ -77,9 +77,8 @@ pub const Engine = struct
 
   const ngnStep = @import( "engineStep.zig" );
 
-  pub inline fn loopLogic( self : *Engine ) void { ngnStep.loopLogic( self ); }
-
-//pub inline fn forceUpdateIntpus( self : *Engine ) void { ngnStep.forceUpdateInputs( self ); } // TODO : validate this works properly
-  pub inline fn forceTickSim(      self : *Engine ) void { ngnStep.forceTickSim(      self ); } // TODO : validate this works properly
-  pub inline fn forceRenderFrame(  self : *Engine ) void { ngnStep.forceRenderFrame(  self ); } // TODO : validate this works properly
+  pub inline fn stepEngineLoop(    self : *Engine ) void { ngnStep.stepEngineLoop(    self ); }
+  pub inline fn forceUpdateInputs( self : *Engine ) void { ngnStep.forceUpdateInputs( self ); }
+  pub inline fn forceTickWorld(    self : *Engine ) void { ngnStep.forceTickWorld(    self ); }
+  pub inline fn forceRenderFrame(  self : *Engine ) void { ngnStep.forceRenderFrame(  self ); }
 };
