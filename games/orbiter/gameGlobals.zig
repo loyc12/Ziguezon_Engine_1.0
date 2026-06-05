@@ -94,28 +94,28 @@ pub const CompStores = struct
 
 
     // Registering componentStores
-    if( !ng.world.registerComponentStore( "transStore", &self.trans ))
+    if( !ng.world.registerBorrowedCompStore( "transStore", &self.trans ))
     {
       utl.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
       hasError = true;
     }
-    if( !ng.world.registerComponentStore( "shapeStore", &self.shape ))
+    if( !ng.world.registerBorrowedCompStore( "shapeStore", &self.shape ))
     {
       utl.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
       hasError = true;
     }
-    if( !ng.world.registerComponentStore( "spriteStore", &self.sprite ))
+    if( !ng.world.registerBorrowedCompStore( "spriteStore", &self.sprite ))
     {
       utl.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
       hasError = true;
     }
 
-    if( !ng.world.registerComponentStore( "orbitStore", &self.orbit ))
+    if( !ng.world.registerBorrowedCompStore( "orbitStore", &self.orbit ))
     {
       utl.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
       hasError = true;
     }
-    if( !ng.world.registerComponentStore( "bodyStore", &self.body ))
+    if( !ng.world.registerBorrowedCompStore( "bodyStore", &self.body ))
     {
       utl.qlog( .ERROR, 0, @src(), "Failed to register bodyStore" );
       hasError = true;
@@ -125,11 +125,11 @@ pub const CompStores = struct
 
   pub inline fn deinitAllStores( self : *CompStores, ng : *eng.Engine ) void
   {
-    _ = ng.world.unregisterComponentStore( "transStore"  );
-    _ = ng.world.unregisterComponentStore( "shapeStore"  );
-    _ = ng.world.unregisterComponentStore( "spriteStore" );
-    _ = ng.world.unregisterComponentStore( "orbitStore"  );
-    _ = ng.world.unregisterComponentStore( "bodyStore"   );
+    _ = ng.world.unregisterBorrowedCompStore( "transStore"  );
+    _ = ng.world.unregisterBorrowedCompStore( "shapeStore"  );
+    _ = ng.world.unregisterBorrowedCompStore( "spriteStore" );
+    _ = ng.world.unregisterBorrowedCompStore( "orbitStore"  );
+    _ = ng.world.unregisterBorrowedCompStore( "bodyStore"   );
 
     self.trans.deinit();
     self.shape.deinit();

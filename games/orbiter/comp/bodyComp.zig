@@ -15,7 +15,7 @@ const BodyType = gdf.BodyType;
 
 pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
-  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   name     : BodyName = .DEBUGY, // NOTE : Should be overwritten. If more than one DEBUGY exists, something went wrong
   bodyType : BodyType = .PLANET, // TODO : infer type based on mass ( and orbitance ) instead ?

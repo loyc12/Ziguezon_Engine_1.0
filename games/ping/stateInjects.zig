@@ -5,8 +5,8 @@ const utl = @import( "utils" );
 pub const TransStore    = eng.TransComp.StoreType();
 pub const ShapeStore    = eng.ShapeComp.StoreType();
 pub const HitboxStore   = eng.HitboxComp.StoreType();
-pub const MobileStore   = eng.ComponentStoreFactory( MobileComp );
-pub const ParticleStore = eng.ComponentStoreFactory( ParticleComp );
+pub const MobileStore   = eng.CompStoreFactory( MobileComp );
+pub const ParticleStore = eng.CompStoreFactory( ParticleComp );
 
 var transStore    : TransStore    = .{};
 var shapeStore    : ShapeStore    = .{};
@@ -47,7 +47,7 @@ pub inline fn getParticleStore() *ParticleStore { return &particleStore; }
 
 fn registerStore( ng : *eng.Engine, name : []const u8, storePtr : *anyopaque ) void
 {
-  if( !ng.world.registerComponentStore( name, storePtr ))
+  if( !ng.world.registerBorrowedCompStore( name, storePtr ))
   {
     utl.log( .ERROR, 0, @src(), "Failed to register {s}", .{ name });
   }
@@ -354,11 +354,11 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
 pub fn OnGameClose( ng : *eng.Engine ) void
 {
-  _ = ng.world.unregisterComponentStore( "pingTransStore"    );
-  _ = ng.world.unregisterComponentStore( "pingShapeStore"    );
-  _ = ng.world.unregisterComponentStore( "pingHitboxStore"   );
-  _ = ng.world.unregisterComponentStore( "pingMobileStore"   );
-  _ = ng.world.unregisterComponentStore( "pingParticleStore" );
+  _ = ng.world.unregisterBorrowedCompStore( "pingTransStore"    );
+  _ = ng.world.unregisterBorrowedCompStore( "pingShapeStore"    );
+  _ = ng.world.unregisterBorrowedCompStore( "pingHitboxStore"   );
+  _ = ng.world.unregisterBorrowedCompStore( "pingMobileStore"   );
+  _ = ng.world.unregisterBorrowedCompStore( "pingParticleStore" );
 
   entityIds.deinit( utl.getDefaultAlloc() );
   particleIds.deinit( utl.getDefaultAlloc() );

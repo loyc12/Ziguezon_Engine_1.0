@@ -1,6 +1,6 @@
-const std      = @import( "std" );
-const eng      = @import( "engine" );
-const utl = @import( "utils" );
+const std      = @import( "std"              );
+const eng      = @import( "engine"           );
+const utl      = @import( "utils"            );
 const stateInj = @import( "stateInjects.zig" );
 
 // ================================ HELPER FUNCTIONS ================================
@@ -20,9 +20,7 @@ var IS_JUMPING    : bool = false; // Flag to check if the disk is jumping
 
 
 
-const DISK_ID        = &stateInj.DISK_ID;
-const TransformStore = stateInj.TransformStore;
-const ShapeStore     = stateInj.ShapeStore;
+const DISK_ID = &stateInj.DISK_ID;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -41,9 +39,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
       IS_GAME_OVER  = false;
       IS_JUMPING    = false;
 
-      const transformStore : *TransformStore = @ptrCast( @alignCast( ng.world.getComponentStore( "transformStore" )));
-
-      var diskTransform = transformStore.get( DISK_ID.* ) orelse
+      var diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
       {
         utl.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
         return;
@@ -73,18 +69,14 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
 pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
-  const transformStore : *TransformStore = @ptrCast( @alignCast( ng.world.getComponentStore( "transformStore" )));
-
-  var diskTransform = transformStore.get( DISK_ID.* ) orelse
+  var diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
 
-  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.world.getComponentStore( "shapeStore" )));
-
-  var diskShape = shapeStore.get( DISK_ID.* ) orelse
+  var diskShape = ng.world.getComp( eng.ShapeComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, 0, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;
@@ -151,17 +143,13 @@ pub fn OffTickUpdate( ng : *eng.Engine ) void
 
 pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
-  const transformStore : *TransformStore = @ptrCast( @alignCast( ng.world.getComponentStore( "transformStore" )));
-
-  const diskTransform = transformStore.get( DISK_ID.* ) orelse
+  const diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
-  const shapeStore : *ShapeStore = @ptrCast( @alignCast( ng.world.getComponentStore( "shapeStore" )));
-
-  const diskShape = shapeStore.get( DISK_ID.* ) orelse
+  const diskShape = ng.world.getComp( eng.ShapeComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, 0, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;

@@ -36,7 +36,13 @@ fn getRaylibOptimize( optimize : std.builtin.OptimizeMode ) std.builtin.Optimize
   };
 }
 
-fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath : []const u8, target : std.Build.ResolvedTarget, optimize : std.builtin.OptimizeMode ) *std.Build.Step.Compile
+const GameExecutable = struct
+{
+  exe       : *std.Build.Step.Compile,
+  engineMod : *std.Build.Module,
+};
+
+fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath : []const u8, target : std.Build.ResolvedTarget, optimize : std.builtin.OptimizeMode ) GameExecutable
 {
   const exeMod = b.createModule(
   .{
@@ -102,7 +108,10 @@ fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath
   interface.addImport( "engine", engine );
   interface.addImport( "utils",  utils  );
 
-  return exe;
+  return .{
+    .exe       = exe,
+    .engineMod = engine,
+  };
 }
 
 
@@ -134,7 +143,8 @@ pub fn build( b : *std.Build ) void
   const executable_name = if( tmp_executable_name )| name | name else "ZE_Game";
 
 
-  const exe = addGameExecutable( b, executable_name, interface_path, target, optimize );
+  const gameBuild = addGameExecutable( b, executable_name, interface_path, target, optimize );
+  const exe       = gameBuild.exe;
 
   b.installArtifact( exe );
 
@@ -214,7 +224,7 @@ pub fn build( b : *std.Build ) void
     const path = game[ 1 ];
 
     const dbg_exe_name = n1;
-    const game_exe     = addGameExecutable( b, dbg_exe_name, path, target, .Debug );
+    const game_exe     = addGameExecutable( b, dbg_exe_name, path, target, .Debug ).exe;
     const game_install = b.addInstallArtifact( game_exe, .{} );
 
     const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode" );
@@ -238,7 +248,7 @@ pub fn build( b : *std.Build ) void
       const opti = opt[ 2 ];
 
       const opt_exe_name = n1 ++ "_" ++ n2;
-      const opt_exe      = addGameExecutable( b, opt_exe_name, path, target, opti );
+      const opt_exe      = addGameExecutable( b, opt_exe_name, path, target, opti ).exe;
       const opt_install  = b.addInstallArtifact( opt_exe, .{} );
 
 
@@ -261,7 +271,7 @@ pub fn build( b : *std.Build ) void
         const plt_exe_name = n1 ++ "_" ++ n2 ++ "_" ++ n3;
         const plt_query    = std.Target.Query.parse( .{ .arch_os_abi = targ } ) catch @panic( "Invalid platform target" );
         const plt_target   = b.resolveTargetQuery( plt_query );
-        const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, opti );
+        const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, opti ).exe;
         const plt_install  = b.addInstallArtifact( plt_exe, .{} );
 
         const targ_step = b.step( n1 ++ "_" ++ n2 ++ "_" ++ n3, "-   Compiles " ++ n1 ++ " in " ++ mode ++ " for " ++ targ );
@@ -277,7 +287,7 @@ pub fn build( b : *std.Build ) void
       const plt_exe_name = n1 ++ "_" ++ n3;
       const plt_query    = std.Target.Query.parse( .{ .arch_os_abi = targ } ) catch @panic( "Invalid platform target" );
       const plt_target   = b.resolveTargetQuery( plt_query );
-      const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, .Debug );
+      const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, .Debug ).exe;
       const plt_install  = b.addInstallArtifact( plt_exe, .{} );
 
       const targ_step = b.step( n1 ++ "_" ++ n3, "- Compiles " ++ n1 ++ " in debug mode for " ++ targ );
@@ -291,8 +301,12 @@ pub fn build( b : *std.Build ) void
   const exe_unit_tests     = b.addTest(.{ .root_module = exe.root_module });
   const run_exe_unit_tests = b.addRunArtifact( exe_unit_tests );
 
+  const engine_unit_tests     = b.addTest(.{ .root_module = gameBuild.engineMod });
+  const run_engine_unit_tests = b.addRunArtifact( engine_unit_tests );
+
   // Similar to creating the run step earlier, this exposes a `test` step to the `zig build --help` menu,
   // providing a way for the user to request running the unit tests instead of the main application.
   const test_step = b.step( "test", "Runs unit tests" );
   test_step.dependOn( &run_exe_unit_tests.step );
+  test_step.dependOn( &run_engine_unit_tests.step );
 }

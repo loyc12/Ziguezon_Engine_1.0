@@ -16,7 +16,7 @@ const Angle = utl.Angle;
 
 pub const TransComp = struct
 {
-  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   pos : VecA,
   vel : VecA = .{},
@@ -45,7 +45,7 @@ pub const TransComp = struct
 
 pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 {
-  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   scale   : Vec2,
   minSize : Vec2        = .{}, // Minimum screen-space size, inactive if 0
@@ -104,7 +104,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 
 pub const HitboxComp = struct
 {
-  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   hitbox : Box2 = .{},
 
@@ -131,7 +131,7 @@ pub const HitboxComp = struct
 
 pub const SpriteComp = struct
 {
-  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   sprite      : utl.Sprite,
   frameTime   : u32 = 1.0,  // How long to show each frame for

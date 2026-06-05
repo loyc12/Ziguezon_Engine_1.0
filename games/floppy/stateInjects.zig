@@ -1,29 +1,7 @@
-const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 pub var DISK_ID : eng.EntityId = 0;
-
-//pub const Mobile = struct
-//{
-//  scale : utl.Vec2   = .{},
-//  pos   : utl.VecA   = .{},
-//  vel   : utl.Vec2   = .{},
-//  acc   : utl.Vec2   = .{},
-//
-//  col   : utl.Colour = utl.Colour.white,
-//};
-//
-//pub const MobileStore = eng.ComponentStoreFactory( Mobile );
-//
-//pub var mobileStore : MobileStore = .{};
-
-pub const TransformStore = eng.TransComp.StoreType();
-pub const ShapeStore     = eng.ShapeComp.StoreType();
-
-var transformStore : TransformStore = .{};
-var shapeStore     : ShapeStore = .{};
-
 
 pub const diskStartPos = utl.VecA.new( -800,    0, .{} );
 pub const diskStartVel = utl.VecA.new(    0, -4000, .{} );
@@ -31,40 +9,39 @@ pub const diskStartVel = utl.VecA.new(    0, -4000, .{} );
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 
-pub fn OnGameOpen( ng : *eng.Engine ) void // Init and register ComponentStores here
+pub fn OnGameOpen( ng : *eng.Engine ) void
 {
-  transformStore.init( utl.getDefaultAlloc() );
-  shapeStore.init(     utl.getDefaultAlloc() );
-
-
-  if( !ng.world.registerComponentStore( "transformStore", &transformStore ))
+  if( !ng.world.registerComp( eng.TransComp ))
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to register transformStore" );
+    utl.qlog( .ERROR, 0, @src(), "Failed to register TransComp" );
+    return;
   }
-  if( !ng.world.registerComponentStore( "shapeStore", &shapeStore ))
+  if( !ng.world.registerComp( eng.ShapeComp ))
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
+    _ = ng.world.unregisterComp( eng.TransComp );
+    utl.qlog( .ERROR, 0, @src(), "Failed to register ShapeComp" );
+    return;
   }
 
 
   DISK_ID = ng.world.createEntity().id;
 
 
-  if( transformStore.add( DISK_ID,
+  if( ng.world.addComp( eng.TransComp, DISK_ID,
     .{
       .pos   = diskStartPos,
       .vel   = diskStartVel,
     }
   ))
   {
-    utl.log( .INFO, 0, @src(), "Added disk entity with Id {} to transformStore", .{ DISK_ID });
+    utl.log( .INFO, 0, @src(), "Added disk entity with Id {} to TransComp store", .{ DISK_ID });
   }
   else
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to add disk entity to transformStore" );
+    utl.qlog( .ERROR, 0, @src(), "Failed to add disk entity to TransComp store" );
   }
 
-  if( shapeStore.add( DISK_ID,
+  if( ng.world.addComp( eng.ShapeComp, DISK_ID,
     .{
       .scale  = .{ .x = 32, .y = 32 },
       .shape  = .RECT,
@@ -72,20 +49,17 @@ pub fn OnGameOpen( ng : *eng.Engine ) void // Init and register ComponentStores 
     }
   ))
   {
-    utl.log( .INFO, 0, @src(), "Added disk entity with Id {} to shapeStore", .{ DISK_ID });
+    utl.log( .INFO, 0, @src(), "Added disk entity with Id {} to ShapeComp store", .{ DISK_ID });
   }
   else
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to add disk entity to shapeStore" );
+    utl.qlog( .ERROR, 0, @src(), "Failed to add disk entity to ShapeComp store" );
   }
 }
 
 
-pub fn OnGameClose( ng : *eng.Engine ) void // Deinit ComponentStores here
+pub fn OnGameClose( ng : *eng.Engine ) void
 {
-  _ = ng.world.unregisterComponentStore( "transformStore" );
-  _ = ng.world.unregisterComponentStore( "shapeStore" );
-
-  transformStore.deinit();
-  shapeStore.deinit();
+  _ = ng.world.unregisterComp( eng.ShapeComp );
+  _ = ng.world.unregisterComp( eng.TransComp );
 }

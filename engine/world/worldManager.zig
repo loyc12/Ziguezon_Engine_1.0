@@ -1,13 +1,17 @@
 const std = @import( "std" );
 const utl = @import( "utils" );
 
-const entity    = @import( "entity.zig" );
-const component = @import( "components/component.zig" );
+const entity  = @import( "entity.zig" );
+const comp    = @import( "components/component.zig" );
+const compMgr = @import( "components/compManager.zig" );
 
-const Entity            = entity.Entity;
-const EntityIdRegistry  = entity.EntityIdRegistry;
-const ComponentRegistry = component.ComponentRegistry;
-const TimeVal           = utl.TimeVal;
+const Entity               = entity.Entity;
+const EntityId             = entity.EntityId;
+const EntityIdRegistry     = entity.EntityIdRegistry;
+const BorrowedCompRegistry = comp.BorrowedCompRegistry;
+const CompManager          = compMgr.CompManager;
+const CompStoreFactory     = comp.CompStoreFactory;
+const TimeVal              = utl.TimeVal;
 
 
 pub const TickContext = struct
@@ -21,8 +25,9 @@ pub const TickContext = struct
 
 pub const World = struct
 {
-  entityIdRegistry  : EntityIdRegistry  = .{},
-  componentRegistry : ComponentRegistry = .{},
+  entityIdRegistry     : EntityIdRegistry     = .{},
+  compManager          : CompManager          = .{},
+  borrowedCompRegistry : BorrowedCompRegistry = .{},
 
   isInit : bool = false,
 
@@ -38,7 +43,8 @@ pub const World = struct
     }
 
     self.entityIdRegistry.reinit();
-    self.componentRegistry.init( alloc );
+    self.borrowedCompRegistry.init( alloc );
+    self.compManager.init(          alloc );
     self.isInit = true;
   }
 
@@ -50,7 +56,8 @@ pub const World = struct
       return;
     }
 
-    self.componentRegistry.deinit();
+    self.compManager.deinit();
+    self.borrowedCompRegistry.deinit();
     self.entityIdRegistry.reinit();
     self.isInit = false;
   }
@@ -70,26 +77,76 @@ pub const World = struct
   }
 
 
-  // ================================ COMPONENT STORE COMPATIBILITY ================================
+  // ================================ OWNED COMPONENT FUNCTIONS ================================
 
-  pub inline fn registerComponentStore( self : *World, name : []const u8, storePtr : *anyopaque ) bool
+  pub inline fn registerComp( self : *World, comptime CompType : type ) bool
   {
-    return self.componentRegistry.register( name, storePtr );
+    return self.compManager.register( CompType );
   }
 
-  pub inline fn unregisterComponentStore( self : *World, name : []const u8 ) bool
+  pub inline fn unregisterComp( self : *World, comptime CompType : type ) bool
   {
-    return self.componentRegistry.unregister( name );
+    return self.compManager.unregister( CompType );
   }
 
-  pub inline fn getComponentStore( self : *World, name : []const u8 ) ?*anyopaque
+  pub inline fn getCompStore( self : *World, comptime CompType : type ) ?*CompStoreFactory( CompType )
   {
-    return self.componentRegistry.get( name );
+    return self.compManager.getStore( CompType );
   }
 
-  pub inline fn hasComponentStore( self : *World, name : []const u8 ) bool
+  pub inline fn addComp( self : *World, comptime CompType : type, entityId : EntityId, value : CompType ) bool
   {
-    return self.componentRegistry.has( name );
+    if( entityId == 0 ){ return false; }
+
+    const store = self.getCompStore( CompType ) orelse return false;
+    return store.add( entityId, value );
+  }
+
+  pub inline fn getComp( self : *World, comptime CompType : type, entityId : EntityId ) ?*CompType
+  {
+    if( entityId == 0 ){ return null; }
+
+    const store = self.getCompStore( CompType ) orelse return null;
+    return store.get( entityId );
+  }
+
+  pub inline fn hasComp( self : *World, comptime CompType : type, entityId : EntityId ) bool
+  {
+    if( entityId == 0 ){ return false; }
+
+    const store = self.getCompStore( CompType ) orelse return false;
+    return store.has( entityId );
+  }
+
+  pub inline fn removeComp( self : *World, comptime CompType : type, entityId : EntityId ) bool
+  {
+    if( entityId == 0 ){ return false; }
+
+    const store = self.getCompStore( CompType ) orelse return false;
+    return store.remove( entityId );
+  }
+
+
+  // ================================ BORROWED COMPONENT COMPATIBILITY ================================
+
+  pub inline fn registerBorrowedCompStore( self : *World, name : []const u8, storePtr : *anyopaque ) bool
+  {
+    return self.borrowedCompRegistry.register( name, storePtr );
+  }
+
+  pub inline fn unregisterBorrowedCompStore( self : *World, name : []const u8 ) bool
+  {
+    return self.borrowedCompRegistry.unregister( name );
+  }
+
+  pub inline fn getBorrowedCompStore( self : *World, name : []const u8 ) ?*anyopaque
+  {
+    return self.borrowedCompRegistry.get( name );
+  }
+
+  pub inline fn hasBorrowedCompStore( self : *World, name : []const u8 ) bool
+  {
+    return self.borrowedCompRegistry.has( name );
   }
 
 
@@ -107,6 +164,8 @@ pub const World = struct
   }
 };
 
+
+// ================================ TESTS ================================
 
 test "World lifecycle resets entity creation"
 {
@@ -127,20 +186,70 @@ test "World compatibility registry borrows component stores"
 {
   var world : World = .{};
   world.init( std.testing.allocator );
-  defer world.deinit();
 
   var dummyStore : u32 = 42;
 
-  try std.testing.expect( world.registerComponentStore( "dummyStore", &dummyStore ));
-  try std.testing.expect( world.hasComponentStore( "dummyStore" ));
+  try std.testing.expect( world.registerBorrowedCompStore( "dummyStore", &dummyStore ));
+  try std.testing.expect( world.hasBorrowedCompStore( "dummyStore" ));
 
-  const storePtr : *u32 = @ptrCast( @alignCast( world.getComponentStore( "dummyStore" ).? ));
+  const storePtr : *u32 = @ptrCast( @alignCast( world.getBorrowedCompStore( "dummyStore" ).? ));
   try std.testing.expect( storePtr.* == dummyStore );
 
-  try std.testing.expect( world.unregisterComponentStore( "dummyStore" ));
-  try std.testing.expect( !world.hasComponentStore( "dummyStore" ));
+  world.deinit();
   try std.testing.expect( dummyStore == 42 );
 
-  try std.testing.expect( world.registerComponentStore( "dummyStore", &dummyStore ));
-  try std.testing.expect( world.unregisterComponentStore( "dummyStore" ));
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerBorrowedCompStore( "dummyStore", &dummyStore ));
+  try std.testing.expect( world.unregisterBorrowedCompStore( "dummyStore" ));
+  try std.testing.expect( !world.hasBorrowedCompStore( "dummyStore" ));
+  try std.testing.expect( dummyStore == 42 );
+}
+
+test "World owns typed component CRUD and registration lifecycle"
+{
+  const TestComp = struct
+  {
+    value : u32 = 0,
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect(  world.registerComp( TestComp ));
+  try std.testing.expect( !world.registerComp( TestComp ));
+  try std.testing.expect(  world.getCompStore( TestComp ) != null );
+  try std.testing.expect( !world.addComp( TestComp, 0, .{ .value = 1 }));
+
+  const entityId = world.createEntity().id;
+
+  try std.testing.expect(  world.addComp(    TestComp, entityId, .{ .value = 42 }));
+  try std.testing.expect(  world.hasComp(    TestComp, entityId ));
+  try std.testing.expect(  world.getComp(    TestComp, entityId ).?.value == 42 );
+  try std.testing.expect(  world.removeComp( TestComp, entityId ));
+  try std.testing.expect( !world.hasComp(    TestComp, entityId ));
+  try std.testing.expect(  world.getComp(    TestComp, entityId ) == null );
+
+  try std.testing.expect( world.unregisterComp( TestComp ));
+  try std.testing.expect( world.getCompStore(   TestComp ) == null );
+  try std.testing.expect( world.registerComp(   TestComp ));
+}
+
+test "World deinit releases registered owned component stores"
+{
+  const TestComp = struct
+  {
+    value : u32 = 0,
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+
+  try std.testing.expect( world.registerComp( TestComp ));
+  try std.testing.expect( world.addComp( TestComp, world.createEntity().id, .{ .value = 42 }));
+
+  world.deinit();
+  try std.testing.expect( !world.compManager.isInit );
 }

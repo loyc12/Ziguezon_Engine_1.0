@@ -15,7 +15,7 @@ const ecn = gdf.econ;
 
 pub const OrbitComp = struct
 {
-  pub inline fn StoreType() type { return eng.ComponentStoreFactory( @This() ); }
+  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   const G : f64 = gdf.G_CONSTS.gravFactor;
   const N : u32 = 256; // number of segments used to render orbital path

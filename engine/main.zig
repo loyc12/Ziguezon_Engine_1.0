@@ -51,8 +51,3 @@ pub fn main() !void
 
   eng.G_ENG.changeState( .OFF );
 }
-
-test "example test"
-{
-
-}

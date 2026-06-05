@@ -117,3 +117,8 @@ Various component systems with an associated manager :
 ================ REFERENCES ================
 
 https://float.exposed/   - to see the bit values of floats
+
+
+
+
+You seem to have encounteedr a recursivity problem earlier with utl.log() when the G_EPOCH var is not set to .getNow() beforehand. Could you trace the issue and suggest a fix ?

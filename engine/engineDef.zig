@@ -1,3 +1,6 @@
+const std = @import( "std" );
+const utl = @import( "utils" );
+
 // ================================ GAME INTERFACES ================================
 
 // ================ ENGINE SETTINGS ================
@@ -70,12 +73,12 @@ pub const Entity   = entity.Entity;
 pub const EntityId = entity.EntityId;
 
 
-const component = @import( "world/components/component.zig" );
+const comp = @import( "world/components/component.zig" );
 
-pub const ComponentStoreFactory = component.ComponentStoreFactory;
+pub const CompStoreFactory = comp.CompStoreFactory;
 
 
-pub const baseComp = @import( "world/components/baseComponents.zig" );
+pub const baseComp = @import( "world/components/baseComps.zig" );
 
 pub const TransComp  = baseComp.TransComp;
 pub const ShapeComp  = baseComp.ShapeComp;
@@ -89,11 +92,18 @@ pub const eventCore = @import( "world/events/event.zig" );
 
 pub const Event = eventCore.Event;
 
-pub const EventType          = eventCore.EventType;
-pub const EventPhase         = eventCore.EventPhase;
-pub const EventData          = eventCore.EventData;
-pub const EventFunc          = eventCore.EventFunc;
+pub const EventType  = eventCore.EventType;
+pub const EventPhase = eventCore.EventPhase;
+pub const EventData  = eventCore.EventData;
+pub const EventFunc  = eventCore.EventFunc;
 
 pub const EventListener      = eventCore.EventListener;
 pub const EventListenerArray = eventCore.EventListenerArray;
 pub const EventQueue         = eventCore.EventQueue;
+
+
+test "engine world declarations"
+{
+  utl.G_EPOCH = utl.getNow();
+  std.testing.refAllDecls( worldMgr );
+}
