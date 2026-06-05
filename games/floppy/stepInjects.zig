@@ -108,7 +108,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
   else { diskTransform.acc.y = GRAVITY; } // Apply gravity
 
 
-  diskTransform.updatePos( ng.getTargetTickDT() );
+  diskTransform.updatePos( ng.getTargetTickDelta() );
 
 
   // ================ CLAMPING THE DISK POSITIONS ================

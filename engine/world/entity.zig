@@ -1,3 +1,8 @@
+// REWORK NOTE : Expand this into the World-owned entity identity and lifecycle
+// foundation. Entities should remain lightweight identifiers while World tracks
+// creation, validity, destruction, and the cleanup/invalidation of associated
+// components, relations, events, and other simulation facts.
+
 const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
@@ -8,7 +13,7 @@ pub const EntityId = u64;
 pub const Entity = struct
 {
   id    : EntityId = 0,
-//mask : utl.BitField64 = 0, // TODO : use me
+//mask : utl.BitField64 = 0, // TODO : use me if you want to store multiple booleans compactly
 };
 
 

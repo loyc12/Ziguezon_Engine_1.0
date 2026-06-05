@@ -1,0 +1,1 @@
+// Will implement the engine-owned World simulation database, which will be stored on Engine and coordinate entity lifecycle, component storage, relations, events, systems, rules, traits, archetypes, scheduling, queries, and views.

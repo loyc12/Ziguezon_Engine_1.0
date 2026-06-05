@@ -1,21 +1,29 @@
-const std              = @import( "std" );
-const eng              = @import( "engine" );
+// REWORK NOTE: Reframe Tilemap as World-managed spatial simulation data rather
+// than an Engine-managed object. Preserve its specialized grid representation,
+// but separate simulation state from rendering/lifecycle concerns and expose it
+// through World queries, systems, and entity/relation links where appropriate.
+
+// REWORK NOTE : This is not a pressing matter. Do not implement these changes
+// without explicit orders to do so by the user
+
+const std = @import( "std" );
+const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-const tileCore         = @import( "tile.zig" );
-const tlmpFlood        = @import( "tilemapFlood.zig" );
-const tlmpShape        = @import( "tilemapShape.zig" );
+const Box2    = utl.Box2;
+const Coords2 = utl.Coords2;
+const Vec2    = utl.Vec2;
+const VecA    = utl.VecA;
+
+const tileCore  = @import( "tile.zig" );
+const tlmpFlood = @import( "tilemapFlood.zig" );
+const tlmpShape = @import( "tilemapShape.zig" );
 
 pub const Tile         = tileCore.Tile;
-pub const TileType  = tileCore.TileType;
-pub const TileFlags = tileCore.TileFlags;
+pub const TileType     = tileCore.TileType;
+pub const TileFlags    = tileCore.TileFlags;
 pub const TilemapShape = tlmpShape.TilemapShape;
-pub const FloodRule = tlmpFlood.FloodRule;
-
-const Box2             = utl.Box2;
-const Coords2          = utl.Coords2;
-const Vec2             = utl.Vec2;
-const VecA             = utl.VecA;
+pub const FloodRule    = tlmpFlood.FloodRule;
 
 const DEF_GRID_SIZE    = Coords2{ .x = 32, .y = 32 };
 const DEF_TILE_SCALE   = Vec2{    .x = 32, .y = 32 };

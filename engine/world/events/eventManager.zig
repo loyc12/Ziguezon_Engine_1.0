@@ -1,3 +1,8 @@
+// REWORK NOTE: Convert this standalone callback manager into World-owned event
+// infrastructure that coordinates ordered queues, subscriptions/reactions, and
+// optional retained logs. Event processing should occur during explicit Engine
+// simulation phases and remain separate from game-specific event definitions.
+
 const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
@@ -13,9 +18,6 @@ const EventFunc  = eng.EventFunc;
 const EventListener      = eng.EventListener;
 const EventListenerArray = eng.EventListenerArray;
 pub const EventQueue     = eng.EventQueue;
-
-// NOTE : This entire file will need a decent rework
-
 
 // ================================ EVENT MANAGER ================================
 

@@ -1,5 +1,5 @@
-const std     = @import( "std" );
-const eng     = @import( "engine" );
+const std = @import( "std" );
+const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const Coords2 = utl.Coords2;

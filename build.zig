@@ -204,7 +204,9 @@ pub fn build( b : *std.Build ) void
     .{ "mac", "x86_64-macos"       },
   };
 
-  const check_games_step = b.step( "check_games", "Compiles every listed game in debug mode" );
+  // Depends directly on compile steps so checks only populate Zig's cache and
+  // never install game executables into zig-out/bin.
+  const check_games_step = b.step( "check_games", "Checks every listed game in debug mode without installing executables" );
 
   inline for( games )| game |
   {

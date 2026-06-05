@@ -285,7 +285,7 @@ pub fn OnTickUpdate( ng : *Engine ) void
     particleIndex += 1;
   }
 
-  stateInj.updateMobileEntities( ng.getTargetTickDT() );
+  stateInj.updateMobileEntities( ng.getTargetTickDelta() );
 }
 
 pub fn OffTickUpdate( ng : *Engine ) void

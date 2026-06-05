@@ -268,13 +268,18 @@ engine/core owns runtime orchestration:
 
 - Engine
 - EngineState
+- EngineTiming
 - timing loop
 - lifecycle transitions
 - hooks
 - configs
 - frame/tick/render phase order
 
-It coordinates systems. It should not own game-specific simulation data.
+`EngineTiming` owns wall-clock sampling, frame pacing, base simulation-tick
+pacing, queued/catch-up tick limits, forced ticks, and performance timing.
+
+It coordinates systems. It should not own game-specific simulation data or the
+World's logical simulation calendar.
 
 ### 3.3 engine/world
 
@@ -288,7 +293,7 @@ engine/world owns simulation infrastructure:
 - generic rules/reactions
 - generic traits/metaproperties
 - generic archetypes/templates
-- simulation scheduler
+- logical simulation time and scheduler
 - query/view helpers
 
 This is the main target of the engine rework.
@@ -340,18 +345,33 @@ Prefer:
 
 ### 4.2 Simulation time is not render time
 
-World systems should not assume frame-rate timing.
+World systems should not assume frame-rate timing, but World should not replace
+or duplicate the existing `EngineTiming` base-tick system.
 
-The architecture must allow different simulation cadences:
+Timing ownership should remain explicit:
 
-- frame update
-- fixed simulation tick
-- scheduled systems
-- delayed events
-- game-defined time scales
+1. `EngineTiming` measures elapsed real time and determines when a base simulation
+   tick or render frame is due.
+2. `EngineStep` consumes due base ticks and calls `World.tick(...)`.
+3. `World` advances logical simulation time and executes simulation work for
+   each received base tick.
+4. The World scheduler runs systems, rules, and delayed events at game-defined
+   logical cadences.
 
-The first implementation can be simple. The design should still leave room for
-multi-cadence simulations.
+The World scheduler must not implement a competing `shouldTick()` loop. It runs
+inside the base ticks paced by `EngineTiming`.
+
+This separation must allow:
+
+- a stable engine base-tick rate
+- world-specific logical time scales
+- systems that run every base tick
+- systems that run at slower or faster logical cadences
+- delayed events and temporary rules
+- pausing or forcing base ticks through the existing Engine API
+
+Changing World simulation speed should not require changing render pacing or
+the Engine base-tick rate.
 
 ### 4.3 Queries and views are first-class
 
@@ -384,10 +404,12 @@ Long-term conceptual shape:
 
     Engine
      |-- Core runtime
+     |    |-- EngineTiming: wall clock, frame pacing, base-tick pacing
      |-- Resources
      |-- Render
      |-- UI ?
      |-- World
+        |-- Logical simulation clock
         |-- Entities
         |-- Components
         |-- Relations
@@ -400,10 +422,11 @@ Long-term conceptual shape:
 
 The near-term work should build toward this in small steps:
 
- 1. Add World as the owner/interface for entity and component storage.
+ 1. Add World as the owner/interface for entity and component storage, with
+    base ticks forwarded from `EngineTiming` through `EngineStep`.
  2. Rework component storage so users can choose dense/sparse policies.
  3. Add relations as one of the first major World extensions.
- 4. Add events, rules, traits, archetypes, scheduler, and query helpers
+ 4. Add events, rules, traits, archetypes, logical-time scheduling, and query helpers
     progressively, with minimal generic examples for each.
 
 The success condition is not "the engine has a pure ECS".

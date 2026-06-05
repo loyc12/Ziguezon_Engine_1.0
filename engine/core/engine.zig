@@ -23,11 +23,11 @@ pub const EngineState = enum( u4 )
 
 pub const Engine = struct
 {
-  const ngnTime = @import( "engineTime.zig" );
+  const ngnTime = @import( "engineTiming.zig" );
 
   // Engine Variables
   state  : EngineState         = .OFF,
-  times  : ngnTime.EngineTime = .{},
+  times  : ngnTime.EngineTiming = .{},
   rng    : utl.Randomiser     = .{},
   camera : eng.WorldCam       = .{},
 
@@ -55,15 +55,15 @@ pub const Engine = struct
     self.times.init();
   }
 
-  pub inline fn simTimeUpdate( self : *Engine ) void
+  pub inline fn updateLoopTiming( self : *Engine ) void
   {
-    self.times.simTimeUpdate( self.isPlaying() );
+    self.times.updateLoopTiming( self.isPlaying() );
   }
 
   pub inline fn getTargetFrameDelta( self : *Engine ) f32 { return( self.times.getTargetFrameDeltaFlt() ); }
-  pub inline fn getRealFrameDelta(   self : *Engine ) f32 { return( self.times.getLastFrameDeltaFlt()   ); }
+  pub inline fn getRealFrameDelta(   self : *Engine ) f32 { return( self.times.getMeasuredFrameDeltaFlt()   ); }
   pub inline fn getTargetTickDelta(  self : *Engine ) f32 { return( self.times.getTargetTickDeltaFlt()  ); }
-  pub inline fn getRealTickDelta(    self : *Engine ) f32 { return( self.times.getLastTickDeltaFlt()    ); }
+  pub inline fn getRealTickDelta(    self : *Engine ) f32 { return( self.times.getMeasuredTickDeltaFlt()    ); }
 
   // ================================ ENGINE STATE FUNCTIONS ================================
 

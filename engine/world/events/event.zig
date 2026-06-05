@@ -1,10 +1,13 @@
+// REWORK NOTE : Replace the fixed engine-specific event union with generic,
+// user-defined simulation event records. Events should integrate with World,
+// carry consistent entity/time metadata, and support both transient dispatch
+// and optional retained history without assuming a particular game domain.
+
 const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const EntityId  = eng.EntityId;
-
-// NOTE : This entire file will need a heavy rework
 
 pub const EventType = enum( u8 )
 {

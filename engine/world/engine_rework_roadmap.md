@@ -66,7 +66,8 @@ Near-term sequence:
 15. Keep at least one minimal generic reference archetype/template in engine
     code.
 
-16. Add scheduler support progressively, without assuming frame-rate timing.
+16. Add World logical-time and scheduler support progressively, driven by base
+    ticks received from the existing `EngineTiming` system.
 
 17. Add query/view helpers progressively, driven by real game and debug needs.
 
@@ -82,7 +83,7 @@ Near-term sequence:
 - rules and reactions
 - traits / metaproperties
 - archetypes / templates
-- simulation scheduling
+- logical simulation time and scheduling
 - query and view helpers
 
 Entities should remain identifiers. Components, relations, events, traits, and
@@ -112,10 +113,23 @@ Keep this slice small:
 - entity lifecycle
 - component store ownership
 - component add/get/remove helpers
+- a `World.tick(TickContext)` boundary called from `EngineStep`
+- a documented base-tick phase order
 - enough migration glue for existing games
 
 Avoid adding relations, rules, traits, or archetypes in this first slice unless
 they are required to prevent a bad ownership boundary.
+
+`World` must not add another base-tick pacing loop. Preserve the existing flow:
+
+1. `EngineTiming` measures elapsed real time and determines when base ticks are
+   due.
+2. `EngineStep` consumes due or forced ticks.
+3. `EngineStep` forwards a tick context into `World.tick(...)`.
+4. `World` executes the simulation phases for that base tick.
+
+The initial tick context should expose the existing tick index and relevant
+timing values without moving their ownership out of `EngineTiming`.
 
 ### 2. Component Storage Policies
 
@@ -213,17 +227,20 @@ Avoid assuming a specific game genre in engine-level traits or archetypes.
 Add scheduling support after the base world data model is stable enough to run
 systems cleanly.
 
+The scheduler is World-specific, but it is not a replacement for `EngineTiming`.
+It runs inside `World.tick(...)` and schedules logical simulation work relative
+to base ticks received from Engine.
+
 The design must leave room for:
 
-- frame update
-- fixed simulation tick
+- systems that run every Engine base tick
+- logical World time and game-defined time scales
 - scheduled systems
 - delayed events
-- game-defined time scales
 - temporary time-bound rules
 
-The first scheduler can be simple. It should not assume simulation time is
-render time.
+The first scheduler can be simple. It must not assume simulation time is render
+time, and it must not independently decide when Engine base ticks occur.
 
 ### 8. Queries And Views
 
@@ -250,10 +267,10 @@ Keep ownership aligned with the reference document:
   RNG, generic drawing helpers, generic camera primitives, and non-world UI
   primitives.
 - `engine/core` owns runtime orchestration: `Engine`, lifecycle, timing loop,
-  hooks, configs, and phase order.
+  `EngineTiming`, base-tick/frame pacing, hooks, configs, and phase order.
 - `engine/world` owns simulation infrastructure: `World`, entities,
-  components, relations, events, rules, traits, archetypes, scheduler, and
-  queries/views.
+  components, relations, events, rules, traits, archetypes, logical simulation
+  time, scheduler, and queries/views.
 - `engine/render` owns world-facing render adapters: `WorldCam`, world-space
   drawing wrappers, sprite/world render helpers, and debug render systems.
 - `games` owns domain-specific simulation content.
@@ -278,6 +295,8 @@ data and draw it.
 - Preserve room for future save/load, deterministic replay, debugging, and
   event history without building those full systems yet.
 - Keep phase order and event ordering explicit.
+- Keep `EngineTiming` as the sole base-tick/frame pacing authority; World logical
+  time and scheduling must build on ticks forwarded by Engine.
 - Keep game-specific components, relations, events, traits, rules,
   archetypes, views, and UI bindings under `games/`.
 

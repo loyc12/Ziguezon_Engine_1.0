@@ -1,9 +1,13 @@
+// REWORK NOTE: Replace the string-keyed, anyopaque registry and single hash-map
+// store with the generic component-table foundation used through World.
+// User-defined components must support typed access and selectable dense/sparse
+// storage policies while remaining data-first and lifecycle-aware.
+
 const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const EntityId   = eng.EntityId;
-
 
 // ================ COMPONENT REGISTRY ================
 

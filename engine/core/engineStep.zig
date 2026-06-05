@@ -21,9 +21,9 @@ pub fn stepEngineLoop( ng : *Engine ) void
 
   while( !utl.ray.windowShouldClose() )
   {
-    ng.times.simTimeUpdate( ng.isPlaying() );
+    ng.times.updateLoopTiming( ng.isPlaying() );
 
-  //utl.logger.logLoopTime( ng.times.simDelta );
+  //utl.logger.logLoopTime( ng.times.loopDelta );
     eng.tryHook( .OnLoopUpdate, ng );
 
   //var loopTime = utl.getNow();
@@ -217,7 +217,7 @@ inline fn drawDebugFpsCount( ng : *Engine ) void
 {
   if( eng.G_CNFGS.DebugDraw_FPS and eng.G_CNFGS.Graphic_Metrics_Colour != null )
   {
-    const frameTime = ng.times.buffFrameDelta; // Using buffered value to ensure stable displaying
+    const frameTime = ng.times.smoothedFrameDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), utl.TimeVal.usPerSec() ));
@@ -231,7 +231,7 @@ inline fn drawDebugTpsCount( ng : *Engine ) void
 {
   if( eng.G_CNFGS.DebugDraw_FPS )
   {
-    const tickTime = ng.times.buffTickDelta; // Using buffered value to ensure stable displaying
+    const tickTime = ng.times.smoothedTickDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( tickTime.toSec() );
     const mic : u64 = @intCast( @rem( tickTime.toUs(), utl.TimeVal.usPerSec() ));
