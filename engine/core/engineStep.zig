@@ -21,7 +21,7 @@ pub fn stepEngineLoop( ng : *Engine ) void
 
   while( !utl.ray.windowShouldClose() )
   {
-    ng.times.updateLoopTiming( ng.isPlaying() );
+    ng.time.updateLoopTiming( ng.isPlaying() );
 
     eng.tryHook( .OnLoopUpdate, ng );
 
@@ -46,7 +46,7 @@ inline fn tryUpdateInputs( ng : *Engine ) bool
 {
   // NOTE : Inputs are polled by EndDrawing, hence tying input rate to framerate
   // TODO : see if we can split the two rates ( if that is even useful to begin with )
-  if( !ng.isOpened() or !ng.times.shouldRender() ){ return false; }
+  if( !ng.isOpened() or !ng.time.shouldRender() ){ return false; }
 
   // TODO : store transient inputs into an engine owned struct to avoid unwanted input state resets
   //utl.ray.pollInputEvents(); // Resets and fills the input "buffer" with the latest inputs
@@ -91,14 +91,14 @@ pub inline fn forceUpdateInputs( ng : *Engine ) void
 
 inline fn tryTickWorld( ng : *Engine ) bool
 {
-  if( !ng.isPlaying() or !ng.times.shouldTick() ){ return false; }
+  if( !ng.isPlaying() or !ng.time.shouldTick() ){ return false; }
 
   var tickCount : u8 = 0;
 
-  while( ng.times.shouldTick() )
+  while( ng.time.shouldTick() )
   {
-    ng.times.consumeTick(); // Limits the number of queued ticks based on engineConfigs
-    tickWorld( ng );
+    ng.time.consumeTick(); // Limits the number of queued ticks based on engineConfigs
+    tickWorld( ng, false );
     tickCount += 1;
   }
 
@@ -113,17 +113,27 @@ pub inline fn forceTickWorld( ng : *Engine ) void
     return;
   }
 
-  ng.times.consumeForcedTick();
-  tickWorld( ng );
+  ng.time.consumeForcedTick();
+  tickWorld( ng, true );
 }
 
 
-inline fn tickWorld( ng : *Engine ) void
+inline fn tickWorld( ng : *Engine, isForced : bool ) void
 {
   utl.qlog( .TRACE, 0, @src(), "Ticking..." );
 
+  const tickContext : eng.TickContext =
+  .{
+    .baseTickIndex = ng.time.tickCount,
+    .targetDelta   = ng.time.getTargetTickDeltaTime(),
+    .measuredDelta = ng.time.getMeasuredTickDeltaTime(),
+    .isForced      = isForced,
+  };
+
+  // Compatibility hooks and tilemaps retain their current relative order.
   eng.tryHook( .OnTickUpdate, ng );
   {
+    ng.world.tick( tickContext );
     tickTilemaps( ng );
   }
   eng.tryHook( .OffTickUpdate, ng );
@@ -142,9 +152,9 @@ inline fn tickTilemaps( ng : *Engine ) void
 
 inline fn tryRenderFrame( ng : *Engine ) bool
 {
-  if( !ng.isOpened() or !ng.times.shouldRender() ){ return false; }
+  if( !ng.isOpened() or !ng.time.shouldRender() ){ return false; }
 
-  ng.times.consumeFrame(); // Limits the number of queued frame to 1
+  ng.time.consumeFrame(); // Limits the number of queued frame to 1
   renderFrame( ng );
 
   return true;
@@ -158,7 +168,7 @@ pub inline fn forceRenderFrame( ng : *Engine ) void
     return;
   }
 
-  ng.times.consumeForcedFrame();
+  ng.time.consumeForcedFrame();
   renderFrame( ng );
 }
 
@@ -214,7 +224,7 @@ inline fn drawDebugFpsCount( ng : *Engine ) void
 {
   if( eng.G_CNFGS.DebugDraw_FPS and eng.G_CNFGS.Graphic_Metrics_Colour != null )
   {
-    const frameTime = ng.times.smoothedFrameDelta; // Using buffered value to ensure stable displaying
+    const frameTime = ng.time.smoothedFrameDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( frameTime.toSec() );
     const mic : u64 = @intCast( @rem( frameTime.toUs(), utl.TimeVal.usPerSec() ));
@@ -228,7 +238,7 @@ inline fn drawDebugTpsCount( ng : *Engine ) void
 {
   if( eng.G_CNFGS.DebugDraw_FPS )
   {
-    const tickTime = ng.times.smoothedTickDelta; // Using buffered value to ensure stable displaying
+    const tickTime = ng.time.smoothedTickDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( tickTime.toSec() );
     const mic : u64 = @intCast( @rem( tickTime.toUs(), utl.TimeVal.usPerSec() ));

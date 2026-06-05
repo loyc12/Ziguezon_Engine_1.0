@@ -33,6 +33,10 @@ pub var G_ENG : Engine = .{};
 pub const resMgr     = @import( "resources/resourceManager.zig" );
 pub const eventMgr   = @import( "world/events/eventManager.zig" );
 pub const tilemapMgr = @import( "world/tilemap/tilemapManager.zig" );
+pub const worldMgr   = @import( "world/worldManager.zig" );
+
+pub const World       = worldMgr.World;
+pub const TickContext = worldMgr.TickContext;
 
 
 // ================ RENDER ================
@@ -60,16 +64,14 @@ pub const FloodRule    = tilemap.FloodRule;
 
 // ================ ECS ================
 
-pub const entity = @import( "world/entity.zig" );
+const entity = @import( "world/entity.zig" );
 
-pub const Entity           = entity.Entity;
-pub const EntityId         = entity.EntityId;
-pub const EntityIdRegistry = entity.EntityIdRegistry;
+pub const Entity   = entity.Entity;
+pub const EntityId = entity.EntityId;
 
 
-pub const component = @import( "world/components/component.zig" );
+const component = @import( "world/components/component.zig" );
 
-pub const ComponentRegistry     = component.ComponentRegistry;
 pub const ComponentStoreFactory = component.ComponentStoreFactory;
 
 

@@ -23,23 +23,20 @@ pub const EngineState = enum( u4 )
 
 pub const Engine = struct
 {
-  const ngnTime = @import( "engineTiming.zig" );
+  const tmng = @import( "engineTiming.zig" );
 
   // Engine Variables
-  state  : EngineState         = .OFF,
-  times  : ngnTime.EngineTiming = .{},
-  rng    : utl.Randomiser     = .{},
-  camera : eng.WorldCam       = .{},
+  state  : EngineState       = .OFF,
+  time   : tmng.EngineTiming = .{},
+  camera : eng.WorldCam      = .{},
+  rng    : utl.Randomiser    = .{},
 
   // Engine Managers
-  resourceManager : eng.resMgr.ResourceManager    = .{},
-  tilemapManager  : eng.tilemapMgr.TilemapManager = .{},
-  eventManager    : eng.eventMgr.EventManager     = .{},
+  world           : eng.World                     = .{},
   uiManager       : utl.UiManager                 = .{},
-
-  // ECS Management
-  componentRegistry : eng.ComponentRegistry = .{},
-  entityIdRegistry  : eng.EntityIdRegistry  = .{},
+  eventManager    : eng.eventMgr.EventManager     = .{}, // NOTE : will be move to World eventually
+  tilemapManager  : eng.tilemapMgr.TilemapManager = .{}, // NOTE : will be move to World eventually
+  resourceManager : eng.resMgr.ResourceManager    = .{},
 
 
 
@@ -52,18 +49,18 @@ pub const Engine = struct
 
   pub inline fn initTimers( self : *Engine ) void
   {
-    self.times.init();
+    self.time.init();
   }
 
   pub inline fn updateLoopTiming( self : *Engine ) void
   {
-    self.times.updateLoopTiming( self.isPlaying() );
+    self.time.updateLoopTiming( self.isPlaying() );
   }
 
-  pub inline fn getTargetFrameDelta( self : *Engine ) f32 { return( self.times.getTargetFrameDeltaFlt() ); }
-  pub inline fn getRealFrameDelta(   self : *Engine ) f32 { return( self.times.getMeasuredFrameDeltaFlt()   ); }
-  pub inline fn getTargetTickDelta(  self : *Engine ) f32 { return( self.times.getTargetTickDeltaFlt()  ); }
-  pub inline fn getRealTickDelta(    self : *Engine ) f32 { return( self.times.getMeasuredTickDeltaFlt()    ); }
+  pub inline fn getTargetTickDelta(  self : *Engine ) f32 { return( self.time.getTargetTickDeltaFlt()    ); }
+  pub inline fn getTargetFrameDelta( self : *Engine ) f32 { return( self.time.getTargetFrameDeltaFlt()   ); }
+  pub inline fn getRealTickDelta(    self : *Engine ) f32 { return( self.time.getMeasuredTickDeltaFlt()  ); }
+  pub inline fn getRealFrameDelta(   self : *Engine ) f32 { return( self.time.getMeasuredFrameDeltaFlt() ); }
 
   // ================================ ENGINE STATE FUNCTIONS ================================
 

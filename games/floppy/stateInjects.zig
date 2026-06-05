@@ -37,17 +37,17 @@ pub fn OnGameOpen( ng : *eng.Engine ) void // Init and register ComponentStores 
   shapeStore.init(     utl.getDefaultAlloc() );
 
 
-  if( !ng.componentRegistry.register( "transformStore", &transformStore ))
+  if( !ng.world.registerComponentStore( "transformStore", &transformStore ))
   {
     utl.qlog( .ERROR, 0, @src(), "Failed to register transformStore" );
   }
-  if( !ng.componentRegistry.register( "shapeStore", &shapeStore ))
+  if( !ng.world.registerComponentStore( "shapeStore", &shapeStore ))
   {
     utl.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
   }
 
 
-  DISK_ID = ng.entityIdRegistry.getNewEntity().id;
+  DISK_ID = ng.world.createEntity().id;
 
 
   if( transformStore.add( DISK_ID,
@@ -83,7 +83,8 @@ pub fn OnGameOpen( ng : *eng.Engine ) void // Init and register ComponentStores 
 
 pub fn OnGameClose( ng : *eng.Engine ) void // Deinit ComponentStores here
 {
-  _ = ng;
+  _ = ng.world.unregisterComponentStore( "transformStore" );
+  _ = ng.world.unregisterComponentStore( "shapeStore" );
 
   transformStore.deinit();
   shapeStore.deinit();

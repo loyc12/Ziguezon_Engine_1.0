@@ -85,7 +85,7 @@ pub fn start( ng : *Engine ) void
     ng.tilemapManager.init(    utl.getDefaultAlloc() );
     ng.eventManager.init(      utl.getDefaultAlloc() );
     ng.uiManager.init(         utl.getDefaultAlloc() );
-    ng.componentRegistry.init( utl.getDefaultAlloc() );
+    ng.world.init(             utl.getDefaultAlloc() );
 
     utl.qlog( .INFO, 0, @src(), "$ Engine substructs initialized !" );
   }
@@ -111,7 +111,7 @@ pub fn stop( ng : *Engine ) void
   {
     utl.qlog( .INFO, 0, @src(), "# Deinitializing engine substructs..." );
 
-    ng.componentRegistry.deinit();
+    ng.world.deinit();
     ng.uiManager.deinit();
     ng.eventManager.deinit();
     ng.tilemapManager.deinit();
@@ -215,7 +215,7 @@ pub fn play( ng : *Engine ) void
   ng.state = .PLAYING;
 
   // Prevent calculating pause time as tick delay
-  ng.times.resetTickTiming();
+  ng.time.resetTickTiming();
 }
 
 

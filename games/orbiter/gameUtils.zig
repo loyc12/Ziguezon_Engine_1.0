@@ -102,7 +102,7 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
   // Setting up relevant components
   for( 0..bodyCount )| idx |
   {
-    nttArr[ idx ] = ng.entityIdRegistry.getNewEntity();
+    nttArr[ idx ] = ng.world.createEntity();
 
     const id = nttArr[ idx ].id;
 
