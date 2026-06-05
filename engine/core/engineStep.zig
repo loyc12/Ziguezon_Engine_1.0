@@ -23,20 +23,17 @@ pub fn stepEngineLoop( ng : *Engine ) void
   {
     ng.times.updateLoopTiming( ng.isPlaying() );
 
-  //utl.logger.logLoopTime( ng.times.loopDelta );
     eng.tryHook( .OnLoopUpdate, ng );
 
-  //var loopTime = utl.getNow();
     if( ng.isOpened() )
     {
       _ = tryUpdateInputs( ng ); // Inputs and Global Flags
       _ = tryTickWorld(    ng ); // Logic and Physics
       _ = tryRenderFrame(  ng ); // Visuals and UI
 
-    //utl.logger.logDeltaTime( loopTime.timeSince(), @src(), "! Loop delta time" );
-    //loopTime = utl.getNow();
     }
   }
+
   utl.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
   eng.tryHook( .OnLoopEnd, ng );
   utl.qlog( .INFO, 0, @src(), "& Game loop stopped\n" );

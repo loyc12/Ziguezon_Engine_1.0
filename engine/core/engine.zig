@@ -32,10 +32,10 @@ pub const Engine = struct
   camera : eng.WorldCam       = .{},
 
   // Engine Managers
-  resourceManager   : eng.resMgr.ResourceManager = .{},
-  tilemapManager    : eng.tilemapMgr.TilemapManager  = .{},
-  eventManager      : eng.eventMgr.EventManager    = .{},
-  uiManager         : utl.UiManager             = .{},
+  resourceManager : eng.resMgr.ResourceManager    = .{},
+  tilemapManager  : eng.tilemapMgr.TilemapManager = .{},
+  eventManager    : eng.eventMgr.EventManager     = .{},
+  uiManager       : utl.UiManager                 = .{},
 
   // ECS Management
   componentRegistry : eng.ComponentRegistry = .{},
