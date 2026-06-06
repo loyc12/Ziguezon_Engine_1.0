@@ -64,21 +64,21 @@ const B_KIN_TRANS_FACTOR_Y : f64 = 0.25; // How much of the player's velocity is
 
 // ================================ HELPER FUNCTIONS ================================
 
-fn getBodyComps( stores : stateInj.PingStores, id : eng.EntityId, name : []const u8 ) ?BodyComps
+fn getBodyComps( view : *stateInj.BodyView, id : eng.EntityId, name : []const u8 ) ?BodyComps
 {
-  const trans = stores.trans.get( id ) orelse
+  const trans = view.get( eng.TransComp, id ) orelse
   {
     utl.log( .WARN, 0, @src(), "Transform for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
   };
 
-  const shape = stores.shape.get( id ) orelse
+  const shape = view.get( eng.ShapeComp, id ) orelse
   {
     utl.log( .WARN, 0, @src(), "Shape for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
   };
 
-  const hitbox = stores.hitbox.get( id ) orelse
+  const hitbox = view.get( eng.HitboxComp, id ) orelse
   {
     utl.log( .WARN, 0, @src(), "Hitbox for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
@@ -97,10 +97,10 @@ fn syncBodyHitbox( body : BodyComps ) void
   body.hitbox.hitbox = body.shape.getAABB( body.trans.pos );
 }
 
-fn cpyBodyPosViaId( stores : stateInj.PingStores, dstId : eng.EntityId, srcId : eng.EntityId ) void
+fn cpyBodyPosViaId( view : *stateInj.BodyView, dstId : eng.EntityId, srcId : eng.EntityId ) void
 {
-  const src = getBodyComps( stores, srcId, "Source" ) orelse return;
-  const dst = getBodyComps( stores, dstId, "Destination" ) orelse return;
+  const src = getBodyComps( view, srcId, "Source" ) orelse return;
+  const dst = getBodyComps( view, dstId, "Destination" ) orelse return;
 
   dst.trans.pos = src.trans.pos;
   syncBodyHitbox( dst );
@@ -149,7 +149,7 @@ fn clampBodyInXRange( body : BodyComps, xMin : f64, xMax : f64 ) void
 }
 
 // Emit particles in a given position and velocity range, with the given colour
-fn emitParticles( ng : *Engine, stores : stateInj.PingStores, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : utl.Colour ) void
+fn emitParticles( ng : *Engine, view : *stateInj.BodyView, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : utl.Colour ) void
 {
   // NOTE : Can invalidate component pointers after use. Call after body pointers are no longer needed.
   // TODO : Swap over to the new particle system once it is implemented
@@ -160,7 +160,7 @@ fn emitParticles( ng : *Engine, stores : stateInj.PingStores, pos : VecA, vel : 
 
     const size = eng.G_ENG.rng.getScaledFloat( 2.0, 7.0 );
 
-    _ = stateInj.createEntity( ng, stores, // NOTE : We do not care if this fails, as we are just emitting particles
+    _ = stateInj.createEntity( ng, view, // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .pos    = eng.G_ENG.rng.getScaledVecA( dPos, pos ),
       .vel    = eng.G_ENG.rng.getScaledVecA( dVel, vel ),
@@ -174,7 +174,7 @@ fn emitParticles( ng : *Engine, stores : stateInj.PingStores, pos : VecA, vel : 
   }
 }
 
-fn emitBounceParticles( ng : *Engine, stores : stateInj.PingStores, ball : BodyComps ) void
+fn emitBounceParticles( ng : *Engine, view : *stateInj.BodyView, ball : BodyComps ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
@@ -182,7 +182,7 @@ fn emitBounceParticles( ng : *Engine, stores : stateInj.PingStores, ball : BodyC
   {
     emitParticles(
       ng,
-      stores,
+      view,
       ball.trans.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
       .{ .x = @divTrunc( ball.trans.vel.x, 3 ), .y = @divTrunc( ball.trans.vel.y, 3 ) },
       .{ .x = 16,  .y = 16, .a = Angle.newRad( 1.0 )},
@@ -286,16 +286,16 @@ fn scorePoint( ball : BodyComps, scorer : PlayerId, hWidth : f64 ) void
   serveBall( ball, opponentOf( scorer ), hWidth );
 }
 
-fn resetMatchBall( stores : stateInj.PingStores ) bool
+fn resetMatchBall( view : *stateInj.BodyView ) bool
 {
-  const ball = getBodyComps( stores, stateInj.BALL_ID, "Ball" ) orelse return false;
+  const ball = getBodyComps( view, stateInj.BALL_ID, "Ball" ) orelse return false;
 
   ball.trans.pos = .{};
   ball.trans.vel = .{};
   ball.trans.acc = .{};
   syncBodyHitbox( ball );
 
-  for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( stores, @intCast( i ), stateInj.BALL_ID ); }
+  for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( view, @intCast( i ), stateInj.BALL_ID ); }
 
   return true;
 }
@@ -454,12 +454,12 @@ pub fn OnInputUpdate( ng : *Engine ) void
 
     if( WINNER != .NONE )
     {
-      const stores = stateInj.getStores( ng ) orelse return;
+      var bodyView = stateInj.getBodyView( ng ) orelse return;
 
       SCORES = .{ 0, 0 }; // Reset scores if the game is restarted
       WINNER = .NONE;     // Reset winner
       resetRally();
-      if( !resetMatchBall( stores )){ return; }
+      if( !resetMatchBall( &bodyView )){ return; }
 
       utl.qlog( .INFO, 0, @src(), "Match reseted" );
     }
@@ -490,29 +490,29 @@ pub fn OnInputUpdate( ng : *Engine ) void
 
 pub fn OnTickUpdate( ng : *Engine ) void
 {
-  const stores = stateInj.getStores( ng ) orelse return;
-  const ball = getBodyComps( stores, stateInj.BALL_ID, "Ball" ) orelse return;
+  var bodyView   = stateInj.getBodyView(   ng ) orelse return;
+  const ball = getBodyComps( &bodyView, stateInj.BALL_ID, "Ball" ) orelse return;
 
   ball.trans.acc.y = B_GRAVITY;
 
   // Chainwap the positions of the ball shadows
-  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( stores, @intCast( i ), @intCast( i + 1 ) ); }
+  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( &bodyView, @intCast( i ), @intCast( i + 1 ) ); }
 
-  cpyBodyPosViaId( stores, stateInj.SHADOW_RANGE_END, stateInj.BALL_ID );
+  cpyBodyPosViaId( &bodyView, stateInj.SHADOW_RANGE_END, stateInj.BALL_ID );
 
   var particleIndex : usize = 0;
   while( particleIndex < stateInj.getParticleCount() )
   {
-    const part = getBodyComps( stores, stateInj.getParticleId( particleIndex ), "Particle" ) orelse
+    const part = getBodyComps( &bodyView, stateInj.getParticleId( particleIndex ), "Particle" ) orelse
     {
-      stateInj.removeParticleAt( stores, particleIndex );
+      stateInj.removeParticleAt( ng, particleIndex );
       continue;
     };
 
     // If the particle is below the screen, deactivate it and mark it for deletion
     if( part.hitbox.hitbox.getTopY() >= utl.getScreenHeight() / 2 )
     {
-      stateInj.removeParticleAt( stores, particleIndex );
+      stateInj.removeParticleAt( ng, particleIndex );
       continue;
     }
 
@@ -520,7 +520,7 @@ pub fn OnTickUpdate( ng : *Engine ) void
     particleIndex += 1;
   }
 
-  stateInj.updateMobileEntities( stores, ng.getTargetTickDelta() );
+  stateInj.updateMobileEntities( &bodyView, ng.getTargetTickDelta() );
 }
 
 pub fn OffTickUpdate( ng : *Engine ) void
@@ -528,10 +528,10 @@ pub fn OffTickUpdate( ng : *Engine ) void
   const hWidth  : f64 = utl.getScreenWidth()  / 2.0;
   const hHeight : f64 = utl.getScreenHeight() / 2.0;
 
-  const stores = stateInj.getStores( ng ) orelse return; // TODO : swap to view system once it is implemented
-  const p1     = getBodyComps( stores, stateInj.P1_ID,   "P1"   ) orelse return;
-  const p2     = getBodyComps( stores, stateInj.P2_ID,   "P2"   ) orelse return;
-  const ball   = getBodyComps( stores, stateInj.BALL_ID, "Ball" ) orelse return;
+  var bodyView = stateInj.getBodyView( ng ) orelse return;
+  const p1     = getBodyComps( &bodyView, stateInj.P1_ID,   "P1"   ) orelse return;
+  const p2     = getBodyComps( &bodyView, stateInj.P2_ID,   "P2"   ) orelse return;
+  const ball   = getBodyComps( &bodyView, stateInj.BALL_ID, "Ball" ) orelse return;
 
   clampPlayerX( p1, &P1_MV_FAC, -hWidth, -BAR_HALF_WIDTH );
   clampPlayerX( p2, &P2_MV_FAC,  BAR_HALF_WIDTH, hWidth );
@@ -545,14 +545,14 @@ pub fn OffTickUpdate( ng : *Engine ) void
   if( handlePlayerBounce( ball, p1, .P1, hWidth )){ return; }
   if( handlePlayerBounce( ball, p2, .P2, hWidth )){ return; }
 
-  emitBounceParticles( ng, stores, ball );
+  emitBounceParticles( ng, &bodyView, ball );
 }
 
 pub fn OnRenderWorld( ng : *Engine ) void
 {
-  const stores = stateInj.getStores( ng ) orelse return;
+  var bodyView = stateInj.getBodyView( ng ) orelse return;
 
-  stateInj.renderEntities( stores );
+  stateInj.renderEntities( &bodyView );
 }
 
 fn drawScore( score : u8, player : PlayerId, pos : Vec2, colour : utl.Colour ) void

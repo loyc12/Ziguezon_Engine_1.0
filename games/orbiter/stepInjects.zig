@@ -7,9 +7,7 @@ const gdf = @import( "gameDef.zig"    );
 const gUtl = @import( "gameUtils.zig"   );
 
 const times  = &gbl.G_DATA.times;
-const stores = &gbl.G_DATA.stores;
 const target = &gbl.G_DATA.target;
-const nttArr = &gbl.G_DATA.entityArray;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -59,9 +57,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 
   if( utl.ray.isKeyDown( utl.ray.KeyboardKey.left_shift ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right_shift ))
   {
-    const bodyStore : *gdf.BodyStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "bodyStore"  )));
-
-    var mainEcon = bodyStore.get( gdf.G_CONSTS.homeId ).?.getEcon( .GROUND );
+    var mainEcon = ng.world.getComp( gdf.bdy.BodyComp, gdf.G_CONSTS.homeId ).?.getEcon( .GROUND );
 
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.zero  )){ mainEcon.addPopCount( .HUMAN,        10000 ); }
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
@@ -80,17 +76,16 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
-  const transStore : *gdf.TransStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "transStore" )));
-  const orbitStore : *gdf.OrbitStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "orbitStore" )));
-  const bodyStore  : *gdf.BodyStore  = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "bodyStore"  )));
+  var orbitView = ng.world.getCompView( .{ eng.TransComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }) orelse return;
+  var bodyView  = ng.world.getCompView( .{ eng.TransComp, gdf.bdy.BodyComp }) orelse return;
 
   times.stepTime();
 
-  gUtl.tickOrbiters( transStore, orbitStore );
+  gUtl.tickOrbiters( &orbitView );
 
-  const starPos : utl.Vec2 = transStore.get( gdf.G_CONSTS.starId ).?.pos.toVec2();
+  const starPos : utl.Vec2 = bodyView.get( eng.TransComp, gdf.G_CONSTS.starId ).?.pos.toVec2();
 
-  gUtl.tickGlobalEconomy( transStore, bodyStore, starPos );
+  gUtl.tickGlobalEconomy( &bodyView, starPos );
 }
 
 
@@ -105,14 +100,9 @@ pub fn OnRenderBckgrnd( ng : *eng.Engine ) void // Called by engine.renderGraphi
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics()
 {
-  const transStore : *gdf.TransStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "transStore" )));
-  const shapeStore : *gdf.ShapeStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "shapeStore" )));
+  var view = ng.world.getCompView( .{ eng.TransComp, eng.ShapeComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }) orelse return;
 
-  const orbitStore : *gdf.OrbitStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "orbitStore" )));
-  const bodyStore  : *gdf.BodyStore  = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "bodyStore"  )));
-
-
-  gUtl.renderOrbiters( transStore, shapeStore, orbitStore, bodyStore );
+  gUtl.renderOrbiters( &view );
 }
 
 pub fn OffRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics()
@@ -137,11 +127,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
   .{ .x = utl.getScreenWidth() - 10.0, .y = utl.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
 
 
-  const transStore : *gdf.TransStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "transStore" )));
-  const shapeStore : *gdf.ShapeStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "shapeStore" )));
+  var view = ng.world.getCompView( .{ eng.TransComp, eng.ShapeComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }) orelse return;
 
-  const orbitStore : *gdf.OrbitStore = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "orbitStore" )));
-  const bodyStore  : *gdf.BodyStore  = @ptrCast( @alignCast( ng.world.getBorrowedCompStore( "bodyStore"  )));
-
-  gUtl.drawTargetInfo( transStore, shapeStore, orbitStore, bodyStore );
+  gUtl.drawTargetInfo( &view );
 }

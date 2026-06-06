@@ -16,6 +16,8 @@ const Angle = utl.Angle;
 
 pub const TransComp = struct
 {
+  pub const storeType : eng.CompStorePolicy = .DENSE;
+
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   pos : VecA,
@@ -45,6 +47,8 @@ pub const TransComp = struct
 
 pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 {
+  pub const storeType : eng.CompStorePolicy = .DENSE;
+
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   scale   : Vec2,
@@ -104,6 +108,8 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
 
 pub const HitboxComp = struct
 {
+  pub const storeType : eng.CompStorePolicy = .DENSE;
+
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   hitbox : Box2 = .{},
@@ -131,6 +137,8 @@ pub const HitboxComp = struct
 
 pub const SpriteComp = struct
 {
+  pub const storeType : eng.CompStorePolicy = .DENSE;
+
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   sprite      : utl.Sprite,

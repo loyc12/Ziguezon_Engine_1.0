@@ -24,7 +24,7 @@ pub fn OnGameStop( ng : *eng.Engine ) void // Called by engine.stop()
 pub fn OnGameOpen( ng : *eng.Engine ) void // Called by engine.open()      // NOTE : This is where you should initialize your entities
 {
   // Initializing and registering all component stores
-  _ = gbl.G_DATA.stores.registerAllStores( ng );
+  if( !gbl.registerOrbiterComps( ng )){ return; }
 
   // Initializing individual components components
   gUtl.initStellarSystem( ng );
@@ -32,7 +32,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void // Called by engine.open()      // NO
 
 pub fn OnGameClose( ng : *eng.Engine ) void // Called by engine.close()
 {
-  gbl.G_DATA.stores.deinitAllStores( ng );
+  gbl.unregisterOrbiterComps( ng );
 }
 
 
@@ -44,7 +44,6 @@ pub fn OnGamePause( ng : *eng.Engine ) void // Called by engine.pause()
 {
   _ = ng; // Prevent unused variable warning
 }
-
 
 
 

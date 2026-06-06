@@ -291,7 +291,7 @@ fn refreshTransferNode( bodyId : EntityId ) void
 {
   if( !isValidBodyId( bodyId )){ return; }
 
-  const body = gbl.G_DATA.stores.body.get( bodyId );
+  const body = eng.G_ENG.world.getComp( gdf.bdy.BodyComp, bodyId );
   if( body == null )
   {
     transferNodes[ @intCast( bodyId )] = .{};
@@ -312,7 +312,7 @@ fn refreshTransferNode( bodyId : EntityId ) void
     return;
   }
 
-  const orbit = gbl.G_DATA.stores.orbit.get( bodyId );
+  const orbit = eng.G_ENG.world.getComp( gdf.orb.OrbitComp, bodyId );
   if( orbit == null )
   {
     node.valid = false;
@@ -352,7 +352,7 @@ pub fn refreshDynamicTransferNodes() void
 
     if( !node.valid or bodyId == gdf.G_CONSTS.starId ){ continue; }
 
-    if( gbl.G_DATA.stores.orbit.get( bodyId ))| orbit |
+    if( eng.G_ENG.world.getComp( gdf.orb.OrbitComp, bodyId ))| orbit |
     {
       node.angularPos = orbit.angularPos;
       node.angularVel = orbit.angularVel;

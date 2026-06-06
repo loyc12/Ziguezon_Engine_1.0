@@ -35,6 +35,8 @@ const MIN_RES_CAP = 10_000.0;
 
 pub const Economy = struct
 {
+  pub const storeType : eng.CompStorePolicy = .DENSE;
+
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   location  : EconLoc,

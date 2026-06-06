@@ -1,9 +1,10 @@
 WARNING : THIS FILES CONTAINS COPIABLE PROMPTS : LLMS / AGENTS SHOULD IGNORE ITS REMAINING CONTENT
 
 
-Implement the engine_rework_todo.md in its entirety
+Implement the engine_rework_todo.md in its entirety, going step-by-step
 Make sure to follow the stylistic guidelines for the project ( see AGENTS.md if you need more details on them )
-Alert me to any unforseen issue wou encounter
+Start by reviewing the todo itself, before planing and executing the work
+Alert me to any unforseen issue you encounter along the way
 
 
 Update the engine_rework_todo.md so it contains the follow up work

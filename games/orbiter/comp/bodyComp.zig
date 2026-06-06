@@ -15,6 +15,8 @@ const BodyType = gdf.BodyType;
 
 pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
+  pub const storeType : eng.CompStorePolicy = .DENSE;
+
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   name     : BodyName = .DEBUGY, // NOTE : Should be overwritten. If more than one DEBUGY exists, something went wrong

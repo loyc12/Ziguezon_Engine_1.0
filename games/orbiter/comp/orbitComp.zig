@@ -15,6 +15,8 @@ const ecn = gdf.econ;
 
 pub const OrbitComp = struct
 {
+  pub const storeType : eng.CompStorePolicy = .DENSE;
+
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
   const G : f64 = gdf.G_CONSTS.gravFactor;

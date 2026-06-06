@@ -2,30 +2,7 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-pub const MobileComp = struct
-{
-  pub const storeType : eng.CompStorePolicy = .SPARSE;
-};
-
-pub const ParticleComp = struct
-{
-  pub const storeType : eng.CompStorePolicy = .SPARSE;
-};
-
-pub const TransStore    = eng.CompStoreFactory( eng.TransComp  );
-pub const ShapeStore    = eng.CompStoreFactory( eng.ShapeComp  );
-pub const HitboxStore   = eng.CompStoreFactory( eng.HitboxComp );
-pub const MobileStore   = eng.CompStoreFactory( MobileComp     );
-pub const ParticleStore = eng.CompStoreFactory( ParticleComp   );
-
-pub const PingStores = struct
-{
-  trans    : *TransStore,
-  shape    : *ShapeStore,
-  hitbox   : *HitboxStore,
-  mobile   : *MobileStore,
-  particle : *ParticleStore,
-};
+pub const BodyView = eng.CompView( .{ eng.TransComp, eng.ShapeComp, eng.HitboxComp });
 
 pub const EntityParams = struct
 {
@@ -41,6 +18,7 @@ pub const EntityParams = struct
 };
 
 var entityIds   : std.ArrayList( eng.EntityId ) = .empty;
+var mobileIds   : std.ArrayList( eng.EntityId ) = .empty;
 var particleIds : std.ArrayList( eng.EntityId ) = .empty;
 
 pub var P1_ID              : eng.EntityId = 0;
@@ -69,105 +47,51 @@ pub fn registerPingComps( ng : *eng.Engine ) bool
     utl.qlog( .ERROR, 0, @src(), "Failed to register HitboxComp" );
     return false;
   }
-  if( !ng.world.registerComp( MobileComp ))
-  {
-    _ = ng.world.unregisterComp( eng.HitboxComp );
-    _ = ng.world.unregisterComp( eng.ShapeComp  );
-    _ = ng.world.unregisterComp( eng.TransComp  );
-    utl.qlog( .ERROR, 0, @src(), "Failed to register MobileComp" );
-    return false;
-  }
-  if( !ng.world.registerComp( ParticleComp ))
-  {
-    _ = ng.world.unregisterComp( MobileComp     );
-    _ = ng.world.unregisterComp( eng.HitboxComp );
-    _ = ng.world.unregisterComp( eng.ShapeComp  );
-    _ = ng.world.unregisterComp( eng.TransComp  );
-    utl.qlog( .ERROR, 0, @src(), "Failed to register ParticleComp" );
-    return false;
-  }
-
   return true;
 }
 
 pub fn unregisterPingComps( ng : *eng.Engine ) void
 {
-  _ = ng.world.unregisterComp( ParticleComp   );
-  _ = ng.world.unregisterComp( MobileComp     );
   _ = ng.world.unregisterComp( eng.HitboxComp );
   _ = ng.world.unregisterComp( eng.ShapeComp  );
   _ = ng.world.unregisterComp( eng.TransComp  );
 }
 
-pub fn getStores( ng : *eng.Engine ) ?PingStores
+pub inline fn getBodyView( ng : *eng.Engine ) ?BodyView
 {
-  const trans = ng.world.getCompStore( eng.TransComp ) orelse
-  {
-    utl.qlog( .WARN, 0, @src(), "Ping TransComp store is not registered" );
-    return null;
-  };
-  const shape = ng.world.getCompStore( eng.ShapeComp ) orelse
-  {
-    utl.qlog( .WARN, 0, @src(), "Ping ShapeComp store is not registered" );
-    return null;
-  };
-  const hitbox = ng.world.getCompStore( eng.HitboxComp ) orelse
-  {
-    utl.qlog( .WARN, 0, @src(), "Ping HitboxComp store is not registered" );
-    return null;
-  };
-  const mobile = ng.world.getCompStore( MobileComp ) orelse
-  {
-    utl.qlog( .WARN, 0, @src(), "Ping MobileComp store is not registered" );
-    return null;
-  };
-  const particle = ng.world.getCompStore( ParticleComp ) orelse
-  {
-    utl.qlog( .WARN, 0, @src(), "Ping ParticleComp store is not registered" );
-    return null;
-  };
-
-  return .{
-    .trans    = trans,
-    .shape    = shape,
-    .hitbox   = hitbox,
-    .mobile   = mobile,
-    .particle = particle,
-  };
+  return ng.world.getCompView( .{ eng.TransComp, eng.ShapeComp, eng.HitboxComp });
 }
 
-pub fn syncHitbox( stores : PingStores, id : eng.EntityId ) void
+pub fn syncHitbox( view : anytype, id : eng.EntityId ) void
 {
-  const trans  = stores.trans.get( id ) orelse return;
-  const shape  = stores.shape.get( id ) orelse return;
-  const hitbox = stores.hitbox.get( id ) orelse return;
+  const trans  = view.get( eng.TransComp,  id ) orelse return;
+  const shape  = view.get( eng.ShapeComp,  id ) orelse return;
+  const hitbox = view.get( eng.HitboxComp, id ) orelse return;
 
   hitbox.hitbox = shape.getAABB( trans.pos );
 }
 
-pub fn syncAllHitboxes( stores : PingStores ) void
+pub fn syncAllHitboxes( view : anytype ) void
 {
-  var iter = stores.hitbox.iterator();
+  var iter = view.iterator( eng.HitboxComp );
   while( iter.next() )| entry |
   {
-    syncHitbox( stores, entry.key_ptr.* );
+    syncHitbox( view, entry.key_ptr.* );
   }
 }
 
-pub fn updateMobileEntities( stores : PingStores, sdt : f32 ) void
+pub fn updateMobileEntities( view : *BodyView, sdt : f32 ) void
 {
-  var iter = stores.mobile.iterator();
-  while( iter.next() )| entry |
+  for( mobileIds.items )| id |
   {
-    const id = entry.key_ptr.*;
-    const trans = stores.trans.get( id ) orelse continue;
+    const trans = view.get( eng.TransComp, id ) orelse continue;
 
     trans.updatePos( sdt );
-    syncHitbox( stores, id );
+    syncHitbox( view, id );
   }
 }
 
-pub fn createEntity( ng : *eng.Engine, stores : PingStores, params : EntityParams ) ?eng.EntityId
+pub fn createEntity( ng : *eng.Engine, view : anytype, params : EntityParams ) ?eng.EntityId
 {
   const id = ng.world.createEntity().id;
 
@@ -185,41 +109,40 @@ pub fn createEntity( ng : *eng.Engine, stores : PingStores, params : EntityParam
     .colour = params.colour,
   }))
   {
-    removePingEntity( stores, id );
+    removePingEntity( ng, id );
     return null;
   }
 
   if( !ng.world.addComp( eng.HitboxComp, id, .{} ))
   {
-    removePingEntity( stores, id );
+    removePingEntity( ng, id );
     return null;
   }
-  syncHitbox( stores, id );
+  syncHitbox( view, id );
 
-  if( params.mobile and !ng.world.addComp( MobileComp, id, .{} ))
+  if( params.mobile )
   {
-    removePingEntity( stores, id );
-    return null;
+    mobileIds.append( utl.getDefaultAlloc(), id ) catch | err |
+    {
+      utl.log( .ERROR, 0, @src(), "Failed to register mobile Entity {d}: {}", .{ id, err });
+      removePingEntity( ng, id );
+      return null;
+    };
   }
 
   entityIds.append( utl.getDefaultAlloc(), id ) catch | err |
   {
     utl.log( .ERROR, 0, @src(), "Failed to register Entity {d}: {}", .{ id, err });
-    removePingEntity( stores, id );
+    removePingEntity( ng, id );
     return null;
   };
 
   if( params.particle )
   {
-    if( !ng.world.addComp( ParticleComp, id, .{} ))
-    {
-      removePingEntity( stores, id );
-      return null;
-    }
     particleIds.append( utl.getDefaultAlloc(), id ) catch | err |
     {
       utl.log( .ERROR, 0, @src(), "Failed to register particle Entity {d}: {}", .{ id, err });
-      removePingEntity( stores, id );
+      removePingEntity( ng, id );
       return null;
     };
   }
@@ -227,40 +150,44 @@ pub fn createEntity( ng : *eng.Engine, stores : PingStores, params : EntityParam
   return id;
 }
 
-pub fn removePingEntity( stores : PingStores, id : eng.EntityId ) void
+fn removeIdFromList( list : *std.ArrayList( eng.EntityId ), id : eng.EntityId ) void
 {
-  for( entityIds.items, 0 .. )| entityId, index |
+  for( list.items, 0 .. )| entityId, index |
   {
     if( entityId == id )
     {
-      _ = entityIds.swapRemove( index );
+      _ = list.swapRemove( index );
       break;
     }
   }
-
-  _ = stores.particle.remove( id );
-  _ = stores.mobile.remove(   id );
-  _ = stores.hitbox.remove(   id );
-  _ = stores.shape.remove(    id );
-  _ = stores.trans.remove(    id );
 }
 
-pub fn removeParticleAt( stores : PingStores, index : usize ) void
+pub fn removePingEntity( ng : *eng.Engine, id : eng.EntityId ) void
+{
+  removeIdFromList( &entityIds,   id );
+  removeIdFromList( &mobileIds,   id );
+  removeIdFromList( &particleIds, id );
+
+  _ = ng.world.removeComp( eng.HitboxComp, id );
+  _ = ng.world.removeComp( eng.ShapeComp,  id );
+  _ = ng.world.removeComp( eng.TransComp,  id );
+}
+
+pub fn removeParticleAt( ng : *eng.Engine, index : usize ) void
 {
   const id = particleIds.items[ index ];
-  removePingEntity( stores, id );
-  _ = particleIds.swapRemove( index );
+  removePingEntity( ng, id );
 }
 
 pub inline fn getParticleCount() usize { return particleIds.items.len; }
 pub inline fn getParticleId( index : usize ) eng.EntityId { return particleIds.items[ index ]; }
 
-pub fn renderEntities( stores : PingStores ) void
+pub fn renderEntities( view : *BodyView ) void
 {
   for( entityIds.items )| id |
   {
-    const trans = stores.trans.get( id ) orelse continue;
-    const shape = stores.shape.get( id ) orelse continue;
+    const trans = view.get( eng.TransComp, id ) orelse continue;
+    const shape = view.get( eng.ShapeComp, id ) orelse continue;
     shape.render( trans.pos );
   }
 }
@@ -284,15 +211,16 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   if( !registerPingComps( ng )){ return; }
 
   entityIds   = .empty;
+  mobileIds   = .empty;
   particleIds = .empty;
 
-  const stores = getStores( ng ) orelse
+  var bodyView = getBodyView( ng ) orelse
   {
     unregisterPingComps( ng );
     return;
   };
 
-  if( createEntity( ng, stores, // player 1
+  if( createEntity( ng, &bodyView, // player 1
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
@@ -302,7 +230,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   })
   )| p1 |{ P1_ID = p1; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create player 1 entity" ); }
 
-  if( createEntity( ng, stores, // player 2
+  if( createEntity( ng, &bodyView, // player 2
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 128, .y = 16 },
@@ -312,7 +240,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   })
   )| p2 |{ P2_ID = p2; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create player 2 entity" ); }
 
-  _ = createEntity( ng, stores, // separator
+  _ = createEntity( ng, &bodyView, // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -320,7 +248,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .pos    = .{ .x = 0, .y = 0 },
   });
 
-  _ = createEntity( ng, stores, // separator
+  _ = createEntity( ng, &bodyView, // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -328,7 +256,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .pos    = .{ .x = 1024, .y = 0 },
   });
 
-  _ = createEntity( ng, stores, // separator
+  _ = createEntity( ng, &bodyView, // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 8, .y = 512 },
@@ -336,7 +264,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .pos    = .{ .x = -1024, .y = 0 },
   });
 
-  _ = createEntity( ng, stores, // separator
+  _ = createEntity( ng, &bodyView, // separator
   .{
     .shape  = .RECT,
     .scale  = .{ .x = 1024, .y = 8 },
@@ -344,7 +272,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .pos    = .{ .x = 0, .y = -512 },
   });
 
-  if( createEntity( ng, stores, // ball shadow
+  if( createEntity( ng, &bodyView, // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 6, .y = 6 },
@@ -354,7 +282,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   )| shad1 |{ SHADOW_RANGE_START = shad1; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create ball shadow 1 entity" ); }
 
   {
-    _ = createEntity( ng, stores, // ball shadow
+    _ = createEntity( ng, &bodyView, // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 8, .y = 8 },
@@ -362,7 +290,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
       .pos    = .{},
     });
 
-    _ = createEntity( ng, stores, // ball shadow
+    _ = createEntity( ng, &bodyView, // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 10, .y = 10 },
@@ -370,7 +298,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
       .pos    = .{},
     });
 
-    _ = createEntity( ng, stores, // ball shadow
+    _ = createEntity( ng, &bodyView, // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 12, .y = 12 },
@@ -378,7 +306,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
       .pos    = .{},
     });
 
-    _ = createEntity( ng, stores, // ball shadow
+    _ = createEntity( ng, &bodyView, // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 14, .y = 14 },
@@ -386,7 +314,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
       .pos    = .{},
     });
 
-    _ = createEntity( ng, stores, // ball shadow
+    _ = createEntity( ng, &bodyView, // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 16, .y = 16 },
@@ -394,7 +322,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
       .pos    = .{},
     });
 
-    _ = createEntity( ng, stores, // ball shadow
+    _ = createEntity( ng, &bodyView, // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 18, .y = 18 },
@@ -402,7 +330,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
       .pos    = .{},
     });
 
-    _ = createEntity( ng, stores, // ball shadow
+    _ = createEntity( ng, &bodyView, // ball shadow
     .{
       .shape  = .ELLI,
       .scale  = .{ .x = 20, .y = 20 },
@@ -411,7 +339,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     });
   }
 
-  if( createEntity( ng, stores, // ball shadow
+  if( createEntity( ng, &bodyView, // ball shadow
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 22, .y = 22 },
@@ -420,7 +348,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   })
   )| shad2 |{ SHADOW_RANGE_END = shad2; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create ball shadow * entity" ); }
 
-  if( createEntity( ng, stores, // ball
+  if( createEntity( ng, &bodyView, // ball
   .{
     .shape  = .ELLI,
     .scale  = .{ .x = 24, .y = 24 },
@@ -434,6 +362,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 pub fn OnGameClose( ng : *eng.Engine ) void
 {
   entityIds.deinit(   utl.getDefaultAlloc() );
+  mobileIds.deinit(   utl.getDefaultAlloc() );
   particleIds.deinit( utl.getDefaultAlloc() );
 
   unregisterPingComps( ng );

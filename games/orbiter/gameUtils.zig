@@ -6,7 +6,6 @@ const gbl = @import( "gameGlobals.zig" );
 const gdf = @import( "gameDef.zig"    );
 
 const times  = &gbl.G_DATA.times;
-const stores = &gbl.G_DATA.stores;
 const target = &gbl.G_DATA.target;
 const nttArr = &gbl.G_DATA.entityArray;
 
@@ -43,7 +42,7 @@ fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyId
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
 
-  if( orbitedId != gdf.G_CONSTS.starId ){ if( stores.body.get( orbitedId ))| b |
+  if( orbitedId != gdf.G_CONSTS.starId ){ if( eng.G_ENG.world.getComp( bdy.BodyComp, orbitedId ))| b |
   {
     orbitedMass = b.mass;
   }
@@ -135,7 +134,7 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
 
       if( orbitedId != gdf.G_CONSTS.starId )
       {
-        if( stores.trans.get( orbitedId ))| trans |
+        if( ng.world.getComp( eng.TransComp, orbitedId ))| trans |
         {
           startPos = startPos.add( trans.pos.toVec2() );
         }
@@ -145,12 +144,12 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
         }
       }
 
-      _ = stores.orbit.add( id, orbitComp ); // SOL does not have an orbit comp
+      _ = ng.world.addComp( orb.OrbitComp, id, orbitComp ); // SOL does not have an orbit comp
     }
 
-    _ = stores.trans.add( id, .{ .pos = startPos.toVecA( .{} )});
-    _ = stores.body.add(  id, bodyComp  );
-    _ = stores.shape.add( id,
+    _ = ng.world.addComp( eng.TransComp, id, .{ .pos = startPos.toVecA( .{} )});
+    _ = ng.world.addComp( bdy.BodyComp,  id, bodyComp  );
+    _ = ng.world.addComp( eng.ShapeComp, id,
     .{
       .colour  = bodyComp.bodyType.getDisplayColour(),
       .minSize = bodyComp.bodyType.getMinDisplaySize(),
@@ -202,7 +201,7 @@ pub fn updateCameraLogic() void
 }
 
 
-pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore ) void
+pub fn tickOrbiters( view : *gdf.OrbitTickView ) void
 {
   var stepCount : u64 = 0;
 
@@ -218,12 +217,12 @@ pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore 
   for( 1..nttArr.len )| idx |
   {
     const id      = nttArr[ idx ].id;
-    const orbiter = orbitStore.get( id );
+    const orbiter = view.get( orb.OrbitComp, id );
 
     if( orbiter == null ){ continue; }
 
-    const orbiterTrans = transStore.get( id );
-    const orbitedTrans = transStore.get( gbl.ORBITANCE.getOrbitedId( id ) );
+    const orbiterTrans = view.get( eng.TransComp, id );
+    const orbitedTrans = view.get( eng.TransComp, gbl.ORBITANCE.getOrbitedId( id ) );
 
     if( orbiterTrans != null and orbitedTrans != null )
     {
@@ -243,7 +242,7 @@ pub fn tickOrbiters( transStore : *gdf.TransStore, orbitStore : *gdf.OrbitStore 
   target.hasMoved = true; // Redundant for now since we update right after, but might become useful again later
 }
 
-pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodyStore, starPos : utl.Vec2 ) void
+pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
 {
   var stepCount : u64 = 0;
 
@@ -264,8 +263,8 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
     inline for( 1..nttArr.len )| idx |
     {
       const id    = nttArr[ idx ].id;
-      const trans = transStore.get( id );
-      const body  = bodyStore.get(  id );
+      const trans = view.get( eng.TransComp, id );
+      const body  = view.get( bdy.BodyComp,  id );
 
       if( trans != null and body != null )
       {
@@ -286,7 +285,7 @@ pub fn tickGlobalEconomy( transStore : *gdf.TransStore, bodyStore : *gdf.BodySto
 //gdf.debugLogTravelCostsList( .TERRA, .ORBIT );
 }
 
-pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
+pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
 {
   if( target.hasMoved ){ target.moveCamOver(); }
 
@@ -297,14 +296,14 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
     utl.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
 
-    const orbiter = orbitStore.get( id );
+    const orbiter = view.get( orb.OrbitComp, id );
 
     if( orbiter == null ){ continue; }
 
-    const orbiterBody  = bodyStore.get(  id );
-    const orbiterTrans = transStore.get( id );
+    const orbiterBody  = view.get( bdy.BodyComp,  id );
+    const orbiterTrans = view.get( eng.TransComp, id );
 
-    const orbitedTrans = transStore.get( gbl.ORBITANCE.getOrbitedId( id ) );
+    const orbitedTrans = view.get( eng.TransComp, gbl.ORBITANCE.getOrbitedId( id ) );
 
     if( orbiterTrans != null and orbitedTrans != null and orbiterBody != null )
     {
@@ -336,8 +335,8 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
     utl.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
 
-    const trans = transStore.get( id );
-    const shape = shapeStore.get( id );
+    const trans = view.get( eng.TransComp, id );
+    const shape = view.get( eng.ShapeComp, id );
 
     if( trans != null and shape != null )
     {
@@ -350,7 +349,7 @@ pub fn renderOrbiters( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
   }
 }
 
-pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStore, orbitStore : *gdf.OrbitStore, bodyStore : *gdf.BodyStore ) void
+pub fn drawTargetInfo( view : *gdf.OrbitRenderView ) void
 {
   const col   = eng.G_CNFGS.Graphic_Metrics_Colour.?;
   const posX  = utl.getScreenWidth() - 16.0;
@@ -358,11 +357,11 @@ pub fn drawTargetInfo( transStore : *gdf.TransStore, shapeStore : *gdf.ShapeStor
 
   if( id == 0 or id > bodyCount ){ return; }
 
-  const trans = transStore.get( id );
-  const shape = shapeStore.get( id );
+  const trans = view.get( eng.TransComp, id );
+  const shape = view.get( eng.ShapeComp, id );
 
-  const orbit = if( id != gdf.G_CONSTS.starId ) orbitStore.get( id ) else null;
-  const body  = if( id != gdf.G_CONSTS.starId ) bodyStore.get(  id ) else null;
+  const orbit = if( id != gdf.G_CONSTS.starId ) view.get( orb.OrbitComp, id ) else null;
+  const body  = if( id != gdf.G_CONSTS.starId ) view.get( bdy.BodyComp,  id ) else null;
 
 
   var lineCount : f32 = 1.0;

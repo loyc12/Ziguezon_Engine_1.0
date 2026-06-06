@@ -374,3 +374,56 @@ When finishing Phase 1E, record:
   ownership is stable.
 * Add rules/reactions, traits, archetypes, scheduler, and broad queries in the
   order described by the roadmap.
+
+
+## 8. Completion Notes - 2026-06-06
+
+Phase 1D completion:
+
+* Dense backend: `DenseCompStoreFactory(CompType)` in
+  `components/storeTypes/denseStore.zig`.
+* Sparse backend: `SparseCompStoreFactory(CompType)` in
+  `components/storeTypes/sparseStore.zig`.
+* `CompStoreFactory(CompType)` now routes through `CompType.storeType`.
+* Missing `storeType` now triggers a compile-time `@compileError`.
+* Dense layout: packed `ArrayList(EntityId)`, packed component rows, and
+  `AutoHashMap(EntityId, usize)` index lookup.
+* Zero-sized component types now trigger a compile-time `@compileError`;
+  marker/tag behavior needs game-owned id lists or a future tag storage policy.
+* Sparse layout: `AutoHashMap(EntityId, CompType)`, matching the old lookup
+  behavior.
+* Base policies: `TransComp`, `ShapeComp`, `HitboxComp`, and `SpriteComp` are
+  `.DENSE`.
+* Ping no longer uses zero-sized `MobileComp` or `ParticleComp`; mobile and
+  particle membership uses game-owned entity-id lists until tag storage exists.
+* Orbiter policies: `OrbitComp`, `BodyComp`, and `Economy` are `.DENSE`.
+
+Phase 1E completion:
+
+* View API: `CompView(.{ ... })`, exported as `eng.CompView` and
+  `eng.ComponentView`; `World.getCompView(.{ ... })` builds transient views.
+* View lifetime: views cache store pointers only and should be reacquired at
+  phase boundaries; component row pointers remain transient and may be
+  invalidated by later dense-store mutations.
+* `ping` no longer defines `PingStores`; body, mobile, render, particle, and
+  cleanup paths use component views plus `World.addComp/removeComp`.
+* `orbiter` now registers components through `World.registerComp`, creates
+  components with `World.addComp`, and uses component views for tick/render
+  phases.
+* Production games no longer use borrowed component stores or borrowed-store
+  pointer casts.
+* `BorrowedCompRegistry`, borrowed component APIs, and borrowed compatibility
+  tests were removed.
+
+Validation:
+
+* `zig build` passed.
+* `zig build ping` passed.
+* `zig build floppy` passed.
+* `zig build orbiter` passed.
+* `zig build check_games` passed.
+* `zig build test` passed.
+* `git diff --check` passed.
+
+No relation, event, rule, trait, archetype, scheduler, or broad query work was
+added in this slice.

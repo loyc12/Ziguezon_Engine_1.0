@@ -11,11 +11,9 @@ pub const ecn = @import( "econ/economy.zig"   );
 pub const trvlSlvr = @import( "econ/travelSolver.zig"  );
 
 
-pub const TransStore  = eng.TransComp.StoreType();
-pub const ShapeStore  = eng.ShapeComp.StoreType();
-pub const SpriteStore = eng.SpriteComp.StoreType();
-pub const OrbitStore  = orb.OrbitComp.StoreType();
-pub const BodyStore   = bdy.BodyComp.StoreType();
+pub const BodyTransView   = eng.CompView( .{ eng.TransComp, bdy.BodyComp });
+pub const OrbitTickView   = eng.CompView( .{ eng.TransComp, orb.OrbitComp, bdy.BodyComp });
+pub const OrbitRenderView = eng.CompView( .{ eng.TransComp, eng.ShapeComp, orb.OrbitComp, bdy.BodyComp });
 
 
 // ================ UNITS AND CONSTANTS ================
@@ -126,4 +124,3 @@ pub const ResType  = rsrc_d.ResType;
 pub const PopType  = popl_d.PopType;
 pub const InfType  = nfrs_d.InfType;
 pub const IndType  = ndst_d.IndType;
-

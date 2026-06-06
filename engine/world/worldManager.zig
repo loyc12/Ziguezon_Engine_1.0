@@ -4,11 +4,11 @@ const utl = @import( "utils" );
 const entity  = @import( "entity.zig" );
 const comp    = @import( "components/component.zig" );
 const compMgr = @import( "components/compManager.zig" );
+const view    = @import( "views/view.zig" );
 
 const Entity               = entity.Entity;
 const EntityId             = entity.EntityId;
 const EntityIdRegistry     = entity.EntityIdRegistry;
-const BorrowedCompRegistry = comp.BorrowedCompRegistry;
 const CompManager          = compMgr.CompManager;
 const CompStoreFactory     = comp.CompStoreFactory;
 const TimeVal              = utl.TimeVal;
@@ -25,9 +25,9 @@ pub const TickInfo = struct
 
 pub const World = struct
 {
-  entityIdRegistry     : EntityIdRegistry     = .{},
-  compManager          : CompManager          = .{},
-  borrowedCompRegistry : BorrowedCompRegistry = .{},
+  entityIdRegistry : EntityIdRegistry = .{},
+  compManager      : CompManager      = .{},
+  viewGeneration   : u64              = 0,
 
   isInit : bool = false,
 
@@ -43,9 +43,9 @@ pub const World = struct
     }
 
     self.entityIdRegistry.reinit();
-    self.borrowedCompRegistry.init( alloc );
-    self.compManager.init(          alloc );
+    self.compManager.init( alloc );
     self.isInit = true;
+    self.bumpViewGeneration();
   }
 
   pub fn deinit( self : *World ) void
@@ -57,9 +57,9 @@ pub const World = struct
     }
 
     self.compManager.deinit();
-    self.borrowedCompRegistry.deinit();
     self.entityIdRegistry.reinit();
     self.isInit = false;
+    self.bumpViewGeneration();
   }
 
 
@@ -81,17 +81,33 @@ pub const World = struct
 
   pub inline fn registerComp( self : *World, comptime CompType : type ) bool
   {
-    return self.compManager.register( CompType );
+    if( !self.compManager.register( CompType )){ return false; }
+
+    self.bumpViewGeneration();
+    return true;
   }
 
   pub inline fn unregisterComp( self : *World, comptime CompType : type ) bool
   {
-    return self.compManager.unregister( CompType );
+    if( !self.compManager.unregister( CompType )){ return false; }
+
+    self.bumpViewGeneration();
+    return true;
   }
 
   pub inline fn getCompStore( self : *World, comptime CompType : type ) ?*CompStoreFactory( CompType )
   {
     return self.compManager.getStore( CompType );
+  }
+
+  pub inline fn getCompView( self : *World, comptime CompTypes : anytype ) ?view.CompView( CompTypes )
+  {
+    return view.CompView( CompTypes ).init( self );
+  }
+
+  pub inline fn getCompViewGeneration( self : *const World ) u64
+  {
+    return self.viewGeneration;
   }
 
   pub inline fn addComp( self : *World, comptime CompType : type, entityId : EntityId, value : CompType ) bool
@@ -126,31 +142,6 @@ pub const World = struct
     return store.remove( entityId );
   }
 
-
-  // ================================ BORROWED COMPONENT COMPATIBILITY ================================
-  // TODO : Remove these once orbiter is moved over to owned comps
-
-  pub inline fn registerBorrowedCompStore( self : *World, name : []const u8, storePtr : *anyopaque ) bool
-  {
-    return self.borrowedCompRegistry.register( name, storePtr );
-  }
-
-  pub inline fn unregisterBorrowedCompStore( self : *World, name : []const u8 ) bool
-  {
-    return self.borrowedCompRegistry.unregister( name );
-  }
-
-  pub inline fn getBorrowedCompStore( self : *World, name : []const u8 ) ?*anyopaque
-  {
-    return self.borrowedCompRegistry.get( name );
-  }
-
-  pub inline fn hasBorrowedCompStore( self : *World, name : []const u8 ) bool
-  {
-    return self.borrowedCompRegistry.has( name );
-  }
-
-
   // ================================ TICK FUNCTIONS ================================
 
   pub inline fn tick( self : *World, info : TickInfo ) void
@@ -162,6 +153,14 @@ pub const World = struct
     }
 
     _ = info;
+  }
+
+
+  // ================================ INTERNAL FUNCTIONS ================================
+
+  inline fn bumpViewGeneration( self : *World ) void
+  {
+    self.viewGeneration +%= 1;
   }
 };
 
@@ -184,35 +183,12 @@ test "World lifecycle resets entity creation"
   try std.testing.expect( world.createEntity().id == 1 );
 }
 
-test "World compatibility registry borrows component stores"
-{
-  var world : World = .{};
-  world.init( std.testing.allocator );
-
-  var dummyStore : u32 = 42;
-
-  try std.testing.expect( world.registerBorrowedCompStore( "dummyStore", &dummyStore ));
-  try std.testing.expect( world.hasBorrowedCompStore( "dummyStore" ));
-
-  const storePtr : *u32 = @ptrCast( @alignCast( world.getBorrowedCompStore( "dummyStore" ).? ));
-  try std.testing.expect( storePtr.* == dummyStore );
-
-  world.deinit();
-  try std.testing.expect( dummyStore == 42 );
-
-  world.init( std.testing.allocator );
-  defer world.deinit();
-
-  try std.testing.expect( world.registerBorrowedCompStore( "dummyStore", &dummyStore ));
-  try std.testing.expect( world.unregisterBorrowedCompStore( "dummyStore" ));
-  try std.testing.expect( !world.hasBorrowedCompStore( "dummyStore" ));
-  try std.testing.expect( dummyStore == 42 );
-}
-
 test "World owns typed component CRUD and registration lifecycle"
 {
   const TestComp = struct
   {
+    pub const storeType : comp.CompStorePolicy = .SPARSE;
+
     value : u32 = 0,
   };
 
@@ -243,6 +219,8 @@ test "World deinit releases registered owned component stores"
 {
   const TestComp = struct
   {
+    pub const storeType : comp.CompStorePolicy = .SPARSE;
+
     value : u32 = 0,
   };
 

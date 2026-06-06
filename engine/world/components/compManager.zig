@@ -56,7 +56,6 @@ pub const CompManager = struct
   pub fn register( self : *CompManager, comptime CompType : type ) bool
   {
     const typeName = @typeName( CompType );
-    const policy   = comp.getCompStorePolicy( CompType );
 
     if( !self.isInit )
     {
@@ -66,11 +65,6 @@ pub const CompManager = struct
     if( self.stores.contains( typeName ))
     {
       utl.log( .WARN, 0, @src(), "Cannot register CompStore for type {s} : type already registered", .{ typeName });
-      return false;
-    }
-    if( policy == .DENSE )
-    {
-      utl.log( .ERROR, 0, @src(), "Cannot register dense CompStore for type {s} : dense storage is not implemented yet", .{ typeName });
       return false;
     }
 
@@ -158,6 +152,8 @@ test "CompManager owns typed store registration and lifecycle"
 {
   const TestComp = struct
   {
+    pub const storeType : CompStorePolicy = .SPARSE;
+
     value : u32 = 0,
   };
 
@@ -179,10 +175,6 @@ test "CompManager owns typed store registration and lifecycle"
 
 test "CompManager resolves component store policies"
 {
-  const DefaultComp = struct
-  {
-    value : u32 = 0,
-  };
   const SparseComp = struct
   {
     pub const storeType : CompStorePolicy = .SPARSE;
@@ -196,12 +188,11 @@ test "CompManager resolves component store policies"
     value : u32 = 0,
   };
 
-  try std.testing.expect( comp.getCompStorePolicy( DefaultComp ) == .SPARSE );
   try std.testing.expect( comp.getCompStorePolicy( SparseComp  ) == .SPARSE );
   try std.testing.expect( comp.getCompStorePolicy( DenseComp   ) == .DENSE  );
 }
 
-test "CompManager accepts sparse policy and rejects dense policy"
+test "CompManager accepts sparse and dense policies"
 {
   const SparseComp = struct
   {
@@ -227,6 +218,10 @@ test "CompManager accepts sparse policy and rejects dense policy"
   try std.testing.expect( sparseStore.add( 1, .{ .value = 42 }));
   try std.testing.expect( sparseStore.get( 1 ).?.value == 42 );
 
+  try std.testing.expect( manager.register( DenseComp ));
   try std.testing.expect( !manager.register( DenseComp ));
-  try std.testing.expect( manager.getStore( DenseComp ) == null );
+
+  const denseStore = manager.getStore( DenseComp ).?;
+  try std.testing.expect( denseStore.add( 1, .{ .value = 42 }));
+  try std.testing.expect( denseStore.get( 1 ).?.value == 42 );
 }

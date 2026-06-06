@@ -14,7 +14,6 @@ pub var G_DATA : GameData = .{};
 pub const GameData = struct
 {
   times  : GameTimes  = .{},
-  stores : CompStores = .{},
   target : TargetInfo = .{},
 
   entityArray : [ bodyCount ]eng.Entity = std.mem.zeroes([ bodyCount ]eng.Entity ),
@@ -69,75 +68,55 @@ pub const GameTimes = struct
 };
 
 
-pub const CompStores = struct
+pub fn registerOrbiterComps( ng : *eng.Engine ) bool
 {
-  trans  : gdf.TransStore  = .{},
-  shape  : gdf.ShapeStore  = .{},
-  sprite : gdf.SpriteStore = .{},
-  orbit  : gdf.OrbitStore  = .{},
-  body   : gdf.BodyStore   = .{},
-
-
-  /// Returns true if the registry process failed somewhere
-  pub inline fn registerAllStores( self : *CompStores, ng : *eng.Engine ) bool
+  if( !ng.world.registerComp( eng.TransComp ))
   {
-    const alloc = utl.getDefaultAlloc();
-
-    var hasError : bool = false;
-
-    self.trans.init(  alloc );
-    self.shape.init(  alloc );
-    self.sprite.init( alloc );
-
-    self.orbit.init(  alloc );
-    self.body.init(   alloc );
-
-
-    // Registering componentStores
-    if( !ng.world.registerBorrowedCompStore( "transStore", &self.trans ))
-    {
-      utl.qlog( .ERROR, 0, @src(), "Failed to register transStore" );
-      hasError = true;
-    }
-    if( !ng.world.registerBorrowedCompStore( "shapeStore", &self.shape ))
-    {
-      utl.qlog( .ERROR, 0, @src(), "Failed to register shapeStore" );
-      hasError = true;
-    }
-    if( !ng.world.registerBorrowedCompStore( "spriteStore", &self.sprite ))
-    {
-      utl.qlog( .ERROR, 0, @src(), "Failed to register spriteStore" );
-      hasError = true;
-    }
-
-    if( !ng.world.registerBorrowedCompStore( "orbitStore", &self.orbit ))
-    {
-      utl.qlog( .ERROR, 0, @src(), "Failed to register orbitStore" );
-      hasError = true;
-    }
-    if( !ng.world.registerBorrowedCompStore( "bodyStore", &self.body ))
-    {
-      utl.qlog( .ERROR, 0, @src(), "Failed to register bodyStore" );
-      hasError = true;
-    }
-    return hasError;
+    utl.qlog( .ERROR, 0, @src(), "Failed to register TransComp" );
+    return false;
+  }
+  if( !ng.world.registerComp( eng.ShapeComp ))
+  {
+    _ = ng.world.unregisterComp( eng.TransComp );
+    utl.qlog( .ERROR, 0, @src(), "Failed to register ShapeComp" );
+    return false;
+  }
+  if( !ng.world.registerComp( eng.SpriteComp ))
+  {
+    _ = ng.world.unregisterComp( eng.ShapeComp );
+    _ = ng.world.unregisterComp( eng.TransComp );
+    utl.qlog( .ERROR, 0, @src(), "Failed to register SpriteComp" );
+    return false;
+  }
+  if( !ng.world.registerComp( gdf.orb.OrbitComp ))
+  {
+    _ = ng.world.unregisterComp( eng.SpriteComp );
+    _ = ng.world.unregisterComp( eng.ShapeComp  );
+    _ = ng.world.unregisterComp( eng.TransComp  );
+    utl.qlog( .ERROR, 0, @src(), "Failed to register OrbitComp" );
+    return false;
+  }
+  if( !ng.world.registerComp( gdf.bdy.BodyComp ))
+  {
+    _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
+    _ = ng.world.unregisterComp( eng.SpriteComp     );
+    _ = ng.world.unregisterComp( eng.ShapeComp      );
+    _ = ng.world.unregisterComp( eng.TransComp      );
+    utl.qlog( .ERROR, 0, @src(), "Failed to register BodyComp" );
+    return false;
   }
 
-  pub inline fn deinitAllStores( self : *CompStores, ng : *eng.Engine ) void
-  {
-    _ = ng.world.unregisterBorrowedCompStore( "transStore"  );
-    _ = ng.world.unregisterBorrowedCompStore( "shapeStore"  );
-    _ = ng.world.unregisterBorrowedCompStore( "spriteStore" );
-    _ = ng.world.unregisterBorrowedCompStore( "orbitStore"  );
-    _ = ng.world.unregisterBorrowedCompStore( "bodyStore"   );
+  return true;
+}
 
-    self.trans.deinit();
-    self.shape.deinit();
-    self.sprite.deinit();
-    self.orbit.deinit();
-    self.body.deinit();
-  }
-};
+pub fn unregisterOrbiterComps( ng : *eng.Engine ) void
+{
+  _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
+  _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
+  _ = ng.world.unregisterComp( eng.SpriteComp    );
+  _ = ng.world.unregisterComp( eng.ShapeComp     );
+  _ = ng.world.unregisterComp( eng.TransComp     );
+}
 
 
 pub const TargetInfo = struct
@@ -187,7 +166,7 @@ pub const TargetInfo = struct
     {
       self.hasMoved = false;
 
-      const targetTrans = G_DATA.stores.trans.get( self.targetId );
+      const targetTrans = eng.G_ENG.world.getComp( eng.TransComp, self.targetId );
 
       if( targetTrans )| trans |
       {
