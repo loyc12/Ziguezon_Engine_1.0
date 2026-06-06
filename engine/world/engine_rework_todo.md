@@ -1,325 +1,219 @@
 # ENGINE REWORK TODO
 
-Action checklist for the next implementation slices after Phase 1C.
-Architectural intent lives in `engine_rework_reference.md`; implementation
-sequence lives in `engine_rework_roadmap.md`. For this todo, the requested
-next work takes precedence where it is more specific than the roadmap.
+Action checklist for the next implementation slice of the world/entity/simulation
+rework.
+
+Architectural intent lives in `engine_rework_reference.md`. Implementation
+sequence lives in `engine_rework_roadmap.md`. If this todo conflicts with either
+file, the reference takes precedence first, then the roadmap.
 
 
 ## 0. Current State
 
-Phase 1C established the first World-owned typed component path:
+Phase 1 completed the current World-owned component foundation, ending with the
+1D/1E dense-store and component-view slices:
 
 * `Engine` owns and initializes one `World`.
-* `World` owns entity-id creation, one typed `CompManager`, and a separate
-  borrowed component registry.
-* `EngineStep` forwards each consumed base tick through
-  `World.tick(TickInfo)`.
-* `floppy` uses World-owned typed transform and shape stores.
-* `ping` uses World-owned typed transform, shape, hitbox, mobile, and particle
-  stores.
-* `ping` currently uses a game-local `PingStores` bundle to cache typed store
-  pointers.
-* `orbiter` remains on the explicitly named borrowed compatibility path.
-* `CompManager` reads optional component store policy metadata.
-* Missing or explicit `.SPARSE` policy uses the current hash-map store.
-* Explicit `.DENSE` policy is recognized but rejected until dense storage is
-  implemented.
-* `baseComps.zig` components currently remain on default sparse behavior.
-* Entity destruction, relations, events, rules, traits, archetypes, scheduling,
-  and broad query systems remain deferred.
+* `World` owns entity-id creation and typed component stores.
+* `EngineStep` forwards each consumed base tick through `World.tick(TickInfo)`.
+* Dense and sparse component stores are implemented.
+* Component types must declare an explicit `storeType`.
+* `floppy`, `ping`, and `orbiter` use World-owned typed component stores.
+* `ping` and `orbiter` use `CompView` / `ComponentView` for transient typed
+  store access.
+* Borrowed component-store compatibility was removed.
+* Relations, events, rules, traits, archetypes, particle/effects systems,
+  logical scheduling, broad queries, and entity destruction remain deferred.
 
-The next work should turn the policy metadata into real storage selection,
-then remove the manual store-pointer bundle pattern by introducing a focused
-component-view helper and migrating real games onto it.
+The next useful slice is entity lifecycle and component cleanup. It should make
+entity identity explicit enough that later relation storage can rely on
+well-defined creation, validity, and destruction behavior.
 
 
-## 1. Slice Order
+## 1. Slice Scope
 
-### Phase 1D: Dense/Sparse Stores And Mandatory Store Policy
+### Phase 2: Entity Lifecycle And Component Cleanup
 
-Implement real `.DENSE` and `.SPARSE` component stores, integrate them into
-`CompManager`, make component `storeType` declarations mandatory, and move all
-engine base components to `.DENSE`.
+Add active entity validity, entity destruction, and registered component-store
+cleanup.
 
 This phase is complete when:
 
-* `storeTypes/denseStore.zig` contains a real dense component store.
-* `storeTypes/sparseStore.zig` contains a real sparse component store.
-* `CompManager.register(CompType)` instantiates the correct store for
-  `CompType.storeType`.
-* Components without `storeType` fail loudly at compile time.
-* `eng.TransComp`, `eng.ShapeComp`, `eng.HitboxComp`, and `eng.SpriteComp`
-  explicitly declare `.DENSE`.
-* `floppy`, `ping`, and `orbiter` compile after every live component type has
-  an explicit policy declaration.
-* No relation/event/rule/trait/archetype work is started.
-
-### Phase 1E: Component Views And Game Migration
-
-Introduce a focused `ComponentView` system for component-store gathering and
-typed access, then move `ping` and `orbiter` onto it.
-
-This phase is complete when:
-
-* Game code can request a typed component view from `World` without manually
-  bundling engine-owned store pointers.
-* `ping` no longer has `PingStores`.
-* `ping` uses `ComponentView` for body-part lookup, mobile/particle updates,
-  hitbox sync, render, and particle creation/cleanup.
-* `orbiter` registers engine-owned components and no longer uses borrowed
-  component stores.
-* `orbiter` uses `ComponentView` where it currently benefits from cached store
-  pointers.
-* Game-owned component-store logic is deprecated once `orbiter` no longer
-  needs it.
-* `BorrowedCompRegistry` has no remaining production game users. Removing it
-  may be done in this phase only if every build target remains clean and the
-  compatibility tests are updated or intentionally removed.
+* `World` can answer whether an entity id is currently alive.
+* `World.destroyEntity(id)` exists and rejects id 0, uninitialized worlds, and
+  already-dead or never-created ids predictably.
+* Destroying an entity removes that id from every registered component store.
+* `World.addComp`, `World.getComp`, `World.hasComp`, and `World.removeComp`
+  respect entity validity.
+* Component views remain transient typed access helpers and do not become the
+  broad future query system.
+* Dense and sparse component stores retain their current public behavior for
+  direct component add/get/has/remove calls.
+* Existing game behavior remains unchanged except where invalid entity/component
+  operations now fail earlier.
+* No relation, event, rule, trait, archetype, scheduler, broad query, or
+  particle/effects implementation is started.
 
 
 ## 2. Fixed Decisions
 
 * Keep `engine/world/engine_rework_reference.md` as the architectural guide.
-* Keep this work inside component storage and component views. Do not start
-  relations yet.
-* Store policy is no longer optional after Phase 1D.
-* Component declarations should read:
-
-      pub const storeType : eng.CompStorePolicy = .DENSE;
-
-  or:
-
-      pub const storeType : eng.CompStorePolicy = .SPARSE;
-
-* `baseComps.zig` components should use `.DENSE` once the dense backend exists.
-* Dense storage should optimize packed iteration and cache locality.
-* Sparse storage should preserve the current lookup-oriented behavior.
-* Component views are for typed component access and store-pointer caching.
-  They are not the full future query system over relations, events, traits,
-  archetypes, or history.
-* Persistent truth should remain entity ids and table rows, not raw pointers.
-  Cached store pointers are allowed as transient view internals.
-* Keep game-specific component definitions under `games/`.
-* Keep engine-level examples minimal and generic.
+* Keep this slice focused on entity lifecycle plus component cleanup.
+* Do not implement entity id reuse in this phase. Monotonic ids are simpler and
+  avoid generation/id-reuse questions before relations exist.
+* Prefer ids over raw pointers as persistent truth.
+* Component row pointers and component-view store pointers remain transient.
+* Destroying an entity should invalidate component membership for that id, but
+  should not invalidate component-store pointers unless component registration
+  changes.
+* Dense storage may keep swap-removal semantics. Stable iteration/draw order
+  remains a game-owned id-list concern until later order-aware queries exist.
+* Do not add marker components or zero-sized tag components. Classification
+  remains a future traits/metaproperties concern.
+* Keep game-specific simulation content under `games/`.
 
 
-## 3. Recommended Store Shapes
+## 3. Recommended Shape
 
-These container choices are the default implementation target unless the code
-strongly argues for a smaller equivalent:
+This section is a practical target, not a requirement if the code argues for a
+smaller equivalent.
 
-### 3.1 Dense Store
+### 3.1 Entity Validity
 
-Use a packed, swap-removal dense table:
+Keep `EntityIdRegistry` as the monotonic id source.
 
-* `std.ArrayList(EntityId)` for dense entity ids.
-* `std.ArrayList(CompType)` for dense component rows.
-* `std.AutoHashMap(EntityId, usize)` for id-to-dense-index lookup.
+Add active-entity tracking owned by `World` or by the registry, whichever keeps
+the lifecycle API cleaner:
 
-Expected behavior:
+* id 0 is never alive;
+* `createEntity()` marks the new id alive;
+* `isEntityAlive(id)` returns the current live/dead state;
+* `destroyEntity(id)` marks the id dead only after component cleanup succeeds;
+* `World.deinit()` clears all live entity tracking.
 
-* `add(id, value)` appends `id` and `value`, then records the index.
-* `get(id)` finds the dense index through the hash map.
-* `has(id)` checks the hash map.
-* `remove(id)` swap-removes the dense id/component rows and repairs the moved
-  entity's index.
-* iteration walks packed component rows.
-* dense iteration order is not stable after removals. Games that need stable
-  draw/order semantics should keep explicit ordered id lists or use later
-  order-aware view/query helpers.
+Do not reuse ids yet. If future id reuse is added, it should be a separate
+generation-aware slice.
 
-### 3.2 Sparse Store
+### 3.2 Component Cleanup
 
-Use the current hash-map-style store:
+`CompManager` should be able to remove an entity id from every registered
+component store without knowing each store's concrete type.
 
-* `std.AutoHashMap(EntityId, CompType)` for direct id-to-component lookup.
+Likely shape:
 
-Expected behavior:
+* extend the erased store entry with a remove-by-id callback;
+* register that callback beside `deinitDestroyFn`;
+* add `CompManager.removeEntity(id)` or similarly named cleanup helper;
+* have `World.destroyEntity(id)` call that helper before marking the entity dead.
 
-* preserve the current add/get/has/remove behavior;
-* preserve current sparse iteration semantics;
-* serve as the default choice for rare, optional, or highly lookup-oriented
-  components.
+The cleanup helper should tolerate stores where the id is absent. A destroyed
+entity may have zero components.
 
-### 3.3 Shared Store Interface
+### 3.3 World API
 
-Both stores should expose the common API used by `World` and game code today:
+The public World lifecycle surface should be small:
 
-      init(alloc)
-      deinit()
-      add(id, value)
-      remove(id)
-      get(id)
-      has(id)
-      iterator()
+    createEntity()
+    isEntityAlive(id)
+    destroyEntity(id)
 
-Names may follow the existing code style, but `CompManager`, `World`, and
-component views should not need to know the concrete container internals.
+Keep `registerComp`, `unregisterComp`, `addComp`, `getComp`, `hasComp`,
+`removeComp`, `getCompStore`, and `getCompView` behavior compatible with the
+current component path, except that component operations through `World` should
+reject dead or never-created ids.
 
 
-## 4. Phase 1D Checklist
+## 4. Phase 2 Checklist
 
-### 4.1 Store Policy Contract
+### 4.1 Inventory And Naming
 
-- [ ] Change the policy helper so missing `storeType` is a compile-time error.
-- [ ] Keep explicit `.DENSE` and `.SPARSE` declarations typed through
-      `CompStorePolicy`.
-- [ ] Ensure misspelled or invalid policy values fail loudly.
-- [ ] Update all live engine/game component types so they declare a policy.
-- [ ] Keep `CompStorePolicy` near component storage and re-export it through
-      the engine facade for game declarations.
-- [ ] Update tests that previously expected missing policy to default to
-      `.SPARSE`.
+- [ ] Inspect current entity creation, component add/remove, and game cleanup
+      call sites before editing behavior.
+- [ ] Choose names consistent with existing style, preferably
+      `isEntityAlive(id)` and `destroyEntity(id)` unless a better local pattern
+      is obvious.
+- [ ] Decide whether active-id tracking lives inside `World` or
+      `EntityIdRegistry`.
+- [ ] Keep existing `Entity` as a lightweight id wrapper.
+- [ ] Do not introduce a broad entity object hierarchy.
 
-### 4.2 Implement Store Backends
+### 4.2 Active Entity Tracking
 
-- [ ] Implement `DenseCompStoreFactory(CompType)` or equivalent in
-      `storeTypes/denseStore.zig`.
-- [ ] Implement `SparseCompStoreFactory(CompType)` or equivalent in
-      `storeTypes/sparseStore.zig`.
-- [ ] Move the current `AutoHashMap` store behavior into the sparse backend,
-      or wrap it without duplicating logic.
-- [ ] Keep allocation failure paths explicit and leak-free.
-- [ ] Keep duplicate add rejection.
-- [ ] Keep remove/get/has behavior for unregistered entity ids predictable.
-- [ ] Add dense-store tests for add/get/has/remove.
-- [ ] Add dense-store tests for swap-remove index repair.
-- [ ] Add dense-store tests for iteration over packed rows.
-- [ ] Add sparse-store tests matching current hash-map behavior.
+- [ ] Add active entity tracking with allocator-backed lifecycle if needed.
+- [ ] Initialize active tracking in `World.init`.
+- [ ] Clear active tracking in `World.deinit`.
+- [ ] Make `createEntity()` reject uninitialized worlds as it does now.
+- [ ] Make successful `createEntity()` mark the id alive.
+- [ ] Add `World.isEntityAlive(id)` or equivalent.
+- [ ] Ensure id 0 is never alive.
+- [ ] Add tests for creation and alive/dead state.
+- [ ] Add tests for world deinit/reinit resetting entity lifecycle state.
 
-### 4.3 Integrate Stores With CompManager
+### 4.3 Component Store Cleanup Hooks
 
-- [ ] Route `.DENSE` registration to the dense backend.
-- [ ] Route `.SPARSE` registration to the sparse backend.
-- [ ] Preserve one erased owned registry entry per component type.
-- [ ] Preserve store deinit/destroy through an erased lifecycle callback.
-- [ ] Preserve duplicate registration rejection.
-- [ ] Preserve allocation failure cleanup.
-- [ ] Preserve `World.addComp`, `World.getComp`, `World.hasComp`,
-      `World.removeComp`, and `World.getCompStore` behavior for both policies.
-- [ ] Avoid exposing dense/sparse internals through the broad `World` API.
+- [ ] Extend `CompManager` erased store entries with a callback that removes a
+      component row by entity id.
+- [ ] Implement the callback through `CompStoreFactory(CompType).remove(id)`.
+- [ ] Add a `CompManager` helper that removes one entity id from all registered
+      stores.
+- [ ] Make the helper return enough information to detect internal cleanup
+      failures if a future store can fail cleanup.
+- [ ] Keep cleanup tolerant of missing component rows.
+- [ ] Preserve store deinit/destroy behavior.
+- [ ] Preserve duplicate component registration rejection.
+- [ ] Add tests for cleanup across both dense and sparse stores.
 
-### 4.4 Move Base Components To Dense
+### 4.4 World Destroy API
 
-- [ ] Add `storeType : eng.CompStorePolicy = .DENSE` to `TransComp`.
-- [ ] Add `storeType : eng.CompStorePolicy = .DENSE` to `ShapeComp`.
-- [ ] Add `storeType : eng.CompStorePolicy = .DENSE` to `HitboxComp`.
-- [ ] Add `storeType : eng.CompStorePolicy = .DENSE` to `SpriteComp`.
-- [ ] Confirm base component registration now succeeds through the dense path.
-- [ ] Keep base components data-first. Do not add behavior beyond storage
-      policy metadata.
+- [ ] Add `World.destroyEntity(id)`.
+- [ ] Reject id 0.
+- [ ] Reject uninitialized worlds.
+- [ ] Reject never-created or already-dead ids.
+- [ ] Remove all registered components for the id.
+- [ ] Mark the id dead after component cleanup.
+- [ ] Ensure `destroyEntity(id)` is idempotent from the caller's perspective:
+      first call succeeds, later calls fail predictably without mutating state.
+- [ ] Add tests that destroyed entities lose dense components.
+- [ ] Add tests that destroyed entities lose sparse components.
+- [ ] Add tests that destroying an entity with no components succeeds.
+- [ ] Add tests that destroying one entity does not disturb another entity's
+      components.
 
-### 4.5 Update Game Component Policies
+### 4.5 World Component API Validity
 
-- [ ] Add explicit policies to `games/ping` components.
-- [ ] Add explicit policies to `games/orbiter` components before or during its
-      typed migration.
-- [ ] Use `.DENSE` for components primarily iterated every tick or render pass.
-- [ ] Use `.SPARSE` for rare, optional, or mostly point-lookup components.
-- [ ] Document any non-obvious policy choice in the local game code or in this
-      todo's completion notes.
+- [ ] Update `World.addComp` to reject dead or never-created ids.
+- [ ] Update `World.getComp` to reject dead or never-created ids.
+- [ ] Update `World.hasComp` to return false for dead or never-created ids.
+- [ ] Update `World.removeComp` to reject dead or never-created ids.
+- [ ] Preserve current behavior for unregistered component stores.
+- [ ] Keep direct store APIs unchanged; validity checks belong at the World
+      boundary for this slice.
+- [ ] Add tests for component operations on dead ids.
+- [ ] Add tests for component operations on ids that were never created.
 
-### 4.6 Phase 1D Validation
+### 4.6 Game Touchpoints
 
-- [ ] Run `zig build`.
-- [ ] Run `zig build ping`.
-- [ ] Run `zig build floppy`.
-- [ ] Run `zig build orbiter`.
-- [ ] Run `zig build check_games`.
-- [ ] Run `zig build test`.
-- [ ] Confirm missing `storeType` declarations fail at compile time with a
-      clear error.
-- [ ] Confirm `.DENSE` no longer rejects registration.
-- [ ] Confirm `.SPARSE` still preserves current sparse behavior.
-- [ ] Confirm no relation/event/rule/trait/archetype/scheduler work was added.
-- [ ] Do not run a formatting pass.
+- [ ] Check `games/ping` cleanup paths that manually remove components from
+      particle/body ids.
+- [ ] Check `games/floppy` and `games/orbiter` for assumptions that any
+      non-zero id can receive components.
+- [ ] Prefer using `World.destroyEntity(id)` where the game is truly deleting an
+      entity.
+- [ ] Keep game-owned stable ordering lists in place if they are still needed.
+- [ ] Do not start the first-class particle/effects system in this phase; only
+      preserve current ping behavior.
 
+### 4.7 Documentation Updates
 
-## 5. Phase 1E Checklist
+- [ ] Update `engine_rework_roadmap.md` only if implementation choices change
+      the sequencing or expose a contradiction.
+- [ ] Append completion notes to this todo when Phase 2 is finished.
+- [ ] Record the final active-id storage shape.
+- [ ] Record the final component cleanup callback/API names.
+- [ ] Record whether any game cleanup paths moved to `World.destroyEntity`.
+- [ ] Record validation commands and results.
 
-### 5.1 Component View API
-
-- [ ] Add a focused component-view module under `engine/world/views` or
-      `engine/world/components`, whichever best fits the code after Phase 1D.
-- [ ] Provide a `ComponentView` / `CompView` naming choice consistent with the
-      existing code style.
-- [ ] Let game code request a view from `World` for a fixed set of component
-      types.
-- [ ] Cache typed store pointers inside the view.
-- [ ] Fail clearly if any required component store is not registered.
-- [ ] Expose typed point lookup by entity id.
-- [ ] Expose enough iteration support to replace ping's manual store pointer
-      loops.
-- [ ] Keep the first view component-only. Do not include relations, events,
-      traits, archetypes, filters, or query planning yet.
-- [ ] Keep view lifetimes transient. Do not store long-lived views across
-      component registration/unregistration unless invalidation rules are
-      explicitly implemented.
-
-Possible target shape:
-
-      const bodyView = ng.world.getCompView( .{
-        eng.TransComp,
-        eng.ShapeComp,
-        eng.HitboxComp,
-      }) orelse return;
-
-Exact syntax may differ to fit Zig constraints and project style.
-
-### 5.2 Replace PingStores
-
-- [ ] Remove `PingStores`.
-- [ ] Replace ping's manual store bundle with component views.
-- [ ] Keep ping's `entityIds` and `particleIds` arrays if stable ordering is
-      still needed.
-- [ ] Update body-part lookup to read through a view.
-- [ ] Update hitbox sync to read through a view.
-- [ ] Update mobile and particle iteration to read through views.
-- [ ] Update render to read through a view.
-- [ ] Update particle/entity cleanup to avoid direct game-owned store pointer
-      bundles.
-- [ ] Preserve ping gameplay values and behavior.
-- [ ] Confirm ping no longer manually stores pointers to engine-owned stores.
-
-### 5.3 Migrate Orbiter To Engine-Owned Components
-
-- [ ] Inventory current `orbiter` game-owned component stores and borrowed
-      registrations.
-- [ ] Define explicit policies for every live `orbiter` component type.
-- [ ] Register orbiter component types through `World.registerComp`.
-- [ ] Replace component creation with `World.addComp`.
-- [ ] Replace borrowed component lookups with `World.getComp`,
-      `World.getCompStore`, or component views as appropriate.
-- [ ] Prefer component views for systems that currently fetch multiple stores
-      and reuse them through a phase.
-- [ ] Remove `@ptrCast` / `@alignCast` use caused by borrowed component lookup.
-- [ ] Preserve existing orbiter gameplay/setup behavior.
-- [ ] Keep orbiter-specific simulation content under `games/orbiter`.
-- [ ] Do not add relation storage to model orbiter relationships in this slice.
-      Keep the migration focused on components and views.
-
-### 5.4 Borrowed Compatibility Cleanup
-
-- [ ] Confirm no production game still calls:
-
-      registerBorrowedCompStore
-      unregisterBorrowedCompStore
-      getBorrowedCompStore
-      hasBorrowedCompStore
-
-- [ ] Deprecate the game-owned component-store path once `orbiter` is migrated.
-- [ ] Remove or clearly mark any helper/API/documentation that teaches users to
-      allocate, initialize, register, and cast game-owned component stores.
-- [ ] Keep any temporary compatibility surface explicitly named as deprecated
-      and borrowed/game-owned.
-- [ ] Decide whether to remove `BorrowedCompRegistry` immediately or leave it
-      for one more cleanup slice.
-- [ ] If removed, update `World`, tests, exports, and docs in the same slice.
-- [ ] If retained temporarily, mark it as deprecated compatibility with no
-      production users.
-
-### 5.5 Phase 1E Validation
+### 4.8 Validation
 
 - [ ] Run `zig build`.
 - [ ] Run `zig build ping`.
@@ -327,103 +221,35 @@ Exact syntax may differ to fit Zig constraints and project style.
 - [ ] Run `zig build orbiter`.
 - [ ] Run `zig build check_games`.
 - [ ] Run `zig build test`.
-- [ ] Confirm ping no longer defines `PingStores`.
-- [ ] Confirm ping and orbiter contain no borrowed-store lookups or component
-      store pointer casts.
-- [ ] Confirm component views do not expose dense/sparse container internals.
-- [ ] Confirm no relation/event/rule/trait/archetype/scheduler work was added.
+- [ ] Confirm no relation/event/rule/trait/archetype/scheduler/broad-query
+      implementation was added.
+- [ ] Confirm no first-class particle/effects implementation was added.
 - [ ] Do not run a formatting pass.
+
+
+## 5. Later, Not Part Of Phase 2
+
+* Entity id reuse or generation counters.
+* Relation storage, relation indexes, cardinality rules, and relation cleanup.
+* Generic event records/queues.
+* Rules/reactions.
+* Traits/metaproperties and archetypes/templates.
+* World logical-time scheduler.
+* Broad query planning over components, relations, events, traits, archetypes,
+  and effect records.
+* First-class particle/effects infrastructure.
+* Save/load/replay context records.
 
 
 ## 6. Completion Notes To Record
 
-When finishing Phase 1D, record:
+When finishing Phase 2, record:
 
-* final dense store type/factory names;
-* final sparse store type/factory names;
-* exact dense container layout;
-* exact sparse container layout;
-* mandatory `storeType` error behavior;
-* final policies chosen for base components;
-* final policies chosen for ping and orbiter components that were touched;
-* validation commands and results;
-* any blocker found before component views.
-
-When finishing Phase 1E, record:
-
-* final component-view type/API names;
-* view lifetime and invalidation assumptions;
-* how ping replaced `PingStores`;
-* how orbiter migrated away from borrowed stores;
-* how game-owned component-store APIs/docs were deprecated;
-* whether `BorrowedCompRegistry` was removed or retained temporarily;
+* final active entity storage shape;
+* final `World` entity lifecycle API names;
+* final `CompManager` cleanup callback/helper names;
+* how destroy cleanup behaves for dense and sparse component stores;
+* how component operations behave for dead and never-created ids;
+* any game cleanup paths changed to `World.destroyEntity`;
 * validation commands and results;
 * any blocker found before relation storage.
-
-
-## 7. Later, Not Part Of This Task
-
-* Track active entity validity in `World`.
-* Add erased component cleanup callbacks/indexing needed by future entity
-  destruction.
-* Implement `World.destroyEntity()` only when every registered component path
-  can participate in cleanup.
-* Add relation storage after entity/component ownership and component views are
-  stable.
-* Add generic event records/queues after entity, component, and relation
-  ownership is stable.
-* Add rules/reactions, traits, archetypes, scheduler, and broad queries in the
-  order described by the roadmap.
-
-
-## 8. Completion Notes - 2026-06-06
-
-Phase 1D completion:
-
-* Dense backend: `DenseCompStoreFactory(CompType)` in
-  `components/storeTypes/denseStore.zig`.
-* Sparse backend: `SparseCompStoreFactory(CompType)` in
-  `components/storeTypes/sparseStore.zig`.
-* `CompStoreFactory(CompType)` now routes through `CompType.storeType`.
-* Missing `storeType` now triggers a compile-time `@compileError`.
-* Dense layout: packed `ArrayList(EntityId)`, packed component rows, and
-  `AutoHashMap(EntityId, usize)` index lookup.
-* Zero-sized component types now trigger a compile-time `@compileError`;
-  marker/tag behavior needs game-owned id lists or a future tag storage policy.
-* Sparse layout: `AutoHashMap(EntityId, CompType)`, matching the old lookup
-  behavior.
-* Base policies: `TransComp`, `ShapeComp`, `HitboxComp`, and `SpriteComp` are
-  `.DENSE`.
-* Ping no longer uses zero-sized `MobileComp` or `ParticleComp`; mobile and
-  particle membership uses game-owned entity-id lists until tag storage exists.
-* Orbiter policies: `OrbitComp`, `BodyComp`, and `Economy` are `.DENSE`.
-
-Phase 1E completion:
-
-* View API: `CompView(.{ ... })`, exported as `eng.CompView` and
-  `eng.ComponentView`; `World.getCompView(.{ ... })` builds transient views.
-* View lifetime: views cache store pointers only and should be reacquired at
-  phase boundaries; component row pointers remain transient and may be
-  invalidated by later dense-store mutations.
-* `ping` no longer defines `PingStores`; body, mobile, render, particle, and
-  cleanup paths use component views plus `World.addComp/removeComp`.
-* `orbiter` now registers components through `World.registerComp`, creates
-  components with `World.addComp`, and uses component views for tick/render
-  phases.
-* Production games no longer use borrowed component stores or borrowed-store
-  pointer casts.
-* `BorrowedCompRegistry`, borrowed component APIs, and borrowed compatibility
-  tests were removed.
-
-Validation:
-
-* `zig build` passed.
-* `zig build ping` passed.
-* `zig build floppy` passed.
-* `zig build orbiter` passed.
-* `zig build check_games` passed.
-* `zig build test` passed.
-* `git diff --check` passed.
-
-No relation, event, rule, trait, archetype, scheduler, or broad query work was
-added in this slice.

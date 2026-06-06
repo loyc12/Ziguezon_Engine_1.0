@@ -46,6 +46,7 @@ support for:
 - reactions
 - traits
 - archetypes
+- particle/effect
 - scheduled simulation
 - inspection and explanation
 
@@ -62,6 +63,7 @@ World should eventually organize:
 - rules and reactions      for entity interactions
 - traits / metaproperties  for marking and classification
 - archetypes / templates
+- particle/effect records, emitters, configs, and pools
 - simulation scheduling
 - query and view helpers
 - context records          for save/load/replay-facing world state
@@ -133,6 +135,7 @@ Event examples should stay generic in the engine:
 - RelationRemoved
 - TraitApplied
 - TraitRemoved
+- EffectTriggered
 
 Games may define domain events on top of these.
 
@@ -159,6 +162,7 @@ Rules emit:
 - component changes
 - relation changes
 - trait changes
+- effect triggers
 
 The engine should provide only a minimal generic rule/reaction example at
 first. Game-specific rules belong in games.
@@ -182,6 +186,28 @@ Engine examples should stay generic:
 - Container
 - Indexed
 
+### 1.8 Particles and effects are first-class, but not ordinary entities
+
+Simulation-heavy games need effects that are driven by world facts without
+turning every transient visual into a full simulation entity.
+
+The particle/effects system should be a first-class engine system alongside
+components, relations, events, rules, traits, and archetypes.
+
+Particle/effect data may include:
+
+- emitter components on gameplay entities
+- effect events or commands
+- particle/effect configs
+- deterministic seeds
+- packed particle pools
+- render adapters for drawing transient rows
+
+Persistent gameplay objects that emit or receive effects may be entities.
+Individual smoke/spark/trail particles should usually live in a dedicated
+particle/effects pool unless they need entity identity, relations, rules, query
+visibility, save/load state, or gameplay interaction.
+
 ## 2. CONTRIBUTOR DIRECTIVES
 
 ### 2.1 Keep built-in systems minimal and generic
@@ -198,6 +224,7 @@ users can see how to define their own:
 - at least one trait/metaproperty type
 - at least one archetype/template
 - at least one rule/reaction example
+- at least one particle/effect example
 
 Add a few examples when genuinely useful. Do not grow a large built-in content
 library inside the engine.
@@ -213,8 +240,8 @@ The engine may provide generic patterns. It should not assume:
 - RPGs
 - colony sims
 
-Game-specific components, relations, events, traits, rules, and archetypes
-belong under games/
+Game-specific components, relations, events, traits, rules, archetypes, effects,
+and particle configs belong under games/
 Except for its focus on simulation-heavy games, the system should stay
 genre-agnostic.
 
@@ -228,6 +255,7 @@ Engine users should be able to express:
 - emit event
 - apply trait
 - spawn archetype
+- trigger effect
 - run/query systems
 
 without manually handling registry casts or container internals at every call
@@ -309,6 +337,7 @@ engine/world owns simulation infrastructure:
 - generic rules/reactions
 - generic traits/metaproperties
 - generic archetypes/templates
+- generic particle/effects infrastructure
 - logical simulation time and scheduler
 - query/view helpers
 - context records and adapters for future save/load/replay support
@@ -322,6 +351,7 @@ engine/render owns world-facing render adapters:
 - WorldCam
 - world-space drawing wrappers
 - sprite/world render helpers
+- particle/effects render helpers
 - debug render systems
 
 Simulation data should not depend on rendering.
@@ -337,6 +367,7 @@ games own domain-specific simulation content:
 - game traits
 - game archetypes
 - game rules
+- game effect configs
 - game-specific views and UI bindings
 
 The engine should make these easy to define, register, inspect, and run.
@@ -406,6 +437,7 @@ World should eventually support queries over:
 - events
 - traits
 - archetypes
+- effect records and emitters
 
 UI and debug tools should read through queries/views and emit commands/events,
 not mutate simulation internals directly.
@@ -414,8 +446,10 @@ not mutate simulation internals directly.
 
 Keep the direction clear:
 
-- data lives in components, relations, events, traits, and archetypes
+- data lives in components, relations, events, traits, archetypes, and effect
+  configs
 - behavior lives in systems and rules
+- particles/effects live in first-class effect systems and packed pools
 - rendering lives in render systems/adapters
 
 This keeps simulation code testable, reusable, and inspectable.
@@ -423,7 +457,7 @@ This keeps simulation code testable, reusable, and inspectable.
 Transient visual effects should not become entities unless they participate in
 gameplay. A gameplay object that emits particles may be an entity with emitter
 state, and the event that caused an effect may be world data, but individual
-smoke/spark/trail particles should usually live in a render/effects pool.
+smoke/spark/trail particles should usually live in a particle/effects pool.
 
 Particle configuration belongs in data such as `ParticleConfigs`. Replay or
 save/load paths should prefer recording the deterministic event/config/seed
@@ -448,6 +482,7 @@ Long-term conceptual shape:
         |-- Rules
         |-- Traits
         |-- Archetypes
+        |-- Particles / Effects
         |-- Scheduler
         |-- Queries / Views
 
@@ -457,5 +492,6 @@ The success condition is:
 
     A user can build a data-oriented simulation with many entities and many
     relationships, define their own simulation types cleanly, choose storage
-    policies when needed, inspect what the world contains, and rely on a
-    small set of generic engine examples as reference patterns.
+    policies when needed, drive first-class effects from world facts, inspect
+    what the world contains, and rely on a small set of generic engine examples
+    as reference patterns.

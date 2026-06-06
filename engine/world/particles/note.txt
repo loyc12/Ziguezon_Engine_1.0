@@ -1,0 +1,2 @@
+particles will hold all particle/effect-like logic
+The goal of this system is to avoid overloading the entity/component system with tons of temporary particles

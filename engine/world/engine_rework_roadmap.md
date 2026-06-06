@@ -12,7 +12,8 @@ If this roadmap conflicts with the reference, the reference takes precedence.
 
 ## Current Starting Point
 
-Phase 1D/1E completed the current World-owned component foundation:
+Phase 1 completed the current World-owned component foundation, ending with the
+1D/1E dense-store and component-view slices:
 
 - `Engine` owns one `World`.
 - `World` owns entity-id creation and typed component stores.
@@ -23,8 +24,8 @@ Phase 1D/1E completed the current World-owned component foundation:
 - `ping` and `orbiter` use `CompView` / `ComponentView` for transient typed
   store access.
 - Borrowed component-store compatibility was removed.
-- Relations, events, rules, traits, archetypes, logical scheduling, broad
-  queries, and entity destruction remain deferred.
+- Relations, events, rules, traits, archetypes, particle/effects systems,
+  logical scheduling, broad queries, and entity destruction remain deferred.
 
 ## Build Direction
 
@@ -33,8 +34,8 @@ simulation database.
 
 The target is not a pure ECS. The target is a data-oriented simulation layer
 where entity identity, components, relations, events, rules, traits,
-archetypes, schedules, queries, and views can be defined, stored, inspected,
-and run cleanly.
+archetypes, particle/effects systems, schedules, queries, and views can be
+defined, stored, inspected, and run cleanly.
 
 Remaining sequence:
 
@@ -82,8 +83,8 @@ Remaining sequence:
     world context work. Do not implement it until reusable save/load
     primitives exist in `utils`.
 
-18. Add a particle/effects system after events, rules, render adapters, and
-    relevant query/view helpers are stable.
+18. Add first-class particle/effects infrastructure after events, rules, render
+    adapters, and relevant query/view helpers are stable.
 
 
 ## World Responsibilities
@@ -97,6 +98,7 @@ Remaining sequence:
 - rules and reactions
 - traits / metaproperties for marking and classification
 - archetypes / templates
+- particle/effect records, emitters, configs, and pools
 - logical simulation time and scheduling
 - query and view helpers
 - context records for future save/load/replay-facing world state
@@ -114,12 +116,13 @@ site:
 - emit event
 - apply trait
 - spawn archetype
+- trigger effect
 - run/query systems
 
 
 ## Implementation Phases
 
-### 1. Entity Lifecycle And Cleanup
+### Phase 2: Entity Lifecycle And Cleanup
 
 Add active entity validity, entity destruction, and registered-store cleanup.
 
@@ -209,6 +212,7 @@ Initial engine examples should stay generic:
 - RelationRemoved
 - TraitApplied
 - TraitRemoved
+- EffectTriggered
 
 Support transient events first if that is the smallest useful slice, but do not
 block retained event history for debugging, UI, replay, audit, or future
@@ -233,6 +237,7 @@ Rules should be able to emit:
 - component changes
 - relation changes
 - trait changes
+- effect triggers
 
 Keep the first engine example minimal and generic. Game-specific rule content
 belongs under `games/`.
@@ -291,6 +296,7 @@ Queries should eventually cover:
 - events
 - traits
 - archetypes
+- effect records and emitters
 
 UI and debug tools should read through queries/views and emit commands/events
 instead of reaching into storage internals.
@@ -307,10 +313,13 @@ For now, do not wire this folder into runtime code. The active rework should
 continue through entity cleanup, relations, events, rules, traits, archetypes,
 scheduler, and broad queries before context work becomes implementation-ready.
 
-### 10. Particles And Transient Effects
+### 10. First-Class Particles And Effects
 
-Add a particle/effects system after the event/rule path and render adapters are
-stable enough to drive visual effects from world facts.
+Add first-class particle/effects infrastructure after the event/rule path and
+render adapters are stable enough to drive effects from world facts.
+
+This should be treated as a peer engine system with components, relations,
+events, rules, traits, and archetypes. It is not just a rendering shortcut.
 
 Particles that are only visual should not be entities. Use entities for
 gameplay-relevant projectiles, hazards, selectable objects, or anything that
@@ -321,8 +330,10 @@ transient visual effects.
 The target split is:
 
 - emitter components on entities for persistent effect sources;
-- world events or rules for effect triggers;
-- `ParticleConfigs` for effect definitions and spawn ranges;
+- world events, commands, or rules for effect triggers;
+- `ParticleConfigs` or equivalent config records for effect definitions and
+  spawn ranges;
+- deterministic seeds where replay/debug paths need them;
 - a packed transient particle pool for simulation and rendering;
 - render systems/adapters that draw particles without exposing pool internals
   to game code.
@@ -347,12 +358,14 @@ Keep ownership aligned with the reference document:
 - `engine/core` owns runtime orchestration: `Engine`, lifecycle, timing loop,
   `EngineTiming`, base-tick/frame pacing, hooks, configs, and phase order.
 - `engine/world` owns simulation infrastructure: `World`, entities,
-  components, relations, events, rules, traits, archetypes, logical simulation
-  time, scheduler, queries/views, and future context records for
-  save/load/replay-facing world state.
+  components, relations, events, rules, traits, archetypes, particle/effects
+  records and pools, logical simulation time, scheduler, queries/views, and
+  future context records for save/load/replay-facing world state.
 - `engine/render` owns world-facing render adapters: `WorldCam`, world-space
-  drawing wrappers, sprite/world render helpers, and debug render systems.
-- `games` owns domain-specific simulation content.
+  drawing wrappers, sprite/world render helpers, particle/effects render
+  helpers, and debug render systems.
+- `games` owns domain-specific simulation content, including game effect
+  configs.
 
 Simulation data should not depend on rendering. Render systems read simulation
 data and draw it.
@@ -367,6 +380,8 @@ data and draw it.
 - Keep engine-level examples minimal and generic.
 - Except for the engine's focus on simulation-heavy games, keep engine-level
   systems, examples, traits, and archetypes genre-agnostic.
+- Treat particle/effects infrastructure as first-class, while keeping
+  game-specific effect content under `games/`.
 - Do not add specialized simulation content to `engine/world`.
 - Do not grow a large built-in content library.
 - Prefer data tables, explicit metadata, relation indexes, and query/view
@@ -381,12 +396,13 @@ data and draw it.
 - Keep `EngineTiming` as the sole base-tick/frame pacing authority; World logical
   time and scheduling must build on ticks forwarded by Engine.
 - Keep game-specific components, relations, events, traits, rules,
-  archetypes, views, and UI bindings under `games/`.
+  archetypes, effects, particle configs, views, and UI bindings under `games/`.
 
 
 ## Success Condition
 
 A user can build a data-oriented simulation with many entities and many
 relationships, define their own simulation types cleanly, choose storage
-policies when needed, inspect what the world contains, and rely on a small set
-of generic engine examples as reference patterns.
+policies when needed, drive first-class effects from world facts, inspect what
+the world contains, and rely on a small set of generic engine examples as
+reference patterns.
