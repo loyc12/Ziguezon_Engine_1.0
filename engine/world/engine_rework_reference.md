@@ -405,6 +405,15 @@ Keep the direction clear:
 
 This keeps simulation code testable, reusable, and inspectable.
 
+Transient visual effects should not become entities unless they participate in
+gameplay. A gameplay object that emits particles may be an entity with emitter
+state, and the event that caused an effect may be world data, but individual
+smoke/spark/trail particles should usually live in a render/effects pool.
+
+Particle configuration belongs in data such as `ParticleConfigs`. Replay or
+save/load paths should prefer recording the deterministic event/config/seed
+that produced an effect instead of serializing every transient particle row.
+
 ## 5. TARGET SHAPE
 
 Long-term conceptual shape:

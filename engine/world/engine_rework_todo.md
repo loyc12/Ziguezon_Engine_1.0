@@ -14,7 +14,7 @@ Phase 1C established the first World-owned typed component path:
 * `World` owns entity-id creation, one typed `CompManager`, and a separate
   borrowed component registry.
 * `EngineStep` forwards each consumed base tick through
-  `World.tick(TickContext)`.
+  `World.tick(TickInfo)`.
 * `floppy` uses World-owned typed transform and shape stores.
 * `ping` uses World-owned typed transform, shape, hitbox, mobile, and particle
   stores.

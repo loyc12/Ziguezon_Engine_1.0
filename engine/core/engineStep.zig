@@ -122,7 +122,7 @@ inline fn tickWorld( ng : *Engine, isForced : bool ) void
 {
   utl.qlog( .TRACE, 0, @src(), "Ticking..." );
 
-  const tickContext : eng.TickContext =
+  const tickContext : eng.TickInfo =
   .{
     .baseTickIndex = ng.time.tickCount,
     .targetDelta   = ng.time.getTargetTickDeltaTime(),

@@ -14,7 +14,7 @@ const CompStoreFactory     = comp.CompStoreFactory;
 const TimeVal              = utl.TimeVal;
 
 
-pub const TickContext = struct
+pub const TickInfo = struct
 {
   baseTickIndex : u128    = 0,
   targetDelta   : TimeVal = .{},
@@ -152,7 +152,7 @@ pub const World = struct
 
   // ================================ TICK FUNCTIONS ================================
 
-  pub inline fn tick( self : *World, context : TickContext ) void
+  pub inline fn tick( self : *World, context : TickInfo ) void
   {
     if( !self.isInit )
     {

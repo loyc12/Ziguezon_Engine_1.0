@@ -84,6 +84,9 @@ Near-term sequence:
     world context work. Do not implement it until reusable save/load
     primitives exist in `utils`.
 
+19. Add a particle/effects system after events, rules, render adapters, and
+    relevant query/view helpers are stable.
+
 
 ## World Responsibilities
 
@@ -127,7 +130,7 @@ Keep this slice small:
 - entity lifecycle
 - component store ownership
 - component add/get/remove helpers
-- a `World.tick(TickContext)` boundary called from `EngineStep`
+- a `World.tick(TickInfo)` boundary called from `EngineStep`
 - a documented base-tick phase order
 - enough migration glue for existing games
 
@@ -289,6 +292,35 @@ For now, do not wire this folder into runtime code. The active rework should
 continue through component storage, component views, relations, events, rules,
 traits, archetypes, scheduler, and broad queries before context work becomes
 implementation-ready.
+
+### 10. Particles And Transient Effects
+
+Add a particle/effects system after the event/rule path and render adapters are
+stable enough to drive visual effects from world facts.
+
+Particles that are only visual should not be entities. Use entities for
+gameplay-relevant projectiles, hazards, selectable objects, or anything that
+participates in components, relations, rules, or collision. Use a particle pool
+for smoke, sparks, trails, impact dust, score confetti, and similar transient
+visual effects.
+
+The target split is:
+
+- emitter components on entities for persistent effect sources;
+- world events or rules for effect triggers;
+- `ParticleConfigs` for effect definitions and spawn ranges;
+- a packed transient particle pool for simulation and rendering;
+- render systems/adapters that draw particles without exposing pool internals
+  to game code.
+
+For save/load and replay, prefer recording deterministic effect triggers,
+configs, and seeds over serializing individual particle rows. Individual
+particles should be excluded from normal saves unless a later feature
+explicitly needs retained visual-effect state.
+
+`games/ping` should eventually replace pseudo-particle entities with this
+system, but not before the generic event/rule/render pieces exist. Treat that
+as the first concrete migration proof for the particle/effects system.
 
 
 ## Architectural Boundaries

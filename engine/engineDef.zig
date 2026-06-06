@@ -39,7 +39,7 @@ pub const tilemapMgr = @import( "world/tilemap/tilemapManager.zig" );
 pub const worldMgr   = @import( "world/worldManager.zig" );
 
 pub const World       = worldMgr.World;
-pub const TickContext = worldMgr.TickContext;
+pub const TickInfo = worldMgr.TickInfo;
 
 
 // ================ RENDER ================
