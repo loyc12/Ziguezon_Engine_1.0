@@ -128,6 +128,7 @@ pub const World = struct
 
 
   // ================================ BORROWED COMPONENT COMPATIBILITY ================================
+  // TODO : Remove these once orbiter is moved over to owned comps
 
   pub inline fn registerBorrowedCompStore( self : *World, name : []const u8, storePtr : *anyopaque ) bool
   {
@@ -152,7 +153,7 @@ pub const World = struct
 
   // ================================ TICK FUNCTIONS ================================
 
-  pub inline fn tick( self : *World, context : TickInfo ) void
+  pub inline fn tick( self : *World, info : TickInfo ) void
   {
     if( !self.isInit )
     {
@@ -160,9 +161,10 @@ pub const World = struct
       return;
     }
 
-    _ = context;
+    _ = info;
   }
 };
+
 
 
 // ================================ TESTS ================================
