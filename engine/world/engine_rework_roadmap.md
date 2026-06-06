@@ -12,16 +12,19 @@ If this roadmap conflicts with the reference, the reference takes precedence.
 
 ## Current Starting Point
 
-Phase 1C has established the first World-owned typed component path:
+Phase 1D/1E completed the current World-owned component foundation:
 
 - `Engine` owns one `World`.
 - `World` owns entity-id creation and typed component stores.
-- `floppy` and `ping` use World-owned typed component stores.
-- `orbiter` still uses the borrowed-store compatibility path.
-- Component store policy metadata exists, but only the current sparse hash-map
-  backend is implemented.
-- Explicit `.DENSE` policy is recognized and rejected until dense storage
-  exists.
+- `EngineStep` forwards consumed base ticks through `World.tick(TickInfo)`.
+- Dense and sparse component stores are implemented.
+- Component types must declare an explicit `storeType`.
+- `floppy`, `ping`, and `orbiter` use World-owned typed component stores.
+- `ping` and `orbiter` use `CompView` / `ComponentView` for transient typed
+  store access.
+- Borrowed component-store compatibility was removed.
+- Relations, events, rules, traits, archetypes, logical scheduling, broad
+  queries, and entity destruction remain deferred.
 
 ## Build Direction
 
@@ -33,58 +36,53 @@ where entity identity, components, relations, events, rules, traits,
 archetypes, schedules, queries, and views can be defined, stored, inspected,
 and run cleanly.
 
-Near-term sequence:
+Remaining sequence:
 
-1. Add `engine/world/worldManager.zig`.
+1. Add active entity tracking and component cleanup hooks.
 
-2. Move entity identity and component access behind `World`.
+2. Implement `World.destroyEntity()` once every registered component path can
+   participate in cleanup.
 
-3. Stabilize the current ECS/component path under `World`.
+3. Keep component views component-only until relation/event/trait query
+   semantics exist.
 
-4. Rework component storage around explicit user-selectable policies:
+4. Do not add marker-component support. Traits/metaproperties are the canonical
+   way to mark, tag, classify, or flag entities.
 
-       pub const storeType = .DENSE;
+5. Add relation storage as the first major `World` extension after entity and
+   component cleanup are stable.
 
-   and:
+6. Keep at least one minimal generic reference relation in engine code.
 
-       pub const storeType = .SPARSE;
-
-5. Keep at least one minimal generic reference component in engine code.
-
-6. Add relation storage as the first major `World` extension after the world
-   wrapper and component ownership are clear.
-
-7. Keep at least one minimal generic reference relation in engine code.
-
-8. Add generic event records/queues after entity, component, and relation
+7. Add generic event records/queues after entity, component, and relation
    ownership is stable. This means reworking the current event system entirely.
 
-9. Keep at least one minimal generic reference event in engine code.
+8. Keep at least one minimal generic reference event in engine code.
 
-10. Add rule/reaction support after events exist.
+9. Add rule/reaction support after events exist.
 
-11. Keep at least one minimal generic reference rule/reaction in engine code.
+10. Keep at least one minimal generic reference rule/reaction in engine code.
 
-12. Add traits/metaproperties after the base world data model is usable.
+11. Add traits/metaproperties after the base world data model is usable.
 
-13. Keep at least one minimal generic reference trait/metaproperty in engine
+12. Keep at least one minimal generic reference trait/metaproperty in engine
     code.
 
-14. Add archetypes/templates for bundles of initial facts.
+13. Add archetypes/templates for bundles of initial facts.
 
-15. Keep at least one minimal generic reference archetype/template in engine
+14. Keep at least one minimal generic reference archetype/template in engine
     code.
 
-16. Add World logical-time and scheduler support progressively, driven by base
+15. Add World logical-time and scheduler support progressively, driven by base
     ticks received from the existing `EngineTiming` system.
 
-17. Add query/view helpers progressively, driven by real game and debug needs.
+16. Add broad query helpers progressively, driven by real game and debug needs.
 
-18. Keep `engine/world/context` reserved for future save/load/replay-facing
+17. Keep `engine/world/context` reserved for future save/load/replay-facing
     world context work. Do not implement it until reusable save/load
     primitives exist in `utils`.
 
-19. Add a particle/effects system after events, rules, render adapters, and
+18. Add a particle/effects system after events, rules, render adapters, and
     relevant query/view helpers are stable.
 
 
@@ -97,7 +95,7 @@ Near-term sequence:
 - relation tables
 - event records / event queues
 - rules and reactions
-- traits / metaproperties
+- traits / metaproperties for marking and classification
 - archetypes / templates
 - logical simulation time and scheduling
 - query and view helpers
@@ -121,23 +119,23 @@ site:
 
 ## Implementation Phases
 
-### 1. World Wrapper
+### 1. Entity Lifecycle And Cleanup
 
-Add `World` as the owner/interface for entity and component storage.
+Add active entity validity, entity destruction, and registered-store cleanup.
 
 Keep this slice small:
 
-- entity lifecycle
-- component store ownership
-- component add/get/remove helpers
-- a `World.tick(TickInfo)` boundary called from `EngineStep`
-- a documented base-tick phase order
-- enough migration glue for existing games
+- active entity tracking
+- entity existence checks for World-owned operations
+- erased component cleanup callbacks for destroyed entities
+- `World.destroyEntity()` once every registered component path can clean up
+- tests for destroy cleanup across dense and sparse component stores
 
-Avoid adding relations, rules, traits, or archetypes in this first slice unless
-they are required to prevent a bad ownership boundary.
+Avoid adding relations, events, rules, traits, or archetypes in this slice
+unless they are required to prevent a bad lifecycle boundary.
 
-`World` must not add another base-tick pacing loop. Preserve the existing flow:
+`World` must still not add another base-tick pacing loop. Preserve the existing
+flow:
 
 1. `EngineTiming` measures elapsed real time and determines when base ticks are
    due.
@@ -148,10 +146,10 @@ they are required to prevent a bad ownership boundary.
 The initial tick context should expose the existing tick index and relevant
 timing values without moving their ownership out of `EngineTiming`.
 
-### 2. Component Storage Policies
+### 2. Component Storage And Views
 
-Rework component storage so users can choose dense or sparse storage where it
-matters.
+Keep the current component storage and view foundation stable while later World
+features are added.
 
 Default storage should stay sensible. Performance-relevant storage choices
 should be explicit on the data type passed to the store generator.
@@ -160,10 +158,16 @@ Prefer dense arrays, sparse sets, hash maps, indexed tables, and
 relation-specific indexes unless profiling proves another structure is
 justified.
 
-Once dense component storage is implemented, the generic engine-owned
-components in `baseComps.zig` should opt into `.DENSE`. Until then, they should
-remain on the working sparse/hash-map path so existing typed games can keep
-registering them successfully.
+The generic engine-owned components in `baseComps.zig` currently opt into
+`.DENSE`. Keep dense storage focused on packed iteration and cache locality, and
+keep sparse storage focused on rare, optional, or lookup-oriented components.
+
+Do not add storage special cases for marker components or zero-data tag
+components. Component stores are for per-entity state. Classification belongs in
+traits/metaproperties.
+
+Component views should remain transient typed access helpers. They are not the
+full future query system over relations, events, traits, archetypes, or history.
 
 ### 3. Relations
 
@@ -177,6 +181,12 @@ Initial engine examples should stay generic:
 - MemberOf
 - LinkedTo
 - DependsOn
+
+Do not use relations as mere tags. Use a relation only when both endpoints are
+meaningful entities. `MemberOf` means membership in another entity, such as a
+group, container, inventory, selection set, or collection that has identity,
+state, lifecycle, rules, or query value of its own. If the target would only
+exist to hold a label, model the label as a trait/metaproperty instead.
 
 Relation storage should move toward:
 
@@ -231,6 +241,10 @@ belongs under `games/`.
 
 Add traits/metaproperties for reusable classification and behavior/data flags.
 
+Traits/metaproperties are the canonical replacement for marker components and
+relation-shaped tags. Use them for facts like "selectable", "visible",
+"simulated", or other presence-style classifications.
+
 Initial engine examples should stay generic:
 
 - Selectable
@@ -242,7 +256,8 @@ Initial engine examples should stay generic:
 Add archetypes/templates for bundles of initial facts after traits and the base
 world data model are usable.
 
-Avoid assuming a specific game genre in engine-level traits or archetypes.
+Except for the engine's focus on simulation-heavy games, engine-level traits and
+archetypes should stay genre-agnostic.
 
 ### 7. Scheduler
 
@@ -289,9 +304,8 @@ and related state-description helpers once `utils` has reusable save/load or
 serialization primitives.
 
 For now, do not wire this folder into runtime code. The active rework should
-continue through component storage, component views, relations, events, rules,
-traits, archetypes, scheduler, and broad queries before context work becomes
-implementation-ready.
+continue through entity cleanup, relations, events, rules, traits, archetypes,
+scheduler, and broad queries before context work becomes implementation-ready.
 
 ### 10. Particles And Transient Effects
 
@@ -301,8 +315,8 @@ stable enough to drive visual effects from world facts.
 Particles that are only visual should not be entities. Use entities for
 gameplay-relevant projectiles, hazards, selectable objects, or anything that
 participates in components, relations, rules, or collision. Use a particle pool
-for smoke, sparks, trails, impact dust, score confetti, and similar transient
-visual effects.
+for smoke, sparks, trails, impact dust, brief feedback effects, and similar
+transient visual effects.
 
 The target split is:
 
@@ -351,6 +365,8 @@ data and draw it.
 - Keep principles and architectural intent in
   `engine/world/engine_rework_reference.md`.
 - Keep engine-level examples minimal and generic.
+- Except for the engine's focus on simulation-heavy games, keep engine-level
+  systems, examples, traits, and archetypes genre-agnostic.
 - Do not add specialized simulation content to `engine/world`.
 - Do not grow a large built-in content library.
 - Prefer data tables, explicit metadata, relation indexes, and query/view

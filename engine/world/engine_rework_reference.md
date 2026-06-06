@@ -3,7 +3,14 @@
 ## Purpose
 
 This document records the core goals, principles, and boundaries for the
-world/entity/simulation layer of Ziguezon Engine.
+world/entity/simulation layer of Ziguezon Engine: a lightweight, flexible,
+simulation-oriented 2D game engine.
+
+The design is loosely inspired by simulation-heavy games such as Thief: The
+Dark Project, Dwarf Fortress, RimWorld, and similar systems-driven games. The
+goal is not to copy any one engine or game structure, but to build a modern Zig
+implementation that uses low-level control, explicit data ownership, and
+performance-aware storage to help users create complex simulation games cleanly.
 
 It is not primarily an implementation roadmap. Detailed implementation order,
 migration steps, and code-level breakdowns belong in:
@@ -51,13 +58,13 @@ World should eventually organize:
 - entity identity
 - component tables
 - relation tables
-- event records / event queues
-- rules and reactions
-- traits / metaproperties
+- event records / queues
+- rules and reactions      for entity interactions
+- traits / metaproperties  for marking and classification
 - archetypes / templates
 - simulation scheduling
 - query and view helpers
-- context records for save/load/replay-facing world state
+- context records          for save/load/replay-facing world state
 
 This is closer to a simulation database than to an object hierarchy.
 
@@ -82,6 +89,11 @@ belongs in render systems/adapters.
 Components should not be forced to represent every fact. If a fact primarily
 connects two or more entities, it is probably a relation.
 
+Do not use marker components as the canonical way to tag or classify entities.
+Presence-only markers, zero-data components, and component-store special cases
+for "has this label" semantics create two competing classification paths.
+Use traits/metaproperties for that purpose.
+
 ### 1.4 Relations are first-class simulation data
 
 Relationships between entities must not be hidden inside arbitrary components
@@ -97,6 +109,12 @@ Relation examples should stay generic in the engine:
 - DependsOn
 
 Games may define specialized relations on top of these patterns.
+
+Relations are not a tag system. Use a relation when the target is another
+meaningful entity with identity, lifecycle, queries, state, rules, or ownership
+semantics. For example, `MemberOf` means "this entity is a member of that group
+entity", not "this entity has a string-like label". If there is no meaningful
+target entity, use a trait/metaproperty instead.
 
 Relations should eventually support source/target queries, reverse lookups,
 cardinality rules, and cleanup behavior when entities are destroyed.
@@ -150,6 +168,10 @@ first. Game-specific rules belong in games.
 Traits/metaproperties classify entities and may attach reusable behavior or
 data.
 
+Traits/metaproperties are the canonical way to mark, tag, classify, or flag
+entities. Prefer traits over marker components and over relation-shaped tags
+whenever the fact is simply "this entity has this classification".
+
 Archetypes/templates create bundles of initial facts.
 
 Engine examples should stay generic:
@@ -159,8 +181,6 @@ Engine examples should stay generic:
 - Simulated
 - Container
 - Indexed
-
-Avoid assuming a particular game genre in engine-level traits or archetypes, only that it is a simulation game.
 
 ## 2. CONTRIBUTOR DIRECTIVES
 
@@ -193,7 +213,10 @@ The engine may provide generic patterns. It should not assume:
 - RPGs
 - colony sims
 
-Game-specific components, relations, events, traits, rules, and archetypes belong under games/
+Game-specific components, relations, events, traits, rules, and archetypes
+belong under games/
+Except for its focus on simulation-heavy games, the system should stay
+genre-agnostic.
 
 ### 2.3 Users should think in simulation concepts
 
@@ -217,15 +240,7 @@ Storage remains configurable, but it should not dominate user-facing code.
 Some entity-related data will be used heavily and need dense storage.
 Others will be rare and need sparse or lookup-oriented storage.
 
-Users should be able to choose the storage policy of their data structs,
-for example with a declaration on the type passed to the store generator:
-
-    pub const storeType = .dense;
-
-or:
-
-    pub const storeType = .sparse;
-
+Users should be able to choose the storage policy of their data structs.
 The engine should provide sensible defaults, but performance-relevant storage
 choices must be available to users.
 
@@ -436,16 +451,7 @@ Long-term conceptual shape:
         |-- Scheduler
         |-- Queries / Views
 
-The near-term work should build toward this in small steps:
-
- 1. Add World as the owner/interface for entity and component storage, with
-    base ticks forwarded from `EngineTiming` through `EngineStep`.
- 2. Rework component storage so users can choose dense/sparse policies.
- 3. Add relations as one of the first major World extensions.
- 4. Add events, rules, traits, archetypes, logical-time scheduling, and query helpers
-    progressively, with minimal generic examples for each.
-
-The success condition is not "the engine has a pure ECS".
+The near-term work should build toward this in small iterative steps.
 
 The success condition is:
 
