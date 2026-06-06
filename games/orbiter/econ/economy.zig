@@ -1,5 +1,4 @@
 const std = @import( "std" );
-const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 
@@ -35,10 +34,6 @@ const MIN_RES_CAP = 10_000.0;
 
 pub const Economy = struct
 {
-  pub const storeType : eng.CompStorePolicy = .DENSE;
-
-  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
-
   location  : EconLoc,
 
   isValid   : bool = false,

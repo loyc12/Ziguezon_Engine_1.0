@@ -1,13 +1,14 @@
-const std = @import( "std"  );
-const eng = @import( "engine" );
-const utl = @import( "utils" );
+const std  = @import( "std"  );
+const eng  = @import( "engine" );
+const utl  = @import( "utils" );
 
-const gbl = @import( "gameGlobals.zig" );
-const gdf = @import( "gameDef.zig"    );
+const gbl  = @import( "gameGlobals.zig" );
+const gdf  = @import( "gameDef.zig"    );
 const gUtl = @import( "gameUtils.zig"   );
 
 const times  = &gbl.G_DATA.times;
 const target = &gbl.G_DATA.target;
+const views  = &gbl.G_DATA.views;
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
@@ -47,8 +48,10 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
     target.camFollow = !target.camFollow;
     if( target.camFollow )
     {
+      const bodyView = views.getBodyTrans( ng ) orelse return;
+
       target.hasMoved = true;
-      target.moveCamOver();
+      target.moveCamOver( bodyView );
     }
   }
 
@@ -57,16 +60,17 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 
   if( utl.ray.isKeyDown( utl.ray.KeyboardKey.left_shift ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right_shift ))
   {
-    var mainEcon = ng.world.getComp( gdf.bdy.BodyComp, gdf.G_CONSTS.homeId ).?.getEcon( .GROUND );
+    const bodyView = views.getBodyTrans( ng ) orelse return;
+    var mainEcon = bodyView.get( gdf.bdy.BodyComp, gdf.G_CONSTS.homeId ).?.getEcon( .GROUND );
 
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.zero  )){ mainEcon.addPopCount( .HUMAN,        10000 ); }
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 10000 ); }
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.two   )){ mainEcon.addResCount( .fromIdx( 1 ), 10000 ); }
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.three )){ mainEcon.addResCount( .fromIdx( 2 ), 10000 ); }
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.four  )){ mainEcon.addResCount( .fromIdx( 3 ), 10000 ); }
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.five  )){ mainEcon.addResCount( .fromIdx( 4 ), 10000 ); }
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.six   )){ mainEcon.addResCount( .fromIdx( 5 ), 10000 ); }
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.seven )){ mainEcon.addResCount( .fromIdx( 6 ), 10000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.zero  )){ mainEcon.addPopCount( .HUMAN,        100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.two   )){ mainEcon.addResCount( .fromIdx( 1 ), 100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.three )){ mainEcon.addResCount( .fromIdx( 2 ), 100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.four  )){ mainEcon.addResCount( .fromIdx( 3 ), 100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.five  )){ mainEcon.addResCount( .fromIdx( 4 ), 100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.six   )){ mainEcon.addResCount( .fromIdx( 5 ), 100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.seven )){ mainEcon.addResCount( .fromIdx( 6 ), 100000 ); }
   }
 
   gUtl.updateCameraLogic();
@@ -76,16 +80,16 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
 pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
-  var orbitView = ng.world.getCompView( .{ eng.TransComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }) orelse return;
-  var bodyView  = ng.world.getCompView( .{ eng.TransComp, gdf.bdy.BodyComp }) orelse return;
+  const orbitView = views.getOrbitTick( ng ) orelse return;
+  const bodyView  = views.getBodyTrans( ng ) orelse return;
 
   times.stepTime();
 
-  gUtl.tickOrbiters( &orbitView );
+  gUtl.tickOrbiters( orbitView );
 
   const starPos : utl.Vec2 = bodyView.get( eng.TransComp, gdf.G_CONSTS.starId ).?.pos.toVec2();
 
-  gUtl.tickGlobalEconomy( &bodyView, starPos );
+  gUtl.tickGlobalEconomy( bodyView, starPos );
 }
 
 
@@ -100,9 +104,9 @@ pub fn OnRenderBckgrnd( ng : *eng.Engine ) void // Called by engine.renderGraphi
 // NOTE : This is where you should render all world-position relative effects
 pub fn OnRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics()
 {
-  var view = ng.world.getCompView( .{ eng.TransComp, eng.ShapeComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }) orelse return;
+  const view = views.getOrbitRender( ng ) orelse return;
 
-  gUtl.renderOrbiters( &view );
+  gUtl.renderOrbiters( view );
 }
 
 pub fn OffRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics()
@@ -127,7 +131,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
   .{ .x = utl.getScreenWidth() - 10.0, .y = utl.getScreenHeight() - 10.0 }, .new( 1.0, 1.0 ), 24, .yellow );
 
 
-  var view = ng.world.getCompView( .{ eng.TransComp, eng.ShapeComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }) orelse return;
+  const view = views.getOrbitRender( ng ) orelse return;
 
-  gUtl.drawTargetInfo( &view );
+  gUtl.drawTargetInfo( view );
 }

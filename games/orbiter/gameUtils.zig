@@ -32,7 +32,7 @@ inline fn initStar( bodyComp : *bdy.BodyComp, bodyId : eng.EntityId ) void
   bodyComp.softInitAllEcons();
 }
 
-fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyId : eng.EntityId ) void
+fn initStellarBody( view : *gdf.BodyTransView, orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyId : eng.EntityId ) void
 {
   const bodyName  = gdf.nameFromId( bodyId );
   const orbitedId = gbl.ORBITANCE.getOrbitedId( bodyId );
@@ -42,7 +42,7 @@ fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyId
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
   var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
 
-  if( orbitedId != gdf.G_CONSTS.starId ){ if( eng.G_ENG.world.getComp( bdy.BodyComp, orbitedId ))| b |
+  if( orbitedId != gdf.G_CONSTS.starId ){ if( view.get( bdy.BodyComp, orbitedId ))| b |
   {
     orbitedMass = b.mass;
   }
@@ -98,6 +98,8 @@ fn initStellarBody( orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyId
 
 pub fn initStellarSystem( ng : *eng.Engine ) void
 {
+  const bodyView = gbl.G_DATA.views.getBodyTrans( ng ) orelse return;
+
   // Setting up relevant components
   for( 0..bodyCount )| idx |
   {
@@ -127,14 +129,14 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
     }
     else
     {
-      initStellarBody( &orbitComp, &bodyComp, id ); // Setting bodyType-specific orbitComp and bodyComp variables
+      initStellarBody( bodyView, &orbitComp, &bodyComp, id ); // Setting bodyType-specific orbitComp and bodyComp variables
 
       const orbitedId = gbl.ORBITANCE.getOrbitedId( id );
              startPos = orbitComp.getRelPos();
 
       if( orbitedId != gdf.G_CONSTS.starId )
       {
-        if( ng.world.getComp( eng.TransComp, orbitedId ))| trans |
+        if( bodyView.get( eng.TransComp, orbitedId ))| trans |
         {
           startPos = startPos.add( trans.pos.toVec2() );
         }
@@ -159,7 +161,8 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
 
   }
 
-  gdf.trvlSlvr.refreshAllTransferNodes();
+  const orbitView = gbl.G_DATA.views.getOrbitTick( ng ) orelse return;
+  gdf.trvlSlvr.refreshAllTransferNodes( orbitView );
 }
 
 
@@ -237,7 +240,7 @@ pub fn tickOrbiters( view : *gdf.OrbitTickView ) void
 
 //utl.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
 
-  gdf.trvlSlvr.refreshDynamicTransferNodes();
+  gdf.trvlSlvr.refreshDynamicTransferNodes( view );
 
   target.hasMoved = true; // Redundant for now since we update right after, but might become useful again later
 }
@@ -287,7 +290,7 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
 
 pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
 {
-  if( target.hasMoved ){ target.moveCamOver(); }
+  if( target.hasMoved ){ target.moveCamOver( view ); }
 
   // Rendering bodies' orbits and debug info
   for( 1..nttArr.len )| idx |

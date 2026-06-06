@@ -13,10 +13,55 @@ pub var G_DATA : GameData = .{};
 
 pub const GameData = struct
 {
-  times  : GameTimes  = .{},
-  target : TargetInfo = .{},
+  times  : GameTimes    = .{},
+  target : TargetInfo   = .{},
+  views  : OrbiterViews = .{},
 
   entityArray : [ bodyCount ]eng.Entity = std.mem.zeroes([ bodyCount ]eng.Entity ),
+};
+
+
+pub const OrbiterViews = struct
+{
+  bodyTrans   : ?gdf.BodyTransView   = null,
+  orbitTick   : ?gdf.OrbitTickView   = null,
+  orbitRender : ?gdf.OrbitRenderView = null,
+
+
+  pub inline fn clear( self : *OrbiterViews ) void
+  {
+    self.bodyTrans   = null;
+    self.orbitTick   = null;
+    self.orbitRender = null;
+  }
+
+  pub fn getBodyTrans( self : *OrbiterViews, ng : *eng.Engine ) ?*gdf.BodyTransView
+  {
+    return getCachedView( gdf.BodyTransView, .{ eng.TransComp, gdf.bdy.BodyComp }, &self.bodyTrans, ng );
+  }
+
+  pub fn getOrbitTick( self : *OrbiterViews, ng : *eng.Engine ) ?*gdf.OrbitTickView
+  {
+    return getCachedView( gdf.OrbitTickView, .{ eng.TransComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }, &self.orbitTick, ng );
+  }
+
+  pub fn getOrbitRender( self : *OrbiterViews, ng : *eng.Engine ) ?*gdf.OrbitRenderView
+  {
+    return getCachedView( gdf.OrbitRenderView, .{ eng.TransComp, eng.ShapeComp, gdf.orb.OrbitComp, gdf.bdy.BodyComp }, &self.orbitRender, ng );
+  }
+
+  fn getCachedView( comptime ViewType : type, comptime CompTypes : anytype, viewSlot : *?ViewType, ng : *eng.Engine ) ?*ViewType
+  {
+    if( viewSlot.* )|* view |
+    {
+      if( view.isStillValid( &ng.world )){ return view; }
+    }
+
+    viewSlot.* = ng.world.getCompView( CompTypes ) orelse return null;
+    if( viewSlot.* )|* view |{ return view; }
+
+    return null;
+  }
 };
 
 
@@ -70,6 +115,8 @@ pub const GameTimes = struct
 
 pub fn registerOrbiterComps( ng : *eng.Engine ) bool
 {
+  G_DATA.views.clear();
+
   if( !ng.world.registerComp( eng.TransComp ))
   {
     utl.qlog( .ERROR, 0, @src(), "Failed to register TransComp" );
@@ -111,6 +158,8 @@ pub fn registerOrbiterComps( ng : *eng.Engine ) bool
 
 pub fn unregisterOrbiterComps( ng : *eng.Engine ) void
 {
+  G_DATA.views.clear();
+
   _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
   _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
   _ = ng.world.unregisterComp( eng.SpriteComp    );
@@ -153,7 +202,7 @@ pub const TargetInfo = struct
     self.hasMoved = true;
   }
 
-  pub fn moveCamOver( self : *TargetInfo ) void
+  pub fn moveCamOver( self : *TargetInfo, view : anytype ) void
   {
     if( self.targetId == 0 )
     {
@@ -166,7 +215,7 @@ pub const TargetInfo = struct
     {
       self.hasMoved = false;
 
-      const targetTrans = eng.G_ENG.world.getComp( eng.TransComp, self.targetId );
+      const targetTrans = view.get( eng.TransComp, self.targetId );
 
       if( targetTrans )| trans |
       {

@@ -287,11 +287,11 @@ fn captureDeltaVToParking( bodyId : EntityId, vInf : f64 ) f64
 
 // ================================ CACHE REFRESH ================================
 
-fn refreshTransferNode( bodyId : EntityId ) void
+fn refreshTransferNode( view : *gdf.OrbitTickView, bodyId : EntityId ) void
 {
   if( !isValidBodyId( bodyId )){ return; }
 
-  const body = eng.G_ENG.world.getComp( gdf.bdy.BodyComp, bodyId );
+  const body = view.get( gdf.bdy.BodyComp, bodyId );
   if( body == null )
   {
     transferNodes[ @intCast( bodyId )] = .{};
@@ -312,7 +312,7 @@ fn refreshTransferNode( bodyId : EntityId ) void
     return;
   }
 
-  const orbit = eng.G_ENG.world.getComp( gdf.orb.OrbitComp, bodyId );
+  const orbit = view.get( gdf.orb.OrbitComp, bodyId );
   if( orbit == null )
   {
     node.valid = false;
@@ -335,15 +335,15 @@ fn refreshTransferNode( bodyId : EntityId ) void
   transferNodes[ @intCast( bodyId )] = node;
 }
 
-pub fn refreshAllTransferNodes() void
+pub fn refreshAllTransferNodes( view : *gdf.OrbitTickView ) void
 {
   for( 1..CACHE_LEN )| idx |
   {
-    refreshTransferNode( @intCast( idx ));
+    refreshTransferNode( view, @intCast( idx ));
   }
 }
 
-pub fn refreshDynamicTransferNodes() void
+pub fn refreshDynamicTransferNodes( view : *gdf.OrbitTickView ) void
 {
   for( 1..CACHE_LEN )| idx |
   {
@@ -352,7 +352,7 @@ pub fn refreshDynamicTransferNodes() void
 
     if( !node.valid or bodyId == gdf.G_CONSTS.starId ){ continue; }
 
-    if( eng.G_ENG.world.getComp( gdf.orb.OrbitComp, bodyId ))| orbit |
+    if( view.get( gdf.orb.OrbitComp, bodyId ))| orbit |
     {
       node.angularPos = orbit.angularPos;
       node.angularVel = orbit.angularVel;

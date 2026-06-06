@@ -5,6 +5,8 @@ const entity = @import( "../../entity.zig" );
 
 const EntityId = entity.EntityId;
 
+// NOTE : Not the densest possible store. Check if implementing an id-indexed array alternative would be worth it
+
 
 pub fn DenseCompStoreFactory( comptime CompType : type ) type
 {
@@ -38,9 +40,9 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type
       }
     };
 
-    alloc     : std.mem.Allocator             = undefined,
-    entityIds : std.ArrayList( EntityId )     = .empty,
-    values    : std.ArrayList( CompType )     = .empty,
+    alloc     : std.mem.Allocator                  = undefined,
+    entityIds : std.ArrayList(   EntityId )        = .empty,
+    values    : std.ArrayList(   CompType )        = .empty,
     indices   : std.AutoHashMap( EntityId, usize ) = undefined,
 
     isInit : bool = false,
