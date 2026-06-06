@@ -57,6 +57,7 @@ World should eventually organize:
 - archetypes / templates
 - simulation scheduling
 - query and view helpers
+- context records for save/load/replay-facing world state
 
 This is closer to a simulation database than to an object hierarchy.
 
@@ -295,6 +296,7 @@ engine/world owns simulation infrastructure:
 - generic archetypes/templates
 - logical simulation time and scheduler
 - query/view helpers
+- context records and adapters for future save/load/replay support
 
 This is the main target of the engine rework.
 
@@ -330,6 +332,11 @@ The engine should make these easy to define, register, inspect, and run.
 
 Save/load primitives will eventually live in utils. The world layer does not
 need a full save/load system immediately.
+
+The `engine/world/context` folder is reserved for future World context records,
+snapshot adapters, and save/load/replay-facing world-state descriptions. It
+should remain mostly dormant until the reusable serialization/save-load
+primitives exist in `utils`.
 
 However, world architecture should avoid choices that make save/load,
 deterministic replay, or debugging unnecessarily hard.

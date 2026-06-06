@@ -76,6 +76,7 @@ pub const EntityId = entity.EntityId;
 const comp = @import( "world/components/component.zig" );
 
 pub const CompStoreFactory = comp.CompStoreFactory;
+pub const CompStorePolicy  = comp.CompStorePolicy;
 
 
 pub const baseComp = @import( "world/components/baseComps.zig" );

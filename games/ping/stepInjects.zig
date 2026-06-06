@@ -21,21 +21,21 @@ var pendingBallParticles : u32 = 0;
 
 // ================================ HELPER FUNCTIONS ================================
 
-fn getBodyParts( id : eng.EntityId, name : []const u8 ) ?BodyParts
+fn getBodyParts( stores : stateInj.PingStores, id : eng.EntityId, name : []const u8 ) ?BodyParts
 {
-  const trans = stateInj.getTransStore().get( id ) orelse
+  const trans = stores.trans.get( id ) orelse
   {
     utl.log( .WARN, 0, @src(), "Transform for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
   };
 
-  const shape = stateInj.getShapeStore().get( id ) orelse
+  const shape = stores.shape.get( id ) orelse
   {
     utl.log( .WARN, 0, @src(), "Shape for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
   };
 
-  const hitbox = stateInj.getHitboxStore().get( id ) orelse
+  const hitbox = stores.hitbox.get( id ) orelse
   {
     utl.log( .WARN, 0, @src(), "Hitbox for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
@@ -54,10 +54,10 @@ fn syncBodyHitbox( body : BodyParts ) void
   body.hitbox.hitbox = body.shape.getAABB( body.trans.pos );
 }
 
-fn cpyBodyPosViaId( dstId : eng.EntityId, srcId : eng.EntityId ) void
+fn cpyBodyPosViaId( stores : stateInj.PingStores, dstId : eng.EntityId, srcId : eng.EntityId ) void
 {
-  const src = getBodyParts( srcId, "Source" ) orelse return;
-  const dst = getBodyParts( dstId, "Destination" ) orelse return;
+  const src = getBodyParts( stores, srcId, "Source" ) orelse return;
+  const dst = getBodyParts( stores, dstId, "Destination" ) orelse return;
 
   dst.trans.pos = src.trans.pos;
   syncBodyHitbox( dst );
@@ -106,7 +106,7 @@ fn clampBodyInXRange( body : BodyParts, xMin : f64, xMax : f64 ) void
 }
 
 // Emit particles in a given position and velocity range, with the given colour
-pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : utl.Colour ) void
+pub fn emitParticles( ng : *Engine, stores : stateInj.PingStores, pos : VecA, vel : VecA, dPos : VecA, dVel : VecA, amount : u32, colour : utl.Colour ) void
 {
   // NOTE : Can invalidate component pointers after use. Call after body pointers are no longer needed.
 
@@ -116,7 +116,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
 
     const size = eng.G_ENG.rng.getScaledFloat( 2.0, 7.0 );
 
-    _ = stateInj.createEntity( ng, // NOTE : We do not care if this fails, as we are just emitting particles
+    _ = stateInj.createEntity( ng, stores, // NOTE : We do not care if this fails, as we are just emitting particles
     .{
       .pos    = eng.G_ENG.rng.getScaledVecA( dPos, pos ),
       .vel    = eng.G_ENG.rng.getScaledVecA( dVel, vel ),
@@ -130,7 +130,7 @@ pub fn emitParticles( ng : *Engine, pos : VecA, vel : VecA, dPos : VecA, dVel : 
   }
 }
 
-pub fn emitBounceParticles( ng : *Engine, ball : BodyParts ) void
+pub fn emitBounceParticles( ng : *Engine, stores : stateInj.PingStores, ball : BodyParts ) void
 {
   // Emit particles at the ball's position relative to the ball's post-bounce velocity
 
@@ -138,6 +138,7 @@ pub fn emitBounceParticles( ng : *Engine, ball : BodyParts ) void
   {
     emitParticles(
       ng,
+      stores,
       ball.trans.pos, // NOTE : Had to set .use_llvm to false to avoid PRO issues with this line
       .{ .x = @divTrunc( ball.trans.vel.x, 3 ), .y = @divTrunc( ball.trans.vel.y, 3 ) },
       .{ .x = 16,  .y = 16, .a = Angle.newRad( 1.0 )},
@@ -152,19 +153,19 @@ pub fn emitBounceParticles( ng : *Engine, ball : BodyParts ) void
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-var   P1_MV_FAC : f64 = 0.0; // Player 1 movement direction
-var   P2_MV_FAC : f64 = 0.0; // Player 2 movement direction
+var   P1_MV_FAC   : f64 = 0.0;   // Player 1 movement direction
+var   P2_MV_FAC   : f64 = 0.0;   // Player 2 movement direction
 
-const MV_FAC_STEP : f64 = 0.4;  // Movement factor step ( size of increment / decrement )
-const MV_FAC_CAP  : f64 = 16.0; // Movement factor cap, to prevent excessive speed
+const MV_FAC_STEP : f64 = 0.4;   // Movement factor step ( size of increment / decrement )
+const MV_FAC_CAP  : f64 = 16.0;  // Movement factor cap, to prevent excessive speed
 
-const B_BASE_VEL : f64 = 500.0; // Base velocity of the ball when it is launched
-const B_GRAVITY  : f64 = 800.0; // Base gravitational acceleration of the ball
+const B_BASE_VEL  : f64 = 500.0; // Base velocity of the ball when it is launched
+const B_GRAVITY   : f64 = 800.0; // Base gravitational acceleration of the ball
 
-const WIN_SCORE : u8 = 5; // Score needed to win the game
-var   WINNER    : u8 = 0; // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet
+const WIN_SCORE   : u8  = 5;     // Score needed to win the game
+var   WINNER      : u8  = 0;     // The winner of the game, 1 for player 1, 2 for player 2, 0 for no winner yet
 
-var   SCORES    : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
+var   SCORES : [ 2 ]u8 = .{ 0, 0 }; // Scores for player 1 and player 2
 
 const B_MIN_BOUNCE_SPEED_X : f64 = 128.0; // Minimum parallel speed of the ball when bouncing off players
 const B_MIN_BOUNCE_SPEED_Y : f64 = 256.0; // Minimum perpendicular speed of the ball when bouncing off players
@@ -192,11 +193,13 @@ pub fn OnInputUpdate( ng : *Engine ) void
 
     if( WINNER != 0 )
     {
+      const stores = stateInj.getStores( ng ) orelse return;
+
       SCORES = .{ 0, 0 }; // Reset scores if the game is restarted
       WINNER = 0;         // Reset winner
 
       // Reset the ball position and velocity
-      const ball = getBodyParts( stateInj.BALL_ID, "Ball" ) orelse return;
+      const ball = getBodyParts( stores, stateInj.BALL_ID, "Ball" ) orelse return;
 
       ball.trans.pos = .{};
       ball.trans.vel = .{};
@@ -204,7 +207,7 @@ pub fn OnInputUpdate( ng : *Engine ) void
       syncBodyHitbox( ball );
 
       // Reset the positions of the ball shadows
-      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( @intCast( i ), stateInj.BALL_ID ); }
+      for( stateInj.SHADOW_RANGE_START .. 1 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( stores, @intCast( i ), stateInj.BALL_ID ); }
 
       utl.qlog( .INFO, 0, @src(), "Match reseted" );
     }
@@ -256,28 +259,29 @@ pub fn OnInputUpdate( ng : *Engine ) void
 
 pub fn OnTickUpdate( ng : *Engine ) void
 {
-  const ball = getBodyParts( stateInj.BALL_ID, "Ball" ) orelse return;
+  const stores = stateInj.getStores( ng ) orelse return;
+  const ball = getBodyParts( stores, stateInj.BALL_ID, "Ball" ) orelse return;
 
   ball.trans.acc.y = B_GRAVITY;
 
   // Chainwap the positions of the ball shadows
-  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( @intCast( i ), @intCast( i + 1 ) ); }
+  for( stateInj.SHADOW_RANGE_START .. 0 + stateInj.SHADOW_RANGE_END )| i |{ cpyBodyPosViaId( stores, @intCast( i ), @intCast( i + 1 ) ); }
 
-  cpyBodyPosViaId( stateInj.SHADOW_RANGE_END, stateInj.BALL_ID );
+  cpyBodyPosViaId( stores, stateInj.SHADOW_RANGE_END, stateInj.BALL_ID );
 
   var particleIndex : usize = 0;
   while( particleIndex < stateInj.getParticleCount() )
   {
-    const part = getBodyParts( stateInj.getParticleId( particleIndex ), "Particle" ) orelse
+    const part = getBodyParts( stores, stateInj.getParticleId( particleIndex ), "Particle" ) orelse
     {
-      stateInj.removeParticleAt( particleIndex );
+      stateInj.removeParticleAt( stores, particleIndex );
       continue;
     };
 
     // If the particle is below the screen, deactivate it and mark it for deletion
     if( part.hitbox.hitbox.getTopY() >= utl.getScreenHeight() / 2 )
     {
-      stateInj.removeParticleAt( particleIndex );
+      stateInj.removeParticleAt( stores, particleIndex );
       continue;
     }
 
@@ -285,7 +289,7 @@ pub fn OnTickUpdate( ng : *Engine ) void
     particleIndex += 1;
   }
 
-  stateInj.updateMobileEntities( ng.getTargetTickDelta() );
+  stateInj.updateMobileEntities( stores, ng.getTargetTickDelta() );
 }
 
 pub fn OffTickUpdate( ng : *Engine ) void
@@ -304,9 +308,10 @@ pub fn OffTickUpdate( ng : *Engine ) void
   const playerBounceFactorY : f64 = 0.80; // Perpendicular bounce factor for the ball when hitting players
   const playerBounceFactorX : f64 = 0.75; // Parallel bounce factor for the ball when hitting players
 
-  const p1   = getBodyParts( stateInj.P1_ID,   "P1"   ) orelse return;
-  const p2   = getBodyParts( stateInj.P2_ID,   "P2"   ) orelse return;
-  const ball = getBodyParts( stateInj.BALL_ID, "Ball" ) orelse return;
+  const stores = stateInj.getStores( ng ) orelse return;
+  const p1   = getBodyParts( stores, stateInj.P1_ID,   "P1"   ) orelse return;
+  const p2   = getBodyParts( stores, stateInj.P2_ID,   "P2"   ) orelse return;
+  const ball = getBodyParts( stores, stateInj.BALL_ID, "Ball" ) orelse return;
 
   // ================ CLAMPING THE PLAYER POSITIONS ================
 
@@ -456,14 +461,14 @@ pub fn OffTickUpdate( ng : *Engine ) void
     }
   }
 
-  emitBounceParticles( ng, ball );
+  emitBounceParticles( ng, stores, ball );
 }
 
 pub fn OnRenderWorld( ng : *Engine ) void
 {
-  _ = ng;
+  const stores = stateInj.getStores( ng ) orelse return;
 
-  stateInj.renderEntities();
+  stateInj.renderEntities( stores );
 }
 
 

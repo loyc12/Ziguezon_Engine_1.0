@@ -12,7 +12,16 @@ If this roadmap conflicts with the reference, the reference takes precedence.
 
 ## Current Starting Point
 
-Nothing implemented yet
+Phase 1C has established the first World-owned typed component path:
+
+- `Engine` owns one `World`.
+- `World` owns entity-id creation and typed component stores.
+- `floppy` and `ping` use World-owned typed component stores.
+- `orbiter` still uses the borrowed-store compatibility path.
+- Component store policy metadata exists, but only the current sparse hash-map
+  backend is implemented.
+- Explicit `.DENSE` policy is recognized and rejected until dense storage
+  exists.
 
 ## Build Direction
 
@@ -34,11 +43,11 @@ Near-term sequence:
 
 4. Rework component storage around explicit user-selectable policies:
 
-       pub const storeType = .dense;
+       pub const storeType = .DENSE;
 
    and:
 
-       pub const storeType = .sparse;
+       pub const storeType = .SPARSE;
 
 5. Keep at least one minimal generic reference component in engine code.
 
@@ -71,6 +80,10 @@ Near-term sequence:
 
 17. Add query/view helpers progressively, driven by real game and debug needs.
 
+18. Keep `engine/world/context` reserved for future save/load/replay-facing
+    world context work. Do not implement it until reusable save/load
+    primitives exist in `utils`.
+
 
 ## World Responsibilities
 
@@ -85,6 +98,7 @@ Near-term sequence:
 - archetypes / templates
 - logical simulation time and scheduling
 - query and view helpers
+- context records for future save/load/replay-facing world state
 
 Entities should remain identifiers. Components, relations, events, traits, and
 rules store the facts that make those identifiers meaningful.
@@ -142,6 +156,11 @@ should be explicit on the data type passed to the store generator.
 Prefer dense arrays, sparse sets, hash maps, indexed tables, and
 relation-specific indexes unless profiling proves another structure is
 justified.
+
+Once dense component storage is implemented, the generic engine-owned
+components in `baseComps.zig` should opt into `.DENSE`. Until then, they should
+remain on the working sparse/hash-map path so existing typed games can keep
+registering them successfully.
 
 ### 3. Relations
 
@@ -258,6 +277,19 @@ Queries should eventually cover:
 UI and debug tools should read through queries/views and emit commands/events
 instead of reaching into storage internals.
 
+### 9. Context
+
+Reserve `engine/world/context` for future save/load/replay-facing World state.
+
+This folder should eventually hold World context records, snapshot adapters,
+and related state-description helpers once `utils` has reusable save/load or
+serialization primitives.
+
+For now, do not wire this folder into runtime code. The active rework should
+continue through component storage, component views, relations, events, rules,
+traits, archetypes, scheduler, and broad queries before context work becomes
+implementation-ready.
+
 
 ## Architectural Boundaries
 
@@ -270,7 +302,8 @@ Keep ownership aligned with the reference document:
   `EngineTiming`, base-tick/frame pacing, hooks, configs, and phase order.
 - `engine/world` owns simulation infrastructure: `World`, entities,
   components, relations, events, rules, traits, archetypes, logical simulation
-  time, scheduler, and queries/views.
+  time, scheduler, queries/views, and future context records for
+  save/load/replay-facing world state.
 - `engine/render` owns world-facing render adapters: `WorldCam`, world-space
   drawing wrappers, sprite/world render helpers, and debug render systems.
 - `games` owns domain-specific simulation content.
@@ -294,6 +327,8 @@ data and draw it.
 - Prefer ids over raw pointers as persistent truth.
 - Preserve room for future save/load, deterministic replay, debugging, and
   event history without building those full systems yet.
+- Keep `engine/world/context` dormant until reusable save/load primitives exist
+  in `utils`.
 - Keep phase order and event ordering explicit.
 - Keep `EngineTiming` as the sole base-tick/frame pacing authority; World logical
   time and scheduling must build on ticks forwarded by Engine.

@@ -10,6 +10,23 @@ const entity = @import( "../entity.zig" );
 
 const EntityId = entity.EntityId;
 
+// ================ COMPONENT STORE POLICY ================
+
+pub const CompStorePolicy = enum
+{
+  SPARSE,
+  DENSE,
+};
+
+pub fn getCompStorePolicy( comptime CompType : type ) CompStorePolicy
+{
+  if( !@hasDecl( CompType, "storeType" )){ return .SPARSE; }
+
+  const policy : CompStorePolicy = CompType.storeType;
+  return policy;
+}
+
+
 // ================ BORROWED COMPONENT REGISTRY ================
 
 // NOTE: BorrowedCompRegistry does NOT own CompStore lifetimes

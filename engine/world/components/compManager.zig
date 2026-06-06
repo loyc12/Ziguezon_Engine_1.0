@@ -3,6 +3,7 @@ const utl  = @import( "utils" );
 const comp = @import( "component.zig" );
 
 const CompStoreFactory = comp.CompStoreFactory;
+const CompStorePolicy  = comp.CompStorePolicy;
 
 
 pub const CompManager = struct
@@ -55,6 +56,7 @@ pub const CompManager = struct
   pub fn register( self : *CompManager, comptime CompType : type ) bool
   {
     const typeName = @typeName( CompType );
+    const policy   = comp.getCompStorePolicy( CompType );
 
     if( !self.isInit )
     {
@@ -64,6 +66,11 @@ pub const CompManager = struct
     if( self.stores.contains( typeName ))
     {
       utl.log( .WARN, 0, @src(), "Cannot register CompStore for type {s} : type already registered", .{ typeName });
+      return false;
+    }
+    if( policy == .DENSE )
+    {
+      utl.log( .ERROR, 0, @src(), "Cannot register dense CompStore for type {s} : dense storage is not implemented yet", .{ typeName });
       return false;
     }
 
@@ -168,4 +175,58 @@ test "CompManager owns typed store registration and lifecycle"
   try std.testing.expect( manager.unregister( TestComp ));
   try std.testing.expect( manager.getStore( TestComp ) == null );
   try std.testing.expect( manager.register( TestComp ));
+}
+
+test "CompManager resolves component store policies"
+{
+  const DefaultComp = struct
+  {
+    value : u32 = 0,
+  };
+  const SparseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const DenseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .DENSE;
+
+    value : u32 = 0,
+  };
+
+  try std.testing.expect( comp.getCompStorePolicy( DefaultComp ) == .SPARSE );
+  try std.testing.expect( comp.getCompStorePolicy( SparseComp  ) == .SPARSE );
+  try std.testing.expect( comp.getCompStorePolicy( DenseComp   ) == .DENSE  );
+}
+
+test "CompManager accepts sparse policy and rejects dense policy"
+{
+  const SparseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const DenseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .DENSE;
+
+    value : u32 = 0,
+  };
+
+  var manager : CompManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect( manager.register( SparseComp ));
+  try std.testing.expect( !manager.register( SparseComp ));
+
+  const sparseStore = manager.getStore( SparseComp ).?;
+  try std.testing.expect( sparseStore.add( 1, .{ .value = 42 }));
+  try std.testing.expect( sparseStore.get( 1 ).?.value == 42 );
+
+  try std.testing.expect( !manager.register( DenseComp ));
+  try std.testing.expect( manager.getStore( DenseComp ) == null );
 }
