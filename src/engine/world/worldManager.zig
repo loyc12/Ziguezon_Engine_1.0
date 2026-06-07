@@ -332,7 +332,7 @@ test "World owns typed component CRUD and registration lifecycle"
 {
   const TestComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
@@ -364,7 +364,7 @@ test "World deinit releases registered owned component stores"
 {
   const TestComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
@@ -397,17 +397,17 @@ test "World rejects invalid entity destruction"
   try std.testing.expect( !world.isEntityAlive( entityId ));
 }
 
-test "World destroyEntity removes dense and sparse components"
+test "World destroyEntity removes packed and sparse components"
 {
   const SparseComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
-  const DenseComp = struct
+  const PackedComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .DENSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
@@ -417,28 +417,28 @@ test "World destroyEntity removes dense and sparse components"
   defer world.deinit();
 
   try std.testing.expect( world.registerComp( SparseComp ));
-  try std.testing.expect( world.registerComp( DenseComp  ));
+  try std.testing.expect( world.registerComp( PackedComp  ));
 
   const entityId = world.createEntity().id;
   try std.testing.expect( world.addComp( SparseComp, entityId, .{ .value = 10 }));
-  try std.testing.expect( world.addComp( DenseComp,  entityId, .{ .value = 20 }));
+  try std.testing.expect( world.addComp( PackedComp,  entityId, .{ .value = 20 }));
 
   const sparseStore = world.getCompStore( SparseComp ).?;
-  const denseStore  = world.getCompStore( DenseComp  ).?;
+  const packedStore  = world.getCompStore( PackedComp  ).?;
 
   try std.testing.expect(  world.destroyEntity( entityId ));
   try std.testing.expect( !world.isEntityAlive( entityId ));
   try std.testing.expect( !sparseStore.has( entityId ));
-  try std.testing.expect( !denseStore.has(  entityId ));
+  try std.testing.expect( !packedStore.has(  entityId ));
   try std.testing.expect(  world.getComp( SparseComp, entityId ) == null );
-  try std.testing.expect( !world.hasComp( DenseComp, entityId ));
+  try std.testing.expect( !world.hasComp( PackedComp, entityId ));
 }
 
 test "World destroyEntity succeeds without components and preserves other entities"
 {
   const TestComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .DENSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
@@ -465,7 +465,7 @@ test "World component API rejects dead and never-created entities"
 {
   const TestComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };

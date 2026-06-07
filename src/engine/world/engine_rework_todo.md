@@ -20,8 +20,8 @@ Phase 3 completed first-class relation storage:
   registered component stores.
 * `World.addComp`, `World.getComp`, `World.hasComp`, and `World.removeComp`
   reject dead or never-created entity ids.
-* Dense and sparse component stores are implemented.
-* Component types must declare an explicit `storeType`.
+* Packed and sparse component stores are implemented.
+* Component types must declare an explicit `compStorePolicy`.
 * Component views remain transient typed store-access helpers.
 * `World.registerRelation`, `World.addRelation`, `World.getRelation`,
   `World.hasRelation`, and `World.removeRelation` are implemented.

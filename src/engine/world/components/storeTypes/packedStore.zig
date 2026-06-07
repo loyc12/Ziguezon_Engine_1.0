@@ -5,10 +5,11 @@ const entity = @import( "../../entity.zig" );
 
 const EntityId = entity.EntityId;
 
-// NOTE : Not the densest possible store. Check if implementing an id-indexed array alternative would be worth it
+// PACKED stores rows contiguously and maps EntityId to row index.
+// A future DIRECT store may use raw EntityId-indexed array storage.
 
 
-pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename to something other than DENSE
+pub fn PackedCompStoreFactory( comptime CompType : type ) type
 {
   return struct
   {
@@ -50,11 +51,11 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
 
     pub fn init( self : *CompStore, alloc : std.mem.Allocator ) void
     {
-      utl.log( .INFO, 0, @src(), "Initializing dense CompStore for type {s}", .{ TypeName });
+      utl.log( .INFO, 0, @src(), "Initializing packed CompStore for type {s}", .{ TypeName });
 
       if( self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Dense CompStore for type {s} is already initialized : returning", .{ TypeName } );
+        utl.log( .WARN, 0, @src(), "Packed CompStore for type {s} is already initialized : returning", .{ TypeName } );
         return;
       }
 
@@ -67,11 +68,11 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
 
     pub fn deinit( self : *CompStore ) void
     {
-      utl.log( .INFO, 0, @src(), "Deinitializing dense CompStore for type {s}", .{ TypeName });
+      utl.log( .INFO, 0, @src(), "Deinitializing packed CompStore for type {s}", .{ TypeName });
 
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Dense CompStore for type {s} is unnitialized : returning", .{ TypeName } );
+        utl.log( .WARN, 0, @src(), "Packed CompStore for type {s} is unnitialized : returning", .{ TypeName } );
         return;
       }
 
@@ -85,17 +86,17 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot add to dense CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, 0, @src(), "Cannot add to packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
       if( id == 0 )
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot add Entity 0 to dense CompStore for type {s}", .{ TypeName });
+        utl.log( .DEBUG, 0, @src(), "Cannot add Entity 0 to packed CompStore for type {s}", .{ TypeName });
         return false;
       }
       if( self.indices.contains( id ))
       {
-        utl.log( .WARN, 0, @src(), "Cannot add Entity {d} to dense CompStore for type {s} : key already in use", .{ id, TypeName });
+        utl.log( .WARN, 0, @src(), "Cannot add Entity {d} to packed CompStore for type {s} : key already in use", .{ id, TypeName });
         return false;
       }
 
@@ -114,7 +115,7 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
         return false;
       };
 
-      utl.log( .TRACE, 0, @src(), "Added Entity {d} to dense CompStore for type {s}", .{ id, TypeName });
+      utl.log( .TRACE, 0, @src(), "Added Entity {d} to packed CompStore for type {s}", .{ id, TypeName });
       return true;
     }
 
@@ -122,13 +123,13 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot remove from dense CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, 0, @src(), "Cannot remove from packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
 
       const index = self.indices.get( id ) orelse
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot remove Entity {d} from dense CompStore for type {s} : key not found", .{ id, TypeName });
+        utl.log( .DEBUG, 0, @src(), "Cannot remove Entity {d} from packed CompStore for type {s} : key not found", .{ id, TypeName });
         return false;
       };
 
@@ -147,7 +148,7 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
       _ = self.values.pop();
       _ = self.indices.remove( id );
 
-      utl.log( .TRACE, 0, @src(), "Removed Entity {d} from dense CompStore for type {s}", .{ id, TypeName });
+      utl.log( .TRACE, 0, @src(), "Removed Entity {d} from packed CompStore for type {s}", .{ id, TypeName });
       return true;
     }
 
@@ -155,13 +156,13 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot obtain from dense CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, 0, @src(), "Cannot obtain from packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return null;
       }
 
       const index = self.indices.get( id ) orelse
       {
-        utl.log( .WARN, 0, @src(), "Cannot find entity with id {d} in dense CompStore for type {s}", .{ id, TypeName });
+        utl.log( .WARN, 0, @src(), "Cannot find entity with id {d} in packed CompStore for type {s}", .{ id, TypeName });
         return null;
       };
 
@@ -172,7 +173,7 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot peer into dense CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, 0, @src(), "Cannot peer into packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
       return self.indices.contains( id );
@@ -186,14 +187,14 @@ pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename t
 }
 
 
-test "DenseCompStore add get has remove"
+test "PackedCompStore add get has remove"
 {
   const TestComp = struct
   {
     value : u32 = 0,
   };
 
-  var store : DenseCompStoreFactory( TestComp ) = .{};
+  var store : PackedCompStoreFactory( TestComp ) = .{};
   store.init( std.testing.allocator );
   defer store.deinit();
 
@@ -207,14 +208,14 @@ test "DenseCompStore add get has remove"
   try std.testing.expect( !store.remove( 1 ));
 }
 
-test "DenseCompStore swap remove repairs moved index"
+test "PackedCompStore swap remove repairs moved index"
 {
   const TestComp = struct
   {
     value : u32 = 0,
   };
 
-  var store : DenseCompStoreFactory( TestComp ) = .{};
+  var store : PackedCompStoreFactory( TestComp ) = .{};
   store.init( std.testing.allocator );
   defer store.deinit();
 
@@ -227,14 +228,14 @@ test "DenseCompStore swap remove repairs moved index"
   try std.testing.expect( store.indices.get( 3 ).? == 1 );
 }
 
-test "DenseCompStore iterates packed rows"
+test "PackedCompStore iterates packed rows"
 {
   const TestComp = struct
   {
     value : u32 = 0,
   };
 
-  var store : DenseCompStoreFactory( TestComp ) = .{};
+  var store : PackedCompStoreFactory( TestComp ) = .{};
   store.init( std.testing.allocator );
   defer store.deinit();
 

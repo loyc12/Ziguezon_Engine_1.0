@@ -15,7 +15,7 @@ const BodyType = gdf.BodyType;
 
 pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
-  pub const storeType : eng.CompStorePolicy = .DENSE;
+  pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
 
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 

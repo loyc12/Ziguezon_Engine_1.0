@@ -218,7 +218,7 @@ test "CompManager owns typed store registration and lifecycle"
 {
   const TestComp = struct
   {
-    pub const storeType : CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
@@ -243,32 +243,32 @@ test "CompManager resolves component store policies"
 {
   const SparseComp = struct
   {
-    pub const storeType : CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
-  const DenseComp = struct
+  const PackedComp = struct
   {
-    pub const storeType : CompStorePolicy = .DENSE;
+    pub const compStorePolicy : CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
 
   try std.testing.expect( comp.getCompStorePolicy( SparseComp  ) == .SPARSE );
-  try std.testing.expect( comp.getCompStorePolicy( DenseComp   ) == .DENSE  );
+  try std.testing.expect( comp.getCompStorePolicy( PackedComp   ) == .PACKED  );
 }
 
-test "CompManager accepts sparse and dense policies"
+test "CompManager accepts sparse and packed policies"
 {
   const SparseComp = struct
   {
-    pub const storeType : CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
-  const DenseComp = struct
+  const PackedComp = struct
   {
-    pub const storeType : CompStorePolicy = .DENSE;
+    pub const compStorePolicy : CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
@@ -284,25 +284,25 @@ test "CompManager accepts sparse and dense policies"
   try std.testing.expect( sparseStore.add( 1, .{ .value = 42 }));
   try std.testing.expect( sparseStore.get( 1 ).?.value == 42 );
 
-  try std.testing.expect( manager.register( DenseComp ));
-  try std.testing.expect( !manager.register( DenseComp ));
+  try std.testing.expect( manager.register( PackedComp ));
+  try std.testing.expect( !manager.register( PackedComp ));
 
-  const denseStore = manager.getStore( DenseComp ).?;
-  try std.testing.expect( denseStore.add( 1, .{ .value = 42 }));
-  try std.testing.expect( denseStore.get( 1 ).?.value == 42 );
+  const packedStore = manager.getStore( PackedComp ).?;
+  try std.testing.expect( packedStore.add( 1, .{ .value = 42 }));
+  try std.testing.expect( packedStore.get( 1 ).?.value == 42 );
 }
 
 test "CompManager removes an entity from every registered store"
 {
   const SparseComp = struct
   {
-    pub const storeType : CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
-  const DenseComp = struct
+  const PackedComp = struct
   {
-    pub const storeType : CompStorePolicy = .DENSE;
+    pub const compStorePolicy : CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
@@ -312,14 +312,14 @@ test "CompManager removes an entity from every registered store"
   defer manager.deinit();
 
   try std.testing.expect( manager.register( SparseComp ));
-  try std.testing.expect( manager.register( DenseComp  ));
+  try std.testing.expect( manager.register( PackedComp  ));
 
   const sparseStore = manager.getStore( SparseComp ).?;
-  const denseStore  = manager.getStore( DenseComp  ).?;
+  const packedStore  = manager.getStore( PackedComp  ).?;
 
   try std.testing.expect( sparseStore.add( 1, .{ .value = 10 }));
-  try std.testing.expect( denseStore.add(  1, .{ .value = 20 }));
-  try std.testing.expect( denseStore.add(  2, .{ .value = 30 }));
+  try std.testing.expect( packedStore.add(  1, .{ .value = 20 }));
+  try std.testing.expect( packedStore.add(  2, .{ .value = 30 }));
 
   const cleanup = manager.removeEntity( 1 );
   try std.testing.expect( cleanup.isSuccess() );
@@ -327,21 +327,21 @@ test "CompManager removes an entity from every registered store"
   try std.testing.expect( cleanup.missingCount == 0 );
 
   try std.testing.expect( !sparseStore.has( 1 ));
-  try std.testing.expect( !denseStore.has(  1 ));
-  try std.testing.expect(  denseStore.has(  2 ));
+  try std.testing.expect( !packedStore.has(  1 ));
+  try std.testing.expect(  packedStore.has(  2 ));
 }
 
 test "CompManager entity cleanup tolerates missing component rows"
 {
   const SparseComp = struct
   {
-    pub const storeType : CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : CompStorePolicy = .SPARSE;
 
     value : u32 = 0,
   };
-  const DenseComp = struct
+  const PackedComp = struct
   {
-    pub const storeType : CompStorePolicy = .DENSE;
+    pub const compStorePolicy : CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
@@ -351,7 +351,7 @@ test "CompManager entity cleanup tolerates missing component rows"
   defer manager.deinit();
 
   try std.testing.expect( manager.register( SparseComp ));
-  try std.testing.expect( manager.register( DenseComp  ));
+  try std.testing.expect( manager.register( PackedComp  ));
 
   const cleanup = manager.removeEntity( 99 );
   try std.testing.expect( cleanup.isSuccess() );

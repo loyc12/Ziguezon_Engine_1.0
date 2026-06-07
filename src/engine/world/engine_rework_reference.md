@@ -43,6 +43,12 @@ Core terms:
   store.
 - **System**: executable game or engine logic that reads facts and applies
   scheduled work.
+- **Policy**: an enum or small value that chooses one behavior axis, such as a
+  component storage policy or relation cardinality policy.
+- **Config**: a struct that groups multiple policies/settings for one fact
+  family or payload type. Prefer direct policy declarations while only one
+  policy exists; introduce config structs when multiple independent choices need
+  to travel together.
 
 Fact families and logic:
 
@@ -163,7 +169,7 @@ entity", not "this entity has a string-like label". If there is no meaningful
 target entity, use a trait/metaproperty instead.
 
 Relations should eventually support source/target queries, reverse lookups,
-cardinality rules, and cleanup behavior when entities are destroyed.
+cardinality policies, and cleanup behavior when entities are destroyed.
 
 ### 1.5 Events record change
 
@@ -310,14 +316,14 @@ Storage remains configurable, but it should not dominate user-facing code.
 
 ### 2.4 Storage policy must be explicit when needed
 
-Some entity-related data will be used heavily and need dense storage.
+Some entity-related data will be used heavily and need packed storage.
 Others will be rare and need sparse or lookup-oriented storage.
 
 Users should be able to choose the storage policy of their fact payload structs.
 The engine should provide sensible defaults, but performance-relevant storage
 choices must be available to users.
 
-Prefer dense arrays, sparse sets, hash maps, indexed tables, and relation-specific
+Prefer packed arrays, sparse sets, hash maps, indexed tables, and relation-specific
 indexes unless profiling proves another structure is justified.
 
 Do not expose data access APIs that pretend zero-sized structs have retrievable

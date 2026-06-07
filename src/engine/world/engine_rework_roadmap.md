@@ -14,13 +14,13 @@ Terminology follows the reference file's keyword section.
 ## Current Starting Point
 
 Phase 1 completed the current World-owned component foundation, ending with the
-1D/1E dense-store and component-view slices:
+packed-store and component-view slices:
 
 - `Engine` owns one `World`.
 - `World` owns entity-id creation and typed component stores.
 - `EngineStep` forwards consumed base ticks through `World.tick(TickInfo)`.
-- Dense and sparse component stores are implemented.
-- Component types must declare an explicit `storeType`.
+- Packed and sparse component stores are implemented.
+- Component types must declare an explicit `compStorePolicy`.
 - `floppy`, `ping`, and `orbiter` use World-owned typed component stores.
 - `ping` and `orbiter` use `CompView` / `ComponentView` for transient typed
   store access.
@@ -133,7 +133,7 @@ Keep this slice small:
 - entity existence checks for World-owned operations
 - erased component cleanup callbacks for destroyed entities
 - `World.destroyEntity()` once every registered component path can clean up
-- tests for destroy cleanup across dense and sparse component stores
+- tests for destroy cleanup across packed and sparse component stores
 
 Avoid adding relations, events, rules, traits, or archetypes in this slice
 unless they are required to prevent a bad lifecycle boundary.
@@ -155,15 +155,16 @@ timing values without moving their ownership out of `EngineTiming`.
 Keep the current component storage and view foundation stable while later World
 features are added.
 
-Default storage should stay sensible. Performance-relevant storage choices
-should be explicit on the fact payload type passed to the store generator.
+Default storage should stay sensible. Performance-relevant storage policy
+choices should be explicit on the fact payload type passed to the store
+generator.
 
-Prefer dense arrays, sparse sets, hash maps, indexed tables, and
+Prefer packed arrays, sparse sets, hash maps, indexed tables, and
 relation-specific indexes unless profiling proves another structure is
 justified.
 
 The generic engine-owned components in `baseComps.zig` currently opt into
-`.DENSE`. Keep dense storage focused on packed iteration and cache locality, and
+.PACKED`. Keep packed storage focused on contiguous iteration and cache locality, and
 keep sparse storage focused on rare, optional, or lookup-oriented components.
 
 Do not add storage special cases for marker components or dataless tag
@@ -196,7 +197,7 @@ Relation storage should move toward:
 
 - source/target queries
 - reverse lookups
-- cardinality rules
+- cardinality policies
 - cleanup behavior when entities are destroyed
 
 ### 4. Events
@@ -387,6 +388,10 @@ facts and draw them.
 - Do not grow a large built-in content library.
 - Prefer fact tables, explicit metadata, relation indexes, and query/view
   helpers over hidden object graphs.
+- Use `Policy` for single-axis enum choices and `Config` for structs grouping
+  multiple policies/settings. Keep single-policy fact declarations direct, such
+  as `compStorePolicy` and `cardinalityPolicy`, until a fact family needs more
+  than one independent policy.
 - Avoid linked-list storage unless a specific profile proves it is justified.
 - Prefer ids over raw pointers as persistent truth.
 - Preserve room for future save/load, deterministic replay, debugging, and

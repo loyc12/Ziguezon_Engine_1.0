@@ -119,13 +119,13 @@ test "CompView caches typed stores and exposes point lookup"
 
   const TransComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .DENSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
   const FlagComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
 
     value : bool = true,
   };
@@ -154,13 +154,13 @@ test "CompView validity tracks world store generation"
 
   const TransComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .DENSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .PACKED;
 
     value : u32 = 0,
   };
   const FlagComp = struct
   {
-    pub const storeType : comp.CompStorePolicy = .SPARSE;
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
 
     value : bool = true,
   };

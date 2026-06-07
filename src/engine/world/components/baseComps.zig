@@ -15,7 +15,7 @@ const Angle = utl.Angle;
 // Allows the positioning of entities in 2D space ( x, y, a )
 pub const TransComp = struct
 {
-  pub const storeType : eng.CompStorePolicy = .DENSE;
+  pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
 
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
@@ -43,7 +43,7 @@ pub const TransComp = struct
 /// Allow the coliding of entities via AABB
 pub const HitboxComp = struct
 {
-  pub const storeType : eng.CompStorePolicy = .DENSE;
+  pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
 
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
@@ -71,7 +71,7 @@ pub const HitboxComp = struct
 // Allows the rendering of simple shapes over the entity
 pub const ShapeComp = struct // TODO : add LODs and implement minScale
 {
-  pub const storeType : eng.CompStorePolicy = .DENSE;
+  pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
 
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 
@@ -131,7 +131,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScale
 /// Allow the rendering of textures over the entity
 pub const SpriteComp = struct
 {
-  pub const storeType : eng.CompStorePolicy = .DENSE;
+  pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
 
   pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
 

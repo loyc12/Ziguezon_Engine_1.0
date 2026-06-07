@@ -1,28 +1,34 @@
 // REWORK NOTE: Replace the string-keyed, anyopaque registry and single hash-map
 // store with the generic component-table foundation used through World.
-// User-defined components must support typed access and selectable dense/sparse
+// User-defined components must support typed access and selectable packed/sparse
 // storage policies while remaining data-first and lifecycle-aware.
 
-const dense  = @import( "storeTypes/denseStore.zig"  );
-const sparse = @import( "storeTypes/sparseStore.zig" );
+const pckdStore = @import( "storeTypes/packedStore.zig"  );
+const sprsStore = @import( "storeTypes/sparseStore.zig" );
 
 // ================ COMPONENT STORE POLICY ================
 
 pub const CompStorePolicy = enum
 {
-//DENSE,  // ought to use a pure id-indexed array storage
-  DENSE,  // use an arrayList storage ( TODO : rename to something other than DENSE )
-  SPARSE, // uses hashmap storage
+//DIRECT, // future raw EntityId-indexed array storage
+  PACKED, // arrayList storage with EntityId-to-row index
+  SPARSE, // hashmap storage
 };
+
+// Use a config struct when component stores need multiple independent policies.
+// pub const CompStoreConfig = struct
+// {
+//   storePolicy : CompStorePolicy = .PACKED,
+// };
 
 pub fn getCompStorePolicy( comptime CompType : type ) CompStorePolicy
 {
-  if( !@hasDecl( CompType, "storeType" ))
+  if( !@hasDecl( CompType, "compStorePolicy" ))
   {
-    @compileError( "Component type " ++ @typeName( CompType ) ++ " must declare : pub const storeType : eng.CompStorePolicy = <ENUM>" );
+    @compileError( "Component type " ++ @typeName( CompType ) ++ " must declare : pub const compStorePolicy : eng.CompStorePolicy = <ENUM>" );
   }
 
-  const policy : CompStorePolicy = CompType.storeType;
+  const  policy : CompStorePolicy = CompType.compStorePolicy;
   return policy;
 }
 
@@ -38,8 +44,8 @@ pub fn CompStoreFactory( comptime CompType : type ) type
 
   return switch( getCompStorePolicy( CompType ))
   {
-  //.DENSE  => dense.DenseCompStoreFactory(   CompType ),
-    .DENSE  => dense.DenseCompStoreFactory(   CompType ), // TODO : rename to something other than DENSE
-    .SPARSE => sparse.SparseCompStoreFactory( CompType ),
+  //.DIRECT => direct.DirectCompStoreFactory( CompType ),
+    .PACKED => pckdStore.PackedCompStoreFactory( CompType ),
+    .SPARSE => sprsStore.SparseCompStoreFactory( CompType ),
   };
 }

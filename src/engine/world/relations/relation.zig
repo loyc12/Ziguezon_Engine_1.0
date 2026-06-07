@@ -6,16 +6,22 @@ const entity = @import( "../entity.zig" );
 const EntityId = entity.EntityId;
 
 
-pub const RelationCardinality = enum
+/// Cardinality policy is read in row direction: source entity -> target entity.
+/// `ONE_TO_MANY` means one source can point at many targets, but each target can only have one source for this relation type.
+/// `MANY_TO_ONE` means many sources can point at one target, but each source can only have one target for this relation type.
+pub const RelationCardinalityPolicy = enum
 {
   MANY_TO_MANY,
-  ONE_TARGET_PER_SOURCE,
+  ONE_TO_MANY,
+  MANY_TO_ONE,
+  ONE_TO_ONE,
 };
 
-pub const RelationConfig = struct
-{
-  cardinality : RelationCardinality = .MANY_TO_MANY,
-};
+// Use a config struct when relations need multiple independent policies.
+// pub const RelationConfig = struct
+// {
+//   cardinalityPolicy : RelationCardinalityPolicy = .MANY_TO_MANY,
+// };
 
 pub const RelationKey = struct
 {
@@ -48,15 +54,15 @@ pub const RelationCleanupResult = struct
 pub const LinkedTo = struct {};
 
 
-pub fn getRelationConfig( comptime RelType : type ) RelationConfig
+pub fn getRelationCardinalityPolicy( comptime RelType : type ) RelationCardinalityPolicy
 {
-  if( @hasDecl( RelType, "relationConfig" ))
+  if( @hasDecl( RelType, "cardinalityPolicy" ))
   {
-    const config : RelationConfig = RelType.relationConfig;
-    return config;
+    const  policy : RelationCardinalityPolicy = RelType.cardinalityPolicy;
+    return policy;
   }
 
-  return .{};
+  return .MANY_TO_MANY;
 }
 
 pub inline fn isDatalessRelation( comptime RelType : type ) bool
@@ -190,17 +196,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
         utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : source {d} target {d} already exists", .{ TypeName, sourceId, targetId });
         return false;
       }
-      if( getRelationConfig( RelType ).cardinality == .ONE_TARGET_PER_SOURCE )
-      {
-        if( self.sourceIndex.getPtr( sourceId ))| links |
-        {
-          if( links.items.len > 0 )
-          {
-            utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : source {d} already has a target", .{ TypeName, sourceId });
-            return false;
-          }
-        }
-      }
+      if( !self.canAddCardinality( sourceId, targetId )){ return false; }
 
       const result = self.data.getOrPut( key ) catch { return false; };
       result.value_ptr.* = if( isDatalessRelation( RelType )) {} else value;
@@ -406,6 +402,40 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
 
       return false;
     }
+
+    fn canAddCardinality( self : *RelStore, sourceId : EntityId, targetId : EntityId ) bool
+    {
+      const cardinality = getRelationCardinalityPolicy( RelType );
+
+      switch( cardinality )
+      {
+        .MANY_TO_MANY              => return true,
+        .MANY_TO_ONE, .ONE_TO_ONE, => if( self.sourceIndex.getPtr( sourceId ))| links |
+        {
+          if( links.items.len > 0 )
+          {
+            utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : source {d} already has a target", .{ TypeName, sourceId });
+            return false;
+          }
+        },
+        .ONE_TO_MANY => {}, // pass
+      }
+
+      switch( cardinality )
+      {
+        .MANY_TO_MANY, .MANY_TO_ONE, => return true,
+        .ONE_TO_MANY,  .ONE_TO_ONE,  => if( self.targetIndex.getPtr( targetId ))| links |
+        {
+          if( links.items.len > 0 )
+          {
+            utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : target {d} already has a source", .{ TypeName, targetId });
+            return false;
+          }
+        },
+      }
+
+      return true;
+    }
   };
 }
 
@@ -566,11 +596,11 @@ test "RelationStore removeEntity removes source and target rows"
   try std.testing.expect( missing.missingCount == 1 );
 }
 
-test "RelationStore supports one target per source cardinality"
+test "RelationStore supports many to one cardinality"
 {
   const TestRel = struct
   {
-    pub const relationConfig : RelationConfig = .{ .cardinality = .ONE_TARGET_PER_SOURCE };
+    pub const cardinalityPolicy : RelationCardinalityPolicy = .MANY_TO_ONE;
 
     value : u32 = 0,
   };
@@ -582,4 +612,41 @@ test "RelationStore supports one target per source cardinality"
   try std.testing.expect(  store.add( 1, 2, .{ .value = 10 }));
   try std.testing.expect( !store.add( 1, 3, .{ .value = 20 }));
   try std.testing.expect(  store.add( 2, 3, .{ .value = 30 }));
+}
+
+test "RelationStore supports one to many cardinality"
+{
+  const TestRel = struct
+  {
+    pub const cardinalityPolicy : RelationCardinalityPolicy = .ONE_TO_MANY;
+
+    value : u32 = 0,
+  };
+
+  var store : RelationStoreFactory( TestRel ) = .{};
+  store.init( std.testing.allocator );
+  defer store.deinit();
+
+  try std.testing.expect(  store.add( 1, 2, .{ .value = 10 }));
+  try std.testing.expect(  store.add( 1, 3, .{ .value = 20 }));
+  try std.testing.expect( !store.add( 4, 2, .{ .value = 30 }));
+}
+
+test "RelationStore supports one to one cardinality"
+{
+  const TestRel = struct
+  {
+    pub const cardinalityPolicy : RelationCardinalityPolicy = .ONE_TO_ONE;
+
+    value : u32 = 0,
+  };
+
+  var store : RelationStoreFactory( TestRel ) = .{};
+  store.init( std.testing.allocator );
+  defer store.deinit();
+
+  try std.testing.expect(  store.add( 1, 2, .{ .value = 10 }));
+  try std.testing.expect( !store.add( 1, 3, .{ .value = 20 }));
+  try std.testing.expect( !store.add( 4, 2, .{ .value = 30 }));
+  try std.testing.expect(  store.add( 4, 5, .{ .value = 40 }));
 }

@@ -83,8 +83,7 @@ pub const ComponentView    = view.CompView;
 
 pub const RelationStoreFactory = rel.RelationStoreFactory;
 pub const RelationKey          = rel.RelationKey;
-pub const RelationConfig       = rel.RelationConfig;
-pub const RelationCardinality  = rel.RelationCardinality;
+pub const RelationCardinalityPolicy = rel.RelationCardinalityPolicy;
 pub const LinkedTo             = rel.LinkedTo;
 
 
