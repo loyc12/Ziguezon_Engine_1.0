@@ -46,7 +46,7 @@ fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath
 {
   const exeMod = b.createModule(
   .{
-    .root_source_file = b.path( "engine/main.zig" ),
+    .root_source_file = b.path( "src/main.zig" ),
     .target           = target,
     .optimize         = optimize,
   });
@@ -75,14 +75,14 @@ fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath
 
   const utils = b.createModule(
   .{
-    .root_source_file = b.path( "utils/utilsDef.zig" ),
+    .root_source_file = b.path( "src/utils/utilsDef.zig" ),
     .target           = target,
     .optimize         = optimize,
   });
 
   const engine = b.createModule(
   .{
-    .root_source_file = b.path( "engine/engineDef.zig" ),
+    .root_source_file = b.path( "src/engine/engineDef.zig" ),
     .target           = target,
     .optimize         = optimize,
   });
@@ -131,9 +131,9 @@ pub fn build( b : *std.Build ) void
   const tmp_engine_interface_path = b.option(
     []const u8,
     "engine_interface_path",
-    "Path to a game's engineInterface implementations ( default : games/gameFolder/engineInterface.zig )"
+    "Path to a game's engineInterface implementations ( default : src/games/gameFolder/engineInterface.zig )"
   );
-  const interface_path = if( tmp_engine_interface_path )| path | path else "games/debug/engineInterface.zig";
+  const interface_path = if( tmp_engine_interface_path )| path | path else "src/games/debug/engineInterface.zig";
 
   const tmp_executable_name = b.option(
     []const u8,
@@ -184,18 +184,18 @@ pub fn build( b : *std.Build ) void
 
   const games =
   .{
-    .{ "debug",       "games/debug/engineInterface.zig"       }, // Default
+    .{ "debug",       "src/games/debug/engineInterface.zig"       }, // Default
 
-    .{ "menuer",      "games/menuer/engineInterface.zig"      },
-    .{ "ping",        "games/ping/engineInterface.zig"        },
-    .{ "floppy",      "games/floppy/engineInterface.zig"      },
-    .{ "dehexer",     "games/dehexer/engineInterface.zig"     },
-    .{ "isofloor",    "games/isofloor/engineInterface.zig"    },
-    .{ "politator",   "games/politator/engineInterface.zig"   },
-    .{ "granulater",  "games/granulater/engineInterface.zig"  },
-    .{ "labyrinther", "games/labyrinther/engineInterface.zig" },
+    .{ "menuer",      "src/games/menuer/engineInterface.zig"      },
+    .{ "ping",        "src/games/ping/engineInterface.zig"        },
+    .{ "floppy",      "src/games/floppy/engineInterface.zig"      },
+    .{ "dehexer",     "src/games/dehexer/engineInterface.zig"     },
+    .{ "isofloor",    "src/games/isofloor/engineInterface.zig"    },
+    .{ "politator",   "src/games/politator/engineInterface.zig"   },
+    .{ "granulater",  "src/games/granulater/engineInterface.zig"  },
+    .{ "labyrinther", "src/games/labyrinther/engineInterface.zig" },
 
-    .{ "orbiter",     "games/orbiter/engineInterface.zig"     },
+    .{ "orbiter",     "src/games/orbiter/engineInterface.zig"     },
 
   };
 
