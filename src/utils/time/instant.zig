@@ -1,6 +1,56 @@
 const std = @import( "std" );
 
-const Duration = @import( "duration.zig" ).Duration;
+const durationMod = @import( "duration.zig" );
+
+const Duration = durationMod.Duration;
+
+// std.time.Instant is the monotonic source, but this project exposes Instants as
+// plain i128 nanosecond values. These globals translate monotonic samples into
+// that project-local timeline.
+var monoLast  : ?std.time.Instant = null;
+var monoValue : ?i128             = null;
+
+
+fn readFallbackTimestamp() i128
+{
+  // If monotonic time is unavailable, fall back to wall-clock nanoseconds while
+  // clamping backward jumps. This is less precise semantically, but still avoids
+  // negative elapsed time after system clock changes.
+  const now = std.time.nanoTimestamp();
+
+  if( monoValue )| value |
+  {
+    if( now > value ){ monoValue = now; }
+  }
+  else
+  {
+    monoValue = now;
+  }
+
+  return monoValue.?;
+}
+
+fn readMonotonicTimestamp() i128
+{
+  // This bridge is kept intentionally: existing code reads Instant.value for
+  // logs/seeds, while elapsed math still needs monotonic deltas.
+  const now = std.time.Instant.now() catch return readFallbackTimestamp();
+
+  if( monoValue == null ){ monoValue = std.time.nanoTimestamp(); }
+
+  if( monoLast )| last |
+  {
+    if( now.order( last ) == .gt )
+    {
+      // std.time.Instant.since() assumes `now >= last`; the order check above
+      // keeps that precondition true even on odd platform timer behavior.
+      monoValue = durationMod.saturatingAdd( monoValue.?, @intCast( now.since( last )));
+    }
+  }
+
+  monoLast = now;
+  return monoValue.?;
+}
 
 
 // ================================ INSTANT STRUCT ================================
@@ -14,7 +64,8 @@ pub const Instant = struct
 
   pub inline fn now() Instant
   {
-    return .{ .value = std.time.nanoTimestamp() };
+    // Current project-local monotonic timestamp.
+    return .{ .value = readMonotonicTimestamp() };
   }
   pub inline fn newNow() Instant
   {
@@ -35,56 +86,34 @@ pub const Instant = struct
 
   pub inline fn isZero( self : *const Instant ) bool { return self.value == 0; }
 
-  // Compatibility helper for old instant-as-maybe-time code. New code should
-  // prefer optional Instant fields when "unset" is meaningful.
-  pub inline fn isSet( self : *const Instant ) bool { return self.value != 0; }
 
-
-  // ======== WALL-CLOCK DELTAS ========
+  // ======== ELAPSED DELTAS ========
 
   pub inline fn since( self : Instant ) Duration
   {
-    return .{ .value = std.time.nanoTimestamp() - self.value };
+    // Elapsed time from `self` to now. Can be negative for manually-created
+    // future Instants, but normal `.now()` values are monotonic.
+    return .{ .value = durationMod.saturatingSub( readMonotonicTimestamp(), self.value )};
   }
   pub inline fn until( self : Instant ) Duration
   {
-    return .{ .value = self.value - std.time.nanoTimestamp() };
+    // Time from now to `self`; useful for deadlines or countdowns.
+    return .{ .value = durationMod.saturatingSub( self.value, readMonotonicTimestamp() )};
   }
 
-  pub inline fn timeSince( self : Instant ) Duration
-  {
-    return self.since();
-  }
-  pub inline fn timeUntil( self : Instant ) Duration
-  {
-    return self.until();
-  }
-
+  /// Can return a negative value
   pub inline fn diff( self : Instant, other : Instant ) Duration
   {
-    const delta = if( self.value >= other.value ) self.value - other.value else other.value - self.value;
-
-    return .{ .value = delta };
+    return .{ .value = durationMod.saturatingSub( self.value, other.value )};
   }
-
-  pub inline fn getDurationSince( self : Instant ) Duration
+  /// Always returns a positive value
+  pub inline fn span( self : Instant, other : Instant ) Duration
   {
-    return self.since();
-  }
+    const delta = self.diff( other ).value;
 
-  pub inline fn getDurationTo( self : Instant ) Duration
-  {
-    return self.until();
-  }
+    if( delta == std.math.minInt( i128 )){ return .{ .value = std.math.maxInt( i128 )}; }
 
-  pub inline fn getDurationBetween( self : Instant, other : Instant ) Duration
-  {
-    return self.diff( other );
-  }
-
-  pub inline fn timeDiff( self : Instant, other : Instant ) Duration
-  {
-    return self.diff( other );
+    return .{ .value = if( delta < 0 ) -delta else delta };
   }
 };
 
@@ -96,12 +125,22 @@ pub inline fn getNow() Instant { return .now(); }
 
 // ================================ TESTS ================================
 
-test "Instant diff returns absolute duration"
+test "Instant diff returns directional duration"
 {
   const t1 : Instant = .new( 100 );
   const t2 : Instant = .new( 40  );
 
   try std.testing.expectEqual( @as( i128, 60 ), t1.diff( t2 ).value );
-  try std.testing.expectEqual( @as( i128, 60 ), t2.diff( t1 ).value );
-  try std.testing.expectEqual( @as( i128, 60 ), t1.getDurationBetween( t2 ).value );
+  try std.testing.expectEqual( @as( i128, -60 ), t2.diff( t1 ).value );
+  try std.testing.expectEqual( @as( i128, 60 ), t1.span( t2 ).value );
+}
+
+test "Instant diff saturates extreme values"
+{
+  const low  : Instant = .new( std.math.minInt( i128 ));
+  const high : Instant = .new( std.math.maxInt( i128 ));
+
+  try std.testing.expectEqual( std.math.maxInt( i128 ), high.diff( low  ).value );
+  try std.testing.expectEqual( std.math.minInt( i128 ), low.diff(  high ).value );
+  try std.testing.expectEqual( std.math.maxInt( i128 ), low.span(  high ).value );
 }

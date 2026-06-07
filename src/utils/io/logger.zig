@@ -253,7 +253,7 @@ fn logTime() !void
     utl.G_EPOCH = now;
     break :blk now;
   };
-  const prog = epoch.timeSince();
+  const prog = epoch.since();
 
   const sec  : u64 = @intCast( prog.toSec() );
   const nano : u64 = @intCast( prog.getRemainder( .SEC ).value );

@@ -85,15 +85,15 @@ pub const GenDataMatrix4  = data3D.GenDataMatrix4;
 
 // ======== BITFLAGS ========
 
-pub const bitField = @import( "data/fielder.zig" );
+pub const fielder = @import( "data/fielder.zig" );
 
-pub const Bfd4   = bitField.Bfd4;
-pub const Bfd8   = bitField.Bfd8;
-pub const Bfd16  = bitField.Bfd16;
-pub const Bfd32  = bitField.Bfd32;
-pub const Bfd64  = bitField.Bfd64;
-pub const Bfd128 = bitField.Bfd128;
-pub const Bfd256 = bitField.Bfd256;
+pub const Bfd4   = fielder.Bfd4;
+pub const Bfd8   = fielder.Bfd8;
+pub const Bfd16  = fielder.Bfd16;
+pub const Bfd32  = fielder.Bfd32;
+pub const Bfd64  = fielder.Bfd64;
+pub const Bfd128 = fielder.Bfd128;
+pub const Bfd256 = fielder.Bfd256;
 
 
 // ======== TIME ========
@@ -116,10 +116,7 @@ pub const TimerUpdate = time.TimerUpdate;
 pub const GameTimer = time.GameTimer;
 pub const RealTimer = time.RealTimer;
 
-pub const getNow              = time.getNow;
-pub const getDurationSince    = time.getDurationSince;
-pub const getDurationTo       = time.getDurationTo;
-pub const getDurationBetween  = time.getDurationBetween;
+pub const getNow = time.getNow;
 
 
 // ======== TYPING ========
@@ -379,17 +376,18 @@ test "time primitives separate instants and durations"
   const t1 : Instant = .new( 100 );
   const t2 : Instant = .new( 40  );
 
-  try std.testing.expectEqual( @as( i128, 60 ), t1.diff( t2 ).value );
+  try std.testing.expectEqual( @as( i128, 60  ), t1.diff( t2 ).value );
+  try std.testing.expectEqual( @as( i128, -60 ), t2.diff( t1 ).value );
   try std.testing.expectEqual( @as( i128, 250_000_000 ), Duration.fromRayDeltaTime( 0.25 ).value );
 }
 
 test "GameTimer reports counted laps"
 {
-  var timer = GameTimer.looping( .new( 10 ), .{ .COUNT = 2 });
+  var timer = GameTimer.looping( .new( 10, .NS ), .{ .COUNT = 2 });
 
-  const update = timer.update( .new( 35 ));
+  const update = timer.update( .new( 35, .NS ));
 
   try std.testing.expect( update.completed );
-  try std.testing.expectEqual( @as( u32, 2 ), update.lapsCompleted );
-  try std.testing.expectEqual( @as( u32, 2 ), timer.core.lapCount );
+  try std.testing.expectEqual( @as( u64, 2 ), update.lapsCompleted );
+  try std.testing.expectEqual( @as( u64, 2 ), timer.core.lapCount );
 }

@@ -21,7 +21,4 @@ pub const TimerUpdate = timer.TimerUpdate;
 pub const GameTimer = gameTimer.GameTimer;
 pub const RealTimer = realTimer.RealTimer;
 
-pub const getNow              = instant.getNow;
-pub const getDurationSince    = instant.getDurationSince;
-pub const getDurationTo       = instant.getDurationTo;
-pub const getDurationBetween  = instant.getDurationBetween;
+pub const getNow = instant.getNow;

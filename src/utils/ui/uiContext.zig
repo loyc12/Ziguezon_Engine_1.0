@@ -21,9 +21,9 @@ const UiNode   = node.UiNode;
 const Duration = utl.Duration;
 const Instant  = utl.Instant;
 
-const tooltipDelay : Duration = Duration.new( 350 * Duration.nsPerMs() );
-const scrollWheelStep : f64 = 30.0;
-const clipStackLen : usize = 8;
+const tooltipDelay    : Duration = Duration.new( 350, .MS );
+const scrollWheelStep : f64      = 30.0;
+const clipStackLen    : usize    = 8;
 
 
 // ================================ UI CONTEXT ================================
@@ -891,7 +891,7 @@ pub const UiContext = struct
     if( self.hoverStarted == null ){ self.hoverStarted = Instant.now(); }
 
     // Tooltip readiness is render-only state; it does not create a node or consume input.
-    self.tooltipHoverReady = self.hoverStarted.?.timeSince().value >= tooltipDelay.value;
+    self.tooltipHoverReady = self.hoverStarted.?.since().value >= tooltipDelay.value;
   }
 
   fn updateSliderFromMouse( self : *UiContext, id : UiId ) void

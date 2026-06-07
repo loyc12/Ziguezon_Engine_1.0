@@ -9,9 +9,12 @@ const TimerUpdate = coreMod.TimerUpdate;
 
 // ================================ REAL TIMER ================================
 
+// RealTimer samples Instant.now() itself. Use it for UI/tooling/real elapsed
+// delays, not deterministic simulation logic.
 pub const RealTimer = struct
 {
   core     : TimerCore = .{},
+  // Last real timestamp used to compute the next update delta.
   lastTime : ?Instant  = null,
 
 
@@ -41,6 +44,7 @@ pub const RealTimer = struct
 
   pub fn update( self : *RealTimer ) TimerUpdate
   {
+    // Convert real elapsed time since the last update into a TimerCore delta.
     const now : Instant = .now();
     defer self.lastTime = now;
 

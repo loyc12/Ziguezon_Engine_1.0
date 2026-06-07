@@ -18,6 +18,8 @@ pub const TimeUnit = enum( u8 )
 
 pub const TimeRatio = struct
 {
+  // `numer / denom` is the multiplier that converts one time unit into another.
+  // Keeping it as integers avoids rounding until the caller asks for a float.
   numer : i128,
   denom : i128,
 
@@ -43,9 +45,61 @@ pub const TimeRatio = struct
 
   pub inline fn applyTrunc( self : *const TimeRatio, value : i128 ) i128
   {
-    return @divTrunc( value * self.numer, self.denom );
+    // Split before multiplying so very large values are less likely to overflow.
+    // Any remaining overflow saturates instead of trapping.
+    const whole = @divTrunc( value, self.denom );
+    const rem   = @rem(      value, self.denom );
+
+    const wholePart = saturatingMul( whole, self.numer );
+    const remPart   = @divTrunc( rem * self.numer, self.denom );
+
+    return saturatingAdd( wholePart, remPart );
   }
 };
+
+
+// ================================ HELPERS ================================
+
+// Saturating helpers clamp to i128 bounds instead of crashing on extreme input.
+pub inline fn saturatingAdd( a : i128, b : i128 ) i128
+{
+  return std.math.add( i128, a, b ) catch
+  {
+    return if( b < 0 ) std.math.minInt( i128 ) else std.math.maxInt( i128 );
+  };
+}
+
+pub inline fn saturatingSub( a : i128, b : i128 ) i128
+{
+  return std.math.sub( i128, a, b ) catch
+  {
+    return if( b < 0 ) std.math.maxInt( i128 ) else std.math.minInt( i128 );
+  };
+}
+
+pub inline fn saturatingMul( a : i128, b : i128 ) i128
+{
+  return std.math.mul( i128, a, b ) catch
+  {
+    // Overflowed multiplication lands on the signed bound matching the result.
+    return if(( a < 0 ) != ( b < 0 )) std.math.minInt( i128 ) else std.math.maxInt( i128 );
+  };
+}
+
+inline fn saturatingIntFromFloat( value : f64 ) i128
+{
+  // Float conversions are used at engine/API boundaries; non-finite values are
+  // programmer errors, while finite overflow clamps to the largest duration.
+  if( !std.math.isFinite( value )){ @panic( "Tried to convert non-finite float to Duration" ); }
+
+  const maxValue : f64 = @floatFromInt( std.math.maxInt( i128 ));
+  const minValue : f64 = @floatFromInt( std.math.minInt( i128 ));
+
+  if( value >= maxValue ){ return std.math.maxInt( i128 ); }
+  if( value <= minValue ){ return std.math.minInt( i128 ); }
+
+  return @intFromFloat( value );
+}
 
 pub inline fn getNsPerUnit( unit : TimeUnit ) i128
 {
@@ -63,23 +117,7 @@ pub inline fn getNsPerUnit( unit : TimeUnit ) i128
   };
 }
 
-pub inline fn getWholeUnitsPerClip( unit : TimeUnit ) ?i128
-{
-  return switch( unit )
-  {
-    .YEAR => null,
-    .WEEK => null,
-    .DAY  => 7,
-    .HOUR => 24,
-    .MIN  => 60,
-    .SEC  => 60,
-    .MS   => 1_000,
-    .US   => 1_000,
-    .NS   => 1_000,
-  };
-}
-
-// Returns the ratio needed to convert a value from `from` units into `to` units.
+// Returns the multiplicative ratio needed to convert a value from `from` units into `to` units.
 // Example: getTimeRatio( .NS, .YEAR ).toWhole() == nanoseconds per year.
 pub inline fn getTimeRatio( to : TimeUnit, from : TimeUnit ) TimeRatio
 {
@@ -99,24 +137,21 @@ pub const Duration = struct
 
   // ======== INITIALIZATION ========
 
-  pub inline fn new( value : anytype ) Duration
+  pub inline fn new( value : anytype, unit : TimeUnit ) Duration
   {
-    switch( @typeInfo( @TypeOf( value )))
-    {
-      .int,   .comptime_int   => return .{ .value = @intCast( value )},
-      .float, .comptime_float => return .{ .value = @as( i128, @intFromFloat( value ))},
-      else => @compileError( "Duration.new() only supports Int and Float values" ),
-    }
+    return .fromUnit( value, unit );
   }
 
   pub inline fn fromUnit( value : anytype, unit : TimeUnit ) Duration
   {
+    // Duration stores nanoseconds internally. Constructors still require the
+    // source unit so call sites do mistakenly treat seconds as nanoseconds.
     const ratio = getTimeRatio( .NS, unit );
 
     switch( @typeInfo( @TypeOf( value )))
     {
-      .int,   .comptime_int   => return .{ .value = @as( i128, @intCast( value )) * ratio.toWhole() },
-      .float, .comptime_float => return .{ .value = @as( i128, @intFromFloat( @as( f64, @floatCast( value )) * ratio.toFloat() ))},
+      .int,   .comptime_int   => return .{ .value = saturatingMul( @intCast( value ), ratio.toWhole() )},
+      .float, .comptime_float => return .{ .value = saturatingIntFromFloat( @as( f64, @floatCast( value )) * ratio.toFloat() )},
       else => @compileError( "Duration.fromUnit() only supports Int and Float values" ),
     }
   }
@@ -132,6 +167,9 @@ pub const Duration = struct
 
   pub inline fn fromTimeRate( timeRate : f32 ) Duration
   {
+    // A rate is "events per second"; timers need the inverse: seconds per event.
+    if( !std.math.isFinite( timeRate ) or timeRate <= 0.0 ){ @panic( "Duration.fromTimeRate() requires a positive finite rate" ); }
+
     return .fromUnit( 1.0 / timeRate, .SEC );
   }
   pub inline fn toTimeRate( self : Duration ) f32
@@ -146,17 +184,13 @@ pub const Duration = struct
   pub inline fn isPos(  self : *const Duration ) bool { return self.value >  0; }
   pub inline fn isNeg(  self : *const Duration ) bool { return self.value <  0; }
 
-  // Compatibility helper for old duration-as-maybe-time code. New code should
-  // prefer optional Duration fields when "unset" is meaningful.
-  pub inline fn isSet( self : *const Duration ) bool { return self.value != 0; }
-
 
   // ======== MUTATORS ========
 
-  pub inline fn clear( self : *Duration ) void { self.value = 0; }
-  pub inline fn setTo( self : *Duration, newValue : anytype ) void
+  pub inline fn toZero( self : *Duration ) void { self.value = 0; }
+  pub inline fn setTo(  self : *Duration, newValue : anytype, unit : TimeUnit ) void
   {
-    self.* = .new( newValue );
+    self.* = .new( newValue, unit );
   }
 
 
@@ -164,6 +198,7 @@ pub const Duration = struct
 
   pub inline fn castTo( self : *const Duration, unit : TimeUnit ) f64
   {
+    // Use floats for display/interop conversions where fractional units matter.
     const ratio = getTimeRatio( unit, .NS );
     const value : f64 = @floatFromInt( self.value );
 
@@ -172,27 +207,14 @@ pub const Duration = struct
 
   pub inline fn truncTo( self : *const Duration, unit : TimeUnit ) i128
   {
+    // Use integer truncation for counters and coarse time buckets.
     return getTimeRatio( unit, .NS ).applyTrunc( self.value );
   }
 
   pub inline fn getRemainder( self : *const Duration, unit : TimeUnit ) Duration
   {
+    // Remainder is kept in nanoseconds so it can be reused as another Duration.
     return .{ .value = @mod( self.value, getTimeRatio( .NS, unit ).toWhole() )};
-  }
-
-  // Returns this duration's component for `unit`, clipped by that unit's natural
-  // parent size. Examples: seconds within a minute, or nanoseconds within a microsecond.
-  pub inline fn getUnitPart( self : *const Duration, unit : TimeUnit ) i128
-  {
-    const total = self.truncTo( unit );
-    const clip  = getWholeUnitsPerClip( unit ) orelse return total;
-
-    return @mod( total, clip );
-  }
-
-  pub inline fn getClippedUnit( self : *const Duration, unit : TimeUnit ) Duration
-  {
-    return .fromUnit( self.getUnitPart( unit ), unit );
   }
 
   pub inline fn toYear( self : *const Duration ) i128 { return self.truncTo( .YEAR ); }
@@ -220,10 +242,11 @@ pub const Duration = struct
 
   pub inline fn scaleByFloat( self : *const Duration, scale : f64 ) Duration
   {
+    // Scaling is intentionally floor-based so the result never overshoots.
     const unscaledFloat : f64 = @floatFromInt( self.value );
     const scaledFloat   : f64 = scale * unscaledFloat;
 
-    return .{ .value = @intFromFloat( @floor( scaledFloat ))};
+    return .{ .value = saturatingIntFromFloat( @floor( scaledFloat ))};
   }
 
   pub inline fn clampedMin( self : *const Duration, min : Duration ) Duration
@@ -285,13 +308,21 @@ test "Duration casts to requested unit"
   try std.testing.expectApproxEqAbs( @as( f64, 1.5 ), duration.castTo( .MIN ), 0.0001 );
 }
 
-test "Duration clips unit parts and remainders"
+test "Duration gets unit remainders"
 {
   const duration = Duration.fromUnit( 90, .SEC ).scaleByFloat( 1.0 );
   const precise  = Duration.fromUnit( 1, .SEC );
 
-  try std.testing.expectEqual( @as( i128, 30 ), duration.getUnitPart( .SEC ));
-  try std.testing.expectEqual( @as( i128, 1  ), duration.getUnitPart( .MIN ));
+  try std.testing.expectEqual( @as( i128, 30_000_000_000 ), duration.getRemainder( .MIN ).value );
   try std.testing.expectEqual( @as( i128, 0  ), precise.getRemainder( .SEC ).value );
   try std.testing.expectEqual( @as( i128, 500_000_000 ), Duration.fromUnit( 1.5, .SEC ).getRemainder( .SEC ).value );
+}
+
+test "Duration requires explicit units and saturates large conversions"
+{
+  const duration = Duration.new( 2.5, .SEC );
+  const huge     = Duration.fromUnit( std.math.maxInt( i128 ), .YEAR );
+
+  try std.testing.expectEqual( @as( i128, 2_500_000_000 ), duration.value );
+  try std.testing.expectEqual( std.math.maxInt( i128 ), huge.value );
 }

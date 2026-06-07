@@ -8,6 +8,8 @@ const TimerUpdate = coreMod.TimerUpdate;
 
 // ================================ GAME TIMER ================================
 
+// GameTimer is advanced by a caller-provided game/simulation delta. Use it for
+// deterministic gameplay timers, pause-aware timers, and fixed-tick systems.
 pub const GameTimer = struct
 {
   core : TimerCore = .{},
@@ -35,6 +37,8 @@ pub const GameTimer = struct
 
   pub inline fn update( self : *GameTimer, delta : Duration ) TimerUpdate
   {
+    // The engine decides what `delta` means: real time, scaled sim time, fixed
+    // tick time, etc. TimerCore only consumes the amount passed here.
     return self.core.updateBy( delta );
   }
 
