@@ -10,3 +10,7 @@ Alert me to any unforseen issue you encounter along the way
 Update the engine_rework_todo.md so it contains the next steps of the rework
 Use engine_rework_reference.md and engine_rework_roadmap.d as authoritative guides
 Scope the todo content appropriately ( not trivially small, not overly ambitious )
+
+I have this system I implemented a long time ago, and which is not currently in used
+I would first like and audit of its code and suitability in the game engine we are building
+Be sure to point out any point of tensions which could be worked out

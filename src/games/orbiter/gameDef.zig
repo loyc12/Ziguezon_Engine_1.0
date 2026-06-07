@@ -50,8 +50,8 @@ pub const GameConsts = struct
 
   gravFactor  : f64  = 0.000240241, // 498.163, // Unit : km³/Gt¹Min² // TODO : adjust based on bodyTickLen
 
-  bodyStepLen : i128 = utl.TimeVal.secPerMin(),
-  econStepLen : i128 = utl.TimeVal.secPerWeek(),
+  bodyStepLen : i128 = utl.Duration.secPerMin(),
+  econStepLen : i128 = utl.Duration.secPerWeek(),
 
   renderScale : f64  = 0.000_001,
 

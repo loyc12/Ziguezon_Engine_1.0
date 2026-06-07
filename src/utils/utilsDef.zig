@@ -1,4 +1,4 @@
-pub var G_EPOCH : TimeVal = .{};
+pub var G_EPOCH : ?Instant = null;
 
 
 // ================================ RAYLIB SHORTHANDS ================================
@@ -96,15 +96,30 @@ pub const Bfd128 = bitField.Bfd128;
 pub const Bfd256 = bitField.Bfd256;
 
 
-// ======== TIMING ========
+// ======== TIME ========
 
-pub const timer = @import( "data/timer.zig" );
+pub const time = @import( "time/timeDef.zig" );
 
-pub const TimeVal    = timer.TimeVal;
-pub const Timer      = timer.Timer;
-pub const TimerFlags = timer.TimerFlags;
+pub const Duration = time.Duration;
+pub const Instant  = time.Instant;
 
-pub const getNow     = timer.getNow;
+pub const TimeUnit  = time.TimeUnit;
+pub const TimeRatio = time.TimeRatio;
+
+pub const getTimeRatio = time.getTimeRatio;
+
+pub const TimerCore   = time.TimerCore;
+pub const TimerLoop   = time.TimerLoop;
+pub const TimerState  = time.TimerState;
+pub const TimerUpdate = time.TimerUpdate;
+
+pub const GameTimer = time.GameTimer;
+pub const RealTimer = time.RealTimer;
+
+pub const getNow              = time.getNow;
+pub const getDurationSince    = time.getDurationSince;
+pub const getDurationTo       = time.getDurationTo;
+pub const getDurationBetween  = time.getDurationBetween;
 
 
 // ======== TYPING ========
@@ -353,3 +368,28 @@ pub var G_ALLOC : std.heap.DebugAllocator(.{ .enable_memory_limit = true }) = .i
 
 pub inline fn getDefaultAlloc() std.mem.Allocator { return G_ALLOC.allocator(); }
 pub inline fn getBytesInUse() usize { return G_ALLOC.total_requested_bytes; }
+
+
+// ================================ TESTS ================================
+
+test "time primitives separate instants and durations"
+{
+  std.testing.refAllDecls( time );
+
+  const t1 : Instant = .new( 100 );
+  const t2 : Instant = .new( 40  );
+
+  try std.testing.expectEqual( @as( i128, 60 ), t1.diff( t2 ).value );
+  try std.testing.expectEqual( @as( i128, 250_000_000 ), Duration.fromRayDeltaTime( 0.25 ).value );
+}
+
+test "GameTimer reports counted laps"
+{
+  var timer = GameTimer.looping( .new( 10 ), .{ .COUNT = 2 });
+
+  const update = timer.update( .new( 35 ));
+
+  try std.testing.expect( update.completed );
+  try std.testing.expectEqual( @as( u32, 2 ), update.lapsCompleted );
+  try std.testing.expectEqual( @as( u32, 2 ), timer.core.lapCount );
+}

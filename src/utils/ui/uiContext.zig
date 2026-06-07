@@ -17,10 +17,11 @@ pub const UiInput     = input.UiInput;
 pub const boxFromTopLeft = types.boxFromTopLeft;
 pub const boxSize        = types.boxSize;
 
-const UiNode  = node.UiNode;
-const TimeVal = utl.TimeVal;
+const UiNode   = node.UiNode;
+const Duration = utl.Duration;
+const Instant  = utl.Instant;
 
-const tooltipDelay : TimeVal = TimeVal.new( 350 * TimeVal.nsPerMs() );
+const tooltipDelay : Duration = Duration.new( 350 * Duration.nsPerMs() );
 const scrollWheelStep : f64 = 30.0;
 const clipStackLen : usize = 8;
 
@@ -41,9 +42,9 @@ pub const UiContext = struct
   pressed : UiId = .{},
   focused : UiId = .{},
 
-  hoveredPrev       : UiId    = .{},
-  hoverStarted      : TimeVal = .{},
-  tooltipHoverReady : bool    = false,
+  hoveredPrev       : UiId     = .{},
+  hoverStarted      : ?Instant = null,
+  tooltipHoverReady : bool     = false,
 
   wantsMouseFlag    : bool = false,
   wantsKeyboardFlag : bool = false,
@@ -869,14 +870,14 @@ pub const UiContext = struct
     if( !self.hovered.isEq( self.hoveredPrev ))
     {
       self.hoveredPrev       = self.hovered;
-      self.hoverStarted      = if( self.hovered.isValid() ) TimeVal.newNow() else .{};
+      self.hoverStarted      = if( self.hovered.isValid() ) Instant.now() else null;
       self.tooltipHoverReady = false;
       return;
     }
 
     const hoveredNode = self.getNode( self.hovered ) orelse
     {
-      self.hoverStarted      = .{};
+      self.hoverStarted      = null;
       self.tooltipHoverReady = false;
       return;
     };
@@ -887,10 +888,10 @@ pub const UiContext = struct
       return;
     }
 
-    if( !self.hoverStarted.isSet() ){ self.hoverStarted = TimeVal.newNow(); }
+    if( self.hoverStarted == null ){ self.hoverStarted = Instant.now(); }
 
     // Tooltip readiness is render-only state; it does not create a node or consume input.
-    self.tooltipHoverReady = self.hoverStarted.timeSince().value >= tooltipDelay.value;
+    self.tooltipHoverReady = self.hoverStarted.?.timeSince().value >= tooltipDelay.value;
   }
 
   fn updateSliderFromMouse( self : *UiContext, id : UiId ) void

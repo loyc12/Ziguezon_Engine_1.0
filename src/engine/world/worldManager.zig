@@ -11,14 +11,14 @@ const EntityId             = entity.EntityId;
 const EntityIdRegistry     = entity.EntityIdRegistry;
 const CompManager          = compMgr.CompManager;
 const CompStoreFactory     = comp.CompStoreFactory;
-const TimeVal              = utl.TimeVal;
+const Duration             = utl.Duration;
 
 
 pub const TickInfo = struct
 {
   baseTickIndex : u128    = 0,
-  targetDelta   : TimeVal = .{},
-  measuredDelta : TimeVal = .{},
+  targetDelta   : Duration = .{},
+  measuredDelta : Duration = .{},
   isForced      : bool    = false,
 };
 

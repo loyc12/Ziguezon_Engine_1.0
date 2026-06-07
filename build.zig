@@ -39,6 +39,7 @@ fn getRaylibOptimize( optimize : std.builtin.OptimizeMode ) std.builtin.Optimize
 const GameExecutable = struct
 {
   exe       : *std.Build.Step.Compile,
+  utilsMod  : *std.Build.Module,
   engineMod : *std.Build.Module,
 };
 
@@ -110,6 +111,7 @@ fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath
 
   return .{
     .exe       = exe,
+    .utilsMod  = utils,
     .engineMod = engine,
   };
 }
@@ -301,6 +303,9 @@ pub fn build( b : *std.Build ) void
   const exe_unit_tests     = b.addTest(.{ .root_module = exe.root_module });
   const run_exe_unit_tests = b.addRunArtifact( exe_unit_tests );
 
+  const utils_unit_tests     = b.addTest(.{ .root_module = gameBuild.utilsMod });
+  const run_utils_unit_tests = b.addRunArtifact( utils_unit_tests );
+
   const engine_unit_tests     = b.addTest(.{ .root_module = gameBuild.engineMod });
   const run_engine_unit_tests = b.addRunArtifact( engine_unit_tests );
 
@@ -308,5 +313,6 @@ pub fn build( b : *std.Build ) void
   // providing a way for the user to request running the unit tests instead of the main application.
   const test_step = b.step( "test", "Runs unit tests" );
   test_step.dependOn( &run_exe_unit_tests.step );
+  test_step.dependOn( &run_utils_unit_tests.step );
   test_step.dependOn( &run_engine_unit_tests.step );
 }

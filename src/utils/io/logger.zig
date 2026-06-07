@@ -2,8 +2,7 @@ const std    = @import( "std" );
 const utl    = @import( "utils" );
 //const stdOut = @import( "./outputer.zig" ).demoStdout;
 
-const TimeVal = utl.TimeVal;
-const getNow  = utl.getNow;
+const Duration = utl.Duration;
 
 var LoggedLastMsg : bool = false;
 
@@ -248,10 +247,16 @@ fn logTime() !void
 {
   if( comptime !SHOW_TIMESTAMP ) return;
 
-  const prog = utl.G_EPOCH.timeSince();
+  const epoch = utl.G_EPOCH orelse blk:
+  {
+    const now = utl.getNow();
+    utl.G_EPOCH = now;
+    break :blk now;
+  };
+  const prog = epoch.timeSince();
 
   const sec  : u64 = @intCast( prog.toSec() );
-  const nano : u64 = @intCast( @mod( prog.value, TimeVal.nsPerSec() ));
+  const nano : u64 = @intCast( prog.getRemainder( .SEC ).value );
 
   try setCol( utl.termColour.GRAY );
 
@@ -322,19 +327,19 @@ pub fn log( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLoc
 
 pub fn logFrameTime( logloc : ?std.builtin.SourceLocation ) void
 {
-  const frameTime = TimeVal.fromRayDeltaTime( utl.ray.getFrameTime() );
+  const frameTime = Duration.fromRayDeltaTime( utl.ray.getFrameTime() );
 
   const sec  : u64 = @intCast( frameTime.toSec() );
-  const nano : u64 = @intCast( @rem( frameTime.value, TimeVal.nsPerSec() ));
+  const nano : u64 = @intCast( frameTime.getRemainder( .SEC ).value );
 
   if( logloc )| loc |{ log( .INFO, 0, loc,    "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
   else {               log( .INFO, 0, @src(), "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
 }
 
-pub fn logDeltaTime( deltaTime : TimeVal, logloc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
+pub fn logDeltaTime( deltaTime : Duration, logloc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
 {
   const sec  : u64 = @intCast( deltaTime.toSec() );
-  const nano : u64 = @intCast( @rem( deltaTime.value, TimeVal.nsPerSec() ));
+  const nano : u64 = @intCast( deltaTime.getRemainder( .SEC ).value );
 
   if( logloc )| loc |{ log( .INFO, 0, loc,    message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
   else {               log( .INFO, 0, @src(), message ++ ": {d}.{d:0>9}", .{ sec, nano }); }

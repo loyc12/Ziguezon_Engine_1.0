@@ -83,8 +83,8 @@ pub const Event = struct
   callerId : ?EntityId,
   targetId : ?EntityId,
 
-  genTime  : ?utl.TimeVal, // When was this generated             ( real time )
-//endTime  : ?utl.TimeVal, // When does this event end / perish   ( real time )
+  genTime  : ?utl.Instant, // When was this generated             ( real time )
+//endTime  : ?utl.Instant, // When does this event end / perish   ( real time )
 };
 
 

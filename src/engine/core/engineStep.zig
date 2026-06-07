@@ -227,7 +227,7 @@ inline fn drawDebugFpsCount( ng : *Engine ) void
     const frameTime = ng.time.smoothedFrameDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( frameTime.toSec() );
-    const mic : u64 = @intCast( @rem( frameTime.toUs(), utl.TimeVal.usPerSec() ));
+    const mic : u64 = @intCast( frameTime.getRemainder( .SEC ).toUs() );
 
     utl.sDraw.textLeftFmt( "{d:.2} fps | {d}.{d:0>6} sec", .{ 1.0 / frameTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 24.0 ), 16, eng.G_CNFGS.Graphic_Metrics_Colour.? );
   }
@@ -241,7 +241,7 @@ inline fn drawDebugTpsCount( ng : *Engine ) void
     const tickTime = ng.time.smoothedTickDelta; // Using buffered value to ensure stable displaying
 
     const sec : u64 = @intCast( tickTime.toSec() );
-    const mic : u64 = @intCast( @rem( tickTime.toUs(), utl.TimeVal.usPerSec() ));
+    const mic : u64 = @intCast( tickTime.getRemainder( .SEC ).toUs() );
 
     utl.sDraw.textLeftFmt( "{d:.2} tps | {d}.{d:0>6} sec", .{ 1.0 / tickTime.toRayDeltaTime(), sec, mic }, .new( 16.0, 56.0 ), 16, eng.G_CNFGS.Graphic_Metrics_Colour.? );
   }

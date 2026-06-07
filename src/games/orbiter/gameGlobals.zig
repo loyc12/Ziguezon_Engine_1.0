@@ -254,12 +254,12 @@ pub const SpeedFactor = enum( i8 )
     {
       .PAUSED => 0,
       .SECOND => 1,
-      .MINUTE => utl.TimeVal.secPerMin(),
-      .HOUR   => utl.TimeVal.secPerHour(),
-      .DAY    => utl.TimeVal.secPerDay(),
-      .WEEK   => utl.TimeVal.secPerDay() * 7,
-      .MONTH  => utl.TimeVal.secPerDay() * 30,
-      .YEAR   => utl.TimeVal.secPerDay() * 365,
+      .MINUTE => utl.Duration.secPerMin(),
+      .HOUR   => utl.Duration.secPerHour(),
+      .DAY    => utl.Duration.secPerDay(),
+      .WEEK   => utl.Duration.secPerDay() * 7,
+      .MONTH  => utl.Duration.secPerDay() * 30,
+      .YEAR   => utl.Duration.secPerDay() * 365,
     };
   }
 
