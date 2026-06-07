@@ -8,6 +8,7 @@ The guiding reference is:
     engine/world/engine_rework_reference.md
 
 If this roadmap conflicts with the reference, the reference takes precedence.
+Terminology follows the reference file's keyword section.
 
 
 ## Current Starting Point
@@ -32,10 +33,10 @@ Phase 1 completed the current World-owned component foundation, ending with the
 The engine rework should build toward `World` as the central engine-owned
 simulation database.
 
-The target is not a pure ECS. The target is a data-oriented simulation layer
-where entity identity, components, relations, events, rules, traits,
-archetypes, particle/effects systems, schedules, queries, and views can be
-defined, stored, inspected, and run cleanly.
+The target is not a pure ECS. The target is a fact-oriented simulation layer
+where entity identity, components, relations, events, traits, archetypes,
+particle/effects systems, schedules, queries, views, rules, and reactions can
+be defined, stored, inspected, and run cleanly.
 
 Remaining sequence:
 
@@ -64,7 +65,7 @@ Remaining sequence:
 
 10. Keep at least one minimal generic reference rule/reaction in engine code.
 
-11. Add traits/metaproperties after the base world data model is usable.
+11. Add traits/metaproperties after the base World fact model is usable.
 
 12. Keep at least one minimal generic reference trait/metaproperty in engine
     code.
@@ -104,7 +105,7 @@ Remaining sequence:
 - context records for future save/load/replay-facing world state
 
 Entities should remain identifiers. Components, relations, events, traits, and
-rules store the facts that make those identifiers meaningful.
+other World-owned records are facts that make those identifiers meaningful.
 
 The user-facing API should let game code express common simulation operations
 without manually handling registry casts or container internals at every call
@@ -155,7 +156,7 @@ Keep the current component storage and view foundation stable while later World
 features are added.
 
 Default storage should stay sensible. Performance-relevant storage choices
-should be explicit on the data type passed to the store generator.
+should be explicit on the fact payload type passed to the store generator.
 
 Prefer dense arrays, sparse sets, hash maps, indexed tables, and
 relation-specific indexes unless profiling proves another structure is
@@ -165,9 +166,9 @@ The generic engine-owned components in `baseComps.zig` currently opt into
 `.DENSE`. Keep dense storage focused on packed iteration and cache locality, and
 keep sparse storage focused on rare, optional, or lookup-oriented components.
 
-Do not add storage special cases for marker components or zero-data tag
-components. Component stores are for per-entity state. Classification belongs in
-traits/metaproperties.
+Do not add storage special cases for marker components or dataless tag
+components. Component stores are for per-entity payload-bearing facts.
+Classification belongs in traits/metaproperties.
 
 Component views should remain transient typed access helpers. They are not the
 full future query system over relations, events, traits, archetypes, or history.
@@ -200,7 +201,7 @@ Relation storage should move toward:
 
 ### 4. Events
 
-Add events as records that something happened, not only as callbacks.
+Add events as facts that record something happened, not only as callbacks.
 
 Initial engine examples should stay generic:
 
@@ -244,7 +245,7 @@ belongs under `games/`.
 
 ### 6. Traits And Archetypes
 
-Add traits/metaproperties for reusable classification and behavior/data flags.
+Add traits/metaproperties for reusable classification facts.
 
 Traits/metaproperties are the canonical replacement for marker components and
 relation-shaped tags. Use them for facts like "selectable", "visible",
@@ -259,14 +260,14 @@ Initial engine examples should stay generic:
 - Indexed
 
 Add archetypes/templates for bundles of initial facts after traits and the base
-world data model are usable.
+World fact model is usable.
 
 Except for the engine's focus on simulation-heavy games, engine-level traits and
 archetypes should stay genre-agnostic.
 
 ### 7. Scheduler
 
-Add scheduling support after the base world data model is stable enough to run
+Add scheduling support after the base World fact model is stable enough to run
 systems cleanly.
 
 The scheduler is World-specific, but it is not a replacement for `EngineTiming`.
@@ -289,7 +290,7 @@ time, and it must not independently decide when Engine base ticks occur.
 Add query/view helpers so simulation-heavy games, debug tools, and UI can
 inspect the world without mutating internals directly.
 
-Queries should eventually cover:
+Queries should eventually cover stored fact families:
 
 - components
 - relations
@@ -367,8 +368,8 @@ Keep ownership aligned with the reference document:
 - `games` owns domain-specific simulation content, including game effect
   configs.
 
-Simulation data should not depend on rendering. Render systems read simulation
-data and draw it.
+Simulation facts should not depend on rendering. Render systems read simulation
+facts and draw them.
 
 
 ## Implementation Constraints
@@ -384,7 +385,7 @@ data and draw it.
   game-specific effect content under `games/`.
 - Do not add specialized simulation content to `engine/world`.
 - Do not grow a large built-in content library.
-- Prefer data tables, explicit metadata, relation indexes, and query/view
+- Prefer fact tables, explicit metadata, relation indexes, and query/view
   helpers over hidden object graphs.
 - Avoid linked-list storage unless a specific profile proves it is justified.
 - Prefer ids over raw pointers as persistent truth.
@@ -401,7 +402,7 @@ data and draw it.
 
 ## Success Condition
 
-A user can build a data-oriented simulation with many entities and many
+A user can build a fact-oriented simulation with many entities and many
 relationships, define their own simulation types cleanly, choose storage
 policies when needed, drive first-class effects from world facts, inspect what
 the world contains, and rely on a small set of generic engine examples as

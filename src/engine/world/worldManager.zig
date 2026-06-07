@@ -27,6 +27,7 @@ pub const World = struct
 {
   entityIdRegistry : EntityIdRegistry = .{},
   compManager      : CompManager      = .{},
+  activeEntities   : std.AutoHashMap( EntityId, void ) = undefined,
   viewGeneration   : u64              = 0,
 
   isInit : bool = false,
@@ -44,6 +45,7 @@ pub const World = struct
 
     self.entityIdRegistry.reinit();
     self.compManager.init( alloc );
+    self.activeEntities = .init( alloc );
     self.isInit = true;
     self.bumpViewGeneration();
   }
@@ -57,6 +59,7 @@ pub const World = struct
     }
 
     self.compManager.deinit();
+    self.activeEntities.deinit();
     self.entityIdRegistry.reinit();
     self.isInit = false;
     self.bumpViewGeneration();
@@ -73,7 +76,51 @@ pub const World = struct
       return .{};
     }
 
-    return self.entityIdRegistry.getNewEntity();
+    const entityVal = self.entityIdRegistry.getNewEntity();
+    self.activeEntities.put( entityVal.id, {} ) catch
+    {
+      utl.log( .ERROR, 0, @src(), "Failed to mark Entity {d} alive", .{ entityVal.id });
+      return .{};
+    };
+
+    return entityVal;
+  }
+
+  pub inline fn isEntityAlive( self : *const World, entityId : EntityId ) bool
+  {
+    if( entityId == 0 ){ return false; }
+    if( !self.isInit ){ return false; }
+
+    return self.activeEntities.contains( entityId );
+  }
+
+  pub fn destroyEntity( self : *World, entityId : EntityId ) bool
+  {
+    if( !self.isInit )
+    {
+      utl.qlog( .WARN, 0, @src(), "Cannot destroy Entity : World is uninitialized" );
+      return false;
+    }
+    if( entityId == 0 )
+    {
+      utl.qlog( .DEBUG, 0, @src(), "Cannot destroy Entity 0" );
+      return false;
+    }
+    if( !self.isEntityAlive( entityId ))
+    {
+      utl.log( .DEBUG, 0, @src(), "Cannot destroy Entity {d} : Entity is not alive", .{ entityId });
+      return false;
+    }
+
+    const cleanup = self.compManager.removeEntity( entityId );
+    if( !cleanup.isSuccess() )
+    {
+      utl.log( .ERROR, 0, @src(), "Failed to clean up Entity {d} from {d} CompStores", .{ entityId, cleanup.failedCount });
+      return false;
+    }
+
+    _ = self.activeEntities.remove( entityId );
+    return true;
   }
 
 
@@ -112,7 +159,7 @@ pub const World = struct
 
   pub inline fn addComp( self : *World, comptime CompType : type, entityId : EntityId, value : CompType ) bool
   {
-    if( entityId == 0 ){ return false; }
+    if( !self.isEntityAlive( entityId )){ return false; }
 
     const store = self.getCompStore( CompType ) orelse return false;
     return store.add( entityId, value );
@@ -120,7 +167,7 @@ pub const World = struct
 
   pub inline fn getComp( self : *World, comptime CompType : type, entityId : EntityId ) ?*CompType
   {
-    if( entityId == 0 ){ return null; }
+    if( !self.isEntityAlive( entityId )){ return null; }
 
     const store = self.getCompStore( CompType ) orelse return null;
     return store.get( entityId );
@@ -128,7 +175,7 @@ pub const World = struct
 
   pub inline fn hasComp( self : *World, comptime CompType : type, entityId : EntityId ) bool
   {
-    if( entityId == 0 ){ return false; }
+    if( !self.isEntityAlive( entityId )){ return false; }
 
     const store = self.getCompStore( CompType ) orelse return false;
     return store.has( entityId );
@@ -136,7 +183,7 @@ pub const World = struct
 
   pub inline fn removeComp( self : *World, comptime CompType : type, entityId : EntityId ) bool
   {
-    if( entityId == 0 ){ return false; }
+    if( !self.isEntityAlive( entityId )){ return false; }
 
     const store = self.getCompStore( CompType ) orelse return false;
     return store.remove( entityId );
@@ -174,13 +221,20 @@ test "World lifecycle resets entity creation"
   world.init( std.testing.allocator );
   defer world.deinit();
 
-  try std.testing.expect( world.createEntity().id == 1 );
-  try std.testing.expect( world.createEntity().id == 2 );
+  const entityA = world.createEntity();
+  const entityB = world.createEntity();
+
+  try std.testing.expect( entityA.id == 1 );
+  try std.testing.expect( entityB.id == 2 );
+  try std.testing.expect( world.isEntityAlive( entityA.id ));
+  try std.testing.expect( world.isEntityAlive( entityB.id ));
 
   world.deinit();
   world.init( std.testing.allocator );
 
+  try std.testing.expect( !world.isEntityAlive( entityA.id ));
   try std.testing.expect( world.createEntity().id == 1 );
+  try std.testing.expect( !world.isEntityAlive( 0 ));
 }
 
 test "World owns typed component CRUD and registration lifecycle"
@@ -232,4 +286,116 @@ test "World deinit releases registered owned component stores"
 
   world.deinit();
   try std.testing.expect( !world.compManager.isInit );
+}
+
+test "World rejects invalid entity destruction"
+{
+  var world : World = .{};
+
+  try std.testing.expect( !world.destroyEntity( 1 ));
+
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( !world.destroyEntity( 0 ));
+  try std.testing.expect( !world.destroyEntity( 99 ));
+
+  const entityId = world.createEntity().id;
+  try std.testing.expect(  world.destroyEntity( entityId ));
+  try std.testing.expect( !world.destroyEntity( entityId ));
+  try std.testing.expect( !world.isEntityAlive( entityId ));
+}
+
+test "World destroyEntity removes dense and sparse components"
+{
+  const SparseComp = struct
+  {
+    pub const storeType : comp.CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const DenseComp = struct
+  {
+    pub const storeType : comp.CompStorePolicy = .DENSE;
+
+    value : u32 = 0,
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp( SparseComp ));
+  try std.testing.expect( world.registerComp( DenseComp  ));
+
+  const entityId = world.createEntity().id;
+  try std.testing.expect( world.addComp( SparseComp, entityId, .{ .value = 10 }));
+  try std.testing.expect( world.addComp( DenseComp,  entityId, .{ .value = 20 }));
+
+  const sparseStore = world.getCompStore( SparseComp ).?;
+  const denseStore  = world.getCompStore( DenseComp  ).?;
+
+  try std.testing.expect(  world.destroyEntity( entityId ));
+  try std.testing.expect( !world.isEntityAlive( entityId ));
+  try std.testing.expect( !sparseStore.has( entityId ));
+  try std.testing.expect( !denseStore.has(  entityId ));
+  try std.testing.expect(  world.getComp( SparseComp, entityId ) == null );
+  try std.testing.expect( !world.hasComp( DenseComp, entityId ));
+}
+
+test "World destroyEntity succeeds without components and preserves other entities"
+{
+  const TestComp = struct
+  {
+    pub const storeType : comp.CompStorePolicy = .DENSE;
+
+    value : u32 = 0,
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp( TestComp ));
+
+  const emptyId = world.createEntity().id;
+  const keptId  = world.createEntity().id;
+
+  try std.testing.expect( world.addComp( TestComp, keptId, .{ .value = 42 }));
+  try std.testing.expect( world.destroyEntity( emptyId ));
+
+  try std.testing.expect( !world.isEntityAlive( emptyId ));
+  try std.testing.expect(  world.isEntityAlive( keptId  ));
+  try std.testing.expect(  world.hasComp( TestComp, keptId ));
+  try std.testing.expect(  world.getComp( TestComp, keptId ).?.value == 42 );
+}
+
+test "World component API rejects dead and never-created entities"
+{
+  const TestComp = struct
+  {
+    pub const storeType : comp.CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp( TestComp ));
+
+  const entityId = world.createEntity().id;
+  try std.testing.expect(  world.addComp( TestComp, entityId, .{ .value = 42 }));
+  try std.testing.expect(  world.destroyEntity( entityId ));
+
+  try std.testing.expect( !world.addComp(    TestComp, entityId, .{ .value = 99 }));
+  try std.testing.expect(  world.getComp(    TestComp, entityId ) == null );
+  try std.testing.expect( !world.hasComp(    TestComp, entityId ));
+  try std.testing.expect( !world.removeComp( TestComp, entityId ));
+
+  try std.testing.expect( !world.addComp(    TestComp, 99, .{ .value = 99 }));
+  try std.testing.expect(  world.getComp(    TestComp, 99 ) == null );
+  try std.testing.expect( !world.hasComp(    TestComp, 99 ));
+  try std.testing.expect( !world.removeComp( TestComp, 99 ));
 }

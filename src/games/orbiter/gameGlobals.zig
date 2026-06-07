@@ -17,7 +17,7 @@ pub const GameData = struct
   target : TargetInfo   = .{},
   views  : OrbiterViews = .{},
 
-  entityArray : [ bodyCount ]eng.Entity = std.mem.zeroes([ bodyCount ]eng.Entity ),
+  stellarEntitiesIds : [ bodyCount ]eng.EntityId = std.mem.zeroes([ bodyCount ]eng.EntityId ),
 };
 
 
@@ -159,6 +159,16 @@ pub fn registerOrbiterComps( ng : *eng.Engine ) bool
 pub fn unregisterOrbiterComps( ng : *eng.Engine ) void
 {
   G_DATA.views.clear();
+
+  for( &G_DATA.stellarEntitiesIds )| *id |
+  {
+    if( ng.world.isEntityAlive( id ))
+    {
+      _ = ng.world.destroyEntity( id );
+    }
+
+    id.* = 0;
+  }
 
   _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
   _ = ng.world.unregisterComp( gdf.orb.OrbitComp );

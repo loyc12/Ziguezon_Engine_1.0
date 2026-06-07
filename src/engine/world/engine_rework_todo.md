@@ -10,67 +10,67 @@ file, the reference takes precedence first, then the roadmap.
 
 ## 0. Current State
 
-Phase 1 completed the current World-owned component foundation, ending with
-the dense-store and component-view slices:
+Phase 1 completed the World-owned component foundation.
+Phase 2 completed entity lifecycle and component cleanup:
 
 * `Engine` owns and initializes one `World`.
-* `World` owns entity-id creation and typed component stores.
-* `EngineStep` forwards each consumed base tick through `World.tick(TickInfo)`.
+* `World` owns entity-id creation, active entity tracking, and destruction.
+* `World.destroyEntity(id)` removes that id from registered component stores.
+* `World.addComp`, `World.getComp`, `World.hasComp`, and `World.removeComp`
+  reject dead or never-created entity ids.
 * Dense and sparse component stores are implemented.
 * Component types must declare an explicit `storeType`.
-* `floppy`, `ping`, and `orbiter` use World-owned typed component stores.
-* `ping` and `orbiter` use `CompView` / `ComponentView` for transient typed
-  store access.
-* Borrowed component-store compatibility was removed.
+* Component views remain transient typed store-access helpers.
+* `EngineStep` forwards each consumed base tick through `World.tick(TickInfo)`.
 * Relations, events, rules, traits, archetypes, particle/effects systems,
-  logical scheduling, broad queries, and entity destruction remain deferred.
+  logical scheduling, broad queries, and world context remain deferred.
 
-The next useful slice is entity lifecycle and component cleanup. It should make
-entity identity explicit enough that later relation storage can rely on
-well-defined creation, validity, and destruction behavior.
+The next useful slice is first-class relation storage. Entity creation,
+validity, and destruction now exist, so relation rows can safely depend on
+source/target entity ids and can participate in entity-destruction cleanup.
 
 
 ## 1. Slice Scope
 
-### Phase 2: Entity Lifecycle And Component Cleanup
+### Phase 3: Relation Storage And World Relation API
 
-Add active entity validity, entity destruction, and registered component-store
-cleanup.
+Add World-owned relation storage for typed facts that connect two live entities.
 
 This phase is complete when:
 
-* `World` can answer whether an entity id is currently alive.
-* `World.destroyEntity(id)` exists and rejects id 0, uninitialized worlds, and
-  already-dead or never-created ids predictably.
-* Destroying an entity removes that id from every registered component store.
-* `World.addComp`, `World.getComp`, `World.hasComp`, and `World.removeComp`
-  respect entity validity.
-* Component views remain transient typed access helpers and do not become the
-  broad future query system.
-* Dense and sparse component stores retain their current public behavior for
-  direct component add/get/has/remove calls.
-* Existing game behavior remains unchanged except where invalid entity/component
-  operations now fail earlier.
-* No relation, event, rule, trait, archetype, scheduler, broad query, or
+* `engine/world/relations/relation.zig` defines the generic relation concepts
+  needed by user-defined relation types.
+* `engine/world/relations/relationManager.zig` owns typed relation stores.
+* `World` initializes, deinitializes, and exposes relation registration and
+  relation row operations.
+* Relation operations reject id 0, dead entities, never-created entities,
+  uninitialized worlds, and unregistered relation types predictably.
+* Relation storage supports source queries, target queries, exact
+  source-target lookup, and removal.
+* Destroying an entity removes relation rows where that entity is either the
+  source or the target.
+* At least one minimal generic engine relation example exists for tests and
+  copyable structure.
+* No event, rule, trait, archetype, scheduler, broad query, context, or
   particle/effects implementation is started.
 
 
 ## 2. Fixed Decisions
 
-* Keep `engine/world/engine_rework_reference.md` as the architectural guide.
-* Keep this slice focused on entity lifecycle plus component cleanup.
-* Do not implement entity id reuse in this phase. Monotonic ids are simpler and
-  avoid generation/id-reuse questions before relations exist.
+* Keep `engine_rework_reference.md` as the architectural guide.
+* Keep `engine_rework_roadmap.md` as the implementation-sequencing guide.
+* Keep this slice focused on relations only.
+* Relations connect meaningful entities. Do not use relations as string-like
+  tags or marker classifications.
+* Classification remains a future traits/metaproperties concern.
 * Prefer ids over raw pointers as persistent truth.
-* Component row pointers and component-view store pointers remain transient.
-* Destroying an entity should invalidate component membership for that id, but
-  should not invalidate component-store pointers unless component registration
-  changes.
-* Dense storage may keep swap-removal semantics. Stable iteration/draw order
-  remains a game-owned id-list concern until later order-aware queries exist.
-* Do not add marker components or zero-sized tag components. Classification
-  remains a future traits/metaproperties concern.
-* Keep game-specific simulation content under `games/`.
+* Relation row pointers, relation-store pointers, and query iterators remain
+  transient.
+* Relation cleanup must follow entity destruction. A destroyed entity should
+  leave no dangling source or target relation rows.
+* Do not add retained event history for relation changes in this phase.
+* Keep game-specific relation types under `games/`.
+* Keep engine relation examples minimal and generic.
 
 
 ## 3. Recommended Shape
@@ -78,178 +78,230 @@ This phase is complete when:
 This section is a practical target, not a requirement if the code argues for a
 smaller equivalent.
 
-### 3.1 Entity Validity
+### 3.1 Relation Type Contract
 
-Keep `EntityIdRegistry` as the monotonic id source.
-
-Add active-entity tracking owned by `World` or by the registry, whichever keeps
-the lifecycle API cleaner:
-
-* id 0 is never alive;
-* `createEntity()` marks the new id alive;
-* `isEntityAlive(id)` returns the current live/dead state;
-* `destroyEntity(id)` marks the id dead only after component cleanup succeeds;
-* `World.deinit()` clears all live entity tracking.
-
-Do not reuse ids yet. If future id reuse is added, it should be a separate
-generation-aware slice.
-
-### 3.2 Component Cleanup
-
-`CompManager` should be able to remove an entity id from every registered
-component store without knowing each store's concrete type.
+User-defined relation fact types should be plain Zig structs owned by typed
+relation stores.
 
 Likely shape:
 
-* extend the erased store entry with a remove-by-id callback;
-* register that callback beside `deinitDestroyFn`;
-* add `CompManager.removeEntity(id)` or similarly named cleanup helper;
-* have `World.destroyEntity(id)` call that helper before marking the entity dead.
+    pub const LinkedTo = struct
+    {
+      // optional relation payload fields
+    };
 
-The cleanup helper should tolerate stores where the id is absent. A destroyed
-entity may have zero components.
+Relation fact types may be zero-sized when the relation kind itself is the
+fact. That is different from marker components: a relation row still stores
+source and target entity ids and represents a typed connection between two
+entities. Dataless relation facts should use keyed existence, not a clamped
+dummy payload byte. `getRelation` must explicitly reject dataless relation fact
+types; `hasRelation` is the intended access path for those rows.
 
-### 3.3 World API
+Add relation metadata only when it is needed by the first store/API slice.
+Cardinality policy is useful, but it should stay small:
 
-The public World lifecycle surface should be small:
+* many source entities to many target entities by default;
+* optional one-target-per-source policy if it is cheap and clarifies the API;
+* defer richer uniqueness, ownership, cascading, and rule semantics.
 
-    createEntity()
-    isEntityAlive(id)
-    destroyEntity(id)
+### 3.2 Relation Storage
 
-Keep `registerComp`, `unregisterComp`, `addComp`, `getComp`, `hasComp`,
-`removeComp`, `getCompStore`, and `getCompView` behavior compatible with the
-current component path, except that component operations through `World` should
-reject dead or never-created ids.
+Implement a typed relation store that can answer the common relation questions
+without scanning every row for normal use.
+
+Target operations:
+
+    add( sourceId, targetId, value )
+    remove( sourceId, targetId )
+    has( sourceId, targetId )
+    get( sourceId, targetId )
+    removeEntity( entityId )
+    sourceIterator( sourceId )
+    targetIterator( targetId )
+
+Prefer explicit indexes:
+
+* exact source-target key for lookup/removal;
+* source index for outgoing relations;
+* target index for incoming/reverse lookup.
+
+Keep storage practical. A pair-key hash map plus source/target index lists is
+enough unless the implementation shows a smaller robust option.
+
+### 3.3 Relation Manager
+
+`RelationManager` should mirror the useful parts of `CompManager` without
+forcing relation storage to look like component storage.
+
+Likely shape:
+
+* allocator-backed lifecycle;
+* string-keyed typed store registry using `@typeName(RelType)`;
+* erased deinit callback;
+* erased remove-entity cleanup callback;
+* `register(RelType)` / `unregister(RelType)`;
+* `getStore(RelType)`;
+* `removeEntity(entityId)` returning a cleanup result.
+
+Relation cleanup should tolerate relation types where the destroyed entity has
+no rows.
+
+### 3.4 World API
+
+The public World relation surface should stay small and symmetrical with the
+component path:
+
+    registerRelation(RelType)
+    unregisterRelation(RelType)
+    getRelationStore(RelType)
+    addRelation(RelType, sourceId, targetId, value)
+    getRelation(RelType, sourceId, targetId)
+    hasRelation(RelType, sourceId, targetId)
+    removeRelation(RelType, sourceId, targetId)
+
+Relation operations through `World` should require both endpoints to be alive.
+Direct store APIs may remain lower-level, but tests should make the boundary
+clear. `World.getRelation` should only be available for payload-bearing
+relation facts. Calling it on a dataless relation fact must fail at compile
+time if possible, or return no relation with a clear logged error if runtime
+dispatch forces that path.
+
+When `World.destroyEntity(id)` succeeds, it should clean up both components and
+relations before marking the entity dead. If relation cleanup can fail, keep the
+entity alive and report failure the same way component cleanup currently does.
+
+### 3.5 Minimal Engine Example
+
+Add one generic relation example for tests and reference usage. Prefer a neutral
+name such as `LinkedTo` unless the implementation needs a stronger example.
+
+Do not add a full library of `Owns`, `Contains`, `ParentOf`, `MemberOf`, and
+`DependsOn` yet. Those are valid target examples from the roadmap, but this
+slice only needs enough engine-level relation content to prove the system.
 
 
-## 4. Phase 2 Checklist
+## 4. Phase 3 Checklist
 
 ### 4.1 Inventory And Naming
 
-- [ ] Inspect current entity creation, component add/remove, and game cleanup
-      call sites before editing behavior.
+- [ ] Inspect current `World`, `CompManager`, and component-store lifecycle
+      patterns before adding relation code.
+- [ ] Confirm whether relation cleanup should run before or after component
+      cleanup inside `World.destroyEntity`.
 - [ ] Choose names consistent with existing style, preferably
-      `isEntityAlive(id)` and `destroyEntity(id)` unless a better local pattern
-      is obvious.
-- [ ] Decide whether active-id tracking lives inside `World` or
-      `EntityIdRegistry`.
-- [ ] Keep existing `Entity` as a lightweight id wrapper.
-- [ ] Do not introduce a broad entity object hierarchy.
+      `registerRelation`, `addRelation`, and `removeRelation`.
+- [ ] Keep `relations/relation.zig` for generic relation concepts.
+- [ ] Keep `relations/relationManager.zig` for typed relation-store ownership.
+- [ ] Avoid broad query/view naming in this phase.
 
-### 4.2 Active Entity Tracking
+### 4.2 Relation Concepts
 
-- [ ] Add active entity tracking with allocator-backed lifecycle if needed.
-- [ ] Initialize active tracking in `World.init`.
-- [ ] Clear active tracking in `World.deinit`.
-- [ ] Make `createEntity()` reject uninitialized worlds as it does now.
-- [ ] Make successful `createEntity()` mark the id alive.
-- [ ] Add `World.isEntityAlive(id)` or equivalent.
-- [ ] Ensure id 0 is never alive.
-- [ ] Add tests for creation and alive/dead state.
-- [ ] Add tests for world deinit/reinit resetting entity lifecycle state.
+- [ ] Define source/target relation row concepts in `relation.zig`.
+- [ ] Define a source-target key type or equivalent hashable key.
+- [ ] Decide whether relation rows store relation fact payload values, pointers
+      to values, or both through typed store access.
+- [ ] Decide whether zero-sized relation fact payloads are allowed.
+- [ ] Ensure dataless relation facts use keyed existence instead of dummy
+      byte storage.
+- [ ] Ensure `getRelation` explicitly rejects dataless relation fact types.
+- [ ] Add only minimal cardinality metadata if the first API needs it.
+- [ ] Add tests for relation key equality and basic row behavior if those types
+      have non-trivial logic.
 
-### 4.3 Component Store Cleanup Hooks
+### 4.3 Relation Store
 
-- [ ] Extend `CompManager` erased store entries with a callback that removes a
-      component row by entity id.
-- [ ] Implement the callback through `CompStoreFactory(CompType).remove(id)`.
-- [ ] Add a `CompManager` helper that removes one entity id from all registered
-      stores.
-- [ ] Make the helper return enough information to detect internal cleanup
-      failures if a future store can fail cleanup.
-- [ ] Keep cleanup tolerant of missing component rows.
-- [ ] Preserve store deinit/destroy behavior.
-- [ ] Preserve duplicate component registration rejection.
-- [ ] Add tests for cleanup across both dense and sparse stores.
+- [ ] Implement typed relation store initialization and deinitialization.
+- [ ] Add relation row add/remove/get/has operations.
+- [ ] Reject duplicate exact source-target rows predictably.
+- [ ] Add outgoing/source lookup.
+- [ ] Add incoming/target lookup.
+- [ ] Add cleanup for all rows touching a destroyed entity.
+- [ ] Keep cleanup tolerant of absent rows.
+- [ ] Ensure removing one relation repairs all indexes.
+- [ ] Add tests for add/get/has/remove.
+- [ ] Add tests for duplicate rejection.
+- [ ] Add tests for source and target queries.
+- [ ] Add tests for remove-entity cleanup touching source rows, target rows,
+      and entities with no relation rows.
 
-### 4.4 World Destroy API
+### 4.4 Relation Manager
 
-- [ ] Add `World.destroyEntity(id)`.
-- [ ] Reject id 0.
-- [ ] Reject uninitialized worlds.
-- [ ] Reject never-created or already-dead ids.
-- [ ] Remove all registered components for the id.
-- [ ] Mark the id dead after component cleanup.
-- [ ] Ensure `destroyEntity(id)` is idempotent from the caller's perspective:
-      first call succeeds, later calls fail predictably without mutating state.
-- [ ] Add tests that destroyed entities lose dense components.
-- [ ] Add tests that destroyed entities lose sparse components.
-- [ ] Add tests that destroying an entity with no components succeeds.
-- [ ] Add tests that destroying one entity does not disturb another entity's
-      components.
+- [ ] Add allocator-backed `RelationManager` lifecycle.
+- [ ] Add typed relation-store registration.
+- [ ] Add typed relation-store unregistration.
+- [ ] Add typed relation-store lookup.
+- [ ] Add erased store deinit/destroy callback.
+- [ ] Add erased remove-entity cleanup callback.
+- [ ] Preserve duplicate relation registration rejection.
+- [ ] Add tests for registration, lookup, unregister, and deinit cleanup.
+- [ ] Add tests for manager-level remove-entity cleanup across multiple
+      relation types.
 
-### 4.5 World Component API Validity
+### 4.5 World Integration
 
-- [ ] Update `World.addComp` to reject dead or never-created ids.
-- [ ] Update `World.getComp` to reject dead or never-created ids.
-- [ ] Update `World.hasComp` to return false for dead or never-created ids.
-- [ ] Update `World.removeComp` to reject dead or never-created ids.
-- [ ] Preserve current behavior for unregistered component stores.
-- [ ] Keep direct store APIs unchanged; validity checks belong at the World
-      boundary for this slice.
-- [ ] Add tests for component operations on dead ids.
-- [ ] Add tests for component operations on ids that were never created.
+- [ ] Add `relationManager` ownership to `World`.
+- [ ] Initialize relation storage in `World.init`.
+- [ ] Deinitialize relation storage in `World.deinit`.
+- [ ] Add `World.registerRelation` and `World.unregisterRelation`.
+- [ ] Add `World.getRelationStore`.
+- [ ] Add `World.addRelation`.
+- [ ] Add `World.getRelation`.
+- [ ] Add `World.hasRelation`.
+- [ ] Add `World.removeRelation`.
+- [ ] Make World relation operations reject dead or never-created source ids.
+- [ ] Make World relation operations reject dead or never-created target ids.
+- [ ] Make `World.destroyEntity` clean relation rows involving the destroyed id.
+- [ ] Add tests for relation operations on uninitialized worlds, id 0,
+      dead ids, never-created ids, and unregistered relation stores.
+- [ ] Add tests that entity destruction removes source-side and target-side
+      relation rows.
+- [ ] Add tests that entity destruction preserves unrelated relation rows.
 
 ### 4.6 Game Touchpoints
 
-- [ ] Check `games/ping` cleanup paths that manually remove components from
-      particle/body ids.
-- [ ] Check `games/floppy` and `games/orbiter` for assumptions that any
-      non-zero id can receive components.
-- [ ] Prefer using `World.destroyEntity(id)` where the game is truly deleting an
-      entity.
-- [ ] Keep game-owned stable ordering lists in place if they are still needed.
-- [ ] Do not start the first-class particle/effects system in this phase; only
-      preserve current ping behavior.
+- [ ] Check whether any current game code is manually modeling relationships
+      with component fields or id lists that would benefit from a tiny proof
+      migration.
+- [ ] Avoid migrating game domain logic unless it is a small, clear validation
+      of the generic relation API.
+- [ ] Keep existing game-owned stable ordering lists in place.
+- [ ] Do not replace current game-specific component references with relations
+      unless the relation carries real source-target semantics.
 
 ### 4.7 Documentation Updates
 
 - [ ] Update `engine_rework_roadmap.md` only if implementation choices change
-      the sequencing or expose a contradiction.
-- [ ] Append completion notes to this todo when Phase 2 is finished.
-- [ ] Record the final active-id storage shape.
-- [ ] Record the final component cleanup callback/API names.
-- [ ] Record whether any game cleanup paths moved to `World.destroyEntity`.
+      the sequence or expose a contradiction.
+- [ ] Append completion notes to this todo when Phase 3 is finished.
+- [ ] Record the final relation type contract.
+- [ ] Record the final relation store/index shape.
+- [ ] Record the final relation manager callback/API names.
+- [ ] Record whether any game code moved to the new relation API.
 - [ ] Record validation commands and results.
 
 ### 4.8 Validation
 
 - [ ] Run `zig build`.
-- [ ] Run `zig build ping`.
-- [ ] Run `zig build floppy`.
-- [ ] Run `zig build orbiter`.
 - [ ] Run `zig build check_games`.
 - [ ] Run `zig build test`.
-- [ ] Confirm no relation/event/rule/trait/archetype/scheduler/broad-query
+- [ ] Run any focused game build touched by the relation proof migration.
+- [ ] Confirm no event/rule/trait/archetype/scheduler/broad-query
       implementation was added.
 - [ ] Confirm no first-class particle/effects implementation was added.
 - [ ] Do not run a formatting pass.
 
 
-## 5. Later, Not Part Of Phase 2
+## 5. Later, Not Part Of Phase 3
 
 * Entity id reuse or generation counters.
-* Relation storage, relation indexes, cardinality rules, and relation cleanup.
+* Relation-driven events, retained relation history, and audit logs.
+* Rich cardinality policies, cascading ownership rules, or relation-specific
+  lifecycle policies beyond entity-destruction cleanup.
 * Generic event records/queues.
 * Rules/reactions.
 * Traits/metaproperties and archetypes/templates.
 * World logical-time scheduler.
 * Broad query planning over components, relations, events, traits, archetypes,
   and effect records.
+* Save/load/replay context wiring.
 * First-class particle/effects infrastructure.
-* Save/load/replay context records.
-
-
-## 6. Completion Notes To Record
-
-When finishing Phase 2, record:
-
-* final active entity storage shape;
-* final `World` entity lifecycle API names;
-* final `CompManager` cleanup callback/helper names;
-* how destroy cleanup behaves for dense and sparse component stores;
-* how component operations behave for dead and never-created ids;
-* any game cleanup paths changed to `World.destroyEntity`;
-* validation commands and results;
-* any blocker found before relation storage.

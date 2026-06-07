@@ -20,6 +20,50 @@ migration steps, and code-level breakdowns belong in:
 This file should be short enough to reread often, but dense enough that future
 engine work does not need to re-litigate the same architectural goals.
 
+## Keywords And Nomenclature
+
+Use these terms consistently in world-rework docs and engine-facing APIs.
+
+Core terms:
+
+- **World**: the engine-owned simulation database that stores and coordinates
+  entity identity, facts, scheduling, queries, and future context records.
+- **Entity**: a stable identifier. Entities do not own behavior or fields
+  directly; World-owned facts make an entity meaningful.
+- **Fact**: any World-owned simulation record that states something inspectable
+  about entities or the world. Components, relations, events, traits,
+  archetype-spawned rows, effect triggers, and scheduler records are all facts
+  when stored in World.
+- **Payload-bearing fact**: a fact with retrievable user data.
+- **Dataless fact**: a zero-sized fact whose meaning is its existence. Store it
+  as keyed presence and query it with `has...` / membership APIs, not payload
+  retrieval APIs.
+- **Store / table**: owned storage for facts of one family or type.
+- **Index**: auxiliary storage used to answer lookups without scanning a whole
+  store.
+- **System**: executable game or engine logic that reads facts and applies
+  scheduled work.
+
+Fact families and logic:
+
+- **Component**: a per-entity fact with payload state, such as transform,
+  motion, hitbox, render shape, or game state.
+- **Relation**: a source-target fact connecting meaningful entities.
+- **Trait / metaproperty**: a classification fact. Use this for tags, flags,
+  labels, and other presence-style classification.
+- **Event**: a fact that records something that happened. Commands request
+  change; events record change.
+- **Archetype / template**: a reusable bundle definition for creating initial
+  facts. The archetype definition is not itself an entity row unless explicitly
+  stored as one.
+- **Query / view**: transient inspection helpers over facts. They should not
+  become hidden owners of simulation facts.
+- **Rule / reaction**: declarative or semi-declarative logic that observes facts
+  and emits commands, events, or fact changes.
+- **Command**: a requested mutation or action. Commands are not proof that the
+  change happened until a system/rule applies them and records resulting facts
+  or events.
+
 ## 1. CORE DIRECTION
 
 ### 1.1 The engine is simulation-oriented, not ECS-oriented
@@ -52,7 +96,7 @@ support for:
 
 ### 1.2 World is the central simulation database
 
-The main engine-owned simulation primitive should be World.
+World is the central ownership boundary for simulation state.
 
 World should eventually organize:
 
@@ -70,12 +114,12 @@ World should eventually organize:
 
 This is closer to a simulation database than to an object hierarchy.
 
-Entities are identifiers. Components, relations, events, traits, and rules
-store the facts that make those identifiers meaningful.
+This keeps lifecycle, save/load, debug inspection, and future replay tied to
+explicit tables instead of hidden object graphs.
 
 ### 1.3 Components are one table family
 
-Components describe per-entity state:
+Component tables are reserved for per-entity payload state:
 
 - transform
 - movement
@@ -85,7 +129,7 @@ Components describe per-entity state:
 - simulation counters
 - domain-specific state
 
-Components should be data-first. Behavior belongs in systems. Rendering
+Components should stay data-first. Behavior belongs in systems. Rendering
 belongs in render systems/adapters.
 
 Components should not be forced to represent every fact. If a fact primarily
@@ -96,7 +140,7 @@ Presence-only markers, zero-data components, and component-store special cases
 for "has this label" semantics create two competing classification paths.
 Use traits/metaproperties for that purpose.
 
-### 1.4 Relations are first-class simulation data
+### 1.4 Relations are first-class simulation facts
 
 Relationships between entities must not be hidden inside arbitrary components
 by default.
@@ -123,7 +167,8 @@ cardinality rules, and cleanup behavior when entities are destroyed.
 
 ### 1.5 Events record change
 
-Events are not only callbacks. They are records that something happened.
+Callbacks may observe events, but the event itself should be an inspectable
+record.
 
 Event examples should stay generic in the engine:
 
@@ -169,8 +214,8 @@ first. Game-specific rules belong in games.
 
 ### 1.7 Traits and archetypes support reuse
 
-Traits/metaproperties classify entities and may attach reusable behavior or
-data.
+Beyond simple classification, traits/metaproperties may eventually attach
+reusable behavior or data.
 
 Traits/metaproperties are the canonical way to mark, tag, classify, or flag
 entities. Prefer traits over marker components and over relation-shaped tags
@@ -268,12 +313,19 @@ Storage remains configurable, but it should not dominate user-facing code.
 Some entity-related data will be used heavily and need dense storage.
 Others will be rare and need sparse or lookup-oriented storage.
 
-Users should be able to choose the storage policy of their data structs.
+Users should be able to choose the storage policy of their fact payload structs.
 The engine should provide sensible defaults, but performance-relevant storage
 choices must be available to users.
 
 Prefer dense arrays, sparse sets, hash maps, indexed tables, and relation-specific
 indexes unless profiling proves another structure is justified.
+
+Do not expose data access APIs that pretend zero-sized structs have retrievable
+payloads. A zero-sized fact may still be stored as keyed existence, relation
+membership, trait presence, or an event kind, but callers should query its
+presence instead of getting a pointer or value. Retrieval APIs such as
+`getComp`, `getRelation`, or future equivalent accessors should reject
+zero-sized payload types explicitly.
 
 ### 2.5 Separate principles from implementation plans
 
@@ -322,7 +374,7 @@ engine/core owns runtime orchestration:
 `EngineTiming` owns wall-clock sampling, frame pacing, base simulation-tick
 pacing, queued/catch-up tick limits, forced ticks, and performance timing.
 
-It coordinates systems. It should not own game-specific simulation data or the
+It coordinates systems. It should not own game-specific simulation facts or the
 World's logical simulation calendar.
 
 ### 3.3 engine/world
@@ -354,8 +406,8 @@ engine/render owns world-facing render adapters:
 - particle/effects render helpers
 - debug render systems
 
-Simulation data should not depend on rendering.
-Render systems read simulation data and draw it.
+Simulation facts should not depend on rendering.
+Render systems read simulation facts and draw them.
 
 ### 3.5 games
 
@@ -442,12 +494,12 @@ World should eventually support queries over:
 UI and debug tools should read through queries/views and emit commands/events,
 not mutate simulation internals directly.
 
-### 4.4 Data first, behavior second, rendering last
+### 4.4 Facts first, behavior second, rendering last
 
 Keep the direction clear:
 
-- data lives in components, relations, events, traits, archetypes, and effect
-  configs
+- facts live in components, relations, events, traits, archetypes, and effect
+  records/configs
 - behavior lives in systems and rules
 - particles/effects live in first-class effect systems and packed pools
 - rendering lives in render systems/adapters
@@ -456,10 +508,10 @@ This keeps simulation code testable, reusable, and inspectable.
 
 Transient visual effects should not become entities unless they participate in
 gameplay. A gameplay object that emits particles may be an entity with emitter
-state, and the event that caused an effect may be world data, but individual
+state, and the event that caused an effect may be a World fact, but individual
 smoke/spark/trail particles should usually live in a particle/effects pool.
 
-Particle configuration belongs in data such as `ParticleConfigs`. Replay or
+Particle configuration belongs in records such as `ParticleConfigs`. Replay or
 save/load paths should prefer recording the deterministic event/config/seed
 that produced an effect instead of serializing every transient particle row.
 
@@ -490,7 +542,7 @@ The near-term work should build toward this in small iterative steps.
 
 The success condition is:
 
-    A user can build a data-oriented simulation with many entities and many
+    A user can build a fact-oriented simulation with many entities and many
     relationships, define their own simulation types cleanly, choose storage
     policies when needed, drive first-class effects from world facts, inspect
     what the world contains, and rely on a small set of generic engine examples

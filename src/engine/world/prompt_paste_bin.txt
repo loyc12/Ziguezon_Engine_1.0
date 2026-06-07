@@ -3,14 +3,27 @@ WARNING : THIS FILES CONTAINS COPIABLE PROMPTS : LLMS / AGENTS SHOULD IGNORE ITS
 
 Implement the engine_rework_todo.md in its entirety, going step-by-step
 Make sure to follow the stylistic guidelines for the project ( see AGENTS.md if you need more details on them )
-Start by reviewing the todo itself, before planing and executing the work
+Avoid duplicating code pointlessly, and do remove deprecated code your changes create
+Start by reviewing the todo itself, before executing the needed work step by step
 Alert me to any unforseen issue you encounter along the way
 
 
-Update the engine_rework_todo.md so it contains the next steps of the rework
+Update engine_rework_todo.md so it contains the next steps of the rework
 Use engine_rework_reference.md and engine_rework_roadmap.d as authoritative guides
 Scope the todo content appropriately ( not trivially small, not overly ambitious )
+
+
+Brief me on the changes planned in engine_rework_todo.md
+I want to be informed of the main consequences of implementation, and the files it will heavily touch
+Keep it compact and to-the-point- but do not ommit non-trivial changes
+
 
 I have this system I implemented a long time ago, and which is not currently in used
 I would first like and audit of its code and suitability in the game engine we are building
 Be sure to point out any point of tensions which could be worked out
+
+
+
+// to do :
+
+remove entityArray from orbiter ?

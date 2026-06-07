@@ -60,6 +60,12 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
 pub fn OnGameClose( ng : *eng.Engine ) void
 {
+  if( DISK_ID != 0 )
+  {
+    _ = ng.world.destroyEntity( DISK_ID );
+    DISK_ID = 0;
+  }
+
   _ = ng.world.unregisterComp( eng.ShapeComp );
   _ = ng.world.unregisterComp( eng.TransComp );
 }

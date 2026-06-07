@@ -1,21 +1,44 @@
 const std  = @import( "std" );
 const utl  = @import( "utils" );
 const comp = @import( "component.zig" );
+const ent  = @import( "../entity.zig" );
 
 const CompStoreFactory = comp.CompStoreFactory;
 const CompStorePolicy  = comp.CompStorePolicy;
+const EntityId         = ent.EntityId;
+
+
+pub const EntityCleanupResult = struct
+{
+  removedCount : usize = 0,
+  missingCount : usize = 0,
+  failedCount  : usize = 0,
+
+  pub inline fn isSuccess( self : EntityCleanupResult ) bool
+  {
+    return self.failedCount == 0;
+  }
+};
 
 
 pub const CompManager = struct
 {
-  const OwnedStoreEntry = struct
+  const StoreEntityCleanupResult = enum
+  {
+    REMOVED,
+    MISSING,
+    FAILED,
+  };
+
+  const StoreEntry = struct
   {
     storePtr        : *anyopaque,
     deinitDestroyFn : *const fn ( std.mem.Allocator, *anyopaque ) void,
+    removeEntityFn  : *const fn ( *anyopaque, EntityId ) StoreEntityCleanupResult,
   };
 
   alloc  : std.mem.Allocator                    = undefined,
-  stores : std.StringHashMap( OwnedStoreEntry ) = undefined,
+  stores : std.StringHashMap( StoreEntry ) = undefined,
 
   isInit : bool = false,
 
@@ -82,6 +105,7 @@ pub const CompManager = struct
     .{
       .storePtr        = store,
       .deinitDestroyFn = deinitDestroyStore( CompType ),
+      .removeEntityFn  = removeEntityFromStore( CompType ),
     })
     catch
     {
@@ -130,6 +154,31 @@ pub const CompManager = struct
     return @ptrCast( @alignCast( entry.storePtr ));
   }
 
+  pub fn removeEntity( self : *CompManager, entityId : EntityId ) EntityCleanupResult
+  {
+    var result : EntityCleanupResult = .{};
+
+    if( !self.isInit )
+    {
+      utl.log( .WARN, 0, @src(), "Cannot remove Entity {d} from CompStores : CompManager is uninitialized", .{ entityId });
+      result.failedCount = 1;
+      return result;
+    }
+
+    var iter = self.stores.valueIterator();
+    while( iter.next() )| entry |
+    {
+      switch( entry.removeEntityFn( entry.storePtr, entityId ))
+      {
+        .REMOVED => result.removedCount += 1,
+        .MISSING => result.missingCount += 1,
+        .FAILED  => result.failedCount  += 1,
+      }
+    }
+
+    return result;
+  }
+
 
   // ================================ INTERNAL FUNCTIONS ================================
 
@@ -143,6 +192,22 @@ pub const CompManager = struct
 
         store.deinit();
         alloc.destroy( store );
+      }
+    }.call;
+  }
+
+  fn removeEntityFromStore( comptime CompType : type ) *const fn ( *anyopaque, EntityId ) StoreEntityCleanupResult
+  {
+    return struct
+    {
+      fn call( storePtr : *anyopaque, entityId : EntityId ) StoreEntityCleanupResult
+      {
+        const store : *CompStoreFactory( CompType ) = @ptrCast( @alignCast( storePtr ));
+
+        if( !store.isInit ){ return .FAILED;  }
+        if( !store.has( entityId )){ return .MISSING; }
+
+        return if( store.remove( entityId )) .REMOVED else .FAILED;
       }
     }.call;
   }
@@ -225,4 +290,71 @@ test "CompManager accepts sparse and dense policies"
   const denseStore = manager.getStore( DenseComp ).?;
   try std.testing.expect( denseStore.add( 1, .{ .value = 42 }));
   try std.testing.expect( denseStore.get( 1 ).?.value == 42 );
+}
+
+test "CompManager removes an entity from every registered store"
+{
+  const SparseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const DenseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .DENSE;
+
+    value : u32 = 0,
+  };
+
+  var manager : CompManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect( manager.register( SparseComp ));
+  try std.testing.expect( manager.register( DenseComp  ));
+
+  const sparseStore = manager.getStore( SparseComp ).?;
+  const denseStore  = manager.getStore( DenseComp  ).?;
+
+  try std.testing.expect( sparseStore.add( 1, .{ .value = 10 }));
+  try std.testing.expect( denseStore.add(  1, .{ .value = 20 }));
+  try std.testing.expect( denseStore.add(  2, .{ .value = 30 }));
+
+  const cleanup = manager.removeEntity( 1 );
+  try std.testing.expect( cleanup.isSuccess() );
+  try std.testing.expect( cleanup.removedCount == 2 );
+  try std.testing.expect( cleanup.missingCount == 0 );
+
+  try std.testing.expect( !sparseStore.has( 1 ));
+  try std.testing.expect( !denseStore.has(  1 ));
+  try std.testing.expect(  denseStore.has(  2 ));
+}
+
+test "CompManager entity cleanup tolerates missing component rows"
+{
+  const SparseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const DenseComp = struct
+  {
+    pub const storeType : CompStorePolicy = .DENSE;
+
+    value : u32 = 0,
+  };
+
+  var manager : CompManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect( manager.register( SparseComp ));
+  try std.testing.expect( manager.register( DenseComp  ));
+
+  const cleanup = manager.removeEntity( 99 );
+  try std.testing.expect( cleanup.isSuccess() );
+  try std.testing.expect( cleanup.removedCount == 0 );
+  try std.testing.expect( cleanup.missingCount == 2 );
 }

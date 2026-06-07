@@ -168,9 +168,7 @@ pub fn removePingEntity( ng : *eng.Engine, id : eng.EntityId ) void
   removeIdFromList( &mobileIds,   id );
   removeIdFromList( &particleIds, id );
 
-  _ = ng.world.removeComp( eng.HitboxComp, id );
-  _ = ng.world.removeComp( eng.ShapeComp,  id );
-  _ = ng.world.removeComp( eng.TransComp,  id );
+  _ = ng.world.destroyEntity( id );
 }
 
 pub fn removeParticleAt( ng : *eng.Engine, index : usize ) void
@@ -361,6 +359,11 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
 pub fn OnGameClose( ng : *eng.Engine ) void
 {
+  while( entityIds.items.len > 0 )
+  {
+    removePingEntity( ng, entityIds.items[ entityIds.items.len - 1 ] );
+  }
+
   entityIds.deinit(   utl.getDefaultAlloc() );
   mobileIds.deinit(   utl.getDefaultAlloc() );
   particleIds.deinit( utl.getDefaultAlloc() );
