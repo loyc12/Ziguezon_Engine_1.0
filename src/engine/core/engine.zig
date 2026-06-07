@@ -34,7 +34,6 @@ pub const Engine = struct
   // Engine Managers
   world           : eng.World                     = .{},
   uiManager       : utl.UiManager                 = .{},
-  eventManager    : eng.eventMgr.EventManager     = .{}, // NOTE : will be move to World eventually
   tilemapManager  : eng.tilemapMgr.TilemapManager = .{}, // NOTE : will be move to World eventually
   resourceManager : eng.resMgr.ResourceManager    = .{},
 

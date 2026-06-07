@@ -1,9 +1,15 @@
 WARNING : THIS FILES CONTAINS COPIABLE PROMPTS : LLMS / AGENTS SHOULD IGNORE ITS REMAINING CONTENT
 
 
+# ================================ MISCELLANEOUS ================================
+
+The rest of this prompt is for the memory generation pass : ignore ignore it and terminate if you are not the memory-update agent :
+
+# ================================ TODO LOOP ================================
+
 Implement the engine_rework_todo.md in its entirety, going step-by-step
 Make sure to follow the stylistic guidelines for the project ( see AGENTS.md if you need more details on them )
-Avoid duplicating code pointlessly, and do remove deprecated code your changes create
+Avoid duplicating code pointlessly, and do remove deprecated code your changes may leave behind
 Start by reviewing the todo itself, before executing the needed work step by step
 Alert me to any unforseen issue you encounter along the way
 
@@ -13,17 +19,14 @@ Use engine_rework_reference.md and engine_rework_roadmap.d as authoritative guid
 Scope the todo content appropriately ( not trivially small, not overly ambitious )
 
 
-Brief me on the changes planned in engine_rework_todo.md
+Brief me on the code and structure changes planned in engine_rework_todo.md
 I want to be informed of the main consequences of implementation, and the files it will heavily touch
 Keep it compact and to-the-point- but do not ommit non-trivial changes
 
 
+
+# ================================ UTILS AUDITING ================================
+
 I have this system I implemented a long time ago, and which is not currently in used
 I would first like and audit of its code and suitability in the game engine we are building
 Be sure to point out any point of tensions which could be worked out
-
-
-
-// to do :
-
-remove entityArray from orbiter ?

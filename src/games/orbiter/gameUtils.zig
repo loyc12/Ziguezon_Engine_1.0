@@ -7,7 +7,7 @@ const gdf = @import( "gameDef.zig"    );
 
 const times  = &gbl.G_DATA.times;
 const target = &gbl.G_DATA.target;
-const nttArr = &gbl.G_DATA.entityArray;
+const nttArr = &gbl.G_DATA.stellarEntitiesIds;
 
 const BodyName  = gdf.BodyName;
 const BodyType  = gdf.BodyType;
@@ -103,9 +103,9 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
   // Setting up relevant components
   for( 0..bodyCount )| idx |
   {
-    nttArr[ idx ] = ng.world.createEntity();
+    nttArr[ idx ] = ng.world.createEntity().id;
 
-    const id = nttArr[ idx ].id;
+    const id = nttArr[ idx ];
 
     utl.log( .TRACE, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -219,7 +219,7 @@ pub fn tickOrbiters( view : *gdf.OrbitTickView ) void
 
   for( 1..nttArr.len )| idx |
   {
-    const id      = nttArr[ idx ].id;
+    const id      = nttArr[ idx ];
     const orbiter = view.get( orb.OrbitComp, id );
 
     if( orbiter == null ){ continue; }
@@ -265,7 +265,7 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
 
     inline for( 1..nttArr.len )| idx |
     {
-      const id    = nttArr[ idx ].id;
+      const id    = nttArr[ idx ];
       const trans = view.get( eng.TransComp, id );
       const body  = view.get( bdy.BodyComp,  id );
 
@@ -295,7 +295,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
   // Rendering bodies' orbits and debug info
   for( 1..nttArr.len )| idx |
   {
-    const id = nttArr[ idx ].id;
+    const id = nttArr[ idx ];
 
     utl.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
 
@@ -334,7 +334,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
   for( 0..nttArr.len )| i |
   {
     const idx = nttArr.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
-    const id  = nttArr[ idx ].id;
+    const id  = nttArr[ idx ];
 
     utl.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
 

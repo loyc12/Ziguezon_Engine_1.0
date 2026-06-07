@@ -162,9 +162,9 @@ pub fn unregisterOrbiterComps( ng : *eng.Engine ) void
 
   for( &G_DATA.stellarEntitiesIds )| *id |
   {
-    if( ng.world.isEntityAlive( id ))
+    if( ng.world.isEntityAlive( id.* ))
     {
-      _ = ng.world.destroyEntity( id );
+      _ = ng.world.destroyEntity( id.* );
     }
 
     id.* = 0;

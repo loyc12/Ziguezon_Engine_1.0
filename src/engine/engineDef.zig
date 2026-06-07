@@ -34,12 +34,11 @@ pub var G_ENG : Engine = .{};
 // ================ MANAGERS ================
 
 pub const resMgr     = @import( "resources/resourceManager.zig" );
-pub const eventMgr   = @import( "world/events/eventManager.zig" );
 pub const tilemapMgr = @import( "world/tilemap/tilemapManager.zig" );
 pub const worldMgr   = @import( "world/worldManager.zig" );
 
 pub const World       = worldMgr.World;
-pub const TickInfo = worldMgr.TickInfo;
+pub const TickInfo    = worldMgr.TickInfo;
 
 
 // ================ RENDER ================
@@ -75,11 +74,18 @@ pub const EntityId = entity.EntityId;
 
 const comp = @import( "world/components/component.zig" );
 const view = @import( "world/views/view.zig" );
+const rel  = @import( "world/relations/relation.zig" );
 
 pub const CompStoreFactory = comp.CompStoreFactory;
 pub const CompStorePolicy  = comp.CompStorePolicy;
 pub const CompView         = view.CompView;
 pub const ComponentView    = view.CompView;
+
+pub const RelationStoreFactory = rel.RelationStoreFactory;
+pub const RelationKey          = rel.RelationKey;
+pub const RelationConfig       = rel.RelationConfig;
+pub const RelationCardinality  = rel.RelationCardinality;
+pub const LinkedTo             = rel.LinkedTo;
 
 
 pub const baseComp = @import( "world/components/baseComps.zig" );
@@ -88,23 +94,6 @@ pub const TransComp  = baseComp.TransComp;
 pub const ShapeComp  = baseComp.ShapeComp;
 pub const HitboxComp = baseComp.HitboxComp;
 pub const SpriteComp = baseComp.SpriteComp;
-
-
-// ================ EVENT ================
-
-pub const eventCore = @import( "world/events/event.zig" );
-
-pub const Event = eventCore.Event;
-
-pub const EventType  = eventCore.EventType;
-pub const EventPhase = eventCore.EventPhase;
-pub const EventData  = eventCore.EventData;
-pub const EventFunc  = eventCore.EventFunc;
-
-pub const EventListener      = eventCore.EventListener;
-pub const EventListenerArray = eventCore.EventListenerArray;
-pub const EventQueue         = eventCore.EventQueue;
-
 
 test "engine world declarations"
 {
