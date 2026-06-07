@@ -10,15 +10,16 @@ const sparse = @import( "storeTypes/sparseStore.zig" );
 
 pub const CompStorePolicy = enum
 {
-  SPARSE,
-  DENSE,
+//DENSE,  // ought to use a pure id-indexed array storage
+  DENSE,  // use an arrayList storage ( TODO : rename to something other than DENSE )
+  SPARSE, // uses hashmap storage
 };
 
 pub fn getCompStorePolicy( comptime CompType : type ) CompStorePolicy
 {
   if( !@hasDecl( CompType, "storeType" ))
   {
-    @compileError( "Component type " ++ @typeName( CompType ) ++ " must declare : pub const storeType : eng.CompStorePolicy = .DENSE or .SPARSE" );
+    @compileError( "Component type " ++ @typeName( CompType ) ++ " must declare : pub const storeType : eng.CompStorePolicy = <ENUM>" );
   }
 
   const policy : CompStorePolicy = CompType.storeType;
@@ -32,12 +33,13 @@ pub fn CompStoreFactory( comptime CompType : type ) type
 {
   if( @sizeOf( CompType ) == 0 )
   {
-    @compileError( "Component type " ++ @typeName( CompType ) ++ " has zero size. Empty marker components are not supported by component stores yet; use explicit game-owned id lists or wait for a tag store policy." );
+    @compileError( "Component type " ++ @typeName( CompType ) ++ " has zero size. Empty marker components are not supported by component stores; use trait system or an explicit game-owned id lists ." );
   }
 
   return switch( getCompStorePolicy( CompType ))
   {
-    .DENSE  => dense.DenseCompStoreFactory(   CompType ),
+  //.DENSE  => dense.DenseCompStoreFactory(   CompType ),
+    .DENSE  => dense.DenseCompStoreFactory(   CompType ), // TODO : rename to something other than DENSE
     .SPARSE => sparse.SparseCompStoreFactory( CompType ),
   };
 }

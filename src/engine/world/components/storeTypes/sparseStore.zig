@@ -10,7 +10,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
 {
   return struct
   {
-    const TypeName  = @typeName( CompType ); // NOTE : FOR LOGGING ONLY
+    const TypeName  = @typeName( CompType );
     const CompStore = @This();
 
     data : std.AutoHashMap( EntityId, CompType ) = undefined,

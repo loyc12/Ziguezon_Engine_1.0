@@ -12,8 +12,7 @@ const Angle = utl.Angle;
 //        All of this is optional, and needs to be user instanciated to be usable
 
 
-// ================ TRANSFORM 2D ================
-
+// Allows the positioning of entities in 2D space ( x, y, a )
 pub const TransComp = struct
 {
   pub const storeType : eng.CompStorePolicy = .DENSE;
@@ -41,11 +40,36 @@ pub const TransComp = struct
 };
 
 
+/// Allow the coliding of entities via AABB
+pub const HitboxComp = struct
+{
+  pub const storeType : eng.CompStorePolicy = .DENSE;
 
-// ================ SHAPE 2D ================
+  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
+
+  hitbox : Box2 = .{},
 
 
-pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
+  pub inline fn setPos(   self : *HitboxComp, newPos   : VecA ) void { self.hitbox.center = newPos.toVec2(); }
+  pub inline fn setScale( self : *HitboxComp, newScale : Vec2 ) void { self.hitbox.scale  = newScale;         }
+
+  pub inline fn getPos(   self : *const HitboxComp ) VecA { return self.hitbox.center.toVecA( .{} ); }
+  pub inline fn getScale( self : *const HitboxComp ) Vec2 { return self.hitbox.scale;                }
+
+  pub inline fn isOverlapping( self : *const HitboxComp, other : *const HitboxComp ) bool
+  {
+    return self.hitbox.doesOverlap( other.hitbox );
+  }
+
+  pub inline fn getOverlap( self : *const HitboxComp, other : *const HitboxComp ) ?Vec2
+  {
+    return self.hitbox.getOverlap( other.hitbox );
+  }
+};
+
+
+// Allows the rendering of simple shapes over the entity
+pub const ShapeComp = struct // TODO : add LODs and implement minScale
 {
   pub const storeType : eng.CompStorePolicy = .DENSE;
 
@@ -57,7 +81,6 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
   colour  : utl.Colour  = .nWhite,
 
 //minScale : Vec2 = .{},
-
 
   pub inline fn setScale( self : *ShapeComp, newScale : Vec2 ) void { self.scale = newScale; }
   pub inline fn getScale( self : *const ShapeComp     ) Vec2 { return self.scale; }
@@ -104,37 +127,8 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScreenScale
   }
 };
 
-// ================ Hitbox 2D ================
 
-pub const HitboxComp = struct
-{
-  pub const storeType : eng.CompStorePolicy = .DENSE;
-
-  pub inline fn StoreType() type { return eng.CompStoreFactory( @This() ); }
-
-  hitbox : Box2 = .{},
-
-
-  pub inline fn setPos(   self : *HitboxComp, newPos   : VecA ) void { self.hitbox.center = newPos.toVec2(); }
-  pub inline fn setScale( self : *HitboxComp, newScale : Vec2 ) void { self.hitbox.scale  = newScale;         }
-
-  pub inline fn getPos(   self : *const HitboxComp ) VecA { return self.hitbox.center.toVecA( .{} ); }
-  pub inline fn getScale( self : *const HitboxComp ) Vec2 { return self.hitbox.scale;                }
-
-  pub inline fn isOverlapping( self : *const HitboxComp, other : *const HitboxComp ) bool
-  {
-    return self.hitbox.doesOverlap( other.hitbox );
-  }
-
-  pub inline fn getOverlap( self : *const HitboxComp, other : *const HitboxComp ) ?Vec2
-  {
-    return self.hitbox.getOverlap( other.hitbox );
-  }
-};
-
-
-// ================ Sprite 2D ================
-
+/// Allow the rendering of textures over the entity
 pub const SpriteComp = struct
 {
   pub const storeType : eng.CompStorePolicy = .DENSE;
@@ -167,4 +161,11 @@ pub const SpriteComp = struct
   pub inline fn setPos(   self : *SpriteComp, newPos   : VecA ) void { self.sprite.pos   = newPos;   }
   pub inline fn setScale( self : *SpriteComp, newScale : Vec2 ) void { self.sprite.scale = newScale; }
   pub inline fn render(   self : *const SpriteComp            ) void { eng.wSprite.drawSprite( &self.sprite ); }
+};
+
+
+/// Allows the parametrize emission of particles from the entity
+pub const EmmiterComp = struct
+{
+  // TODO : implement me once the particle system exists
 };

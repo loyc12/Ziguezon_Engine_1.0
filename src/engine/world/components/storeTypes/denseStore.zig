@@ -8,11 +8,11 @@ const EntityId = entity.EntityId;
 // NOTE : Not the densest possible store. Check if implementing an id-indexed array alternative would be worth it
 
 
-pub fn DenseCompStoreFactory( comptime CompType : type ) type
+pub fn DenseCompStoreFactory( comptime CompType : type ) type // TODO : rename to something other than DENSE
 {
   return struct
   {
-    const TypeName  = @typeName( CompType ); // NOTE : FOR LOGGING ONLY
+    const TypeName  = @typeName( CompType );
     const CompStore = @This();
 
     pub const Entry = struct

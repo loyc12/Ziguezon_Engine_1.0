@@ -1,8 +1,7 @@
 const std = @import( "std" );
 const utl = @import( "utils" );
 
-const comp = @import( "../components/component.zig" );
-
+const comp     = @import( "../components/component.zig" );
 const EntityId = @import( "../entity.zig" ).EntityId;
 
 

@@ -43,6 +43,41 @@ const GameExecutable = struct
   engineMod : *std.Build.Module,
 };
 
+const CheckGamesCompleteStep = struct
+{
+  step      : std.Build.Step,
+  gameCount : usize,
+
+  fn create( b : *std.Build, gameCount : usize ) *CheckGamesCompleteStep
+  {
+    const complete = b.allocator.create( CheckGamesCompleteStep ) catch @panic( "OOM" );
+
+    complete.* =
+    .{
+      .step = std.Build.Step.init(
+      .{
+        .id      = .custom,
+        .name    = "check_games complete",
+        .owner   = b,
+        .makeFn  = make,
+      }),
+
+      .gameCount = gameCount,
+    };
+
+    return complete;
+  }
+
+  fn make( step : *std.Build.Step, options : std.Build.Step.MakeOptions ) !void
+  {
+    _ = options;
+
+    const complete : *CheckGamesCompleteStep = @fieldParentPtr( "step", step );
+
+    std.debug.print( "check_games passed: {d} games checked, 0 failed\n", .{ complete.gameCount } );
+  }
+};
+
 fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath : []const u8, target : std.Build.ResolvedTarget, optimize : std.builtin.OptimizeMode ) GameExecutable
 {
   const exeMod = b.createModule(
@@ -219,6 +254,7 @@ pub fn build( b : *std.Build ) void
   // Depends directly on compile steps so checks only populate Zig's cache and
   // never install game executables into zig-out/bin.
   const check_games_step = b.step( "check_games", "Checks every listed game in debug mode without installing executables" );
+  const check_games_done = CheckGamesCompleteStep.create( b, games.len );
 
   inline for( games )| game |
   {
@@ -232,7 +268,7 @@ pub fn build( b : *std.Build ) void
     const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode" );
     game_step.dependOn( &game_install.step );
 
-    check_games_step.dependOn( &game_exe.step );
+    check_games_done.step.dependOn( &game_exe.step );
 
 
     const game_run_step = b.step( n1 ++ "_run", "Compiles " ++ n1 ++ " in debug mode and runs it" );
@@ -296,6 +332,8 @@ pub fn build( b : *std.Build ) void
       targ_step.dependOn( &plt_install.step );
     }
   }
+
+  check_games_step.dependOn( &check_games_done.step );
 
 
   // ================ TEST COMMANDS ================

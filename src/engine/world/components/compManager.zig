@@ -85,9 +85,10 @@ pub const CompManager = struct
     })
     catch
     {
+      utl.log( .ERROR, 0, @src(), "Failed to register CompStore for type {s}", .{ typeName });
+
       store.deinit();
       self.alloc.destroy( store );
-      utl.log( .ERROR, 0, @src(), "Failed to register CompStore for type {s}", .{ typeName });
       return false;
     };
 
