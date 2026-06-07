@@ -17,7 +17,7 @@ pub const RelationManager = struct
     removeEntityFn  : *const fn ( *anyopaque, EntityId ) RelationCleanupResult,
   };
 
-  alloc  : std.mem.Allocator              = undefined,
+  alloc  : std.mem.Allocator               = undefined,
   stores : std.StringHashMap( StoreEntry ) = undefined,
 
   isInit : bool = false,
