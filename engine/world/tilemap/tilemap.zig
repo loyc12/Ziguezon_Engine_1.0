@@ -53,7 +53,7 @@ pub const Tilemap = struct
 {
   // ================ PROPERTIES ================
   id    : u32 = 0,
-  flags : utl.BitField8 = utl.BitField8.new( TilemapFlags.DEFAULT ),
+  flags : utl.Bfd8 = .new( TilemapFlags.DEFAULT ),
 
   // ======== GRID DATA ========
   mapPos  : VecA    = .{},
@@ -69,10 +69,10 @@ pub const Tilemap = struct
 
   pub inline fn hasFlag( self : *const Tilemap, flag : TilemapFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
-  pub inline fn setAllFlags( self : *Tilemap, flags : u8 )                       void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Tilemap, flag  : TilemapFlags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setAllFlags( self : *Tilemap, flags : u8 )                       void { self.flags.setAllFlags( flags ); }
+  pub inline fn setFlag(     self : *Tilemap, flag  : TilemapFlags, val : bool ) void { self.flags.setBitFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags.delFlag( @intFromEnum( flag )); }
 
   pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.DELETE  ); }
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.IS_INIT ); }
@@ -172,8 +172,11 @@ pub const Tilemap = struct
   {
     if( params.isInit() ){ utl.qlog( .WARN, 0, @src(), "Params shoul not be an initialized tilemap"); }
 
+    var flags = params.flags;
+    flags.filterField( TilemapFlags.TO_CPY );
+
     var tmp      = Tilemap{
-      .flags     = params.flags.filterField( TilemapFlags.TO_CPY ),
+      .flags     = flags,
       .mapPos    = params.mapPos,
       .mapSize   = params.mapSize,
       .tileScale = params.tileScale,

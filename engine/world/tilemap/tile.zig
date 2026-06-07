@@ -64,25 +64,24 @@ pub const TileType = enum( u8 )
 pub const Tile = struct
 {
   // ================ PROPERTIES ================
-  tType     : TileType = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
-  flags     : utl.BitField8 = utl.BitField8.new( TileFlags.DEFAULT ),
+  tType : TileType = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
+  flags : utl.Bfd8 = .new( TileFlags.DEFAULT ),
 
   // ======== GRID POS DATA ========
   mapCoords : Coords2     = .{},
 
   // ======== RENDERING DATA ======== ( DEBUG )
-  colour    : utl.Colour  = .transpa,
-
-  relPos    : ?utl.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
+  colour : utl.Colour  = .transpa,
+  relPos : ?utl.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
 
   // ================ FLAG MANAGEMENT ================
 
   pub inline fn hasFlag( self : *const Tile, flag : TileFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
-  pub inline fn setAllFlags( self : *Tile, flags : u8 )                       void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Tile, flag  : TileFlags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Tile, flag  : TileFlags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Tile, flag  : TileFlags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setAllFlags( self : *Tile, flags : u8 )                    void { self.flags.setAllFlags( flags ); }
+  pub inline fn setFlag(     self : *Tile, flag  : TileFlags, val : bool ) void { self.flags.setBitFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Tile, flag  : TileFlags )             void { self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Tile, flag  : TileFlags )             void { self.flags.delFlag( @intFromEnum( flag )); }
 
 //pub inline fn canBeDel( self : *const Tile ) bool { return self.hasFlag( TileFlags.DELETE  ); }
 //pub inline fn isInit(   self : *const Tile ) bool { return self.hasFlag( TileFlags.IS_INIT ); }

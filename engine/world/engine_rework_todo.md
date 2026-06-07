@@ -10,8 +10,8 @@ file, the reference takes precedence first, then the roadmap.
 
 ## 0. Current State
 
-Phase 1 completed the current World-owned component foundation, ending with the
-1D/1E dense-store and component-view slices:
+Phase 1 completed the current World-owned component foundation, ending with
+the dense-store and component-view slices:
 
 * `Engine` owns and initializes one `World`.
 * `World` owns entity-id creation and typed component stores.

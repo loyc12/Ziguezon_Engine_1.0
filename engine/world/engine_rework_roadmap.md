@@ -178,12 +178,12 @@ Add first-class relation storage for facts that connect entities.
 
 Initial engine examples should stay generic:
 
-- Owns
-- Contains
-- ParentOf
-- MemberOf
-- LinkedTo
-- DependsOn
+- Entity1 -> Owns      -> Entity2
+- Entity1 -> Contains  -> Entity2
+- Entity1 -> ParentOf  -> Entity2
+- Entity1 -> MemberOf  -> Entity2
+- Entity1 -> LinkedTo  -> Entity2
+- Entity1 -> DependsOn -> Entity2
 
 Do not use relations as mere tags. Use a relation only when both endpoints are
 meaningful entities. `MemberOf` means membership in another entity, such as a

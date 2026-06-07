@@ -192,7 +192,7 @@ pub const TimerFlags = enum( u8 )
 pub const Timer = struct
 {
   // All times are in nanoseconds
-  flags  : utl.BitField8 = utl.BitField8.new( TimerFlags.NONE ),
+  flags : utl.Bfd8 = utl.Bfd8.new( TimerFlags.NONE ),
 
   progress : TimeVal = .{}, // current progress ( where between 0 and duration )
   duration : TimeVal = .{}, // End time ( 0 means no duration )
@@ -205,10 +205,10 @@ pub const Timer = struct
 
   pub inline fn hasFlag( self : *const Timer, flag : TimerFlags ) bool { return self.flags.hasFlag( @intFromEnum( flag )); }
 
-  pub inline fn setAllFlags( self : *Timer, flags : u8 )                        void { self.flags.bitField = flags; }
-  pub inline fn setFlag(     self : *Timer, flag  : TimerFlags, val : bool ) void { self.flags = self.flags.setFlag( @intFromEnum( flag ), val); }
-  pub inline fn addFlag(     self : *Timer, flag  : TimerFlags )             void { self.flags = self.flags.addFlag( @intFromEnum( flag )); }
-  pub inline fn delFlag(     self : *Timer, flag  : TimerFlags )             void { self.flags = self.flags.delFlag( @intFromEnum( flag )); }
+  pub inline fn setAllFlags( self : *Timer, flags : u8 )                    void { self.flags.setAllFlags( flags ); }
+  pub inline fn setFlag(     self : *Timer, flag  : TimerFlags, val : bool ) void { self.flags.setBitFlag( @intFromEnum( flag ), val); }
+  pub inline fn addFlag(     self : *Timer, flag  : TimerFlags )             void { self.flags.addFlag( @intFromEnum( flag )); }
+  pub inline fn delFlag(     self : *Timer, flag  : TimerFlags )             void { self.flags.delFlag( @intFromEnum( flag )); }
 
   pub inline fn pause(       self : *Timer ) void { self.addFlag( TimerFlags.PAUSED ); }
   pub inline fn play(        self : *Timer ) void { self.delFlag( TimerFlags.PAUSED ); }
@@ -243,7 +243,8 @@ pub const Timer = struct
 
   pub fn copyTimerSettings( self : *Timer, params : Timer ) void
   {
-    self.flags    = params.flags.filterField( TimerFlags.TO_CPY );
+    self.flags    = params.flags;
+    self.flags.filterField( TimerFlags.TO_CPY );
 
     self.progress = .{};
     self.duration = params.duration;
@@ -255,7 +256,7 @@ pub const Timer = struct
   pub fn getDefaultTimer() Timer
   {
     return Timer{
-      .flags    = utl.BitField8.new( TimerFlags.NONE ),
+      .flags    = utl.Bfd8.new( TimerFlags.NONE ),
 
       .progress = .{},
       .duration = .{},

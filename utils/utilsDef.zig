@@ -85,12 +85,15 @@ pub const GenDataMatrix4  = data3D.GenDataMatrix4;
 
 // ======== BITFLAGS ========
 
-pub const bitField = @import( "data/flagger.zig" );
+pub const bitField = @import( "data/fielder.zig" );
 
-pub const BitField8  = bitField.BitField8;
-pub const BitField16 = bitField.BitField16;
-pub const BitField32 = bitField.BitField32;
-pub const BitField64 = bitField.BitField64;
+pub const Bfd4   = bitField.Bfd4;
+pub const Bfd8   = bitField.Bfd8;
+pub const Bfd16  = bitField.Bfd16;
+pub const Bfd32  = bitField.Bfd32;
+pub const Bfd64  = bitField.Bfd64;
+pub const Bfd128 = bitField.Bfd128;
+pub const Bfd256 = bitField.Bfd256;
 
 
 // ======== TIMING ========
