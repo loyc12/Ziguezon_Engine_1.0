@@ -463,13 +463,13 @@ test "RelationStore add get has remove"
   store.init( std.testing.allocator );
   defer store.deinit();
 
-  try std.testing.expect(  store.add( 1, 2, .{ .weight = 42 }));
-  try std.testing.expect( !store.add( 1, 2, .{ .weight = 99 }));
-  try std.testing.expect(  store.has( 1, 2 ));
-  try std.testing.expect(  store.get( 1, 2 ).?.weight == 42 );
+  try std.testing.expect(  store.add(    1, 2, .{ .weight = 42 }));
+  try std.testing.expect( !store.add(    1, 2, .{ .weight = 99 }));
+  try std.testing.expect(  store.has(    1, 2 ));
+  try std.testing.expect(  store.get(    1, 2 ).?.weight == 42 );
   try std.testing.expect(  store.remove( 1, 2 ));
-  try std.testing.expect( !store.has( 1, 2 ));
-  try std.testing.expect(  store.get( 1, 2 ) == null );
+  try std.testing.expect( !store.has(    1, 2 ));
+  try std.testing.expect(  store.get(    1, 2 ) == null );
   try std.testing.expect( !store.remove( 1, 2 ));
 }
 
@@ -479,11 +479,11 @@ test "RelationStore supports dataless keyed existence"
   store.init( std.testing.allocator );
   defer store.deinit();
 
-  try std.testing.expect(  store.add( 1, 2, .{} ));
-  try std.testing.expect(  store.has( 1, 2 ));
-  try std.testing.expect( !store.has( 2, 1 ));
+  try std.testing.expect(  store.add(    1, 2, .{} ));
+  try std.testing.expect(  store.has(    1, 2 ));
+  try std.testing.expect( !store.has(    2, 1 ));
   try std.testing.expect(  store.remove( 1, 2 ));
-  try std.testing.expect( !store.has( 1, 2 ));
+  try std.testing.expect( !store.has(    1, 2 ));
 }
 
 test "RelationStore source and target iterators use indexes"
@@ -538,12 +538,11 @@ test "RelationStore remove repairs all indexes"
   store.init( std.testing.allocator );
   defer store.deinit();
 
-  try std.testing.expect( store.add( 1, 2, .{ .value = 10 }));
-  try std.testing.expect( store.add( 1, 3, .{ .value = 20 }));
-  try std.testing.expect( store.add( 4, 2, .{ .value = 30 }));
+  try std.testing.expect( store.add(    1, 2, .{ .value = 10 }));
+  try std.testing.expect( store.add(    1, 3, .{ .value = 20 }));
+  try std.testing.expect( store.add(    4, 2, .{ .value = 30 }));
   try std.testing.expect( store.remove( 1, 2 ));
-
-  try std.testing.expect( !store.has( 1, 2 ));
+  try std.testing.expect( !store.has(   1, 2 ));
 
   var sourceCount : usize = 0;
   var srcIter = store.sourceIterator( 1 );

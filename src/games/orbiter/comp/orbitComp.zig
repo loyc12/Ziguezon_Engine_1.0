@@ -39,7 +39,7 @@ pub const OrbitComp = struct
   angularVel : f64   = 0.0,
 
   // Other metrics
-  period  : f64 = 0.0, // how many days to complete a full orbit around its path
+  period  : f64        = 0.0, // how many days to complete a full orbit around its path
   pathCol : utl.Colour = gdf.G_CONSTS.textColour,
 
   pub fn initFromParams(
