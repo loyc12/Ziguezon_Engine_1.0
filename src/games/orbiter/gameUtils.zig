@@ -1,4 +1,3 @@
-const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
@@ -7,23 +6,17 @@ const gdf = @import( "gameDef.zig"    );
 
 const times  = &gbl.G_DATA.times;
 const target = &gbl.G_DATA.target;
-const nttArr = &gbl.G_DATA.stellarEntitiesIds;
 
-const BodyName  = gdf.BodyName;
-const BodyType  = gdf.BodyType;
-const bodyCount = gdf.G_CONSTS.bodyCount;
+const BodyName = gdf.BodyName;
 
 const orb = gdf.orb;
 const bdy = gdf.bdy;
-const ecn = gdf.econ;
 
 
 // ================================ STATE INJECT ================================
 
-inline fn initStar( bodyComp : *bdy.BodyComp, bodyId : eng.EntityId ) void
+inline fn initStar( bodyComp : *bdy.BodyComp, bodyName : BodyName ) void
 {
-  const bodyName = gdf.nameFromId( bodyId );
-
   bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
   bodyComp.name     = bodyName;
   bodyComp.mass     = gbl.STLR_DATA.get( bodyName, .MASS );
@@ -32,24 +25,19 @@ inline fn initStar( bodyComp : *bdy.BodyComp, bodyId : eng.EntityId ) void
   bodyComp.softInitAllEcons();
 }
 
-fn initStellarBody( view : *gdf.BodyTransView, orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyId : eng.EntityId ) void
+fn initStellarBody( view : *gdf.BodyTransView, orbitComp : *orb.OrbitComp, bodyComp : *bdy.BodyComp, bodyName : BodyName, orbitedId : eng.EntityId ) void
 {
-  const bodyName  = gdf.nameFromId( bodyId );
-  const orbitedId = gbl.ORBITANCE.getOrbitedId( bodyId );
-
-//utl.log( .DEBUG, 0, @src(), "{s} orbits {s} ( {d} > {d} )", .{ @tagName( gdf.nameFromId( bodyId )), @tagName( gdf.nameFromId( orbitedId )), bodyId, orbitedId });
-
   const orbiterMass = gbl.STLR_DATA.get( bodyName, .MASS );
-  var   orbitedMass = gbl.STLR_DATA.get( .SOL,     .MASS );
+  var   orbitedMass = gbl.STLR_DATA.get( gdf.G_CONSTS.starBody, .MASS );
 
-  if( orbitedId != gdf.G_CONSTS.starId ){ if( view.get( bdy.BodyComp, orbitedId ))| b |
+  if( view.get( bdy.BodyComp, orbitedId ))| b |
   {
     orbitedMass = b.mass;
   }
   else
   {
-    utl.log( .WARN, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
-  }}
+    utl.log( .WARN, 0, @src(), "Failed to find parent BodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
+  }
 
   bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
   bodyComp.name     = bodyName;
@@ -95,19 +83,55 @@ fn initStellarBody( view : *gdf.BodyTransView, orbitComp : *orb.OrbitComp, bodyC
   }
 }
 
+fn abortStellarBodySetup( ng : *eng.Engine, bodyName : BodyName, bodyId : eng.EntityId ) void
+{
+  if( ng.world.isEntityAlive( bodyId )){ _ = ng.world.destroyEntity( bodyId ); }
+  gbl.G_DATA.bodyRegistry.clearId( bodyName );
+}
+
+fn addOrbitRelationAndRefreshCache( ng : *eng.Engine, bodyName : BodyName, bodyId : eng.EntityId ) bool
+{
+  const parentName = gdf.getOrbitedName( bodyName ) orelse
+  {
+    utl.log( .ERROR, 0, @src(), "Missing static orbit parent for {s}", .{ @tagName( bodyName )});
+    return false;
+  };
+  const parentId = gbl.G_DATA.bodyRegistry.idOf( parentName );
+  if( parentId == 0 )
+  {
+    utl.log( .ERROR, 0, @src(), "Cannot add orbit relation for {s} : parent {s} has no live entity", .{ @tagName( bodyName ), @tagName( parentName )});
+    return false;
+  }
+
+  if( !ng.world.addRelation( gdf.Orbits, bodyId, parentId, .{} ))
+  {
+    utl.log( .ERROR, 0, @src(), "Failed to add Orbits relation {s} -> {s}", .{ @tagName( bodyName ), @tagName( parentName )});
+    return false;
+  }
+
+  return gbl.refreshOrbitParentCacheEntry( ng, bodyName );
+}
 
 pub fn initStellarSystem( ng : *eng.Engine ) void
 {
   const bodyView = gbl.G_DATA.views.getBodyTrans( ng ) orelse return;
 
+  gbl.G_DATA.bodyRegistry.clear();
+  gbl.clearOrbitParentCache();
+
   // Setting up relevant components
-  for( 0..bodyCount )| idx |
+  for( gdf.bodyOrder, 0.. )| bodyName, idx |
   {
-    nttArr[ idx ] = ng.world.createEntity().id;
+    const id = ng.world.createEntity().id;
+    if( id == 0 )
+    {
+      utl.log( .ERROR, 0, @src(), "Failed to create entity for {s}", .{ @tagName( bodyName )});
+      continue;
+    }
 
-    const id = nttArr[ idx ];
+    gbl.G_DATA.bodyRegistry.setId( bodyName, id );
 
-    utl.log( .TRACE, 0, @src(), "Initializing components of entity #{d} at idx #{d}", .{ id, idx });
+    utl.log( .TRACE, 0, @src(), "Initializing components of body {s} on entity #{d} at body idx #{d}", .{ @tagName( bodyName ), id, idx });
 
 
     // Non-sun component instanciation
@@ -118,32 +142,37 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
 
     var startPos : utl.Vec2 = .{};
 
-    if( id > gdf.G_CONSTS.maxEntityId ) // Will ignore all subsequent Ids ( should have none left )
+    if( bodyName == gdf.G_CONSTS.starBody )
     {
-      utl.log( .INFO, 0, @src(), "Id #{d} is invalid: will not initialize related comps", .{ id });
-      continue;
-    }
-    else if( id == gdf.G_CONSTS.starId )
-    {
-      initStar( &bodyComp, id ); // Setting sol's bodyComp variables
+      if( !gbl.refreshOrbitParentCacheEntry( ng, bodyName ))
+      {
+        abortStellarBodySetup( ng, bodyName, id );
+        continue;
+      }
+
+      initStar( &bodyComp, bodyName ); // Setting sol's bodyComp variables
     }
     else
     {
-      initStellarBody( bodyView, &orbitComp, &bodyComp, id ); // Setting bodyType-specific orbitComp and bodyComp variables
-
-      const orbitedId = gbl.ORBITANCE.getOrbitedId( id );
-             startPos = orbitComp.getRelPos();
-
-      if( orbitedId != gdf.G_CONSTS.starId )
+      if( !addOrbitRelationAndRefreshCache( ng, bodyName, id ))
       {
-        if( bodyView.get( eng.TransComp, orbitedId ))| trans |
-        {
-          startPos = startPos.add( trans.pos.toVec2() );
-        }
-        else
-        {
-          utl.log( .ERROR, 0, @src(), "Failed to find bodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
-        }
+        abortStellarBodySetup( ng, bodyName, id );
+        continue;
+      }
+
+      const orbitedId = gbl.getOrbitedIdCached( bodyName );
+
+      initStellarBody( bodyView, &orbitComp, &bodyComp, bodyName, orbitedId ); // Setting bodyType-specific orbitComp and bodyComp variables
+
+      startPos = orbitComp.getRelPos();
+
+      if( bodyView.get( eng.TransComp, orbitedId ))| trans |
+      {
+        startPos = startPos.add( trans.pos.toVec2() );
+      }
+      else
+      {
+        utl.log( .ERROR, 0, @src(), "Failed to find parent TransComp for id {d} : using relative start position", .{ orbitedId });
       }
 
       _ = ng.world.addComp( orb.OrbitComp, id, orbitComp ); // SOL does not have an orbit comp
@@ -161,6 +190,11 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
 
   }
 
+  if( !gbl.rebuildOrbitParentCache( ng ))
+  {
+    utl.qlog( .ERROR, 0, @src(), "Failed to rebuild orbit-parent cache after stellar setup" );
+  }
+
   const orbitView = gbl.G_DATA.views.getOrbitTick( ng ) orelse return;
   gdf.trvlSlvr.refreshAllTransferNodes( orbitView );
 }
@@ -176,22 +210,23 @@ pub fn updateCameraLogic() void
   const scrollSpeed = gdf.G_CONSTS.scrollSpeed;
   const zoomSpeed   = gdf.G_CONSTS.zoomSpeed;
 
-  // Moves the camera with the WASD or arrow keys
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.up    )){ cam.moveByS( utl.Vec2.new(  0.0, -scrollSpeed )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.down  )){ cam.moveByS( utl.Vec2.new(  0.0,  scrollSpeed )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.left  )){ cam.moveByS( utl.Vec2.new( -scrollSpeed,  0.0 )); }
-  if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right )){ cam.moveByS( utl.Vec2.new(  scrollSpeed,  0.0 )); }
-
-  // Zooms in and out with the mouse wheel
-  if( target.camFollow )
+  if( !target.camFollow )
   {
-    if( utl.ray.getMouseWheelMove() >  utl.EPS ){ cam.zoomBy( 1.0 * zoomSpeed ); }
-    if( utl.ray.getMouseWheelMove() < -utl.EPS ){ cam.zoomBy( 1.0 / zoomSpeed ); }
+    // Moves the camera with the WASD or arrow keys
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.w ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.up    )){ cam.moveByS( utl.Vec2.new(  0.0, -scrollSpeed )); }
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.s ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.down  )){ cam.moveByS( utl.Vec2.new(  0.0,  scrollSpeed )); }
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.a ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.left  )){ cam.moveByS( utl.Vec2.new( -scrollSpeed,  0.0 )); }
+    if( utl.ray.isKeyDown( utl.ray.KeyboardKey.d ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right )){ cam.moveByS( utl.Vec2.new(  scrollSpeed,  0.0 )); }
+
+    // Zooms in and out with the mouse wheel
+    if( utl.ray.getMouseWheelMove() >  utl.EPS ){ cam.zoomOnMouseBy( 1.0 * zoomSpeed ); }
+    if( utl.ray.getMouseWheelMove() < -utl.EPS ){ cam.zoomOnMouseBy( 1.0 / zoomSpeed ); }
   }
   else
   {
-    if( utl.ray.getMouseWheelMove() >  utl.EPS ){ cam.zoomOnMouseBy( 1.0 * zoomSpeed ); }
-    if( utl.ray.getMouseWheelMove() < -utl.EPS ){ cam.zoomOnMouseBy( 1.0 / zoomSpeed ); }
+    // Zooms in and out with the mouse wheel
+    if( utl.ray.getMouseWheelMove() >  utl.EPS ){ cam.zoomBy( 1.0 * zoomSpeed ); }
+    if( utl.ray.getMouseWheelMove() < -utl.EPS ){ cam.zoomBy( 1.0 / zoomSpeed ); }
   }
 
   // Resets the camera zoom and position
@@ -217,24 +252,27 @@ pub fn tickOrbiters( view : *gdf.OrbitTickView ) void
   if( stepCount == 0 ){ return; }
 
 
-  for( 1..nttArr.len )| idx |
+  for( gdf.bodyOrder )| bodyName |
   {
-    const id      = nttArr[ idx ];
+    if( bodyName == gdf.G_CONSTS.starBody ){ continue; }
+
+    const id      = gbl.G_DATA.bodyRegistry.idOf( bodyName );
     const orbiter = view.get( orb.OrbitComp, id );
 
     if( orbiter == null ){ continue; }
 
+    const orbitedId    = gbl.getOrbitedIdCached( bodyName );
     const orbiterTrans = view.get( eng.TransComp, id );
-    const orbitedTrans = view.get( eng.TransComp, gbl.ORBITANCE.getOrbitedId( id ) );
+    const orbitedTrans = view.get( eng.TransComp, orbitedId );
 
     if( orbiterTrans != null and orbitedTrans != null )
     {
-      utl.log( .TRACE, 0, @src(), "Updating orbit of entity #{d}", .{ id });
+      utl.log( .TRACE, 0, @src(), "Updating orbit of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
       orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, stepCount );
     }
     else
     {
-      utl.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of entity #{d}", .{ id });
+      utl.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
     }
   }
 
@@ -263,9 +301,11 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
 
     var econCount : u32 = 0;
 
-    inline for( 1..nttArr.len )| idx |
+    for( gdf.bodyOrder )| bodyName |
     {
-      const id    = nttArr[ idx ];
+      if( bodyName == gdf.G_CONSTS.starBody ){ continue; }
+
+      const id    = gbl.G_DATA.bodyRegistry.idOf( bodyName );
       const trans = view.get( eng.TransComp, id );
       const body  = view.get( bdy.BodyComp,  id );
 
@@ -275,7 +315,7 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
       }
       else
       {
-        utl.log( .WARN, 0, @src(), "Failed to get all required components to tick economy of entity #{d}", .{ id });
+        utl.log( .WARN, 0, @src(), "Failed to get all required components to tick economy of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
       }
     }
 
@@ -293,11 +333,13 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
   if( target.hasMoved ){ target.moveCamOver( view ); }
 
   // Rendering bodies' orbits and debug info
-  for( 1..nttArr.len )| idx |
+  for( gdf.bodyOrder )| bodyName |
   {
-    const id = nttArr[ idx ];
+    if( bodyName == gdf.G_CONSTS.starBody ){ continue; }
 
-    utl.log( .TRACE, 0, @src(), "Rendering path & dbg info of entity #{d} at idx #{d}", .{ id, idx });
+    const id = gbl.G_DATA.bodyRegistry.idOf( bodyName );
+
+    utl.log( .TRACE, 0, @src(), "Rendering path & dbg info of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
 
     const orbiter = view.get( orb.OrbitComp, id );
 
@@ -306,7 +348,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
     const orbiterBody  = view.get( bdy.BodyComp,  id );
     const orbiterTrans = view.get( eng.TransComp, id );
 
-    const orbitedTrans = view.get( eng.TransComp, gbl.ORBITANCE.getOrbitedId( id ) );
+    const orbitedTrans = view.get( eng.TransComp, gbl.getOrbitedIdCached( bodyName ) );
 
     if( orbiterTrans != null and orbitedTrans != null and orbiterBody != null )
     {
@@ -326,17 +368,18 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
     }
     else
     {
-      utl.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of entity #{d}", .{ id });
+      utl.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
     }
   }
 
   // Rendering bodies
-  for( 0..nttArr.len )| i |
+  for( 0..gdf.bodyOrder.len )| i |
   {
-    const idx = nttArr.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
-    const id  = nttArr[ idx ];
+    const idx      = gdf.bodyOrder.len - ( i + 1 ); // Render in opposite order, to ensure planets are above moons
+    const bodyName = gdf.bodyOrder[ idx ];
+    const id       = gbl.G_DATA.bodyRegistry.idOf( bodyName );
 
-    utl.log( .TRACE, 0, @src(), "Rendering shape of entity #{d} at idx #{d}", .{ id, idx });
+    utl.log( .TRACE, 0, @src(), "Rendering shape of body {s} on entity #{d} at body idx #{d}", .{ @tagName( bodyName ), id, idx });
 
     const trans = view.get( eng.TransComp, id );
     const shape = view.get( eng.ShapeComp, id );
@@ -347,7 +390,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
     }
     else
     {
-      utl.log( .WARN, 0, @src(), "Failed to get all required components to render shape of entity #{d}", .{ id });
+      utl.log( .WARN, 0, @src(), "Failed to get all required components to render shape of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
     }
   }
 }
@@ -358,24 +401,26 @@ pub fn drawTargetInfo( view : *gdf.OrbitRenderView ) void
   const posX  = utl.getScreenWidth() - 16.0;
   const id    = target.targetId;
 
-  if( id == 0 or id > bodyCount ){ return; }
+  if( id == 0 ){ return; }
+
+  const bodyName = gbl.G_DATA.bodyRegistry.nameOf( id ) orelse return;
 
   const trans = view.get( eng.TransComp, id );
   const shape = view.get( eng.ShapeComp, id );
 
-  const orbit = if( id != gdf.G_CONSTS.starId ) view.get( orb.OrbitComp, id ) else null;
-  const body  = if( id != gdf.G_CONSTS.starId ) view.get( bdy.BodyComp,  id ) else null;
+  const orbit = if( bodyName != gdf.G_CONSTS.starBody ) view.get( orb.OrbitComp, id ) else null;
+  const body  = view.get( bdy.BodyComp, id );
 
 
   var lineCount : f32 = 1.0;
 
-  utl.sDraw.textRightFmt( "== Entity #{d} ==", .{ id }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.5;
-
+  utl.sDraw.textRightFmt( "==== Entity #{d} ====", .{ id }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.5;
+  utl.sDraw.textRightFmt( "{s}", .{ @tagName( bodyName )}, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.5;
 
   if( trans != null )
   {
-    utl.sDraw.textRightFmt( "{d:.3} :     posX", .{ trans.?.pos.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    utl.sDraw.textRightFmt( "{d:.3} :     posY", .{ trans.?.pos.y }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    utl.sDraw.textRightFmt( "{d:.0} :     posX", .{ trans.?.pos.x }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    utl.sDraw.textRightFmt( "{d:.0} :     posY", .{ trans.?.pos.y }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }
@@ -394,18 +439,18 @@ pub fn drawTargetInfo( view : *gdf.OrbitRenderView ) void
     utl.sDraw.textRightFmt( "{d:.3} :  radius",  .{ body.?.radius       }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     utl.sDraw.textRightFmt( "{d:.3} : density",  .{ body.?.getDensity() }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
-    if( target.targetId == gdf.G_CONSTS.starId )
+    lineCount += 0.5;
+
+    if( bodyName == gdf.G_CONSTS.starBody )
     {
       utl.sDraw.textRightFmt( "{d:.3} :    shine", .{ gbl.SUNSHINE.shineStrength }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
     }
-
-    lineCount += 0.5;
   }
 
   if( orbit != null )
   {
-    utl.sDraw.textRightFmt( "{d:.3} :      minR", .{ orbit.?.minRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
-    utl.sDraw.textRightFmt( "{d:.3} :      maxR", .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    utl.sDraw.textRightFmt( "{d:.0} :      minR", .{ orbit.?.minRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
+    utl.sDraw.textRightFmt( "{d:.0} :     maxR",  .{ orbit.?.maxRadius }, .new( posX, lineCount * 32.0 ), 24, col ); lineCount += 1.0;
 
     lineCount += 0.5;
   }

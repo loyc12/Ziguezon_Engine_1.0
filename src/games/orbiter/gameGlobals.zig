@@ -17,7 +17,52 @@ pub const GameData = struct
   target : TargetInfo   = .{},
   views  : OrbiterViews = .{},
 
-  stellarEntitiesIds : [ bodyCount ]eng.EntityId = std.mem.zeroes([ bodyCount ]eng.EntityId ),
+  bodyRegistry   : BodyRegistry = .{},
+  orbitParentIds : [ bodyCount ]eng.EntityId = std.mem.zeroes([ bodyCount ]eng.EntityId ),
+};
+
+
+pub const BodyRegistry = struct
+{
+  ids : [ bodyCount ]eng.EntityId = std.mem.zeroes([ bodyCount ]eng.EntityId ),
+
+
+  pub inline fn clear( self : *BodyRegistry ) void
+  {
+    self.ids = std.mem.zeroes([ bodyCount ]eng.EntityId );
+  }
+
+  pub inline fn idOf( self : *const BodyRegistry, bodyName : gdf.BodyName ) eng.EntityId
+  {
+    return self.ids[ bodyName.toIdx() ];
+  }
+
+  pub inline fn setId( self : *BodyRegistry, bodyName : gdf.BodyName, id : eng.EntityId ) void
+  {
+    self.ids[ bodyName.toIdx() ] = id;
+  }
+
+  pub inline fn clearId( self : *BodyRegistry, bodyName : gdf.BodyName ) void
+  {
+    self.ids[ bodyName.toIdx() ] = 0;
+  }
+
+  pub fn nameOf( self : *const BodyRegistry, id : eng.EntityId ) ?gdf.BodyName
+  {
+    if( id == 0 ){ return null; }
+
+    for( gdf.bodyOrder )| bodyName |
+    {
+      if( self.idOf( bodyName ) == id ){ return bodyName; }
+    }
+
+    return null;
+  }
+
+  pub inline fn containsId( self : *const BodyRegistry, id : eng.EntityId ) bool
+  {
+    return self.nameOf( id ) != null;
+  }
 };
 
 
@@ -113,9 +158,95 @@ pub const GameTimes = struct
 };
 
 
-pub fn registerOrbiterComps( ng : *eng.Engine ) bool
+// ================================ RELATION CACHE FUNCTIONS ================================
+
+pub inline fn clearOrbitParentCache() void
+{
+  G_DATA.orbitParentIds = std.mem.zeroes([ bodyCount ]eng.EntityId );
+}
+
+pub fn refreshOrbitParentCacheEntry( ng : *eng.Engine, bodyName : gdf.BodyName ) bool
+{
+  const bodyId = G_DATA.bodyRegistry.idOf( bodyName );
+  if( bodyId == 0 )
+  {
+    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : body has no live entity", .{ @tagName( bodyName )});
+    return false;
+  }
+
+  const store = ng.world.getRelationStore( gdf.Orbits ) orelse
+  {
+    utl.qlog( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache : Orbits relation is not registered" );
+    return false;
+  };
+
+  var iter = store.sourceIterator( bodyId );
+  const first = iter.next();
+
+  if( bodyName == gdf.G_CONSTS.starBody )
+  {
+    if( first != null )
+    {
+      utl.qlog( .ERROR, 0, @src(), "Star body unexpectedly has an Orbits relation" );
+      return false;
+    }
+
+    G_DATA.orbitParentIds[ bodyName.toIdx() ] = 0;
+    return true;
+  }
+
+  if( first == null )
+  {
+    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : missing Orbits relation", .{ @tagName( bodyName )});
+    return false;
+  }
+  if( iter.next() != null )
+  {
+    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : multiple Orbits relation targets", .{ @tagName( bodyName )});
+    return false;
+  }
+
+  const parentId = first.?.key.targetId;
+  if( !ng.world.isEntityAlive( parentId ))
+  {
+    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : parent Entity {d} is not alive", .{ @tagName( bodyName ), parentId });
+    return false;
+  }
+  if( G_DATA.bodyRegistry.nameOf( parentId ) == null )
+  {
+    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : parent Entity {d} is not a registered body", .{ @tagName( bodyName ), parentId });
+    return false;
+  }
+
+  G_DATA.orbitParentIds[ bodyName.toIdx() ] = parentId;
+  return true;
+}
+
+pub fn rebuildOrbitParentCache( ng : *eng.Engine ) bool
+{
+  clearOrbitParentCache();
+
+  var success = true;
+  for( gdf.bodyOrder )| bodyName |
+  {
+    if( !refreshOrbitParentCacheEntry( ng, bodyName )){ success = false; }
+  }
+
+  return success;
+}
+
+pub inline fn getOrbitedIdCached( bodyName : gdf.BodyName ) eng.EntityId
+{
+  return G_DATA.orbitParentIds[ bodyName.toIdx() ];
+}
+
+// ================================ WORLD STORE FUNCTIONS ================================
+
+pub fn registerOrbiterStores( ng : *eng.Engine ) bool
 {
   G_DATA.views.clear();
+  G_DATA.bodyRegistry.clear();
+  clearOrbitParentCache();
 
   if( !ng.world.registerComp( eng.TransComp ))
   {
@@ -125,6 +256,7 @@ pub fn registerOrbiterComps( ng : *eng.Engine ) bool
   if( !ng.world.registerComp( eng.ShapeComp ))
   {
     _ = ng.world.unregisterComp( eng.TransComp );
+
     utl.qlog( .ERROR, 0, @src(), "Failed to register ShapeComp" );
     return false;
   }
@@ -132,6 +264,7 @@ pub fn registerOrbiterComps( ng : *eng.Engine ) bool
   {
     _ = ng.world.unregisterComp( eng.ShapeComp );
     _ = ng.world.unregisterComp( eng.TransComp );
+
     utl.qlog( .ERROR, 0, @src(), "Failed to register SpriteComp" );
     return false;
   }
@@ -140,41 +273,59 @@ pub fn registerOrbiterComps( ng : *eng.Engine ) bool
     _ = ng.world.unregisterComp( eng.SpriteComp );
     _ = ng.world.unregisterComp( eng.ShapeComp  );
     _ = ng.world.unregisterComp( eng.TransComp  );
+
     utl.qlog( .ERROR, 0, @src(), "Failed to register OrbitComp" );
     return false;
   }
   if( !ng.world.registerComp( gdf.bdy.BodyComp ))
   {
     _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
-    _ = ng.world.unregisterComp( eng.SpriteComp     );
-    _ = ng.world.unregisterComp( eng.ShapeComp      );
-    _ = ng.world.unregisterComp( eng.TransComp      );
+    _ = ng.world.unregisterComp( eng.SpriteComp    );
+    _ = ng.world.unregisterComp( eng.ShapeComp     );
+    _ = ng.world.unregisterComp( eng.TransComp     );
+
     utl.qlog( .ERROR, 0, @src(), "Failed to register BodyComp" );
+    return false;
+  }
+  if( !ng.world.registerRelation( gdf.Orbits ))
+  {
+    _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
+    _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
+    _ = ng.world.unregisterComp( eng.SpriteComp    );
+    _ = ng.world.unregisterComp( eng.ShapeComp     );
+    _ = ng.world.unregisterComp( eng.TransComp     );
+
+    utl.qlog( .ERROR, 0, @src(), "Failed to register Orbits relation" );
     return false;
   }
 
   return true;
 }
 
-pub fn unregisterOrbiterComps( ng : *eng.Engine ) void
+pub fn unregisterOrbiterStores( ng : *eng.Engine ) void
 {
   G_DATA.views.clear();
 
-  for( &G_DATA.stellarEntitiesIds )| *id |
+  for( gdf.bodyOrder )| bodyName |
   {
-    if( ng.world.isEntityAlive( id.* ))
+    const id = G_DATA.bodyRegistry.idOf( bodyName );
+
+    if( ng.world.isEntityAlive( id ))
     {
-      _ = ng.world.destroyEntity( id.* );
+      _ = ng.world.destroyEntity( id );
     }
 
-    id.* = 0;
+    G_DATA.bodyRegistry.clearId( bodyName );
   }
 
+  _ = ng.world.unregisterRelation( gdf.Orbits    );
   _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
   _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
   _ = ng.world.unregisterComp( eng.SpriteComp    );
   _ = ng.world.unregisterComp( eng.ShapeComp     );
   _ = ng.world.unregisterComp( eng.TransComp     );
+
+  clearOrbitParentCache();
 }
 
 
@@ -183,33 +334,65 @@ pub const TargetInfo = struct
   camFollow : bool = false,
   hasMoved  : bool = false,
 
-  targetId : eng.EntityId = 0,
+  targetId   : eng.EntityId = 0,
+  targetBody : ?gdf.BodyName = null,
 
+
+  pub fn changeTargetToBody( self : *TargetInfo, bodyName : gdf.BodyName ) void
+  {
+    const targetId = G_DATA.bodyRegistry.idOf( bodyName );
+    if( targetId == 0 )
+    {
+      utl.log( .WARN, 0, @src(), "Target body {s} has no live entity : clearing target", .{ @tagName( bodyName )});
+      self.targetId   = 0;
+      self.targetBody = null;
+      self.hasMoved   = true;
+      return;
+    }
+
+    self.targetId   = targetId;
+    self.targetBody = bodyName;
+    self.hasMoved   = true;
+  }
 
   pub fn changeTargetTo( self : *TargetInfo, targetId : eng.EntityId ) void
   {
-    if( targetId >= 0 and targetId < bodyCount )
+    if( targetId == 0 )
     {
-      self.targetId = targetId;
-      self.hasMoved = true;
+      self.targetId   = 0;
+      self.targetBody = null;
+      self.hasMoved   = true;
+      return;
     }
-    else
+
+    const bodyName = G_DATA.bodyRegistry.nameOf( targetId ) orelse
     {
       utl.qlog( .WARN, 0, @src(), "Target does not exist : defaulting to Id 0 ( none )" );
-      self.targetId = 0;
-    }
+      self.targetId   = 0;
+      self.targetBody = null;
+      self.hasMoved   = true;
+      return;
+    };
+
+    self.targetId   = targetId;
+    self.targetBody = bodyName;
+    self.hasMoved   = true;
   }
 
   pub fn changeTargetBy( self : *TargetInfo, delta : i64 ) void
   {
-    const current : i64 = @intCast( self.targetId );
+    const current : i64 = if( self.targetBody )| bodyName |
+      @intCast( gdf.getBodyOrderIdx( bodyName ) orelse 0 )
+    else
+      -1;
+
     var next = current + delta;
 
     if( next < 0 ){ next = 0; }
-    if( next > bodyCount ){ next = bodyCount; }
+    const maxIdx : i64 = @intCast( gdf.bodyOrder.len - 1 );
+    if( next > maxIdx ){ next = maxIdx; }
 
-    self.targetId = @intCast( next );
-    self.hasMoved = true;
+    self.changeTargetToBody( gdf.bodyOrder[ @intCast( next )] );
   }
 
   pub fn moveCamOver( self : *TargetInfo, view : anytype ) void
@@ -266,7 +449,7 @@ pub const SpeedFactor = enum( i8 )
       .SECOND => 1,
       .MINUTE => utl.Duration.secPerMin(),
       .HOUR   => utl.Duration.secPerHour(),
-      .DAY    => utl.Duration.secPerDay(),
+      .DAY    => utl.Duration.secPerDay() * 1,
       .WEEK   => utl.Duration.secPerDay() * 7,
       .MONTH  => utl.Duration.secPerDay() * 30,
       .YEAR   => utl.Duration.secPerDay() * 365,
@@ -311,17 +494,14 @@ pub const NFRS_DATA = &nfrs_d.infrastructureData;
 pub const NDST_DATA = &ndst_d.industryData;
 
 
-    const rbtc_d = @import( "data/orbitanceData.zig" );
-    const sshn_d = @import( "data/sunshineData.zig"   );
+    const sshn_d = @import( "data/sunshineData.zig" );
 
-pub const ORBITANCE = &rbtc_d.orbitTree;
-pub const SUNSHINE  = &sshn_d.solShine;
+pub const SUNSHINE = &sshn_d.solShine;
 
 
 pub fn loadStaticDataMatrices() void
 {
   stlr_d.loadStellarData();
-  rbtc_d.loadOrbitanceTree();
 
   powr_d.loadPowerSrcData();
   vesl_d.loadVesselData();

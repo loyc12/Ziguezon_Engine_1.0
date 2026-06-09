@@ -9,6 +9,7 @@ const TData = gdf.TravelData;
 
 const BodyEconPair = gdf.BodyEconPair;
 const EconLoc      = gdf.EconLoc;
+const BodyName     = gdf.BodyName;
 const Angle        = utl.Angle;
 const EntityId     = eng.EntityId;
 
@@ -18,8 +19,7 @@ const MAX_NESTING_DEPTH = 4; // Assumes depth will never exceede this
 // ================================ CONFIGURATION ================================
 
 const BODY_COUNT : usize = gdf.G_CONSTS.bodyCount;
-const CACHE_LEN  : usize = BODY_COUNT + 1; // Entity id 0 is invalid, but kept as a sentinel slot.
-const MAX_DEPTH  : usize = @min( CACHE_LEN, MAX_NESTING_DEPTH );
+const MAX_DEPTH  : usize = @min( BODY_COUNT, MAX_NESTING_DEPTH );
 
 const LOW_ORBIT_RADIUS_FACTOR       : f64 = 1.10;
 const ATMOSPHERIC_LAUNCH_DV_FACTOR  : f64 = 0.21;
@@ -54,7 +54,7 @@ pub const TransferNode = struct
 
   orientation  : Angle = .{},
   angularPos   : Angle = .{},
-  angularVel   : f64 = 0.0,
+  angularVel   : f64   = 0.0,
 
   gravParam      : f64 = 0.0,
   orbitalEnergy  : f64 = 0.0,
@@ -71,10 +71,10 @@ const RepState = struct
 
   orientation  : Angle = .{},
   angularPos   : Angle = .{},
-  angularVel   : f64 = 0.0,
+  angularVel   : f64   = 0.0,
 
-  radius : f64 = 0.0,
-  energy : f64 = 0.0,
+  radius : f64  = 0.0,
+  energy : f64  = 0.0,
   valid  : bool = false,
 };
 
@@ -86,17 +86,30 @@ const HohmannResult = struct
   arriveDeltaV : f64 = 0.0,
 };
 
-var transferNodes : [ CACHE_LEN ]TransferNode = std.mem.zeroes([ CACHE_LEN ]TransferNode );
+var transferNodes : [ BODY_COUNT ]TransferNode = std.mem.zeroes([ BODY_COUNT ]TransferNode );
 
 
 // ================================ UTILITY ================================
 
-inline fn isValidBodyId( id : EntityId ) bool { return( id > 0 and id < CACHE_LEN ); }
+inline fn isValidBodyId( id : EntityId ) bool { return gbl.G_DATA.bodyRegistry.containsId( id ); }
+
+inline fn getNodeByName( bodyName : BodyName ) ?*const TransferNode
+{
+  const node = &transferNodes[ bodyName.toIdx() ];
+  if( !node.valid ){ return null; }
+
+  return node;
+}
+
+inline fn getNodeMutByName( bodyName : BodyName ) *TransferNode
+{
+  return &transferNodes[ bodyName.toIdx() ];
+}
 
 fn doDirMatch( a : f64, b : f64 ) bool
 {
   if( utl.isFltZr( a ) or utl.isFltZr( b )){ return true; }
-  return( ( a < 0.0 ) == ( b < 0.0 ));
+  return(( a < 0.0 ) == ( b < 0.0 ));
 }
 
 fn minutesToDays( minutes : f64 ) f64
@@ -125,9 +138,9 @@ fn coOrbitalDriftDurationDays( radius : f64, phase : f64, mu : f64 ) f64
 {
   if( radius < utl.EPS or phase < utl.EPS or mu < utl.EPS ){ return 0.0; }
 
-  const baseAngularVel  = @sqrt( mu / ( radius * radius * radius ));
   const driftRadius     = radius * ( 1.0 + CO_ORBITAL_DRIFT_RADIUS_OFFSET );
   const driftAngularVel = @sqrt( mu / ( driftRadius * driftRadius * driftRadius ));
+  const baseAngularVel  = @sqrt( mu / ( radius * radius * radius ));
   const relAngularVel   = @abs( baseAngularVel - driftAngularVel );
 
   if( relAngularVel < utl.EPS ){ return 0.0; }
@@ -157,12 +170,8 @@ fn locAngularOffset( loc : EconLoc ) Angle
 
 fn getNode( id : EntityId ) ?*const TransferNode
 {
-  if( !isValidBodyId( id )){ return null; }
-
-  const node = &transferNodes[ @intCast( id )];
-  if( !node.valid ){ return null; }
-
-  return node;
+  const bodyName = gbl.G_DATA.bodyRegistry.nameOf( id ) orelse return null;
+  return getNodeByName( bodyName );
 }
 
 fn bodyEnergyAtRadius( node : *const TransferNode, radius : f64 ) f64
@@ -287,14 +296,19 @@ fn captureDeltaVToParking( bodyId : EntityId, vInf : f64 ) f64
 
 // ================================ CACHE REFRESH ================================
 
-fn refreshTransferNode( view : *gdf.OrbitTickView, bodyId : EntityId ) void
+fn refreshTransferNode( view : *gdf.OrbitTickView, bodyName : BodyName ) void
 {
-  if( !isValidBodyId( bodyId )){ return; }
+  const bodyId = gbl.G_DATA.bodyRegistry.idOf( bodyName );
+  if( bodyId == 0 )
+  {
+    transferNodes[ bodyName.toIdx() ] = .{};
+    return;
+  }
 
   const body = view.get( gdf.bdy.BodyComp, bodyId );
   if( body == null )
   {
-    transferNodes[ @intCast( bodyId )] = .{};
+    transferNodes[ bodyName.toIdx() ] = .{};
     return;
   }
 
@@ -306,9 +320,9 @@ fn refreshTransferNode( view : *gdf.OrbitTickView, bodyId : EntityId ) void
     .valid     = true,
   };
 
-  if( bodyId == gdf.G_CONSTS.starId )
+  if( bodyName == gdf.G_CONSTS.starBody )
   {
-    transferNodes[ @intCast( bodyId )] = node;
+    transferNodes[ bodyName.toIdx() ] = node;
     return;
   }
 
@@ -316,11 +330,11 @@ fn refreshTransferNode( view : *gdf.OrbitTickView, bodyId : EntityId ) void
   if( orbit == null )
   {
     node.valid = false;
-    transferNodes[ @intCast( bodyId )] = node;
+    transferNodes[ bodyName.toIdx() ] = node;
     return;
   }
 
-  node.parentId = gbl.ORBITANCE.getOrbitedId( bodyId );
+  node.parentId = gbl.getOrbitedIdCached( bodyName );
 
   node.semiMajor      = orbit.?.getSemiMajor();
   node.eccentricity   = orbit.?.getEccentricity();
@@ -332,25 +346,27 @@ fn refreshTransferNode( view : *gdf.OrbitTickView, bodyId : EntityId ) void
   node.boundaryRadius = orbit.?.getHillRadius();
   node.boundaryEnergy = bodyEnergyAtRadius( &node, node.boundaryRadius );
 
-  transferNodes[ @intCast( bodyId )] = node;
+  transferNodes[ bodyName.toIdx() ] = node;
 }
 
 pub fn refreshAllTransferNodes( view : *gdf.OrbitTickView ) void
 {
-  for( 1..CACHE_LEN )| idx |
+  for( gdf.bodyOrder )| bodyName |
   {
-    refreshTransferNode( view, @intCast( idx ));
+    refreshTransferNode( view, bodyName );
   }
 }
 
 pub fn refreshDynamicTransferNodes( view : *gdf.OrbitTickView ) void
 {
-  for( 1..CACHE_LEN )| idx |
+  for( gdf.bodyOrder )| bodyName |
   {
-    const bodyId : EntityId = @intCast( idx );
-    const node = &transferNodes[ idx ];
+    if( bodyName == gdf.G_CONSTS.starBody ){ continue; }
 
-    if( !node.valid or bodyId == gdf.G_CONSTS.starId ){ continue; }
+    const bodyId = gbl.G_DATA.bodyRegistry.idOf( bodyName );
+    const node = getNodeMutByName( bodyName );
+
+    if( !node.valid or bodyId == 0 ){ continue; }
 
     if( view.get( gdf.orb.OrbitComp, bodyId ))| orbit |
     {
@@ -728,7 +744,9 @@ fn commonFramePenalty( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : Enti
 
 pub fn estimateTransfer( fromBodyId : EntityId, fromLoc : EconLoc, toBodyId : EntityId, toLoc : EconLoc ) TData
 {
-  if(( fromBodyId == gdf.G_CONSTS.starId and fromLoc == .GROUND ) or ( toBodyId == gdf.G_CONSTS.starId and toLoc == .GROUND ))
+  const starId = gbl.G_DATA.bodyRegistry.idOf( gdf.G_CONSTS.starBody );
+
+  if(( fromBodyId == starId and fromLoc == .GROUND ) or ( toBodyId == starId and toLoc == .GROUND ))
   {
     return .{};
   }
@@ -753,9 +771,12 @@ pub fn estimateTransferPair( from : BodyEconPair, to : BodyEconPair ) TData
   const fromSplit = gdf.fromBodyEconPair( from );
   const toSplit   = gdf.fromBodyEconPair( to   );
 
+  const fromBodyId = gbl.G_DATA.bodyRegistry.idOf( fromSplit.a );
+  const toBodyId   = gbl.G_DATA.bodyRegistry.idOf( toSplit.a   );
+
   return estimateTransfer(
-    gdf.idFromName( fromSplit.a ), fromSplit.b,
-    gdf.idFromName( toSplit.a   ), toSplit.b,
+    fromBodyId, fromSplit.b,
+    toBodyId,   toSplit.b,
   );
 }
 

@@ -36,13 +36,10 @@ pub fn fromBodyEconPair( pair : BodyEconPair ) BodyEconSplit
 
 pub inline fn debugLogTravelCosts( departure : gdf.BodyEconPair, arrival : gdf.BodyEconPair ) void
 {
-  const pair1 = gdf.fromBodyEconPair( departure );
-  const pair2 = gdf.fromBodyEconPair( arrival );
+  const tData1 = gdf.trvlSlvr.estimateTransferPair( departure, arrival );
+  utl.log( .CONT, 0, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE",  .{ @tagName( departure ), @tagName( arrival ), tData1.deltaV, tData1.deltaT, tData1.deltaE });
 
-  const tData1 = gdf.trvlSlvr.estimateTransfer( pair1.a.toNttId(), pair1.b, pair2.a.toNttId(), pair2.b );
-  utl.log( .CONT, 0, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE", .{ @tagName( departure ), @tagName( arrival ), tData1.deltaV, tData1.deltaT, tData1.deltaE });
-
-  const tData2 = gdf.trvlSlvr.estimateTransfer( pair2.a.toNttId(), pair2.b, pair1.a.toNttId(), pair1.b );
+  const tData2 = gdf.trvlSlvr.estimateTransferPair( arrival, departure );
   utl.log( .CONT, 0, @src(), "{s} < {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE\n", .{ @tagName( departure ), @tagName( arrival ), tData2.deltaV, tData2.deltaT, tData2.deltaE });
 }
 
@@ -63,11 +60,9 @@ pub inline fn debugLogTravelCostsList( body : gdf.BodyName, loc : gdf.EconLoc ) 
   }
   utl.qlog( .CONT, 0, @src(), "----------------------------------------------------------------\n" );
 
-  inline for( 1..gdf.BodyName.count )| b | // Skip SUN
+  for( gdf.bodyOrder )| body2 |
   {
-    const body2 = BodyName.fromIdx( b );
-
-    if( body2 != body )
+    if( body2 != body and body2 != gdf.G_CONSTS.starBody )
     {
       gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( body2, loc ));
     }

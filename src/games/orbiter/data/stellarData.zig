@@ -1,5 +1,4 @@
 const std = @import( "std" );
-const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const gbl = @import( "../gameGlobals.zig" );
@@ -36,9 +35,6 @@ pub const StellarBodyName = enum( u8 )
 
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( i    ); }
-
-  pub inline fn toNttId( self : @This() ) eng.EntityId { return 1 + @intFromEnum( self ); } // No entity 0
-  pub inline fn fromNttId( i : eng.EntityId ) @This() {  return @enumFromInt( i - 1    ); } // No entity 0
 
   SOL,
 
@@ -237,12 +233,12 @@ pub fn loadStellarData() void
 
   // INNER SYSTEM
 
-  stellarData.set( .SOL,      .MASS,   1_988_475_000_000_000_000 );
-  stellarData.set( .SOL,      .RADIUS,                   695_700 );
-  stellarData.set( .SOL,      .PERIAP,                         0 );
-  stellarData.set( .SOL,      .APOAP,                          0 );
-  stellarData.set( .SOL,      .LONG,                           0 );
-  stellarData.set( .SOL,      .TYPE,            SBT.STAR.toFlt() );
+  stellarData.set( .SOL, .MASS,   1_988_475_000_000_000_000 );
+  stellarData.set( .SOL, .RADIUS,                   695_700 );
+  stellarData.set( .SOL, .PERIAP,                         0 );
+  stellarData.set( .SOL, .APOAP,                          0 );
+  stellarData.set( .SOL, .LONG,                           0 );
+  stellarData.set( .SOL, .TYPE,            SBT.STAR.toFlt() );
 
   stellarData.set( .DEBUGY,   .MASS,            1_000_000 );
   stellarData.set( .DEBUGY,   .RADIUS,            100.000 );
@@ -412,12 +408,3 @@ pub fn loadStellarData() void
 
   stellarData.isInit = true;
 }
-
-
-//CERES,
-//VESTA,
-//PALLAS,
-//HYGIEA,
-//EUROPEA,
-//DAVIDA,
-//SYLVIA,

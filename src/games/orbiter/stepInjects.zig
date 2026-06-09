@@ -61,7 +61,8 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   if( utl.ray.isKeyDown( utl.ray.KeyboardKey.left_shift ) or utl.ray.isKeyDown( utl.ray.KeyboardKey.right_shift ))
   {
     const bodyView = views.getBodyTrans( ng ) orelse return;
-    var mainEcon = bodyView.get( gdf.bdy.BodyComp, gdf.G_CONSTS.homeId ).?.getEcon( .GROUND );
+    const homeId = gbl.G_DATA.bodyRegistry.idOf( gdf.G_CONSTS.homeBody );
+    var mainEcon = bodyView.get( gdf.bdy.BodyComp, homeId ).?.getEcon( .GROUND );
 
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.zero  )){ mainEcon.addPopCount( .HUMAN,        100000 ); }
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 100000 ); }
@@ -87,7 +88,8 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( eve
 
   gUtl.tickOrbiters( orbitView );
 
-  const starPos : utl.Vec2 = bodyView.get( eng.TransComp, gdf.G_CONSTS.starId ).?.pos.toVec2();
+  const starId = gbl.G_DATA.bodyRegistry.idOf( gdf.G_CONSTS.starBody );
+  const starPos : utl.Vec2 = bodyView.get( eng.TransComp, starId ).?.pos.toVec2();
 
   gUtl.tickGlobalEconomy( bodyView, starPos );
 }

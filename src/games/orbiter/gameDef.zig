@@ -15,6 +15,11 @@ pub const BodyTransView   = eng.CompView( .{ eng.TransComp, bdy.BodyComp });
 pub const OrbitTickView   = eng.CompView( .{ eng.TransComp, orb.OrbitComp, bdy.BodyComp });
 pub const OrbitRenderView = eng.CompView( .{ eng.TransComp, eng.ShapeComp, orb.OrbitComp, bdy.BodyComp });
 
+pub const Orbits = struct
+{
+  pub const cardinalityPolicy : eng.RelationCardinalityPolicy = .MANY_TO_ONE;
+};
+
 
 // ================ UNITS AND CONSTANTS ================
 
@@ -62,11 +67,10 @@ pub const GameConsts = struct
   foreColour : utl.Colour = .dCrimson,
   textColour : utl.Colour = .lGreen,
 
-  bodyCount   : usize        = BodyName.count,
-  maxEntityId : eng.EntityId = BodyName.count,
+  bodyCount : usize = BodyName.count,
 
-  starId : eng.EntityId = idFromName( .SOL   ), // SUN
-  homeId : eng.EntityId = idFromName( .TERRA ), // EARTH
+  starBody : BodyName = .SOL,
+  homeBody : BodyName = .TERRA,
 };
 
 pub const GameFlags = struct
@@ -92,11 +96,12 @@ pub const StellarMetricEnum = stlr_d.StellarMetricEnum;
 pub const Construct         = bldr_d.Construct;
 pub const Requester         = bldr_d.Requester;
 
-pub const rbtc_d = @import( "data/orbitanceData.zig"  );
+pub const rbtc_d = @import( "data/orbitRelationData.zig" );
 pub const trvl_d = @import( "data/travelData.zig"      );
 
-pub const idFromName        = rbtc_d.idFromName;
-pub const nameFromId        = rbtc_d.nameFromId;
+pub const bodyOrder         = rbtc_d.bodyOrder;
+pub const getBodyOrderIdx   = rbtc_d.getBodyOrderIdx;
+pub const getOrbitedName    = rbtc_d.getOrbitedName;
 
 pub const BodyEconPair      = trvl_d.BodyEconPair;
 pub const toBodyEconPair    = trvl_d.toBodyEconPair;

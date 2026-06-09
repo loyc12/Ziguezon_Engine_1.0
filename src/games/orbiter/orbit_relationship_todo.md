@@ -10,9 +10,9 @@ the engine reference or the current code, the current code wins until the
 contradiction is resolved explicitly.
 
 
-## 0. Current State
+## 0. Original State
 
-Orbiter currently stores orbital parentage outside `World`:
+Before this migration, Orbiter stored orbital parentage outside `World`:
 
 * `data/orbitanceData.zig` owns a fixed `orbitArray`, mapping each orbiter id to
   its orbited parent id.
@@ -64,7 +64,8 @@ This slice is complete when:
 * `OrbitComp` remains a component.
 * The transfer solver continues to read cached parent ids through
   `TransferNode.parentId`.
-* `data/orbitanceData.zig` no longer owns the authoritative live parent lookup.
+* `data/orbitRelationData.zig` no longer owns the authoritative live parent
+  lookup.
 * Deprecated id/name conversion helpers and dense-id assumptions are removed.
 * Validation covers relation registration, endpoint resolution, relation-backed
   cache rebuild, orbit ticking, orbit rendering, and transfer-cache refresh.
@@ -147,20 +148,20 @@ Add an Orbiter-owned runtime registry:
 The registry should answer `BodyName -> EntityId`. It should not answer orbital
 parentage. Parentage belongs to `Orbits`, with the cache derived from `Orbits`.
 
-### 3.3 Static Orbitance Data
+### 3.3 Static Orbit Relation Data
 
 Keep the hardcoded body-parent table small and explicit, but store body names,
 not entity ids.
 
 Likely shape:
 
-    pub const OrbitancePair = struct
+    pub const OrbitRelationPair = struct
     {
       orbiter : BodyName,
       orbited : BodyName,
     };
 
-    pub const orbitancePairs = [_]OrbitancePair{ ... };
+    pub const orbitRelationPairs = [_]OrbitRelationPair{ ... };
 
 Required helper direction:
 
@@ -176,7 +177,8 @@ During `initStellarSystem()`:
 1. Iterate `bodyOrder`.
 2. Create the body entity.
 3. Store the entity in `BodyRegistry`.
-4. If the body is not `SOL`, resolve its parent name from `orbitancePairs`.
+4. If the body is not `SOL`, resolve its parent name from
+   `orbitRelationPairs`.
 5. Resolve parent id through `BodyRegistry.idOf(parentName)`.
 6. Add `ng.world.addRelation(Orbits, bodyId, parentId, .{})`.
 7. Refresh that body's parent-cache entry from the relation store.
@@ -254,121 +256,124 @@ When Orbiter closes:
 
 ### 4.1 Inventory
 
-- [ ] List all uses of `gbl.ORBITANCE`.
-- [ ] List all uses of `getOrbitedId`.
-- [ ] List all uses of `getNextOrbiterId`.
-- [ ] List all uses of `idFromName`, `nameFromId`, `toNttId`, and `fromNttId`.
-- [ ] List all uses of `G_CONSTS.starId`, `G_CONSTS.homeId`, `maxEntityId`, and
+- [x] List all uses of `gbl.ORBITANCE`.
+- [x] List all uses of `getOrbitedId`.
+- [x] List all uses of `getNextOrbiterId`.
+- [x] List all uses of `idFromName`, `nameFromId`, `toNttId`, and `fromNttId`.
+- [x] List all uses of `G_CONSTS.starId`, `G_CONSTS.homeId`, `maxEntityId`, and
       loops that assume body ids are dense from `1..bodyCount`.
-- [ ] Confirm `OrbitComp` has no hidden parent-id field to preserve.
-- [ ] Confirm `TransferNode.parentId` remains the travel solver's cached parent
+- [x] Confirm `OrbitComp` has no hidden parent-id field to preserve.
+- [x] Confirm `TransferNode.parentId` remains the travel solver's cached parent
       surface.
 
 ### 4.2 Relation Definition And Registration
 
-- [ ] Add the Orbiter-owned `Orbits` relation type.
-- [ ] Export `Orbits` through the local Orbiter definition module if needed.
-- [ ] Register `Orbits` during Orbiter world setup.
-- [ ] If `Orbits` registration fails, unwind already registered Orbiter stores
+- [x] Add the Orbiter-owned `Orbits` relation type.
+- [x] Export `Orbits` through the local Orbiter definition module if needed.
+- [x] Register `Orbits` during Orbiter world setup.
+- [x] If `Orbits` registration fails, unwind already registered Orbiter stores
       consistently with the existing `registerOrbiterComps()` style.
-- [ ] Unregister `Orbits` during Orbiter close.
-- [ ] Do not clear component-only cached views merely because relation
+- [x] Unregister `Orbits` during Orbiter close.
+- [x] Do not clear component-only cached views merely because relation
       registration changes. Clear the parent cache and body registry as their own
       Orbiter runtime data.
 
 ### 4.3 Body Registry And Order
 
-- [ ] Add explicit `bodyOrder`.
-- [ ] Add `BodyRegistry` to Orbiter-owned runtime data.
-- [ ] Add `clear`, `idOf`, `setId`, and any small membership helper needed by
+- [x] Add explicit `bodyOrder`.
+- [x] Add `BodyRegistry` to Orbiter-owned runtime data.
+- [x] Add `clear`, `idOf`, `setId`, and any small membership helper needed by
       target/debug code.
-- [ ] Replace `stellarEntitiesIds` as the primary body iteration surface.
-- [ ] Update body creation to store each created entity by `BodyName`.
-- [ ] Ensure setup logs a clear error if an ordered child resolves a parent that
+- [x] Replace `stellarEntitiesIds` as the primary body iteration surface.
+- [x] Update body creation to store each created entity by `BodyName`.
+- [x] Ensure setup logs a clear error if an ordered child resolves a parent that
       has not been created yet.
 
 ### 4.4 Static Data Conversion
 
-- [ ] Replace `OrbitanceData.orbitArray` with a compact static `BodyName` pair
+- [x] Replace `OrbitanceData.orbitArray` with a compact static `BodyName` pair
       list, or add the pair list first and leave the old array unused until
       cleanup.
-- [ ] Add `getOrbitedName(orbiter : BodyName) ?BodyName`.
-- [ ] Move live relation insertion out of `loadOrbitanceTree()`.
-- [ ] Add relation insertion during ordered body setup, after both child and
+- [x] Add `getOrbitedName(orbiter : BodyName) ?BodyName`.
+- [x] Move live relation insertion out of `loadOrbitanceTree()`.
+- [x] Add relation insertion during ordered body setup, after both child and
       parent entities are live.
-- [ ] Make insertion failure visible through logs.
-- [ ] Confirm `SOL` has no static parent pair.
-- [ ] Confirm every non-star body in `bodyOrder` has exactly one static parent
+- [x] Make insertion failure visible through logs.
+- [x] Confirm `SOL` has no static parent pair.
+- [x] Confirm every non-star body in `bodyOrder` has exactly one static parent
       pair.
 
 ### 4.5 Cache
 
-- [ ] Add `orbitParentIds` to Orbiter-owned runtime data, keyed by
+- [x] Add `orbitParentIds` to Orbiter-owned runtime data, keyed by
       `BodyName.toIdx()`.
-- [ ] Add a helper to clear the parent cache to zero.
-- [ ] Add a helper to refresh one body cache entry from the `Orbits` relation
+- [x] Add a helper to clear the parent cache to zero.
+- [x] Add a helper to refresh one body cache entry from the `Orbits` relation
       store by source id.
-- [ ] Add a helper to rebuild the whole parent cache from the `Orbits` relation
+- [x] Add a helper to rebuild the whole parent cache from the `Orbits` relation
       store by scanning `bodyOrder` and using source-side relation iteration.
-- [ ] Validate that each non-star cached parent id is non-zero and alive.
-- [ ] Validate that each non-star source produces exactly one relation target.
-- [ ] Rebuild or refresh the cache after static `Orbits` insertion.
-- [ ] Clear the cache on game close.
+- [x] Validate that each non-star cached parent id is non-zero and alive.
+- [x] Validate that each non-star source produces exactly one relation target.
+- [x] Rebuild or refresh the cache after static `Orbits` insertion.
+- [x] Clear the cache on game close.
 
 ### 4.6 Call-Site Migration
 
-- [ ] Replace parent lookup in `initStellarBody()`.
-- [ ] Replace parent lookup in initial start-position calculation.
-- [ ] Replace parent lookup in `tickOrbiters()`.
-- [ ] Replace parent lookup in `renderOrbiters()`.
-- [ ] Replace parent lookup in `refreshTransferNode()`.
-- [ ] Replace dense-id body loops with `bodyOrder` plus `BodyRegistry.idOf()`.
-- [ ] Replace target cycling so it tracks body order/body name rather than raw
+- [x] Replace parent lookup in `initStellarBody()`.
+- [x] Replace parent lookup in initial start-position calculation.
+- [x] Replace parent lookup in `tickOrbiters()`.
+- [x] Replace parent lookup in `renderOrbiters()`.
+- [x] Replace parent lookup in `refreshTransferNode()`.
+- [x] Replace dense-id body loops with `bodyOrder` plus `BodyRegistry.idOf()`.
+- [x] Replace target cycling so it tracks body order/body name rather than raw
       entity-id arithmetic.
-- [ ] Replace `drawTargetInfo()` body validation so arbitrary live entity ids are
+- [x] Replace `drawTargetInfo()` body validation so arbitrary live entity ids are
       not rejected solely because they are greater than `bodyCount`.
-- [ ] Remove direct `gbl.ORBITANCE.getOrbitedId()` usage from hot paths.
-- [ ] Keep `OrbitComp` construction and math unchanged unless a parent lookup
+- [x] Remove direct `gbl.ORBITANCE.getOrbitedId()` usage from hot paths.
+- [x] Keep `OrbitComp` construction and math unchanged unless a parent lookup
       bug is exposed.
 
 ### 4.7 Cleanup
 
-- [ ] Remove obsolete live lookup fields from `OrbitanceData`.
-- [ ] Remove obsolete `getOrbitedId()` once all call sites use the relation-derived
+- [x] Remove obsolete live lookup fields from `OrbitanceData`.
+- [x] Remove obsolete `getOrbitedId()` once all call sites use the relation-derived
       cache helper.
-- [ ] Remove obsolete `getNextOrbiterId()` if no current call site needs it.
-- [ ] Remove obsolete `idFromName()` and `nameFromId()`.
-- [ ] Remove obsolete `toNttId()` and `fromNttId()` if no remaining code needs
+- [x] Remove obsolete `getNextOrbiterId()` if no current call site needs it.
+- [x] Remove obsolete `idFromName()` and `nameFromId()`.
+- [x] Remove obsolete `toNttId()` and `fromNttId()` if no remaining code needs
       enum/entity conversion.
-- [ ] Replace `G_CONSTS.starId` and `G_CONSTS.homeId` with `starBody` /
+- [x] Replace `G_CONSTS.starId` and `G_CONSTS.homeId` with `starBody` /
       `homeBody` body-name constants, resolving ids through the registry where
       needed.
-- [ ] Remove or replace `G_CONSTS.maxEntityId`.
-- [ ] Remove `gbl.ORBITANCE` once static orbit data is accessed through a clearer
+- [x] Remove or replace `G_CONSTS.maxEntityId`.
+- [x] Remove `gbl.ORBITANCE` once static orbit data is accessed through a clearer
       static-data API.
-- [ ] Rename `orbitanceData.zig` if its remaining role becomes only static orbit
+- [x] Rename `orbitanceData.zig` if its remaining role becomes only static orbit
       pair data and a clearer name emerges.
-- [ ] Remove any temporary compatibility helper once the migration is complete.
+- [x] Remove any temporary compatibility helper once the migration is complete.
 
 ### 4.8 Validation
 
-- [ ] Run `zig build orbiter`.
-- [ ] Run `zig build test`.
-- [ ] Confirm `SOL` has no parent relation.
-- [ ] Confirm `LUNA` has an `Orbits` relation to `TERRA`.
-- [ ] Confirm `PHOBOS` and `DEIMOS` have `Orbits` relations to `MARS`.
-- [ ] Confirm `LUNA` caches `TERRA` as parent after reading the relation store.
-- [ ] Confirm `PHOBOS` and `DEIMOS` cache `MARS` as parent after reading the
+Validation status: build/static verification complete. Interactive visual
+playtest was not run in this pass.
+
+- [x] Run `zig build orbiter`.
+- [x] Run `zig build test`.
+- [x] Confirm `SOL` has no parent relation.
+- [x] Confirm `LUNA` has an `Orbits` relation to `TERRA`.
+- [x] Confirm `PHOBOS` and `DEIMOS` have `Orbits` relations to `MARS`.
+- [x] Confirm `LUNA` caches `TERRA` as parent after reading the relation store.
+- [x] Confirm `PHOBOS` and `DEIMOS` cache `MARS` as parent after reading the
       relation store.
-- [ ] Confirm all non-star bodies with `OrbitComp` have non-zero cached parents.
-- [ ] Confirm arbitrary created entity ids no longer need to match
+- [x] Confirm all non-star bodies with `OrbitComp` have non-zero cached parents.
+- [x] Confirm arbitrary created entity ids no longer need to match
       `BodyName.toIdx() + 1`.
-- [ ] Confirm orbit ticking still updates body transforms.
-- [ ] Confirm orbit rendering still draws paths around each body's cached
+- [x] Confirm orbit ticking still updates body transforms.
+- [x] Confirm orbit rendering still draws paths around each body's cached
       parent.
-- [ ] Confirm target cycling still visits all bodies in body order.
-- [ ] Confirm `refreshAllTransferNodes()` fills `TransferNode.parentId`.
-- [ ] Confirm `estimateTransfer()` still finds ancestor chains for moon-parent
+- [x] Confirm target cycling still visits all bodies in body order.
+- [x] Confirm `refreshAllTransferNodes()` fills `TransferNode.parentId`.
+- [x] Confirm `estimateTransfer()` still finds ancestor chains for moon-parent
       routes.
 
 
