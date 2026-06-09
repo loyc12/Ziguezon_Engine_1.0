@@ -171,6 +171,20 @@ target entity, use a trait/metaproperty instead.
 Relations should eventually support source/target queries, reverse lookups,
 cardinality policies, and cleanup behavior when entities are destroyed.
 
+Practical relation guidance from early game integration:
+
+- Define source and target semantics explicitly for each relation type, and use
+  cardinality policies to encode relationship invariants.
+- Add relation rows only after both endpoint entities are live. If domain data
+  guarantees parent-before-child order, ordered setup is enough; otherwise create
+  endpoints first or sort the relation topology before insertion.
+- Treat relation stores as authoritative for live relationship facts. Game-owned
+  registries may map stable domain keys to runtime `EntityId`s, but should not
+  become a second source of relationship truth.
+- Hot systems may use compact derived caches for performance, but those caches
+  must be rebuildable from relation stores and refreshed when relation facts
+  mutate.
+
 ### 1.5 Events record change
 
 Callbacks may observe events, but the event itself should be an inspectable
@@ -448,6 +462,8 @@ deterministic replay, or debugging unnecessarily hard.
 Prefer:
 
 - ids over raw pointers as persistent truth
+- stable game/domain keys over assuming `EntityId` values match enum order or
+  static data order
 - table rows over hidden object graphs
 - explicit phase order
 - explicit event ordering
