@@ -29,6 +29,7 @@ const DEF_GRID_SIZE    = Coords2{ .x = 32, .y = 32 };
 const DEF_TILE_SCALE   = Vec2{    .x = 32, .y = 32 };
 
 
+/// Runtime flags for Tilemap lifecycle, activity, and debug rendering.
 pub const TilemapFlags = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -49,6 +50,9 @@ pub const TilemapFlags = enum( u8 )
 };
 
 
+/// Grid of lightweight tiles with world position, tile scale, and shape metadata.
+/// Tilemaps are still a specialized world utility; future rework may route them
+/// through World-managed facts and queries.
 pub const Tilemap = struct
 {
   // ================ PROPERTIES ================
@@ -84,8 +88,10 @@ pub const Tilemap = struct
   // ================ CHECKERS ================
 
 
+  /// Returns the total number of tile cells in the grid.
   pub inline fn getTileCount(  self : *const Tilemap ) u32 { return @intCast( self.mapSize.x * self.mapSize.y ); }
   pub inline fn isIndexValid(  self : *const Tilemap, index : u32 ) bool { return( index < self.getTileCount() ); }
+  /// Returns true when grid coordinates are non-negative and inside `mapSize`.
   pub inline fn isCoordsValid( self : *const Tilemap, coords : Coords2 ) bool
   {
     if( !coords.isPosi() )
@@ -101,6 +107,7 @@ pub const Tilemap = struct
     return true;
   }
 
+  /// Returns true when two map coordinates touch through one cardinal direction.
   pub fn areCoordsNeighbours( self : *const Tilemap, c1 : Coords2, c2 : Coords2 ) bool
   {
     for( utl.Dir2.arr )| dir |
@@ -121,6 +128,7 @@ pub const Tilemap = struct
 
   // ================ INITIALIZATION FUNCTIONS ================
 
+  /// Allocates the tile array and fills every cell with `fillType`.
   pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : TileType ) void
   {
     utl.log( .TRACE, 0, @src(), "Initializing Tilemap {d}", .{ self.id });
@@ -153,6 +161,7 @@ pub const Tilemap = struct
     self.fillWithType( fillType );
   }
 
+  /// Releases the tile array and marks the tilemap inactive/deleted.
   pub fn deinit( self : *Tilemap, allocator : std.mem.Allocator ) void
   {
     utl.log( .TRACE, 0, @src(), "Deinitializing Tilemap {d}", .{ self.id });
@@ -168,6 +177,7 @@ pub const Tilemap = struct
     self.setFlag( TilemapFlags.ACTIVE,  false );
   }
 
+  /// Creates a fresh tilemap by copying safe setup fields from `params`.
   pub fn createTilemapFromParams( params : Tilemap, fillType : TileType, allocator : std.mem.Allocator ) ?Tilemap
   {
     if( params.isInit() ){ utl.qlog( .WARN, 0, @src(), "Params shoul not be an initialized tilemap"); }
@@ -187,6 +197,7 @@ pub const Tilemap = struct
     return tmp;
   }
 
+  /// Placeholder for future tilemap loading.
   pub fn createTilemapFromFile( filePath : []const u8, allocator : std.mem.Allocator ) ?Tilemap
   {
     _ = filePath;
@@ -201,6 +212,7 @@ pub const Tilemap = struct
 
   // ================ TILE FUNCTIONS ================
 
+  /// Converts a flat tile-array index into grid coordinates.
   pub inline fn getTileCoordsFromIndex( self : *const Tilemap, index : u32 ) ?Coords2
   {
     if( !self.isIndexValid( index ))
@@ -218,6 +230,7 @@ pub const Tilemap = struct
   }
 
 
+  /// Converts grid coordinates into a flat tile-array index.
   pub inline fn getTileIndex( self : *const Tilemap, mapCoords : Coords2 ) ?u32
   {
     if( !self.isCoordsValid( mapCoords )){ return null; }
@@ -225,6 +238,7 @@ pub const Tilemap = struct
     return @intCast(( mapCoords.y * self.mapSize.x ) + mapCoords.x );
   }
 
+  /// Returns a tile pointer for valid grid coordinates.
   pub inline fn getTile( self : *const Tilemap, mapCoords : Coords2 ) ?*Tile
   {
     if( !self.isInit() )

@@ -8,6 +8,8 @@ const CompStorePolicy  = comp.CompStorePolicy;
 const EntityId         = ent.EntityId;
 
 
+/// Summary of removing one entity id from all registered component stores.
+/// Missing rows are normal when an entity does not have every component type.
 pub const EntityCleanupResult = struct
 {
   removedCount : usize = 0,
@@ -21,6 +23,8 @@ pub const EntityCleanupResult = struct
 };
 
 
+/// Owns the typed component stores registered for a World.
+/// Game code usually reaches this through `World.registerComp` and friends.
 pub const CompManager = struct
 {
   const StoreEntityCleanupResult = enum
@@ -45,6 +49,7 @@ pub const CompManager = struct
 
   // ================================ LIFECYCLE FUNCTIONS ================================
 
+  /// Initializes the component-store registry.
   pub fn init( self : *CompManager, alloc : std.mem.Allocator ) void
   {
     if( self.isInit )
@@ -58,6 +63,7 @@ pub const CompManager = struct
     self.isInit = true;
   }
 
+  /// Deinitializes and destroys every registered component store.
   pub fn deinit( self : *CompManager ) void
   {
     if( !self.isInit )
@@ -76,6 +82,7 @@ pub const CompManager = struct
 
   // ================================ STORE FUNCTIONS ================================
 
+  /// Registers storage for one component payload type.
   pub fn register( self : *CompManager, comptime CompType : type ) bool
   {
     const typeName = @typeName( CompType );
@@ -119,6 +126,7 @@ pub const CompManager = struct
     return true;
   }
 
+  /// Removes storage for one component type and drops all rows in that store.
   pub fn unregister( self : *CompManager, comptime CompType : type ) bool
   {
     const typeName = @typeName( CompType );
@@ -140,6 +148,7 @@ pub const CompManager = struct
     return true;
   }
 
+  /// Returns the typed store pointer for one component type.
   pub fn getStore( self : *CompManager, comptime CompType : type ) ?*CompStoreFactory( CompType )
   {
     const typeName = @typeName( CompType );
@@ -154,6 +163,8 @@ pub const CompManager = struct
     return @ptrCast( @alignCast( entry.storePtr ));
   }
 
+  /// Removes an entity id from every registered component store.
+  /// Used by `World.destroyEntity`.
   pub fn removeEntity( self : *CompManager, entityId : EntityId ) EntityCleanupResult
   {
     var result : EntityCleanupResult = .{};

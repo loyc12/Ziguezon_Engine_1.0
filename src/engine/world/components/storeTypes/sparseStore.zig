@@ -6,6 +6,8 @@ const entity = @import( "../../entity.zig" );
 const EntityId = entity.EntityId;
 
 
+/// Hash-map component storage for optional or sparsely used components.
+/// Lookup is direct by entity id; iteration order is hash-map order.
 pub fn SparseCompStoreFactory( comptime CompType : type ) type
 {
   return struct
@@ -17,6 +19,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
     isInit : bool = false,
 
 
+    /// Initializes sparse hash-map storage.
     pub fn init( self : *CompStore, alloc : std.mem.Allocator ) void
     {
       utl.log( .INFO, 0, @src(), "Initializing sparse CompStore for type {s}", .{ TypeName });
@@ -31,6 +34,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       self.isInit = true;
     }
 
+    /// Releases sparse storage.
     pub fn deinit( self : *CompStore ) void
     {
       utl.log( .INFO, 0, @src(), "Deinitializing sparse CompStore for type {s}", .{ TypeName });
@@ -45,6 +49,8 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       self.isInit = false;
     }
 
+    /// Adds a component row for a nonzero entity id.
+    /// Duplicate entity ids are rejected.
     pub fn add( self : *CompStore, id : EntityId, value : CompType ) bool
     {
       if( !self.isInit )
@@ -74,6 +80,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       }
     }
 
+    /// Removes a component row by entity id.
     pub fn remove( self : *CompStore, id : EntityId ) bool
     {
       if( !self.isInit )
@@ -93,6 +100,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       }
     }
 
+    /// Returns a mutable payload pointer for an entity id, or null.
     pub fn get( self : *CompStore, id : EntityId ) ?*CompType
     {
       if( !self.isInit )
@@ -111,6 +119,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       return null;
     }
 
+    /// Returns true when the entity id has a row in this store.
     pub fn has( self : *CompStore, id : EntityId ) bool
     {
       if( !self.isInit )
@@ -121,6 +130,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       return self.data.getPtr( id ) != null;
     }
 
+    /// Returns the underlying hash-map iterator over rows.
     pub fn iterator( self : *CompStore ) @TypeOf( self.data.iterator() )
     {
       return self.data.iterator();

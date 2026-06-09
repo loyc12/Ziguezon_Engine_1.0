@@ -8,6 +8,8 @@ const RelationCleanupResult = rel.RelationCleanupResult;
 const RelationStoreFactory  = rel.RelationStoreFactory;
 
 
+/// Owns typed relation stores registered for a World.
+/// Game code normally uses the `World.*Relation` wrappers.
 pub const RelationManager = struct
 {
   const StoreEntry = struct
@@ -25,6 +27,7 @@ pub const RelationManager = struct
 
   // ================================ LIFECYCLE FUNCTIONS ================================
 
+  /// Initializes the relation-store registry.
   pub fn init( self : *RelationManager, alloc : std.mem.Allocator ) void
   {
     if( self.isInit )
@@ -38,6 +41,7 @@ pub const RelationManager = struct
     self.isInit = true;
   }
 
+  /// Deinitializes and destroys every registered relation store.
   pub fn deinit( self : *RelationManager ) void
   {
     if( !self.isInit )
@@ -56,6 +60,7 @@ pub const RelationManager = struct
 
   // ================================ STORE FUNCTIONS ================================
 
+  /// Registers storage for one relation fact type.
   pub fn register( self : *RelationManager, comptime RelType : type ) bool
   {
     const typeName = @typeName( RelType );
@@ -99,6 +104,7 @@ pub const RelationManager = struct
     return true;
   }
 
+  /// Removes storage for one relation type and drops all rows in that store.
   pub fn unregister( self : *RelationManager, comptime RelType : type ) bool
   {
     const typeName = @typeName( RelType );
@@ -120,6 +126,7 @@ pub const RelationManager = struct
     return true;
   }
 
+  /// Returns the typed store pointer for one relation type.
   pub fn getStore( self : *RelationManager, comptime RelType : type ) ?*RelationStoreFactory( RelType )
   {
     const typeName = @typeName( RelType );
@@ -134,6 +141,8 @@ pub const RelationManager = struct
     return @ptrCast( @alignCast( entry.storePtr ));
   }
 
+  /// Removes an entity id from every registered relation store.
+  /// Used by `World.destroyEntity` before component cleanup.
   pub fn removeEntity( self : *RelationManager, entityId : EntityId ) RelationCleanupResult
   {
     var result : RelationCleanupResult = .{};

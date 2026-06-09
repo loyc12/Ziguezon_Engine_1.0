@@ -116,9 +116,17 @@ switch( ng.state )
 ## Comments And Logging
 
 - Comments should explain intent, constraints, lifecycle phases, or non-obvious
-  decisions.
+  decisions. Avoid comments that merely restate straightforward code or add more
+  visual noise than it clarifies context.
+- Add `///` documentation comments to potentially ambiguous functions, data
+  structures, types, and API calls.
+- Prioritize documentation for game-facing and public engine-facing APIs:
+  ownership boundaries, initialization/deinitialization requirements, pointer
+  validity, failure behavior, ordering guarantees, and expected usage.
+- Use normal `//` comments for local or codeblock implementation notes and
+  `///` comments for declarations that users or future systems are expected
+  to call, store, or copy.
 - Use `NOTE` and `TODO` markers for specific concerns.
 - Use scoped blocks to visually group lifecycle phases.
 - Log state transitions, lifecycle events, invalid operations, and failures near
   their source.
-- Avoid comments that merely restate straightforward code.

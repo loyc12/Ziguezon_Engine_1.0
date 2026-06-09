@@ -10,6 +10,8 @@ Prefer succinct, direct answers with minimal embellishment.
 - Align semantically related declarations, arguments, calls, switch cases, and comments across lines using extra spacing.
 - When editing an aligned group, realign the whole group.
 - Prefer compact, practical implementations and avoid unnecessary abstraction.
+- Add `//` simple or `///` doc comments for potentially ambiguous codeblocks, functions, data
+  structures, and types, especially game-facing or public API surfaces.
 - Ask before making large, ambiguous, or risky changes.
 - After refactors, remove deprecated or dead code made obsolete by the change.
 

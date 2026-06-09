@@ -8,9 +8,13 @@ const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 
+/// Stable runtime identifier for a World entity.
+/// `0` is reserved as "no entity" / invalid and is never assigned by World.
 pub const EntityId  = u64;
 pub const EntityGen = u32;
 
+/// Lightweight entity handle returned by `World.createEntity`.
+/// Store this id in game data when you need to refer back to World-owned facts.
 pub const Entity = struct
 {
   id   : EntityId  = 0, // uuid of this entity
@@ -28,6 +32,8 @@ pub const EntityIdRegistry = struct
 
 //var freedIds : std.ArrayList( EntityId ) = undefined;
 
+  /// Resets id allocation back to the first valid id.
+  /// Called when a World is initialized or deinitialized.
   pub inline fn reinit( self : *EntityIdRegistry ) void
   {
     self.maxId = 0;
@@ -45,6 +51,8 @@ pub const EntityIdRegistry = struct
     return self.maxId;
   }
 
+  /// Allocates a new entity handle without attaching any components or facts.
+  /// Use `World.createEntity` instead of calling this directly from games.
   pub inline fn getNewEntity( self : *EntityIdRegistry ) Entity
   {
     return .{ .id = self.getNewId() };

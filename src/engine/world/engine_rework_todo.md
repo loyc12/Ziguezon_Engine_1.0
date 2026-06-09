@@ -200,95 +200,168 @@ the event model ready for them.
 
 ### 4.1 Inventory And Compatibility
 
-- [ ] Inspect current `event.zig`, `eventManager.zig`, `eventQueue.zig`, and
+- [x] Inspect current `event.zig`, `eventManager.zig`, `eventQueue.zig`, and
       `eventLog.zig`.
-- [ ] Find all imports and call sites for the legacy `EventType`, `EventData`,
+- [x] Find all imports and call sites for the legacy `EventType`, `EventData`,
       `Event`, and callback subscription API.
-- [ ] Decide whether the legacy callback event manager remains as compatibility
+- [x] Decide whether the legacy callback event manager remains as compatibility
       surface for games during this slice or is removed immediately.
-- [ ] Confirm the event implementation does not require trait, rule, archetype,
+- [x] Confirm the event implementation does not require trait, rule, archetype,
       scheduler, query, context, or particle/effects code.
-- [ ] Choose final names consistent with existing style, preferably
+- [x] Choose final names consistent with existing style, preferably
       `registerEvent`, `emitEvent`, and `popEvent`.
 
 ### 4.2 Event Concepts
 
-- [ ] Replace or isolate the fixed engine-specific `EventType` enum.
-- [ ] Replace or isolate the fixed generic `EventData` union.
-- [ ] Define a generic event metadata type if the first API needs it.
-- [ ] Define minimal generic engine event examples.
-- [ ] Decide whether dataless event facts are allowed in this slice.
-- [ ] Keep game-specific event payloads under `games/`.
-- [ ] Add tests for metadata ordering and basic event construction if those
+- [x] Replace or isolate the fixed engine-specific `EventType` enum.
+- [x] Replace or isolate the fixed generic `EventData` union.
+- [x] Define a generic event metadata type if the first API needs it.
+- [x] Define minimal generic engine event examples.
+- [x] Decide whether dataless event facts are allowed in this slice.
+- [x] Keep game-specific event payloads under `games/`.
+- [x] Add tests for metadata ordering and basic event construction if those
       types have non-trivial logic.
 
 ### 4.3 Event Queue
 
-- [ ] Implement typed event queue initialization and deinitialization.
-- [ ] Add event push/pop/count/clear operations.
-- [ ] Preserve insertion order.
-- [ ] Add explicit drain behavior if it is needed by `World.tick`.
-- [ ] Keep retained-history behavior out of the queue unless it is only a small
+- [x] Implement typed event queue initialization and deinitialization.
+- [x] Add event push/pop/count/clear operations.
+- [x] Preserve insertion order.
+- [x] Add explicit drain behavior if it is needed by `World.tick`.
+- [x] Keep retained-history behavior out of the queue unless it is only a small
       callback/hook.
-- [ ] Add tests for push/pop order, empty pop, clear, and deinit cleanup.
+- [x] Add tests for push/pop order, empty pop, clear, and deinit cleanup.
 
 ### 4.4 Event Manager
 
-- [ ] Add allocator-backed `EventManager` lifecycle.
-- [ ] Add typed event-queue registration.
-- [ ] Add typed event-queue unregistration.
-- [ ] Add typed event-queue lookup.
-- [ ] Add erased queue deinit/destroy callback.
-- [ ] Add manager-level emit and pop/drain helpers.
-- [ ] Preserve duplicate event registration rejection.
-- [ ] Add tests for registration, lookup, unregister, duplicate rejection, and
+- [x] Add allocator-backed `EventManager` lifecycle.
+- [x] Add typed event-queue registration.
+- [x] Add typed event-queue unregistration.
+- [x] Add typed event-queue lookup.
+- [x] Add erased queue deinit/destroy callback.
+- [x] Add manager-level emit and pop/drain helpers.
+- [x] Preserve duplicate event registration rejection.
+- [x] Add tests for registration, lookup, unregister, duplicate rejection, and
       deinit cleanup.
 
 ### 4.5 World Integration
 
-- [ ] Add `eventManager` ownership to `World`.
-- [ ] Initialize event storage in `World.init`.
-- [ ] Deinitialize event storage in `World.deinit`.
-- [ ] Add `World.registerEvent` and `World.unregisterEvent`.
-- [ ] Add `World.getEventQueue` only if direct queue access is useful.
-- [ ] Add `World.emitEvent`.
-- [ ] Add `World.popEvent` or a focused drain API.
-- [ ] Emit minimal generic entity/component/relation events only if that does
+- [x] Add `eventManager` ownership to `World`.
+- [x] Initialize event storage in `World.init`.
+- [x] Deinitialize event storage in `World.deinit`.
+- [x] Add `World.registerEvent` and `World.unregisterEvent`.
+- [x] Add `World.getEventQueue` only if direct queue access is useful.
+- [x] Add `World.emitEvent`.
+- [x] Add `World.popEvent` or a focused drain API.
+- [x] Emit minimal generic entity/component/relation events only if that does
       not distort the first slice.
-- [ ] Keep event processing tied to `World.tick(TickInfo)`.
-- [ ] Add tests for event operations on uninitialized worlds and unregistered
+- [x] Keep event processing tied to `World.tick(TickInfo)`.
+- [x] Add tests for event operations on uninitialized worlds and unregistered
       event queues.
 
 ### 4.6 Legacy Game Touchpoints
 
-- [ ] Build an inventory of current game event usage.
-- [ ] Avoid migrating game domain events unless needed to keep builds passing.
-- [ ] Keep compatibility code compact if legacy callbacks are temporarily
+- [x] Build an inventory of current game event usage.
+- [x] Avoid migrating game domain events unless needed to keep builds passing.
+- [x] Keep compatibility code compact if legacy callbacks are temporarily
       preserved.
-- [ ] Record any intentional incompatibility in this todo before finishing the
+- [x] Record any intentional incompatibility in this todo before finishing the
       phase.
 
 ### 4.7 Documentation Updates
 
-- [ ] Update `engine_rework_roadmap.md` only if implementation choices change
+- [x] Update `engine_rework_roadmap.md` only if implementation choices change
       the sequence or expose a contradiction.
-- [ ] Append completion notes to this todo when Phase 4 is finished.
-- [ ] Record the final event type contract.
-- [ ] Record the final queue/manager shape.
-- [ ] Record the final World event API names.
-- [ ] Record whether legacy callback events were preserved, moved, or removed.
-- [ ] Record validation commands and results.
+- [x] Append completion notes to this todo when Phase 4 is finished.
+- [x] Record the final event type contract.
+- [x] Record the final queue/manager shape.
+- [x] Record the final World event API names.
+- [x] Record whether legacy callback events were preserved, moved, or removed.
+- [x] Record validation commands and results.
 
 ### 4.8 Validation
 
-- [ ] Run `zig build`.
-- [ ] Run `zig build check_games`.
-- [ ] Run `zig build test`.
-- [ ] Run any focused game build touched by event compatibility work.
-- [ ] Confirm no rule/trait/archetype/scheduler/broad-query implementation was
+- [x] Run `zig build`.
+- [x] Run `zig build check_games`.
+- [x] Run `zig build test`.
+- [x] Run any focused game build touched by event compatibility work.
+- [x] Confirm no rule/trait/archetype/scheduler/broad-query implementation was
       added.
-- [ ] Confirm no first-class particle/effects implementation was added.
-- [ ] Do not run a formatting pass.
+- [x] Confirm no first-class particle/effects implementation was added.
+- [x] Do not run a formatting pass.
+
+### 4.9 Completion Notes
+
+Phase 4 is implemented.
+
+Final event contract:
+
+* Event fact types are user-defined plain Zig structs.
+* `EventMeta` stores `sequence`, `tickOrder`, optional `baseTickIndex`, and
+  optional `primaryEntity`.
+* `EventRecord(EventType)` stores metadata plus the typed event value.
+* Dataless event facts are allowed.
+* Minimal generic engine events now exist: `EntityCreated`,
+  `EntityDestroyed`, `ComponentAdded`, `ComponentRemoved`, `RelationAdded`,
+  and `RelationRemoved`.
+* Game-specific payloads remain outside the engine event modules.
+
+Final queue and manager shape:
+
+* `EventQueueFactory(EventType)` owns transient array-backed typed records and
+  supports `push`, `pushRecord`, `pop`, `count`, `clear`, `init`, and `deinit`.
+* `EventManager` owns a string-keyed typed queue registry using
+  `@typeName(EventType)`.
+* `EventManager` supports `register`, `unregister`, `getQueue`, `hasQueue`,
+  `emit`, `pop`, `clear`, `count`, `clearAll`, `countAll`, and `beginTick`.
+* Queue destruction is erased through stored deinit/destroy callbacks.
+* `eventLog.zig` contains only a small optional bounded retention boundary via
+  `EventLogFactory(EventType)`; replay/history/audit tooling remains deferred.
+
+Final World API:
+
+* `World.registerEvent(EventType)`
+* `World.unregisterEvent(EventType)`
+* `World.getEventQueue(EventType)`
+* `World.emitEvent(EventType, value)`
+* `World.popEvent(EventType)`
+* `World.clearEvents(EventType)`
+* `World.getEventCount(EventType)`
+
+`World.tick(TickInfo)` now establishes the event tick metadata boundary by
+recording the current `baseTickIndex` and resetting tick-local event order.
+The first slice does not add a drain loop because no rule/reaction processor
+exists yet.
+
+Generic entity/component/relation events are emitted only when the relevant
+event queue has been registered. Entity destruction cleanup still removes
+relations before components; it does not synthesize per-store cleanup events
+because the current erased cleanup callbacks do not expose typed row details.
+
+Legacy callback event compatibility:
+
+* The legacy fixed `EventType` enum, `EventData` union, `Event` record,
+  listener structs, callback subscription API, and single fixed queue were
+  removed from the active engine event modules.
+* No compatibility shim was preserved because the inventory found no current
+  game call sites for the legacy engine event API.
+* UI-local events under `src/utils/ui` were intentionally left untouched.
+
+Roadmap update:
+
+* `engine_rework_roadmap.md` did not need changes; this implementation follows
+  the existing Phase 4 sequence and exposed no roadmap/reference contradiction.
+
+Validation:
+
+* `zig build` passed.
+* `zig build check_games` passed: 10 games checked, 0 failed.
+* `zig build test` passed.
+* No focused game compatibility build was required beyond `check_games`
+  because no game event migration was performed.
+* No rule, trait, archetype, scheduler, broad-query, context, or
+  particle/effects implementation was added.
+* No formatting pass was run.
 
 
 ## 5. Trait System Entry Criteria

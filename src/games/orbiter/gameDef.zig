@@ -17,7 +17,7 @@ pub const OrbitRenderView = eng.CompView( .{ eng.TransComp, eng.ShapeComp, orb.O
 
 pub const Orbits = struct
 {
-  pub const cardinalityPolicy : eng.RelationCardinalityPolicy = .MANY_TO_ONE;
+  pub const cardinalityPolicy : eng.RelationLimitPolicy = .MANY_TO_ONE;
 };
 
 

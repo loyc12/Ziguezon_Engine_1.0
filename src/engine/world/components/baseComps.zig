@@ -12,7 +12,8 @@ const Angle = utl.Angle;
 //        All of this is optional, and needs to be user instanciated to be usable
 
 
-// Allows the positioning of entities in 2D space ( x, y, a )
+/// Basic transform component for 2D position, velocity, and acceleration.
+/// `pos` uses x/y plus angle; systems should mutate this rather than storing position elsewhere.
 pub const TransComp = struct
 {
   pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
@@ -24,7 +25,8 @@ pub const TransComp = struct
   acc : VecA = .{},
 
 
-  // NOTE : Set sdt to 1.0 to apply the full expected movement
+  /// Integrates acceleration and velocity into position.
+  /// Set `sdt` to 1.0 to apply the full expected movement for the current step.
   pub fn updatePos( self : *TransComp, sdt : f32 ) void
   {
     const scaledHalfAcc = self.acc.mulVal( 0.5 * sdt );
@@ -40,7 +42,7 @@ pub const TransComp = struct
 };
 
 
-/// Allow the coliding of entities via AABB
+/// Axis-aligned hitbox component for broad collision and overlap checks.
 pub const HitboxComp = struct
 {
   pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
@@ -56,11 +58,13 @@ pub const HitboxComp = struct
   pub inline fn getPos(   self : *const HitboxComp ) VecA { return self.hitbox.center.toVecA( .{} ); }
   pub inline fn getScale( self : *const HitboxComp ) Vec2 { return self.hitbox.scale;                }
 
+  /// Returns true when this hitbox overlaps another hitbox.
   pub inline fn isOverlapping( self : *const HitboxComp, other : *const HitboxComp ) bool
   {
     return self.hitbox.doesOverlap( other.hitbox );
   }
 
+  /// Returns the overlap vector when two hitboxes overlap.
   pub inline fn getOverlap( self : *const HitboxComp, other : *const HitboxComp ) ?Vec2
   {
     return self.hitbox.getOverlap( other.hitbox );
@@ -68,7 +72,8 @@ pub const HitboxComp = struct
 };
 
 
-// Allows the rendering of simple shapes over the entity
+/// Render component for simple engine-drawn geometric shapes.
+/// `minSize` is a screen-space clamp so distant objects can remain visible.
 pub const ShapeComp = struct // TODO : add LODs and implement minScale
 {
   pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
@@ -85,7 +90,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScale
   pub inline fn setScale( self : *ShapeComp, newScale : Vec2 ) void { self.scale = newScale; }
   pub inline fn getScale( self : *const ShapeComp     ) Vec2 { return self.scale; }
 
-  // Returns the effective render scale, clamping to minSize in screen space if set
+  /// Returns the effective render scale, clamping to minSize in screen space if set.
   inline fn getRenderScale( self : *const ShapeComp ) Vec2
   {
     const zoom = eng.G_ENG.camera.getZoom(); // fetch current zoom factor
@@ -99,12 +104,14 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScale
     return renderScale.mulVal( 1.0 / zoom );
   }
 
+  /// Builds a world-space AABB for broad-phase checks or culling.
   pub inline fn getAABB( self : *const ShapeComp, selfPos : VecA ) Box2
   {
     if( self.shape != .RECT ){ return Box2.newPolyAABB( selfPos.toVec2(), self.scale, selfPos.a, self.shape.getEdgeCount() ); }
     else {                     return Box2.newRectAABB( selfPos.toVec2(), self.scale, selfPos.a ); }
   }
 
+  /// Draws the shape using the current engine world drawer.
   pub fn render( self : *const ShapeComp, selfPos : VecA ) void
   {
     const p = selfPos.toVec2();
@@ -128,7 +135,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScale
 };
 
 
-/// Allow the rendering of textures over the entity
+/// Sprite render component with simple frame-time animation state.
 pub const SpriteComp = struct
 {
   pub const compStorePolicy : eng.CompStorePolicy = .PACKED;
@@ -140,6 +147,7 @@ pub const SpriteComp = struct
   frameElapse : u32 = 0.0,  // How long the current frame has been shown
 
 
+  /// Advances animation by `frameStep` frame-time units.
   pub fn updateAnimation( self : *SpriteComp, frameStep : f32 ) void
   {
     self.frameElapse += frameStep;

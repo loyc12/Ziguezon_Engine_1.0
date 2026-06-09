@@ -6,10 +6,11 @@ const entity = @import( "../entity.zig" );
 const EntityId = entity.EntityId;
 
 
-/// Cardinality policy is read in row direction: source entity -> target entity.
+/// Cardinality/limit policy for one relation type.
+/// Policy is read in row direction: source entity -> target entity.
 /// `ONE_TO_MANY` means one source can point at many targets, but each target can only have one source for this relation type.
 /// `MANY_TO_ONE` means many sources can point at one target, but each source can only have one target for this relation type.
-pub const RelationCardinalityPolicy = enum
+pub const RelationLimitPolicy = enum
 {
   MANY_TO_MANY,
   ONE_TO_MANY,
@@ -20,9 +21,10 @@ pub const RelationCardinalityPolicy = enum
 // Use a config struct when relations need multiple independent policies.
 // pub const RelationConfig = struct
 // {
-//   cardinalityPolicy : RelationCardinalityPolicy = .MANY_TO_MANY,
+//   cardinalityPolicy : RelationLimitPolicy = .MANY_TO_MANY,
 // };
 
+/// Exact source-target key for one relation row.
 pub const RelationKey = struct
 {
   sourceId : EntityId = 0,
@@ -39,6 +41,7 @@ pub const RelationKey = struct
   }
 };
 
+/// Summary of removing one entity id from one or more relation stores.
 pub const RelationCleanupResult = struct
 {
   removedCount : usize = 0,
@@ -51,20 +54,24 @@ pub const RelationCleanupResult = struct
   }
 };
 
+/// Generic dataless relation fact for simple source-target links.
 pub const LinkedTo = struct {};
 
 
-pub fn getRelationCardinalityPolicy( comptime RelType : type ) RelationCardinalityPolicy
+/// Reads the optional cardinality policy declared by a relation type.
+/// Missing policy defaults to many-to-many.
+pub fn getRelationCardinalityPolicy( comptime RelType : type ) RelationLimitPolicy
 {
   if( @hasDecl( RelType, "cardinalityPolicy" ))
   {
-    const  policy : RelationCardinalityPolicy = RelType.cardinalityPolicy;
+    const  policy : RelationLimitPolicy = RelType.cardinalityPolicy;
     return policy;
   }
 
   return .MANY_TO_MANY;
 }
 
+/// Returns true when a relation type stores only presence, not payload data.
 pub inline fn isDatalessRelation( comptime RelType : type ) bool
 {
   return @sizeOf( RelType ) == 0;
@@ -73,6 +80,8 @@ pub inline fn isDatalessRelation( comptime RelType : type ) bool
 
 // ================================ RELATION STORE FUNCTIONS ================================
 
+/// Builds storage for one relation fact type.
+/// Rows are keyed by `(sourceId, targetId)` and indexed in both directions.
 pub fn RelationStoreFactory( comptime RelType : type ) type
 {
   return struct
@@ -87,12 +96,15 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       TARGET,
     };
 
+    /// Iterator item for relation queries.
+    /// `value_ptr` is null for dataless relation facts.
     pub const Entry = struct
     {
       key       : RelationKey,
       value_ptr : ?*RelType = null,
     };
 
+    /// Iterates relations from one fixed source or one fixed target.
     pub const Iterator = struct
     {
       store   : *RelStore,
@@ -141,6 +153,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
 
     // ================================ LIFECYCLE FUNCTIONS ================================
 
+    /// Initializes row storage and source/target indexes.
     pub fn init( self : *RelStore, alloc : std.mem.Allocator ) void
     {
       utl.log( .INFO, 0, @src(), "Initializing RelationStore for type {s}", .{ TypeName });
@@ -158,6 +171,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       self.isInit      = true;
     }
 
+    /// Releases relation rows and indexes.
     pub fn deinit( self : *RelStore ) void
     {
       utl.log( .INFO, 0, @src(), "Deinitializing RelationStore for type {s}", .{ TypeName });
@@ -177,6 +191,8 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
 
     // ================================ ROW FUNCTIONS ================================
 
+    /// Adds one source-target relation row.
+    /// Enforces duplicate checks and the relation type's limit policy.
     pub fn add( self : *RelStore, sourceId : EntityId, targetId : EntityId, value : RelType ) bool
     {
       if( !self.isInit )
@@ -216,6 +232,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       return true;
     }
 
+    /// Removes one exact source-target relation row.
     pub fn remove( self : *RelStore, sourceId : EntityId, targetId : EntityId ) bool
     {
       if( !self.isInit )
@@ -227,6 +244,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       return self.removeKey( RelationKey.init( sourceId, targetId ));
     }
 
+    /// Returns true when an exact source-target relation row exists.
     pub fn has( self : *RelStore, sourceId : EntityId, targetId : EntityId ) bool
     {
       if( !self.isInit )
@@ -238,6 +256,8 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       return self.data.contains( RelationKey.init( sourceId, targetId ));
     }
 
+    /// Returns a mutable payload pointer for an exact relation row.
+    /// Dataless relations must use `has`.
     pub fn get( self : *RelStore, sourceId : EntityId, targetId : EntityId ) ?*RelType
     {
       if( isDatalessRelation( RelType ))
@@ -254,6 +274,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       return self.data.getPtr( RelationKey.init( sourceId, targetId ));
     }
 
+    /// Removes every row where the entity is either source or target.
     pub fn removeEntity( self : *RelStore, entityId : EntityId ) RelationCleanupResult
     {
       var result : RelationCleanupResult = .{};
@@ -308,6 +329,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       return result;
     }
 
+    /// Iterates rows where `sourceId` is the source endpoint.
     pub fn sourceIterator( self : *RelStore, sourceId : EntityId ) Iterator
     {
       if( self.sourceIndex.getPtr( sourceId ))| links |
@@ -318,6 +340,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       return .{ .store = self, .fixedId = sourceId, .mode = .SOURCE };
     }
 
+    /// Iterates rows where `targetId` is the target endpoint.
     pub fn targetIterator( self : *RelStore, targetId : EntityId ) Iterator
     {
       if( self.targetIndex.getPtr( targetId ))| links |
@@ -599,7 +622,7 @@ test "RelationStore supports many to one cardinality"
 {
   const TestRel = struct
   {
-    pub const cardinalityPolicy : RelationCardinalityPolicy = .MANY_TO_ONE;
+    pub const cardinalityPolicy : RelationLimitPolicy = .MANY_TO_ONE;
 
     value : u32 = 0,
   };
@@ -617,7 +640,7 @@ test "RelationStore supports one to many cardinality"
 {
   const TestRel = struct
   {
-    pub const cardinalityPolicy : RelationCardinalityPolicy = .ONE_TO_MANY;
+    pub const cardinalityPolicy : RelationLimitPolicy = .ONE_TO_MANY;
 
     value : u32 = 0,
   };
@@ -635,7 +658,7 @@ test "RelationStore supports one to one cardinality"
 {
   const TestRel = struct
   {
-    pub const cardinalityPolicy : RelationCardinalityPolicy = .ONE_TO_ONE;
+    pub const cardinalityPolicy : RelationLimitPolicy = .ONE_TO_ONE;
 
     value : u32 = 0,
   };

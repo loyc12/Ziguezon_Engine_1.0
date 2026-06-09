@@ -1,216 +1,411 @@
-// REWORK NOTE: Convert this standalone callback manager into World-owned event
-// infrastructure that coordinates ordered queues, subscriptions/reactions, and
-// optional retained logs. Event processing should occur during explicit Engine
-// simulation phases and remain separate from game-specific event definitions.
-
 const std = @import( "std" );
-const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-const EntityId = eng.EntityId;
-const Event    = eng.Event;
+const evt      = @import( "event.zig" );
+const evtQueue = @import( "eventQueue.zig" );
 
-const EventType  = eng.EventType;
-const EventPhase = eng.EventPhase;
-const EventData  = eng.EventData;
-const EventFunc  = eng.EventFunc;
 
-const EventListener      = eng.EventListener;
-const EventListenerArray = eng.EventListenerArray;
-pub const EventQueue     = eng.EventQueue;
-
-// ================================ EVENT MANAGER ================================
-
+/// Owns all typed event queues for a World.
+/// Queues are registered by event payload type and keyed internally by `@typeName`.
 pub const EventManager = struct
 {
-  alloc     : std.mem.Allocator  = undefined,
-  listeners : EventListenerArray = undefined,
-  queue     : EventQueue         = undefined,
+  const QueueEntry = struct
+  {
+    queuePtr        : *anyopaque,
+    deinitDestroyFn : *const fn ( std.mem.Allocator, *anyopaque ) void,
+    clearFn         : *const fn ( *anyopaque ) void,
+    countFn         : *const fn ( *anyopaque ) usize,
+  };
+
+  alloc  : std.mem.Allocator                = undefined,
+  queues : std.StringHashMap( QueueEntry ) = undefined,
+
+  nextSequence  : u64   = 0,
+  nextTickOrder : u64   = 0,
+  baseTickIndex : ?u128 = null,
 
   isInit : bool = false,
 
 
+  // ================================ LIFECYCLE FUNCTIONS ================================
+
+  /// Initializes the typed queue registry and event sequence counters.
   pub fn init( self : *EventManager, alloc : std.mem.Allocator ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "# Initializing event manager..." );
-
     if( self.isInit )
     {
       utl.qlog( .WARN, 0, @src(), "EventManager is already initialized : returning" );
       return;
     }
 
-    self.alloc     = alloc;
-    self.listeners = .init( alloc );
-
-    self.queue = EventQueue.initCapacity( self.alloc, 65 ) catch | err |
-    {
-      utl.log( .ERROR, 0, @src(), "Failed to initialize event queue : {}", .{ err } );
-      return;
-    };
-
-    self.isInit = true;
-
-    utl.qlog( .INFO, 0, @src(), "& EventManager initialized !" );
+    self.alloc         = alloc;
+    self.queues        = .init( alloc );
+    self.nextSequence  = 0;
+    self.nextTickOrder = 0;
+    self.baseTickIndex = null;
+    self.isInit        = true;
   }
 
+  /// Deinitializes and destroys every registered typed queue.
   pub fn deinit( self : *EventManager ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "# Deinitializing event manager..." );
-
     if( !self.isInit )
     {
       utl.qlog( .WARN, 0, @src(), "EventManager is uninitialized : returning" );
       return;
     }
 
-    var it = self.listeners.valueIterator();
-    while( it.next() )| listenerList |
-    {
-      listenerList.deinit( self.alloc );
-    }
+    var iter = self.queues.valueIterator();
 
-    self.queue.deinit( self.alloc );
-    self.listeners.deinit();
-    self.isInit = false;
+    while( iter.next() )| entry |{ entry.deinitDestroyFn( self.alloc, entry.queuePtr ); }
 
-    utl.qlog( .INFO, 0, @src(), "$ EventManager denitialized !" );
+    self.queues.deinit();
+    self.nextSequence  = 0;
+    self.nextTickOrder = 0;
+    self.baseTickIndex = null;
+    self.isInit        = false;
   }
 
-  pub fn subscribe( self : *EventManager, eventType : EventType, callerId : EntityId, callback : EventFunc ) !void
+
+  // ================================ QUEUE FUNCTIONS ================================
+
+  /// Registers a queue for one event payload type.
+  /// Duplicate registration returns false and keeps the existing queue.
+  pub fn register( self : *EventManager, comptime EventType : type ) bool
   {
-      if( !self.isInit )
-      {
-        utl.log( .WARN, 0, @src(), "Cannot subscribe to EventManager : uninitialized");
-        return;
-      }
+    const typeName = @typeName( EventType );
 
-      var listeners = try self.listeners.getOrPut( eventType );
-      if( !listeners.found_existing )
-      {
-        listeners.value_ptr.* = std.ArrayList( EventListener ).init( self.alloc );
-      }
-
-      try listeners.value_ptr.append(.{ .listenerId = callerId, .callback = callback });
-
-      utl.log( .TRACE, 0, @src(), "Entity {d} subscribed to event type {d}", .{ callerId, @intFromEnum( eventType )});
-  }
-
-  pub fn unsubscribe( self: *EventManager, eventType : EventType, callerId : EntityId ) bool
-  {
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot unsubscribe from EventManager : uninitialized");
+      utl.log( .WARN, 0, @src(), "Cannot register EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
+      return false;
+    }
+    if( self.queues.contains( typeName ))
+    {
+      utl.log( .WARN, 0, @src(), "Cannot register EventQueue for type {s} : type already registered", .{ typeName });
       return false;
     }
 
-    if( self.listeners.getPtr( eventType ))| listenerList |
+    const QueueType = evtQueue.EventQueueFactory( EventType );
+    const queue = self.alloc.create( QueueType ) catch
     {
-      for ( listenerList.items, 0.. )| listener, idx |
-      {
-        if( listener.listenerId == callerId )
-        {
-          _ = listenerList.orderedRemove( idx );
+      utl.log( .ERROR, 0, @src(), "Failed to allocate EventQueue for type {s}", .{ typeName });
+      return false;
+    };
 
-          utl.log( .TRACE, 0, @src(), "Entity {d} unsubscribed from event type {d}", .{ callerId, @intFromEnum( eventType )});
-          return true;
-        }
-      }
-    }
+    queue.* = .{};
+    queue.init( self.alloc );
 
-    utl.log( .DEBUG, 0, @src(), "Cannot unsubscribe Entity {d} : not found in listeners", .{ callerId });
-    return false;
+    self.queues.put( typeName,
+    .{
+      .queuePtr        = queue,
+      .deinitDestroyFn = deinitDestroyQueue( EventType ),
+      .clearFn         = clearQueue(        EventType ),
+      .countFn         = countQueue(        EventType ),
+    })
+    catch
+    {
+      utl.log( .ERROR, 0, @src(), "Failed to register EventQueue for type {s}", .{ typeName });
+
+      queue.deinit();
+      self.alloc.destroy( queue );
+      return false;
+    };
+
+    return true;
   }
 
-  // ================ PUSH / POP ================
-
-  pub fn pushEvent( self: *EventManager, event : Event ) !void
+  /// Removes and destroys the queue for one event payload type.
+  pub fn unregister( self : *EventManager, comptime EventType : type ) bool
   {
+    const typeName = @typeName( EventType );
+
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot push to EventManager : uninitialized" );
-      return;
+      utl.log( .WARN, 0, @src(), "Cannot unregister EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
+      return false;
     }
 
-    try self.queue.append( event );
+    const entry = self.queues.get( typeName ) orelse
+    {
+      utl.log( .DEBUG, 0, @src(), "Cannot unregister EventQueue for type {s} : type not registered", .{ typeName });
+      return false;
+    };
 
-    utl.log( .TRACE, 0, @src(), "Event pushed to queue (queue size: {d})", .{ self.queue.items.len });
+    if( !self.queues.remove( typeName )){ return false; }
+    entry.deinitDestroyFn( self.alloc, entry.queuePtr );
+    return true;
   }
 
-  pub fn popEvent( self : *EventManager ) ?Event
+  /// Returns the typed queue for direct access, or null if unregistered.
+  pub fn getQueue( self : *EventManager, comptime EventType : type ) ?*evtQueue.EventQueueFactory( EventType )
   {
+    const typeName = @typeName( EventType );
+
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot pop from EventManager : uninitialized" );
+      utl.log( .WARN, 0, @src(), "Cannot get EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
       return null;
     }
 
-    if( self.queue.items.len == 0 ){ return null; }
-
-    return self.queue.orderedRemove( 0 );
+    const entry = self.queues.get( typeName ) orelse return null;
+    return @ptrCast( @alignCast( entry.queuePtr ));
   }
 
-  // ================ DISPATCH ================
-
-  pub fn handleAllEvents( self: *EventManager ) void
+  /// Returns true when an event type has a registered queue.
+  pub inline fn hasQueue( self : *const EventManager, comptime EventType : type ) bool
   {
-    _ = self.handleSomeEvents( 0 );
+    if( !self.isInit ){ return false; }
+    return self.queues.contains( @typeName( EventType ));
   }
 
-  // Returns the amount of handled events
-  pub fn handleSomeEvents( self: *EventManager, maxCount : u32 ) u32
+  /// Appends an event with global sequence, tick order, and inferred entity metadata.
+  pub fn emit( self : *EventManager, comptime EventType : type, value : EventType ) bool
+  {
+    const queue = self.getQueue( EventType ) orelse return false;
+    const meta  = self.makeEventMeta( evt.inferPrimaryEntity( EventType, value ));
+
+    if( !queue.pushRecord( .{ .meta = meta, .value = value })){ return false; }
+
+    self.nextSequence  +%= 1;
+    self.nextTickOrder +%= 1;
+    return true;
+  }
+
+  /// Pops the oldest event record for one type.
+  pub fn pop( self : *EventManager, comptime EventType : type ) ?evt.EventRecord( EventType )
+  {
+    const queue = self.getQueue( EventType ) orelse return null;
+    return queue.pop();
+  }
+
+  /// Clears queued records for one event type.
+  pub fn clear( self : *EventManager, comptime EventType : type ) bool
+  {
+    const queue = self.getQueue( EventType ) orelse return false;
+
+    queue.clear();
+    return true;
+  }
+
+  /// Counts queued records for one event type.
+  pub fn count( self : *EventManager, comptime EventType : type ) usize
+  {
+    const queue = self.getQueue( EventType ) orelse return 0;
+    return queue.count();
+  }
+
+  /// Clears every registered event queue without unregistering any type.
+  pub fn clearAll( self : *EventManager ) void
   {
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot handle events in EventManager : uninitialized" );
+      utl.log( .WARN, 0, @src(), "Cannot clear EventManager : uninitialized", .{} );
       return;
     }
 
-    var count : u32 = 0;
-    while( self.popEvent() )| event | // Ends when event == null, or maxCount is reached and not 0
-    {
-      if( count >= maxCount and maxCount > 0 ){ return count; }
-
-      self.dispatchEvent( event );
-      count += 1;
-    }
-    return count;
+    var iter = self.queues.valueIterator();
+    while( iter.next() )| entry |{ entry.clearFn( entry.queuePtr ); }
   }
 
-  fn dispatchEvent( self : *EventManager, event : Event ) void
+  /// Counts queued records across every registered event queue.
+  pub fn countAll( self : *EventManager ) usize
   {
-    if( self.listeners.get( event.eType ))| listenerList |
+    if( !self.isInit ){ return 0; }
+
+    var total : usize = 0;
+    var iter = self.queues.valueIterator();
+    while( iter.next() )| entry |{ total += entry.countFn( entry.queuePtr ); }
+
+    return total;
+  }
+
+  /// Starts metadata for a World tick and resets tick-local ordering.
+  pub fn beginTick( self : *EventManager, baseTickIndex : u128 ) void
+  {
+    if( !self.isInit )
     {
-      for ( listenerList.items )| listener |
+      utl.log( .WARN, 0, @src(), "Cannot begin EventManager tick : uninitialized", .{} );
+      return;
+    }
+
+    self.baseTickIndex = baseTickIndex;
+    self.nextTickOrder = 0;
+  }
+
+
+  // ================================ INTERNAL FUNCTIONS ================================
+
+  fn makeEventMeta( self : *EventManager, primaryEntity : ?evt.EntityId ) evt.EventMeta
+  {
+    return .{
+      .sequence      = self.nextSequence,
+      .tickOrder     = self.nextTickOrder,
+      .baseTickIndex = self.baseTickIndex,
+      .primaryEntity = primaryEntity,
+    };
+  }
+
+  fn deinitDestroyQueue( comptime EventType : type ) *const fn ( std.mem.Allocator, *anyopaque ) void
+  {
+    return struct
+    {
+      fn call( alloc : std.mem.Allocator, queuePtr : *anyopaque ) void
       {
-        // Prevents sending undesired events if listerner is focusing on a specific Id
-        if( listener.filteredId == null or listener.filteredId == event.callerId )
-        {
-          listener.callback( event );
-        }
+        const queue : *evtQueue.EventQueueFactory( EventType ) = @ptrCast( @alignCast( queuePtr ));
+
+        queue.deinit();
+        alloc.destroy( queue );
       }
-      return;
-    }
-
-    utl.log(.DEBUG, 0, @src(), "No listeners for event type {d}", .{ @intFromEnum( event.eType )});
-
+    }.call;
   }
 
-  // ================ QUEUE UTILS ================
-
-  pub fn clearQueue( self: *EventManager ) void
+  fn clearQueue( comptime EventType : type ) *const fn ( *anyopaque ) void
   {
-    if( !self.isInit )
+    return struct
     {
-      utl.log( .WARN, 0, @src(), "Cannot clear EventManager : uninitialized" );
-      return;
-    }
-
-    self.queue.clearRetainingCapacity();
+      fn call( queuePtr : *anyopaque ) void
+      {
+        const queue : *evtQueue.EventQueueFactory( EventType ) = @ptrCast( @alignCast( queuePtr ));
+        queue.clear();
+      }
+    }.call;
   }
 
-  pub fn getQueueSize( self: *const EventManager ) usize
+  fn countQueue( comptime EventType : type ) *const fn ( *anyopaque ) usize
   {
-    return self.queue.items.len;
+    return struct
+    {
+      fn call( queuePtr : *anyopaque ) usize
+      {
+        const queue : *evtQueue.EventQueueFactory( EventType ) = @ptrCast( @alignCast( queuePtr ));
+        return queue.count();
+      }
+    }.call;
   }
 };
+
+
+// ================================ TESTS ================================
+
+test "EventManager owns typed queue registration and lifecycle"
+{
+  const TestEvent = struct
+  {
+    value : u32 = 0,
+  };
+
+  var manager : EventManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect(  manager.register( TestEvent ));
+  try std.testing.expect( !manager.register( TestEvent ));
+  try std.testing.expect(  manager.getQueue( TestEvent ) != null );
+
+  try std.testing.expect(  manager.unregister( TestEvent ));
+  try std.testing.expect(  manager.getQueue(   TestEvent ) == null );
+  try std.testing.expect(  manager.register(   TestEvent ));
+}
+
+test "EventManager emits pops and preserves global metadata order"
+{
+  const TestEvent = struct
+  {
+    entityId : evt.EntityId = 0,
+    value    : u32          = 0,
+  };
+
+  var manager : EventManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect( manager.register( TestEvent ));
+
+  manager.beginTick( 5 );
+
+  try std.testing.expect( manager.emit( TestEvent, .{ .entityId = 11, .value = 10 }));
+  try std.testing.expect( manager.emit( TestEvent, .{ .entityId = 12, .value = 20 }));
+  try std.testing.expect( manager.count( TestEvent ) == 2 );
+
+  const first  = manager.pop( TestEvent ).?;
+  const second = manager.pop( TestEvent ).?;
+
+  try std.testing.expect( first.value.value          == 10 );
+  try std.testing.expect( second.value.value         == 20 );
+  try std.testing.expect( first.meta.sequence        == 0  );
+  try std.testing.expect( second.meta.sequence       == 1  );
+  try std.testing.expect( first.meta.tickOrder       == 0  );
+  try std.testing.expect( second.meta.tickOrder      == 1  );
+  try std.testing.expect( first.meta.baseTickIndex.? == 5 );
+  try std.testing.expect( first.meta.primaryEntity.? == 11 );
+}
+
+test "EventManager clears typed and all queues"
+{
+  const EventA = struct
+  {
+    value : u32 = 0,
+  };
+  const EventB = struct
+  {
+    value : u32 = 0,
+  };
+
+  var manager : EventManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect( manager.register( EventA ));
+  try std.testing.expect( manager.register( EventB ));
+  try std.testing.expect( manager.emit( EventA, .{ .value = 1 }));
+  try std.testing.expect( manager.emit( EventB, .{ .value = 2 }));
+  try std.testing.expect( manager.countAll() == 2 );
+
+  try std.testing.expect( manager.clear( EventA ));
+  try std.testing.expect( manager.count( EventA ) == 0 );
+  try std.testing.expect( manager.count( EventB ) == 1 );
+
+  manager.clearAll();
+  try std.testing.expect( manager.countAll() == 0 );
+}
+
+test "EventManager rejects uninitialized and unregistered operations"
+{
+  const TestEvent = struct
+  {
+    value : u32 = 0,
+  };
+
+  var manager : EventManager = .{};
+
+  try std.testing.expect( !manager.register( TestEvent ));
+  try std.testing.expect( !manager.emit( TestEvent, .{ .value = 1 }));
+  try std.testing.expect(  manager.pop( TestEvent ) == null );
+  try std.testing.expect( !manager.clear( TestEvent ));
+
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect( !manager.emit( TestEvent, .{ .value = 2 }));
+  try std.testing.expect(  manager.pop( TestEvent ) == null );
+  try std.testing.expect( !manager.clear( TestEvent ));
+}
+
+test "EventManager deinit releases registered queues"
+{
+  const TestEvent = struct
+  {
+    value : u32 = 0,
+  };
+
+  var manager : EventManager = .{};
+  manager.init( std.testing.allocator );
+
+  try std.testing.expect( manager.register( TestEvent ));
+  try std.testing.expect( manager.emit( TestEvent, .{ .value = 1 }));
+
+  manager.deinit();
+  try std.testing.expect( !manager.isInit );
+  try std.testing.expect( manager.countAll() == 0 );
+}

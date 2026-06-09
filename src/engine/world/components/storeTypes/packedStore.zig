@@ -9,6 +9,8 @@ const EntityId = entity.EntityId;
 // A future DIRECT store may use raw EntityId-indexed array storage.
 
 
+/// Dense component storage for components that are commonly iterated.
+/// Removal uses swap-remove, so row order is not stable.
 pub fn PackedCompStoreFactory( comptime CompType : type ) type
 {
   return struct
@@ -16,12 +18,15 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     const TypeName  = @typeName( CompType );
     const CompStore = @This();
 
+    /// Iterator item containing both the entity id and component payload pointer.
     pub const Entry = struct
     {
       key_ptr   : *EntityId,
       value_ptr : *CompType,
     };
 
+    /// Iterates current packed rows in storage order.
+    /// Storage order may change after removals.
     pub const Iterator = struct
     {
       store : *CompStore,
@@ -49,6 +54,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     isInit : bool = false,
 
 
+    /// Initializes packed arrays and the entity-id to row-index map.
     pub fn init( self : *CompStore, alloc : std.mem.Allocator ) void
     {
       utl.log( .INFO, 0, @src(), "Initializing packed CompStore for type {s}", .{ TypeName });
@@ -66,6 +72,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       self.isInit    = true;
     }
 
+    /// Releases packed storage.
     pub fn deinit( self : *CompStore ) void
     {
       utl.log( .INFO, 0, @src(), "Deinitializing packed CompStore for type {s}", .{ TypeName });
@@ -82,6 +89,8 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       self.isInit = false;
     }
 
+    /// Adds a component row for a nonzero entity id.
+    /// Duplicate entity ids are rejected.
     pub fn add( self : *CompStore, id : EntityId, value : CompType ) bool
     {
       if( !self.isInit )
@@ -119,6 +128,8 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       return true;
     }
 
+    /// Removes a component row by entity id using swap-remove.
+    /// Existing pointers into this store may become stale after removal.
     pub fn remove( self : *CompStore, id : EntityId ) bool
     {
       if( !self.isInit )
@@ -152,6 +163,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       return true;
     }
 
+    /// Returns a mutable payload pointer for an entity id, or null.
     pub fn get( self : *CompStore, id : EntityId ) ?*CompType
     {
       if( !self.isInit )
@@ -169,6 +181,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       return &self.values.items[ index ];
     }
 
+    /// Returns true when the entity id has a row in this store.
     pub fn has( self : *CompStore, id : EntityId ) bool
     {
       if( !self.isInit )
@@ -179,6 +192,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       return self.indices.contains( id );
     }
 
+    /// Returns an iterator over packed rows.
     pub fn iterator( self : *CompStore ) Iterator
     {
       return .{ .store = self };

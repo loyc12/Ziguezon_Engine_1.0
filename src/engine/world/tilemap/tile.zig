@@ -4,6 +4,7 @@ const utl = @import( "utils" );
 
 const Coords2 = utl.Coords2;
 
+/// Per-tile state flags stored in the tile's bitfield.
 pub const TileFlags = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -24,6 +25,8 @@ pub const TileFlags = enum( u8 )
 };
 
 
+/// Built-in tile type ids.
+/// Games can map these to their own meaning while the engine keeps generic helpers.
 pub const TileType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -46,6 +49,7 @@ pub const TileType = enum( u8 )
   RANDOM = 255, // For random tile generation only
 
   // an enum method... ? in THIS economy ?!
+  /// Returns a debug/default display colour for built-in tile types.
   pub fn getTileTypeColour( self : TileType ) utl.Colour
   {
     return switch( self )
@@ -61,6 +65,8 @@ pub const TileType = enum( u8 )
 };
 
 
+/// One cell in a Tilemap grid.
+/// Tile state is intentionally lightweight; map position comes from grid coordinates.
 pub const Tile = struct
 {
   // ================ PROPERTIES ================

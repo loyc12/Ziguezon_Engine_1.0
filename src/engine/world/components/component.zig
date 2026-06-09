@@ -8,6 +8,8 @@ const sprsStore = @import( "storeTypes/sparseStore.zig" );
 
 // ================ COMPONENT STORE POLICY ================
 
+/// Storage policy selected by each component type.
+/// Game components must declare `pub const compStorePolicy : eng.CompStorePolicy`.
 pub const CompStorePolicy = enum
 {
 //DIRECT, // future raw EntityId-indexed array storage
@@ -21,6 +23,8 @@ pub const CompStorePolicy = enum
 //   storePolicy : CompStorePolicy = .PACKED,
 // };
 
+/// Reads and validates the storage policy declared by a component type.
+/// Missing declarations are compile errors so storage behavior is explicit.
 pub fn getCompStorePolicy( comptime CompType : type ) CompStorePolicy
 {
   if( !@hasDecl( CompType, "compStorePolicy" ))
@@ -35,6 +39,8 @@ pub fn getCompStorePolicy( comptime CompType : type ) CompStorePolicy
 
 // ================ COMPONENT STORE FUNCTIONS ================
 
+/// Resolves the concrete store type for a component payload.
+/// Empty marker components are rejected; use future traits for classification.
 pub fn CompStoreFactory( comptime CompType : type ) type
 {
   if( @sizeOf( CompType ) == 0 )

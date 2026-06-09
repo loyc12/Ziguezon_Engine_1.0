@@ -73,18 +73,41 @@ pub const EntityId = entity.EntityId;
 
 
 const comp = @import( "world/components/component.zig" );
-const view = @import( "world/views/view.zig" );
-const rel  = @import( "world/relations/relation.zig" );
 
 pub const CompStoreFactory = comp.CompStoreFactory;
 pub const CompStorePolicy  = comp.CompStorePolicy;
+
+
+const view = @import( "world/views/view.zig" );
+
 pub const CompView         = view.CompView;
 pub const ComponentView    = view.CompView;
 
+
+const rel  = @import( "world/relations/relation.zig" );
+
 pub const RelationStoreFactory = rel.RelationStoreFactory;
 pub const RelationKey          = rel.RelationKey;
-pub const RelationCardinalityPolicy = rel.RelationCardinalityPolicy;
+pub const RelationLimitPolicy  = rel.RelationLimitPolicy;
 pub const LinkedTo             = rel.LinkedTo;
+
+const evt  = @import( "world/events/event.zig" );
+const eque = @import( "world/events/eventQueue.zig" );
+const emgr = @import( "world/events/eventManager.zig" );
+const elog = @import( "world/events/eventLog.zig" );
+
+pub const EventMeta         = evt.EventMeta;
+pub const EventRecord       = evt.EventRecord;
+pub const EventQueueFactory = eque.EventQueueFactory;
+pub const EventLogFactory   = elog.EventLogFactory;
+pub const EventManager      = emgr.EventManager;
+
+pub const EntityCreated    = evt.EntityCreated;
+pub const EntityDestroyed  = evt.EntityDestroyed;
+pub const ComponentAdded   = evt.ComponentAdded;
+pub const ComponentRemoved = evt.ComponentRemoved;
+pub const RelationAdded    = evt.RelationAdded;
+pub const RelationRemoved  = evt.RelationRemoved;
 
 
 pub const baseComp = @import( "world/components/baseComps.zig" );
@@ -97,5 +120,10 @@ pub const SpriteComp = baseComp.SpriteComp;
 test "engine world declarations"
 {
   utl.G_EPOCH = utl.getNow();
+
   std.testing.refAllDecls( worldMgr );
+  std.testing.refAllDecls( evt );
+  std.testing.refAllDecls( eque );
+  std.testing.refAllDecls( emgr );
+  std.testing.refAllDecls( elog );
 }

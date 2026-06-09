@@ -41,6 +41,8 @@ fn validateCompTypes( comptime CompTypes : anytype ) void
 }
 
 
+/// Typed helper that caches several component stores for repeated access.
+/// Use `World.getCompView(.{ CompA, CompB })` to construct it from games.
 pub fn CompView( comptime CompTypes : anytype ) type
 {
   validateCompTypes( CompTypes );
@@ -49,12 +51,15 @@ pub fn CompView( comptime CompTypes : anytype ) type
   {
     const View = @This();
 
+    /// Tuple of typed store pointers matching the requested component types.
     pub const StoreTuple = StoreTupleType( CompTypes );
 
     stores     : StoreTuple,
     generation : u64,
 
 
+    /// Builds a view if every requested component store is registered.
+    /// Returns null when any store is missing.
     pub fn init( world : anytype ) ?View
     {
       const fields = std.meta.fields( @TypeOf( CompTypes ));
@@ -76,12 +81,14 @@ pub fn CompView( comptime CompTypes : anytype ) type
       };
     }
 
-    /// Validates that the store pointers are still valid. Does not garrantee component pointers validity
+    /// Validates that cached store pointers are still valid.
+    /// Does not guarantee previously fetched component pointers are still valid.
     pub inline fn isStillValid( self : *const View, world : anytype ) bool
     {
       return self.generation == world.getCompViewGeneration();
     }
 
+    /// Returns the cached store for one component type included in this view.
     pub fn store( self : *View, comptime CompType : type ) *comp.CompStoreFactory( CompType )
     {
       const fields = std.meta.fields( @TypeOf( CompTypes ));
@@ -95,16 +102,19 @@ pub fn CompView( comptime CompTypes : anytype ) type
       @compileError( "ComponentView does not contain component type " ++ @typeName( CompType ));
     }
 
+    /// Looks up a component row through the cached store.
     pub inline fn get( self : *View, comptime CompType : type, id : EntityId ) ?*CompType
     {
       return self.store( CompType ).get( id );
     }
 
+    /// Tests whether an entity has the component row in the cached store.
     pub inline fn has( self : *View, comptime CompType : type, id : EntityId ) bool
     {
       return self.store( CompType ).has( id );
     }
 
+    /// Returns the iterator for one cached component store.
     pub inline fn iterator( self : *View, comptime CompType : type ) @TypeOf( self.store( CompType ).iterator() )
     {
       return self.store( CompType ).iterator();

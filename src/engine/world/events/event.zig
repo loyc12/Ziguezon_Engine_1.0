@@ -1,104 +1,127 @@
-// REWORK NOTE : Replace the fixed engine-specific event union with generic,
-// user-defined simulation event records. Events should integrate with World,
-// carry consistent entity/time metadata, and support both transient dispatch
-// and optional retained history without assuming a particular game domain.
-
 const std = @import( "std" );
-const eng = @import( "engine" );
-const utl = @import( "utils" );
 
-const EntityId  = eng.EntityId;
+const entity = @import( "../entity.zig" );
 
-pub const EventType = enum( u8 )
+pub const EntityId = entity.EntityId;
+
+
+/// Metadata attached by the event queue/manager when an event is recorded.
+/// Game event payloads stay plain structs; this wrapper records ordering and tick context.
+pub const EventMeta = struct
 {
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-
-  CLICK_WORLD,
-  CLICK_UI,
-
-  KEYPRESS_WORLD,
-  KEYPRESS_UI,
-
-  CONTACT, // zone related trigger ( ex : collisions )
-  PHYSICS, // non-zone related trigger ( ex : gravity pulse )
-
-  ANIMATION,
-  MUSIC,
-  AUDIO,
-
-  CUSTOM = 255,
+  /// Monotonic order across all events emitted through one EventManager.
+  sequence      : u64       = 0,
+  /// Order within the current World tick; reset by `World.tick`.
+  tickOrder     : u64       = 0,
+  /// Engine base tick active when the event was emitted, if known.
+  baseTickIndex : ?u128     = null,
+  /// Best-effort entity id for quick inspection/filtering.
+  primaryEntity : ?EntityId = null,
 };
 
-pub const EventPhase = enum( u8 )
+/// Typed event record stored in queues.
+/// `EventType` is a user-defined plain Zig struct, not an engine enum value.
+pub fn EventRecord( comptime EventType : type ) type
 {
-  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+  return struct
+  {
+    meta  : EventMeta = .{},
+    value : EventType,
+  };
+}
 
-  STEP, // Default
-
-  START,
-  FINISH,
-
-  PAUSE,
-  PLAY, // AKA restart
+/// Generic engine event emitted after an entity id becomes live.
+pub const EntityCreated = struct
+{
+  entityId : EntityId = 0,
 };
 
-//pub const EventTiming = enum( u8 )
-//{
-//  pub const count = @typeInfo( @This() ).@"enum".fields.len;
-//
-//  INSTANT,
-//  DELAYED,
-//  PERISHABLE, // useful ?
-//};
-
-pub const EventData = union
+/// Generic engine event emitted after an entity has been removed from World.
+pub const EntityDestroyed = struct
 {
-  coord2 : utl.Coords2, // 2 x i32
-  coord3 : utl.Coords3, // 3 x i32
-
-  vec2 : utl.Vec2, // 2 x f32
-  vecA : utl.VecA, // 3 x f32
-  vec3 : utl.Vec3, // 3 x f32
-
-  col : utl.Colour, // 4 x u8
-
-  bit1 : u8,
-  bit2 : u16,
-  bit4 : u32,
-
-  byte1 : u64,
-  byte2 : u128,
-  byte4 : u256, // 8 x u8
-
-  custom : *anyopaque // u128 ?
+  entityId : EntityId = 0,
 };
 
-pub const Event = struct
+/// Generic engine event emitted after a component row is added.
+pub const ComponentAdded = struct
 {
-  eType    : EventType,
-  ePhase   : EventPhase,
-//eTiming  : EventTiming,
-  data     : EventData,
-
-  callerId : ?EntityId,
-  targetId : ?EntityId,
-
-  genTime  : ?utl.Instant, // When was this generated             ( real time )
-//endTime  : ?utl.Instant, // When does this event end / perish   ( real time )
+  entityId     : EntityId   = 0,
+  compTypeName : []const u8 = "",
 };
 
-
-pub const EventFunc  = *const fn( event : Event ) void;
-
-
-pub const EventListener = struct // Tied to an eventType in the eventManager. One instance per listening entity
+/// Generic engine event emitted after a component row is removed.
+pub const ComponentRemoved = struct
 {
-  listenerId : EntityId,
-  filteredId : ?EntityId, // If set, filters out all all event from other entities NOTE : be careful about duplicate listening
-
-  callback   : EventFunc, // What to do with caught events
+  entityId     : EntityId   = 0,
+  compTypeName : []const u8 = "",
 };
 
-pub const EventListenerArray = std.AutoHashMap( EventType, std.ArrayList( EventListener ));
+/// Generic engine event emitted after a relation row is added.
+pub const RelationAdded = struct
+{
+  sourceId         : EntityId   = 0,
+  targetId         : EntityId   = 0,
+  relationTypeName : []const u8 = "",
+};
 
-pub const EventQueue = std.ArrayList( Event );
+/// Generic engine event emitted after a relation row is removed.
+pub const RelationRemoved = struct
+{
+  sourceId         : EntityId   = 0,
+  targetId         : EntityId   = 0,
+  relationTypeName : []const u8 = "",
+};
+
+/// Infers a primary entity id from common field names in plain event structs.
+/// Events without `entityId`, `sourceId`, or `targetId` simply return null.
+pub fn inferPrimaryEntity( comptime EventType : type, value : EventType ) ?EntityId
+{
+  switch( @typeInfo( EventType ))
+  {
+    .@"struct" => {},
+    else       => return null,
+  }
+
+  if( @hasField( EventType, "entityId" )){ return value.entityId; }
+  if( @hasField( EventType, "sourceId" )){ return value.sourceId; }
+  if( @hasField( EventType, "targetId" )){ return value.targetId; }
+
+  return null;
+}
+
+
+// ================================ TESTS ================================
+
+test "EventRecord stores metadata and plain event payload"
+{
+  const record = EventRecord( EntityCreated )
+  {
+    .meta  = .{ .sequence = 7, .tickOrder = 2, .baseTickIndex = 11, .primaryEntity = 42 },
+    .value = .{ .entityId = 42 },
+  };
+
+  try std.testing.expect( record.meta.sequence      == 7  );
+  try std.testing.expect( record.meta.tickOrder     == 2  );
+  try std.testing.expect( record.meta.baseTickIndex.? == 11 );
+  try std.testing.expect( record.meta.primaryEntity.? == 42 );
+  try std.testing.expect( record.value.entityId     == 42 );
+}
+
+test "Event concepts allow dataless event facts"
+{
+  const Dataless = struct {};
+  const record = EventRecord( Dataless )
+  {
+    .meta  = .{ .sequence = 1 },
+    .value = .{},
+  };
+
+  try std.testing.expect( record.meta.sequence == 1 );
+}
+
+test "inferPrimaryEntity reads generic entity fields"
+{
+  try std.testing.expect( inferPrimaryEntity( EntityCreated,   .{ .entityId = 4 }) == 4 );
+  try std.testing.expect( inferPrimaryEntity( RelationAdded,   .{ .sourceId = 5, .targetId = 6 }) == 5 );
+  try std.testing.expect( inferPrimaryEntity( struct {},       .{} ) == null );
+}

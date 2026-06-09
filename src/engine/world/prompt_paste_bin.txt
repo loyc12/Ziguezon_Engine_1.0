@@ -30,3 +30,10 @@ Keep it compact and to-the-point- but do not ommit non-trivial changes
 I have this system I implemented a long time ago, and which is not currently in used
 I would first like and audit of its code and suitability in the game engine we are building
 Be sure to point out any point of tensions which could be worked out
+
+
+
+audit src/ for all undefined, and validate proper usage
+replace pointless array.init() calls by std.ArrayList(...).empty wherever pertinent
+
+reactivate and revamp logger's file logging system
