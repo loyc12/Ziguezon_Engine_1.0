@@ -1,17 +1,10 @@
-const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const Tile         = eng.Tile;
 const Tilemap      = eng.Tilemap;
 
-const TileType  = eng.TileType;
-const TileFlags = eng.TileFlags;
-
-const Box2         = utl.Box2;
-const Coords2      = utl.Coords2;
-const Vec2         = utl.Vec2;
-const VecA         = utl.VecA;
+const TileType = eng.TileType;
 
 
 // ================================ FLOODRULE STRUCT ================================
@@ -37,56 +30,65 @@ pub const FloodRule = struct
 
 // ================================ BASE FLOODFILL FUNCTIONS ================================
 
-pub inline fn resetFloodFillFlags( tlmp : *Tilemap ) void { tlmp.fillWithTileFlagVal( .FLOODED, false ); }
+pub inline fn resetFloodMarks( tlmp : *Tilemap ) void
+{
+  for( tlmp.tileArray )| *tile |{ tile.floodMark = 0; }
+  tlmp.floodMark = 0;
+}
 
 
 
 
-pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, expectedIter : u32, rules : *FloodRule ) void
+pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, rules : *FloodRule ) void
 {
   const alloc = utl.getDefaultAlloc();
 
-  // Using a stack to avoid Depth-First Search, thus avoiding stack overflows due to recursivity
-  var stack = std.ArrayList( *Tile ).initCapacity( alloc, expectedIter ) catch | err |
+  _ = tlmp.beginFloodFill();
+
+  // Explicit stack avoids recursive flood fill and is bounded by the tile count.
+  const stack = alloc.alloc( *Tile, tlmp.getTileCount() ) catch | err |
   {
     utl.log( .ERROR, 0, @src(), "Stack initialization error : {} : returning", .{ err });
     return;
   };
-  defer stack.deinit( alloc );
+  defer alloc.free( stack );
 
-  if( start.isFlooded() or !rules.filter( start ))
+  var stackLen : usize = 0;
+
+  if( tlmp.isFloodMarked( start ) or !rules.filter( start ))
   {
     utl.qlog( .TRACE, 0, @src(), "Invalid start location for floodFill : returning" );
     return;
   }
 
-  start.addFlag( .FLOODED );
-  stack.append( alloc, start ) catch | err |
-  {
-    utl.log( .ERROR, 0, @src(), "Early stack error : {} : returning", .{ err });
-    return;
-  };
+  tlmp.addFloodMark( start );
+  stack[ stackLen ] = start;
+  stackLen += 1;
 
-  while( stack.pop() )| cTile |
+  while( stackLen > 0 )
   {
+    stackLen -= 1;
+    const cTile = stack[ stackLen ];
+
     rules.change( cTile );
 
     for( utl.Dir2.arr )| dir |
     {
       if( tlmp.getNeighbourTile( cTile.mapCoords, dir ))| nTile |
       {
-        if( nTile.isFlooded() or !rules.filter( nTile ) ){ continue; }
-
-        nTile.addFlag( .FLOODED );
-        stack.append( alloc, nTile ) catch | err |
+        if( tlmp.isFloodMarked( nTile ) or !rules.filter( nTile ) ){ continue; }
+        if( stackLen >= stack.len )
         {
-          utl.log( .WARN, 0, @src(), "Late stack error : {} : ignoring", .{ err });
-        };
+          utl.qlog( .ERROR, 0, @src(), "Flood-fill stack exceeded tile count : returning" );
+          return;
+        }
+
+        tlmp.addFloodMark( nTile );
+        stack[ stackLen ] = nTile;
+        stackLen += 1;
       }
     }
   }
-
-  tlmp.resetFloodFillFlags();
 }
 
 
@@ -95,7 +97,7 @@ pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, expectedIter : u32, 
 fn filterType( r : *FloodRule, t : *Tile ) bool { return t.tType == r.filterData.tType; }
 fn changeType( r : *FloodRule, t : *Tile ) void { t.tType = r.changeData.tType; }
 
-pub fn floodFillWithType( tlmp : *Tilemap, start : *Tile, expectedIter : u32 , targetType : TileType, newType : TileType ) void
+pub fn floodFillWithType( tlmp : *Tilemap, start : *Tile, targetType : TileType, newType : TileType ) void
 {
   var rules : FloodRule =
   .{
@@ -105,13 +107,13 @@ pub fn floodFillWithType( tlmp : *Tilemap, start : *Tile, expectedIter : u32 , t
     .changeFunc = changeType,
   };
 
-  tlmp.floodFillWithParams( start, expectedIter, &rules );
+  tlmp.floodFillWithParams( start, &rules );
 }
 
 
 fn changeColour( r : *FloodRule, t : *Tile ) void { t.colour = r.changeData.colour; }
 
-pub fn floodFillWithColour( tlmp : *Tilemap, start : *Tile, expectedIter : u32 , targetType : TileType, newCol : utl.Colour ) void
+pub fn floodFillWithColour( tlmp : *Tilemap, start : *Tile, targetType : TileType, newCol : utl.Colour ) void
 {
   var rules : FloodRule =
   .{
@@ -121,5 +123,5 @@ pub fn floodFillWithColour( tlmp : *Tilemap, start : *Tile, expectedIter : u32 ,
     .changeFunc = changeColour,
   };
 
-  tlmp.floodFillWithParams( start, expectedIter, &rules );
+  tlmp.floodFillWithParams( start, &rules );
 }

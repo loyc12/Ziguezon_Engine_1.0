@@ -91,7 +91,7 @@ fn blowUpMine( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile, damage :
   {
     for( 0 .. grid.getTileCount() )| index |
     {
-      const iTile : *eng.Tile = &grid.tileArray.items.ptr[ index ];
+      const iTile : *eng.Tile = &grid.tileArray[ index ];
 
       setMinecolour( iTile );
     }
@@ -158,7 +158,7 @@ fn initGrid( ng : *eng.Engine, grid : *eng.Tilemap, startTile : *eng.Tile ) void
   {
     const remaingingTileCount = tileCount - index; // preemptively decrease the count to avoid duplicating code
 
-    var tile : *eng.Tile = &grid.tileArray.items.ptr[ index ];
+    var tile : *eng.Tile = &grid.tileArray[ index ];
 
     // Prevents having tiles at or around the first clicked cell
     if( tile.mapCoords.isEq( startTile.mapCoords )){ continue; }
@@ -324,7 +324,7 @@ fn playerHasWon( ng : *eng.Engine, grid : *eng.Tilemap ) bool
 
   for( 0 .. grid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &grid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &grid.tileArray[ index ];
 
     if( tile.tType == TILE_HIDDEN ){ return false; }
   }
@@ -528,7 +528,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   for( 0 .. grid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &grid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &grid.tileArray[ index ];
 
     const tileCenter = eng.G_ENG.camera.worldToScreen( grid.getAbsTilePos( tile.mapCoords ).toVec2() );
 

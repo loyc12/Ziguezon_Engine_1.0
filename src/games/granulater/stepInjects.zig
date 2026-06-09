@@ -114,7 +114,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
     for( 0 .. worldGrid.getTileCount() )| index |
     {
-      const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+      const tile : *eng.Tile = &worldGrid.tileArray[ index ];
 
       const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 
@@ -155,7 +155,7 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
 
   for( 0 .. tileCount )| index |
   {
-    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *Tile = &worldGrid.tileArray[ index ];
 
     const data : *TileData = &TILEMAP_DATA[ index ];
 

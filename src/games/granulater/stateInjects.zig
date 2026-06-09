@@ -59,7 +59,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
 
     const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 

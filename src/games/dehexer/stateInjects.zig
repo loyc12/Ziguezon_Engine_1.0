@@ -50,7 +50,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
   for( 0 .. grid.getTileCount() )| index |
   {
-    var tile : *eng.Tile = &grid.tileArray.items.ptr[ index ];
+    var tile : *eng.Tile = &grid.tileArray[ index ];
 
     tile.colour = .mGray;
   }

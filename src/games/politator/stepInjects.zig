@@ -227,7 +227,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
   // Calculating next pop and resources for each tile
   for( 0 .. tileCount )| index |
   {
-    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *Tile = &worldGrid.tileArray[ index ];
 
     var ownData : *TileData = &TILEMAP_DATA[ index ];
 
@@ -412,7 +412,7 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
 
   for( 0 .. tileCount )| index |
   {
-    const tile : *Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *Tile = &worldGrid.tileArray[ index ];
 
     const data : *TileData = &TILEMAP_DATA[ index ];
 

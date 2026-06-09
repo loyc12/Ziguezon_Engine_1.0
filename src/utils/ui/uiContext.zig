@@ -72,8 +72,8 @@ pub const UiContext = struct
     }
 
     self.alloc  = alloc;
-    self.nodes  = std.ArrayList( UiNode  ).empty;
-    self.events = std.ArrayList( UiEvent ).empty;
+    self.nodes  = .empty;
+    self.events = .empty;
 
     self.input   = .{};
     self.hovered = .{};

@@ -60,7 +60,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    var tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    var tile : *eng.Tile = &worldGrid.tileArray[ index ];
 
     TILEMAP_DATA[ index ] =
     .{

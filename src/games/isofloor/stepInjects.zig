@@ -139,7 +139,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
 
@@ -185,7 +185,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   // Draw base floor everywhere that isn't empty
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.ground == .Empty ){ continue; }
@@ -200,7 +200,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   // Draw non-floor ground tiles
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.ground == .Empty or data.ground == .Floor ){ continue; }
@@ -224,7 +224,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   // Draw objects onto floor
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray.items.ptr[ index ];
+    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.object == .Empty ){ continue; }

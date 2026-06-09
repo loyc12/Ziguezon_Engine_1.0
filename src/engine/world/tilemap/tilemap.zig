@@ -63,7 +63,8 @@ pub const Tilemap = struct
   mapPos  : VecA    = .{},
   mapSize : Coords2 = DEF_GRID_SIZE,
 
-  tileArray : std.ArrayList( Tile ) = undefined,
+  tileArray : []Tile = &.{},
+  floodMark : u32    = 0,
 
   // ======= TILE DATA ========
   tileScale : Vec2         = DEF_TILE_SCALE,
@@ -149,7 +150,7 @@ pub const Tilemap = struct
       return;
     }
 
-    self.tileArray = std.ArrayList( Tile ).initCapacity( allocator, self.getTileCount() ) catch | err |
+    self.tileArray = allocator.alloc( Tile, self.getTileCount() ) catch | err |
     {
       utl.log( .ERROR, 0, @src(), "Failed to initialize tilemap tile array: {}", .{ err } );
       return;
@@ -171,7 +172,9 @@ pub const Tilemap = struct
       utl.log( .ERROR, 0, @src(), "Tilemap {d} is not initialized, cannot deinitialize", .{ self.id });
       return;
     }
-    self.tileArray.deinit( allocator );
+    allocator.free( self.tileArray );
+    self.tileArray = &.{};
+    self.floodMark = 0;
     self.setFlag( TilemapFlags.DELETE,  true );
     self.setFlag( TilemapFlags.IS_INIT, false );
     self.setFlag( TilemapFlags.ACTIVE,  false );
@@ -249,7 +252,7 @@ pub const Tilemap = struct
     if( !self.isCoordsValid( mapCoords )){ return null; }
 
     const index = self.getTileIndex( mapCoords ) orelse return null;
-    return &self.tileArray.items.ptr[ index ];
+    return &self.tileArray[ index ];
   }
 
   pub inline fn getNeighbourTile( self : *const Tilemap, mapCoords : Coords2, dir : utl.Dir2 ) ?*Tile
@@ -274,7 +277,7 @@ pub const Tilemap = struct
     index += 1;
 
     index = @mod( index, self.getTileCount() );
-    return &self.tileArray.items.ptr[ index ];
+    return &self.tileArray[ index ];
   }
 
   pub inline fn getPreviousTile( self : *const Tilemap, mapCoords : Coords2 ) ?*Tile
@@ -288,7 +291,7 @@ pub const Tilemap = struct
     index -= 1;
     index = @mod( index, self.getTileCount() );
 
-    return &self.tileArray.items.ptr[ index ];
+    return &self.tileArray[ index ];
   }
 
 
@@ -312,7 +315,7 @@ pub const Tilemap = struct
   {
     utl.log( .INFO, 0, @src(), "@ Resetting cached tile positions for tilemap {d}", .{ self.id });
 
-    for( 0 .. self.getTileCount() )| index |{ self.tileArray.items.ptr[ index ].relPos = null; }
+    for( 0 .. self.getTileCount() )| index |{ self.tileArray[ index ].relPos = null; }
   }
 
   // ================ FILL FUNCTIONS ================
@@ -329,7 +332,7 @@ pub const Tilemap = struct
 
     for( 0 .. self.getTileCount() )| index |
     {
-      self.tileArray.items.ptr[ index ].setFlag( flag, val );
+      self.tileArray[ index ].setFlag( flag, val );
     }
   }
 
@@ -371,7 +374,7 @@ pub const Tilemap = struct
         else    => tmpType.getTileTypeColour(),
       };
 
-      self.tileArray.items.ptr[ index ] = Tile
+      self.tileArray[ index ] = Tile
       {
         .tType     = tmpType,
         .colour    = col,
@@ -390,26 +393,39 @@ pub const Tilemap = struct
 
     for( 0 .. self.getTileCount() )| index |
     {
-      self.tileArray.items.ptr[ index ].colour = col;
+      self.tileArray[ index ].colour = col;
     }
   }
 
 
   // ======== FLOOD FILL FUNCTIONS ========
 
-  pub inline fn resetFloodFillFlags( self : *Tilemap ) void { tlmpFlood.resetFloodFillFlags( self ); }
-  pub inline fn floodFillWithParams( self : *Tilemap, start : *Tile, expectedIter : u32, rules : *FloodRule ) void
+  pub fn beginFloodFill( self : *Tilemap ) u32
   {
-    tlmpFlood.floodFillWithParams( self, start, expectedIter, rules );
+    self.floodMark +%= 1;
+    if( self.floodMark != 0 ){ return self.floodMark; }
+
+    for( self.tileArray )| *tile |{ tile.floodMark = 0; }
+    self.floodMark = 1;
+    return self.floodMark;
   }
 
-  pub inline fn floodFillWithType( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : TileType, newType : TileType ) void
+  pub inline fn isFloodMarked( self : *const Tilemap, tile : *const Tile ) bool { return tile.floodMark == self.floodMark; }
+  pub inline fn addFloodMark(  self : *const Tilemap, tile : *Tile       ) void { tile.floodMark =  self.floodMark; }
+  pub inline fn resetFloodMarks( self : *Tilemap ) void { tlmpFlood.resetFloodMarks( self ); }
+
+  pub inline fn floodFillWithParams( self : *Tilemap, start : *Tile, rules : *FloodRule ) void
   {
-    tlmpFlood.floodFillWithType( self, start, expectedIter, targetType, newType );
+    tlmpFlood.floodFillWithParams( self, start, rules );
   }
-  pub inline fn floodFillWithColour( self : *Tilemap, start : *Tile, expectedIter : u32 , targetType : TileType, newCol : utl.Colour ) void
+
+  pub inline fn floodFillWithType( self : *Tilemap, start : *Tile, targetType : TileType, newType : TileType ) void
   {
-    tlmpFlood.floodFillWithColour( self, start, expectedIter, targetType, newCol );
+    tlmpFlood.floodFillWithType( self, start, targetType, newType );
+  }
+  pub inline fn floodFillWithColour( self : *Tilemap, start : *Tile, targetType : TileType, newCol : utl.Colour ) void
+  {
+    tlmpFlood.floodFillWithColour( self, start, targetType, newCol );
   }
 
 
@@ -513,3 +529,50 @@ pub const Tilemap = struct
     };
   }
 };
+
+
+test "Tilemap starts with empty tile storage"
+{
+  const tlmp : Tilemap = .{};
+
+  try std.testing.expect( !tlmp.isInit() );
+  try std.testing.expectEqual( @as( usize, 0 ), tlmp.tileArray.len );
+}
+
+test "Tilemap init allocates fixed tile storage"
+{
+  var tlmp : Tilemap = .{ .mapSize = .{ .x = 3, .y = 2 }};
+
+  tlmp.init( std.testing.allocator, .T1 );
+  defer tlmp.deinit( std.testing.allocator );
+
+  try std.testing.expect( tlmp.isInit() );
+  try std.testing.expectEqual( @as( usize, 6 ), tlmp.tileArray.len );
+  try std.testing.expectEqual( TileType.T1, tlmp.tileArray[ 0 ].tType );
+  try std.testing.expectEqual( Coords2{ .x = 2, .y = 1 }, tlmp.tileArray[ 5 ].mapCoords );
+}
+
+test "Tilemap flood fill uses generation marks"
+{
+  var tlmp : Tilemap = .{ .mapSize = .{ .x = 3, .y = 3 }};
+
+  tlmp.init( std.testing.allocator, .T1 );
+  defer tlmp.deinit( std.testing.allocator );
+
+  tlmp.tileArray[ 4 ].tType = .T2;
+
+  const startA = tlmp.getTile( .{ .x = 0, .y = 0 } ).?;
+  tlmp.floodFillWithType( startA, .T1, .T3 );
+
+  try std.testing.expectEqual( @as( u32, 1 ), tlmp.floodMark );
+  try std.testing.expectEqual( TileType.T2, tlmp.tileArray[ 4 ].tType );
+  try std.testing.expectEqual( TileType.T3, tlmp.tileArray[ 0 ].tType );
+  try std.testing.expectEqual( @as( u32, 1 ), tlmp.tileArray[ 0 ].floodMark );
+
+  const startB = tlmp.getTile( .{ .x = 0, .y = 0 } ).?;
+  tlmp.floodFillWithType( startB, .T3, .T4 );
+
+  try std.testing.expectEqual( @as( u32, 2 ), tlmp.floodMark );
+  try std.testing.expectEqual( TileType.T4, tlmp.tileArray[ 0 ].tType );
+  try std.testing.expectEqual( @as( u32, 2 ), tlmp.tileArray[ 0 ].floodMark );
+}

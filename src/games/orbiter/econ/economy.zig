@@ -62,7 +62,7 @@ pub const Economy = struct
 
   pub inline fn newDeadEcon( loc : EconLoc ) Economy
   {
-    var econ : Economy = undefined;
+    var econ : Economy = .{ .location = loc, .hasAtmo = false };
 
     econ.softInit( loc );
 
@@ -71,15 +71,18 @@ pub const Economy = struct
 
   pub inline fn softInit( self : *Economy, loc : EconLoc ) void
   {
-    self.isValid  = true;
-    self.isActive = false;
-    self.location = loc;
+    self.isValid    = true;
+    self.isActive   = false;
+    self.hasAtmo    = false;
+    self.location   = loc;
+    self.ecology    = null;
+    self.buildQueue = null;
   }
 
 
   pub inline fn newLiveEcon( loc : EconLoc, area : f64, landCover : f64, atmo : bool ) Economy
   {
-    var econ : Economy = undefined;
+    var econ : Economy = .{ .location = loc, .hasAtmo = atmo };
 
     econ.hardInit( loc, area, landCover, atmo );
 
@@ -88,7 +91,7 @@ pub const Economy = struct
 
   pub inline fn hardInit( self : *Economy, loc : EconLoc, area : f64, landCover : f64, atmo : bool ) void
   {
-    if( !self.isValid ){ self.softInit( loc ); } // NOTE : check might pass if garbage data ( not softInit beforehand )
+    self.softInit( loc );
 
     self.hasAtmo  = atmo;
 
@@ -1120,3 +1123,22 @@ pub const Economy = struct
 
   }
 };
+
+
+test "Economy constructors initialize required fields"
+{
+  const dead = Economy.newDeadEcon( .ORBIT );
+
+  try std.testing.expect( dead.isValid );
+  try std.testing.expect( !dead.isActive );
+  try std.testing.expectEqual( EconLoc.ORBIT, dead.location );
+  try std.testing.expectEqual( false, dead.hasAtmo );
+
+  const live = Economy.newLiveEcon( .GROUND, 1000.0, 0.25, false );
+
+  try std.testing.expect( live.isValid );
+  try std.testing.expect( !live.isActive );
+  try std.testing.expectEqual( EconLoc.GROUND, live.location );
+  try std.testing.expectEqual( false, live.hasAtmo );
+  try std.testing.expect( live.buildQueue != null );
+}

@@ -1,5 +1,3 @@
-const std = @import( "std" );
-const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const Coords2 = utl.Coords2;
@@ -15,7 +13,7 @@ pub const TileFlags = enum( u8 )
 //MORE... = 0b00010000, //
 //MORE... = 0b00001000, //
 //MORE... = 0b00000100, //
-  FLOODED = 0b00000010, // Flood-fill anti-recursion flag
+//MORE... = 0b00000010, //
   DEBUG   = 0b00000001, // Tile will be rendered with debug information
 
   DEFAULT = 0b01100000, // Default flags for a new tile
@@ -70,15 +68,16 @@ pub const TileType = enum( u8 )
 pub const Tile = struct
 {
   // ================ PROPERTIES ================
-  tType : TileType = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
-  flags : utl.Bfd8 = .new( TileFlags.DEFAULT ),
+  tType : TileType    = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
+  flags : utl.Bfd8    = .new( TileFlags.DEFAULT ),
 
   // ======== GRID POS DATA ========
-  mapCoords : Coords2     = .{},
+  mapCoords : Coords2 = .{},
+  floodMark : u32     = 0,
 
   // ======== RENDERING DATA ======== ( DEBUG )
-  colour : utl.Colour  = .transpa,
-  relPos : ?utl.Vec2   = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
+  colour : utl.Colour = .transpa,
+  relPos : ?utl.Vec2  = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
 
   // ================ FLAG MANAGEMENT ================
 
@@ -93,7 +92,6 @@ pub const Tile = struct
 //pub inline fn isInit(   self : *const Tile ) bool { return self.hasFlag( TileFlags.IS_INIT ); }
 //pub inline fn isActive( self : *const Tile ) bool { return self.hasFlag( TileFlags.ACTIVE  ); }
 
-  pub inline fn isFlooded( self : *const Tile ) bool { return self.hasFlag( TileFlags.FLOODED ); }
   pub inline fn viewDBG(   self : *const Tile ) bool { return self.hasFlag( TileFlags.DEBUG   ); }
 
 

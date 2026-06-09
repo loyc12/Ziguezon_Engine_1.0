@@ -12,7 +12,7 @@ pub const TilemapManager = struct
   maxId       : u32  = 0,
   isInit      : bool = false,
   allocator   : std.mem.Allocator       = undefined,
-  tilemapList : std.ArrayList( Tilemap ) = undefined,
+  tilemapList : std.ArrayList( Tilemap ) = .empty,
 
   // ================================ HELPER FUNCTIONS ================================
 
@@ -139,15 +139,10 @@ pub const TilemapManager = struct
       return;
     }
 
-    self.tilemapList = std.ArrayList( Tilemap ).empty;
-    //self.tilemapList = std.ArrayList( Tilemap ).initCapacity( self.allocator, 4 ) catch
-    //{
-    //  utl.qlog( .ERROR, 0, @src(), "Failed to initialize tilemapList to proper default length" );
-    //  return;
-    //};
+    self.allocator   = allocator;
+    self.tilemapList = .empty;
+    self.isInit      = true;
 
-    self.isInit    = true;
-    self.allocator = allocator;
     utl.qlog( .INFO, 0, @src(), "$ Tilemap manager initialized !\n" );
   }
 
@@ -290,7 +285,7 @@ pub const TilemapManager = struct
 
       if( eng.G_CNFGS.DebugDraw_Tile ){ for ( 0 .. tlmp.getTileCount() )| index |
       {
-        const tile = tlmp.tileArray.items.ptr[ index ];
+        const tile = tlmp.tileArray[ index ];
         const tilePos = tlmp.getRelTilePos( tile.mapCoords );
         const tileBox = tlmp.getTileBoundingBox( tilePos );
         eng.wDraw.rect( tileBox.center, tileBox.scale, .{}, utl.Colour.green.setA( 32 ));
@@ -322,3 +317,13 @@ pub const TilemapManager = struct
     }}
   }
 };
+
+
+test "TilemapManager starts with empty tilemap storage"
+{
+  const manager : TilemapManager = .{};
+
+  try std.testing.expect( !manager.isInit );
+  try std.testing.expectEqual( @as( usize, 0 ), manager.tilemapList.items.len );
+  try std.testing.expectEqual( @as( usize, 0 ), manager.tilemapList.capacity );
+}
