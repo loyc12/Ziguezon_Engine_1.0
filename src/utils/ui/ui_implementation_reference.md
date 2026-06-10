@@ -1,740 +1,444 @@
-# UI Implementation Reference - Ziguezon Engine
-
-## Context
-
-Design document for a retained-mode UI system in the Ziguezon engine
-(Zig + raylib wrapper). The user is building a Paradox-style macro-economic
-space simulation game. Prior UI experience: simple texture/shape rendering,
-no UI implementation experience.
+# UI Implementation Reference - Retained Imperative Primitives
+
+This reference replaces the previous retained-manager-first UI plan. The old
+prototype remains useful as evidence for layout, hit testing, input capture, and
+rendering behavior, but it is no longer the target architecture.
+
+The new target is a small retained imperative UI primitive toolkit for a 2D game
+engine and its utils library.
+
+## 1. Target
+
+Build UI from explicit objects:
+
+```zig
+const panelCfg : ui.PanelConfig = .{
+  .layout = .absolute,
+};
+
+var panel = try ui.Panel.init(
+  alloc,
+  .{
+    .key    = ui.key( "main_panel" ),
+    .box    = box,
+    .config = panelCfg,
+  }
+);
+
+const buyBtn = try panel.addButton(
+  .{
+    .key    = ui.key( "buy" ),
+    .box    = buyBox,
+    .text   = "Buy",
+    .config = .{},
+  }
+);
+
+try ng.ui.addPanel( panel, .{ .layer = .panel } );
+```
+
+The same primitive should also work without the engine manager:
+
+```zig
+panel.updateInput( input );
+panel.updateLayout();
+panel.draw();
+
+if( panel.wasClicked( buyBtn ) )
+{
+  buyGoods();
+}
+```
+
+This is retained UI, but not a React-style rebuild-every-frame system. The game
+or engine creates panels and widgets when needed, mutates them through handles,
+and lets dirty flags decide what must be recomputed.
+
+## 2. Primary Goals
+
+- Simple and direct for non-frontend developers.
+- Imperative creation and mutation through ordinary Zig code.
+- Sparse config structs with sensible defaults.
+- Stable handles for later mutation and state queries.
+- Panels/widgets can be game-owned or engine-owned.
+- UI geometry is center-defined through `Box2`, not top-left rectangle data.
+- No mandatory global UI manager for simple cases.
+- Engine manager can later orchestrate the same primitives.
+- Layout, render, text, and hit-test state are inspectable.
+- Stable state is cached and only recalculated when dirty.
+- Game logic stays in userland; the UI layer does not become a scripting
+  language.
+- The first useful version should build static panels with clickable widgets.
+
+## 3. Non-Goals
+
+- Do not build a new layout programming language.
+- Do not require declarative panel definitions.
+- Do not require rebuilding every UI tree every frame.
+- Do not force all UI through an engine-owned singleton.
+- Do not create domain-specific core widgets such as inventory panels or quest
+  panels.
+- Do not integrate `raygui`.
+- Do not depend on the old `interface2D.zig` visual experiment unless explicitly
+  revisited.
+- Do not start with text input, keyboard navigation, docking, hot reload,
+  accessibility, or full modal/window management.
+
+## 4. Ownership Boundary
+
+### 4.1 Utils Layer
+
+`src/utils/ui` should own reusable primitive data and behavior:
+
+- `UiKey`, `UiHandle`, and generation-safe identity helpers.
+- `Panel`, `Widget`, and child storage.
+- `PanelConfig` and `WidgetConfig` with defaults.
+- layout inputs and computed layout outputs.
+- dirty flags.
+- pointer/mouse interaction state structs that do not require `eng.Engine`.
+- text metrics and text draw data.
+- render caches or render command generation.
+- hit-test lists.
+- primitive input update helpers.
+- primitive draw helpers backed by existing 2D drawing utilities.
 
-Goal of the UI system:
- 1. Start as dev-only debug panels (replace digging through terminal logs)
- 2. Evolve into shipped UI for a management game (tables, charts, panels)
- 3. Live in the engine layer so it is reusable across future projects
-
-Engine state validated against the codebase:
-
-- ECS-like system: user declares component structs, engine generates a
-   componentStore at comptime via componentStoreFactory. Entities are IDs.
-   See src/core/ecs/.
-
-- Box2 struct (src/utils/data/boxer2.zig): rect defined from center +
-   half-scale; queryable / movable by significant points (corners, edges,
-   center). Originally for hitboxes, intended also for UI layout-output.
-   Has known logic bugs to fix BEFORE UI relies on it. See APPENDIX A.
+The utils layer should not require `eng.Engine`.
 
-- Camera subsystem: def.G_CAM : Cam2D, owned singleton-style by engine
-   alongside G_NG, G_RNG, G_ST, G_HK. A G_UI fits alongside.
-
-- Hook system (src/core/interfacers/gameHooks.zig): robust, well-tested
-   (one of the first features implemented). Provides phase tags consumed
-   by the engine loop in src/core/engine/engineStep.zig. Key tags for UI:
-     .OnInputUpdate   - frame-cadence update, before tick + render
-     .OnRenderOverlay - after world render, in screen space
-     .OnRenderWorld   - during the camera-transformed render pass
-   UI logic lives in the engine's updateFrame phase, not in tickAll.
-
-- Drawer split: src/utils/render/drawerScreen.zig (screen-space) and
-   drawerWorld.zig (world-space). Stable. UI panels use sDraw; world-space
-   UI elements (floating labels, etc.) use wDraw.
-
-- Interfacer2D (src/utils/ui/interfacer.zig, moved from utils/render):
-   first-draft panel-visual primitive. The vertex/bevel/render half is
-   salvageable for panel drawing. The state half (isActive, isSelected)
-   should be dropped - interaction state belongs in the UI tree, not in
-   the visual primitive. Treat Interfacer2D as a "panel shape renderer"
-   callable from the UI render pass.
-
-- Event system (src/core/event/): first-draft implementation, lightly
-   tested. Intended UI->game channel for clicks/commands. Expect to
-   stress-test it and likely refactor it as part of the UI work.
-
-- Scripter (src/core/script/): stub. Ignored for now. If/when scripting
-   is built out, a panel-text-format would be the entry point for
-   hot-reload, but that is deferred.
-
-- Spritemap (src/utils/render/spritemap.zig): works, suboptimal. Off
-   the UI critical path.
-
-- raygui: build module currently commented out in build.zig.
-   DECISION: do NOT enable. Building UI from primitives is the chosen
-   path. Reasoning:
-  - raygui is immediate-mode and fights the retained-mode architecture
-    chosen for this engine.
-  - Interfacer2D already exceeds raygui's flat-rect visual capability
-    (bevels, polygon shapes).
-  - The widget set raygui provides is small and roughly the same
-    amount of work to build on top of existing primitives, while
-    keeping full control over visuals and state.
-
-This roadmap is direction, not a spec. Any decision below is open to
-revisit.
-
-## 1. FOUNDATIONAL PRINCIPLES
-
-### 1.1 Separate simulation from UI
-
-The single biggest pitfall in game UI is coupling rendering to game state.
-For a Paradox-style game pulling from many systems, there must be a clear
-data boundary:
-
-- Simulation owns truth (planets, markets, fleets)
-- UI queries snapshots or subscribes to changes - never reaches into sim
-   internals
-- Widgets are dumb - they render whatever data they are handed
-
-This is the rule that makes "debug UI -> shipped UI" a styling migration
-rather than a rewrite. Worth enforcing from day one.
-
-### 1.2 Retained-mode UI, immediate-mode primitives underneath
-
-Decided: retained mode. Matches the mental model already used for engine
-features (colliders, textures). Architecture:
-
-- Persistent node tree with identity and state
-- A layout pass assigning each node a Box2 (its layout-output rect)
-- A render pass that translates node state into immediate-mode draw
-   calls via the existing primitives:
-  - sDraw for lines, rectangles, text, basic shapes
-  - Interfacer2D's visual half for beveled panel/button surfaces
-  - wDraw for any world-space UI element
-
-No raygui. Single primitive backend.
+### 4.2 Engine Layer
 
-### 1.3 Build primitives before widgets
+Engine-side UI should be built later on top of the same primitives. It should
+own orchestration, not the primitive definitions:
 
-Before any "chart widget", the system needs:
+- global/layered UI manager;
+- panel lifetime and ownership transfer;
+- ordered layers and z-index;
+- frame input routing;
+- focus, hover, press, and capture rules;
+- modal blocking and close policies;
+- engine event/command output;
+- render ordering;
+- debug inspection;
+- optional world-space UI routing.
 
-- Layout (start trivial absolute-position; graduate to flex-like later)
-- Text measurement and wrapping (raylib has MeasureTextEx; wrap it)
-- Scissor / clip rects for scroll regions (raylib BeginScissorMode)
-- A font choice the user is happy with (sDraw already has
-   getDefaultFont / setDefaultFont)
-- Input routing that knows which panel has focus (lives in
-   .OnInputUpdate hook)
+Engine goals should be stored, but implemented separately after the primitive
+layer proves itself.
 
-The classic trap is jumping to fancy widgets. Chart rendering is ~20% of
-the work; the scroll / clip / focus / resize machinery around it is ~80%.
+### 4.3 Game-Owned UI
 
-### 1.4 Composable primitives, ergonomic archetypes
+Games should be able to instantiate and own panels directly when that is easier:
 
-The UI should stay composable without making common menus annoying to
-instantiate.
+- debug overlays;
+- one-off menus;
+- in-world labels;
+- isolated minigame tools;
+- custom UI experiments.
 
-- Keep the primitive set small: node kinds should represent real behavior
-   differences, not every visual or naming variant.
-- Prefer behavior data and flags for shared mechanics such as modal
-   blocking, movable windows, close policies, clipping, and delayed input.
-- Preserve ease of use through archetype / template helpers. A caller
-   should be able to ask for a popup, modal, panel, or debug window without
-   manually setting ten low-level options every time.
-- If two menu types differ only by defaults, layer, or style, they should
-   probably become one primitive with different archetype constructors.
-- Add broad escape hatches such as a custom-draw node before adding
-   one-off chart, graph, table, or inspector node kinds.
+The engine manager should add convenience, ordering, and shared input policy; it
+should not be required for every UI use.
 
-Target shape: compact internal primitives, convenient external creation
-helpers.
+## 5. Core Object Model
 
-## 2. ARCHITECTURE
+### 5.1 Panel
 
-### 2.1 The three passes per frame
+A panel is the top-level primitive container. It owns widget storage and cached
+state for one UI surface.
 
-Each frame, the UI system runs:
+Expected panel data:
 
- 1. Build / Reconcile. Declare what the tree should look like this
-    frame. Start with the STATEFUL approach (tree persists, mutate it)
-    rather than fully declarative React-style reconciliation. Simpler
-    to implement, can evolve later.
+- stable key;
+- requested root box;
+- final root box;
+- panel config;
+- widget storage;
+- child order;
+- layout cache;
+- text cache;
+- hit map;
+- render cache;
+- event buffer;
+- dirty flags.
 
- 2. Layout. Walk the tree and assign every node a Box2.
-  - Recommended: two-pass flex-style - bottom-up measure preferred
-     sizes, top-down distribute available space.
-  - Do NOT invent your own layout math. Copy flexbox semantics or a
-     simplified subset. Well-understood; players' eyes are trained on
-     it.
-  - For v1, absolute positioning is fine. Graduate to flex later.
+Panels may contain child widgets and child containers. Whether nested panels are
+represented as widgets or separate panels can be decided during implementation;
+the API should make nesting easy either way.
 
- 3. Input. Walk front-to-back for input (hit-test, route events to the
-    topmost interested node). Input depends on layout, so it belongs after
-    layout in the frame update phase.
+### 5.2 Widget
 
- 4. Render. Build render commands from retained state, then draw
-    back-to-front (or use z-indices). Rendering belongs in renderAll,
-    after world rendering has left camera mode.
+A widget is a retained primitive element inside a panel.
 
-Wiring into the engine loop:
+Initial widget kinds:
 
-- Build + Layout + Input  ->  updateFrame / .OnInputUpdate
-- Render (screen layers)  ->  renderAll / .OnRenderOverlay
-- Render (world layer)    ->  renderAll / .OnRenderWorld
+- `label`;
+- `button`;
+- `checkbox`;
+- `image` or `sprite` if trivial;
+- `spacer`;
+- `container`;
+- `customDraw`.
 
-Keep these passes separate. Input depends on layout (need the rect for
-hit-testing); render depends on input (need to know hovered/pressed
-state). Mixing creates ordering bugs that are painful to debug.
+Later widget kinds:
 
-### 2.2 Node abstraction
+- slider;
+- scroll area;
+- text input;
+- tabs;
+- table/list;
+- graph/custom plot helpers.
 
-Every UI element is a node. In Zig, prefer a TAGGED UNION over
-polymorphism / vtables - simpler, faster, more debuggable. Nodes need:
+Avoid adding domain widgets to the primitive layer. Domain panels should be game
+code that composes primitive widgets.
 
-- Identity      - stable ID (string or path hash, NOT array index)
-- Layout inputs - size hints, padding, alignment, flex weight
-- Layout output - the computed Box2
-- State         - hovered, focused, pressed, scroll offset, animation
-- Children      - ordered list
-- Behavior hooks - on_click, on_hover, on_draw
+### 5.3 Identity
 
-A node does NOT know how to draw itself in absolute terms. It knows its
-Box2 and its style, and asks the renderer to draw it.
+Use stable user-provided keys plus generation-safe handles.
 
-Aim for ~10 node kinds, not 47. "Custom drawing" can be a single node
-variant that holds a function pointer. When a difference is only defaults,
-style, layer, or close behavior, prefer an archetype / template helper over
-a new node kind.
+Suggested split:
 
-#### 2.2.1 Parent ownership vs. dependency links
+- `UiKey`: stable external identity, often a hashed string or explicit integer.
+- `UiHandle`: runtime handle, probably index + generation.
 
-Menus need more than a plain tree. Parent links should control layout,
-clipping, and ordinary ownership. Dependency links should control
-invalidation.
+The user should not need to keep raw pointers to widgets. Pointers are fragile if
+widget storage reallocates. Handles also make engine ownership transfer easier.
 
-- Closing a parent closes parent-owned descendants.
-- Closing an upper dependent menu closes lower dependent menus.
-- Opening a sibling submenu closes lower dependent menus from the old
-   branch.
-- A menu can spawn an independent root/window by detaching it from the
-   menu dependency chain before the menu closes.
+## 6. Geometry Model
 
-This makes cascading menus cheap while still allowing a menu action to
-instantiate a durable inspector or tool window.
+UI primitives should use the repository's native `Box2` convention directly.
+`Box2` stores:
 
-Useful operations:
+```zig
+center : Vec2, // center position
+scale  : Vec2, // half-size / side distance from center
+```
 
-- close_node(id)             - closes node and parent-owned descendants
-- close_dependent_chain(id)  - closes nodes that depend on id
-- detach_node(id)            - preserves a node by removing parent /
-                              dependency ownership
+Do not make the primitive API primarily top-left + width/height. Helpers can
+exist for convenience, but the core data model, configs, layout outputs, and
+queries should be center-defined.
 
-#### 2.2.2 Surfaces, archetypes, and menu semantics
+Every widget should distinguish requested, computed, and final geometry:
 
-Panel, popup, window, and modal should be treated first as surface
-archetypes, not necessarily permanent primitive categories.
+```zig
+requestedBox : Box2, // user request or local absolute box
+computedBox  : Box2, // layout result
+visualOffset : Vec2, // animation/manual movement after layout
+finalBox     : Box2, // computedBox + visualOffset
+```
 
-- A panel is an ordinary owned surface.
-- A popup is a transient surface, usually dependent on an opener and
-   closeable by outside click or a close input.
-- A window is a detached or independently owned surface, optionally
-   movable.
-- A modal is a surface that blocks interaction below its modal scope.
+For absolute static UI, `requestedBox` and `computedBox` are usually the same.
+For row/column layout, the layout pass owns `computedBox`. For animation or
+manual nudging, user code changes `visualOffset` without corrupting layout.
 
-Those distinctions are important for behavior, but they do not all need
-separate internals if one surface primitive with behavior options can cover
-them. The public API should still expose easy helpers for the common cases.
+This keeps "move the button like an entity" compatible with automatic layout.
 
-Future consolidation target:
+## 7. Layout Model
 
-- Keep current names where they help call-site readability.
-- Move shared mechanics into a smaller surface/options model.
-- Keep special node kinds only when they have distinct layout, input, or
-   render behavior.
+Start with a small layout set:
 
-### 2.3 The UIRenderer interface
+- `absolute`: use requested child boxes.
+- `column`: stack children vertically.
+- `row`: stack children horizontally.
+- `stack`: overlay children in the same region.
+- `spacer`: consumes explicit or flexible space.
 
-Define an interface (struct of function pointers, or comptime-generic
-in Zig) with primitives like:
+Later:
 
-  draw_panel(box, style)         -> Interfacer2D visuals
-  draw_text(box, text, style)    -> sDraw text fns
-  draw_button(box, label, state) -> Interfacer2D shape + sDraw text
-  begin_clip(box) / end_clip()   -> raylib BeginScissorMode wrappers
-  measure_text(text, style)      -> raylib MeasureTextEx wrapper
+- grid;
+- scroll region;
+- anchoring helpers;
+- splitter;
+- docking if a real use case appears.
 
-Nodes only call these. One implementation, backed by sDraw +
-Interfacer2D visual half. No second backend.
+Layout should arrange elements. It should not decide whether game-specific
+elements exist. Game code should use ordinary Zig `if`, loops, and functions to
+create/mutate panels.
 
-### 2.4 Layers (multiple roots under one system)
+## 8. Dirty Flags
 
-One UISystem owns several z-ordered layer trees:
+Use dirty flags to keep the system fast without making the user manage caches by
+hand.
 
-- World-space layer - floating health bars, unit labels, damage numbers
-   (renders with camera transform; uses wDraw; hooked into
-   .OnRenderWorld)
-- HUD layer         - persistent screen-space (resource bar, minimap,
-   clock)
-- Panel layer       - openable/closeable windows (market view, fleet
-   detail)
-- Modal layer       - confirmations blocking input below
-- Tooltip layer     - always on top, never receives input
+Suggested flags:
 
-Each layer is its own tree, independently built and rendered. Input
-routes top-down through layers. Cheap to add now, painful to retrofit.
+- `structureDirty`: child added, removed, reordered, or parent changed.
+- `layoutDirty`: requested boxes, layout mode, text size dependency, padding, or
+  visibility changed.
+- `textDirty`: text or font data changed.
+- `renderDirty`: style, final geometry, text draw data, or visibility changed.
+- `hitDirty`: final boxes or interactivity changed.
 
-Similar to Godot's CanvasLayer / Unity's sorted Canvas model.
+Mutation APIs should mark dirty state automatically.
 
-Initial layer order:
+Examples:
 
- 1. World-space layer
- 2. HUD layer
- 3. Panel layer
- 4. Popup / menu layer
- 5. Modal layer
- 6. Tooltip layer
+- `setText()` marks `textDirty`, `renderDirty`, and maybe `layoutDirty`.
+- `setBox()` marks `layoutDirty`, `renderDirty`, and `hitDirty`.
+- `setVisualOffset()` marks `renderDirty` and `hitDirty`.
+- `setStyle()` marks `renderDirty`.
+- `addWidget()` marks `structureDirty`, `layoutDirty`, `renderDirty`, and
+  `hitDirty`.
 
-### 2.5 Box2 as layout output
+## 9. Input And Events
 
-Use the existing Box2 struct (src/utils/data/boxer2.zig) as every node's
-post-layout rect. Reasons:
+The primitive layer should support simple input without owning the whole engine
+policy.
 
-- Hit-testing UI uses the same code path as hit-testing game entities
-- World-space UI (tooltip pinned to entity) is trivial: copy entity's
-   Box2, offset it
-- Debug visualization of UI bounds reuses existing rect drawing
-- Anchoring (corner-relative, edge-relative, center-relative
-   positioning) is already solved by significant-point queries
+Use a centralized pointer/mouse state instead of making every widget track its
+own hover/click timing. This fits the existing camera/input direction and keeps
+transient pointer facts in one place.
 
-Do NOT introduce a separate UIRect type.
+The primitive-level state can be panel-local at first:
 
-PREREQUISITE: Box2 has known bugs (see APPENDIX A) that must be fixed
-before relying on it for UI layout / clipping.
+```zig
+const UiPointerState = struct
+{
+  screenPos       : Vec2,
+  worldPos        : Vec2, // optional when supplied by engine/camera code
+  delta           : Vec2,
+  hoveredPanel    : UiHandle,
+  hoveredWidget   : UiHandle,
+  pressedWidget   : [ 3 ]UiHandle,
+  buttonState     : [ 3 ]UiPointerButton,
+  hoverDuration   : Duration,
+};
 
-## 3. ECS INTEGRATION
+const UiPointerButton = struct
+{
+  isDown            : bool,
+  pressedThisFrame  : bool,
+  releasedThisFrame : bool,
+  downDuration      : Duration,
+  dragDelta         : Vec2,
+};
+```
 
-### 3.1 UI is NOT just entities-with-components
+Exact field names can change during implementation. The important rule is that
+the pointer state owns transient interaction facts: topmost hovered target,
+pressed/captured target per button, position, movement, button transitions,
+click duration, and hover duration.
 
-Considered: making every button an entity with UIVisual, UIInteraction,
-etc. components (Bevy-style). Rejected for this project because:
+Widgets should still own durable widget state, such as checkbox value, slider
+value, text, visibility, configs, dirty flags, and layout/render caches. A
+button should not need to store "hovered for 0.4 seconds"; it can derive its
+visual state from the current `UiPointerState`.
 
-- ECS excels at many entities with similar shapes processed in bulk
-- UI has the opposite profile: few elements, rich state, tree-organized,
-   processed in tree-walk order with parent-child dependencies
-- Forcing UI into ECS means fighting it to recover hierarchy and
-   ordering
+Initial input behavior:
 
-Chosen approach: UI is a parallel system that INTERFACES with the ECS
-through well-defined queries and commands. UI tree is its own data
-structure inside UISystem. ECS components exist for the CONNECTIONS
-between UI and game, not for the UI itself.
+- update hover from mouse position;
+- update pointer state from hit-test results and button transitions;
+- emit clicked event on press/release over the same widget;
+- return hit-test results for custom handling.
 
-### 3.2 Don't put UI state on game entities
+Initial events:
 
-A planet entity should NOT have a UIPanel component. Reasons:
+- `clicked`;
+- `changed`;
+- `closed` only if panels support local close/destruction.
 
-- Lifecycles differ: planet exists for the game's lifetime; its detail
-   panel exists only while open.
-- An entity might be destroyed mid-frame with its panel open - cleaner
-   to handle if the panel isn't literally a component on the dead
-   entity.
+The engine manager can later add:
 
-Do allow game entities to REFERENCE UI:
+- focus;
+- keyboard capture;
+- modal blocking;
+- close policy;
+- layer-aware routing;
+- global event forwarding.
 
-- Selectable component   -> "when clicked, open panel X for entity #42"
-- HasTooltip component   -> holds an ID/path the UI system looks up
+## 10. Introspection
 
-### 3.3 Connection components (keep this set small)
+The UI should expose its own current state. This is a first-class goal, not a
+debug-only afterthought.
 
-- UIRoot     - marks ownership of a UI tree / layer. Holds root node,
-              z-index, visibility. A handful of these total (one per
-              layer).
+Required query surfaces:
 
-- UIAnchor   - (optional, for world-space) links a UI element's
-              position to an entity's Box2, with offset. Makes
-              floating labels follow units.
+- get panel box;
+- get widget requested/computed/final box;
+- get widget kind;
+- get widget text;
+- get text metrics;
+- get hit-test result at point;
+- get current pointer/mouse state;
+- get hovered/pressed panel and widget handles from pointer state;
+- get child count/order;
+- get parent/child relation;
+- get dirty/debug state.
 
-- UIBinding  - (optional, defer until needed) marks that a UI element
-              pulls data from a specific entity each frame. Holds
-              entity ID + a tag or function pointer indicating WHAT
-              to read.
+Text-specific queries should eventually include:
 
-Defer UIBinding until there's a real panel that needs live data. Its
-shape will be clearer after feeling the pain firsthand.
+- line bounds;
+- glyph/character bounds;
+- caret position from character index;
+- character index from point.
 
-### 3.4 World-space UI is a separate, simpler model
+The exact character query depends on how text measurement is implemented. The
+primitive layer should not pretend it can provide per-letter positions until the
+text cache actually stores enough data.
 
-Floating health bars / damage numbers / name labels DO belong attached
-to entities (they share the entity's transform). Model them as a
-distinct, lightweight component (WorldLabel or similar) - they render
-via wDraw in the .OnRenderWorld hook, need no layout, no focus, no
-input routing.
+## 11. Rendering
 
-Don't try to unify world-space UI and screen-space UI under one model.
-Different beasts.
+Rendering should be optimized but simple:
 
-### 3.5 Data flow per frame
+- layout produces final boxes;
+- text measurement produces text draw data;
+- render update produces cached draw commands or directly draws from caches;
+- draw walks widgets in panel order.
 
- 1. Game systems update entity state
- 2. UI system iterates UIBinding components, pulls fresh data into UI
-    tree nodes (resource bar label text, etc.)
- 3. UI system iterates UIAnchor components, updates positions of
-    world-space elements
- 4. UI system runs its three passes (build, layout, render+input) over
-    each UIRoot's tree, in z-order, hooked into .OnInputUpdate and
-    .OnRenderOverlay (and .OnRenderWorld for the world-space layer)
- 5. UI emits commands back to game via the engine event system when
-    buttons clicked, etc. Game processes those events next frame.
+The first renderer can draw immediately through existing screen draw helpers.
+Render command extraction can be added only when it removes real complexity or
+helps engine-side layering/debugging.
 
-Discipline: UI READS from ECS; UI does NOT MUTATE game state directly.
-Mutations go through events / commands. This keeps dependencies clean
-and makes UI testable in isolation.
+Do not require `interface2D.zig` for v1. Simple rectangles and text are enough
+to validate the primitive API.
 
-## 4. API DESIGN
+## 12. Defaults And Configs
 
-### 4.1 Engine-facing command surface (keep small)
+Configs should be sparse:
 
-The game should NOT see addButton, removeLabel, setText, moveBox. All
-of that is internal to the UI system. The full surface is roughly:
+```zig
+const cfg : ui.WidgetConfig = .{
+  .style = .warning,
+};
+```
 
-  ui.show(panel_definition)     - open / show a panel
-  ui.hide(panel_id)             - close
-  ui.update_binding(key, value) - push fresh data
-  ui.poll_events()              - drain user actions (clicks, etc.)
-  ui.set_focus(panel_id)        - explicit focus control
+Everything else should default sensibly.
 
-Game describes INTENT, not mechanics. This inversion is what makes the
-system maintainable.
+Separate config from mutable state:
 
-### 4.2 Panel definition - declarative, comptime
+- config/defaults describe initial behavior and style;
+- widget state stores durable values such as checked value, text, visibility,
+  dirty flags, and caches.
+- transient hover/press/click timing lives in centralized pointer state.
 
-Define a panel as a comptime struct describing its tree; tell the UI
-system to show / hide it by ID. Sketch:
+## 13. Stronger Engine System Later
 
-  const MarketPanel = ui.Panel{
-    .id = "market",
-    .layout = .vertical,
-    .children = &.{
-        ui.Label{ .text_binding = "market.title" },
-        ui.Table{ .data_binding = "market.commodities" },
-        ui.Button{ .label = "Close", .on_click = .close_self },
-    },
-  };
+The primitive toolkit is intended to support a stronger engine-owned UI system.
+The engine manager should not replace the primitive API; it should orchestrate
+it.
 
-  ui.show(MarketPanel);
-  ui.hide("market");
+Future engine manager responsibilities:
 
-Benefits:
+- own many panels;
+- sort by layer and z-index;
+- route input front-to-back;
+- centralize capture and modal behavior;
+- expose UI events to game hooks;
+- draw all registered panels;
+- provide debug views over panel/widget state;
+- support persistent windows/popups/tooltips.
 
-- Comptime-friendly in Zig, compile-time validated
-- Stable IDs for free
-- Tree structure visible at a glance
-- A hot-reloadable script format can later produce the same data
-   structure if / when scripting is built out (currently deferred).
+If this split works, engine-owned UI and game-owned UI use the same primitives.
+That keeps the simple path simple while allowing stronger engine behavior later.
 
-### 4.3 Comptime vs. hot-reload
+## 14. First Useful Milestone
 
-- Comptime declarations - compile-time validation, zero runtime
-   overhead, editor autocomplete on bindings. Cost: every UI tweak
-   needs a rebuild.
+The first successful version is not a full windowing system. It is:
 
-- Hot-reloadable scripts - iterate without recompiling (big win for
-   management games where layout tweaks are constant). Cost: scripting
-   layer, runtime parsing, loss of comptime validation.
+- create a panel;
+- add labels and buttons;
+- layout with absolute/row/column;
+- draw the panel;
+- hit-test buttons;
+- emit clicked events;
+- mutate text/boxes after creation;
+- query final boxes;
+- recalculate only dirty state.
 
-Recommendation: start comptime. After 3-4 real panels exist and the
-panel API has stabilized, reconsider whether a text format on top is
-worth it. Scripter.zig is currently a stub; this would be revisited
-if / when it is built out properly.
-
-### 4.4 Event channel (UI -> game)
-
-Use the existing engine event system (src/core/event/). UI actions
-become typed Events with EventPhase. Game-side listeners register via
-the existing EventListener / EventListenerArray.
-
-Caveat: the event system is a first-draft implementation that has not
-been heavily tested. Expect to stress-test it and likely refactor
-alongside the UI work. The first one or two real panels will surface
-what the API actually needs to look like - treat that friction as the
-brief, not as a blocker.
-
-### 4.5 Input capture
-
-The UI system consumes raw input and emits UI events. Game input should
-be able to query capture before acting on the same mouse / keyboard state.
-
-Minimum capture helpers:
-
-  ui.wants_mouse()
-  ui.wants_keyboard()
-  ui.get_hovered_id()
-  ui.get_focused_id()
-
-Mouse capture is required for drag / slider / scroll interactions.
-Keyboard capture is required for text input and command fields. Modal
-capture blocks interaction outside the modal subtree.
-
-Close inputs must also be captured. If Escape closes a UI surface, the
-game must not also use that same Escape press for pause/settings/etc. The
-current implementation follows this pattern through `wants_keyboard()` when
-a UI node consumes Escape; game code must query capture after UI dispatch.
-
-Avoid accumulating one flag per close key (`close_on_escape`,
-`close_on_enter`, etc.) if the set grows. Prefer a compact close-policy
-representation that can describe triggers such as:
-
-- Escape
-- Enter
-- outside click
-- explicit close button / command
-- future custom key or gamepad input
-
-A close policy should close only the focused or topmost eligible UI surface
-for that input, emit one close event, and consume that input for the frame.
-
-#### 4.5.1 UI timebase and delayed activation
-
-Transient UI should support a short activation delay. A newly opened popup,
-modal, or menu should be able to ignore close inputs and interactions for a
-configured number of UI frames or seconds. This prevents same-frame or
-immediately repeated input from opening and closing a surface by accident.
-
-Prefer a UI-local timebase:
-
-- UI frame counter for frame-based guards.
-- Optional elapsed seconds for hover delay, animation, and graph sampling.
-- Stored on the UI manager / context, not duplicated per game.
-
-The same timebase can later support animated graphs, transitions, and
-richer tooltip timing. Keep the first version small: enough for delayed
-activation and existing tooltip delay.
-
-### 4.6 Engine-owned frame surface
-
-The engine should own common UI phase calls. Games can populate UI roots
-and drain events through hooks, but the timing should not be per-game.
-
-Draft frame shape:
-
-  // updateFrame phase
-  ui.begin_frame(input)
-  ui.update_layout()
-  ui.dispatch_input()
-
-  // renderAll overlay phase
-  ui.build_render_commands()
-  ui.draw_screen()
-  ui.end_frame()
-
-If world-space UI is needed, keep it as a distinct draw path:
-
-  // renderAll world phase, inside camera mode
-  ui.draw_world()
-
-## 5. BUILD ORDER
-
-The order to actually implement in. Resist building the full system before
-testing it.
-
- 1. Fix / verify Box2 semantics (APPENDIX A) - UI depends on Box2 being
-    correct for hit testing, clipping, and layout bounds.
-
- 2. UiContext / UISystem owned by Engine, analogous to other engine
-    managers. Start with one layer.
-
- 3. Node tagged union with three variants: Panel, Label, Button.
-
- 4. Trivial absolute-position layout - Box2 does the work. Flex later.
-
- 5. UIRenderer interface with 3-4 methods, single implementation
-    against sDraw + Interfacer2D visual half.
-
- 6. PanelDefinition comptime struct + ui.show(def) / ui.hide(id).
-
- 7. UI hooks wired: build / layout / input in updateFrame /
-    .OnInputUpdate; screen render in renderAll / .OnRenderOverlay
-    (and .OnRenderWorld for world layer).
-
- 8. Event integration: button clicks emit engine Events the game polls.
-
- 9. Menu lifetime and dependency invalidation: dependent submenu,
-    independent spawned window, outside-click close, escape close.
-
-10. ONE REAL PANEL end-to-end - even something dumb like an FPS
-    counter with a "Reset" button.
-
-The most important step is #10. Until one panel exists end-to-end, every
-architectural decision is theoretical. Wiring "game state -> binding ->
-render -> click -> event -> game response" through the whole pipeline
-will surface half a dozen small design decisions invisible from the
-design level. Plan to throw away the first panel.
-
-Then iterate:
-
-- Add scroll regions
-- Add flex-style layout
-- Add the layer system (more than one)
-- Add UIBinding for live data
-- Add world-space layer + UIAnchor
-- ...
-
-## 6. PITFALLS TO ACTIVELY AVOID
-
-- Don't use inheritance / vtables for node kinds. Tagged union + switch
- is simpler, faster, more debuggable in Zig.
-
-- Stable IDs matter. When nodes appear / disappear / reorder, state
- (scroll, focus, animation) needs to follow them. Use string IDs or
- path hashes, NOT array indices. (ComponentRegistry already uses
- StringHashMap; same pattern applies here.)
-
-- Don't cache layout results until you measure a problem. UI trees are
- small. Relayout every frame. Caching is premature optimization and a
- major bug source.
-
-- Game code must not reach into UI node internals. UI reads game state
- via the binding / query layer. Game touches button.is_pressed ->
- architecture broken.
-
-- Entity destruction with UI references is a footgun. Decide early how
- it is signaled - cleanest pattern is a deletion event the UI listens
- to. Otherwise: use-after-free or stale data bugs.
-
-- Tooltips are first-class, not an afterthought. Build into the
- primitive layer from day one. Paradox does this right; their UI is
- navigable because everything tells you what it is and where the
- number came from.
-
-- Avoid modal dialogs for anything the player might want to compare.
- Use side panels that don't block the main view.
-
-- Tables need sort / filter / pin from the start. Even if stubbed, plan
- the API for these now or retrofitting becomes expensive.
-
-- One canonical place per piece of info, plus contextual surfacing.
- Each datum lives in one definitive view but appears as tooltips /
- inline summaries elsewhere. Don't duplicate panels.
-
-- Don't put interaction state on Interfacer2D. Its isActive / isSelected
- fields exist but should be ignored or removed - interaction state
- lives in the UI tree.
-
-## 7. OPEN QUESTIONS FOR FURTHER DESIGN
-
-These were not resolved and may want further thought:
-
-- Exact shape of UIBinding. Function pointer? Tagged enum of read
- operations? String key into a property bag? Probably wait until 2-3
- panels exist and patterns emerge.
-
-- Focus model. Single global focus, or per-layer focus? How does
- keyboard navigation work? (Likely defer until a panel actually needs
- keyboard input.) Also decide whether close inputs prefer strict focused
- surfaces or the frontmost eligible transient when focus is absent.
-
-- Style / theming system. Hard-coded styles to start; eventually
- probably a style struct passed down the tree. Don't over-design
- early. def.Colour already exists with named constants.
-
-- Surface consolidation. Should panel / popup / window remain separate node
- kinds, or become archetypes around one surface primitive once their shared
- behavior is clearer?
-
-- Animation / transition system. Tween library? Per-node animation
- state? Probably trivial easing curves on a few properties to start.
-
-- Localization hooks. Worth thinking about BEFORE hard-coding English
- strings everywhere - at minimum, route all displayed text through a
- tr("key") function even if it is identity for now.
-
-- Charts. Out of scope for v1 but mentioned. Plan to add a CustomDraw
- node variant early so charts can be implemented as user-drawn nodes
- without bloating the core node set.
-
-- Event system refactor scope. How much will UI use stress the existing
- event system? Will it stay as-is, get extended, or be replaced?
- Answer becomes clear after the first panel.
-
-## 8. SUMMARY MENTAL MODEL
-
-The engine owns one UISystem (like it owns one camera). The UISystem owns
-several z-ordered layer trees. Each tree is built from declarative
-PanelDefinitions the game registers via ui.show(...). Each frame, the
-system runs build -> layout -> render+input over each tree:
-
- build / layout / input  ->  .OnInputUpdate hook
- render (screen)         ->  .OnRenderOverlay hook
- render (world)          ->  .OnRenderWorld hook
-
-UI reads game state through bindings; it writes back through the engine's
-existing event system. Nodes are tagged unions, dumb, addressable by
-stable ID; they don't know how to draw themselves - they ask a UIRenderer
-interface backed by sDraw + Interfacer2D's visual half (no raygui). The
-existing Box2 struct is the universal rect type. Game entities can
-reference UI elements (Selectable, HasTooltip) but UI state never lives
-on game entities, except for world-space labels which are a separate,
-simpler model.
-
-## Appendix A: Box2 Fixes Prerequisite
-
-Bug fixes and API simplifications in src/utils/data/boxer2.zig. UI cannot
-reliably use Box2 for layout / clipping / collision until these are
-clean.
-
-Semantic convention (the On / In / Out trio):
-
-    in  - box is fully contained in the range ( box ⊆ range )
-    out - box has no overlap with the range at all ( disjoint )
-    on  - box overlaps the range by at least one point of contact ( partial overlap counts )
-
-  Predicates: isOn / isIn / ( isOut = !isOn ).
-  Clamps:    clampOn / clampIn / clampOut, each producing the
-           minimally-displaced box that satisfies its relation.
-
- TODO : Review current implementation and logic. Test changes
-
-## Appendix B: Naming - Box Edges Vs Range Bounds
-
-Decision: Option A. Rename edge accessors to min / max so they map
-trivially to range parameter names. Keep directional vocabulary for
-compound keypoints (corners) and for direction-of-extent methods
-(goes... / is...OfX / clampOn...LeftX / etc.).
-
-Renames to apply (handled by IDE-wide refactor):
-
-Edge accessors:
-  getLeftX   -> getMinX
-  getRightX  -> getMaxX
-  getTopY    -> getMinY
-  getBottomY -> getMaxY
-  setLeftX   -> setMinX
-  setRightX  -> setMaxX
-  setTopY    -> setMinY
-  setBottomY -> setMaxY
-
-Helpers:
-  getCenterXFromLeftX    -> getCenterXFromMinX
-  getCenterXFromRightX   -> getCenterXFromMaxX
-  getCenterYFromTopY     -> getCenterYFromMinY
-  getCenterYFromBottomY  -> getCenterYFromMaxY
-
-Parameter names (where they exist on the renamed setters/helpers):
-  leftX   -> minX
-  rightX  -> maxX
-  topY    -> minY
-  bottomY -> maxY
-
-Kept directional (do NOT rename):
-
-Corner accessors / setters (compound 2D directional names read well):
-  getTopLeft / getTopRight / getBottomLeft / getBottomRight
-  setTopLeft / setTopRight / setBottomLeft / setBottomRight
-  getCenterFromTopLeft / getCenterFromTopRight / getCenterFromBottomLeft
-    / getCenterFromBottomRight
-  (and their compound parameter names: topLeftPos, etc.)
-
-Standalone util predicates:
-  isLeftOf, isRightOf, isAbove, isBelow
-
-Direction-of-extent methods on Box2:
-  goesLeftOfX, goesRightOfX, goesAboveY, goesBelowY
-  isLeftOfX,   isRightOfX,   isAboveY,   isBelowY
-  clampOnLeftX,  clampOnRightX,  clampOnTopY,  clampOnBottomY
-  clampInLeftX,  clampInRightX,  clampInTopY,  clampInBottomY
-
-After the rename, those kept directional methods read as the explicit
-mapping at their bodies, e.g.
-
-  goesLeftOfX(t) = isLeftOf( self.getMinX(), t )
-  isLeftOfX(t)   = isLeftOf( self.getMaxX(), t )
-
-which makes "Left = min on X" visible at the implementation site while
-keeping the directional vocabulary natural at call sites.
+Use `src/games/menuer` as the proof surface once the primitive API exists.

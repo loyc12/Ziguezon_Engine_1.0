@@ -1,205 +1,319 @@
-# UI Implementation Brief
+# UI Implementation Roadmap
+
+Roadmap for replacing the previous retained-manager-first UI plan with a
+retained imperative primitive toolkit.
+
+The immediate target is not a full engine UI manager. The immediate target is a
+small, reusable primitive layer that can be owned directly by a game or later
+orchestrated by an engine-side UI subsystem.
+
+## 0. Direction
+
+Build this first:
+
+```text
+src/utils/ui
+  Panel
+  Widget
+  configs/defaults
+  stable handles
+  center-defined Box2 geometry
+  pointer/mouse state
+  simple layout
+  dirty flags
+  hit-test helpers
+  draw helpers
+  query/introspection APIs
+```
+
+Build this later:
+
+```text
+src/engine/...
+  UI manager
+  layers
+  input routing
+  focus/capture
+  modal/close policy
+  engine event forwarding
+  panel lifetime orchestration
+```
+
+The current `UiContext` implementation may be mined for behavior, but it should
+not constrain the new shape.
+
+## 1. Phase One - Primitive Data Model
+
+Goal: create the smallest useful retained object model.
+
+Required pieces:
+
+- `UiKey` for stable user-provided identity.
+- `UiHandle` as index + generation or equivalent.
+- `Panel`.
+- `Widget`.
+- `PanelConfig`.
+- `WidgetConfig`.
+- `WidgetKind`.
+- `WidgetState`.
+- `UiPointerState`.
+- `UiPointerButton`.
+- `UiDirtyFlags`.
+- `UiEvent`.
 
-This is the implementation contract for the next retained-mode UI pass after the v0.5 feature layer. It supplements `ui_roadmap.txt` and `todo.md`; keep broader design rationale in the roadmap and status / backlog tracking in the TODO.
+Initial widget kinds:
 
-## Current Baseline
+- label;
+- button;
+- checkbox only if cheap;
+- spacer;
+- container;
+- custom draw placeholder if it does not complicate storage.
 
-The retained UI system already has:
+Expected API shape:
+
+```zig
+var panel = try ui.Panel.init( alloc, .{
+  .key    = ui.key( "main" ),
+  .box    = box,
+  .config = .{},
+});
 
-* engine-owned `UiManager` / `UiContext` lifecycle
-* retained node storage with stable `UiId`
-* parent / child ownership and dependency invalidation
-* root, panel, label, button, checkbox, popup, window, scroll-area, slider, and tooltip behavior
-* HUD, panel, popup, modal, and tooltip layers
-* modal blocking, layer-aware hit testing, clipped scroll regions, slider drag capture, tooltip delay, and debug overlay
-* UI-local clicked / changed / closed event buffer
-* `menuer` sandbox coverage for the current retained controls and input capture
+const title = try panel.addLabel( .{
+  .key  = ui.key( "title" ),
+  .text = "Market",
+});
+
+const buy = try panel.addButton( .{
+  .key  = ui.key( "buy" ),
+  .box  = buyBox,
+  .text = "Buy",
+});
+```
 
-Escape currently closes the frontmost eligible `closeOnEscape` node and sets keyboard capture when that input is consumed. This prevents duplicate game handling when game code checks `wantsKeyboard()` after UI dispatch, but it is not yet a complete focused-menu close policy.
+Do not add engine ownership in this phase.
 
-## Scope
+## 2. Phase Two - Geometry And Layout
 
-Build the next composability / input-policy pass. The goal is to make the current UI surface model easier to reason about and easier to instantiate before adding larger shipped-game widgets.
+Goal: make static panels easy to build and inspect.
+
+Required geometry:
 
-This pass should focus on:
+- requested `Box2`, using center + half-size;
+- computed `Box2`, using center + half-size;
+- visual offset;
+- final `Box2`, using center + half-size;
+- parent/child local coordinate rules.
 
-* auditing `panel`, `popup`, `window`, and `modal` behavior against a smaller surface/options model
-* preserving convenient public archetypes / helper constructors for common menu surfaces
-* replacing or extending one-off close flags with a compact close-policy / closing-input representation
-* guaranteeing one consumed close input produces one UI close action and suppresses duplicate game handling for that frame
-* adding UI-local time tracking
-* adding delayed activation / input guards for newly spawned popups, modals, and menus
-* updating `menuer` so the new behavior is visible and manually testable
+Do not make top-left + width/height the primary primitive representation.
+Convenience helpers are fine, but the primitive storage and API should match
+`Box2`.
 
-Keep the current core architecture: engine-owned manager, retained nodes, `Box2` bounds, simple `sDraw` rendering, UI-local events, and game-facing use through `def.UiManager`.
+Required layouts:
 
-Treat `interfacer.zig` as a deprecated/stub visual experiment. Do not read from it, refactor it, depend on it, or route rendering through it unless the user explicitly asks for that later.
+- absolute;
+- row;
+- column;
+- stack;
+- spacer support if straightforward.
 
-## Location
+Required queries:
 
-All new retained UI implementation files should live under `src/utils/ui/`.
+- `panel.getBox()`;
+- `panel.getWidgetBox( handle )`;
+- `panel.getWidgetFinalBox( handle )`;
+- `panel.getParent( handle )`;
+- `panel.getChildren( handle )` or iterator equivalent.
 
-Allowed supporting edits:
+Layout should be manually callable:
 
-* `src/defs.zig` exports for new UI types / helpers
-* `src/core/engine/engineCore.zig` only if manager storage changes
-* `src/core/engine/engineState.zig` only if init / deinit changes
-* `src/core/engine/engineStep.zig` only if frame order must change
-* `exampleGames/menuer/*` for the behavior sandbox
+```zig
+panel.updateLayout();
+```
 
-Ask before making major structural changes outside those areas.
+Mutations should mark layout dirty automatically, so the caller does not need to
+track invalidation details.
 
-## Engine Integration Constraints
+## 3. Phase Three - Rendering
 
-Do not move UI ownership out of `Engine.uiManager`.
+Goal: draw useful static panels with minimal boilerplate.
 
-The frame sequence should stay:
+Required drawing:
 
-* `beginFrame`
-* `updateLayout`
-* `dispatchInput`
-* game `OnInputUpdate`
-* `endFrame`
-* game `OnRenderOverlay`
-* UI screen draw
+- panel/background boxes;
+- labels;
+- button surfaces;
+- checkbox surface if implemented;
+- debug bounds option.
 
-Only change this ordering if the new behavior cannot be made correct otherwise, and document the reason in `todo.md`.
+Rendering can initially draw immediately through existing `sDraw` helpers. A
+render command cache can wait until it is needed.
 
-Do not integrate retained UI with `src/core/event` in this pass unless the user explicitly changes the scope. The current UI-local event buffer is preferred because it is narrow, already used by `menuer`, and keeps UI command ordering easy to reason about while the global event manager remains mostly unused and insufficiently validated.
+Required render optimization:
 
-Use `Box2` for retained UI layout output, draw bounds, hit testing, overlap checks, clipping decisions, and screen-edge clamping. Prefer `getSize` / `getSizeX` / `getSizeY` over repeated `scale * 2.0` math.
+- `renderDirty` flag;
+- text cache or measured text data;
+- no recomputation of stable geometry/text unless dirty.
 
-## Style Constraints
+Do not integrate `interface2D.zig` yet.
 
-Match the existing Zig codebase style and naming patterns, especially from complex /src/utils/*/** and /src/core/*/** files
+## 4. Phase Four - Hit Testing And Local Events
 
-These are intentionally different from standard Zig, so do not run formatting passes such as `zig fmt`.
+Goal: make the primitive layer interactive without needing the engine manager.
 
-Comment non-self-documenting or non-obvious code enough so that a skilled zig coder could understand without extremely domain-specific knowledge
+Required behavior:
 
-Prefer compact implementations. Extract helpers when they reduce repeated surface / close-policy / time-guard logic, but do not build a broad framework ahead of the current behavior.
+- hit-test front-to-back within one panel;
+- centralized pointer/mouse state;
+- hovered panel/widget handles on pointer state;
+- pressed/captured widget handle per mouse button on pointer state;
+- pointer position, movement delta, button transitions, click durations, and
+  hover duration on pointer state;
+- clicked event for buttons;
+- changed event for checkbox if implemented;
+- primitive event queue on the panel.
 
-Prefer using /src/utils/** utils over local (re)implementation when it makes sense. If no matching util is available, implement it locally for now, but warn the user it could become a util
+Expected manual usage:
 
-## Required Work Chunks
+```zig
+panel.updateInput( uiInput );
 
-### 1. Surface Behavior Audit
+while( panel.popEvent() )| event |
+{
+  if( event.isClicked( buy ) ){ buyGoods(); }
+}
+```
 
-Inventory the current behavior differences between panels, popups, windows, modals, detached roots, and floating layout.
+This phase should also expose:
 
-Implementation expectations:
+- hit result at point;
+- pointer state;
+- hovered handles;
+- pressed/captured handles;
+- simple event count/debug queries.
 
-* Identify which differences are real behavior differences and which are only defaults, layer, style, or naming.
-* Keep separate node kinds only where they have distinct layout, input, or render behavior.
-* Keep public names / helpers where they improve call-site readability.
-* Do not perform a large rewrite until the audit makes the smaller primitive shape obvious.
-* Remove dead or deprecated codeblocks if a consolidation makes them obsolete.
+Widgets should not individually track hover/click timers. Durable widget state,
+such as checked value, slider value, text, visibility, configs, and caches,
+still belongs on widgets. Focus, keyboard navigation, modal blocking, and
+layered routing remain engine-side goals.
 
-Document any remaining ambiguity in `todo.md`.
+## 5. Phase Five - Mutation And Dirty Tracking
 
-### 2. Surface Archetypes / Templates
+Goal: make retained UI practical after creation.
 
-Add or sketch ergonomic constructors / templates for common menu surfaces.
+Required mutation helpers:
 
-Implementation expectations:
+- set text;
+- set visibility;
+- set style/config fields that are safe to mutate;
+- set requested box;
+- set visual offset;
+- set checked/value state if relevant;
+- add/remove widgets;
+- clear panel.
 
-* A caller should be able to create ordinary panels, transient popups, independent windows, and modals without manually setting every low-level option.
-* Archetypes should populate sensible defaults for layer, close policy, modal blocking, movability, dependency ownership, and delayed activation.
-* The underlying data should remain composable; avoid baking every menu flavor into a new primitive.
-* Keep call sites in `menuer` readable enough to judge whether the API is actually easier to use.
+Dirty rules:
 
-If this is too large to implement cleanly in one pass, first land the option structs / helper shape and update `todo.md` with the remaining migration work.
+- setters mark the right dirty flags;
+- layout/render/hit caches update only when needed;
+- direct access to internal arrays should not bypass invalidation.
 
-### 3. Close Policy / Closing Input
+This phase is what makes simple animation possible:
 
-Replace or extend `closeOnEscape` / `closeOnOutside` style booleans with a compact close-policy model before adding more one-off flags such as `closeOnEnter`.
+```zig
+panel.setVisualOffset( buy, offset );
+```
 
-Implementation expectations:
+## 6. Phase Six - Text Introspection
 
-* Support at least Escape and outside click.
-* Include Enter if it can be added without complicating the model.
-* Leave room for explicit close buttons / commands and future custom inputs.
-* A consumed close input should close only one eligible UI surface per frame.
-* Prefer focused surface first; if focus is absent or unsuitable, use the frontmost eligible transient as the fallback.
-* Set keyboard or mouse capture when a close input is consumed so game code cannot also act on the same input.
-* Emit the existing closed event behavior unless the event shape needs a small, documented extension.
+Goal: expose enough text state for precise custom drawing.
 
-Do not add full keyboard navigation as part of this work.
+Required first:
 
-### 4. UI Timebase
+- measured text size;
+- text baseline or draw origin;
+- line height;
+- label final text box.
 
-Add UI-local time tracking to `UiContext` or the manager-owned UI state.
+Later:
 
-Implementation expectations:
+- line bounds;
+- character/glyph bounds;
+- point-to-character lookup.
 
-* Track a monotonically increasing UI frame counter.
-* Track elapsed seconds only if it is straightforward with the current input/frame data.
-* Use the timebase for new delayed activation guards.
-* Preserve existing tooltip delay behavior and migrate it to the shared timebase only if that keeps the implementation simpler.
-* Keep the timebase UI-owned, not duplicated in `menuer`.
+Do not promise per-letter positioning until the text cache stores the data
+needed to answer it correctly.
 
-This timebase should be small, but shaped so later animated graphs / transitions can reuse it.
+## 7. Phase Seven - Menuer Primitive Sandbox
 
-### 5. Delayed Activation / Input Guards
+Goal: prove the primitive layer without the engine manager.
 
-Add configurable delayed activation for newly spawned popups, modals, and menus.
+Use `src/games/menuer` or a small new route in it to demonstrate:
 
-Implementation expectations:
+- create a panel directly;
+- add labels/buttons;
+- row/column/absolute layout;
+- render panel;
+- click buttons;
+- update text after a click;
+- query and draw debug boxes from widget final boxes;
+- move one widget via visual offset.
 
-* A surface can ignore close inputs and direct interactions for a configured number of UI frames or seconds after creation.
-* The default delay should prevent same-frame accidental close without making normal menus feel sluggish.
-* The guard should apply to close-on-outside and close inputs.
-* Decide whether hover-only behavior, such as tooltip readiness, should be blocked during the guard and document the result.
-* `menuer` should include at least one reachable transient surface that demonstrates the guard.
+This validates the desired backend-dev-friendly use before adding a global
+manager.
 
-### 6. Menuer Sandbox
+## 8. Phase Eight - Engine-Side Manager Design
 
-Update `exampleGames/menuer` so the new behavior is visible and manually testable.
+Goal: store the engine-side implementation context for later review.
 
-The sandbox should demonstrate:
+Do not implement this until the primitive layer is usable.
 
-* existing MVP and v0.5 behavior still works
-* a popup / modal with delayed activation
-* Escape or another close input closes only one eligible UI surface
-* game pause / camera / settings-style inputs still respect `wantsMouse` / `wantsKeyboard`
-* the new surface archetype helpers are used at least once if implemented
+Future engine manager should provide:
 
-Keep sandbox additions direct and readable. Do not turn `menuer` into a UI framework.
+- ownership of many panels;
+- panel add/remove/transfer APIs;
+- layer and z-order sorting;
+- global hit-test across panels;
+- input routing into shared pointer/mouse state;
+- capture and modal rules;
+- close policy;
+- engine event forwarding;
+- draw-all orchestration;
+- debug overlay/inspection.
 
-## Non-Goals For This Pass
+The engine manager should use the same `Panel` primitives that game-owned UI
+uses directly.
 
-Do not implement these unless needed to complete the above behavior:
+## 9. Deferred Features
 
-* textual input
-* clipboard
-* gamepad navigation
-* full keyboard navigation
-* dropdowns
-* menu bars
-* tabs
-* tables
-* charts / graph widgets
-* property inspectors
-* hot-reloadable panel definitions
-* full comptime panel definition API
-* world-space UI / anchors
-* engine event system integration
-* `interfacer.zig` bevel / shape integration
-* any cleanup, replacement, or partial integration of `interfacer.zig`
-* advanced theme files
+Defer until the primitive layer is proven:
 
-## Validation
+- text input;
+- keyboard navigation;
+- gamepad navigation;
+- scroll areas;
+- dropdowns;
+- menu bars;
+- tabs;
+- tables/lists;
+- property inspectors;
+- graph widgets;
+- docking;
+- hot reload;
+- theme files;
+- world-space UI anchors;
+- global engine event integration.
 
-Required checks:
+## 10. Validation Strategy
 
-* `zig build -Dengine_interface_path=exampleGames/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`
-* `zig build`
-* `zig build test` after touching utility code such as `Box2`
+For docs-only changes, no build is required.
 
-Do not run `zig fmt`.
+For primitive implementation changes:
 
-Also manually inspect the `menuer` sandbox if a graphical run is available. At minimum, the code should make each new behavior reachable from the sandbox without hidden setup.
+- run `zig build`;
+- run `zig build test` after utility-level changes;
+- run the `src/games/menuer` build target once the sandbox is updated;
+- do not run `zig fmt`.
 
-
-
-# User note on current build ( keep even if empty )
+Manual validation should focus on whether the API feels easy to use from game
+code, not just whether the internals are elegant.
