@@ -45,10 +45,7 @@ pub const MouseButton = enum( u8 )
 
   pub const count = @typeInfo( MouseButton ).@"enum".fields.len;
 
-  pub inline fn toIndex( self : MouseButton ) usize
-  {
-    return @intFromEnum( self );
-  }
+  pub inline fn toIndex( self : MouseButton ) usize { return @intFromEnum( self ); }
 };
 
 pub const MouseButtonState = struct
@@ -124,10 +121,11 @@ pub const MouseModifierState = struct
   {
     self.leftDown          = leftDown;
     self.rightDown         = rightDown;
-    self.isDown            = leftDown or rightDown;
+    self.isDown            = leftDown     or rightDown;
     self.pressedThisFrame  = leftPressed  or rightPressed;
     self.releasedThisFrame = leftReleased or rightReleased;
 
+    // TODO : split into individualize left and right press timers
     if( self.pressedThisFrame )
     {
       self.heldTime = .{};
@@ -174,7 +172,7 @@ pub const Mouse = struct
 
   // ================================ UPDATING ================================
 
-  pub fn readRaylib( deltaTime : Duration ) Mouse
+  pub fn fromRayData( deltaTime : Duration ) Mouse
   {
     var mouse : Mouse = .{};
     mouse.updateRaylib( deltaTime );
@@ -189,75 +187,68 @@ pub const Mouse = struct
     self.screenMove = Vec2.fromRayVec2( utl.ray.getMouseDelta() );
     self.wheelMove  = @floatCast( utl.ray.getMouseWheelMove() );
 
-    self.updateButton(
-      .left,
+    self.updateButton( .left,
       utl.ray.isMouseButtonDown(     utl.ray.MouseButton.left ),
       utl.ray.isMouseButtonPressed(  utl.ray.MouseButton.left ),
       utl.ray.isMouseButtonReleased( utl.ray.MouseButton.left ),
       deltaTime
     );
 
-    self.updateButton(
-      .right,
+    self.updateButton( .right,
       utl.ray.isMouseButtonDown(     utl.ray.MouseButton.right ),
       utl.ray.isMouseButtonPressed(  utl.ray.MouseButton.right ),
       utl.ray.isMouseButtonReleased( utl.ray.MouseButton.right ),
       deltaTime
     );
 
-    self.updateButton(
-      .middle,
+    self.updateButton( .middle,
       utl.ray.isMouseButtonDown(     utl.ray.MouseButton.middle ),
       utl.ray.isMouseButtonPressed(  utl.ray.MouseButton.middle ),
       utl.ray.isMouseButtonReleased( utl.ray.MouseButton.middle ),
       deltaTime
     );
 
-    self.updateModifier(
-      .shift,
-      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_shift ),
+    self.updateModifier( .shift,
+      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_shift  ),
       utl.ray.isKeyDown(     utl.ray.KeyboardKey.right_shift ),
-      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_shift ),
+      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_shift  ),
       utl.ray.isKeyPressed(  utl.ray.KeyboardKey.right_shift ),
-      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_shift ),
+      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_shift  ),
       utl.ray.isKeyReleased( utl.ray.KeyboardKey.right_shift ),
       deltaTime
     );
 
-    self.updateModifier(
-      .ctrl,
-      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_control ),
+    self.updateModifier( .ctrl,
+      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_control  ),
       utl.ray.isKeyDown(     utl.ray.KeyboardKey.right_control ),
-      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_control ),
+      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_control  ),
       utl.ray.isKeyPressed(  utl.ray.KeyboardKey.right_control ),
-      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_control ),
+      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_control  ),
       utl.ray.isKeyReleased( utl.ray.KeyboardKey.right_control ),
       deltaTime
     );
 
-    self.updateModifier(
-      .alt,
-      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_alt ),
+    self.updateModifier( .alt,
+      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_alt  ),
       utl.ray.isKeyDown(     utl.ray.KeyboardKey.right_alt ),
-      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_alt ),
+      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_alt  ),
       utl.ray.isKeyPressed(  utl.ray.KeyboardKey.right_alt ),
-      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_alt ),
+      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_alt  ),
       utl.ray.isKeyReleased( utl.ray.KeyboardKey.right_alt ),
       deltaTime
     );
 
-    self.updateModifier(
-      .super,
-      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_super ),
+    self.updateModifier( .super,
+      utl.ray.isKeyDown(     utl.ray.KeyboardKey.left_super  ),
       utl.ray.isKeyDown(     utl.ray.KeyboardKey.right_super ),
-      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_super ),
+      utl.ray.isKeyPressed(  utl.ray.KeyboardKey.left_super  ),
       utl.ray.isKeyPressed(  utl.ray.KeyboardKey.right_super ),
-      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_super ),
+      utl.ray.isKeyReleased( utl.ray.KeyboardKey.left_super  ),
       utl.ray.isKeyReleased( utl.ray.KeyboardKey.right_super ),
       deltaTime
     );
 
-    // TODO(ui): after UI hit testing exists, update topPanel/topWidget here or
+    // TODO ui : after UI hit testing exists, update topPanel/topWidget here or
     // through `setUiHoverTarget()`, then use `updateHoverTime()`.
     self.updateHoverTime( deltaTime );
   }

@@ -38,9 +38,7 @@ Be sure to point out any point of tensions which could be worked out
 
 reactivate and revamp logger's file logging system
 
-menuer : keep game-own ui implementations, but deactivate via a toggleable flag, and build engine-own ui beside it
+menuer : once engine ui system implemented : keep game-own ui implementations, but deactivate via a toggleable flag, and build engine-own ui beside it
 
 panel & widget should have some permission booleans : isMovable, isVisible, isClickable, isActivable
-panel & widget subtypes ought to beb uilt via generics if possible and desirable
-
-add more line-based shapes ( Ngons, but only link apex to center )
+panel & widget subtypes ought to be built via generics if possible and desirable
