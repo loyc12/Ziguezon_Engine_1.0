@@ -1,6 +1,6 @@
 const std      = @import( "std" );
 const eng      = @import( "engine" );
-const utl = @import( "utils" );
+const utl      = @import( "utils" );
 const stateInj = @import( "stateInjects.zig" );
 
 const Engine = eng.Engine;
@@ -24,11 +24,17 @@ const shaker : utl.Shake2D = .{
 const SHOW_SPRITE_ANIM = true;
 
 var sprite_i : i32 = 0;
-var sprite_r : f32 = 0;
+
 
 const SHOW_INTERFACE = true;
 
-var ui : utl.Interface2D = .{ .pos = .new( 256, 512, .{ .r = 0 }), .scale = .new( 128, 256 ), .edgeWidth = 32, .lineWidth = 4 };
+var interface : utl.Interface2D = .{ .pos = .new( 256, 512, .{ .r = 0 }), .scale = .new( 128, 256 ), .edgeWidth = 32, .lineWidth = 4 };
+
+
+const SHOW_STARS = true;
+
+var angle : Angle = .newRad( 0 );
+var val1  : u16   = 0;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
@@ -73,35 +79,34 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     utl.qlog( .INFO, 0, @src(), "Camera reseted" );
   }
 
-
-  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.c ))
-  {
-    var newShape : usize = @intFromEnum( ui.shape );
-        newShape = @mod( newShape + 1, utl.InterfaceShape.count );
-
-    ui.setShape( @enumFromInt( newShape ));
-  }
-
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.v ))
   {
-    const s = ui.bevelStrength[ 0 ] + 0.1;
+    const s = interface.bevelStrength[ 0 ] + 0.1;
     const n = utl.InterfaceShape.maxCornerCount;
 
     for( 0..n )| i |
     {
-       ui.setBevelStrength( i, s );
+       interface.setBevelStrength( i, s );
     }
   }
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.b ))
   {
-    const s = ui.bevelStrength[ 0 ] - 0.1;
+    const s = interface.bevelStrength[ 0 ] - 0.1;
     const n = utl.InterfaceShape.maxCornerCount;
 
     for( 0..n )| i |
     {
-      ui.setBevelStrength( i, s );
+      interface.setBevelStrength( i, s );
     }
+  }
+
+  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.k ))
+  {
+    val1 = ( val1 + 1 ) % 99;
+
+    const newShape = val1 % utl.InterfaceShape.count;
+    interface.setShape( @enumFromInt( newShape ));
   }
 
 
@@ -113,7 +118,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
   // Swap tilemap shape if the V key is pressed
 
-  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.c ))
+  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.h ))
   {
     switch( exampleTilemap.tileShape )
     {
@@ -168,9 +173,10 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
     return;
   };
 
-  exampleTilemap.mapPos.a = exampleTilemap.mapPos.a.rotRad( 0.01 ); // Example of a simple variable rotation effect
 
-  sprite_r = @mod( sprite_r + ( utl.TAU / ( 60.0 * 4.0 )), utl.TAU );
+  angle = angle.rotDeg( 1 );
+
+  exampleTilemap.mapPos.a = angle;
 }
 
 
@@ -186,21 +192,21 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   if( SHOW_SPRITE_ANIM )
   {
-    ng.resourceManager.drawScreenFromSprite( "cubes_1", @intCast( sprite_i ), .{ .x = width / 2, .y = height / 2, .a = .{ .r = sprite_r }}, .{ .x = 4.0, .y = 4.0 }, .white );
+    ng.resourceManager.drawScreenFromSprite( "cubes_1", @intCast( sprite_i ), .{ .x = width / 2, .y = height / 2, .a = angle }, .{ .x = 4.0, .y = 4.0 }, .white );
   }
 
   if( SHOW_INTERFACE )
   {
-    ui.drawSelf();
+    interface.drawSelf();
   }
 
   if( SHOW_SHAKE_GRAPHS )
   {
 
-    utl.sDraw.basicLine( .{ .x = 0, .y = height * 0.125 }, .{ .x = width, .y = height * 0.125 }, .nBlack, 4 );
-    utl.sDraw.basicLine( .{ .x = 0, .y = height * 0.375 }, .{ .x = width, .y = height * 0.375 }, .nBlack, 4 );
-    utl.sDraw.basicLine( .{ .x = 0, .y = height * 0.625 }, .{ .x = width, .y = height * 0.625 }, .nBlack, 4 );
-    utl.sDraw.basicLine( .{ .x = 0, .y = height * 0.875 }, .{ .x = width, .y = height * 0.875 }, .nBlack, 4 );
+    utl.sDraw.basicLine( .new( 0, height * 0.125 ), .new( width, height * 0.125 ), .nBlack, 4 );
+    utl.sDraw.basicLine( .new( 0, height * 0.375 ), .new( width, height * 0.375 ), .nBlack, 4 );
+    utl.sDraw.basicLine( .new( 0, height * 0.625 ), .new( width, height * 0.625 ), .nBlack, 4 );
+    utl.sDraw.basicLine( .new( 0, height * 0.875 ), .new( width, height * 0.875 ), .nBlack, 4 );
 
     const l1 = width *           shaker.beg_length / shaker.getTotalLength();
     const l2 = width * ( 1.0 - ( shaker.end_length / shaker.getTotalLength() ));
@@ -227,5 +233,12 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
       utl.sDraw.textCenter( "|", .new( x, hy ), 12.0, .green );
       utl.sDraw.textCenter( "|", .new( x, hr ), 12.0, .blue );
     }
+  }
+
+  if( SHOW_SHAKE_GRAPHS )
+  {
+    utl.sDraw.polyStar(      .new( width * 0.75, height * 0.25 ), .new( 64, 48 ), angle, .green, 7,  ( val1 % 6  ) + 1 );
+    utl.sDraw.polyStarPerim( .new( width * 0.75, height * 0.50 ), .new( 64, 64 ), angle, .blue,  11, ( val1 % 10 ) + 1, 2.0 );
+    utl.sDraw.polySpokes(    .new( width * 0.75, height * 0.75 ), .new( 64, 80 ), angle, .red,       ( val1 % 12 ) + 1, 2.0 );
   }
 }

@@ -7,6 +7,8 @@ const Angle   = utl.Angle;
 const Colour  = utl.Colour;
 const RayRect = utl.RayRect;
 
+const MAX_POLY_SIDES = 256;
+
 
 pub fn GetDrawer( comptime Transform : type ) type
 {
@@ -137,145 +139,180 @@ pub fn GetDrawer( comptime Transform : type ) type
       Self.basicQuadPerim( p1, p2, p3, p4, col, width );
     }
 
+    pub fn calcPolyVertices( radii : Vec2, a : Angle, sides : u16, out : []Vec2 ) bool
+    {
+      // Validation pass
+      if( sides == 0 )
+      {
+        utl.qlog(.ERROR, 0, @src(), "Cannot draw a polygon with 0 sides");
+        return false;
+      }
+
+      const count : usize = @intCast( sides );
+
+      if( count > out.len )
+      {
+        utl.qlog(.ERROR, 0, @src(), "Polygon side count exceeds temporary vertex buffer");
+        return false;
+      }
+
+      // Special cases
+      if( sides <= 2 )
+      {
+        const p = Vec2.new( radii.x, 0.0 ).rot( a );
+
+                          out[ 0 ] = p;
+        if( sides == 2 ){ out[ 1 ] = p.flp(); }
+
+        return true;
+      }
+
+      // General cases
+      const n : f32 = @floatFromInt( sides );
+      const angleStep = Angle.newRad( utl.TAU / n );
+
+      if ( radii.isIso() )
+      {
+        const p0 = Vec2.new( radii.x, 0.0 ).rot( a );
+
+        for( 0..count )| i |
+        {
+          const angle = angleStep.mulVal( @floatFromInt( i ));
+          out[ i ] = p0.rot( angle );
+        }
+      }
+      else
+      {
+        for( 0..count )| i |
+        {
+          const angle = angleStep.mulVal( @floatFromInt( i ));
+          out[ i ] = Vec2.fromAngleScaled( angle, radii ).rot( a );
+        }
+      }
+
+      return true;
+    }
+
 
     // Draws a polygon centered at a given position with specified rotation (rad), colour and facet count, and scaled in x/y by radii
     pub fn poly( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16 ) void
     {
-      if( sides < 1 )
+      var verts : [ MAX_POLY_SIDES ]Vec2 = undefined;
+
+      if( !calcPolyVertices( radii, a, sides, verts[ 0.. ]))
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with 0 sides" );
+        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
         return;
       }
 
-      const N : f32 = @floatFromInt( sides );
-      const sideStepAngle = Angle.newRad( utl.TAU / N );
-      const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
-
-      if( sides < 3 ) // NOTE : only for radius or diametre lines
+      // Special cases
+      if( sides <= 2 )
       {
-        const rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+        const p1 = pos.add( verts[ 0 ]);
+        var   p2 = pos;
 
-        if( sides == 1 ){ Self.basicLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
-        else { Self.basicLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+        if( sides == 2 ){ p2 = p2.add( verts[ 1 ]); }
+
+        basicLine( p1, p2, col, BASE_LINE_WIDTH );
+        return;
       }
-      else if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
+
+      // General case
+      const count : usize = @intCast( sides );
+
+      const p0 = pos.add( verts[ 0 ]);
+      var   p1 = Vec2.new( 0, 0 );
+      var   p2 = pos.add( verts[ 1 ]);
+
+      for( 2..count )| i | // Triangle fan using vertex 0 as the fixed anchor
       {
-        var rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+        p1 = p2;
+        p2 = pos.add( verts[ i ]);
 
-        for( 2..sides )| i | // Starting at two since each triangle needs 3 points to draw ( 0, 1, 2 )
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i ));
-          const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
-
-          Self.basicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
-          rP1 = rP2;
-        }
-      }
-      else // NOTE : slightly faster, but requires isoscalar polygons
-      {
-        var rP1 = rP0.rot( sideStepAngle );
-
-        for( 2..sides )| i | // Starting at two since each triangle needs 3 points to draw ( 0, 1, 2 )
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i ));
-          const rP2 = rP0.rot( angle );
-
-          Self.basicTria( pos.add( rP0 ), pos.add( rP2 ), pos.add( rP1 ), col );
-          rP1 = rP2;
-        }
+        basicTria( p0, p2, p1, col );
       }
     }
     pub fn polyPerim( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, width : f64 ) void
     {
-      if( sides < 1 )
+      var verts : [ MAX_POLY_SIDES ]Vec2 = undefined;
+
+      if( !calcPolyVertices( radii, a, sides, verts[ 0.. ]))
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a polygon with 0 sides" );
+        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
         return;
       }
 
-      const N : f32 = @floatFromInt( sides );
-      const sideStepAngle = Angle.newRad( utl.TAU / N );
-      const rP0 = Vec2.new( radii.x, 0.0 ).rot( a );
-
-      if( sides < 3 ) // NOTE : only for radius or diametre lines
+      // Special cases
+      if( sides <= 2 )
       {
-        const rP1 = Vec2.fromAngleScaled( sideStepAngle, radii ).rot( a );
+        const p1 = pos.add( verts[ 0 ]);
+        var   p2 = pos;
 
-        if( sides == 1 ){ Self.basicLine( pos, pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
-        else { Self.basicLine( pos.add( rP1.flp() ), pos.add( rP1 ), col, BASE_LINE_WIDTH ); }
+        if( sides == 2 ){ p2 = p2.add( verts[ 1 ]); }
+
+        basicLine( p1, p2, col, width );
+        return;
       }
-      else if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
+
+      // General case
+      const count : usize = @intCast( sides );
+
+      var p1 = pos.add( verts[ count - 1 ]);
+      var p2 = pos.add( verts[ 0 ]);
+
+      basicLine( p1, p2, col, width );
+
+      for( 1..count )| i | // Drawing each remaining edge individually
       {
-        var rP1 = rP0;
+        p1 = p2;
+        p2 = pos.add( verts[ i ]);
 
-        for( 0..sides )| i |
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i + 1 ));
-          const rP2 = Vec2.fromAngleScaled( angle, radii ).rot( a );
-
-          Self.basicLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
-          rP1 = rP2;
-        }
-      }
-      else // NOTE : slightly faster, but requires isoscalar polygons
-      {
-        var rP1 = rP0;
-
-        for( 0..sides )| i |
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i + 1 ));
-          const rP2 = rP0.rot( angle );
-
-          Self.basicLine( pos.add( rP1 ), pos.add( rP2 ), col, width );
-          rP1 = rP2;
-        }
+        basicLine( p1, p2, col, width );
       }
     }
 
 
-    pub fn star( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16 ) void
+    pub fn polyStar( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16 ) void
     {
       if( sides < 5 )
       {
         utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with fewer than 5 vertices" );
         return;
       }
-
-      if( skipFactor == 1 )
+      if( skipFactor == 0 )
       {
-        utl.qlog( .WARN, 0, @src(), "Not a star : drawing a polygon instead" );
-        Self.poly( pos, radii, a, col, sides );
+        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skip factor of 0" );
+        return;
+      }
+      if( skipFactor >= sides )
+      {
+        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skipFactor equal or greater than sides : use modulo for that" );
         return;
       }
 
-      const N : f32 = @floatFromInt( sides );
-      const sideStepAngle : Angle = Angle.newRad( utl.TAU / N );
+      const skip  : usize = @intCast( @min( skipFactor, sides - skipFactor ));
 
-      // Precompute all vertex positions
-      var verts : [ 32 ]Vec2 = undefined; // 32 is enough for all defined star shapes FOR NOW
+      if( skip == 1 )
+      {
+        utl.qlog( .TRACE, 0, @src(), "Not a star : drawing a polygon instead" );
 
-      if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
-      {
-        for( 0..sides )| i |
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i ));
-          verts[ i ]  = Vec2.fromAngleScaled( angle, radii ).rot( a );
-        }
-      }
-      else // NOTE : slightly faster, but requires isoscalar polygons
-      {
-        for( 0..sides )| i |
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i ));
-          verts[ i ]  = Vec2.new( radii.x, 0.0 ).rot( a.add( angle ));
-        }
+        poly( pos, radii, a, col, sides );
+        return;
       }
 
-      // Connect vertices by skipFactor step, drawing lines between them
-      // NOTE : We need to traverse enough steps to close all sub-paths
+      const count : usize = @intCast( sides );
 
-      const gcdenom = utl.gcd( @as( u32, sides ), @as( u32, skipFactor )); // TODO : Implement me
-      const pathLen = @divFloor( sides, gcdenom ); // Number of vertices per sub-path
+      var verts : [ MAX_POLY_SIDES ]Vec2 = undefined;
+
+      if( !calcPolyVertices( radii, a, sides, verts[ 0.. ] ))
+      {
+        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        return;
+      }
+
+      const gcdenom_u32 = utl.gcd( @as( u32, @intCast( sides )), @as( u32, @intCast( skip )));
+      const gcdenom : usize = @intCast( gcdenom_u32 );
+      const pathLen : usize = count / gcdenom;
 
       for( 0..gcdenom )| startIdx |
       {
@@ -283,55 +320,55 @@ pub fn GetDrawer( comptime Transform : type ) type
 
         for( 0..pathLen )| _ |
         {
-          const idx2 = ( idx1 + skipFactor ) % sides;
-          Self.basicTria( pos, pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col );
+          const idx2 = ( idx1 + skip ) % count;
+
+          basicTria( pos, pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ]), col );
+
           idx1 = idx2;
         }
       }
     }
-    pub fn starPerim( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16, width : f64 ) void
+    pub fn polyStarPerim( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, skipFactor : u16, width : f64 ) void
     {
       if( sides < 5 )
       {
         utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with fewer than 5 vertices" );
         return;
       }
-
-      if( skipFactor == 1 )
+      if( skipFactor == 0 )
       {
-        utl.qlog( .WARN, 0, @src(), "Not a star : drawing a polygon instead" );
-        Self.polyPerim( pos, radii, a, col, sides, width );
+        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skip factor of 0" );
+        return;
+      }
+      if( skipFactor >= sides )
+      {
+        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skipFactor equal or greater than sides : use modulo for that" );
         return;
       }
 
-      const N : f32 = @floatFromInt( sides );
-      const sideStepAngle : Angle = Angle.newRad( utl.TAU / N );
+      const skip  : usize = @intCast( @min( skipFactor, sides - skipFactor ));
 
-      // Precompute all vertex positions
-      var verts : [ 32 ]Vec2 = undefined; // 32 is enough for all defined star shapes FOR NOW
+      if( skip == 1 )
+      {
+        utl.qlog( .TRACE, 0, @src(), "Not a star : drawing a polygon instead" );
 
-      if( !radii.isIso() ) // NOTE : slower, but accounts for non isoscalar polygons
-      {
-        for( 0..sides )| i |
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i ));
-          verts[ i ]  = Vec2.fromAngleScaled( angle, radii ).rot( a );
-        }
-      }
-      else // NOTE : slightly faster, but requires isoscalar polygons
-      {
-        for( 0..sides )| i |
-        {
-          const angle = sideStepAngle.mulVal( @floatFromInt( i ));
-          verts[ i ]  = Vec2.new( radii.x, 0.0 ).rot( a.add( angle ));
-        }
+        polyPerim( pos, radii, a, col, sides, width );
+        return;
       }
 
-      // Connect vertices by skipFactor step, drawing lines between them
-      // NOTE : We need to traverse enough steps to close all sub-paths
+      const count : usize = @intCast( sides );
 
-      const gcdenom = utl.gcd( @as( u32, sides ), @as( u32, skipFactor )); // TODO : Implement me
-      const pathLen = @divFloor( sides, gcdenom ); // Number of vertices per sub-path
+      var verts : [ MAX_POLY_SIDES ]Vec2 = undefined;
+
+      if( !calcPolyVertices( radii, a, sides, verts[ 0.. ] ))
+      {
+        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        return;
+      }
+
+      const gcdenom_u32 = utl.gcd( @as( u32, @intCast( sides )), @as( u32, @intCast( skip )));
+      const gcdenom : usize = @intCast( gcdenom_u32 );
+      const pathLen : usize = count / gcdenom;
 
       for( 0..gcdenom )| startIdx |
       {
@@ -339,13 +376,37 @@ pub fn GetDrawer( comptime Transform : type ) type
 
         for( 0..pathLen )| _ |
         {
-          const idx2 = ( idx1 + skipFactor ) % sides;
-          Self.basicLine( pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ] ), col, width );
+          const idx2 = ( idx1 + skip ) % count;
+
+          basicLine( pos.add( verts[ idx2 ]), pos.add( verts[ idx1 ]), col, width );
+
           idx1 = idx2;
         }
       }
     }
 
+    pub fn polySpokes( pos : Vec2, radii : Vec2, a : Angle, col : Colour, sides : u16, width : f64 ) void
+    {
+      var verts : [ MAX_POLY_SIDES ]Vec2 = undefined;
+
+      if( !calcPolyVertices( radii, a, sides, verts[ 0.. ] ))
+      {
+        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        return;
+      }
+
+      const count : usize = @intCast( sides );
+
+      for( 0..count )| i |
+      {
+        basicLine(
+          pos,
+          pos.add( verts[ i ]),
+          col,
+          width,
+        );
+      }
+    }
 
     // ================ TEXTURE DRAWING FUNCTIONS ================
 
