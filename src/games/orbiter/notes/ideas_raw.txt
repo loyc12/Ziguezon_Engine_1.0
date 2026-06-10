@@ -1,1 +1,1 @@
-1. Split HUMAN pop subtype into classes and/or employment types ( use total count for consumption calcs ? )
+1. Split HUMAN pops into classes / employment types ( use total count for consumption calcs ? )

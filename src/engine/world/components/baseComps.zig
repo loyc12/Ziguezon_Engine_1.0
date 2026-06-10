@@ -125,7 +125,7 @@ pub const ShapeComp = struct // TODO : add LODs and implement minScale
     }
     else if( self.shape.isStar() )
     {
-      eng.wDraw.star( p, s, a, c, self.shape.getEdgeCount(), self.shape.getSkipFactor() );
+      eng.wDraw.polyStar( p, s, a, c, self.shape.getEdgeCount(), self.shape.getSkipFactor() );
     }
     else // Lines can be handled by drawPoly()
     {

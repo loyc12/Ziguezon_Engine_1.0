@@ -478,7 +478,7 @@ pub const BuildEntry = struct
   {
     if( self.entryType == .DESTR ){ return 0.0; }
 
-    var cashCost = 0.0;       // TODO : integrate assembly cnstr payments in costs
+    var cashCost : f64 = 0.0; // TODO : integrate assembly cnstr payments in costs
 
 
     if( self.entryType == .RECYC ){ return cashCost; }
@@ -535,16 +535,14 @@ pub const BuildEntry = struct
   }
 
 
-  pub inline fn matchesWithPart( self : *const BuildEntry, other : *const BuildEntry ) bool
+  pub inline fn matchesWithPart( self : BuildEntry, other : BuildEntry ) bool
   {
     if( !utl.areContEqual( self.construct, other.construct )){ return false; }
     if( !utl.areContEqual( self.requester, other.requester )){ return false; }
 
     return true;
   }
-
-
-  pub inline fn matchesWithFull( self : *const BuildEntry, other : *const BuildEntry ) bool
+  pub inline fn matchesWithFull( self : BuildEntry, other : BuildEntry ) bool
   {
     if( !utl.areContEqual( self.construct, other.construct )){ return false; }
     if( !utl.areContEqual( self.requester, other.requester )){ return false; }

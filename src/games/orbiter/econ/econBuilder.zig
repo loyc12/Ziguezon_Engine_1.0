@@ -67,7 +67,7 @@ pub const BuildQueue = struct
   {
     for( self.entries )| e |
     {
-      if( e.matchesWithPart( &BuildEntry{ .construct = c, .requester = q }))
+      if( e.matchesWithPart( .{ .construct = c, .requester = q }))
       {
         return true;
       }
@@ -163,7 +163,7 @@ pub const BuildQueue = struct
       {
         var e = &self.entries[ idx ];
 
-        if( e.matchesWith( .{ .construct = c, .requester = q, .entryType = t }))
+        if( e.matchesWithFull( .{ .construct = c, .requester = q, .entryType = t }))
         {
           remainingFunds = e.tryGrantFunds( econ, funds );
           e.debugLogComplex();

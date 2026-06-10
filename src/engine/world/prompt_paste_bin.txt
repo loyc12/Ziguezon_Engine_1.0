@@ -42,3 +42,5 @@ menuer : once engine ui system implemented : keep game-own ui implementations, b
 
 panel & widget should have some permission booleans : isMovable, isVisible, isClickable, isActivable
 panel & widget subtypes ought to be built via generics if possible and desirable
+
+add RESTARTING state / flag to engine, allowing an automatic close-and-reopen
