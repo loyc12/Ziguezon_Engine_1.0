@@ -155,6 +155,7 @@ pub const Mouse = struct
   screenPrev : Vec2 = .{},
   screenMove : Vec2 = .{},
   wheelMove  : f64  = 0.0,
+  frameTime  : Duration = .{},
 
   // Optional world-space position supplied by engine/camera code.
   worldPos  : ?Vec2 = null,
@@ -182,6 +183,7 @@ pub const Mouse = struct
 
   pub fn updateRaylib( self : *Mouse, deltaTime : Duration ) void
   {
+    self.frameTime  = deltaTime;
     self.screenPrev = self.screenPos;
     self.screenPos  = utl.getMouseScreenPos();
     self.screenMove = Vec2.fromRayVec2( utl.ray.getMouseDelta() );

@@ -7,21 +7,21 @@ The rest of this prompt is for the memory generation pass : ignore ignore it and
 
 # ================================ TODO LOOP ================================
 
-Implement the engine_rework_todo.md in its entirety, going step-by-step
+Implement the todo.md in its entirety, going step-by-step
 Make sure to follow the stylistic guidelines for the project ( see AGENTS.md if you need more details on them )
 Avoid duplicating code pointlessly, and do remove deprecated code your changes may leave behind
 Start by reviewing the todo itself, before executing the needed work step by step
 Alert me to any unforseen issue you encounter along the way
 
 
-Update engine_rework_todo.md so it contains the next steps of the rework
-Use engine_rework_reference.md and engine_rework_roadmap.d as authoritative guides
+Update todo.md so it contains the next steps of the rework
+Use reference.md and roadmap.md as authoritative guides
 Scope the todo content appropriately ( not trivially small, not overly ambitious )
 
 
 Brief me on the code and structure changes planned in engine_rework_todo.md
 I want to be informed of the main consequences of implementation, and the files it will heavily touch
-Keep it compact and to-the-point- but do not ommit non-trivial changes
+Keep it compact and to-the-point, but do not ommit non-trivial changes
 
 
 
@@ -37,3 +37,10 @@ Be sure to point out any point of tensions which could be worked out
 # ================================ RANDOM TODOS ================================
 
 reactivate and revamp logger's file logging system
+
+menuer : keep game-own ui implementations, but deactivate via a toggleable flag, and build engine-own ui beside it
+
+panel & widget should have some permission booleans : isMovable, isVisible, isClickable, isActivable
+panel & widget subtypes ought to beb uilt via generics if possible and desirable
+
+add more line-based shapes ( Ngons, but only link apex to center )

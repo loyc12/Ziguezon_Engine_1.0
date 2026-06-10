@@ -4,7 +4,8 @@ First steps for the retained imperative UI primitive rewrite.
 
 The previous retained `UiContext` work is superseded as the target plan. It may
 still be used as reference material for behavior, but new work should start from
-the primitive API described in `ui_implementation_reference.md`.
+the primitive API described in `ui_implementation_reference.md`. The previous work
+is to be removed upon deprecation
 
 ## 0. Current Decisions
 
@@ -28,9 +29,6 @@ the primitive API described in `ui_implementation_reference.md`.
 
 ## 1. Preserve Context Before Code
 
-* Keep `ui_current_plan_summary.md` as the snapshot of the old implementation.
-* Keep `ui_conversation_model_summary.md` as the design pressure that motivated
-  the rewrite.
 * Treat `ui_implementation_reference.md` as the current architecture reference.
 * Treat this TODO as the first implementation checklist.
 

@@ -303,32 +303,46 @@ pub const Shake2D = shake2D.Shake2D;
 
 // ================================ UI SHORTHANDS ================================
 
-// ======== RETAINED UI ========
+// ======== UI PRIMITIVES ========
 
-pub const uiContext = @import( "ui/uiContext.zig" );
-pub const uiTypes   = @import( "ui/uiTypes.zig" );
-pub const uiMouse   = @import( "ui/mouse.zig" );
+pub const uiPanel = @import( "ui/panel.zig" );
 
-pub const UiManager   = uiContext.UiManager;
-pub const UiContext   = uiContext.UiContext;
-pub const UiId        = uiContext.UiId;
-pub const UiNodeKind  = uiContext.UiNodeKind;
-pub const UiLayer     = uiContext.UiLayer;
-pub const UiLayout    = uiContext.UiLayout;
-pub const UiEvent     = uiContext.UiEvent;
-pub const UiEventType = uiContext.UiEventType;
-pub const UiStyle     = uiContext.UiStyle;
-pub const UiNodeOpts  = uiContext.UiNodeOpts;
-pub const UiInput     = uiContext.UiInput;
+pub const UiKey            = uiPanel.UiKey;
+pub const UiHandle         = uiPanel.UiHandle;
+pub const UiDirtyFlags     = uiPanel.UiDirtyFlags;
 
-pub const Mouse            = uiMouse.Mouse;
-pub const MouseButton      = uiMouse.MouseButton;
-pub const MouseButtonState = uiMouse.MouseButtonState;
-pub const MouseModifier      = uiMouse.MouseModifier;
-pub const MouseModifierState = uiMouse.MouseModifierState;
-pub const MouseUiTarget    = uiMouse.MouseUiTarget;
+pub const Panel            = uiPanel.Panel;
+pub const PanelConfig      = uiPanel.PanelConfig;
+pub const PanelInit        = uiPanel.PanelInit;
 
-pub const uiBoxFromTopLeft = uiContext.boxFromTopLeft;
+pub const Widget           = uiPanel.Widget;
+pub const WidgetConfig     = uiPanel.WidgetConfig;
+pub const WidgetInit       = uiPanel.WidgetInit;
+pub const WidgetKind       = uiPanel.WidgetKind;
+pub const WidgetState      = uiPanel.WidgetState;
+
+pub const UiLayout         = uiPanel.UiLayout;
+pub const UiTextAlign      = uiPanel.UiTextAlign;
+pub const UiStyle          = uiPanel.UiStyle;
+pub const UiPointerState   = uiPanel.UiPointerState;
+pub const UiPointerButton  = uiPanel.UiPointerButton;
+pub const UiEvent          = uiPanel.UiEvent;
+pub const UiEventType      = uiPanel.UiEventType;
+pub const uiBoxFromTopLeft = uiPanel.boxFromTopLeft;
+
+pub const uiKey = uiPanel.key;
+
+
+// ======== MOUSER ========
+
+pub const msr_u = @import( "ui/mouser.zig" );
+
+pub const Mouse              = msr_u.Mouse;
+pub const MouseButton        = msr_u.MouseButton;
+pub const MouseButtonState   = msr_u.MouseButtonState;
+pub const MouseModifier      = msr_u.MouseModifier;
+pub const MouseModifierState = msr_u.MouseModifierState;
+pub const MouseUiTarget      = msr_u.MouseUiTarget;
 
 
 // ======== INTERFACER ========

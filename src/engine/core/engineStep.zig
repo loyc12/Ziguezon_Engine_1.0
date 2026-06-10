@@ -73,12 +73,7 @@ inline fn updateInputs( ng : *Engine ) void
   ng.mouse.updateRaylib( mouseDelta );
   ng.mouse.worldPos = ng.camera.screenToWorld( ng.mouse.screenPos );
 
-  ng.uiManager.beginFrame();
-  ng.uiManager.updateLayout();
-  ng.uiManager.dispatchInput();
-
   eng.tryHook( .OnInputUpdate, ng );
-  ng.uiManager.endFrame();
 }
 
 pub inline fn forceUpdateInputs( ng : *Engine ) void
@@ -204,8 +199,6 @@ inline fn renderFrame( ng : *Engine ) void
 
   eng.tryHook( .OnRenderOverlay, ng );
   {
-    ng.uiManager.drawScreen();
-
     drawDebugFpsCount( ng );
     drawDebugTpsCount( ng );
   }
