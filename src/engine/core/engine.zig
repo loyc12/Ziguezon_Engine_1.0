@@ -29,6 +29,7 @@ pub const Engine = struct
   state  : EngineState       = .OFF,
   time   : tmng.EngineTiming = .{},
   camera : eng.WorldCam      = .{},
+  mouse  : utl.Mouse         = .{},
   rng    : utl.Randomiser    = .{},
 
   // Engine Managers

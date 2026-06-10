@@ -67,6 +67,12 @@ inline fn updateInputs( ng : *Engine ) void
     }
   }
 
+  var mouseDelta = ng.time.getFrameAccumTime();
+  if( mouseDelta.isZero() ){ mouseDelta = ng.time.getMeasuredFrameDeltaTime(); }
+
+  ng.mouse.updateRaylib( mouseDelta );
+  ng.mouse.worldPos = ng.camera.screenToWorld( ng.mouse.screenPos );
+
   ng.uiManager.beginFrame();
   ng.uiManager.updateLayout();
   ng.uiManager.dispatchInput();

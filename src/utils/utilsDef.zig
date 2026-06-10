@@ -307,6 +307,7 @@ pub const Shake2D = shake2D.Shake2D;
 
 pub const uiContext = @import( "ui/uiContext.zig" );
 pub const uiTypes   = @import( "ui/uiTypes.zig" );
+pub const uiMouse   = @import( "ui/mouse.zig" );
 
 pub const UiManager   = uiContext.UiManager;
 pub const UiContext   = uiContext.UiContext;
@@ -319,6 +320,13 @@ pub const UiEventType = uiContext.UiEventType;
 pub const UiStyle     = uiContext.UiStyle;
 pub const UiNodeOpts  = uiContext.UiNodeOpts;
 pub const UiInput     = uiContext.UiInput;
+
+pub const Mouse            = uiMouse.Mouse;
+pub const MouseButton      = uiMouse.MouseButton;
+pub const MouseButtonState = uiMouse.MouseButtonState;
+pub const MouseModifier      = uiMouse.MouseModifier;
+pub const MouseModifierState = uiMouse.MouseModifierState;
+pub const MouseUiTarget    = uiMouse.MouseUiTarget;
 
 pub const uiBoxFromTopLeft = uiContext.boxFromTopLeft;
 
