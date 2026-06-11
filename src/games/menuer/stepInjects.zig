@@ -9,8 +9,12 @@ var MAIN_PANEL   : ?utl.Panel   = null;
 var TITLE_LABEL  : utl.UiHandle = .{};
 var STATUS_LABEL : utl.UiHandle = .{};
 var DEBUG_LABEL  : utl.UiHandle = .{};
+var ROW_GROUP    : utl.UiHandle = .{};
+var ABS_GROUP    : utl.UiHandle = .{};
 var COUNT_BUTTON : utl.UiHandle = .{};
 var MOVE_BUTTON  : utl.UiHandle = .{};
+var OPTION_CHECK : utl.UiHandle = .{};
+var ABS_BUTTON   : utl.UiHandle = .{};
 var CLICK_COUNT  : u32          = 0;
 var MOVE_STEP    : u32          = 0;
 
@@ -19,7 +23,7 @@ var MOVE_STEP    : u32          = 0;
 
 fn mainPanelBox() utl.Box2
 {
-  return utl.uiBoxFromTopLeft( .new( 24.0, 24.0 ), .new( 390.0, 264.0 ));
+  return utl.uiBoxFromTopLeft( .new( 24.0, 24.0 ), .new( 460.0, 390.0 ));
 }
 
 fn buttonConfig() utl.WidgetConfig
@@ -34,6 +38,16 @@ fn labelConfig( height : f64 ) utl.WidgetConfig
 {
   return .{
     .desiredSize = .new( 0.0, height ),
+  };
+}
+
+fn containerConfig( layout : utl.UiLayout, height : f64 ) utl.WidgetConfig
+{
+  return .{
+    .layout      = layout,
+    .desiredSize = .new( 0.0, height ),
+    .padding     = 0.0,
+    .gap         = 8.0,
   };
 }
 
@@ -82,11 +96,34 @@ pub fn buildUi( ng : *eng.Engine ) void
     }
   ) catch .{};
 
+  ROW_GROUP = panel.addContainer(
+    .{
+      .key    = utl.uiKey( "menuer.row_group" ),
+      .config = containerConfig( .row, 42.0 ),
+    }
+  ) catch .{};
+
   COUNT_BUTTON = panel.addButton(
     .{
       .key    = utl.uiKey( "menuer.count_button" ),
+      .parent = ROW_GROUP,
       .text   = "Count click",
-      .config = buttonConfig(),
+      .config = .{
+        .desiredSize = .new( 156.0, 36.0 ),
+        .textAlign   = .center,
+      },
+    }
+  ) catch .{};
+
+  OPTION_CHECK = panel.addCheckbox(
+    .{
+      .key    = utl.uiKey( "menuer.option_check" ),
+      .parent = ROW_GROUP,
+      .text   = "Option",
+      .config = .{
+        .desiredSize = .new( 132.0, 36.0 ),
+        .isChecked   = true,
+      },
     }
   ) catch .{};
 
@@ -95,6 +132,23 @@ pub fn buildUi( ng : *eng.Engine ) void
       .key    = utl.uiKey( "menuer.move_button" ),
       .text   = "Move this button",
       .config = buttonConfig(),
+    }
+  ) catch .{};
+
+  ABS_GROUP = panel.addContainer(
+    .{
+      .key    = utl.uiKey( "menuer.absolute_group" ),
+      .config = containerConfig( .absolute, 58.0 ),
+    }
+  ) catch .{};
+
+  ABS_BUTTON = panel.addButton(
+    .{
+      .key    = utl.uiKey( "menuer.absolute_button" ),
+      .parent = ABS_GROUP,
+      .box    = .{ .center = .new( -116.0, 0.0 ), .scale = .new( 86.0, 18.0 ) },
+      .text   = "Absolute child",
+      .config = .{ .textAlign = .center },
     }
   ) catch .{};
 
@@ -109,7 +163,7 @@ pub fn buildUi( ng : *eng.Engine ) void
     .{
       .key    = utl.uiKey( "menuer.debug" ),
       .text   = "hover: none | final: none",
-      .config = labelConfig( 52.0 ),
+      .config = labelConfig( 74.0 ),
     }
   ) catch .{};
 
@@ -124,8 +178,12 @@ pub fn closeUi() void
   TITLE_LABEL  = .{};
   STATUS_LABEL = .{};
   DEBUG_LABEL  = .{};
+  ROW_GROUP    = .{};
+  ABS_GROUP    = .{};
   COUNT_BUTTON = .{};
   MOVE_BUTTON  = .{};
+  OPTION_CHECK = .{};
+  ABS_BUTTON   = .{};
 }
 
 fn handleUiEvents( panel : *utl.Panel ) void
@@ -146,23 +204,48 @@ fn handleUiEvents( panel : *utl.Panel ) void
       panel.setVisualOffset( MOVE_BUTTON, offset );
       panel.setTextFmt( STATUS_LABEL, "Moved button by {d:.0}px using setVisualOffset().", .{ offset.x });
     }
+    else if( event.isClicked( ABS_BUTTON ))
+    {
+      panel.bringWidgetForward( ABS_BUTTON );
+      panel.setText( STATUS_LABEL, "Absolute child clicked; sibling order helper ran." );
+    }
+    else if( event.isChanged( OPTION_CHECK ))
+    {
+      const checked = panel.getChecked( OPTION_CHECK ) orelse false;
+      panel.setTextFmt( STATUS_LABEL, "Checkbox changed. Checked: {}.", .{ checked });
+    }
   }
 }
 
 fn updateDebugLabel( panel : *utl.Panel ) void
 {
+  panel.updateLayout();
+
   const hovered = panel.getHovered();
   const hoverName =
     if( panel.getWidgetKind( hovered ))| kind | @tagName( kind )
     else "none";
 
+  const childCount = panel.getChildCount( ROW_GROUP );
+
   if( panel.getWidgetFinalBox( MOVE_BUTTON ))| box |
   {
-    panel.setTextFmt(
-      DEBUG_LABEL,
-      "hover: {s} | move final center: {d:.0}:{d:.0}",
-      .{ hoverName, box.center.x, box.center.y }
-    );
+    if( panel.getWidgetTextMetrics( STATUS_LABEL ))| metrics |
+    {
+      panel.setTextFmt(
+        DEBUG_LABEL,
+        "hover:{s} | row children:{d} | move:{d:.0}:{d:.0} | status text:{d:.0}x{d:.0}",
+        .{ hoverName, childCount, box.center.x, box.center.y, metrics.measuredSize.x, metrics.lineHeight }
+      );
+    }
+    else
+    {
+      panel.setTextFmt(
+        DEBUG_LABEL,
+        "hover:{s} | row children:{d} | move:{d:.0}:{d:.0} | text:none",
+        .{ hoverName, childCount, box.center.x, box.center.y }
+      );
+    }
   }
   else
   {
@@ -172,7 +255,10 @@ fn updateDebugLabel( panel : *utl.Panel ) void
 
 fn uiWantsMouse( panel : *utl.Panel ) bool
 {
-  return panel.getHovered().isValid() or panel.getPressed( .left ).isValid();
+  return panel.getHovered().isValid()
+    or panel.getPressed( .left   ).isValid()
+    or panel.getPressed( .right  ).isValid()
+    or panel.getPressed( .middle ).isValid();
 }
 
 fn drawFinalBoxMarker( panel : *utl.Panel ) void

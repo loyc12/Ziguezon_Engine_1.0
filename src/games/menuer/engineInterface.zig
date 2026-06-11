@@ -10,7 +10,7 @@ const utl = @import( "utils" );
 
   pub const DebugDraw_Tilemap = true;
   pub const DebugDraw_Tile    = true;
-  pub const DebugDraw_FPS     = true;
+  pub const DebugDraw_FPS     = false;
 
 
 // Feature Flag

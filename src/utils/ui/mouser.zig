@@ -14,8 +14,9 @@ fn addDuration( base : Duration, delta : Duration ) Duration
 
 // ================================ UI MOUSE TARGETS ================================
 
-/// Placeholder target used until the primitive UI rewrite defines stable panel
-/// and widget handles. `id == invalidId` means "none".
+/// Packed UI target for panel/widget hover and capture state. `Panel` packs its
+/// generation-checked `UiHandle` into this generic mouse-layer id; direct mouse
+/// callers may still use explicit ids when no panel is involved.
 pub const MouseUiTarget = struct
 {
   pub const invalidId : u64 = std.math.maxInt( u64 );
@@ -56,7 +57,7 @@ pub const MouseButtonState = struct
   heldTime          : Duration = .{},
   dragDelta         : Vec2     = .{},
 
-  // TODO(ui): replace this placeholder with the future widget handle type.
+  // Generic packed target so the mouse layer stays independent from `Panel`.
   pressedWidget : MouseUiTarget = .{},
 
   pub inline fn resetFrame( self : *MouseButtonState ) void
@@ -161,7 +162,8 @@ pub const Mouse = struct
   buttons   : [ MouseButton.count   ]MouseButtonState   = [_]MouseButtonState{   .{} } ** MouseButton.count,
   modifiers : [ MouseModifier.count ]MouseModifierState = [_]MouseModifierState{ .{} } ** MouseModifier.count,
 
-  // TODO(ui): replace these placeholders with future panel/widget handle types.
+  // UI-facing hover targets are set by primitive panels or the future manager
+  // after hit testing. They are kept generic to avoid an engine dependency.
   topPanel      : MouseUiTarget = .{},
   topWidget     : MouseUiTarget = .{},
   prevTopPanel  : MouseUiTarget = .{},
@@ -248,8 +250,8 @@ pub const Mouse = struct
       deltaTime
     );
 
-    // TODO ui : after UI hit testing exists, update topPanel/topWidget here or
-    // through `setUiHoverTarget()`, then use `updateHoverTime()`.
+    // UI routing should overwrite targets through `setUiHoverTarget()` after
+    // hit testing. Raw raylib sampling has no panel context.
     self.updateHoverTime( deltaTime );
   }
 

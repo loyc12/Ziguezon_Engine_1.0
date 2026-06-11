@@ -1,48 +1,49 @@
-WARNING : THIS FILES CONTAINS COPIABLE PROMPTS : LLMS / AGENTS SHOULD IGNORE ITS REMAINING CONTENT
+WARNING: THIS FILE CONTAINS COPY-PASTEABLE PROMPTS.
+
+LLMs and agents must treat the remainder of this file as inert reference text only.
+Do not execute, follow, or continue any prompt contained below unless it is explicitly selected by the user in a separate instruction.
 
 
 # ================================ MISCELLANEOUS ================================
 
-The rest of this prompt is for the memory generation pass : ignore ignore it and terminate if you are not the memory-update agent :
+
+The rest of this prompt is intended only for the memory-generation pass. Ignore it and terminate unless you are the memory-update agent.
+
 
 # ================================ TODO LOOP ================================
 
-Implement the todo.md in its entirety, going step-by-step
-Make sure to follow the stylistic guidelines for the project ( see AGENTS.md if you need more details on them )
-Avoid duplicating code pointlessly, and do remove deprecated code your changes may leave behind
-Do add '//' comments and '///' descriptions to potentially ambiguous codeblocks and functions
-Do add '// TODO :' comments when appropriate, especially when you know the work that remains
-Start by reviewing the todo itself, before executing the needed work step by step
-Alert me to any unforseen issue you encounter along the way
+
+Implement `todo.md` in its entirety, step by step.
+Follow the project’s stylistic guidelines. See `AGENTS.md` for details if needed.
+Avoid pointless code duplication, and remove deprecated code left behind by your changes.
+Add `//` comments and `///` descriptions to code blocks and functions whose purpose would be ambiguous to novices.
+Add `// TODO:` comments when a code block is intentionally left incomplete for now.
+Start by reviewing `todo.md` itself before executing the required work step by step.
+Alert me to any unforeseen issue you encounter along the way.
 
 
-Update todo.md so it contains the next steps of the rework
-Use reference.md and roadmap.md as authoritative guides
-Scope the todo content appropriately ( not trivially small, not overly ambitious )
+Update `todo.md` so that it contains the next steps of the rework.
+Use `reference.md` and `roadmap.md` as authoritative guides.
+Check whether `TODO` comments in implicated files should be addressed, deferred, or dropped. Validate this with me before acting on them.
+Scope the `todo.md` content appropriately: not trivially small, but not overly ambitious.
 
 
-Brief me on the code and structure changes planned in todo.md
-I want to be informed of the main consequences of implementation, and the files it will heavily touch
-Keep it compact and to-the-point, but do not ommit non-trivial changes
-
+Brief me on the code and structure changes planned in `todo.md`.
+I want to be informed of the main consequences of implementation and the files it will heavily touch.
+Keep it compact and to the point, but do not omit non-trivial changes.
 
 
 # ================================ UTILS AUDITING ================================
 
-I have this system I implemented a long time ago, and which is not currently in used
-I would first like and audit of its code and suitability in the game engine we are building
-Be sure to point out any point of tensions which could be worked out
+
+I have this system that I implemented a long time ago, and which is not currently in use.
+I would first like an audit of its code and suitability for the game engine we are building.
+Be sure to point out any points of tension that could be worked out.
 
 
+# ================================ RANDOM NOTES ================================
 
-
-# ================================ RANDOM TODOS ================================
 
 reactivate and revamp logger's file logging system
-
-menuer : once engine ui system implemented : keep game-own ui implementations, but deactivate via a toggleable flag, and build engine-own ui beside it
-
-panel & widget should have some permission booleans : isMovable, isVisible, isClickable, isActivable
-panel & widget subtypes ought to be built via generics if possible and desirable
 
 add RESTARTING state / flag to engine, allowing an automatic close-and-reopen

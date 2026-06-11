@@ -9,6 +9,8 @@ const Vec2     = utl.Vec2;
 
 // ================================ IDENTIFIERS ================================
 
+/// Stable user-facing identity for panels and widgets. Runtime mutation should
+/// still use `UiHandle` because keys are not generation-checked.
 pub const UiKey = u64;
 
 pub fn key( str : []const u8 ) UiKey
@@ -16,6 +18,8 @@ pub fn key( str : []const u8 ) UiKey
   return std.hash.Wyhash.hash( 0, str );
 }
 
+/// Generation-checked runtime identity for a widget stored inside a `Panel`.
+/// Handles become invalid when their slot generation no longer matches.
 pub const UiHandle = struct
 {
   pub const invalidIndex : u32 = std.math.maxInt( u32 );
@@ -40,6 +44,8 @@ pub const UiPointerButton = utl.MouseButtonState;
 
 // ================================ STYLE ================================
 
+/// Small built-in layout set. `absolute` child boxes are center-defined; root
+/// children use screen space while children of widgets are local to the parent.
 pub const UiLayout = enum( u8 )
 {
   absolute,
@@ -48,12 +54,14 @@ pub const UiLayout = enum( u8 )
   stack,
 };
 
+/// Horizontal text alignment inside the widget's final box.
 pub const UiTextAlign = enum( u8 )
 {
   left,
   center,
 };
 
+/// Minimal visual style for primitive widgets.
 pub const UiStyle = struct
 {
   fillCol        : Colour = Colour.nBlack.setA( 220 ),
@@ -94,6 +102,15 @@ pub const UiStyle = struct
         style.edgeCol        = Colour.lGray;
       },
 
+      .checkbox =>
+      {
+        style.fillCol        = Colour.sGray.setA( 230 );
+        style.fillHoverCol   = Colour.lGray.setA( 240 );
+        style.fillPressedCol = Colour.dGray.setA( 250 );
+        style.edgeCol        = Colour.lGray;
+        style.accentCol      = Colour.pTeal;
+      },
+
       .spacer =>
       {
         style.fillCol   = Colour.transpa;
@@ -118,6 +135,8 @@ pub const UiStyle = struct
 
 // ================================ CONFIGS ================================
 
+/// Dirty flags used by retained primitives to avoid recalculating stable
+/// layout, text, render, and hit data when the caller only changes one area.
 pub const UiDirtyFlags = packed struct
 {
   structure : bool = true,
@@ -143,6 +162,8 @@ pub const UiDirtyFlags = packed struct
   }
 };
 
+/// Top-level panel configuration. A panel box is always screen-space and
+/// center-defined through `Box2`.
 pub const PanelConfig = struct
 {
   layout  : UiLayout = .absolute,
@@ -151,6 +172,7 @@ pub const PanelConfig = struct
   style   : UiStyle  = .{},
 };
 
+/// Widget configuration applied when a primitive is created.
 pub const WidgetConfig = struct
 {
   layout      : UiLayout    = .absolute,
@@ -159,10 +181,12 @@ pub const WidgetConfig = struct
   gap         : f64         = 4.0,
   isVisible   : bool        = true,
   isEnabled   : bool        = true,
+  isChecked   : bool        = false,
   textAlign   : UiTextAlign = .left,
   style       : ?UiStyle    = null,
 };
 
+/// Arguments for creating a `Panel`.
 pub const PanelInit = struct
 {
   key    : UiKey       = 0,
@@ -170,6 +194,7 @@ pub const PanelInit = struct
   config : PanelConfig = .{},
 };
 
+/// Arguments for creating a widget inside a `Panel`.
 pub const WidgetInit = struct
 {
   key    : UiKey        = 0,
@@ -182,12 +207,15 @@ pub const WidgetInit = struct
 
 // ================================ EVENTS ================================
 
+/// Panel-local UI event kind.
 pub const UiEventType = enum( u8 )
 {
   clicked,
   changed,
 };
 
+/// Event queued by a panel. Events stay queued until `popEvent()` or
+/// `clearEvents()` removes them.
 pub const UiEvent = struct
 {
   eType  : UiEventType = .clicked,
@@ -197,6 +225,11 @@ pub const UiEvent = struct
   {
     return self.eType == .clicked and self.widget.isEq( widget );
   }
+
+  pub inline fn isChanged( self : UiEvent, widget : UiHandle ) bool
+  {
+    return self.eType == .changed and self.widget.isEq( widget );
+  }
 };
 
 pub inline fn isClicked( event : UiEvent, widget : UiHandle ) bool
@@ -204,26 +237,47 @@ pub inline fn isClicked( event : UiEvent, widget : UiHandle ) bool
   return event.isClicked( widget );
 }
 
+pub inline fn isChanged( event : UiEvent, widget : UiHandle ) bool
+{
+  return event.isChanged( widget );
+}
+
 
 // ================================ WIDGETS ================================
 
+/// Primitive widget types intentionally kept small enough for direct game code.
 pub const WidgetKind = enum( u8 )
 {
   label,
   button,
+  checkbox,
   spacer,
   container,
   customDraw,
 };
 
+/// Durable per-widget state that survives input frames and layout updates.
 pub const WidgetState = struct
 {
   isVisible : bool = true,
   isEnabled : bool = true,
+  isChecked : bool = false,
 };
 
 const textBufLen : usize = 160;
 
+/// Cached text measurements derived from the widget's text, final box, style,
+/// and alignment. Per-character bounds are intentionally deferred.
+pub const UiTextMetrics = struct
+{
+  measuredSize : Vec2 = .{},
+  drawOrigin   : Vec2 = .{},
+  lineHeight   : f64  = 0.0,
+  textBox      : Box2 = .{},
+};
+
+/// Retained widget storage owned by `Panel`. Prefer handle-based panel methods
+/// over direct mutation so dirty flags remain correct.
 pub const Widget = struct
 {
   key : UiKey    = 0,
@@ -232,6 +286,7 @@ pub const Widget = struct
 
   kind   : WidgetKind = .label,
   parent : UiHandle   = .{},
+  order  : u32        = 0,
 
   requestedBox : Box2 = .{},
   computedBox  : Box2 = .{},
@@ -246,10 +301,10 @@ pub const Widget = struct
   state : WidgetState = .{},
   style : UiStyle     = .{},
 
-  text      : [ textBufLen ]u8 = [_]u8{ 0 } ** textBufLen,
-  textLen   : usize            = 0,
-  textSize  : Vec2             = .{},
-  textAlign : UiTextAlign      = .left,
+  text        : [ textBufLen ]u8 = [_]u8{ 0 } ** textBufLen,
+  textLen     : usize            = 0,
+  textMetrics : UiTextMetrics    = .{},
+  textAlign   : UiTextAlign      = .left,
 
   isAlive : bool = false,
 
@@ -268,7 +323,7 @@ pub const Widget = struct
       .layout       = opts.config.layout,
       .padding      = opts.config.padding,
       .gap          = opts.config.gap,
-      .state        = .{ .isVisible = opts.config.isVisible, .isEnabled = opts.config.isEnabled },
+      .state        = .{ .isVisible = opts.config.isVisible, .isEnabled = opts.config.isEnabled, .isChecked = opts.config.isChecked },
       .style        = if( opts.config.style )| style | style else UiStyle.forKind( kind ),
       .textAlign    = opts.config.textAlign,
       .isAlive      = true,
@@ -295,7 +350,11 @@ pub const Widget = struct
 
   pub inline fn isInteractive( self : *const Widget ) bool
   {
-    return self.kind == .button and self.isAlive and self.state.isVisible and self.state.isEnabled;
+    return switch( self.kind )
+    {
+      .button, .checkbox => self.isAlive and self.state.isVisible and self.state.isEnabled,
+      else               => false,
+    };
   }
 };
 
@@ -308,6 +367,8 @@ const HitEntry = struct
   box    : Box2     = .{},
 };
 
+/// Game-owned retained primitive UI surface. Child order is stable and local to
+/// each parent: earlier siblings draw first and later siblings hit first.
 pub const Panel = struct
 {
   alloc : std.mem.Allocator = undefined,
@@ -369,6 +430,8 @@ pub const Panel = struct
     var fixedOpts = opts;
     if( fixedOpts.key == 0 ){ fixedOpts.key = @as( UiKey, @intFromEnum( kind )) + @as( UiKey, self.widgets.items.len ) + 1; }
 
+    const order = self.getNextChildOrder( fixedOpts.parent );
+
     for( self.widgets.items, 0.. )| *slot, i |
     {
       if( slot.isAlive ){ continue; }
@@ -378,6 +441,7 @@ pub const Panel = struct
 
       const id = UiHandle.fromIndexGen( @intCast( i ), gen );
       slot.* = Widget.init( id, kind, fixedOpts );
+      slot.order = order;
       self.markStructureDirty();
       return id;
     }
@@ -389,19 +453,97 @@ pub const Panel = struct
 
     const id = UiHandle.fromIndexGen( @intCast( self.widgets.items.len ), 1 );
     try self.widgets.append( self.alloc, Widget.init( id, kind, fixedOpts ) );
+    self.widgets.items[ self.widgets.items.len - 1 ].order = order;
 
     self.markStructureDirty();
     return id;
   }
 
-  pub inline fn addLabel(     self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .label,     opts ); }
-  pub inline fn addButton(    self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .button,    opts ); }
-  pub inline fn addSpacer(    self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .spacer,    opts ); }
+  /// Adds a non-interactive text primitive.
+  pub inline fn addLabel( self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .label, opts ); }
+
+  /// Adds a clickable button. Press and release must happen on the same button
+  /// for a `clicked` event to be queued.
+  pub inline fn addButton( self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .button, opts ); }
+
+  /// Adds a persistent two-state checkbox that emits `changed` after toggling.
+  pub inline fn addCheckbox( self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .checkbox, opts ); }
+
+  /// Adds empty layout space.
+  pub inline fn addSpacer( self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .spacer, opts ); }
+
+  /// Adds a child container whose own `layout`, `padding`, and `gap` arrange
+  /// descendants.
   pub inline fn addContainer( self : *Panel, opts : WidgetInit ) !UiHandle { return self.createWidget( .container, opts ); }
+
+
+  // ================================ CHILD ORDER ================================
+
+  fn getNextChildOrder( self : *const Panel, parent : UiHandle ) u32
+  {
+    var maxOrder : u32 = 0;
+
+    for( self.widgets.items )| *widget |
+    {
+      if( widget.isAlive and widget.parent.isEq( parent )){ maxOrder = @max( maxOrder, widget.order +% 1 ); }
+    }
+
+    return maxOrder;
+  }
+
+  fn getNextChildIndex( self : *const Panel, parent : UiHandle, afterOrder : ?u32 ) ?usize
+  {
+    var bestIdx   : ?usize = null;
+    var bestOrder : u32    = std.math.maxInt( u32 );
+
+    for( self.widgets.items, 0.. )| *widget, i |
+    {
+      if( !widget.isAlive or !widget.parent.isEq( parent )){ continue; }
+      if( afterOrder )| order |{ if( widget.order <= order ){ continue; } }
+      if( widget.order >= bestOrder ){ continue; }
+
+      bestIdx   = i;
+      bestOrder = widget.order;
+    }
+
+    return bestIdx;
+  }
+
+  fn appendOrderedChildren( self : *const Panel, parent : UiHandle, out : *std.ArrayList( UiHandle ) ) !void
+  {
+    var cursor : ?u32 = null;
+
+    while( self.getNextChildIndex( parent, cursor ))| idx |
+    {
+      const widget = &self.widgets.items[ idx ];
+      try out.append( self.alloc, widget.id );
+      cursor = widget.order;
+    }
+  }
+
+  fn getSiblingIndex( self : *const Panel, id : UiHandle ) ?usize
+  {
+    const widget = self.getWidget( id ) orelse return null;
+    var cursor   : ?u32  = null;
+    var outIndex : usize = 0;
+
+    while( self.getNextChildIndex( widget.parent, cursor ))| idx |
+    {
+      const child = &self.widgets.items[ idx ];
+      if( child.id.isEq( id )){ return outIndex; }
+
+      cursor = child.order;
+      outIndex += 1;
+    }
+
+    return null;
+  }
 
 
   // ================================ LOOKUP ================================
 
+  /// Advanced/internal escape hatch. Normal callers should use handle-based
+  /// getters and setters so layout, text, render, and hit caches stay valid.
   pub fn getWidgetPtr( self : *Panel, id : UiHandle ) ?*Widget
   {
     if( !id.isValid() ){ return null; }
@@ -415,6 +557,8 @@ pub const Panel = struct
     return widget;
   }
 
+  /// Read-only widget lookup. Prefer narrower getters when only one property is
+  /// needed.
   pub fn getWidget( self : *const Panel, id : UiHandle ) ?*const Widget
   {
     if( !id.isValid() ){ return null; }
@@ -431,8 +575,22 @@ pub const Panel = struct
   pub inline fn getWidgetCount( self : *const Panel ) usize { return self.widgets.items.len; }
   pub inline fn getEventCount(  self : *const Panel ) usize { return self.events.items.len;  }
 
+  pub inline fn peekEventCount( self : *const Panel ) usize { return self.getEventCount(); }
+  pub inline fn getDebugDrawBounds( self : *const Panel ) bool { return self.debugDrawBounds; }
+
   pub inline fn getBox( self : *const Panel ) Box2 { return self.box; }
   pub inline fn getDirtyFlags( self : *const Panel ) UiDirtyFlags { return self.dirty; }
+
+  pub inline fn isWidgetAlive( self : *const Panel, id : UiHandle ) bool
+  {
+    return self.getWidget( id ) != null;
+  }
+
+  pub inline fn isWidgetVisible( self : *const Panel, id : UiHandle ) bool
+  {
+    if( self.getWidget( id ))| widget |{ return widget.state.isVisible; }
+    return false;
+  }
 
   pub inline fn getWidgetKind( self : *const Panel, id : UiHandle ) ?WidgetKind
   {
@@ -458,6 +616,49 @@ pub const Panel = struct
     return count;
   }
 
+  pub fn getChildAt( self : *const Panel, parent : UiHandle, childIdx : usize ) UiHandle
+  {
+    var cursor : ?u32  = null;
+    var count  : usize = 0;
+
+    while( self.getNextChildIndex( parent, cursor ))| idx |
+    {
+      const widget = &self.widgets.items[ idx ];
+      if( count == childIdx ){ return widget.id; }
+
+      cursor = widget.order;
+      count += 1;
+    }
+
+    return .{};
+  }
+
+  /// Copies ordered child handles into `out` and returns the number copied.
+  /// Children are ordered from back-to-front draw order within the parent.
+  pub fn collectChildren( self : *const Panel, parent : UiHandle, out : []UiHandle ) usize
+  {
+    var cursor : ?u32  = null;
+    var count  : usize = 0;
+
+    while( count < out.len )
+    {
+      const idx = self.getNextChildIndex( parent, cursor ) orelse break;
+      const widget = &self.widgets.items[ idx ];
+
+      out[ count ] = widget.id;
+      cursor = widget.order;
+      count += 1;
+    }
+
+    return count;
+  }
+
+  pub inline fn getWidgetRequestedBox( self : *const Panel, id : UiHandle ) ?Box2
+  {
+    if( self.getWidget( id ))| widget |{ return widget.requestedBox; }
+    return null;
+  }
+
   pub inline fn getWidgetBox( self : *const Panel, id : UiHandle ) ?Box2
   {
     if( self.getWidget( id ))| widget |{ return widget.computedBox; }
@@ -472,7 +673,29 @@ pub const Panel = struct
 
   pub inline fn getWidgetTextSize( self : *const Panel, id : UiHandle ) ?Vec2
   {
-    if( self.getWidget( id ))| widget |{ return widget.textSize; }
+    if( self.getWidget( id ))| widget |{ return widget.textMetrics.measuredSize; }
+    return null;
+  }
+
+  pub inline fn getWidgetTextMetrics( self : *const Panel, id : UiHandle ) ?UiTextMetrics
+  {
+    if( self.getWidget( id ))| widget |{ return widget.textMetrics; }
+    return null;
+  }
+
+  pub inline fn getWidgetText( self : *const Panel, id : UiHandle ) ?[]const u8
+  {
+    if( self.getWidget( id ))| widget |{ return widget.getText(); }
+    return null;
+  }
+
+  pub inline fn getChecked( self : *const Panel, id : UiHandle ) ?bool
+  {
+    if( self.getWidget( id ))| widget |
+    {
+      if( widget.kind == .checkbox ){ return widget.state.isChecked; }
+    }
+
     return null;
   }
 
@@ -486,6 +709,18 @@ pub const Panel = struct
 
   // ================================ MUTATION ================================
 
+  pub fn setPanelBox( self : *Panel, box : Box2 ) void
+  {
+    self.box = box;
+    self.markLayoutDirty();
+  }
+
+  pub fn setPanelLayout( self : *Panel, layout : UiLayout ) void
+  {
+    self.config.layout = layout;
+    self.markLayoutDirty();
+  }
+
   pub fn removeWidget( self : *Panel, id : UiHandle ) void
   {
     if( self.getWidgetPtr( id ))| widget |
@@ -494,6 +729,11 @@ pub const Panel = struct
       widget.state.isVisible = false;
       self.markStructureDirty();
     }
+  }
+
+  pub fn clearEvents( self : *Panel ) void
+  {
+    self.events.clearRetainingCapacity();
   }
 
   pub fn setText( self : *Panel, id : UiHandle, str : []const u8 ) void
@@ -517,12 +757,70 @@ pub const Panel = struct
     self.setText( id, str );
   }
 
+  pub fn setLayout( self : *Panel, id : UiHandle, layout : UiLayout ) void
+  {
+    if( self.getWidgetPtr( id ))| widget |
+    {
+      widget.layout = layout;
+      self.markLayoutDirty();
+    }
+  }
+
+  pub fn setDesiredSize( self : *Panel, id : UiHandle, size : Vec2 ) void
+  {
+    if( self.getWidgetPtr( id ))| widget |
+    {
+      widget.desiredSize = size;
+      self.markLayoutDirty();
+    }
+  }
+
+  pub fn setPadding( self : *Panel, id : UiHandle, padding : f64 ) void
+  {
+    if( self.getWidgetPtr( id ))| widget |
+    {
+      widget.padding = padding;
+      self.markLayoutDirty();
+    }
+  }
+
+  pub fn setGap( self : *Panel, id : UiHandle, gap : f64 ) void
+  {
+    if( self.getWidgetPtr( id ))| widget |
+    {
+      widget.gap = gap;
+      self.markLayoutDirty();
+    }
+  }
+
   pub fn setVisible( self : *Panel, id : UiHandle, isVisible : bool ) void
   {
     if( self.getWidgetPtr( id ))| widget |
     {
       widget.state.isVisible = isVisible;
       self.markLayoutDirty();
+    }
+  }
+
+  pub fn setEnabled( self : *Panel, id : UiHandle, isEnabled : bool ) void
+  {
+    if( self.getWidgetPtr( id ))| widget |
+    {
+      widget.state.isEnabled = isEnabled;
+      self.dirty.hit = true;
+      self.markRenderDirty();
+    }
+  }
+
+  pub fn setChecked( self : *Panel, id : UiHandle, isChecked : bool ) void
+  {
+    if( self.getWidgetPtr( id ))| widget |
+    {
+      if( widget.kind != .checkbox ){ return; }
+      if( widget.state.isChecked == isChecked ){ return; }
+
+      widget.state.isChecked = isChecked;
+      self.markRenderDirty();
     }
   }
 
@@ -540,6 +838,8 @@ pub const Panel = struct
     if( self.getWidgetPtr( id ))| widget |
     {
       widget.visualOffset = offset;
+      widget.finalBox     = widget.computedBox.moveCenter( widget.visualOffset );
+      self.updateWidgetTextMetrics( widget );
       self.markRenderDirty();
       self.dirty.hit = true;
     }
@@ -550,13 +850,78 @@ pub const Panel = struct
     if( self.getWidgetPtr( id ))| widget |
     {
       widget.style = style;
-      self.markRenderDirty();
+      self.markTextDirty();
     }
   }
 
   pub inline fn setDebugDrawBounds( self : *Panel, enabled : bool ) void
   {
     self.debugDrawBounds = enabled;
+  }
+
+  /// Moves a widget to an explicit sibling index. Index 0 draws first; the last
+  /// index draws on top and wins hit testing among overlapping siblings.
+  pub fn moveWidgetToSiblingIndex( self : *Panel, id : UiHandle, targetIdx : usize ) void
+  {
+    const widget = self.getWidget( id ) orelse return;
+
+    var children : std.ArrayList( UiHandle ) = .empty;
+    defer children.deinit( self.alloc );
+
+    self.appendOrderedChildren( widget.parent, &children ) catch | err |
+    {
+      utl.log( .ERROR, 0, @src(), "Failed to collect UI child order : {}", .{ err });
+      return;
+    };
+
+    var nextOrder : u32   = 0;
+    var outIndex  : usize = 0;
+    var inserted  : bool  = false;
+    const clampedIdx = @min( targetIdx, if( children.items.len == 0 ) 0 else children.items.len - 1 );
+
+    for( children.items )| child |
+    {
+      if( child.isEq( id )){ continue; }
+
+      if( !inserted and outIndex == clampedIdx )
+      {
+        if( self.getWidgetPtr( id ))| moved |
+        {
+          moved.order = nextOrder;
+          nextOrder += 1;
+        }
+        inserted = true;
+        outIndex += 1;
+      }
+
+      if( self.getWidgetPtr( child ))| ordered |
+      {
+        ordered.order = nextOrder;
+        nextOrder += 1;
+      }
+
+      outIndex += 1;
+    }
+
+    if( !inserted )
+    {
+      if( self.getWidgetPtr( id ))| moved |{ moved.order = nextOrder; }
+    }
+
+    self.markStructureDirty();
+  }
+
+  pub fn bringWidgetForward( self : *Panel, id : UiHandle ) void
+  {
+    const idx = self.getSiblingIndex( id ) orelse return;
+    self.moveWidgetToSiblingIndex( id, idx + 1 );
+  }
+
+  pub fn sendWidgetBackward( self : *Panel, id : UiHandle ) void
+  {
+    const idx = self.getSiblingIndex( id ) orelse return;
+    if( idx == 0 ){ return; }
+    self.moveWidgetToSiblingIndex( id, idx - 1 );
   }
 
 
@@ -581,9 +946,7 @@ pub const Panel = struct
   fn markTextDirty( self : *Panel ) void
   {
     self.dirty.text   = true;
-    self.dirty.layout = true;
     self.dirty.render = true;
-    self.dirty.hit    = true;
   }
 
   fn markRenderDirty( self : *Panel ) void
@@ -621,6 +984,7 @@ pub const Panel = struct
   {
     widget.computedBox = box;
     widget.finalBox    = box.moveCenter( widget.visualOffset );
+    self.updateWidgetTextMetrics( widget );
 
     if( widget.kind == .container )
     {
@@ -630,8 +994,13 @@ pub const Panel = struct
 
   fn layoutAbsoluteChildren( self : *Panel, parent : UiHandle, parentBox : Box2 ) void
   {
-    for( self.widgets.items )| *widget |
+    var cursor : ?u32 = null;
+
+    while( self.getNextChildIndex( parent, cursor ))| idx |
     {
+      const widget = &self.widgets.items[ idx ];
+      cursor = widget.order;
+
       if( !self.isLayoutChild( widget, parent )){ continue; }
 
       var box = widget.requestedBox;
@@ -649,9 +1018,13 @@ pub const Panel = struct
   {
     const contentWidth = @max( 0.0, parentBox.getSizeX() - ( padding * 2.0 ));
     var topLeft = parentBox.getTopLeft().add( .new( padding, padding ));
+    var cursor : ?u32 = null;
 
-    for( self.widgets.items )| *widget |
+    while( self.getNextChildIndex( parent, cursor ))| idx |
     {
+      const widget = &self.widgets.items[ idx ];
+      cursor = widget.order;
+
       if( !self.isLayoutChild( widget, parent )){ continue; }
 
       var size = widget.desiredSize;
@@ -668,9 +1041,13 @@ pub const Panel = struct
   {
     const contentHeight = @max( 0.0, parentBox.getSizeY() - ( padding * 2.0 ));
     var topLeft = parentBox.getTopLeft().add( .new( padding, padding ));
+    var cursor : ?u32 = null;
 
-    for( self.widgets.items )| *widget |
+    while( self.getNextChildIndex( parent, cursor ))| idx |
     {
+      const widget = &self.widgets.items[ idx ];
+      cursor = widget.order;
+
       if( !self.isLayoutChild( widget, parent )){ continue; }
 
       var size = widget.desiredSize;
@@ -689,8 +1066,13 @@ pub const Panel = struct
     box.scale.x = @max( 0.0, box.scale.x - padding );
     box.scale.y = @max( 0.0, box.scale.y - padding );
 
-    for( self.widgets.items )| *widget |
+    var cursor : ?u32 = null;
+
+    while( self.getNextChildIndex( parent, cursor ))| idx |
     {
+      const widget = &self.widgets.items[ idx ];
+      cursor = widget.order;
+
       if( !self.isLayoutChild( widget, parent )){ continue; }
       self.finishWidgetLayout( widget, box );
     }
@@ -710,16 +1092,32 @@ pub const Panel = struct
   {
     for( self.widgets.items )| *widget |
     {
-      if( !widget.isAlive or widget.textLen == 0 )
-      {
-        widget.textSize = .{};
-        continue;
-      }
-
-      widget.textSize = measureText( widget.getText(), widget.style.fontSize );
+      self.updateWidgetTextMetrics( widget );
     }
 
     self.dirty.text = false;
+  }
+
+  fn updateWidgetTextMetrics( self : *Panel, widget : *Widget ) void
+  {
+    _ = self;
+
+    if( !widget.isAlive or widget.textLen == 0 )
+    {
+      widget.textMetrics = .{};
+      return;
+    }
+
+    const measuredSize = measureText( widget.getText(), widget.style.fontSize );
+    const lineHeight   = measuredSize.y;
+    const drawOrigin   = getTextDrawOrigin( widget );
+
+    widget.textMetrics = .{
+      .measuredSize = measuredSize,
+      .drawOrigin   = drawOrigin,
+      .lineHeight   = lineHeight,
+      .textBox      = getTextBox( widget, drawOrigin, measuredSize ),
+    };
   }
 
 
@@ -746,26 +1144,45 @@ pub const Panel = struct
     const hovered = self.hitTest( mouse.screenPos );
     self.pointer.setUiHoverTarget( .fromId( self.key ), targetFromHandle( hovered ), mouse.frameTime );
 
-    const left = mouse.getButton( .left );
-    if( left.pressedThisFrame )
+    inline for( .{ utl.MouseButton.left, utl.MouseButton.right, utl.MouseButton.middle } )| button |
     {
-      self.pointer.setPressedWidget( .left, targetFromHandle( hovered ) );
-    }
+      const buttonState = mouse.getButton( button );
 
-    if( left.releasedThisFrame )
-    {
-      const pressedTarget = self.pointer.getButton( .left ).pressedWidget;
-      const pressed = handleFromTarget( pressedTarget );
-
-      if( pressed.isValid() and pressed.isEq( hovered ))
+      if( buttonState.pressedThisFrame )
       {
-        if( self.getWidget( hovered ))| widget |
-        {
-          if( widget.isInteractive() ){ self.pushEvent( .{ .eType = .clicked, .widget = hovered }); }
-        }
+        self.pointer.setPressedWidget( button, targetFromHandle( hovered ) );
       }
 
-      self.pointer.setPressedWidget( .left, .{} );
+      if( buttonState.releasedThisFrame )
+      {
+        const pressedTarget = self.pointer.getButton( button ).pressedWidget;
+        const pressed = handleFromTarget( pressedTarget );
+
+        if( button == .left and pressed.isValid() and pressed.isEq( hovered ))
+        {
+          if( self.getWidgetPtr( hovered ))| widget |
+          {
+            if( widget.isInteractive() )
+            {
+              switch( widget.kind )
+              {
+                .button => self.pushEvent( .{ .eType = .clicked, .widget = hovered } ),
+
+                .checkbox =>
+                {
+                  widget.state.isChecked = !widget.state.isChecked;
+                  self.markRenderDirty();
+                  self.pushEvent( .{ .eType = .changed, .widget = hovered } );
+                },
+
+                else => {},
+              }
+            }
+          }
+        }
+
+        self.pointer.setPressedWidget( button, .{} );
+      }
     }
   }
 
@@ -791,18 +1208,33 @@ pub const Panel = struct
     if( !self.dirty.hit ){ return; }
 
     self.hits.clearRetainingCapacity();
-
-    for( self.widgets.items )| *widget |
-    {
-      if( !widget.isInteractive() ){ continue; }
-      self.hits.append( self.alloc, .{ .widget = widget.id, .box = widget.finalBox }) catch | err |
-      {
-        utl.log( .ERROR, 0, @src(), "Failed to append UI hit entry : {}", .{ err });
-        return;
-      };
-    }
+    self.appendHitChildrenOf( .{} );
 
     self.dirty.hit = false;
+  }
+
+  fn appendHitChildrenOf( self : *Panel, parent : UiHandle ) void
+  {
+    var cursor : ?u32 = null;
+
+    while( self.getNextChildIndex( parent, cursor ))| idx |
+    {
+      const widget = &self.widgets.items[ idx ];
+      cursor = widget.order;
+
+      if( !widget.isAlive or !widget.state.isVisible ){ continue; }
+
+      if( widget.isInteractive() )
+      {
+        self.hits.append( self.alloc, .{ .widget = widget.id, .box = widget.finalBox }) catch | err |
+        {
+          utl.log( .ERROR, 0, @src(), "Failed to append UI hit entry : {}", .{ err });
+          return;
+        };
+      }
+
+      self.appendHitChildrenOf( widget.id );
+    }
   }
 
   fn pushEvent( self : *Panel, event : UiEvent ) void
@@ -820,6 +1252,18 @@ pub const Panel = struct
     return self.events.orderedRemove( 0 );
   }
 
+  /// Non-consuming queue scan. This returns true while a matching clicked event
+  /// is still queued, so callers that use `popEvent()` first will not see it.
+  pub fn wasClicked( self : *const Panel, id : UiHandle ) bool
+  {
+    for( self.events.items )| event |
+    {
+      if( event.isClicked( id )){ return true; }
+    }
+
+    return false;
+  }
+
 
   // ================================ DRAWING ================================
 
@@ -828,16 +1272,27 @@ pub const Panel = struct
     self.updateLayout();
 
     drawBox( self.box, self.config.style.fillCol, self.config.style.edgeCol, self.config.style.lineWidth );
-
-    for( self.widgets.items )| *widget |
-    {
-      if( !widget.isAlive or !widget.state.isVisible ){ continue; }
-      self.drawWidget( widget );
-    }
+    self.drawChildrenOf( .{} );
 
     if( self.debugDrawBounds ){ self.drawDebugBounds(); }
 
     self.dirty.render = false;
+  }
+
+  fn drawChildrenOf( self : *Panel, parent : UiHandle ) void
+  {
+    var cursor : ?u32 = null;
+
+    while( self.getNextChildIndex( parent, cursor ))| idx |
+    {
+      const widget = &self.widgets.items[ idx ];
+      cursor = widget.order;
+
+      if( !widget.isAlive or !widget.state.isVisible ){ continue; }
+
+      self.drawWidget( widget );
+      self.drawChildrenOf( widget.id );
+    }
   }
 
   fn drawWidget( self : *Panel, widget : *const Widget ) void
@@ -855,7 +1310,26 @@ pub const Panel = struct
       .button =>
       {
         drawBox( widget.finalBox, widget.style.fillFor( hovered, pressed ), widget.style.edgeCol, widget.style.lineWidth );
-        if( widget.textLen > 0 ){ drawTextCenter( widget.getText(), widget.finalBox.center, widget.style.fontSize, widget.style.textCol ); }
+        if( widget.textLen > 0 ){ self.drawWidgetText( widget ); }
+      },
+
+      .checkbox =>
+      {
+        drawBox( widget.finalBox, widget.style.fillFor( hovered, pressed ), widget.style.edgeCol, widget.style.lineWidth );
+
+        const markSize = @max( 0.0, @min( widget.finalBox.getSizeY() - ( widget.padding * 2.0 ), 18.0 ));
+        const markBox  = boxFromTopLeft( widget.finalBox.getTopLeft().add( .new( widget.padding, widget.padding )), .new( markSize, markSize ));
+
+        drawBox( markBox, Colour.transpa, widget.style.edgeCol, widget.style.lineWidth );
+        if( widget.state.isChecked )
+        {
+          drawBox( markBox.subScale( .new( @min( 4.0, markBox.scale.x ), @min( 4.0, markBox.scale.y ) )), widget.style.accentCol, Colour.transpa, 0.0 );
+        }
+
+        if( widget.textLen > 0 )
+        {
+          drawTextLeft( widget.getText(), widget.textMetrics.drawOrigin, widget.style.fontSize, widget.style.textCol );
+        }
       },
 
       .spacer, .container =>
@@ -876,14 +1350,8 @@ pub const Panel = struct
 
     switch( widget.textAlign )
     {
-      .left =>
-      {
-        const pos = Vec2.new( widget.finalBox.getMinX() + widget.padding, widget.finalBox.center.y );
-
-        drawTextLeft( widget.getText(), pos, widget.style.fontSize, widget.style.textCol );
-      },
-
-      .center => drawTextCenter( widget.getText(), widget.finalBox.center, widget.style.fontSize, widget.style.textCol ),
+      .left   => drawTextLeft(   widget.getText(), widget.textMetrics.drawOrigin, widget.style.fontSize, widget.style.textCol ),
+      .center => drawTextCenter( widget.getText(), widget.textMetrics.drawOrigin, widget.style.fontSize, widget.style.textCol ),
     }
   }
 
@@ -891,10 +1359,23 @@ pub const Panel = struct
   {
     drawBox( self.box, Colour.transpa, Colour.pGold, 1.0 );
 
-    for( self.widgets.items )| *widget |
+    self.drawDebugChildrenOf( .{} );
+  }
+
+  fn drawDebugChildrenOf( self : *Panel, parent : UiHandle ) void
+  {
+    var cursor : ?u32 = null;
+
+    while( self.getNextChildIndex( parent, cursor ))| idx |
     {
+      const widget = &self.widgets.items[ idx ];
+      cursor = widget.order;
+
       if( !widget.isAlive or !widget.state.isVisible ){ continue; }
       drawBox( widget.finalBox, Colour.transpa, Colour.pTeal, 1.0 );
+      if( widget.textLen > 0 ){ drawBox( widget.textMetrics.textBox, Colour.transpa, Colour.pGold, 1.0 ); }
+
+      self.drawDebugChildrenOf( widget.id );
     }
   }
 };
@@ -925,6 +1406,39 @@ fn handleFromTarget( target : utl.MouseUiTarget ) UiHandle
   if( idx == UiHandle.invalidIndex or gen == 0 ){ return .{}; }
 
   return .fromIndexGen( idx, gen );
+}
+
+fn getTextDrawOrigin( widget : *const Widget ) Vec2
+{
+  if( widget.kind == .checkbox )
+  {
+    const markSize = @max( 0.0, @min( widget.finalBox.getSizeY() - ( widget.padding * 2.0 ), 18.0 ));
+    const markBox  = boxFromTopLeft( widget.finalBox.getTopLeft().add( .new( widget.padding, widget.padding )), .new( markSize, markSize ));
+
+    return Vec2.new( markBox.getMaxX() + widget.padding, widget.finalBox.center.y );
+  }
+
+  return switch( widget.textAlign )
+  {
+    .left   => Vec2.new( widget.finalBox.getMinX() + widget.padding, widget.finalBox.center.y ),
+    .center => widget.finalBox.center,
+  };
+}
+
+fn getTextBox( widget : *const Widget, drawOrigin : Vec2, measuredSize : Vec2 ) Box2
+{
+  const halfSize = measuredSize.mulVal( 0.5 );
+
+  if( widget.kind == .checkbox )
+  {
+    return .{ .center = drawOrigin.add( .new( halfSize.x, 0.0 )), .scale = halfSize };
+  }
+
+  return switch( widget.textAlign )
+  {
+    .left   => .{ .center = drawOrigin.add( .new( halfSize.x, 0.0 )), .scale = halfSize },
+    .center => .{ .center = drawOrigin,                               .scale = halfSize },
+  };
 }
 
 fn measureText( str : []const u8, fontSize : f64 ) Vec2

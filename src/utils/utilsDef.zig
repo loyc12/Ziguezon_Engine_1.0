@@ -323,6 +323,7 @@ pub const WidgetState      = uiPanel.WidgetState;
 
 pub const UiLayout         = uiPanel.UiLayout;
 pub const UiTextAlign      = uiPanel.UiTextAlign;
+pub const UiTextMetrics    = uiPanel.UiTextMetrics;
 pub const UiStyle          = uiPanel.UiStyle;
 pub const UiPointerState   = uiPanel.UiPointerState;
 pub const UiPointerButton  = uiPanel.UiPointerButton;
