@@ -572,7 +572,10 @@ pub const Panel = struct
     return widget;
   }
 
+  /// Storage-slot count, including dead slots kept for generation-safe reuse.
+  /// Use `getAliveWidgetCount()` when the visible/living widget count matters.
   pub inline fn getWidgetCount( self : *const Panel ) usize { return self.widgets.items.len; }
+  pub inline fn getWidgetSlotCount( self : *const Panel ) usize { return self.widgets.items.len; }
   pub inline fn getEventCount(  self : *const Panel ) usize { return self.events.items.len;  }
 
   pub inline fn peekEventCount( self : *const Panel ) usize { return self.getEventCount(); }
@@ -584,6 +587,18 @@ pub const Panel = struct
   pub inline fn isWidgetAlive( self : *const Panel, id : UiHandle ) bool
   {
     return self.getWidget( id ) != null;
+  }
+
+  pub fn getAliveWidgetCount( self : *const Panel ) usize
+  {
+    var count : usize = 0;
+
+    for( self.widgets.items )| *widget |
+    {
+      if( widget.isAlive ){ count += 1; }
+    }
+
+    return count;
   }
 
   pub inline fn isWidgetVisible( self : *const Panel, id : UiHandle ) bool
@@ -659,10 +674,17 @@ pub const Panel = struct
     return null;
   }
 
-  pub inline fn getWidgetBox( self : *const Panel, id : UiHandle ) ?Box2
+  /// Returns the layout-computed center-defined box before visual offset.
+  pub inline fn getWidgetComputedBox( self : *const Panel, id : UiHandle ) ?Box2
   {
     if( self.getWidget( id ))| widget |{ return widget.computedBox; }
     return null;
+  }
+
+  /// Compatibility alias for `getWidgetComputedBox()`.
+  pub inline fn getWidgetBox( self : *const Panel, id : UiHandle ) ?Box2
+  {
+    return self.getWidgetComputedBox( id );
   }
 
   pub inline fn getWidgetFinalBox( self : *const Panel, id : UiHandle ) ?Box2
@@ -1446,6 +1468,194 @@ fn measureText( str : []const u8, fontSize : f64 ) Vec2
   var buf : [ textBufLen ]u8 = undefined;
   const zStr = std.fmt.bufPrintZ( &buf, "{s}", .{ str }) catch return .{};
   return Vec2.fromRayVec2( utl.ray.measureTextEx( utl.sDraw.getDefaultFont(), zStr, @floatCast( fontSize ), @floatCast( fontSize * 0.125 ) ));
+}
+
+
+// ================================ TESTS ================================
+
+fn testPanel( box : Box2, layout : UiLayout ) !Panel
+{
+  return Panel.init(
+    std.testing.allocator,
+    .{
+      .key    = key( "test.panel" ),
+      .box    = box,
+      .config = .{ .layout = layout, .padding = 0.0, .gap = 0.0 },
+    }
+  );
+}
+
+fn testButtonAt( panel : *Panel, str : []const u8, box : Box2 ) !UiHandle
+{
+  return panel.addButton(
+    .{
+      .key  = key( str ),
+      .box  = box,
+      .text = "",
+    }
+  );
+}
+
+fn testMouseAt( pos : Vec2, isDown : bool, pressed : bool, released : bool ) Mouse
+{
+  var mouse : Mouse = .{
+    .screenPos = pos,
+    .frameTime = .new( 1, .NS ),
+  };
+
+  mouse.buttons[ utl.MouseButton.left.toIndex() ] = .{
+    .isDown            = isDown,
+    .pressedThisFrame  = pressed,
+    .releasedThisFrame = released,
+  };
+
+  return mouse;
+}
+
+test "Panel reuses widget slots with a new handle generation"
+{
+  var panel = try testPanel( .{ .center = .new( 100.0, 100.0 ), .scale = .new( 100.0, 100.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const first = try testButtonAt( &panel, "first", .{ .center = .new( 10.0, 10.0 ), .scale = .new( 5.0, 5.0 ) } );
+  panel.removeWidget( first );
+
+  const second = try testButtonAt( &panel, "second", .{ .center = .new( 20.0, 20.0 ), .scale = .new( 5.0, 5.0 ) } );
+
+  try std.testing.expect( first.idx == second.idx );
+  try std.testing.expect( first.gen != second.gen );
+  try std.testing.expect( !panel.isWidgetAlive( first ) );
+  try std.testing.expect(  panel.isWidgetAlive( second ));
+  try std.testing.expectEqual( @as( usize, 1 ), panel.getWidgetSlotCount() );
+  try std.testing.expectEqual( @as( usize, 1 ), panel.getAliveWidgetCount() );
+}
+
+test "Panel child draw order also drives front-to-back hit testing"
+{
+  var panel = try testPanel( .{ .center = .new( 100.0, 100.0 ), .scale = .new( 100.0, 100.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const back  = try testButtonAt( &panel, "back",  .{ .center = .new( 50.0, 50.0 ), .scale = .new( 20.0, 20.0 ) } );
+  const front = try testButtonAt( &panel, "front", .{ .center = .new( 50.0, 50.0 ), .scale = .new( 20.0, 20.0 ) } );
+
+  var children : [ 2 ]UiHandle = undefined;
+  try std.testing.expectEqual( @as( usize, 2 ), panel.collectChildren( .{}, &children ) );
+  try std.testing.expect( children[ 0 ].isEq( back  ));
+  try std.testing.expect( children[ 1 ].isEq( front ));
+  try std.testing.expect( panel.hitTest( .new( 50.0, 50.0 )).isEq( front ));
+
+  panel.sendWidgetBackward( front );
+  try std.testing.expect( panel.hitTest( .new( 50.0, 50.0 )).isEq( back ));
+}
+
+test "Panel sibling order helpers keep deterministic indexes"
+{
+  var panel = try testPanel( .{ .center = .new( 0.0, 0.0 ), .scale = .new( 100.0, 100.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const a = try testButtonAt( &panel, "a", .{ .center = .new( 0.0, 0.0 ), .scale = .new( 5.0, 5.0 ) } );
+  const b = try testButtonAt( &panel, "b", .{ .center = .new( 0.0, 0.0 ), .scale = .new( 5.0, 5.0 ) } );
+  const c = try testButtonAt( &panel, "c", .{ .center = .new( 0.0, 0.0 ), .scale = .new( 5.0, 5.0 ) } );
+
+  panel.moveWidgetToSiblingIndex( c, 0 );
+
+  var children : [ 3 ]UiHandle = undefined;
+  _ = panel.collectChildren( .{}, &children );
+  try std.testing.expect( children[ 0 ].isEq( c ));
+  try std.testing.expect( children[ 1 ].isEq( a ));
+  try std.testing.expect( children[ 2 ].isEq( b ));
+
+  panel.bringWidgetForward( c );
+  _ = panel.collectChildren( .{}, &children );
+  try std.testing.expect( children[ 0 ].isEq( a ));
+  try std.testing.expect( children[ 1 ].isEq( c ));
+  try std.testing.expect( children[ 2 ].isEq( b ));
+
+  panel.sendWidgetBackward( b );
+  _ = panel.collectChildren( .{}, &children );
+  try std.testing.expect( children[ 0 ].isEq( a ));
+  try std.testing.expect( children[ 1 ].isEq( b ));
+  try std.testing.expect( children[ 2 ].isEq( c ));
+}
+
+test "Panel absolute root boxes stay screen-space center-defined"
+{
+  var panel = try testPanel( .{ .center = .new( 100.0, 100.0 ), .scale = .new( 100.0, 100.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const rootChild = try testButtonAt( &panel, "root", .{ .center = .new( 30.0, 40.0 ), .scale = .new( 6.0, 7.0 ) } );
+  panel.updateLayout();
+
+  try std.testing.expect( panel.getWidgetComputedBox( rootChild ).?.isEq( .{ .center = .new( 30.0, 40.0 ), .scale = .new( 6.0, 7.0 ) } ));
+}
+
+test "Panel absolute child boxes are parent-center-relative"
+{
+  var panel = try testPanel( .{ .center = .new( 100.0, 100.0 ), .scale = .new( 100.0, 100.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const parent = try panel.addContainer( .{ .box = .{ .center = .new( 90.0, 80.0 ), .scale = .new( 20.0, 20.0 ) } } );
+  const child  = try panel.addButton(    .{ .parent = parent, .box = .{ .center = .new( 5.0, -6.0 ), .scale = .new( 4.0, 3.0 ) } } );
+  panel.updateLayout();
+
+  try std.testing.expect( panel.getWidgetComputedBox( child ).?.isEq( .{ .center = .new( 95.0, 74.0 ), .scale = .new( 4.0, 3.0 ) } ));
+}
+
+test "Panel hit testing skips disabled and hidden widgets"
+{
+  var panel = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 50.0, 50.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const lower = try testButtonAt( &panel, "lower", .{ .center = .new( 50.0, 50.0 ), .scale = .new( 20.0, 20.0 ) } );
+  const upper = try testButtonAt( &panel, "upper", .{ .center = .new( 50.0, 50.0 ), .scale = .new( 20.0, 20.0 ) } );
+
+  try std.testing.expect( panel.hitTest( .new( 50.0, 50.0 )).isEq( upper ));
+
+  panel.setEnabled( upper, false );
+  try std.testing.expect( panel.hitTest( .new( 50.0, 50.0 )).isEq( lower ));
+
+  panel.setEnabled( upper, true );
+  panel.setVisible( upper, false );
+  try std.testing.expect( panel.hitTest( .new( 50.0, 50.0 )).isEq( lower ));
+}
+
+test "Panel click and changed events require release on the pressed widget"
+{
+  var panel = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 50.0, 50.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const button   = try panel.addButton(   .{ .box = .{ .center = .new( 25.0, 25.0 ), .scale = .new( 10.0, 10.0 ) } } );
+  const checkbox = try panel.addCheckbox( .{ .box = .{ .center = .new( 75.0, 25.0 ), .scale = .new( 10.0, 10.0 ) } } );
+
+  panel.updateInput( testMouseAt( .new( 25.0, 25.0 ), true,  true,  false ) );
+  panel.updateInput( testMouseAt( .new( 75.0, 25.0 ), false, false, true  ) );
+  try std.testing.expectEqual( @as( usize, 0 ), panel.getEventCount() );
+
+  panel.updateInput( testMouseAt( .new( 25.0, 25.0 ), true,  true,  false ) );
+  panel.updateInput( testMouseAt( .new( 25.0, 25.0 ), false, false, true  ) );
+  try std.testing.expect( panel.popEvent().?.isClicked( button ) );
+
+  panel.updateInput( testMouseAt( .new( 75.0, 25.0 ), true,  true,  false ) );
+  panel.updateInput( testMouseAt( .new( 75.0, 25.0 ), false, false, true  ) );
+  try std.testing.expect( panel.popEvent().?.isChanged( checkbox ) );
+  try std.testing.expect( panel.getChecked( checkbox ).? );
+}
+
+test "Panel text changes dirty text and render without forcing layout"
+{
+  var panel = try testPanel( .{ .center = .new( 0.0, 0.0 ), .scale = .new( 50.0, 50.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const label = try panel.addLabel( .{ .box = .{ .center = .new( 0.0, 0.0 ), .scale = .new( 10.0, 10.0 ) } } );
+  panel.updateLayout();
+
+  try std.testing.expect( !panel.getDirtyFlags().layout );
+  panel.setText( label, "changed" );
+
+  const dirty = panel.getDirtyFlags();
+  try std.testing.expect(  dirty.text   );
+  try std.testing.expect(  dirty.render );
+  try std.testing.expect( !dirty.layout );
 }
 
 fn drawBox( box : Box2, fillCol : Colour, edgeCol : Colour, lineWidth : f64 ) void

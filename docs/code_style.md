@@ -89,6 +89,9 @@ switch( ng.state )
 - Separate scheduled operations from forced operations using clear names such
   as `tryTickWorld` and `forceTickWorld`.
 - Remove deprecated or dead code made obsolete by a refactor.
+- Do not keep compatibility semantics around unless they remain clearly useful;
+  prefer one clear surface over duplicate names such as `getTopSide` and
+  `getNegXSide`.
 
 ## Defensive Behavior
 
@@ -98,6 +101,16 @@ switch( ng.state )
 - Handle allocation failures close to the failing operation.
 - Avoid silently correcting invalid state.
 - Use dedicated epsilon-aware helpers for floating-point comparisons.
+
+## Testing
+
+- Add tests when they cover meaningful behavior that could realistically fail.
+- Prefer failure cases, edge cases, lifecycle misuse, bounds behavior, invalid
+  input, and regressions over trivially provable getters, setters, wrappers, or
+  straight-line assignments.
+- Remove or rework tests that assert implementation details, duplicate stronger
+  coverage, or make simple behavior harder to change without improving safety.
+- Keep tests compact and local to the behavior they protect.
 
 ## Naming
 

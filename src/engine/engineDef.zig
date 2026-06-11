@@ -36,9 +36,14 @@ pub var G_ENG : Engine = .{};
 pub const resMgr     = @import( "resources/resourceManager.zig" );
 pub const tilemapMgr = @import( "world/tilemap/tilemapManager.zig" );
 pub const worldMgr   = @import( "world/worldManager.zig" );
+pub const uiMgr      = @import( "ui/uiManager.zig" );
 
-pub const World       = worldMgr.World;
-pub const TickInfo    = worldMgr.TickInfo;
+pub const World          = worldMgr.World;
+pub const TickInfo       = worldMgr.TickInfo;
+pub const UiManager      = uiMgr.UiManager;
+pub const UiPanelHandle  = uiMgr.UiPanelHandle;
+pub const UiPanelConfig  = uiMgr.UiPanelConfig;
+pub const UiManagerEvent = uiMgr.UiManagerEvent;
 
 
 // ================ RENDER ================
@@ -126,4 +131,5 @@ test "engine world declarations"
   std.testing.refAllDecls( eque );
   std.testing.refAllDecls( emgr );
   std.testing.refAllDecls( elog );
+  std.testing.refAllDecls( uiMgr );
 }

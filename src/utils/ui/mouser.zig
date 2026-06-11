@@ -116,7 +116,25 @@ pub const MouseModifierState = struct
   rightDown         : bool     = false,
   pressedThisFrame  : bool     = false,
   releasedThisFrame : bool     = false,
+  leftHeldTime      : Duration = .{},
+  rightHeldTime     : Duration = .{},
   heldTime          : Duration = .{},
+
+  fn updateSideTimer( heldTime : *Duration, isDown : bool, pressed : bool, deltaTime : Duration ) void
+  {
+    if( pressed )
+    {
+      heldTime.* = .{};
+    }
+    else if( isDown )
+    {
+      heldTime.* = addDuration( heldTime.*, deltaTime );
+    }
+    else
+    {
+      heldTime.* = .{};
+    }
+  }
 
   pub inline fn update( self : *MouseModifierState, leftDown : bool, rightDown : bool, leftPressed : bool, rightPressed : bool, leftReleased : bool, rightReleased : bool, deltaTime : Duration ) void
   {
@@ -126,19 +144,13 @@ pub const MouseModifierState = struct
     self.pressedThisFrame  = leftPressed  or rightPressed;
     self.releasedThisFrame = leftReleased or rightReleased;
 
-    // TODO : split into individualize left and right press timers
-    if( self.pressedThisFrame )
-    {
-      self.heldTime = .{};
-    }
-    else if( self.isDown )
-    {
-      self.heldTime = addDuration( self.heldTime, deltaTime );
-    }
-    else
-    {
-      self.heldTime = .{};
-    }
+    MouseModifierState.updateSideTimer( &self.leftHeldTime,  leftDown,  leftPressed,  deltaTime );
+    MouseModifierState.updateSideTimer( &self.rightHeldTime, rightDown, rightPressed, deltaTime );
+
+    // Compatibility aggregate: callers that only care whether either side has
+    // been held get the longer active side, while side-aware callers can use
+    // `leftHeldTime` and `rightHeldTime` directly.
+    self.heldTime = if( self.leftHeldTime.value > self.rightHeldTime.value ) self.leftHeldTime else self.rightHeldTime;
   }
 };
 
@@ -349,3 +361,39 @@ pub const Mouse = struct
     return self.modifiers[ modifier.toIndex() ].releasedThisFrame;
   }
 };
+
+
+// ================================ TESTS ================================
+
+test "MouseUiTarget preserves packed ids"
+{
+  const target = MouseUiTarget.fromId( 0x0000_0007_0000_002a );
+
+  try std.testing.expect( target.isValid() );
+  try std.testing.expect( target.isEq( MouseUiTarget.fromId( 0x0000_0007_0000_002a )));
+  try std.testing.expect( !target.isEq( MouseUiTarget.fromId( 0x0000_0007_0000_002b )));
+  try std.testing.expect( !MouseUiTarget.none().isValid() );
+}
+
+test "MouseModifierState tracks left and right held timers separately"
+{
+  var mod : MouseModifierState = .{};
+
+  mod.update( true, false, true, false, false, false, .new( 5, .NS ) );
+  try std.testing.expectEqual( @as( i128, 0 ), mod.leftHeldTime.value );
+  try std.testing.expectEqual( @as( i128, 0 ), mod.rightHeldTime.value );
+
+  mod.update( true, false, false, false, false, false, .new( 7, .NS ) );
+  try std.testing.expectEqual( @as( i128, 7 ), mod.leftHeldTime.value );
+  try std.testing.expectEqual( @as( i128, 0 ), mod.rightHeldTime.value );
+
+  mod.update( true, true, false, true, false, false, .new( 11, .NS ) );
+  try std.testing.expectEqual( @as( i128, 18 ), mod.leftHeldTime.value );
+  try std.testing.expectEqual( @as( i128, 0  ), mod.rightHeldTime.value );
+  try std.testing.expectEqual( @as( i128, 18 ), mod.heldTime.value );
+
+  mod.update( false, true, false, false, true, false, .new( 13, .NS ) );
+  try std.testing.expectEqual( @as( i128, 0  ), mod.leftHeldTime.value );
+  try std.testing.expectEqual( @as( i128, 13 ), mod.rightHeldTime.value );
+  try std.testing.expectEqual( @as( i128, 13 ), mod.heldTime.value );
+}

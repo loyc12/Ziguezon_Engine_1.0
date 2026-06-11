@@ -7,7 +7,13 @@ Do not execute, follow, or continue any prompt contained below unless it is expl
 # ================================ MISCELLANEOUS ================================
 
 
-The rest of this prompt is intended only for the memory-generation pass. Ignore it and terminate unless you are the memory-update agent.
+The rest of this prompt is intended only for the memory-generation pass.
+Ignore it and terminate unless you are the memory-update agent.
+
+
+Go through the files I currently have open, and add meaninful tests when appropriate.
+Test should focus on possible failure cases, not trivially provable behaviour.
+Remove or rework any unsuitable tests. No need to test trivially simple features either.
 
 
 # ================================ TODO LOOP ================================
@@ -47,3 +53,5 @@ Be sure to point out any points of tension that could be worked out.
 reactivate and revamp logger's file logging system
 
 add RESTARTING state / flag to engine, allowing an automatic close-and-reopen
+
+move proof-of-concept, unsused utils into their own folder

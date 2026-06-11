@@ -14,6 +14,9 @@ Prefer succinct, direct answers with minimal embellishment.
   structures, and types, especially game-facing or public API surfaces.
 - Ask before making large, ambiguous, or risky changes.
 - After refactors, remove deprecated or dead code made obsolete by the change.
+- Do not keep compatibility semantics around unless clearly useful ( ex : getTopSide and getNegXSide )
+- When adding or auditing tests, focus on meaningful failure cases; skip trivially
+  provable behavior and remove or rework unsuitable tests.
 
 For broad refactors, new modules, or uncertain formatting decisions, read
 [`docs/code_style.md`](docs/code_style.md).

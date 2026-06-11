@@ -84,6 +84,7 @@ pub fn start( ng : *Engine ) void
     ng.resourceManager.init(   utl.getDefaultAlloc() );
     ng.tilemapManager.init(    utl.getDefaultAlloc() );
     ng.world.init(             utl.getDefaultAlloc() );
+    ng.uiManager.init(         utl.getDefaultAlloc() );
 
     utl.qlog( .INFO, 0, @src(), "$ Engine substructs initialized !" );
   }
@@ -109,6 +110,7 @@ pub fn stop( ng : *Engine ) void
   {
     utl.qlog( .INFO, 0, @src(), "# Deinitializing engine substructs..." );
 
+    ng.uiManager.deinit();
     ng.world.deinit();
     ng.tilemapManager.deinit();
     ng.resourceManager.deinit();

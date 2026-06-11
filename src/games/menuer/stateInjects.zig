@@ -21,8 +21,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void // Called by engine.open()      // NO
 }
 pub fn OnGameClose( ng : *eng.Engine ) void // Called by engine.close()
 {
-  _ = ng; // Prevent unused variable warning
-  stepInj.closeUi();
+  stepInj.closeUi( ng );
 }
 
 
@@ -34,6 +33,5 @@ pub fn OnGamePause( ng : *eng.Engine ) void // Called by engine.pause()
 {
   _ = ng; // Prevent unused variable warning
 }
-
 
 
