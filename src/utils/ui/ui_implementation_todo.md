@@ -1,186 +1,195 @@
 # UI TODO
 
-First steps for the retained imperative UI primitive rewrite.
+Next steps for the retained imperative UI primitive rewrite.
 
-The previous retained `UiContext` work is superseded as the target plan. It may
-still be used as reference material for behavior, but new work should start from
-the primitive API described in `ui_implementation_reference.md`. The previous work
-is to be removed upon deprecation
+`ui_implementation_reference.md` is the architecture authority. The roadmap is
+the phase-order authority. This TODO should stay narrower than either file: it
+tracks the next implementation slices, not every future UI ambition.
 
-## 0. Current Decisions
+## 0. Current Baseline
 
-* Target a retained imperative primitive toolkit, not a full engine UI manager
-  first.
-* Keep the first implementation under `src/utils/ui`.
-* Primitives must be usable directly by game code without `eng.Engine`.
-* A later engine-side UI manager should orchestrate the same primitives.
-* Use `Box2` for requested, computed, and final widget bounds.
-* Keep UI primitive geometry center-defined, matching `Box2.center` +
-  `Box2.scale` half-size semantics.
-* Use sparse config structs with defaults.
-* Use stable handles/keys; do not expose raw widget pointers as long-term IDs.
-* Use dirty flags so mutations automatically trigger only the needed
-  recalculation.
-* Track transient mouse hover/click timing in a centralized pointer state, not
-  independently on every widget.
-* Keep logic in game code. Do not add layout-level conditionals, loops,
-  expression evaluators, or domain-specific panel nodes.
+The first primitive slice exists:
+
+* `src/utils/ui/panel.zig` owns `Panel`, `Widget`, handles, configs, dirty
+  flags, layout, hit testing, events, rendering, and basic introspection.
+* `src/utils/ui/mouser.zig` owns engine-agnostic mouse/pointer state, button
+  state, modifier state, UI targets, hover timing, and click timing.
+* `src/utils/utilsDef.zig` exports the primitive UI surface.
+* `eng.Engine` owns mouse state but no longer owns an engine UI manager.
+* `src/games/menuer` is a game-owned primitive UI testbed.
+* The old retained `UiContext` implementation has been removed.
+
+Do not revive the old manager-first architecture. Engine-side UI management is a
+later subsystem built on these primitives.
+
+## 1. Immediate Guardrails
+
+* Preserve center-defined `Box2` semantics for all primitive storage and query
+  results.
+* Keep top-left helpers as convenience constructors only.
+* Keep UI logic in game/user code; do not add a layout scripting language.
+* Keep `interface2D.zig` out of this pass.
 * Do not run formatting passes such as `zig fmt`.
+* Validate implementation changes with:
+  * `zig build`
+  * `zig build test` after utility-level logic changes
+  * `zig build -Dengine_interface_path=src/games/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test` after sandbox or UI-surface changes
 
-## 1. Preserve Context Before Code
+## 2. Next Slice - Primitive API Hardening
 
-* Treat `ui_implementation_reference.md` as the current architecture reference.
-* Treat this TODO as the first implementation checklist.
+Goal: make the existing primitive API safer and easier to use before adding more
+widgets.
 
-## 2. First Implementation Slice - Primitive Types
+Tasks:
 
-Create or replace the minimal type surface in `src/utils/ui`:
+* Audit public names in `panel.zig` and `mouser.zig` for consistency.
+* Decide whether `mouser.zig` should remain named that way or be renamed to
+  `mouse.zig`; update exports only if the rename is worth the churn.
+* Add doc comments to public primitive types and public game-facing methods
+  whose behavior is not obvious.
+* Add convenience queries:
+  * `getWidgetRequestedBox()`
+  * `getWidgetText()`
+  * `isWidgetAlive()`
+  * `isWidgetVisible()`
+  * `getDebugDrawBounds()`
+* Add event helpers:
+  * `clearEvents()`
+  * `peekEventCount()` or keep `getEventCount()` if that name is preferred
+  * `wasClicked( handle )` only if its queue semantics are clear and documented
+* Avoid exposing mutable widget pointers as the normal user path.
+* Keep any direct pointer access clearly marked as advanced/internal.
 
-* `UiKey`
-* `UiHandle`
-* `UiDirtyFlags`
-* `Panel`
-* `PanelConfig`
-* `Widget`
-* `WidgetConfig`
-* `WidgetKind`
-* `WidgetState`
-* `UiPointerState`
-* `UiPointerButton`
-* `UiEvent`
+## 3. Next Slice - Layout And Child Order
 
-Initial widget kinds:
+Goal: make static panels predictable enough to compose without inspecting
+internal arrays.
 
-* label
-* button
-* spacer
-* container if needed for row/column nesting
+Tasks:
 
-Hold checkbox until button/label/container behavior is clean unless it is
-trivial to include.
+* Define and document child ordering rules for draw order and hit-test order.
+* Add child iteration or ordered child collection without exposing raw storage.
+* Add child count by parent if the current count helper is not enough.
+* Confirm absolute children of a container use center-relative local boxes.
+* Confirm root absolute widgets use screen-space center-defined boxes.
+* Add a simple reorder API if needed:
+  * bring widget forward/backward within its parent, or
+  * move widget to explicit sibling index.
+* Add layout mutation helpers if missing:
+  * set panel box
+  * set panel layout
+  * set widget layout/config fields that affect layout
+  * set widget enabled/interactivity state
+* Recheck dirty rules for structure, layout, text, render, and hit caches after
+  each mutation.
 
-## 3. First API Shape
+## 4. Next Slice - Text Cache And Introspection
 
-Aim for calls like:
+Goal: expose useful text state without pretending per-character layout exists
+before it is actually cached.
 
-```zig
-var panel = try ui.Panel.init( alloc, .{
-  .key    = ui.key( "main_panel" ),
-  .box    = box,
-  .config = .{},
-});
+Tasks:
 
-const title = try panel.addLabel( .{
-  .key  = ui.key( "title" ),
-  .text = "Main",
-});
+* Replace the current single `textSize` cache with a small text metrics struct
+  if that makes queries clearer.
+* Expose:
+  * measured text size
+  * text draw origin
+  * line height
+  * final text box or label text box
+* Document how label alignment affects draw origin.
+* Keep per-character/glyph bounds deferred until the text cache stores enough
+  data to answer accurately.
+* Ensure text changes dirty only the needed caches.
+* Add one menuer debug readout that proves text metrics can be queried.
 
-const buy = try panel.addButton( .{
-  .key    = ui.key( "buy" ),
-  .box    = buyBox,
-  .text   = "Buy",
-  .config = .{},
-});
-```
+## 5. Next Slice - Input Correctness
 
-The first API should favor clarity over maximum compactness. After it works,
-trim boilerplate.
+Goal: make panel-local input dependable enough that an engine manager can later
+route the same state front-to-back across panels.
 
-## 4. Geometry And Layout Tasks
+Tasks:
 
-* Store requested, computed, visual offset, and final boxes.
-* Ensure requested/computed/final boxes use center + half-size `Box2`
-  semantics.
-* Keep top-left/size helpers as optional convenience only, not as core storage.
-* Implement absolute layout first.
-* Implement column layout second.
-* Implement row layout third.
-* Add stack layout only if it falls out naturally.
-* Add `updateLayout()` on `Panel`.
-* Add `getWidgetBox()` / `getWidgetFinalBox()` queries.
-* Mark layout dirty on structure, box, layout, visibility, and relevant text
-  changes.
+* Audit `MouseUiTarget` packing and unpacking against `UiHandle` generation
+  behavior.
+* Ensure pressed/captured widget state survives across frames until release.
+* Track and expose pressed handle per mouse button.
+* Confirm hover duration resets only when hovered panel/widget changes.
+* Confirm click events only fire when press and release happen on the same
+  interactive widget.
+* Decide whether disabled widgets should block hit testing or be skipped.
+* Add right and middle button capture behavior if it is trivial and does not add
+  policy complexity.
+* Keep focus, keyboard navigation, modal blocking, and global capture out of the
+  primitive layer for now.
 
-## 5. Rendering Tasks
+## 6. Next Slice - Widget Set
 
-* Draw panel background/perimeter.
-* Draw labels.
-* Draw button rectangles and centered/left text.
-* Add a debug draw mode for widget final boxes.
-* Add render dirty tracking.
-* Reuse existing screen draw helpers.
-* Do not integrate `interface2D.zig` yet.
+Goal: add only the next primitive widgets that materially improve static UI
+composition.
 
-## 6. Hit Test And Event Tasks
+Tasks:
 
-* Build or update a panel-local hit list from final boxes.
-* Add `hitTest( point )`.
-* Add `updatePointer( pointer )` or `updateInput( input )` around a centralized
-  pointer/mouse state.
-* Track hovered panel/widget handles on pointer state.
-* Track pressed/captured widget handles per mouse button on pointer state.
-* Track pointer position, movement delta, button transitions, click duration,
-  and hover duration on pointer state.
-* Emit clicked events for buttons.
-* Add `popEvent()`.
-* Mark hit dirty when final boxes or interactivity change.
-* Do not store hover/click timers on each widget.
+* Consider adding `checkbox` now that button/label/container behavior exists.
+* If checkbox is added:
+  * store checked state as durable widget state;
+  * add `setChecked()` / `getChecked()`;
+  * emit `changed`;
+  * draw a simple checked/unchecked surface;
+  * add a menuer example.
+* Consider adding image/sprite only if existing render helpers make it cheap.
+* Do not add sliders, scroll areas, text input, tabs, lists, docking, or theme
+  files in this slice.
 
-## 7. Mutation Tasks
+## 7. Menuer Testbed Updates
 
-* Add `setText()`.
-* Add `setVisible()`.
-* Add `setBox()`.
-* Add `setVisualOffset()`.
-* Add `setStyle()` only if style is included in the first slice.
-* Make every setter mark dirty flags automatically.
-* Avoid exposing direct mutable access that bypasses invalidation.
+Goal: keep `src/games/menuer` as proof that the API is easy to use directly from
+game code.
 
-## 8. Introspection Tasks
+Tasks:
 
-* Expose panel/widget counts.
-* Expose widget kind.
-* Expose parent/child relation or child iteration.
-* Expose requested/computed/final boxes.
-* Expose pointer/mouse state.
-* Expose hovered/pressed handles through pointer state.
-* Expose dirty/debug state.
-* Add text size query once text measurement exists.
-* Defer per-character/glyph positions until the text cache can answer them
-  accurately.
+* Keep the sandbox small and rebuild examples from scratch when stale.
+* Demonstrate:
+  * one direct game-owned panel;
+  * label and button;
+  * row or column layout;
+  * absolute child placement if layout rules are touched;
+  * click event handling;
+  * text mutation after click;
+  * visual offset movement;
+  * final box query and debug drawing;
+  * text metrics query once implemented.
+* Do not recreate stale popup/modal/slider/window demos until the primitive or
+  engine-manager layer actually supports those concepts.
 
-## 9. Sandbox Tasks
+## 8. Engine-Side Context To Preserve
 
-After the primitive layer compiles:
+Do not implement this in the current primitive pass. Keep these notes for the
+later engine subsystem review:
 
-* Update `src/games/menuer` or add a small path in it to build one game-owned
-  primitive panel.
-* Demonstrate label + button.
-* Demonstrate row or column layout.
-* Demonstrate click event handling.
-* Demonstrate `setText()` after click.
-* Demonstrate direct widget movement with `setVisualOffset()`.
-* Demonstrate querying widget final boxes and drawing debug bounds.
+* `eng.Engine` may later own an optional UI manager built on `Panel`.
+* The manager should own panel lifetime or panel registration, not redefine
+  widgets.
+* The manager should sort panels by layer/z.
+* The manager should route input front-to-back into shared mouse/pointer state.
+* The manager should own global capture, focus, modal blocking, and close
+  policy.
+* The manager should drain panel-local events and expose engine-facing events.
+* Game-owned panels must remain valid for simple/manual use.
 
-## 10. Engine-Side Context To Review Later
+## 9. Deferred Features
 
-Do not implement yet. Keep these goals for the next design pass:
+Do not pull these into the next slice unless the reference or roadmap is updated:
 
-* `eng.Engine` owns an optional UI manager built on primitive `Panel`.
-* Manager can add/remove/own panels.
-* Manager sorts panels by layer/z.
-* Manager routes input front-to-back into shared pointer/mouse state.
-* Manager owns focus/capture/modal/close policy.
-* Manager drains panel-local events and exposes engine-facing events.
-* Manager draws all registered panels.
-* Game-owned panels remain valid for simple/manual use.
-
-## 11. Validation
-
-For the first primitive implementation:
-
-* `zig build`
-* `zig build test` if utility tests are added or changed
-* later, the `src/games/menuer` build target once the sandbox is updated
-
-Never run `zig fmt`.
+* text input;
+* keyboard/gamepad navigation;
+* scroll areas;
+* dropdowns and menu bars;
+* tabs;
+* tables/lists/property inspectors;
+* graph widgets;
+* docking;
+* hot reload;
+* theme files;
+* world-space UI anchors;
+* global engine event integration.
