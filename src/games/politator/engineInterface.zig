@@ -3,16 +3,15 @@ const eng = @import( "engine" );
 
 // ================================ ENGINE SETTINGS ================================
 
-// Engine Debug Flags
+
 
   pub const DebugDraw_FPS     = true;
 
-
-// Engine Feature Flag
-
   pub const AutoApply_State_Playing    = false;
 
-// Engine Global Startup Values
+
+  pub const Startup_Target_TickRate  : u16 = 30;
+  pub const Startup_Target_FrameRate : u16 = 60;
 
   pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Politator";
 

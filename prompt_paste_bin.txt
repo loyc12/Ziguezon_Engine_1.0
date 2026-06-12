@@ -54,4 +54,5 @@ reactivate and revamp logger's file logging system
 
 add RESTARTING state / flag to engine, allowing an automatic close-and-reopen
 
-move proof-of-concept, unsused utils into their own folder
+tilemap rendering is way too slow
+make sure targetFrame/TickRate are actually used

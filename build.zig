@@ -78,6 +78,41 @@ const CheckGamesCompleteStep = struct
   }
 };
 
+const MessageStep = struct
+{
+  step    : std.Build.Step,
+  message : []const u8,
+
+  fn create( b : *std.Build, name : []const u8, message : []const u8 ) *MessageStep
+  {
+    const msg = b.allocator.create( MessageStep ) catch @panic( "OOM" );
+
+    msg.* =
+    .{
+      .step = std.Build.Step.init(
+      .{
+        .id      = .custom,
+        .name    = name,
+        .owner   = b,
+        .makeFn  = make,
+      }),
+
+      .message = message,
+    };
+
+    return msg;
+  }
+
+  fn make( step : *std.Build.Step, options : std.Build.Step.MakeOptions ) !void
+  {
+    _ = options;
+
+    const msg : *MessageStep = @fieldParentPtr( "step", step );
+
+    std.debug.print( "{s}\n", .{ msg.message } );
+  }
+};
+
 fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath : []const u8, target : std.Build.ResolvedTarget, optimize : std.builtin.OptimizeMode ) GameExecutable
 {
   const exeMod = b.createModule(
@@ -195,9 +230,8 @@ pub fn build( b : *std.Build ) void
 
   // ================ GENERIC COMMANDS ================
 
-  const run_step = b.step( "run", "Use [game]_run instead, e.g. debug_run or orbiter_run" );
-  const run_fail = b.addFail( "Bare `zig build run` is ambiguous. Use `zig build debug_run`, `zig build orbiter_run`, etc." );
-  run_step.dependOn( &run_fail.step );
+  const run_step = b.step( "run", "Runs debug_run. Use [game]_run to run a specific game" );
+  const run_msg  = MessageStep.create( b, "run alias notice", "running zig build debug_run. use \"zig build [game]_run\" to run a specific game" );
 
 
   const clean_exe_step = b.step( "clean_exe", "Deletes installed executables from zig-out/bin" );
@@ -277,6 +311,15 @@ pub fn build( b : *std.Build ) void
 
     game_run_cmd.step.dependOn( &game_install.step );
     game_run_step.dependOn( &game_run_cmd.step );
+
+    if( std.mem.eql( u8, n1, "debug" ) )
+    {
+      const default_run_cmd = b.addRunArtifact( game_exe );
+
+      default_run_cmd.step.dependOn( &game_install.step );
+      default_run_cmd.step.dependOn( &run_msg.step );
+      run_step.dependOn( &default_run_cmd.step );
+    }
 
 
     inline for( optimizations )| opt |
