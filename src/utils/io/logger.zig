@@ -2,6 +2,9 @@
 
 const std = @import( "std" );
 const utl = @import( "utils" );
+const out = @import( "outputer.zig" );
+
+const loggerConfig = @import( "logger_config" );
 
 const Duration = utl.Duration;
 
@@ -39,67 +42,22 @@ pub const LogLevel = enum( u4 )
   }
 };
 
-// Global configuration variables for the debug logging system.
-pub const G_LOG_LVL      : LogLevel    = .DEBUG; // Sets the global log level for debug printing ( do not use CONT here )
-pub const SHOW_TIMESTAMP : bool        = true;   // If true, messages include a timestamp relative to the first logger timestamp
-pub const SHOW_MSG_SRC   : bool        = true;   // If true, messages include the source file, line number, and function name
-pub const ADD_PREC_NL    : bool        = true;   // If true, a newline is inserted before the message body
+// Global comptime configuration for the debug logging system.
+pub const G_LOG_LVL       : LogLevel    = parseLogLevel( loggerConfig.log_level ); // Sets the global log level ( do not use CONT here )
+pub const SHOW_TIMESTAMP  : bool        = loggerConfig.show_timestamp;             // If true, messages include a timestamp relative to the first logger timestamp
+pub const SHOW_MSG_SRC    : bool        = loggerConfig.show_source;                // If true, messages include the source file, line number, and function name
+pub const USE_TERM_COLOUR : bool        = loggerConfig.show_colour;                // If true, terminal messages include ANSI color codes
+pub const ADD_PREC_NL     : bool        = true;                                    // If true, a newline is inserted before the message body
 
-pub const USE_LOG_FILE   : bool        = false;       // If true, log messages are also written to plain-text log files
-pub const LOG_FILE_NAME  : [] const u8 = "debug.log"; // Aggregate file name used when USE_LOG_FILE is true
+pub const USE_LOG_FILE    : bool        = loggerConfig.use_file;                   // If true, log messages are also written to plain-text log files
+pub const LOG_FILE_NAME   : [] const u8 = loggerConfig.file_name;                  // Aggregate file name used when USE_LOG_FILE is true
+
+const EXPECT_FILE_SETUP_FAILURE : bool  = loggerConfig.expect_file_setup_failure;  // Test-only expectation for setup-failure validation
 
 
 // ================================ FILE STATE ================================
 
-const FileSlot = struct
-{
-  file     : std.fs.File        = undefined,
-  nameBuff : [ LOG_NAME_LEN ]u8 = undefined,
-  name     : [] const u8        = "",
-  isOpen   : bool               = false,
-
-
-  fn openNamed( self : *FileSlot, name : [] const u8 ) !void
-  {
-    if( name.len > self.nameBuff.len ){ return error.LogFileNameTooLong; }
-
-    std.mem.copyForwards( u8, self.nameBuff[ 0..name.len ], name );
-    self.name = self.nameBuff[ 0..name.len ];
-
-    self.file   = try std.fs.cwd().createFile( self.name, .{ .truncate = true });
-    self.isOpen = true;
-  }
-
-  fn openForLevel( self : *FileSlot, level : LogLevel ) !void
-  {
-    const extStart = std.mem.lastIndexOfScalar( u8, LOG_FILE_NAME, '.' ) orelse LOG_FILE_NAME.len;
-
-    self.name = std.fmt.bufPrint(
-      &self.nameBuff,
-      "{s}_{s}{s}",
-      .{ LOG_FILE_NAME[ 0..extStart ], @tagName( level ), LOG_FILE_NAME[ extStart.. ] }
-    ) catch return error.LogFileNameTooLong;
-
-    self.file   = try std.fs.cwd().createFile( self.name, .{ .truncate = true });
-    self.isOpen = true;
-  }
-
-  fn close( self : *FileSlot ) void
-  {
-    if( !self.isOpen ){ return; }
-
-    self.file.close();
-    self.isOpen = false;
-  }
-
-  fn writeAll( self : *FileSlot, bytes : [] const u8 ) !void
-  {
-    if( !self.isOpen ){ return; }
-
-    try self.file.writeAll( bytes );
-  }
-};
-
+const FileSlot = out.NamedFileSink( LOG_NAME_LEN );
 
 var AggregateLogFile : FileSlot = FileSlot{};
 var LevelLogFiles    : [ LogLevel.count ]FileSlot = [_]FileSlot{ FileSlot{} } ** LogLevel.count;
@@ -115,65 +73,16 @@ const LogStamp = struct
 };
 
 /// Fixed-size formatter used to build one complete log record before flushing.
-const LogStream = struct
+const LogStream = out.FixedStream( LOG_BUFF_LEN, LOG_TRUNC_MSG );
+
+fn parseLogLevel( comptime text : [] const u8 ) LogLevel
 {
-  buff       : [ LOG_BUFF_LEN ]u8 = undefined,
-  idx        : usize              = 0,
-  overflowed : bool               = false,
+  const level = std.meta.stringToEnum( LogLevel, text ) orelse
+    @compileError( "Invalid logger log level. Expected NONE, ERROR, WARN, INFO, DEBUG, or TRACE." );
 
-
-  fn init() LogStream { return .{}; }
-
-  fn bytes( self : *const LogStream ) [] const u8 { return self.buff[ 0..self.idx ]; }
-
-  fn append( self : *LogStream, text : [] const u8 ) void
-  {
-    if( self.overflowed ){ return; }
-
-    const available = self.buff.len - self.idx;
-    if( text.len <= available )
-    {
-      std.mem.copyForwards( u8, self.buff[ self.idx..self.idx + text.len ], text );
-      self.idx += text.len;
-      return;
-    }
-
-    if( available > 0 )
-    {
-      std.mem.copyForwards( u8, self.buff[ self.idx.. ], text[ 0..available ] );
-      self.idx = self.buff.len;
-    }
-    self.markOverflow();
-  }
-
-  fn appendFormat( self : *LogStream, comptime fmt : [] const u8, args : anytype ) void
-  {
-    if( self.overflowed ){ return; }
-
-    const written = std.fmt.bufPrint( self.buff[ self.idx.. ], fmt, args ) catch
-    {
-      self.markOverflow();
-      return;
-    };
-    self.idx += written.len;
-  }
-
-  fn markOverflow( self : *LogStream ) void
-  {
-    if( self.overflowed ){ return; }
-
-    self.overflowed = true;
-
-    const keepLen = if( self.buff.len > LOG_TRUNC_MSG.len ) self.buff.len - LOG_TRUNC_MSG.len else 0;
-    self.idx = @min( self.idx, keepLen );
-
-    if( LOG_TRUNC_MSG.len <= self.buff.len - self.idx )
-    {
-      std.mem.copyForwards( u8, self.buff[ self.idx..self.idx + LOG_TRUNC_MSG.len ], LOG_TRUNC_MSG );
-      self.idx += LOG_TRUNC_MSG.len;
-    }
-  }
-};
+  if( level == .CONT ){ @compileError( "CONT is a continuation policy, not a valid global logger level." ); }
+  return level;
+}
 
 fn _log( level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime message : [] const u8, args : anytype ) !void
 {
@@ -185,7 +94,7 @@ fn _log( level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime messag
   const stamp = if( level == .CONT ) null else getLogStamp();
 
   var terminalRecord = LogStream.init();
-  appendRecord( &terminalRecord, level, logLoc, stamp, message, args, true );
+  appendRecord( &terminalRecord, level, logLoc, stamp, message, args, USE_TERM_COLOUR );
   std.debug.print( "{s}", .{ terminalRecord.bytes() });
 
   if( comptime USE_LOG_FILE )
@@ -287,7 +196,7 @@ pub fn deinitFile() void
 
 fn initFileInner() !void
 {
-  AggregateLogFile.openNamed( LOG_FILE_NAME ) catch | err | return err;
+  AggregateLogFile.createTruncated( LOG_FILE_NAME ) catch | err | return err;
   try AggregateLogFile.writeAll( LOG_INIT_MSG );
 
   inline for( @typeInfo( LogLevel ).@"enum".fields )| field |
@@ -296,7 +205,7 @@ fn initFileInner() !void
     if( isLevelFileIsActive( level ))
     {
       var slot = &LevelLogFiles[ getLevelIndex( level ) ];
-      try slot.openForLevel( level );
+      try slot.createTagged( LOG_FILE_NAME, @tagName( level ) );
       try slot.writeAll( LOG_INIT_MSG );
     }
   }
@@ -506,4 +415,104 @@ pub inline fn getSignChar( val : anytype ) u8
     },
     else => @compileError( "getSignChar() only supports Int and Float types" ),
   };
+}
+
+
+// =============================== TESTS ================================
+
+test "logger file sinks write plain aggregate level and continuation records"
+{
+  if( comptime !USE_LOG_FILE ){ return; }
+  if( comptime EXPECT_FILE_SETUP_FAILURE ){ return; }
+
+  cleanupLoggerValidationFiles();
+  defer cleanupLoggerValidationFiles();
+
+  initFile();
+  qlog( .INFO, @src(), "$ Logger file validation info" );
+  qlog( .CONT, @src(), "continued validation info" );
+  qlog( .WARN, @src(), "@ Logger file validation warn" );
+  deinitFile();
+
+  const allocator = std.testing.allocator;
+
+  const aggregate = try std.fs.cwd().readFileAlloc( allocator, LOG_FILE_NAME, 16 * 1024 );
+  defer allocator.free( aggregate );
+
+  try expectContains( aggregate, LOG_INIT_MSG );
+  try expectContains( aggregate, "Logger file validation info" );
+  try expectContains( aggregate, "continued validation info" );
+  try expectContains( aggregate, "Logger file validation warn" );
+  try expectContains( aggregate, LOG_DEINIT_MSG );
+  try expectNoAnsiEscapes( aggregate );
+
+  var infoNameBuff : [ LOG_NAME_LEN ]u8 = undefined;
+  const infoName = try out.formatTaggedFileName( &infoNameBuff, LOG_FILE_NAME, @tagName( LogLevel.INFO ) );
+  const infoFile = try std.fs.cwd().readFileAlloc( allocator, infoName, 16 * 1024 );
+  defer allocator.free( infoFile );
+
+  try expectContains( infoFile, "Logger file validation info" );
+  try expectContains( infoFile, "continued validation info" );
+  try std.testing.expect( std.mem.indexOf( u8, infoFile, "Logger file validation warn" ) == null );
+  try expectNoAnsiEscapes( infoFile );
+
+  var warnNameBuff : [ LOG_NAME_LEN ]u8 = undefined;
+  const warnName = try out.formatTaggedFileName( &warnNameBuff, LOG_FILE_NAME, @tagName( LogLevel.WARN ) );
+  const warnFile = try std.fs.cwd().readFileAlloc( allocator, warnName, 16 * 1024 );
+  defer allocator.free( warnFile );
+
+  try expectContains( warnFile, "Logger file validation warn" );
+  try std.testing.expect( std.mem.indexOf( u8, warnFile, "continued validation info" ) == null );
+  try expectNoAnsiEscapes( warnFile );
+}
+
+test "logger file setup failure falls back to terminal-only state"
+{
+  if( comptime !USE_LOG_FILE ){ return; }
+  if( comptime !EXPECT_FILE_SETUP_FAILURE ){ return; }
+
+  initFile();
+  defer deinitFile();
+
+  try std.testing.expect( !G_IsFileOpened );
+  qlog( .WARN, @src(), "Logger setup-failure validation still logs to terminal" );
+  try std.testing.expect( !G_IsFileOpened );
+}
+
+fn cleanupLoggerValidationFiles() void
+{
+  deleteFileIfPresent( LOG_FILE_NAME );
+
+  inline for( @typeInfo( LogLevel ).@"enum".fields )| field |
+  {
+    const level : LogLevel = @enumFromInt( field.value );
+    if( isLevelFileIsActive( level ))
+    {
+      var nameBuff : [ LOG_NAME_LEN ]u8 = undefined;
+      const name = out.formatTaggedFileName( &nameBuff, LOG_FILE_NAME, @tagName( level ) ) catch continue;
+      deleteFileIfPresent( name );
+    }
+  }
+}
+
+fn deleteFileIfPresent( name : [] const u8 ) void
+{
+  std.fs.cwd().deleteFile( name ) catch | err |
+  {
+    switch( err )
+    {
+      error.FileNotFound => {},
+      else               => {},
+    }
+  };
+}
+
+fn expectContains( bytes : [] const u8, needle : [] const u8 ) !void
+{
+  try std.testing.expect( std.mem.indexOf( u8, bytes, needle ) != null );
+}
+
+fn expectNoAnsiEscapes( bytes : [] const u8 ) !void
+{
+  try std.testing.expect( std.mem.indexOf( u8, bytes, "\x1b[" ) == null );
 }

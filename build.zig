@@ -43,6 +43,17 @@ const GameExecutable = struct
   engineMod : *std.Build.Module,
 };
 
+const LoggerBuildOptions = struct
+{
+  logLevel               : []const u8,
+  useFile                : bool,
+  fileName               : []const u8,
+  showTimestamp          : bool,
+  showSource             : bool,
+  showColour              : bool,
+  expectFileSetupFailure : bool = false,
+};
+
 const CheckGamesCompleteStep = struct
 {
   step      : std.Build.Step,
@@ -113,7 +124,14 @@ const MessageStep = struct
   }
 };
 
-fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath : []const u8, target : std.Build.ResolvedTarget, optimize : std.builtin.OptimizeMode ) GameExecutable
+fn addGameExecutable(
+  b              : *std.Build,
+  executableName : []const u8,
+  interfacePath  : []const u8,
+  target         : std.Build.ResolvedTarget,
+  optimize       : std.builtin.OptimizeMode,
+  loggerOptions  : LoggerBuildOptions,
+) GameExecutable
 {
   const exeMod = b.createModule(
   .{
@@ -151,6 +169,16 @@ fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath
     .optimize         = optimize,
   });
 
+  const loggerConfig = b.addOptions();
+
+  loggerConfig.addOption( []const u8, "log_level",                 loggerOptions.logLevel               );
+  loggerConfig.addOption( bool,       "use_file",                  loggerOptions.useFile                );
+  loggerConfig.addOption( []const u8, "file_name",                 loggerOptions.fileName               );
+  loggerConfig.addOption( bool,       "show_timestamp",            loggerOptions.showTimestamp          );
+  loggerConfig.addOption( bool,       "show_source",               loggerOptions.showSource             );
+  loggerConfig.addOption( bool,       "show_colour",                loggerOptions.showColour              );
+  loggerConfig.addOption( bool,       "expect_file_setup_failure", loggerOptions.expectFileSetupFailure );
+
   const engine = b.createModule(
   .{
     .root_source_file = b.path( "src/engine/engineDef.zig" ),
@@ -172,6 +200,7 @@ fn addGameExecutable( b : *std.Build, executableName : []const u8, interfacePath
   utils.addImport( "raylib", raylib );
   utils.addImport( "utils",  utils  );
   utils.addImport( "engine", engine );
+  utils.addOptions( "logger_config", loggerConfig );
 
   engine.addImport( "utils",  utils  );
   engine.addImport( "engine", engine );
@@ -214,8 +243,54 @@ pub fn build( b : *std.Build ) void
   );
   const executable_name = if( tmp_executable_name )| name | name else "ZE_Game";
 
+  const tmp_logger_log_level = b.option(
+    []const u8,
+    "logger_log_level",
+    "Comptime logger level: NONE, ERROR, WARN, INFO, DEBUG, or TRACE"
+  );
 
-  const gameBuild = addGameExecutable( b, executable_name, interface_path, target, optimize );
+  const tmp_logger_use_file = b.option(
+    bool,
+    "logger_use_file",
+    "If true, writes logger output to aggregate and per-level plain-text files"
+  );
+
+  const tmp_logger_file_name = b.option(
+    []const u8,
+    "logger_file_name",
+    "Base aggregate file name used when logger_use_file is true"
+  );
+
+  const tmp_logger_show_timestamp = b.option(
+    bool,
+    "logger_show_timestamp",
+    "If true, logger output includes elapsed timestamps"
+  );
+
+  const tmp_logger_show_source = b.option(
+    bool,
+    "logger_show_source",
+    "If true, logger output includes source file, line, and function"
+  );
+
+  const tmp_logger_show_colour = b.option(
+    bool,
+    "logger_show_colour",
+    "If true, terminal logger output includes ANSI color codes"
+  );
+
+  const loggerOptions =
+  LoggerBuildOptions
+  {
+    .logLevel      = if( tmp_logger_log_level      )| level | level else "DEBUG",
+    .useFile       = if( tmp_logger_use_file       )| use   | use   else true,
+    .fileName      = if( tmp_logger_file_name      )| name  | name  else "logs/debug.log",
+    .showTimestamp = if( tmp_logger_show_timestamp )| show  | show  else true,
+    .showSource    = if( tmp_logger_show_source    )| show  | show  else true,
+    .showColour    = if( tmp_logger_show_colour    )| show  | show  else true,
+  };
+
+  const gameBuild = addGameExecutable( b, executable_name, interface_path, target, optimize, loggerOptions );
   const exe       = gameBuild.exe;
 
   b.installArtifact( exe );
@@ -296,7 +371,7 @@ pub fn build( b : *std.Build ) void
     const path = game[ 1 ];
 
     const dbg_exe_name = n1;
-    const game_exe     = addGameExecutable( b, dbg_exe_name, path, target, .Debug ).exe;
+    const game_exe     = addGameExecutable( b, dbg_exe_name, path, target, .Debug, loggerOptions ).exe;
     const game_install = b.addInstallArtifact( game_exe, .{} );
 
     const game_step = b.step( n1, "Compiles " ++ n1 ++ " in debug mode" );
@@ -329,7 +404,7 @@ pub fn build( b : *std.Build ) void
       const opti = opt[ 2 ];
 
       const opt_exe_name = n1 ++ "_" ++ n2;
-      const opt_exe      = addGameExecutable( b, opt_exe_name, path, target, opti ).exe;
+      const opt_exe      = addGameExecutable( b, opt_exe_name, path, target, opti, loggerOptions ).exe;
       const opt_install  = b.addInstallArtifact( opt_exe, .{} );
 
 
@@ -352,7 +427,7 @@ pub fn build( b : *std.Build ) void
         const plt_exe_name = n1 ++ "_" ++ n2 ++ "_" ++ n3;
         const plt_query    = std.Target.Query.parse( .{ .arch_os_abi = targ } ) catch @panic( "Invalid platform target" );
         const plt_target   = b.resolveTargetQuery( plt_query );
-        const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, opti ).exe;
+        const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, opti, loggerOptions ).exe;
         const plt_install  = b.addInstallArtifact( plt_exe, .{} );
 
         const targ_step = b.step( n1 ++ "_" ++ n2 ++ "_" ++ n3, "-   Compiles " ++ n1 ++ " in " ++ mode ++ " for " ++ targ );
@@ -368,7 +443,7 @@ pub fn build( b : *std.Build ) void
       const plt_exe_name = n1 ++ "_" ++ n3;
       const plt_query    = std.Target.Query.parse( .{ .arch_os_abi = targ } ) catch @panic( "Invalid platform target" );
       const plt_target   = b.resolveTargetQuery( plt_query );
-      const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, .Debug ).exe;
+      const plt_exe      = addGameExecutable( b, plt_exe_name, path, plt_target, .Debug, loggerOptions ).exe;
       const plt_install  = b.addInstallArtifact( plt_exe, .{} );
 
       const targ_step = b.step( n1 ++ "_" ++ n3, "- Compiles " ++ n1 ++ " in debug mode for " ++ targ );
@@ -396,4 +471,42 @@ pub fn build( b : *std.Build ) void
   test_step.dependOn( &run_exe_unit_tests.step );
   test_step.dependOn( &run_utils_unit_tests.step );
   test_step.dependOn( &run_engine_unit_tests.step );
+
+
+  // ================ LOGGER VALIDATION COMMANDS ================
+
+  const loggerFileOptions =
+  LoggerBuildOptions
+  {
+    .logLevel      = "DEBUG",
+    .useFile       = true,
+    .fileName      = "logger_validation.log",
+    .showTimestamp = true,
+    .showSource    = true,
+    .showColour     = true,
+  };
+
+  const logger_file_build      = addGameExecutable( b, "logger_file_validation", interface_path, target, optimize, loggerFileOptions );
+  const logger_file_tests      = b.addTest(.{ .root_module = logger_file_build.utilsMod });
+  const run_logger_file_tests  = b.addRunArtifact( logger_file_tests );
+  const logger_file_test_step  = b.step( "test_logger_files", "Runs logger file-sink validation with file logging enabled" );
+  logger_file_test_step.dependOn( &run_logger_file_tests.step );
+
+  const loggerFileFailureOptions =
+  LoggerBuildOptions
+  {
+    .logLevel               = "DEBUG",
+    .useFile                = true,
+    .fileName               = "missing_logger_dir/debug.log",
+    .showTimestamp          = true,
+    .showSource             = true,
+    .showColour              = true,
+    .expectFileSetupFailure = true,
+  };
+
+  const logger_file_failure_build     = addGameExecutable( b, "logger_file_failure_validation", interface_path, target, optimize, loggerFileFailureOptions );
+  const logger_file_failure_tests     = b.addTest(.{ .root_module = logger_file_failure_build.utilsMod });
+  const run_logger_file_failure_tests = b.addRunArtifact( logger_file_failure_tests );
+  const logger_file_failure_step      = b.step( "test_logger_file_failure", "Runs logger file setup-failure fallback validation" );
+  logger_file_failure_step.dependOn( &run_logger_file_failure_tests.step );
 }

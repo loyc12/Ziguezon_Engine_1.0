@@ -1,18 +1,16 @@
 # Logging System Reference
 
-This reference defines the target contract for `src/utils/io/logger.zig`.
-The logger is a personal debug tool first, but its public shape should be clean
-enough to grow into a reusable utils-level debug logging API.
+This reference records the current design contract for `src/utils/io/logger.zig`
+and the logger-specific expansion paths that still look relevant.
 
-The roadmap records phase order. The TODO tracks the next practical edits.
-
-## 1. Target
+## 1. Purpose
 
 Provide a compact logging helper that keeps gated-out calls as cheap as
 possible while still producing precise, source-stamped debug output when a level
-is active.
+is active. The logger is a personal debug tool first, but its public shape should
+stay clean enough to remain reusable across engine and game code.
 
-Example target call shape:
+The current public call shape is id-free:
 
 ```zig
 utl.qlog( .INFO, @src(), "Camera reset" );
@@ -23,18 +21,20 @@ The logger should remain practical in hot engine/game paths:
 
 * inactive levels should return before formatting;
 * active logs should build each emitted message once;
-* terminal output should be readable and optionally colored;
+* terminal output should be readable and optionally coloured;
 * file output should be plain text and deterministic;
-* file logging should not require broad save-system primitives up front.
+* logging internals should not leak file handles or sink details into the public
+  API.
 
 ## 2. Level Gating
 
-`G_LOG_LVL` remains the primary logging gate.
+`G_LOG_LVL` is the primary logging gate. It is currently backed by the
+compile-time `logger_config.log_level` build option.
 
 The level argument should stay `comptime` so inactive calls can return before
 formatting, argument formatting, timestamp work, location formatting, or file
-I/O. This is the main reason to keep a custom logger instead of replacing the
-surface with plain `std.log` immediately.
+I/O. This is the main reason the logger remains custom instead of being replaced
+by direct `std.log` calls.
 
 Ordering remains:
 
@@ -53,20 +53,23 @@ expected to be noisy. Normal development runs are expected to use `DEBUG` or a
 stricter level.
 
 `CONT` is a continuation policy, not a normal independent severity. A
-continuation should only log if the previous log call emitted successfully.
+continuation only logs if the previous log call emitted successfully.
 
 ## 3. Public API
 
-Keep the active convenience API small:
+The active convenience API is intentionally small:
 
 * `qlog`: message with no formatting args;
 * `log`: message with formatting args;
-* `logFrameTime`: frame-time helper;
-* `logDeltaTime`: duration helper;
-* `resetTmpTimer` / `logTmpTimer` if timing helpers remain part of the logger.
+* `logRayFrameTime`: raylib frame-time helper;
+* `logDeltaTime`: duration helper.
 
-Remove the old `id` argument from the public API. It has not proven useful and
-adds noise to every call site.
+The old `id` argument was removed because it added noise to every call site
+without proving useful.
+
+Temporary timer helpers such as `resetTmpTimer` / `logTmpTimer` are not part of
+the active public API. Restore them only if a concrete caller needs scoped timing
+logs again.
 
 The public logger API should not expose file handles, stream internals, or sink
 selection details unless a concrete caller needs them.
@@ -95,18 +98,24 @@ terminal-only convenience. They should not leak ANSI escapes into log files.
 
 ## 5. Output Model
 
-Each active log call should format into a temporary message stream, then flush
-that stream once per sink.
+Each active log call formats into a temporary message stream, then flushes that
+stream once per sink.
 
-The logger should support these sinks:
+The logger supports these sinks:
 
 * terminal sink;
 * aggregate log file sink;
 * per-level log file sink.
 
 Terminal and file records may be built separately if that keeps color handling
-simple. The important contract is that each sink receives one complete message
-record rather than several interleaved `std.debug.print` fragments.
+simple. The important contract is that each sink receives one complete record
+rather than several interleaved `std.debug.print` fragments.
+
+The reusable output primitives live in `src/utils/io/outputer.zig`:
+
+* `FixedStream`: fixed-size buffer with an explicit truncation marker;
+* `NamedFileSink`: create/truncate/write/close wrapper for a single file;
+* `formatTaggedFileName`: helper for `debug_INFO.log`-style paths.
 
 For file logging:
 
@@ -118,14 +127,16 @@ For file logging:
   level file;
 * every file starts with an initialization record so an empty file is visibly
   valid;
-* files are readable as plain text.
+* shutdown writes deinitialization records before files close;
+* files are readable as plain text and never contain terminal colour escapes.
 
 ## 6. File Names
 
-`LOG_FILE_NAME` remains file-local config for now.
+`LOG_FILE_NAME` is backed by the compile-time `logger_config.file_name` build
+option.
 
-The aggregate log file should use `LOG_FILE_NAME` directly. Per-level files
-should derive their names from the configured base name plus the level name:
+The aggregate log file uses `LOG_FILE_NAME` directly. Per-level files derive
+their names from the configured base name plus the level name:
 
 ```text
 debug.log
@@ -135,41 +146,45 @@ debug_INFO.log
 debug_DEBUG.log
 ```
 
-If `TRACE` is active, create `debug_TRACE.log`. `CONT` should not need its own
-file unless a later use case proves otherwise.
+If `TRACE` is active, create `debug_TRACE.log`. `CONT` does not get its own
+file; it routes to the latest successful non-`CONT` level file.
 
 ## 7. Initialization And Shutdown
 
-`initFile()` and `deinitFile()` are currently the lifecycle hooks exposed
-through `utl.initAllUtils()` and `utl.deinitAllUtils()`.
+`initFile()` and `deinitFile()` are the lifecycle hooks exposed through
+`utl.initAllUtils()` and `utl.deinitAllUtils()`.
 
-The eventual logger lifecycle should:
+The logger lifecycle:
 
-* assert or reject `G_LOG_LVL == .CONT`;
-* initialize terminal/file sinks once;
+* reject `G_LOG_LVL == .CONT`;
+* reset continuation state during initialization;
 * create/truncate every required file when file logging is enabled;
 * write initialization records to every file;
 * tolerate file initialization failure by falling back to terminal logging;
 * close every opened file during deinit.
 
-The logger should avoid depending on the future save system. If a small file
-primitive naturally falls out of the implementation, promote it later.
-
 ## 8. Configuration Boundary
 
-Current file-local globals stay in `logger.zig` for now:
+Logger configuration is compile-time build configuration injected as the
+`logger_config` module. This keeps inactive call sites comptime-gated while
+allowing validation and local runs to change logger behavior without editing
+`logger.zig`.
 
-* `G_LOG_LVL`;
-* timestamp/source toggles;
-* terminal/file toggles;
-* file base name.
+Current build options:
 
-Later, these may move into a utils configuration layer. That config layer could
-reuse or replace the current engine-interface configuration pattern, but that is
-deferred until there is a broader utils config pass.
+* `-Dlogger_log_level=DEBUG`;
+* `-Dlogger_use_file=false`;
+* `-Dlogger_file_name=debug.log`;
+* `-Dlogger_show_timestamp=true`;
+* `-Dlogger_show_source=true`;
+* `-Dlogger_show_colour=true`.
 
-Tests may later override logging level through the same config path. Until that
-exists, test-output quieting is a deferred polish task.
+`logger_log_level` accepts `NONE`, `ERROR`, `WARN`, `INFO`, `DEBUG`, or `TRACE`.
+`CONT` is intentionally rejected because it is a continuation policy, not a
+global gate.
+
+The default configuration is terminal-only debug logging with timestamps, source
+locations, and terminal colours enabled.
 
 ## 9. Concurrency And Limits
 
@@ -184,16 +199,52 @@ Buffers should be fixed-size or otherwise allocator-light. If a message exceeds
 the temporary stream capacity, the logger should emit a visible truncation or
 logging-failed note rather than silently corrupting output.
 
-## 10. Non-Goals
+## 10. Validation
 
-Do not pull these into the first logger rework:
+General validation:
 
-* general save-system design;
-* complete file I/O abstraction for all utils;
-* async logging;
-* thread-safe logging;
-* log rotation;
-* structured JSON logs;
-* domain-specific log categories;
-* replacing all call sites with `std.log`;
-* runtime-configurable log levels before a utils config layer exists.
+```sh
+zig build
+zig build test
+```
+
+File logging validation:
+
+```sh
+zig build test_logger_files
+```
+
+This validates aggregate file output, exact-level file output, `.CONT` routing,
+and absence of ANSI escape sequences in file logs.
+
+Setup-failure validation:
+
+```sh
+zig build test_logger_file_failure
+```
+
+This validates that file setup failure leaves the logger in terminal-only state
+and still allows log calls to return normally.
+
+`zig build check_games` is useful after build-option plumbing changes because
+every game target receives a generated `logger_config` module.
+
+## 11. Future Expansion
+
+These are logger-specific future avenues, not current implementation work:
+
+* runtime log-level switching if compile-time gating becomes too rigid;
+* log categories or subsystem tags if level-only filtering becomes too blunt;
+* structured records if plain text stops being enough for inspection tools;
+* log rotation or log directory configuration if file output becomes common;
+* async or thread-safe logging if concurrent engine logging appears;
+* per-test log capture or quiet defaults if test output becomes too noisy;
+* scoped temporary timing helpers if a concrete caller needs them again;
+* closer `std.log` integration if it can preserve this logger's gating and
+  message-shape guarantees.
+
+## 12. Non-Goals
+
+Do not add complexity without a concrete logging use case. In particular, avoid
+turning logger work into a broad application configuration, general file I/O, or
+unrelated serialization project.
