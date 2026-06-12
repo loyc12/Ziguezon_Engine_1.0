@@ -267,12 +267,12 @@ pub const Colour = colour.Colour;
 // ======== DRAWERS ========
 
 pub const drawerCore = @import( "render/drawerCore.zig" );
-pub const sDraw = @import( "render/drawerScreen.zig" );
+pub const sDraw      = @import( "render/drawerScreen.zig" );
 
 
 // ======== SPRITEMAPS ========
 
-pub const spritemap = @import( "render/spritemap.zig" );
+pub const spritemap = @import( "drafts/spritemap.zig" );
 
 pub const Spritemap = spritemap.Spritemap;
 pub const Sprite    = spritemap.Sprite;
@@ -296,7 +296,7 @@ pub const Randomiser = random.Randomiser;
 
 // ======== SHAKE ========
 
-pub const shake2D = @import( "rng/shake2D.zig" );
+pub const shake2D = @import( "drafts/shake2D.zig" );
 
 pub const Shake2D = shake2D.Shake2D;
 
@@ -348,7 +348,7 @@ pub const MouseUiTarget      = msr_u.MouseUiTarget;
 
 // ======== INTERFACER ========
 
-pub const interface2D = @import( "ui/interface2D.zig" );
+pub const interface2D = @import( "drafts/interface2D.zig" );
 
 pub const InterfaceShape = interface2D.InterfaceShape;
 pub const BevelArray     = interface2D.BevelArray;

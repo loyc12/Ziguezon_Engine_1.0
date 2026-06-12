@@ -1,6 +1,6 @@
 const std    = @import( "std" );
 const utl    = @import( "utils" );
-//const stdOut = @import( "./outputer.zig" ).demoStdout;
+//const stdOut = @import( "../drafts/outputer.zig" ).demoStdout;
 
 const Duration = utl.Duration;
 
