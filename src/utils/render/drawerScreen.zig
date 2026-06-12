@@ -113,22 +113,22 @@ pub fn setDefaultFont( fontPath : ?[:0] const u8 ) bool
     if( result )| font |
     {
 
-      utl.log( .DEBUG, 0, @src(), "& Default font params : baseSize = {}, glyphCount = {}, texture id = {}", .{ font.baseSize, font.glyphCount, font.texture.id });
+      utl.log( .DEBUG, @src(), "& Default font params : baseSize = {}, glyphCount = {}, texture id = {}", .{ font.baseSize, font.glyphCount, font.texture.id });
 
       if( font.isReady() )
       {
         DEFAULT_FONT = font;
         return true;
       }
-      else { utl.qlog( .ERROR, 0, @src(), "Invalid font : " ); }
+      else { utl.qlog( .ERROR, @src(), "Invalid font : " ); }
 
-      if( font.glyphCount == 0 ) { utl.qlog( .CONT, 0, @src(), "( glyphCount == 0 )" ); }
-      if( font.texture.id == 0 ) { utl.qlog( .CONT, 0, @src(), "( texture id == 0 )" ); }
+      if( font.glyphCount == 0 ) { utl.qlog( .CONT, @src(), "( glyphCount == 0 )" ); }
+      if( font.texture.id == 0 ) { utl.qlog( .CONT, @src(), "( texture id == 0 )" ); }
     }
     else | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to set default font : {}", .{ err });
-      utl.qlog( .CONT, 0, @src(), "Defaulting to raylib defaults" );
+      utl.log( .ERROR, @src(), "Failed to set default font : {}", .{ err });
+      utl.qlog( .CONT, @src(), "Defaulting to raylib defaults" );
     }
   }
 

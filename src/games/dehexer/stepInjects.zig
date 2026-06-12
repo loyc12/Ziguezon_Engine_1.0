@@ -70,17 +70,17 @@ fn blowUpMine( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile, damage :
     1 =>
     {
       LIFE_COUNT -= 1;
-      utl.log( .INFO, 0, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+      utl.log( .INFO, @src(), "@ Clicked on a small mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
     2 =>
     {
       LIFE_COUNT -= 2;
-      utl.log( .INFO, 0, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+      utl.log( .INFO, @src(), "@ Clicked on a medium mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
     else =>
     {
       LIFE_COUNT -= 3;
-      utl.log( .INFO, 0, @src(), "@ Clicked on a large mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+      utl.log( .INFO, @src(), "@ Clicked on a large mine at {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     },
   }
 
@@ -108,7 +108,7 @@ fn getNeighbourMineCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Til
   {
     const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
-      utl.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
+      utl.log( .TRACE, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
       continue;
     };
 
@@ -129,7 +129,7 @@ fn getNeighbourFlagCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Til
   {
     const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
-      utl.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
+      utl.log( .TRACE, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
       continue;
     };
 
@@ -187,11 +187,11 @@ fn initGrid( ng : *eng.Engine, grid : *eng.Tilemap, startTile : *eng.Tile ) void
 
   if( remaingingMineCount != 0 )
   {
-    utl.qlog( .ERROR, 0, @src(), "@ Failed to assign the proper amount of mines !" );
+    utl.qlog( .ERROR, @src(), "@ Failed to assign the proper amount of mines !" );
   }
   else
   {
-    utl.qlog( .INFO, 0, @src(), "$ Assigned all mines properly !" );
+    utl.qlog( .INFO, @src(), "$ Assigned all mines properly !" );
   }
 
   IS_INIT = true;
@@ -231,7 +231,7 @@ fn leftCLickTile( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) void
       {
         const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
         {
-          utl.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
+          utl.log( .TRACE, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
           continue;
         };
 
@@ -267,13 +267,13 @@ fn rightCLickTile( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) voi
   else if( tile.colour.isEq( .lBlue )){ tile.colour = .mBlue; }
   else if( tile.colour.isEq( .mBlue ))
   {
-    utl.log( .INFO, 0, @src(), "# Removing a flag on {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+    utl.log( .INFO, @src(), "# Removing a flag on {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     FLAG_COUNT -= 1;
     tile.colour = .mGray;
   }
   else
   {
-    utl.log( .INFO, 0, @src(), "# Adding a flag on {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
+    utl.log( .INFO, @src(), "# Adding a flag on {d}:{d}", .{ tile.mapCoords.x, tile.mapCoords.y });
     tile.colour = .blue ;
     FLAG_COUNT += 1;
   }
@@ -305,7 +305,7 @@ fn floodDiscoverCheck( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile )
   {
     const n = grid.getNeighbourTile( tile.mapCoords, dir ) orelse
     {
-      utl.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
+      utl.log( .TRACE, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
       continue;
     };
 
@@ -344,7 +344,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 {
   var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -386,11 +386,11 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
     if( worldCoords == null ){ return; }
 
-    utl.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+    utl.log( .INFO, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
     const clickedTile = grid.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, 0, @src(), "No tile found at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
       return;
     };
 
@@ -427,7 +427,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   const grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -469,13 +469,13 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   {
     _ = std.fmt.bufPrint( &mineBuff, "Difficulty : {d}%", .{ DIFFICULTY }) catch | err |
     {
-        utl.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
+        utl.log( .ERROR, @src(), "Failed to format mineCount : {}", .{ err });
         return;
     };
 
     _ = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
     {
-        utl.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
+        utl.log( .ERROR, @src(), "Failed to format lifeCount : {}", .{ err });
         return;
     };
   }
@@ -486,13 +486,13 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
     _ = std.fmt.bufPrint( &mineBuff, "Mines : {d}", .{ unmarkedMineCount }) catch | err |
     {
-        utl.log( .ERROR, 0, @src(), "Failed to format mineCount : {}", .{ err });
+        utl.log( .ERROR, @src(), "Failed to format mineCount : {}", .{ err });
         return;
     };
 
     _ = std.fmt.bufPrint( &lifeBuff, "Lives : {d}", .{ LIFE_COUNT }) catch | err |
     {
-        utl.log( .ERROR, 0, @src(), "Failed to format lifeCount : {}", .{ err });
+        utl.log( .ERROR, @src(), "Failed to format lifeCount : {}", .{ err });
         return;
     };
   }
@@ -503,7 +503,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -549,7 +549,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
     const numSlice = std.fmt.bufPrint( &numBuff, "{d}", .{ nMineCount }) catch | err |
     {
-      utl.log(.ERROR, 0, @src(), "Failed to format value : {}", .{ err });
+      utl.log(.ERROR, @src(), "Failed to format value : {}", .{ err });
       return;
     };
     numBuff[ numSlice.len ] = 0;

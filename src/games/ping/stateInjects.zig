@@ -31,20 +31,20 @@ pub fn registerPingComps( ng : *eng.Engine ) bool
 {
   if( !ng.world.registerComp( eng.TransComp ))
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to register TransComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register TransComp" );
     return false;
   }
   if( !ng.world.registerComp( eng.ShapeComp ))
   {
     _ = ng.world.unregisterComp( eng.TransComp );
-    utl.qlog( .ERROR, 0, @src(), "Failed to register ShapeComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register ShapeComp" );
     return false;
   }
   if( !ng.world.registerComp( eng.HitboxComp ))
   {
     _ = ng.world.unregisterComp( eng.ShapeComp );
     _ = ng.world.unregisterComp( eng.TransComp );
-    utl.qlog( .ERROR, 0, @src(), "Failed to register HitboxComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register HitboxComp" );
     return false;
   }
   return true;
@@ -124,7 +124,7 @@ pub fn createEntity( ng : *eng.Engine, view : anytype, params : EntityParams ) ?
   {
     mobileIds.append( utl.getDefaultAlloc(), id ) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to register mobile Entity {d}: {}", .{ id, err });
+      utl.log( .ERROR, @src(), "Failed to register mobile Entity {d}: {}", .{ id, err });
       removePingEntity( ng, id );
       return null;
     };
@@ -132,7 +132,7 @@ pub fn createEntity( ng : *eng.Engine, view : anytype, params : EntityParams ) ?
 
   entityIds.append( utl.getDefaultAlloc(), id ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to register Entity {d}: {}", .{ id, err });
+    utl.log( .ERROR, @src(), "Failed to register Entity {d}: {}", .{ id, err });
     removePingEntity( ng, id );
     return null;
   };
@@ -141,7 +141,7 @@ pub fn createEntity( ng : *eng.Engine, view : anytype, params : EntityParams ) ?
   {
     particleIds.append( utl.getDefaultAlloc(), id ) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to register particle Entity {d}: {}", .{ id, err });
+      utl.log( .ERROR, @src(), "Failed to register particle Entity {d}: {}", .{ id, err });
       removePingEntity( ng, id );
       return null;
     };
@@ -196,11 +196,11 @@ pub fn OnGameStart( ng : *eng.Engine ) void
 {
   ng.resourceManager.addAudioFromFile( "hit_1", "assets/sounds/Boop_1.wav" ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
+    utl.log( .ERROR, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
   };
   ng.resourceManager.addAudioFromFile( "hit_2", "assets/sounds/Boop_2.wav" ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to load audio 'hit_2': {}\n", .{ err } );
+    utl.log( .ERROR, @src(), "Failed to load audio 'hit_2': {}\n", .{ err } );
   };
 }
 
@@ -226,7 +226,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .pos    = .{ .x = -512, .y = 512 },
     .mobile = true,
   })
-  )| p1 |{ P1_ID = p1; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create player 1 entity" ); }
+  )| p1 |{ P1_ID = p1; } else { utl.qlog( .ERROR, @src(), "Failed to create player 1 entity" ); }
 
   if( createEntity( ng, &bodyView, // player 2
   .{
@@ -236,7 +236,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .pos    = .{ .x = 512, .y = 512 },
     .mobile = true,
   })
-  )| p2 |{ P2_ID = p2; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create player 2 entity" ); }
+  )| p2 |{ P2_ID = p2; } else { utl.qlog( .ERROR, @src(), "Failed to create player 2 entity" ); }
 
   _ = createEntity( ng, &bodyView, // separator
   .{
@@ -277,7 +277,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .colour = utl.Colour.pMagenta,
     .pos    = .{},
   })
-  )| shad1 |{ SHADOW_RANGE_START = shad1; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create ball shadow 1 entity" ); }
+  )| shad1 |{ SHADOW_RANGE_START = shad1; } else { utl.qlog( .ERROR, @src(), "Failed to create ball shadow 1 entity" ); }
 
   {
     _ = createEntity( ng, &bodyView, // ball shadow
@@ -344,7 +344,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .colour = utl.Colour.magenta,
     .pos    = .{},
   })
-  )| shad2 |{ SHADOW_RANGE_END = shad2; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create ball shadow * entity" ); }
+  )| shad2 |{ SHADOW_RANGE_END = shad2; } else { utl.qlog( .ERROR, @src(), "Failed to create ball shadow * entity" ); }
 
   if( createEntity( ng, &bodyView, // ball
   .{
@@ -354,7 +354,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .pos    = .{},
     .mobile = true,
   })
-  )| ball |{ BALL_ID = ball; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create ball entity" ); }
+  )| ball |{ BALL_ID = ball; } else { utl.qlog( .ERROR, @src(), "Failed to create ball entity" ); }
 }
 
 pub fn OnGameClose( ng : *eng.Engine ) void

@@ -9,11 +9,11 @@ pub fn drawSprite( sprite : *const utl.Sprite ) void
 
 pub fn drawSpritemap( spritemap : *const utl.Spritemap, index : u32, pos : utl.VecA, scale : utl.Vec2, col : utl.Colour ) void
 {
-  utl.log( .TRACE, 0, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
+  utl.log( .TRACE, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
 
   if( spritemap.atlas == null )
   {
-    utl.qlog( .ERROR, 0, @src(), "Trying to draw from uninitialized spritemap" );
+    utl.qlog( .ERROR, @src(), "Trying to draw from uninitialized spritemap" );
     return;
   }
 

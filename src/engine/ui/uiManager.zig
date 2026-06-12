@@ -328,7 +328,7 @@ pub const UiManager = struct
     {
       self.events.append( self.alloc, .{ .panel = handle, .event = event }) catch | err |
       {
-        utl.log( .ERROR, 0, @src(), "Failed to append UI manager event : {}", .{ err });
+        utl.log( .ERROR, @src(), "Failed to append UI manager event : {}", .{ err });
         return;
       };
     }

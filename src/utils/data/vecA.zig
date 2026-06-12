@@ -85,7 +85,7 @@ pub const VecA = struct
   {
     if( utl.isFltZr( other.x ) or utl.isFltZr( other.y ) )
     {
-      utl.qlog( .ERROR, 0, @src(), "Division by zero in VecA.div()" );
+      utl.qlog( .ERROR, @src(), "Division by zero in VecA.div()" );
       return null;
     }
     return VecA{ .x = self.x / other.x, .y = self.y / other.y, .a = self.a.div( other.a )};
@@ -98,7 +98,7 @@ pub const VecA = struct
   {
     if( utl.isFltZr( val ))
     {
-      utl.qlog( .ERROR, 0, @src(), "Division by zero in VecA.divVal()" );
+      utl.qlog( .ERROR, @src(), "Division by zero in VecA.divVal()" );
       return null;
     }
     return VecA{ .x = self.x / val, .y = self.y / val, .a = self.a.mulVal( 1.0 / val )};
@@ -140,14 +140,14 @@ pub const VecA = struct
   {
     if( utl.isFltZr( newLen ))
     {
-      utl.qlog( .WARN, 0, @src(), "Normalizing a VecA to 0" );
+      utl.qlog( .WARN, @src(), "Normalizing a VecA to 0" );
       return .{};
     }
 
     const oldLenSqr = self.lenSqr();
     if( utl.isFltZr( oldLenSqr ))
     {
-      utl.qlog( .WARN, 0, @src(), "Normalizing a 0:0 VecA" );
+      utl.qlog( .WARN, @src(), "Normalizing a 0:0 VecA" );
       return .{};
     }
 

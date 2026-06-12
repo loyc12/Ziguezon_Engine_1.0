@@ -37,7 +37,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 
   if( ng.isPaused() and utl.ray.isKeyPressed( utl.ray.KeyboardKey.o ))
   {
-    utl.qlog( .INFO, 0, @src(), "$ Forcing tick to occur" );
+    utl.qlog( .INFO, @src(), "$ Forcing tick to occur" );
     ng.forceTickWorld();
   }
 

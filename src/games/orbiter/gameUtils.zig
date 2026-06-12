@@ -36,7 +36,7 @@ fn initStellarBody( view : *gdf.BodyTransView, orbitComp : *orb.OrbitComp, bodyC
   }
   else
   {
-    utl.log( .WARN, 0, @src(), "Failed to find parent BodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
+    utl.log( .WARN, @src(), "Failed to find parent BodyComp for id {d} : defaulting to using star's mass", .{ orbitedId });
   }
 
   bodyComp.bodyType = .fromFlt( gbl.STLR_DATA.get( bodyName, .TYPE ));
@@ -93,19 +93,19 @@ fn addOrbitRelationAndRefreshCache( ng : *eng.Engine, bodyName : BodyName, bodyI
 {
   const parentName = gdf.getOrbitedName( bodyName ) orelse
   {
-    utl.log( .ERROR, 0, @src(), "Missing static orbit parent for {s}", .{ @tagName( bodyName )});
+    utl.log( .ERROR, @src(), "Missing static orbit parent for {s}", .{ @tagName( bodyName )});
     return false;
   };
   const parentId = gbl.G_DATA.bodyRegistry.idOf( parentName );
   if( parentId == 0 )
   {
-    utl.log( .ERROR, 0, @src(), "Cannot add orbit relation for {s} : parent {s} has no live entity", .{ @tagName( bodyName ), @tagName( parentName )});
+    utl.log( .ERROR, @src(), "Cannot add orbit relation for {s} : parent {s} has no live entity", .{ @tagName( bodyName ), @tagName( parentName )});
     return false;
   }
 
   if( !ng.world.addRelation( gdf.Orbits, bodyId, parentId, .{} ))
   {
-    utl.log( .ERROR, 0, @src(), "Failed to add Orbits relation {s} -> {s}", .{ @tagName( bodyName ), @tagName( parentName )});
+    utl.log( .ERROR, @src(), "Failed to add Orbits relation {s} -> {s}", .{ @tagName( bodyName ), @tagName( parentName )});
     return false;
   }
 
@@ -125,13 +125,13 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
     const id = ng.world.createEntity().id;
     if( id == 0 )
     {
-      utl.log( .ERROR, 0, @src(), "Failed to create entity for {s}", .{ @tagName( bodyName )});
+      utl.log( .ERROR, @src(), "Failed to create entity for {s}", .{ @tagName( bodyName )});
       continue;
     }
 
     gbl.G_DATA.bodyRegistry.setId( bodyName, id );
 
-    utl.log( .TRACE, 0, @src(), "Initializing components of body {s} on entity #{d} at body idx #{d}", .{ @tagName( bodyName ), id, idx });
+    utl.log( .TRACE, @src(), "Initializing components of body {s} on entity #{d} at body idx #{d}", .{ @tagName( bodyName ), id, idx });
 
 
     // Non-sun component instanciation
@@ -172,7 +172,7 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
       }
       else
       {
-        utl.log( .ERROR, 0, @src(), "Failed to find parent TransComp for id {d} : using relative start position", .{ orbitedId });
+        utl.log( .ERROR, @src(), "Failed to find parent TransComp for id {d} : using relative start position", .{ orbitedId });
       }
 
       _ = ng.world.addComp( orb.OrbitComp, id, orbitComp ); // SOL does not have an orbit comp
@@ -192,7 +192,7 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
 
   if( !gbl.rebuildOrbitParentCache( ng ))
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to rebuild orbit-parent cache after stellar setup" );
+    utl.qlog( .ERROR, @src(), "Failed to rebuild orbit-parent cache after stellar setup" );
   }
 
   const orbitView = gbl.G_DATA.views.getOrbitTick( ng ) orelse return;
@@ -234,7 +234,7 @@ pub fn updateCameraLogic() void
   {
     cam.setZoom( 1.0 );
     cam.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reset" );
+    utl.qlog( .INFO, @src(), "Camera reset" );
   }
 }
 
@@ -267,16 +267,16 @@ pub fn tickOrbiters( view : *gdf.OrbitTickView ) void
 
     if( orbiterTrans != null and orbitedTrans != null )
     {
-      utl.log( .TRACE, 0, @src(), "Updating orbit of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
+      utl.log( .TRACE, @src(), "Updating orbit of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
       orbiter.?.updateOrbit( orbiterTrans.?, orbitedTrans.?, stepCount );
     }
     else
     {
-      utl.log( .WARN, 0, @src(), "Failed to get all required components to tick orbit of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
+      utl.log( .WARN, @src(), "Failed to get all required components to tick orbit of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
     }
   }
 
-//utl.log( .DEBUG, 0, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
+//utl.log( .DEBUG, @src(), "Ticked all orbiters {d} steps", .{ stepCount });
 
   gdf.trvlSlvr.refreshDynamicTransferNodes( view );
 
@@ -297,7 +297,7 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
 
   for( 0..stepCount )| _ |
   {
-    utl.qlog( .DEBUG, 0, @src(), "# ================================ Ticking all econs once ================================" );
+    utl.qlog( .DEBUG, @src(), "# ================================ Ticking all econs once ================================" );
 
     var econCount : u32 = 0;
 
@@ -315,13 +315,13 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
       }
       else
       {
-        utl.log( .WARN, 0, @src(), "Failed to get all required components to tick economy of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
+        utl.log( .WARN, @src(), "Failed to get all required components to tick economy of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
       }
     }
 
-    utl.log( .DEBUG, 0, @src(), "Ticked {d} distinct economies", .{ econCount });
+    utl.log( .DEBUG, @src(), "Ticked {d} distinct economies", .{ econCount });
   }
-  utl.log( .DEBUG, 0, @src(), "==== Ticked global economy {d} time(s) ====", .{ stepCount });
+  utl.log( .DEBUG, @src(), "==== Ticked global economy {d} time(s) ====", .{ stepCount });
 
 
   // DEBUG logging
@@ -339,7 +339,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
 
     const id = gbl.G_DATA.bodyRegistry.idOf( bodyName );
 
-    utl.log( .TRACE, 0, @src(), "Rendering path & dbg info of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
+    utl.log( .TRACE, @src(), "Rendering path & dbg info of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
 
     const orbiter = view.get( orb.OrbitComp, id );
 
@@ -368,7 +368,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
     }
     else
     {
-      utl.log( .WARN, 0, @src(), "Failed to get all required components to render orbital path of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
+      utl.log( .WARN, @src(), "Failed to get all required components to render orbital path of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
     }
   }
 
@@ -379,7 +379,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
     const bodyName = gdf.bodyOrder[ idx ];
     const id       = gbl.G_DATA.bodyRegistry.idOf( bodyName );
 
-    utl.log( .TRACE, 0, @src(), "Rendering shape of body {s} on entity #{d} at body idx #{d}", .{ @tagName( bodyName ), id, idx });
+    utl.log( .TRACE, @src(), "Rendering shape of body {s} on entity #{d} at body idx #{d}", .{ @tagName( bodyName ), id, idx });
 
     const trans = view.get( eng.TransComp, id );
     const shape = view.get( eng.ShapeComp, id );
@@ -390,7 +390,7 @@ pub fn renderOrbiters( view : *gdf.OrbitRenderView ) void
     }
     else
     {
-      utl.log( .WARN, 0, @src(), "Failed to get all required components to render shape of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
+      utl.log( .WARN, @src(), "Failed to get all required components to render shape of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
     }
   }
 }

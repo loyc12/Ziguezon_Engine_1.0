@@ -892,7 +892,7 @@ pub const Panel = struct
 
     self.appendOrderedChildren( widget.parent, &children ) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to collect UI child order : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to collect UI child order : {}", .{ err });
       return;
     };
 
@@ -1250,7 +1250,7 @@ pub const Panel = struct
       {
         self.hits.append( self.alloc, .{ .widget = widget.id, .box = widget.finalBox }) catch | err |
         {
-          utl.log( .ERROR, 0, @src(), "Failed to append UI hit entry : {}", .{ err });
+          utl.log( .ERROR, @src(), "Failed to append UI hit entry : {}", .{ err });
           return;
         };
       }
@@ -1263,7 +1263,7 @@ pub const Panel = struct
   {
     self.events.append( self.alloc, event ) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to append UI event : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to append UI event : {}", .{ err });
       return;
     };
   }

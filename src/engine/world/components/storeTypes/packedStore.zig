@@ -57,11 +57,11 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     /// Initializes packed arrays and the entity-id to row-index map.
     pub fn init( self : *CompStore, alloc : std.mem.Allocator ) void
     {
-      utl.log( .INFO, 0, @src(), "Initializing packed CompStore for type {s}", .{ TypeName });
+      utl.log( .INFO, @src(), "Initializing packed CompStore for type {s}", .{ TypeName });
 
       if( self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Packed CompStore for type {s} is already initialized : returning", .{ TypeName } );
+        utl.log( .WARN, @src(), "Packed CompStore for type {s} is already initialized : returning", .{ TypeName } );
         return;
       }
 
@@ -75,11 +75,11 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     /// Releases packed storage.
     pub fn deinit( self : *CompStore ) void
     {
-      utl.log( .INFO, 0, @src(), "Deinitializing packed CompStore for type {s}", .{ TypeName });
+      utl.log( .INFO, @src(), "Deinitializing packed CompStore for type {s}", .{ TypeName });
 
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Packed CompStore for type {s} is unnitialized : returning", .{ TypeName } );
+        utl.log( .WARN, @src(), "Packed CompStore for type {s} is unnitialized : returning", .{ TypeName } );
         return;
       }
 
@@ -95,17 +95,17 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot add to packed CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot add to packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
       if( id == 0 )
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot add Entity 0 to packed CompStore for type {s}", .{ TypeName });
+        utl.log( .DEBUG, @src(), "Cannot add Entity 0 to packed CompStore for type {s}", .{ TypeName });
         return false;
       }
       if( self.indices.contains( id ))
       {
-        utl.log( .WARN, 0, @src(), "Cannot add Entity {d} to packed CompStore for type {s} : key already in use", .{ id, TypeName });
+        utl.log( .WARN, @src(), "Cannot add Entity {d} to packed CompStore for type {s} : key already in use", .{ id, TypeName });
         return false;
       }
 
@@ -124,7 +124,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
         return false;
       };
 
-      utl.log( .TRACE, 0, @src(), "Added Entity {d} to packed CompStore for type {s}", .{ id, TypeName });
+      utl.log( .TRACE, @src(), "Added Entity {d} to packed CompStore for type {s}", .{ id, TypeName });
       return true;
     }
 
@@ -134,13 +134,13 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot remove from packed CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot remove from packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
 
       const index = self.indices.get( id ) orelse
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot remove Entity {d} from packed CompStore for type {s} : key not found", .{ id, TypeName });
+        utl.log( .DEBUG, @src(), "Cannot remove Entity {d} from packed CompStore for type {s} : key not found", .{ id, TypeName });
         return false;
       };
 
@@ -159,7 +159,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       _ = self.values.pop();
       _ = self.indices.remove( id );
 
-      utl.log( .TRACE, 0, @src(), "Removed Entity {d} from packed CompStore for type {s}", .{ id, TypeName });
+      utl.log( .TRACE, @src(), "Removed Entity {d} from packed CompStore for type {s}", .{ id, TypeName });
       return true;
     }
 
@@ -168,13 +168,13 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot obtain from packed CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot obtain from packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return null;
       }
 
       const index = self.indices.get( id ) orelse
       {
-        utl.log( .WARN, 0, @src(), "Cannot find entity with id {d} in packed CompStore for type {s}", .{ id, TypeName });
+        utl.log( .WARN, @src(), "Cannot find entity with id {d} in packed CompStore for type {s}", .{ id, TypeName });
         return null;
       };
 
@@ -186,7 +186,7 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot peer into packed CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot peer into packed CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
       return self.indices.contains( id );

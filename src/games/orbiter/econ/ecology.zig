@@ -52,7 +52,7 @@ pub const EcoState = struct
   {
     if( !econ.hasEcology() )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot generate ecology : invalid economy" );
+      utl.qlog( .WARN, @src(), "Cannot generate ecology : invalid economy" );
       return null;
     }
 
@@ -61,11 +61,11 @@ pub const EcoState = struct
 
   pub inline fn logEco( self : *const EcoState ) void
   {
-    utl.qlog( .INFO, 0, @src(), "Loggin ecology :" );
-    utl.log(  .CONT, 0, @src(), "Development : {d:.6}", .{ self.development });
-    utl.log(  .CONT, 0, @src(), "Pollution   : {d:.6}", .{ self.pollution   });
-    utl.log(  .CONT, 0, @src(), "Eco Factor  : {d:.6}", .{ self.ecoFactor   });
-    utl.log(  .CONT, 0, @src(), "Eco Target  : {d:.6}", .{ self.ecoTarget   });
+    utl.qlog( .INFO, @src(), "Loggin ecology :" );
+    utl.log(  .CONT, @src(), "Development : {d:.6}", .{ self.development });
+    utl.log(  .CONT, @src(), "Pollution   : {d:.6}", .{ self.pollution   });
+    utl.log(  .CONT, @src(), "Eco Factor  : {d:.6}", .{ self.ecoFactor   });
+    utl.log(  .CONT, @src(), "Eco Target  : {d:.6}", .{ self.ecoTarget   });
   }
 
   /// Sets ecoFactor to the calculated ecoTarget

@@ -77,7 +77,7 @@ pub const Vec3 = struct
   {
     if( utl.isFltZr( other.x ) or utl.isFltZr( other.y ) or utl.isFltZr( other.z ) )
     {
-      utl.qlog( .ERROR, 0, @src(), "Division by zero in Vec3.div()" );
+      utl.qlog( .ERROR, @src(), "Division by zero in Vec3.div()" );
       return null;
     }
     return Vec3{ .x = self.x / other.x, .y = self.y / other.y, .z = self.z / other.z };
@@ -90,7 +90,7 @@ pub const Vec3 = struct
   {
     if( utl.isFltZr( val ))
     {
-      utl.qlog( .ERROR, 0, @src(), "Division by zero in Vec3.divVal()" );
+      utl.qlog( .ERROR, @src(), "Division by zero in Vec3.divVal()" );
       return null;
     }
     return Vec3{ .x = self.x / val, .y = self.y / val, .z = self.z / val };
@@ -141,14 +141,14 @@ pub const Vec3 = struct
   {
     if( utl.isFltZr( newLen ))
     {
-      utl.qlog( .WARN, 0, @src(), "Normalizing a Vec3 to 0" );
+      utl.qlog( .WARN, @src(), "Normalizing a Vec3 to 0" );
       return .{};
     }
 
     const oldLenSqr = self.lenSqr();
     if( utl.isFltZr( oldLenSqr ))
     {
-      utl.qlog( .WARN, 0, @src(), "Normalizing a 0:0 Vec3" );
+      utl.qlog( .WARN, @src(), "Normalizing a 0:0 Vec3" );
       return .{};
     }
 
@@ -179,7 +179,7 @@ pub const Vec3 = struct
   //{
   //  if( utl.isFltZr( self.x ) and utl.isFltZr( self.y ))
   //  {
-  //    utl.qlog( .WARN, 0, @src(), "Angle of a zero vector in Vec3.angle()" );
+  //    utl.qlog( .WARN, @src(), "Angle of a zero vector in Vec3.angle()" );
   //    return 0.0;
   //  }
   //  return utl.atan2( self.y, self.x );

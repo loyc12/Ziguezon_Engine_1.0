@@ -29,7 +29,7 @@ pub fn EventQueueFactory( comptime EventType : type ) type
     {
       if( self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "EventQueue for type {s} is already initialized : returning", .{ TypeName });
+        utl.log( .WARN, @src(), "EventQueue for type {s} is already initialized : returning", .{ TypeName });
         return;
       }
 
@@ -44,7 +44,7 @@ pub fn EventQueueFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "EventQueue for type {s} is uninitialized : returning", .{ TypeName });
+        utl.log( .WARN, @src(), "EventQueue for type {s} is uninitialized : returning", .{ TypeName });
         return;
       }
 
@@ -63,7 +63,7 @@ pub fn EventQueueFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot push EventRecord for type {s} : EventQueue is uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot push EventRecord for type {s} : EventQueue is uninitialized", .{ TypeName });
         return false;
       }
 
@@ -86,13 +86,13 @@ pub fn EventQueueFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot push EventRecord for type {s} : EventQueue is uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot push EventRecord for type {s} : EventQueue is uninitialized", .{ TypeName });
         return false;
       }
 
       self.records.append( self.alloc, record ) catch
       {
-        utl.log( .ERROR, 0, @src(), "Failed to push EventRecord for type {s}", .{ TypeName });
+        utl.log( .ERROR, @src(), "Failed to push EventRecord for type {s}", .{ TypeName });
         return false;
       };
 
@@ -104,7 +104,7 @@ pub fn EventQueueFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot pop EventRecord for type {s} : EventQueue is uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot pop EventRecord for type {s} : EventQueue is uninitialized", .{ TypeName });
         return null;
       }
 
@@ -124,7 +124,7 @@ pub fn EventQueueFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot clear EventQueue for type {s} : uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot clear EventQueue for type {s} : uninitialized", .{ TypeName });
         return;
       }
 

@@ -78,7 +78,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     eng.G_ENG.camera.setZoom(   1.0 );
     eng.G_ENG.camera.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reset" );
+    utl.qlog( .INFO, @src(), "Camera reset" );
   }
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.v ))
@@ -90,12 +90,12 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
       .INF => .RES,
       .RES => .ALL,
     };
-    utl.log( .INFO, 0, @src(), "Swapped display mode to {s}", .{ @tagName( DISPLAY_MODE )});
+    utl.log( .INFO, @src(), "Swapped display mode to {s}", .{ @tagName( DISPLAY_MODE )});
   }
 
   var worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -110,11 +110,11 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
     if( worldCoords != null )
     {
-      utl.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+      utl.log( .INFO, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
       const clickedTile = worldGrid.getTile( worldCoords.? ) orelse
       {
-        utl.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, worldGrid.id });
+        utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, worldGrid.id });
         return;
       };
 
@@ -196,7 +196,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -343,7 +343,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
     {
       const n = worldGrid.getNeighbourTile( tile.mapCoords, dir ) orelse
       {
-        utl.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
+        utl.log( .TRACE, @src(), "No neighbour in direction {s} found for tile at {d}:{d}", .{ @tagName( dir ), tile.mapCoords.x, tile.mapCoords.y });
         continue;
       };
 
@@ -397,7 +397,7 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
 
   const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -462,7 +462,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   {
     const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
     {
-      utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
+      utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
       return;
     };
 
@@ -480,44 +480,44 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
     _ = std.fmt.bufPrint( &popBuff, "PopCount : {d}", .{ data.popCount }) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to format pop count : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to format pop count : {}", .{ err });
       return;
     };
 
     _ = std.fmt.bufPrint( &dPopBuff, "PopDelta : +{d}, -{d}", .{ data.lastPopGrowth, data.lastPopLoss }) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to format pop delta counts : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to format pop delta counts : {}", .{ err });
       return;
     };
 
     _ = std.fmt.bufPrint( &migBuff, "Migrants : +{d}, -{d}", .{ data.lastPopIn, data.lastPopOut }) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to format pop migration counts : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to format pop migration counts : {}", .{ err });
       return;
     };
 
 
     _ = std.fmt.bufPrint( &resBuff, "ResCount : {d}", .{ data.resCount }) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to format res count : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to format res count : {}", .{ err });
       return;
     };
 
     _ = std.fmt.bufPrint( &dResBuff, "ResDelta : +{d}, -{d}", .{ data.lastResGrowth, data.lastResLoss }) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to format res delta : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to format res delta : {}", .{ err });
       return;
     };
 
     _ = std.fmt.bufPrint( &infBuff, "InfCount : {d}", .{ data.infCount }) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to format inf count : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to format inf count : {}", .{ err });
       return;
     };
 
     _ = std.fmt.bufPrint( &dInfBuff, "InfDelta : +{d}, -{d}", .{ data.lastInfGrowth, data.lastInfLoss }) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to format inf delta : {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to format inf delta : {}", .{ err });
       return;
     };
 

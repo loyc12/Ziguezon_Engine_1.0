@@ -44,7 +44,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .tileShape = .RECT,
   }, .T1 );
 
-  if( tlm == null ){ utl.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
+  if( tlm == null ){ utl.qlog( .ERROR, @src(), "Failed to create tilemap" ); }
 
   var worldGrid : *eng.Tilemap = tlm.?;
 
@@ -55,7 +55,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   var max_noise : f32 = 0.0;
 
   NOISE_GEN.seed = eng.G_ENG.rng.getInt( u64 );
-  utl.log( .INFO, 0, @src(), "Generating world with seed '{}'", .{ NOISE_GEN.seed });
+  utl.log( .INFO, @src(), "Generating world with seed '{}'", .{ NOISE_GEN.seed });
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
@@ -69,7 +69,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     TILEMAP_DATA[ index ] = .{ .noiseVal = noise };
   }
 
-  utl.log( .INFO, 0, @src(), "Min : {d}, Max : {d}", .{ min_noise, max_noise });
+  utl.log( .INFO, @src(), "Min : {d}, Max : {d}", .{ min_noise, max_noise });
 }
 
 

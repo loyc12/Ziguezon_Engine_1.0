@@ -119,7 +119,7 @@ pub const OrbitComp = struct
 
     if( semiMajor < 1.0 )
     {
-      utl.qlog( .WARN, 0, @src(), "Unable to calculate period : semi major axis too small" );
+      utl.qlog( .WARN, @src(), "Unable to calculate period : semi major axis too small" );
       return;
     }
 
@@ -415,7 +415,7 @@ pub const OrbitComp = struct
 
     if( LPcount != maxLP + 1 )
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to render inexistant LP : ignoring" );
+      utl.qlog( .WARN, @src(), "Trying to render inexistant LP : ignoring" );
     }
 
     for( 1..LPcount )| i |
@@ -477,7 +477,7 @@ pub const OrbitComp = struct
 
       else =>
       {
-        utl.qlog( .ERROR, 0, @src(), "Trying to access inexistant LP's position : returning 0:0" );
+        utl.qlog( .ERROR, @src(), "Trying to access inexistant LP's position : returning 0:0" );
         return .{};
       },
     }

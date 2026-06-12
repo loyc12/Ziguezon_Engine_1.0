@@ -54,7 +54,7 @@ pub const Spritemap = struct
 
   pub fn deinit( self : *Spritemap ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "Deinitializing spritemap" );
+    utl.qlog( .TRACE, @src(), "Deinitializing spritemap" );
 
     //if( self.atlas != null ){ self.atlas.?.unload(); } // NOTE : done by closeWindow(), presumably... ?
     self.* = .{};
@@ -62,20 +62,20 @@ pub const Spritemap = struct
 
   pub fn init( self : *Spritemap, fileName : [ :0 ]const u8, frameSize : Vec2, frameCount : u32 ) void
   {
-    utl.log( .TRACE, 0, @src(), "Initializing spritemap using : {s}", .{ fileName });
+    utl.log( .TRACE, @src(), "Initializing spritemap using : {s}", .{ fileName });
 
 
     // Initializing texture
 
     if( self.atlas != null )
     {
-      utl.qlog( .WARN, 0, @src(), "Overiding previous spritemap info" );
+      utl.qlog( .WARN, @src(), "Overiding previous spritemap info" );
       self.atlas.?.unload();
     }
 
     self.atlas = Texture.init( fileName ) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to init spritemap atlas using : {s} : {} : returning", .{ fileName, err });
+      utl.log( .ERROR, @src(), "Failed to init spritemap atlas using : {s} : {} : returning", .{ fileName, err });
       self.* = .{};
       return;
     };
@@ -88,13 +88,13 @@ pub const Spritemap = struct
 
     if( frameSize.x > atlasSize.x or frameSize.y > atlasSize.y )
     {
-      utl.qlog( .ERROR, 0, @src(), "frameSize is larger than atlasSize : returning" );
+      utl.qlog( .ERROR, @src(), "frameSize is larger than atlasSize : returning" );
       self.deinit();
       return;
     }
     if( frameSize.x < 1.0 or frameSize.y < 1.0 )
     {
-      utl.qlog( .ERROR, 0, @src(), "frameSize must be at least 1.0 in both axis" );
+      utl.qlog( .ERROR, @src(), "frameSize must be at least 1.0 in both axis" );
       self.deinit();
       return;
     }
@@ -106,7 +106,7 @@ pub const Spritemap = struct
 
     if( frameCount == 0 )
     {
-      utl.qlog( .ERROR, 0, @src(), "frameCount cannot be zero : returning" );
+      utl.qlog( .ERROR, @src(), "frameCount cannot be zero : returning" );
       self.deinit();
       return;
     }
@@ -128,7 +128,7 @@ pub const Spritemap = struct
 
       if( layoutPixelHeight > atlasSize.y )
       {
-        utl.qlog( .ERROR, 0, @src(), "atlas is not large enough to fit the frameCount with given frameSize : returning" );
+        utl.qlog( .ERROR, @src(), "atlas is not large enough to fit the frameCount with given frameSize : returning" );
         self.deinit();
         return;
       }
@@ -136,7 +136,7 @@ pub const Spritemap = struct
       self.frameCount = frameCount;
     }
 
-    utl.qlog( .DEBUG, 0, @src(), "$ spritemap initialized !" );
+    utl.qlog( .DEBUG, @src(), "$ spritemap initialized !" );
   }
 
   pub fn getSpriteRect( self : *const Spritemap, index : u32 ) RayRect
@@ -154,11 +154,11 @@ pub const Spritemap = struct
 
   pub fn drawScreenSprite( self : *const Spritemap, index : u32, pos : VecA, scale : Vec2, col : utl.Colour ) void
   {
-    utl.log( .TRACE, 0, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
+    utl.log( .TRACE, @src(), "Drawing spritemap frame #{} at {}:{}", .{ index, pos.x, pos.y });
 
     if( self.atlas == null )
     {
-      utl.qlog( .ERROR, 0, @src(), "Trying to draw from uninitialized spritemap" );
+      utl.qlog( .ERROR, @src(), "Trying to draw from uninitialized spritemap" );
       return;
     }
 

@@ -178,7 +178,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
       .none => "*NONE*",
     };
 
-    utl.log( .DEBUG, 0, @src(), "# Gave {d:.2}$ to {s}", .{ val, requesterName });
+    utl.log( .DEBUG, @src(), "# Gave {d:.2}$ to {s}", .{ val, requesterName });
   }
 
   pub fn subAgentSavings( econ : *ecn.Economy, q : Requester, val : f64 ) void
@@ -205,7 +205,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
       .none => "*NONE*",
     };
 
-    utl.log( .DEBUG, 0, @src(), "# Took {d:.2}$ from {s}", .{ val, requesterName });
+    utl.log( .DEBUG, @src(), "# Took {d:.2}$ from {s}", .{ val, requesterName });
   }
 };
 
@@ -627,13 +627,13 @@ pub const BuildEntry = struct
       .DESTR => "DESTROYING",
     };
 
-    utl.log( .CONT, 0, @src(), "# {s} -> {s} {d:.0} units of {s}", .{ requesterName, entryType, self.unitCount, constructName });
+    utl.log( .CONT, @src(), "# {s} -> {s} {d:.0} units of {s}", .{ requesterName, entryType, self.unitCount, constructName });
   }
 
   pub inline fn debugLogComplex( self : *const BuildEntry ) void
   {
     self.debugLogSimple();
-    utl.log( .CONT, 0, @src(), " - {d:.2}$ | {d:.2}c | {d:.0}r | lvl {d:.0}", .{ self.stashedFunds, self.stashedCnst, self.getStoredResSum(), self.priority });
+    utl.log( .CONT, @src(), " - {d:.2}$ | {d:.2}c | {d:.0}r | lvl {d:.0}", .{ self.stashedFunds, self.stashedCnst, self.getStoredResSum(), self.priority });
   }
 };
 

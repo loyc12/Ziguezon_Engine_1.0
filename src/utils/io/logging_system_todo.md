@@ -1,10 +1,11 @@
 # Logging System TODO
 
-Next steps for polishing the active logger.
+Next practical steps for polishing the active logger.
 
 `logging_system_reference.md` is the contract authority. The roadmap is the
 phase-order authority. This TODO stays narrower than both: it tracks the next
-practical implementation slices.
+implementation slices that are useful without turning the logger into a broad
+utils I/O or save-system project.
 
 ## 0. Current Baseline
 
@@ -13,149 +14,148 @@ The active logger is `src/utils/io/logger.zig`.
 Current behavior:
 
 * `utl.log` and `utl.qlog` are exported through `src/utils/utilsDef.zig`;
-* call sites pass `( level, id, @src(), message, args )`;
+* call sites pass `( level, @src(), message, args )` or
+  `( level, @src(), message )`;
 * `G_LOG_LVL` is a file-local comptime gate;
 * inactive levels return before `_log()` is called;
-* output is written through several direct `std.debug.print` calls;
-* terminal output uses ANSI colors;
-* file logging globals exist, but file initialization and shutdown are
-  commented out;
-* `CONT` relies on `LoggedLastMsg`;
-* no dedicated latest-level state exists for routing continuations to per-level
-  files.
+* active terminal output is built into a fixed-size logger-local buffer and
+  flushed with one `std.debug.print` call;
+* terminal output uses ANSI colors and prefix-driven message colors;
+* file logging state exists behind `USE_LOG_FILE`;
+* file logging creates an aggregate file and one active non-`.CONT` file per
+  level;
+* file logs are plain text and truncate files during `initFile()`;
+* `.CONT` relies on `LoggedLastMsg` and routes file continuations through
+  `LastLogLevel`;
+* if file setup fails, the logger closes any opened files and continues
+  terminal-only.
 
-## 1. Guardrails
+## 1. Next Slice - Output Primitive Extraction Review
 
-* Preserve comptime `G_LOG_LVL` gating.
-* Keep gated-out calls as close to no-op functions as practical.
-* Do not evaluate timestamps, source formatting, message formatting, or file
-  writes for inactive levels.
-* Remove the old `id` argument rather than keeping compatibility shims.
-* Keep file-local logger globals for now.
-* Keep log files plain text.
-* Keep terminal color behavior.
-* Keep `TRACE` potentially noisy.
-* Keep `CONT` simple and global-state based.
-* Do not design the full save system in this pass.
-* Do not run formatting passes such as `zig fmt`.
-
-Validation rules:
-
-* Docs-only changes need no build.
-* Logger signature or call-site changes: run `zig build test`.
-* Wider utils I/O changes: run `zig build` and `zig build test`.
-* If game call sites are touched broadly, consider `zig build check_games` if
-  available and relevant.
-
-## 2. Next Slice - Remove Id Arguments
-
-Goal: simplify the active API and remove unused id-gating behavior.
+Goal: decide whether the logger-local stream and file-sink code should stay in
+`logger.zig` or become reusable utils I/O.
 
 Tasks:
 
-* Change `_log` from:
+* compare `LogStream` in `src/utils/io/logger.zig` against
+  `src/utils/drafts/outputer.zig`;
+* decide whether fixed-buffer writing is logger-specific or useful enough to
+  move into `src/utils/io/outputer.zig`;
+* if extracting, keep the first extracted API small:
+  * fixed stream wrapper;
+  * optional create/truncate helper;
+  * plain write/close helpers if they reduce logger duplication;
+* preserve logger behavior exactly during any extraction;
+* do not pull in `src/utils/drafts/inputer.zig` or save/load semantics during
+  this slice;
+* run `zig build` and `zig build test` if code moves.
 
-```zig
-fn _log( level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : [] const u8, args : anytype ) !void
-```
+Exit criteria:
 
-to:
+* either `LogStream` and file helpers are deliberately kept logger-local, or a
+  minimal `src/utils/io/outputer.zig` exists and `logger.zig` uses it without
+  behavior drift;
+* stale draft comments are either updated to point at the new direction or left
+  deferred with an explicit reason.
 
-```zig
-fn _log( level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime message : [] const u8, args : anytype ) !void
-```
+## 2. Next Slice - Logger Configuration Boundary
 
-* Change `qlog` from:
-
-```zig
-pub fn qlog( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8 ) void
-```
-
-to:
-
-```zig
-pub fn qlog( comptime level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8 ) void
-```
-
-* Change `log` from:
-
-```zig
-pub fn log( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8, args : anytype ) void
-```
-
-to:
-
-```zig
-pub fn log( comptime level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8, args : anytype ) void
-```
-
-* Remove `SHOW_ID_MSGS`.
-* Remove `logId()`.
-* Remove the id section from comments and examples.
-* Update `logFrameTime()` and `logDeltaTime()` helper calls.
-* Update every `utl.qlog( level, 0, @src(), ... )` call.
-* Update every `utl.log( level, 0, @src(), ... )` call.
-* Search for non-zero id call sites before editing. If any exist, inspect them
-  manually before removing the argument.
-* Run `zig build test`.
-
-## 3. Next Slice - Remove Dead Logger Draft Code
-
-Goal: clear obsolete implementation noise before adding the new stream path.
+Goal: choose the smallest useful configuration path for logger globals.
 
 Tasks:
 
-* Remove the old commented-out `LogStream` draft block once replacement stream
-  work begins.
-* Replace self-deprecating file comments with precise module docs.
-* Fix spelling in logger-local comments while touching nearby lines.
-* Keep section organization and alignment consistent with the surrounding file.
+* decide whether `G_LOG_LVL` should become a build option, a utils config value,
+  or remain file-local for now;
+* decide how `USE_LOG_FILE`, `LOG_FILE_NAME`, colors, timestamps, and source
+  locations should be configured;
+* decide whether tests need a quiet log level override;
+* check whether the engine-interface config pattern is appropriate for utils or
+  too heavy for this layer;
+* update `logging_system_reference.md` and `logging_system_roadmap.md` if the
+  chosen boundary changes the contract.
 
-This can be done with the id-removal slice if the diff stays easy to review.
+Guardrails:
 
-## 4. Next Slice - Single Terminal Flush
+* keep inactive log calls comptime-gated;
+* do not add runtime log-level switching yet;
+* do not design a general app config system in this pass.
 
-Goal: build a complete terminal record before output.
+Validation:
 
-Tasks:
+* docs-only decisions need no build;
+* build-option or config code changes need `zig build` and `zig build test`;
+* if game interfaces are touched, also run `zig build check_games`.
 
-* Add a fixed-size logger-local buffer/stream.
-* Format level, timestamp, source, body, newline, and reset color into the
-  stream.
-* Flush once at the end of each active call.
-* Preserve prefix-driven message colors.
-* Preserve `ADD_PREC_NL` behavior unless renamed during cleanup.
-* Make overflow visible.
-* Keep inactive log behavior unchanged.
-* Run `zig build test`.
+## 3. Next Slice - File Logging Validation Polish
 
-## 5. Next Slice - File Logging Prototype
-
-Goal: make `USE_LOG_FILE` actually work.
+Goal: make file logging easier to verify without changing the public logger API.
 
 Tasks:
 
-* Add aggregate file state.
-* Add per-level file state for every active non-`.CONT` level.
-* Add `LastLogLevel : ?LogLevel` or equivalent.
-* Create/truncate files in `initFile()`.
-* Write initialization records to every opened file.
-* Close files in `deinitFile()`.
-* Build file records without ANSI colors.
-* Route normal records to aggregate + exact level file.
-* Route `.CONT` records to aggregate + `LastLogLevel` file.
-* If file setup fails, print a clear terminal warning and continue terminal-only.
-* Run `zig build test`.
+* add a focused validation path for `USE_LOG_FILE = true` that avoids manually
+  editing constants when practical;
+* verify aggregate file output, per-level file output, and `.CONT` routing;
+* verify file logs do not contain ANSI escape sequences;
+* verify setup failure still prints a clear terminal warning and continues
+  terminal-only;
+* document the validation command or workflow in this TODO if it cannot be
+  automated cleanly yet.
 
-## 6. Open Design Decisions For Later
+Guardrails:
 
-These are intentionally deferred:
+* keep log files plain text;
+* do not add log rotation, async logging, or structured records;
+* do not introduce allocator-heavy formatting for normal log calls.
 
-* whether logger-local stream code should move to `src/utils/io/outputer.zig`;
-* whether `src/utils/drafts/inputer.zig` should become a real input primitive;
-* whether logging and save/load share lower-level file helpers;
-* whether `G_LOG_LVL` becomes a build option;
-* whether tests override the log level;
-* whether the engine-interface config pattern should move into utils.
+## 4. Next Slice - Public API And Docs Sync
 
-Ask before starting any of these as implementation work.
+Goal: keep the reference docs aligned with the active API.
+
+Tasks:
+
+* inspect whether `resetTmpTimer` / `logTmpTimer` should remain part of the
+  target public API; they are referenced in `logging_system_reference.md`, but
+  are not active exports after the id-removal pass;
+* update the reference if temporary timer helpers are intentionally dropped;
+* if the helpers are still wanted, add a small scoped TODO for restoring them
+  instead of silently reintroducing dead exports;
+* keep examples in `logging_system_reference.md` and
+  `logging_system_roadmap.md` using the id-free call shape.
+
+Validation:
+
+* docs-only sync needs no build;
+* restored helper code needs `zig build test`.
+
+## 5. TODO Comment Triage
+
+Validated handling for currently implicated TODO comments:
+
+* `src/utils/drafts/outputer.zig`
+  * current TODO: `// TODO : figure me out better`;
+  * handling: defer until the output primitive extraction review;
+  * reason: it may become the real home for logger-local stream/file helpers,
+    but that decision has not been made.
+* `src/utils/drafts/inputer.zig`
+  * current TODO: `// TODO : figure me out better`;
+  * handling: defer;
+  * reason: input primitives and save/load-adjacent file semantics are outside
+    the next logger slice.
+
+Do not address, delete, or rewrite these draft TODO comments before confirming
+the specific implementation slice.
+
+## 6. Deferred Features
+
+These remain intentionally out of scope unless the reference changes:
+
+* general save-system design;
+* complete file I/O abstraction for all utils;
+* async logging;
+* thread-safe logging;
+* runtime log-level switching;
+* log categories/subsystems;
+* structured log records;
+* log rotation;
+* replacing the logger API with `std.log`;
+* per-test log capture beyond a simple log-level override.

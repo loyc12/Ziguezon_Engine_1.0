@@ -29,7 +29,7 @@ pub fn EventLogFactory( comptime EventType : type ) type
     {
       if( self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "EventLog for type {s} is already initialized : returning", .{ TypeName });
+        utl.log( .WARN, @src(), "EventLog for type {s} is already initialized : returning", .{ TypeName });
         return;
       }
 
@@ -44,7 +44,7 @@ pub fn EventLogFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "EventLog for type {s} is uninitialized : returning", .{ TypeName });
+        utl.log( .WARN, @src(), "EventLog for type {s} is uninitialized : returning", .{ TypeName });
         return;
       }
 
@@ -62,14 +62,14 @@ pub fn EventLogFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot append EventRecord for type {s} : EventLog is uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot append EventRecord for type {s} : EventLog is uninitialized", .{ TypeName });
         return false;
       }
       if( self.retainLimit == 0 ){ return true; }
 
       self.records.append( self.alloc, record ) catch
       {
-        utl.log( .ERROR, 0, @src(), "Failed to append EventRecord for type {s}", .{ TypeName });
+        utl.log( .ERROR, @src(), "Failed to append EventRecord for type {s}", .{ TypeName });
         return false;
       };
 
@@ -93,7 +93,7 @@ pub fn EventLogFactory( comptime EventType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot clear EventLog for type {s} : uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot clear EventLog for type {s} : uninitialized", .{ TypeName });
         return;
       }
 

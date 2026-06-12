@@ -13,13 +13,13 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 {
   if( !ng.world.registerComp( eng.TransComp ))
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to register TransComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register TransComp" );
     return;
   }
   if( !ng.world.registerComp( eng.ShapeComp ))
   {
     _ = ng.world.unregisterComp( eng.TransComp );
-    utl.qlog( .ERROR, 0, @src(), "Failed to register ShapeComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register ShapeComp" );
     return;
   }
 
@@ -34,11 +34,11 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     }
   ))
   {
-    utl.log( .INFO, 0, @src(), "Added disk entity with Id {} to TransComp store", .{ DISK_ID });
+    utl.log( .INFO, @src(), "Added disk entity with Id {} to TransComp store", .{ DISK_ID });
   }
   else
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to add disk entity to TransComp store" );
+    utl.qlog( .ERROR, @src(), "Failed to add disk entity to TransComp store" );
   }
 
   if( ng.world.addComp( eng.ShapeComp, DISK_ID,
@@ -49,11 +49,11 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     }
   ))
   {
-    utl.log( .INFO, 0, @src(), "Added disk entity with Id {} to ShapeComp store", .{ DISK_ID });
+    utl.log( .INFO, @src(), "Added disk entity with Id {} to ShapeComp store", .{ DISK_ID });
   }
   else
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to add disk entity to ShapeComp store" );
+    utl.qlog( .ERROR, @src(), "Failed to add disk entity to ShapeComp store" );
   }
 }
 

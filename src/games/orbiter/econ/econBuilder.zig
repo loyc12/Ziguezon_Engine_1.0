@@ -92,7 +92,7 @@ pub const BuildQueue = struct
         {
           if( e.entryType != t ) // TODO : Find something better to do with conflicting entryTypes here
           {
-            utl.qlog( .WARN, 0, @src(), "EntryType mismatch : deleting previous entry with conflicting entryType" );
+            utl.qlog( .WARN, @src(), "EntryType mismatch : deleting previous entry with conflicting entryType" );
 
             e.unitCount = 0.0;
           }
@@ -123,12 +123,12 @@ pub const BuildQueue = struct
   {
     if( m == .CANCEL )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot cancel non-existant entry form build queue" );
+      utl.qlog( .WARN, @src(), "Cannot cancel non-existant entry form build queue" );
       return false;
     }
     if( self.maxEntryCount >= BUILD_QUEUE_CAPACITY )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot add entry to build queue : no more space left in queue" );
+      utl.qlog( .WARN, @src(), "Cannot add entry to build queue : no more space left in queue" );
       return false;
     }
 
@@ -373,8 +373,8 @@ pub const BuildQueue = struct
   {
     if( self.maxEntryCount > 0 )
     {
-      utl.qlog( .INFO, 0, @src(), "# Logging build queue entries :" );
-      utl.log(  .CONT, 0, @src(), "EntryCount : {d} ( Cnstr : {d} | UnitsBuilt {d} | EntryClosed : {d} )", .{ self.maxEntryCount, self.totCnstrAvail, self.totUnitsBuilt, self.totEntryClosed });
+      utl.qlog( .INFO, @src(), "# Logging build queue entries :" );
+      utl.log(  .CONT, @src(), "EntryCount : {d} ( Cnstr : {d} | UnitsBuilt {d} | EntryClosed : {d} )", .{ self.maxEntryCount, self.totCnstrAvail, self.totUnitsBuilt, self.totEntryClosed });
 
 
       for( 0..self.maxEntryCount )| idx |

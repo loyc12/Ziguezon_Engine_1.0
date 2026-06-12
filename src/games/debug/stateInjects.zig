@@ -18,12 +18,12 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 {
   ng.resourceManager.addAudioFromFile( "hit_1", "assets/sounds/Boop_2.wav" ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
+    utl.log( .ERROR, @src(), "Failed to load audio 'hit_1': {}\n", .{ err } );
   };
 
   ng.resourceManager.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "assets/textures/Cubes.png" ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
+    utl.log( .ERROR, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
   };
 
   if( ng.tilemapManager.loadTilemapFromParams(
@@ -33,6 +33,6 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .tileScale = .{ .x = 64, .y = 64 },
     .tileShape = .TRI1,
   }, .T1 )
-  )| tlm |{ EXAMPLE_TLM_ID = tlm.id; } else { utl.qlog( .ERROR, 0, @src(), "Failed to create example tilemap" ); }
+  )| tlm |{ EXAMPLE_TLM_ID = tlm.id; } else { utl.qlog( .ERROR, @src(), "Failed to create example tilemap" ); }
 }
 

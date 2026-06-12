@@ -189,7 +189,7 @@ pub inline fn wrap( val : anytype, min : @TypeOf( val ), max : @TypeOf( val )) @
     {
       if( max <= min )
       {
-        utl.qlog( .ERROR, 0, @src(), "wrap() called with max <= min" );
+        utl.qlog( .ERROR, @src(), "wrap() called with max <= min" );
         return min; // or max, they are the same
       }
       const range = max - min;
@@ -232,13 +232,13 @@ pub fn getPolyArea( circumradius : f32, sideCount : u8 ) f32
 {
   if( sideCount < 3 )
   {
-    utl.qlog( .ERROR, 0, @src(), "getPolyArea() called with sides < 3" );
+    utl.qlog( .ERROR, @src(), "getPolyArea() called with sides < 3" );
     return 0.0;
   }
 
   if( sideCount == 255 )
   {
-    utl.qlog( .DEBUG, 0, @src(), "getPolyArea() called with sides = 255 ( treating as circle )" );
+    utl.qlog( .DEBUG, @src(), "getPolyArea() called with sides = 255 ( treating as circle )" );
     return PI * circumradius * circumradius;
   }
 
@@ -252,13 +252,13 @@ pub fn getPolyCircumRad( area : f32, sideCount : u8 ) f32
 {
   if( sideCount < 3 )
   {
-    utl.qlog( .ERROR, 0, @src(), "getPolyCircumradius() called with sides < 3" );
+    utl.qlog( .ERROR, @src(), "getPolyCircumradius() called with sides < 3" );
     return 0.0;
   }
 
   if( sideCount == 255 )
   {
-    utl.qlog( .DEBUG, 0, @src(), "getPolyCircumradius() called with sides = 255 ( treating as circle )" );
+    utl.qlog( .DEBUG, @src(), "getPolyCircumradius() called with sides = 255 ( treating as circle )" );
     return @sqrt( area / PI );
   }
 

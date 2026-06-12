@@ -45,7 +45,7 @@ inline fn isMinMaxValid( vMin : f64, vMax : f64 ) bool
 {
   if( vMin > vMax )
   {
-    utl.log( .ERROR, 0, @src(), "Invalid range: vMin ({d}) is greater than vMax ({d})", .{ vMin, vMax });
+    utl.log( .ERROR, @src(), "Invalid range: vMin ({d}) is greater than vMax ({d})", .{ vMin, vMax });
     return false;
   }
   return true;
@@ -54,7 +54,7 @@ inline fn isMinMaxValidVec2( pMin : Vec2, pMax : Vec2 ) bool
 {
   if( pMin.x > pMax.x or pMin.y > pMax.y )
   {
-    utl.log( .ERROR, 0, @src(), "Invalid area: pMin ({d}:{d}) is greater than pMax ({d}:{d})", .{ pMin.x, pMin.y, pMax.x, pMax.y });
+    utl.log( .ERROR, @src(), "Invalid area: pMin ({d}:{d}) is greater than pMax ({d}:{d})", .{ pMin.x, pMin.y, pMax.x, pMax.y });
     return false;
   }
   return true;
@@ -64,7 +64,7 @@ inline fn isClampRangeValid( vMin : f64, vMax : f64, size : f64 ) bool
 {
   if( vMax - vMin < size )
   {
-    utl.log( .ERROR, 0, @src(), "Invalid range for clamping: range ({d}) is smaller than the box size ({d})", .{ vMax - vMin, size });
+    utl.log( .ERROR, @src(), "Invalid range for clamping: range ({d}) is smaller than the box size ({d})", .{ vMax - vMin, size });
     return false;
   }
   return true;
@@ -137,7 +137,7 @@ pub const Box2 = struct
   {
     if( sides < 1 )
     {
-      utl.qlog( .ERROR, 0, @src(), "Cannot create polygon AABB with 0 sides");
+      utl.qlog( .ERROR, @src(), "Cannot create polygon AABB with 0 sides");
       return newRectAABB( pos, radii, a );
     }
 

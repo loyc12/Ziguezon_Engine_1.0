@@ -57,7 +57,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
   ng.resourceManager.addSpriteFromFile( "cubes_1", .{ .x = 32, .y = 32 }, 256, "assets/textures/Cubes.png" ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
+    utl.log( .ERROR, @src(), "Failed to load sprite 'cubes_1': {}\n", .{ err } );
   };
 
   const tlm = ng.tilemapManager.loadTilemapFromParams(
@@ -68,7 +68,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .tileShape = .DIAM,
   }, .T1 );
 
-  if( tlm == null ){ utl.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
+  if( tlm == null ){ utl.qlog( .ERROR, @src(), "Failed to create tilemap" ); }
 
   var worldGrid : *eng.Tilemap = tlm.?;
 

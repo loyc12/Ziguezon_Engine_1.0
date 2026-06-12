@@ -170,13 +170,13 @@ pub fn refreshOrbitParentCacheEntry( ng : *eng.Engine, bodyName : gdf.BodyName )
   const bodyId = G_DATA.bodyRegistry.idOf( bodyName );
   if( bodyId == 0 )
   {
-    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : body has no live entity", .{ @tagName( bodyName )});
+    utl.log( .ERROR, @src(), "Cannot refresh orbit-parent cache for {s} : body has no live entity", .{ @tagName( bodyName )});
     return false;
   }
 
   const store = ng.world.getRelationStore( gdf.Orbits ) orelse
   {
-    utl.qlog( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache : Orbits relation is not registered" );
+    utl.qlog( .ERROR, @src(), "Cannot refresh orbit-parent cache : Orbits relation is not registered" );
     return false;
   };
 
@@ -187,7 +187,7 @@ pub fn refreshOrbitParentCacheEntry( ng : *eng.Engine, bodyName : gdf.BodyName )
   {
     if( first != null )
     {
-      utl.qlog( .ERROR, 0, @src(), "Star body unexpectedly has an Orbits relation" );
+      utl.qlog( .ERROR, @src(), "Star body unexpectedly has an Orbits relation" );
       return false;
     }
 
@@ -197,24 +197,24 @@ pub fn refreshOrbitParentCacheEntry( ng : *eng.Engine, bodyName : gdf.BodyName )
 
   if( first == null )
   {
-    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : missing Orbits relation", .{ @tagName( bodyName )});
+    utl.log( .ERROR, @src(), "Cannot refresh orbit-parent cache for {s} : missing Orbits relation", .{ @tagName( bodyName )});
     return false;
   }
   if( iter.next() != null )
   {
-    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : multiple Orbits relation targets", .{ @tagName( bodyName )});
+    utl.log( .ERROR, @src(), "Cannot refresh orbit-parent cache for {s} : multiple Orbits relation targets", .{ @tagName( bodyName )});
     return false;
   }
 
   const parentId = first.?.key.targetId;
   if( !ng.world.isEntityAlive( parentId ))
   {
-    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : parent Entity {d} is not alive", .{ @tagName( bodyName ), parentId });
+    utl.log( .ERROR, @src(), "Cannot refresh orbit-parent cache for {s} : parent Entity {d} is not alive", .{ @tagName( bodyName ), parentId });
     return false;
   }
   if( G_DATA.bodyRegistry.nameOf( parentId ) == null )
   {
-    utl.log( .ERROR, 0, @src(), "Cannot refresh orbit-parent cache for {s} : parent Entity {d} is not a registered body", .{ @tagName( bodyName ), parentId });
+    utl.log( .ERROR, @src(), "Cannot refresh orbit-parent cache for {s} : parent Entity {d} is not a registered body", .{ @tagName( bodyName ), parentId });
     return false;
   }
 
@@ -250,14 +250,14 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
 
   if( !ng.world.registerComp( eng.TransComp ))
   {
-    utl.qlog( .ERROR, 0, @src(), "Failed to register TransComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register TransComp" );
     return false;
   }
   if( !ng.world.registerComp( eng.ShapeComp ))
   {
     _ = ng.world.unregisterComp( eng.TransComp );
 
-    utl.qlog( .ERROR, 0, @src(), "Failed to register ShapeComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register ShapeComp" );
     return false;
   }
   if( !ng.world.registerComp( eng.SpriteComp ))
@@ -265,7 +265,7 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
     _ = ng.world.unregisterComp( eng.ShapeComp );
     _ = ng.world.unregisterComp( eng.TransComp );
 
-    utl.qlog( .ERROR, 0, @src(), "Failed to register SpriteComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register SpriteComp" );
     return false;
   }
   if( !ng.world.registerComp( gdf.orb.OrbitComp ))
@@ -274,7 +274,7 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
     _ = ng.world.unregisterComp( eng.ShapeComp  );
     _ = ng.world.unregisterComp( eng.TransComp  );
 
-    utl.qlog( .ERROR, 0, @src(), "Failed to register OrbitComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register OrbitComp" );
     return false;
   }
   if( !ng.world.registerComp( gdf.bdy.BodyComp ))
@@ -284,7 +284,7 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
     _ = ng.world.unregisterComp( eng.ShapeComp     );
     _ = ng.world.unregisterComp( eng.TransComp     );
 
-    utl.qlog( .ERROR, 0, @src(), "Failed to register BodyComp" );
+    utl.qlog( .ERROR, @src(), "Failed to register BodyComp" );
     return false;
   }
   if( !ng.world.registerRelation( gdf.Orbits ))
@@ -295,7 +295,7 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
     _ = ng.world.unregisterComp( eng.ShapeComp     );
     _ = ng.world.unregisterComp( eng.TransComp     );
 
-    utl.qlog( .ERROR, 0, @src(), "Failed to register Orbits relation" );
+    utl.qlog( .ERROR, @src(), "Failed to register Orbits relation" );
     return false;
   }
 
@@ -343,7 +343,7 @@ pub const TargetInfo = struct
     const targetId = G_DATA.bodyRegistry.idOf( bodyName );
     if( targetId == 0 )
     {
-      utl.log( .WARN, 0, @src(), "Target body {s} has no live entity : clearing target", .{ @tagName( bodyName )});
+      utl.log( .WARN, @src(), "Target body {s} has no live entity : clearing target", .{ @tagName( bodyName )});
       self.targetId   = 0;
       self.targetBody = null;
       self.hasMoved   = true;
@@ -367,7 +367,7 @@ pub const TargetInfo = struct
 
     const bodyName = G_DATA.bodyRegistry.nameOf( targetId ) orelse
     {
-      utl.qlog( .WARN, 0, @src(), "Target does not exist : defaulting to Id 0 ( none )" );
+      utl.qlog( .WARN, @src(), "Target does not exist : defaulting to Id 0 ( none )" );
       self.targetId   = 0;
       self.targetBody = null;
       self.hasMoved   = true;
@@ -399,7 +399,7 @@ pub const TargetInfo = struct
   {
     if( self.targetId == 0 )
     {
-      utl.qlog( .TRACE, 0, @src(), "targetId is 0 : returning" );
+      utl.qlog( .TRACE, @src(), "targetId is 0 : returning" );
       return;
     }
 
@@ -413,11 +413,11 @@ pub const TargetInfo = struct
       if( targetTrans )| trans |
       {
         eng.G_ENG.camera.cam.pos = trans.pos;
-        utl.qlog( .TRACE, 0, @src(), "View centered on target" );
+        utl.qlog( .TRACE, @src(), "View centered on target" );
       }
       else
       {
-        utl.qlog( .WARN, 0, @src(), "Target does not exist : cannot center view" );
+        utl.qlog( .WARN, @src(), "Target does not exist : cannot center view" );
         self.camFollow = false;
       }
     }
@@ -512,7 +512,7 @@ pub fn loadStaticDataMatrices() void
 
   if( !debugCheckDataInit() )
   {
-    utl.qlog( .ERROR, 0, @src(), "One or more dataMatrices were left uninitialized" );
+    utl.qlog( .ERROR, @src(), "One or more dataMatrices were left uninitialized" );
   }
 
   _ = SUNSHINE.initFromData();

@@ -34,20 +34,16 @@ src/utils/io/outputer.zig
 The logger should not wait for a full save system. The first useful file output
 can be logger-local.
 
-## 1. Phase 1 - Remove Legacy Id Plumbing
+## 1. Completed - Remove Legacy Id Plumbing
 
-Goal: simplify every call site and remove a feature that has not earned its
-cost.
+The active API no longer takes the old `id` argument.
 
-Tasks:
+Done:
 
-* remove the `id` argument from `qlog`, `log`, `_log`, and helper calls;
-* remove `SHOW_ID_MSGS`;
-* remove `logId()`;
-* update logger comments and examples;
-* update every `utl.log` and `utl.qlog` call site;
-* keep `G_LOG_LVL` gating exactly at the public wrapper boundary;
-* run `zig build test`.
+* removed the `id` argument from `qlog`, `log`, `_log`, and helper calls;
+* removed `SHOW_ID_MSGS` and `logId()`;
+* updated logger comments and every `utl.log` / `utl.qlog` call site;
+* kept `G_LOG_LVL` gating at the public wrapper boundary.
 
 Expected API after this phase:
 
@@ -56,29 +52,24 @@ utl.qlog( .INFO, @src(), "Camera reset" );
 utl.log(  .WARN, @src(), "Missing Entity {d}", .{ entityId });
 ```
 
-## 2. Phase 2 - Single-Record Terminal Formatting
+## 2. Completed - Single-Record Terminal Formatting
 
-Goal: replace many direct `std.debug.print` fragments with one formatted record
-per emitted log call.
+Active terminal logs now build one complete record before output.
 
-Tasks:
+Done:
 
-* introduce a small logger-local stream/buffer;
-* format header, body, and reset code into the stream;
-* flush terminal output once at the end of the log call;
-* preserve terminal colors;
-* preserve `CONT` behavior;
-* keep inactive log levels no-op-like;
-* remove obsolete commented-out stream code while replacing it.
+* introduced a small logger-local stream/buffer;
+* formats header, body, newline, and reset code into the stream;
+* flushes terminal output once at the end of the log call;
+* preserves terminal colors, prefix message colors, and `CONT` behavior;
+* keeps inactive log levels no-op-like;
+* removed obsolete commented-out stream code.
 
-This phase should not add file logging yet. It proves the formatter and stream
-shape first.
+## 3. Completed - Logger-Local File Sinks
 
-## 3. Phase 3 - Logger-Local File Sinks
+File logging is implemented inside `logger.zig` behind `USE_LOG_FILE`.
 
-Goal: implement file logging without broadening into a save-system project.
-
-Tasks:
+Done:
 
 * create/truncate the aggregate file at startup;
 * create/truncate one file for every active non-`.CONT` level;
@@ -89,8 +80,6 @@ Tasks:
   file;
 * close all files during deinit;
 * fallback visibly to terminal-only logging if file setup fails.
-
-This phase can keep the file implementation inside `logger.zig`.
 
 ## 4. Phase 4 - Output Primitive Extraction Review
 

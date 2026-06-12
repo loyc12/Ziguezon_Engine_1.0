@@ -68,19 +68,19 @@ fn getBodyComps( view : *stateInj.BodyView, id : eng.EntityId, name : []const u8
 {
   const trans = view.get( eng.TransComp, id ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Transform for Entity {d} ( {s} ) not found", .{ id, name });
+    utl.log( .WARN, @src(), "Transform for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
   };
 
   const shape = view.get( eng.ShapeComp, id ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Shape for Entity {d} ( {s} ) not found", .{ id, name });
+    utl.log( .WARN, @src(), "Shape for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
   };
 
   const hitbox = view.get( eng.HitboxComp, id ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Hitbox for Entity {d} ( {s} ) not found", .{ id, name });
+    utl.log( .WARN, @src(), "Hitbox for Entity {d} ( {s} ) not found", .{ id, name });
     return null;
   };
 
@@ -280,7 +280,7 @@ fn scorePoint( ball : BodyComps, scorer : PlayerId, hWidth : f64 ) void
   if( scorer == .NONE ){ return; }
 
   SCORES[ playerIndex( scorer ) ] += 1;
-  utl.log( .INFO, 0, @src(), "Player {d} scores a point! : {d}:{d}", .{ playerNum( scorer ), SCORES[ 0 ], SCORES[ 1 ] });
+  utl.log( .INFO, @src(), "Player {d} scores a point! : {d}:{d}", .{ playerNum( scorer ), SCORES[ 0 ], SCORES[ 1 ] });
 
   // Set the ball to be thrown towards the player who lost the point.
   serveBall( ball, opponentOf( scorer ), hWidth );
@@ -324,7 +324,7 @@ fn updateCameraInput() void
   {
     eng.G_ENG.camera.setZoom( 1.0 );
     eng.G_ENG.camera.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reseted" );
+    utl.qlog( .INFO, @src(), "Camera reseted" );
   }
 }
 
@@ -344,7 +344,7 @@ fn handleBottomEdge( ball : BodyComps, hWidth : f64, hHeight : f64 ) bool
 {
   if( ball.trans.pos.y < hHeight ){ return false; }
 
-  utl.qlog( .DEBUG, 0, @src(), "Ball hit the bottom edge" );
+  utl.qlog( .DEBUG, @src(), "Ball hit the bottom edge" );
 
   if( ball.trans.pos.x < 0 )
   {
@@ -356,7 +356,7 @@ fn handleBottomEdge( ball : BodyComps, hWidth : f64, hHeight : f64 ) bool
   }
   else
   {
-    utl.qlog( .WARN, 0, @src(), "No player scored, throwing ball to Player 1" );
+    utl.qlog( .WARN, @src(), "No player scored, throwing ball to Player 1" );
     serveBallRandom( ball, hWidth );
   }
 
@@ -367,7 +367,7 @@ fn handleTopEdge( ball : BodyComps, hHeight : f64 ) void
 {
   if( ball.hitbox.hitbox.getTopY() > -hHeight ){ return; }
 
-  utl.qlog( .DEBUG, 0, @src(), "Ball hit the top edge" );
+  utl.qlog( .DEBUG, @src(), "Ball hit the top edge" );
   setBodyTopY( ball, -hHeight );
 
   if( ball.trans.vel.y < 0 )
@@ -383,7 +383,7 @@ fn handleSideEdges( ball : BodyComps, hWidth : f64 ) void
 {
   if( ball.hitbox.hitbox.getRightX() >= hWidth )
   {
-    utl.qlog( .DEBUG, 0, @src(), "Ball hit the right edge" );
+    utl.qlog( .DEBUG, @src(), "Ball hit the right edge" );
     setBodyRightX( ball, hWidth );
 
     if( ball.trans.vel.x > 0 )
@@ -396,7 +396,7 @@ fn handleSideEdges( ball : BodyComps, hWidth : f64 ) void
   }
   else if( ball.hitbox.hitbox.getLeftX() <= -hWidth )
   {
-    utl.qlog( .DEBUG, 0, @src(), "Ball hit the left edge" );
+    utl.qlog( .DEBUG, @src(), "Ball hit the left edge" );
     setBodyLeftX( ball, -hWidth );
 
     if( ball.trans.vel.x < 0 )
@@ -413,14 +413,14 @@ fn handlePlayerBounce( ball : BodyComps, player : BodyComps, playerId : PlayerId
 {
   if( !ball.hitbox.isOverlapping( player.hitbox )){ return false; }
 
-  utl.log( .DEBUG, 0, @src(), "Ball collided with player {d}", .{ playerNum( playerId ) });
+  utl.log( .DEBUG, @src(), "Ball collided with player {d}", .{ playerNum( playerId ) });
   setBodyBottomY( ball, player.hitbox.hitbox.getTopY() );
 
   if( ball.trans.vel.y <= 0 ){ return false; }
 
   if( !registerPlayerBounce( playerId ))
   {
-    utl.log( .INFO, 0, @src(), "Player {d} exceeded the {d}-bounce cap", .{ playerNum( playerId ), BOUNCE_CAP });
+    utl.log( .INFO, @src(), "Player {d} exceeded the {d}-bounce cap", .{ playerNum( playerId ), BOUNCE_CAP });
     scorePoint( ball, opponentOf( playerId ), hWidth );
     return true;
   }
@@ -461,7 +461,7 @@ pub fn OnInputUpdate( ng : *Engine ) void
       resetRally();
       if( !resetMatchBall( &bodyView )){ return; }
 
-      utl.qlog( .INFO, 0, @src(), "Match reseted" );
+      utl.qlog( .INFO, @src(), "Match reseted" );
     }
   }
 
@@ -478,12 +478,12 @@ pub fn OnInputUpdate( ng : *Engine ) void
     if( SCORES[ 0 ] >= WIN_SCORE )
     {
       WINNER = .P1;
-      utl.log( .INFO, 0, @src(), "Player 1 wins! : {d} to {d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
+      utl.log( .INFO, @src(), "Player 1 wins! : {d} to {d}", .{ SCORES[ 0 ], SCORES[ 1 ] });
     }
     else if( SCORES[ 1 ] >= WIN_SCORE )
     {
       WINNER = .P2;
-      utl.log( .INFO, 0, @src(), "Player 2 wins! : {d} to {d}", .{ SCORES[ 1 ], SCORES[ 0 ] });
+      utl.log( .INFO, @src(), "Player 2 wins! : {d} to {d}", .{ SCORES[ 1 ], SCORES[ 0 ] });
     }
   }
 }
@@ -561,7 +561,7 @@ fn drawScore( score : u8, player : PlayerId, pos : Vec2, colour : utl.Colour ) v
 
   const slice = std.fmt.bufPrint( &buff, "{d}", .{ score }) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to format score for player {d}: {}", .{ playerNum( player ), err });
+    utl.log( .ERROR, @src(), "Failed to format score for player {d}: {}", .{ playerNum( player ), err });
     return;
   };
 

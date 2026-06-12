@@ -1,13 +1,19 @@
-const std    = @import( "std" );
-const utl    = @import( "utils" );
-//const stdOut = @import( "../drafts/outputer.zig" ).demoStdout;
+//! Logger-local debug output helpers with comptime level gating, terminal colors, and optional plain-text log files.
+
+const std = @import( "std" );
+const utl = @import( "utils" );
 
 const Duration = utl.Duration;
 
-var LoggedLastMsg : bool = false;
+const LOG_BUFF_LEN   : usize       = 8192;
+const LOG_NAME_LEN   : usize       = 256;
+const LOG_TRUNC_MSG  : [] const u8 = "\n[LOGGER RECORD TRUNCATED]\n";
+const LOG_INIT_MSG   : [] const u8 = "\n[LOGGER INITIALIZED]\n";
+const LOG_DEINIT_MSG : [] const u8 = "\n[LOGGER DEINITIALIZED]\n";
 
-// This file defines helper functions to conditionally print debug info based on the following enum's value
-// Yes, this might very well be a shittier version of std.log...
+var LoggedLastMsg : bool      = false;
+var LastLogLevel  : ?LogLevel = null;
+
 
 // ================================ DEFINITIONS ================================
 
@@ -15,20 +21,16 @@ pub const LogLevel = enum( u4 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  // These values are used to control the verbosity of debug output.
-  // The higher the value, the more verbose the output.
-  // This means each value prints all values below it.
-
-  NONE,  // No output      ( deactivates the debug print system entirely )
+  // Higher configured values include every lower-severity value.
+  NONE,  // No output                                          ( deactivates the logging system entirely )
   CONT,  // Continues the latest log message if it was printed ( does not print message header )
-  ERROR, // Error messages ( critical issues that prevent normal execution )
-  WARN,  // Warnings too   ( non critical issues that do not prevent normal execution )
-  INFO,  // Long term informational messages   ( key events in the program )
-  DEBUG, // Tracing of abnormal execution flow ( unhappy path ) and short term debugging messages
-  TRACE, // Tracing of normal   execution flow ( happy path )
+  ERROR, // Error messages                                     ( critical issues that prevent normal execution )
+  WARN,  // Warnings too                                       ( non critical issues that do not prevent normal execution )
+  INFO,  // Long term informational messages                   ( key events in the program )
+  DEBUG, // Tracing of abnormal execution flow                 ( unhappy path and temporary debugging messages )
+  TRACE, // Tracing of normal   execution flow                 ( happy path )
 
-
-  // an enum method... ? in THIS economy ?!
+  /// Returns whether this level is active under the comptime global gate.
   pub fn canLog( self : LogLevel ) bool
   {
     if( comptime G_LOG_LVL == .NONE ){                     return false; }
@@ -37,215 +39,314 @@ pub const LogLevel = enum( u4 )
   }
 };
 
-// Global configuration variables for the debug logging system
-pub const G_LOG_LVL      : LogLevel    = .DEBUG; // Set the global log level for debug printing ( do not use CONT here )
+// Global configuration variables for the debug logging system.
+pub const G_LOG_LVL      : LogLevel    = .DEBUG; // Sets the global log level for debug printing ( do not use CONT here )
+pub const SHOW_TIMESTAMP : bool        = true;   // If true, messages include a timestamp relative to the first logger timestamp
+pub const SHOW_MSG_SRC   : bool        = true;   // If true, messages include the source file, line number, and function name
+pub const ADD_PREC_NL    : bool        = true;   // If true, a newline is inserted before the message body
 
-pub const SHOW_ID_MSGS   : bool        = true;   // If true, messages with id will not be omitted
-pub const SHOW_TIMESTAMP : bool        = true;   // If true, messages will include a timestamp of the system clock
-pub const SHOW_MSG_SRC   : bool        = true;   // If true, messages will include the source file, line number, and function name of the call location
-pub const ADD_PREC_NL    : bool        = true;   // If true, a newline will be before the actual message, to make it more readable
+pub const USE_LOG_FILE   : bool        = false;       // If true, log messages are also written to plain-text log files
+pub const LOG_FILE_NAME  : [] const u8 = "debug.log"; // Aggregate file name used when USE_LOG_FILE is true
 
-pub const USE_LOG_FILE   : bool        = false;              // If true, log messages will be written to a file instead of stdout/stderr
-pub const LOG_FILE_NAME  : [] const u8 = "debug.log";        // The file to write log messages to if USE_LOG_FILE is true
-var       G_LOG_FILE     : std.fs.File = undefined;             // The file to write log messages in ( default is stderr )
-var       G_IsFileOpened : bool        = false;              // Flag to check if the log file is opened ( and different from stderr )
 
-// TODO : have each log level be printed in its own file, on top of the shared main one
+// ================================ FILE STATE ================================
+
+const FileSlot = struct
+{
+  file     : std.fs.File        = undefined,
+  nameBuff : [ LOG_NAME_LEN ]u8 = undefined,
+  name     : [] const u8        = "",
+  isOpen   : bool               = false,
+
+
+  fn openNamed( self : *FileSlot, name : [] const u8 ) !void
+  {
+    if( name.len > self.nameBuff.len ){ return error.LogFileNameTooLong; }
+
+    std.mem.copyForwards( u8, self.nameBuff[ 0..name.len ], name );
+    self.name = self.nameBuff[ 0..name.len ];
+
+    self.file   = try std.fs.cwd().createFile( self.name, .{ .truncate = true });
+    self.isOpen = true;
+  }
+
+  fn openForLevel( self : *FileSlot, level : LogLevel ) !void
+  {
+    const extStart = std.mem.lastIndexOfScalar( u8, LOG_FILE_NAME, '.' ) orelse LOG_FILE_NAME.len;
+
+    self.name = std.fmt.bufPrint(
+      &self.nameBuff,
+      "{s}_{s}{s}",
+      .{ LOG_FILE_NAME[ 0..extStart ], @tagName( level ), LOG_FILE_NAME[ extStart.. ] }
+    ) catch return error.LogFileNameTooLong;
+
+    self.file   = try std.fs.cwd().createFile( self.name, .{ .truncate = true });
+    self.isOpen = true;
+  }
+
+  fn close( self : *FileSlot ) void
+  {
+    if( !self.isOpen ){ return; }
+
+    self.file.close();
+    self.isOpen = false;
+  }
+
+  fn writeAll( self : *FileSlot, bytes : [] const u8 ) !void
+  {
+    if( !self.isOpen ){ return; }
+
+    try self.file.writeAll( bytes );
+  }
+};
+
+
+var AggregateLogFile : FileSlot = FileSlot{};
+var LevelLogFiles    : [ LogLevel.count ]FileSlot = [_]FileSlot{ FileSlot{} } ** LogLevel.count;
+var G_IsFileOpened   : bool = false;
 
 
 // ================================ CORE FUNCTIONS ================================
 
-//const buffLen   = 4096;
-//const LogStream = struct
-//{
-//  buff : [ buffLen ]u8 = undefined,
-//  idx  : usize = 0,
-//
-//  pub inline fn init( ) LogStream { return.{ .buff = std.mem.zeroes([ buffLen ]u8 ), .idx = 0 }; }
-//
-//
-//  pub fn writer( self: *LogStream ) std.io.Writer
-//  {
-//    return std.io.Writer.fixed( self.buff[ 0..self.idx ]);
-//  }
-//
-//  pub fn writeChar( self : *LogStream, char : u8 ) !void
-//  {
-//    if( self.idx >= buffLen ){ return error.NoSpaceLeft; }
-//
-//    self.buff[ self.idx ] = char;
-//
-//    self.idx += 1;
-//  }
-//
-//  pub fn write( self : *LogStream, bytes : []const u8 ) !usize
-//  {
-//    const size : usize = @min( buffLen - self.idx, bytes.len );
-//
-//    if( size == 0 ){ return error.NoSpaceLeft; }
-//
-//    const start = self.idx;
-//    const end   = start + size;
-//
-//    std.mem.copyForwards( u8, self.buff[ start..end ], bytes[ 0..size ] );
-//    self.idx += size;
-//
-//    return size;
-//  }
-//
-//
-//  pub inline fn flush( self : *LogStream ) void
-//  {
-//    const col = if( comptime !USE_LOG_FILE ) utl.termColour.RESET else "";
-//
-//    std.debug.print( "{s}{s}", .{ self.buff[ 0..self.idx ], col });
-//    self.idx = 0;
-//  }
-//
-//  pub inline fn clear( self : *LogStream ) void
-//  {
-//    self.idx = 0;
-//  }
-//};
-//
-//var stream = LogStream.init();
-
-
-
-fn _log( level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : [] const u8, args : anytype ) !void
+const LogStamp = struct
 {
-  // LOG EXAMPLE :
+  sec  : u64,
+  nano : u64,
+};
 
-    // [DEBUG] (1) - 2025-10-01 12:34:56 - main.zig:42 (main)
-    // > This is a debug message
-    //   This is a message continuation (.CONT )
+/// Fixed-size formatter used to build one complete log record before flushing.
+const LogStream = struct
+{
+  buff       : [ LOG_BUFF_LEN ]u8 = undefined,
+  idx        : usize              = 0,
+  overflowed : bool               = false,
 
-  // TODO : reimplement logging to file ( need my own io implementation for that )
-  // TODO : Implement the trace system properly, to log/unlog functions when they are called and exited ( maybe via a trace stack file ?)
 
-  // ================ LOGGING CHECKS ================
+  fn init() LogStream { return .{}; }
 
+  fn bytes( self : *const LogStream ) [] const u8 { return self.buff[ 0..self.idx ]; }
+
+  fn append( self : *LogStream, text : [] const u8 ) void
+  {
+    if( self.overflowed ){ return; }
+
+    const available = self.buff.len - self.idx;
+    if( text.len <= available )
+    {
+      std.mem.copyForwards( u8, self.buff[ self.idx..self.idx + text.len ], text );
+      self.idx += text.len;
+      return;
+    }
+
+    if( available > 0 )
+    {
+      std.mem.copyForwards( u8, self.buff[ self.idx.. ], text[ 0..available ] );
+      self.idx = self.buff.len;
+    }
+    self.markOverflow();
+  }
+
+  fn appendFormat( self : *LogStream, comptime fmt : [] const u8, args : anytype ) void
+  {
+    if( self.overflowed ){ return; }
+
+    const written = std.fmt.bufPrint( self.buff[ self.idx.. ], fmt, args ) catch
+    {
+      self.markOverflow();
+      return;
+    };
+    self.idx += written.len;
+  }
+
+  fn markOverflow( self : *LogStream ) void
+  {
+    if( self.overflowed ){ return; }
+
+    self.overflowed = true;
+
+    const keepLen = if( self.buff.len > LOG_TRUNC_MSG.len ) self.buff.len - LOG_TRUNC_MSG.len else 0;
+    self.idx = @min( self.idx, keepLen );
+
+    if( LOG_TRUNC_MSG.len <= self.buff.len - self.idx )
+    {
+      std.mem.copyForwards( u8, self.buff[ self.idx..self.idx + LOG_TRUNC_MSG.len ], LOG_TRUNC_MSG );
+      self.idx += LOG_TRUNC_MSG.len;
+    }
+  }
+};
+
+fn _log( level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime message : [] const u8, args : anytype ) !void
+{
+  if( level == .NONE  ){                    return; }
   if( level == .CONT and !LoggedLastMsg  ){ return; }
 
-  LoggedLastMsg = false; // Leaves this at false unless the message ends up being logged
+  LoggedLastMsg = false;
 
-  if( comptime !SHOW_ID_MSGS and id != 0 ){ return; }
+  const stamp = if( level == .CONT ) null else getLogStamp();
 
+  var terminalRecord = LogStream.init();
+  appendRecord( &terminalRecord, level, logLoc, stamp, message, args, true );
+  std.debug.print( "{s}", .{ terminalRecord.bytes() });
 
+  if( comptime USE_LOG_FILE )
+  {
+    if( G_IsFileOpened )
+    {
+      var fileRecord = LogStream.init();
+      appendRecord( &fileRecord, level, logLoc, stamp, message, args, false );
+      writeFileRecords( level, fileRecord.bytes() ) catch | err |
+      {
+        std.debug.print(
+          utl.termColour.YELLOW ++ "Logger file write failed: {}. Continuing terminal-only.\n" ++ utl.termColour.RESET,
+          .{ err }
+        );
+      };
+    }
+  }
 
+  if( level != .CONT ){ LastLogLevel = level; }
+  LoggedLastMsg = true;
+}
 
-  // ================ LOGGING LOGIC ================
-
-  // Setting the success flag for the next .CONT canLog() check
-
+fn appendRecord(
+  stream           : *LogStream,
+  level            : LogLevel,
+  logLoc           : ?std.builtin.SourceLocation,
+  stamp            : ?LogStamp,
+  comptime message : [] const u8,
+  args             : anytype,
+  comptime hasCol  : bool,
+) void
+{
   if( level != .CONT )
   {
-    try logLevel( level ); // Show the log level as a string
-
-    try logId( id ); // Shows the message id if SHOW_ID_MSGS is true
-
-    try logTime(); // Shows the time of the message relative to the system clock if SHOW_TIMESTAMP is true
-
-    try logLocation( logLoc ); // Shows the file location if SHOW_MSG_SRC is true
+    appendLevel(    stream, level,  hasCol );
+    appendTime(     stream, stamp,  hasCol );
+    appendLocation( stream, logLoc, hasCol );
   }
 
-  try setMsgColour( message );
+  if( comptime hasCol ){ stream.append( msgColour( message )); }
 
-  if( comptime ADD_PREC_NL ) // If ADD_PREC_NL is true, print a newline before the actual message
+  if( comptime ADD_PREC_NL )
   {
-    if( level == .CONT ){ std.debug.print( "   ",   .{} ); }
-    else                { std.debug.print( "\n > ", .{} );}
+    if( level == .CONT ){ stream.append( "   "   ); }
+    else                { stream.append( "\n > " ); }
   }
 
-  std.debug.print( message ++ "\n", args ); // Prints the actual message
-  try setCol( utl.termColour.RESET );
-  //stream.flush();
+  stream.appendFormat( message ++ "\n", args );
 
-  LoggedLastMsg = true;
-
+  if( comptime hasCol ){ stream.append( utl.termColour.RESET ); }
 }
+
 
 // ================================ FILE FUNCTIONS ================================
 
+/// Initializes aggregate and per-level log files when file logging is enabled.
 pub fn initFile() void
 {
   std.debug.assert( G_LOG_LVL != .CONT );
 
-//if( comptime !USE_LOG_FILE ){ return; }
-//
-//G_LOG_FILE = std.fs.cwd().createFile( LOG_FILE_NAME, .{ .truncate = false }) catch | err |
-//{
-//  std.debug.print( "Failed to create or open log file '{s}': {}\nLogging to stderr isntead\n", .{ LOG_FILE_NAME, err });
-//  return;
-//};
-//std.debug.print( utl.termColour.YELLOW ++ "Logging to file '{s}'\n" ++ utl.termColour.RESET, .{ LOG_FILE_NAME });
-//
-//G_IsFileOpened = true; // Set the flag to true as we successfully opened the file
-//
-//qlog( .INFO, 0, @src(), "Logfile initialized\n\n" );
+  LoggedLastMsg = false;
+  LastLogLevel  = null;
+
+  if( comptime !USE_LOG_FILE ){ return; }
+
+  initFileInner() catch | err |
+  {
+    closeAllFiles();
+    G_IsFileOpened = false;
+
+    std.debug.print( utl.termColour.YELLOW ++ "Failed to initialize log files: {}. Continuing terminal-only.\n" ++ utl.termColour.RESET, .{ err });
+    return;
+  };
+
+  G_IsFileOpened = true;
+  std.debug.print( utl.termColour.YELLOW ++ "Logging to file '{s}'\n" ++ utl.termColour.RESET, .{ LOG_FILE_NAME });
 }
 
+/// Writes shutdown records and closes all opened logger files.
 pub fn deinitFile() void
 {
-//if( comptime !USE_LOG_FILE ){ return; }
-//
-//if( G_IsFileOpened )
-//{
-//  qlog( .INFO, 0, @src(), "Logfile deinitialized\n\n" );
-//  G_LOG_FILE.stop();
-//  G_IsFileOpened = false;
-//}
+  if( comptime !USE_LOG_FILE ){ return; }
+  if( !G_IsFileOpened ){ return; }
+
+  AggregateLogFile.writeAll( LOG_DEINIT_MSG ) catch {};
+
+  inline for( @typeInfo( LogLevel ).@"enum".fields )| field |
+  {
+    const level : LogLevel = @enumFromInt( field.value );
+    if( isLevelFileIsActive( level ))
+    {
+      LevelLogFiles[ getLevelIndex( level ) ].writeAll( LOG_DEINIT_MSG ) catch {};
+    }
+  }
+
+  closeAllFiles();
+  G_IsFileOpened = false;
 }
 
+fn initFileInner() !void
+{
+  AggregateLogFile.openNamed( LOG_FILE_NAME ) catch | err | return err;
+  try AggregateLogFile.writeAll( LOG_INIT_MSG );
+
+  inline for( @typeInfo( LogLevel ).@"enum".fields )| field |
+  {
+    const level : LogLevel = @enumFromInt( field.value );
+    if( isLevelFileIsActive( level ))
+    {
+      var slot = &LevelLogFiles[ getLevelIndex( level ) ];
+      try slot.openForLevel( level );
+      try slot.writeAll( LOG_INIT_MSG );
+    }
+  }
+}
+
+fn writeFileRecords( level : LogLevel, bytes : [] const u8 ) !void
+{
+  try AggregateLogFile.writeAll( bytes );
+
+  const fileLevel = if( level == .CONT ) LastLogLevel else level;
+  if( fileLevel )| lvl |
+  {
+    if( isLevelFileIsActive( lvl ))
+    {
+      try LevelLogFiles[ getLevelIndex( lvl ) ].writeAll( bytes );
+    }
+  }
+}
+
+fn closeAllFiles() void
+{
+  AggregateLogFile.close();
+
+  inline for( @typeInfo( LogLevel ).@"enum".fields )| field |
+  {
+    const level : LogLevel = @enumFromInt( field.value );
+    LevelLogFiles[ getLevelIndex( level ) ].close();
+  }
+}
+
+fn isLevelFileIsActive( level : LogLevel ) bool
+{
+  return switch( level )
+  {
+    .NONE, .CONT => false,
+    else         => @intFromEnum( level ) <= @intFromEnum( G_LOG_LVL ),
+  };
+}
+
+fn getLevelIndex( level : LogLevel ) usize
+{
+  return @intCast( @intFromEnum( level ));
+}
 
 
 // ================================ HELPER FUNCTIONS ================================
 
-inline fn setCol( col : []const u8 ) !void
+fn getLogStamp() ?LogStamp
 {
-  if( comptime USE_LOG_FILE ){ return; }
-
-  std.debug.print( "{s}", .{ col });
-}
-
-fn logLevel( level : LogLevel ) !void
-{
-  switch ( level )
-  {
-    LogLevel.NONE  => try setCol( utl.termColour.RESET  ),
-    LogLevel.ERROR => try setCol( utl.termColour.RED    ),
-    LogLevel.WARN  => try setCol( utl.termColour.MAGEN  ),
-    LogLevel.INFO  => try setCol( utl.termColour.GREEN  ),
-    LogLevel.DEBUG => try setCol( utl.termColour.CYAN   ),
-    LogLevel.TRACE => try setCol( utl.termColour.GRAY   ),
-    else => {},
-  }
-
-  const lvl : []const u8 = switch ( level )
-  {
-    LogLevel.NONE  => "NONE ",
-    LogLevel.ERROR => "[ERROR]",
-    LogLevel.WARN  => "[WARN ]",
-    LogLevel.INFO  => "[INFO ]",
-    LogLevel.DEBUG => "[DEBUG]",
-    LogLevel.TRACE => "[TRACE]",
-    else           => "[N/A]"
-  };
-
-  std.debug.print( "{s} ", .{ lvl });
-}
-
-fn logId( id : u64 ) !void
-{
-  if( id != 0 )
-  {
-    std.debug.print( "{d:0>4} ", .{ id });
-  }
-}
-
-fn logTime() !void
-{
-  if( comptime !SHOW_TIMESTAMP ) return;
+  if( comptime !SHOW_TIMESTAMP ){ return null; }
 
   const epoch = utl.G_EPOCH orelse blk:
   {
@@ -255,102 +356,143 @@ fn logTime() !void
   };
   const prog = epoch.since();
 
-  const sec  : u64 = @intCast( prog.toSec() );
-  const nano : u64 = @intCast( prog.getRemainder( .SEC ).value );
-
-  try setCol( utl.termColour.GRAY );
-
-  //try G_LOG_FILE.writer().print( "{d}.{d:0>9} ", .{ sec, nano });
-  std.debug.print( "{d}.{d:0>9} : ", .{ sec, nano });
+  return .{
+    .sec  = @intCast( prog.toSec() ),
+    .nano = @intCast( prog.getRemainder( .SEC ).value ),
+  };
 }
 
-fn logLocation( logloc : ?std.builtin.SourceLocation ) !void
+fn appendLevel( stream : *LogStream, level : LogLevel, comptime colour : bool ) void
+{
+  if( comptime colour ){ stream.append( levelColour( level )); }
+
+  stream.appendFormat( "{s} ", .{ getLevelLabel( level ) });
+}
+
+fn appendTime( stream : *LogStream, stamp : ?LogStamp, comptime colour : bool ) void
+{
+  if( stamp )| s |
+  {
+    if( comptime colour ){ stream.append( utl.termColour.GRAY ); }
+    stream.appendFormat( "{d}.{d:0>9} : ", .{ s.sec, s.nano });
+  }
+}
+
+fn appendLocation( stream : *LogStream, logloc : ?std.builtin.SourceLocation, comptime colour : bool ) void
 {
   if( comptime !SHOW_MSG_SRC ){ return; }
 
-  if( logloc )| loc | // If the call location is defined, print the file, line, and function name
+  if( logloc )| loc |
   {
-    try setCol( utl.termColour.BLUE );
-    std.debug.print( "{s}:{d} ", .{ loc.file, loc.line });
+    if( comptime colour ){ stream.append( utl.termColour.BLUE ); }
+    stream.appendFormat( "{s}:{d} ", .{ loc.file, loc.line });
 
-    try setCol( utl.termColour.GRAY );
-    std.debug.print( "| {s}() :", .{ loc.fn_name });
+    if( comptime colour ){ stream.append( utl.termColour.GRAY ); }
+    stream.appendFormat( "| {s}() :", .{ loc.fn_name });
   }
   else
   {
-    try setCol( utl.termColour.YELLOW );
-    std.debug.print( "{s} : ", .{ "UNLOCATED" });
+    if( comptime colour ){ stream.append( utl.termColour.YELLOW ); }
+    stream.append( "UNLOCATED : " );
   }
 }
 
-fn setMsgColour( message : [] const u8 ) !void
+fn getLevelLabel( level : LogLevel ) [] const u8
 {
-  if( !USE_LOG_FILE and message.len > 0 )
+  return switch( level )
   {
-    switch ( message[ 0 ])
-    {
-      '!'  => try setCol( utl.termColour.RED    ),
-      '@'  => try setCol( utl.termColour.MAGEN  ),
-      '#'  => try setCol( utl.termColour.YELLOW ),
-      '$'  => try setCol( utl.termColour.GREEN  ),
-      '%'  => try setCol( utl.termColour.BLUE   ),
-      '&'  => try setCol( utl.termColour.CYAN   ),
-      else => try setCol( utl.termColour.RESET  ),
-    }
-  }
+    .ERROR => "[ERROR]",
+    .WARN  => "[WARN ]",
+    .INFO  => "[INFO ]",
+    .DEBUG => "[DEBUG]",
+    .TRACE => "[TRACE]",
+    else   => undefined,
+  };
+}
+
+fn levelColour( level : LogLevel ) [] const u8
+{
+  return switch( level )
+  {
+    .NONE  => utl.termColour.RESET,
+    .ERROR => utl.termColour.RED,
+    .WARN  => utl.termColour.MAGEN,
+    .INFO  => utl.termColour.GREEN,
+    .DEBUG => utl.termColour.CYAN,
+    .TRACE => utl.termColour.GRAY,
+    else   => utl.termColour.RESET,
+  };
+}
+
+fn msgColour( message : [] const u8 ) [] const u8
+{
+  if( message.len == 0 ){ return utl.termColour.RESET; }
+
+  return switch( message[ 0 ])
+  {
+    '!'  => utl.termColour.RED,
+    '@'  => utl.termColour.MAGEN,
+    '#'  => utl.termColour.YELLOW,
+    '$'  => utl.termColour.GREEN,
+    '%'  => utl.termColour.BLUE,
+    '&'  => utl.termColour.CYAN,
+    else => utl.termColour.RESET,
+  };
 }
 
 
 // =============================== SHORTHAND FUNCTIONS ================================
 
-// Shortcut to log a message with no arguments ( for simple text with no formatting )
-pub fn qlog( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8 ) void
+/// Logs a static message with no formatting arguments.
+pub fn qlog( comptime level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8 ) void
 {
   if( comptime !level.canLog() ){ return; }
 
-  _log( level, id, logLoc, message, .{} ) catch | err |
+  _log( level, logLoc, message, .{} ) catch | err |
   {
     std.debug.print( "Logging failed : {}", .{ err });
   };
 }
 
-pub fn log( comptime level : LogLevel, id : u64, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8, args : anytype ) void
+/// Logs a comptime format string and its arguments.
+pub fn log( comptime level : LogLevel, logLoc : ?std.builtin.SourceLocation, comptime message : []const u8, args : anytype ) void
 {
   if( comptime !level.canLog() ){ return; }
 
-  _log( level, id, logLoc, message, args ) catch | err |
+  _log( level, logLoc, message, args ) catch | err |
   {
     std.debug.print( "Logging failed : {}", .{ err });
   };
 }
 
-
-pub fn logFrameTime( logloc : ?std.builtin.SourceLocation ) void
+/// Logs the current raylib frame time using the standard info level.
+pub fn logRayFrameTime( logloc : ?std.builtin.SourceLocation ) void
 {
   const frameTime = Duration.fromRayDeltaTime( utl.ray.getFrameTime() );
 
   const sec  : u64 = @intCast( frameTime.toSec() );
   const nano : u64 = @intCast( frameTime.getRemainder( .SEC ).value );
 
-  if( logloc )| loc |{ log( .INFO, 0, loc,    "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
-  else {               log( .INFO, 0, @src(), "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
+  if( logloc )| loc |{ log( .INFO, loc,    "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
+  else {               log( .INFO, @src(), "$ Full frame time : {d}.{d:0>9} sec | {d:.2} fps", .{ sec, nano, 1.0 / frameTime.toRayDeltaTime() }); }
 }
 
+/// Logs a duration with a caller-provided prefix.
 pub fn logDeltaTime( deltaTime : Duration, logloc : ?std.builtin.SourceLocation, comptime message : [:0] const u8 ) void
 {
   const sec  : u64 = @intCast( deltaTime.toSec() );
   const nano : u64 = @intCast( deltaTime.getRemainder( .SEC ).value );
 
-  if( logloc )| loc |{ log( .INFO, 0, loc,    message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
-  else {               log( .INFO, 0, @src(), message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
+  if( logloc )| loc |{ log( .INFO, loc,    message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
+  else {               log( .INFO, @src(), message ++ ": {d}.{d:0>9}", .{ sec, nano }); }
 }
 
 
-// =============================== FORMATING HELPER FUNCTIONS ================================
+// =============================== FORMATTING HELPER FUNCTIONS ================================
 
-pub fn getSignChar( val : anytype ) u8
+pub inline fn getSignChar( val : anytype ) u8
 {
-  switch( @typeInfo( @TypeOf( val )))
+  comptime switch( @typeInfo( @TypeOf( val )))
   {
     .float, .comptime_float =>
     {
@@ -363,5 +505,5 @@ pub fn getSignChar( val : anytype ) u8
       else{           return '-'; }
     },
     else => @compileError( "getSignChar() only supports Int and Float types" ),
-  }
+  };
 }

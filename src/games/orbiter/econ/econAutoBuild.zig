@@ -61,7 +61,7 @@ pub fn debugAutoBuild( self : *Economy ) void
 
   if( self.buildQueue.?.maxEntryCount < AUTO_BUILD_QUEUE_LIMIT )
   {
-    utl.qlog( .INFO, 0, @src(), "Logging autoBuilds : ");
+    utl.qlog( .INFO, @src(), "Logging autoBuilds : ");
 
     // ======== INFRASTRUCTURE ========
 
@@ -100,7 +100,7 @@ pub fn debugAutoBuild( self : *Economy ) void
 
           if( avail < utl.EPS )
           {
-            utl.log( .INFO, 0, @src(), "@ {s} cannot fund construction : no savings available", .{ @tagName( infT )});
+            utl.log( .INFO, @src(), "@ {s} cannot fund construction : no savings available", .{ @tagName( infT )});
 
             _ = self.buildQueue.?.tryFundEntry( self, .{ .infT = infT }, .{ .infT = infT }, .CNSTR, 1_000_000_000.0 ); // TODO : remove this hacky fix
           }
@@ -205,7 +205,7 @@ pub fn debugAutoBuild( self : *Economy ) void
 
             if( avail < utl.EPS )
             {
-              utl.log( .INFO, 0, @src(), "@ {s} cannot fund construction : no savings available", .{ @tagName( indT )});
+              utl.log( .INFO, @src(), "@ {s} cannot fund construction : no savings available", .{ @tagName( indT )});
             }
             else
             {

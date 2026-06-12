@@ -99,7 +99,7 @@ pub const Angle = struct
   {
     if( utl.isFltZr( val ) )
     {
-      utl.qlog( .ERROR, 0, @src(), "Division by zero in Angle.div()" );
+      utl.qlog( .ERROR, @src(), "Division by zero in Angle.div()" );
       return self;
     }
     return Angle.newRad( self.r / val ).norm();

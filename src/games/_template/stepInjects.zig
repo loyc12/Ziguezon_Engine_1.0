@@ -48,7 +48,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   {
     eng.G_ENG.camera.setZoom(   1.0 );
     eng.G_ENG.camera.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reset" );
+    utl.qlog( .INFO, @src(), "Camera reset" );
   }
 
   // Toggle the "DRAW_TEST" example flag if the T key is pressed
@@ -56,7 +56,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   {
     DRAW_TEST = !DRAW_TEST;
     ng.resourceManager.playAudio( "hit_1" );
-    utl.log( .DEBUG, 0, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
+    utl.log( .DEBUG, @src(), "DRAW_TEST is now: {s}", .{ if( DRAW_TEST ) "true" else "false" });
   }
 }
 

@@ -32,7 +32,7 @@ pub const RelationManager = struct
   {
     if( self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "RelationManager is already initialized : returning" );
+      utl.qlog( .WARN, @src(), "RelationManager is already initialized : returning" );
       return;
     }
 
@@ -46,7 +46,7 @@ pub const RelationManager = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "RelationManager is uninitialized : returning" );
+      utl.qlog( .WARN, @src(), "RelationManager is uninitialized : returning" );
       return;
     }
 
@@ -67,19 +67,19 @@ pub const RelationManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot register RelationStore for type {s} : RelationManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot register RelationStore for type {s} : RelationManager is uninitialized", .{ typeName });
       return false;
     }
     if( self.stores.contains( typeName ))
     {
-      utl.log( .WARN, 0, @src(), "Cannot register RelationStore for type {s} : type already registered", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot register RelationStore for type {s} : type already registered", .{ typeName });
       return false;
     }
 
     const StoreType = RelationStoreFactory( RelType );
     const store = self.alloc.create( StoreType ) catch
     {
-      utl.log( .ERROR, 0, @src(), "Failed to allocate RelationStore for type {s}", .{ typeName });
+      utl.log( .ERROR, @src(), "Failed to allocate RelationStore for type {s}", .{ typeName });
       return false;
     };
 
@@ -94,7 +94,7 @@ pub const RelationManager = struct
     })
     catch
     {
-      utl.log( .ERROR, 0, @src(), "Failed to register RelationStore for type {s}", .{ typeName });
+      utl.log( .ERROR, @src(), "Failed to register RelationStore for type {s}", .{ typeName });
 
       store.deinit();
       self.alloc.destroy( store );
@@ -111,13 +111,13 @@ pub const RelationManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot unregister RelationStore for type {s} : RelationManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot unregister RelationStore for type {s} : RelationManager is uninitialized", .{ typeName });
       return false;
     }
 
     const entry = self.stores.get( typeName ) orelse
     {
-      utl.log( .DEBUG, 0, @src(), "Cannot unregister RelationStore for type {s} : type not registered", .{ typeName });
+      utl.log( .DEBUG, @src(), "Cannot unregister RelationStore for type {s} : type not registered", .{ typeName });
       return false;
     };
 
@@ -133,7 +133,7 @@ pub const RelationManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot get RelationStore for type {s} : RelationManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot get RelationStore for type {s} : RelationManager is uninitialized", .{ typeName });
       return null;
     }
 
@@ -149,7 +149,7 @@ pub const RelationManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot remove Entity {d} from RelationStores : RelationManager is uninitialized", .{ entityId });
+      utl.log( .WARN, @src(), "Cannot remove Entity {d} from RelationStores : RelationManager is uninitialized", .{ entityId });
       result.failedCount = 1;
       return result;
     }

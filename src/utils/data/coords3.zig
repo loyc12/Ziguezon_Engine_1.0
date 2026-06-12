@@ -95,7 +95,7 @@ pub const Coords3 = struct
   {
     if( utl.isFltZr( f ))
     {
-      utl.qlog( .ERROR, 0, @src(), "Division by zero in Coords3.div()" );
+      utl.qlog( .ERROR, @src(), "Division by zero in Coords3.div()" );
       return null;
     }
     return Coords3{

@@ -55,7 +55,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     eng.G_ENG.camera.cam.pos = .{ .x = offset.x * 32, .y = offset.y * 32, .a = .{ .r = offset.a.r * 0.2, }};
     s_time += ( 1.0 / 120.0 );
 
-    utl.log( .INFO, 0, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
+    utl.log( .INFO, @src(), "Shake Offset : {}:{}:{} ({}s)", .{ offset.x, offset.y, offset.a.r, s_time });
   }
 
 
@@ -76,7 +76,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     eng.G_ENG.camera.setZoom(   1.0 );
     eng.G_ENG.camera.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reseted" );
+    utl.qlog( .INFO, @src(), "Camera reseted" );
   }
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.v ))
@@ -112,7 +112,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
   var exampleTilemap = ng.tilemapManager.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
     return;
   };
 
@@ -129,7 +129,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
       .TRI1 => exampleTilemap.setTileShape( .TRI2 ),
       .TRI2 => exampleTilemap.setTileShape( .RECT ),
     }
-    utl.log( .INFO, 0, @src(), "Example tilemap shape changed to {}", .{ exampleTilemap.tileShape });
+    utl.log( .INFO, @src(), "Example tilemap shape changed to {}", .{ exampleTilemap.tileShape });
   }
 
   // If left clicked, check if a tile was clicked on the example tilemap
@@ -138,28 +138,28 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     const mouseScreenPos = utl.getMouseScreenPos();
     const mouseWorldPos  = eng.G_ENG.camera.getMouseWorldPos();
 
-    utl.log( .INFO, 0, @src(), "Mouse clicked at screen pos {d}:{d}, world pos {d}:{d}", .{ mouseScreenPos.x, mouseScreenPos.y, mouseWorldPos.x, mouseWorldPos.y });
+    utl.log( .INFO, @src(), "Mouse clicked at screen pos {d}:{d}, world pos {d}:{d}", .{ mouseScreenPos.x, mouseScreenPos.y, mouseWorldPos.x, mouseWorldPos.y });
 
     const worldCoords = exampleTilemap.findHitTileCoords( Vec2{ .x = mouseWorldPos.x, .y = mouseWorldPos.y });
 
     if( worldCoords != null )
     {
-      utl.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+      utl.log( .INFO, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
       var clickedTile = exampleTilemap.getTile( worldCoords.? ) orelse
       {
-        utl.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, exampleTilemap.id });
+        utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, exampleTilemap.id });
         return;
       };
 
-      utl.log( .INFO, 0, @src(), "Clicked on tile with coords {d}:{d} in tilemap {d}", .{ clickedTile.mapCoords.x, clickedTile.mapCoords.y, exampleTilemap.id });
+      utl.log( .INFO, @src(), "Clicked on tile with coords {d}:{d} in tilemap {d}", .{ clickedTile.mapCoords.x, clickedTile.mapCoords.y, exampleTilemap.id });
 
       // Change the tile color to a random color
       clickedTile.colour = eng.G_ENG.rng.getColour();
     }
     else
     {
-      utl.log( .INFO, 0, @src(), "No tile found at mouse world position {d}:{d}", .{ mouseWorldPos.x, mouseWorldPos.y });
+      utl.log( .INFO, @src(), "No tile found at mouse world position {d}:{d}", .{ mouseWorldPos.x, mouseWorldPos.y });
     }
   }
 }
@@ -169,7 +169,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   var exampleTilemap = ng.tilemapManager.getTilemap( stateInj.EXAMPLE_TLM_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.EXAMPLE_TLM_ID });
     return;
   };
 

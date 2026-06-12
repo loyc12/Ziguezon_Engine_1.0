@@ -36,31 +36,31 @@ pub const Shake2D = struct
   {
     if( self.beg_length < 0 or self.mid_length < 0 or self.end_length < 0 )
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to use a Shake2D with negative duration(s)" );
+      utl.qlog( .WARN, @src(), "Trying to use a Shake2D with negative duration(s)" );
       return false;
     }
 
     if( self.beg_length <= 0 and self.mid_length <= 0 and self.end_length <= 0 )
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to use a Shake2D without any durations" );
+      utl.qlog( .WARN, @src(), "Trying to use a Shake2D without any durations" );
       return false;
     }
 
     if( self.shake_speed <= 0 )
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to use a Shake2D with a negative shake speed" );
+      utl.qlog( .WARN, @src(), "Trying to use a Shake2D with a negative shake speed" );
       return false;
     }
 
     if( self.octave_depth <= 0 )
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to use a Shake2D without octaves" );
+      utl.qlog( .WARN, @src(), "Trying to use a Shake2D without octaves" );
       return false;
     }
 
     if( self.octave_amp_f >= 1.0 or self.octave_freq_f <= 1.0 )
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to use a Shake2D with invalid amplitude / frequency" );
+      utl.qlog( .WARN, @src(), "Trying to use a Shake2D with invalid amplitude / frequency" );
       return false;
     }
 

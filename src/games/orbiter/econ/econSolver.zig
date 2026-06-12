@@ -288,7 +288,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
       const popT = PopType.fromIdx( d );
       const popC = self.econ.popState.get( .COUNT, popT );
 
-    //utl.log( .INFO, 0, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( popT )});
+    //utl.log( .INFO, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( popT )});
 
       if( popC > utl.EPS ){ inline for ( 0..resTypeC )| r | // Skip absent populations
       {
@@ -297,7 +297,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         const maxCons = popC * popT.getResMetric_f64( .CONS, resT );
         const maxProd = popC * popT.getResMetric_f64( .PROD, resT );
 
-      //utl.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
+      //utl.log( .CONT, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
 
         self.popResFlowData.set( popT, .OPR_CONS, resT, @ceil(  maxCons ));
         self.popResFlowData.set( popT, .OPR_PROD, resT, @floor( maxProd ));
@@ -327,7 +327,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
       const indT = IndType.fromIdx( d );
       const indC = self.econ.indState.get( .COUNT, indT );
 
-    //utl.log( .INFO, 0, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( indT )});
+    //utl.log( .INFO, @src(), "$ LOGGING DELTAS FOR {s} :", .{ @tagName( indT )});
 
       if( indC > utl.EPS ){ inline for ( 0..resTypeC )| r | // Skip absent industries
       {
@@ -352,7 +352,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         //  maxCons *= @min( agroFactor * AGRO_FACTOR_CONS_MUL, 1.0 );
         //}
         }
-      //utl.log( .CONT, 0, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
+      //utl.log( .CONT, @src(), "{s}  \t: {d:.0}\t-{d:.0}", .{ @tagName( resT ), maxProd, maxCons });
 
         self.indResFlowData.set( indT, .OPR_CONS, resT, @ceil(  maxCons ));
         self.indResFlowData.set( indT, .OPR_PROD, resT, @floor( maxProd ));
@@ -438,7 +438,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
             },
             else =>
             {
-              utl.qlog( .ERROR, 0, @src(), "Construct type not handled yet" );
+              utl.qlog( .ERROR, @src(), "Construct type not handled yet" );
             },
           }
         }
@@ -482,7 +482,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn calcPopResAccess( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING POP RES ACCESS :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING POP RES ACCESS :" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -502,11 +502,11 @@ fn updateFlowAllSums( self : *EconSolver ) void
       {
         access = @min( access, remain / popDem );
 
-        utl.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( resT ), remain, popDem, access * 100.0 });
+        utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>7.2}%", .{ @tagName( resT ), remain, popDem, access * 100.0 });
 
         if( access < 1.0 - utl.EPS )
         {
-          utl.log( .CONT, 0, @src(), "@ {s} shortage for population", .{ @tagName( resT )});
+          utl.log( .CONT, @src(), "@ {s} shortage for population", .{ @tagName( resT )});
         }
       }
 
@@ -522,7 +522,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn calcIndResAccess( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING IND RES ACCESS :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING IND RES ACCESS :" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -542,11 +542,11 @@ fn updateFlowAllSums( self : *EconSolver ) void
       {
         access = @min( access, remain / indDem );
 
-        utl.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( resT ), remain, indDem, access * 100.0 });
+        utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( resT ), remain, indDem, access * 100.0 });
 
         if( access < 1.0 - utl.EPS )
         {
-          utl.log( .CONT, 0, @src(), "@ {s} shortage for industry", .{ @tagName( resT )});
+          utl.log( .CONT, @src(), "@ {s} shortage for industry", .{ @tagName( resT )});
         }
       }
 
@@ -558,7 +558,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
   // TODO : Fold into POP/INF/IND, and generalise to account for all res
   fn calcMntResAccess( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING MNT RES ACCESS :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING MNT RES ACCESS :" );
 
     const resT = ResType.PART;
 
@@ -576,11 +576,11 @@ fn updateFlowAllSums( self : *EconSolver ) void
     {
       access = @min( access, remain / mntDem );
 
-      utl.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( resT ), remain, mntDem, access * 100.0 });
+      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( resT ), remain, mntDem, access * 100.0 });
 
       if( access < 1.0 - utl.EPS )
       {
-        utl.log( .CONT, 0, @src(), "@ {s} shortage for maintenance", .{ @tagName( resT )});
+        utl.log( .CONT, @src(), "@ {s} shortage for maintenance", .{ @tagName( resT )});
       }
     }
 
@@ -593,7 +593,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
   // TODO : Fold into POP/INF/IND, and generalise to account for all resT
   fn calcBldResAccess( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING BLD RES ACCESS :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING BLD RES ACCESS :" );
 
     const resT = ResType.PART;
 
@@ -612,11 +612,11 @@ fn updateFlowAllSums( self : *EconSolver ) void
     {
       access = @min( access, remain / bldDem );
 
-      utl.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( .PART ), remain, bldDem, access * 100.0 });
+      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} |  {d:>6.2}%", .{ @tagName( .PART ), remain, bldDem, access * 100.0 });
 
       if( access < 1.0 - utl.EPS )
       {
-        utl.log( .CONT, 0, @src(), "@ {s} shortage for building", .{ @tagName( .PART )});
+        utl.log( .CONT, @src(), "@ {s} shortage for building", .{ @tagName( .PART )});
       }
     }
 
@@ -629,7 +629,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn calcGenResAccess( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING GEN RES ACCESS :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING GEN RES ACCESS :" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -645,7 +645,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         access = stored / genDem; // Intentionally left unclamped : shows under/over-abundance per resource
       }
 
-      utl.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>10.4}%", .{ @tagName( resT ), stored, genDem, access });
+      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} -{d:<14.0} | {d:>10.4}%", .{ @tagName( resT ), stored, genDem, access });
       self.genResFlowData.set( .OPR_ACS, resT, access );
     }
   }
@@ -656,7 +656,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
   // TODO : Generalise to acount for all pop
   fn updatePopFulfilment( self : *EconSolver ) void
   {
-  //utl.qlog( .DEBUG, 0, @src(), "$ LOGGING FINAL POP ACTIVITY :" );
+  //utl.qlog( .DEBUG, @src(), "$ LOGGING FINAL POP ACTIVITY :" );
 
     inline for ( 0..popTypeC )| p |
     {
@@ -680,7 +680,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
           }
         }
       }
-    //utl.log( .CONT, 0, @src(), "{s}  \t: {d:.6}", .{ @tagName( resT ), fulfilment });
+    //utl.log( .CONT, @src(), "{s}  \t: {d:.6}", .{ @tagName( resT ), fulfilment });
 
       self.econ.popState.set( .FLM_LVL, popT, fulfilment );
     }
@@ -693,7 +693,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn updateIndActivity( self : *EconSolver ) void
   {
-  //utl.qlog( .DEBUG, 0, @src(), "$ LOGGING FINAL IND ACTIVITY :" );
+  //utl.qlog( .DEBUG, @src(), "$ LOGGING FINAL IND ACTIVITY :" );
 
     inline for( 0..indTypeC )| d |
     {
@@ -720,7 +720,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
           }
         }
       }
-    //utl.log( .CONT, 0, @src(), "{s}\t: {d:.6}", .{ @tagName( indT ), activity });
+    //utl.log( .CONT, @src(), "{s}\t: {d:.6}", .{ @tagName( indT ), activity });
 
       self.econ.indState.set( .ACT_LVL, indT, activity );
     }
@@ -924,7 +924,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         self.resStockData.set( .DESTR, resT, destroyed );
         self.resStockData.sub( .FINAL, resT, destroyed );
 
-        utl.log( .WARN, 0, @src(), "{s:<8} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resT ), resC, resL, resC - resL });
+        utl.log( .WARN, @src(), "{s:<8} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resT ), resC, resL, resC - resL });
       }
     }
   }
@@ -938,7 +938,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn updateResPrices( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING RES PRICES :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING RES PRICES :" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -969,7 +969,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       const resC = self.resStockData.get( .FINAL, resT );
 
-      utl.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} | {d:>8.6}$ | {d:>8.6}$ > {d:>8.6}$ | {d:>6.3}% ( {d:>6.2}% )", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, offPrcnt, dltPrcnt });
+      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} | {d:>8.6}$ | {d:>8.6}$ > {d:>8.6}$ | {d:>6.3}% ( {d:>6.2}% )", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, offPrcnt, dltPrcnt });
 
       self.econ.resState.set( .PRICE,   resT, newPrice );
       self.econ.resState.set( .PRICE_D, resT, dltPrice );
@@ -981,7 +981,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn updatePopFinances( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING POP FINANCES :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING POP FINANCES :" );
 
     const econ = self.econ;
     inline for( 0..popTypeC )| p |
@@ -1036,7 +1036,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
           const nextSavings = prevSavings + profit;
 
           // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
-          utl.log( .CONT, 0, @src(), "{s:<8}: {d:<8.0} | {d:>16.1}$ | +{d:<8.4} -{d:<8.4} | {d:>7.4}", .{ @tagName( popT ), popC, nextSavings, revenue / popC, expense / popC, margin });
+          utl.log( .CONT, @src(), "{s:<8}: {d:<8.0} | {d:>16.1}$ | +{d:<8.4} -{d:<8.4} | {d:>7.4}", .{ @tagName( popT ), popC, nextSavings, revenue / popC, expense / popC, margin });
 
           econ.popState.set( .EXPENSE,  popT, expense     );
           econ.popState.set( .REVENUE,  popT, revenue     );
@@ -1044,8 +1044,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
         }
         else
         {
-          utl.log( .CONT, 0, @src(), "{s:<8}: {s:<8} | {d:>16.1}$ | +{d:<8.4} -{d:<8.4} | {d:>7.4}", .{ @tagName( popT ), "0", prevSavings, revenue, expense, margin });
-        //utl.log( .CONT, 0, @src(), "{s}\t: 0\t| {d:.1}\t| +N/A\t-N/A\t| {d:.4}", .{ @tagName( popT ), prevSavings, margin});
+          utl.log( .CONT, @src(), "{s:<8}: {s:<8} | {d:>16.1}$ | +{d:<8.4} -{d:<8.4} | {d:>7.4}", .{ @tagName( popT ), "0", prevSavings, revenue, expense, margin });
+        //utl.log( .CONT, @src(), "{s}\t: 0\t| {d:.1}\t| +N/A\t-N/A\t| {d:.4}", .{ @tagName( popT ), prevSavings, margin});
 
           econ.popState.zero( .EXPENSE,  popT );
           econ.popState.zero( .REVENUE,  popT );
@@ -1072,7 +1072,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn updateIndFinances( self : *EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ LOGGING IND FINANCES :" );
+    utl.qlog( .INFO, @src(), "$ LOGGING IND FINANCES :" );
 
     const econ = self.econ;
     inline for( 0..indTypeC )| d |
@@ -1135,7 +1135,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
           const nextCapital = prevCapital + profit;
 
           // NOTE : Expenses and revenues are logged per unit for ease of comparison, but stored as totals
-          utl.log( .CONT, 0, @src(), "{s:<12}: {d:>8.0} | {d:>16.1}$ |  +{d:<8.4} -{d:<8.4} | {d:>7.4} {d:>10.4}%", .{ @tagName( indT ), indC, nextCapital, revenue / indC, expense / indC, margin, activityTarget * 100.0 });
+          utl.log( .CONT, @src(), "{s:<12}: {d:>8.0} | {d:>16.1}$ |  +{d:<8.4} -{d:<8.4} | {d:>7.4} {d:>10.4}%", .{ @tagName( indT ), indC, nextCapital, revenue / indC, expense / indC, margin, activityTarget * 100.0 });
 
           econ.indState.set( .EXPENSE,  indT, expense     );
           econ.indState.set( .REVENUE,  indT, revenue     );
@@ -1143,7 +1143,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         }
         else
         {
-          utl.log( .CONT, 0, @src(), "{s:<12}: {s:>8} | {d:>16.1}$ |  +{d:<8.4} -{d:<8.4} | {d:>7.4} {d:>10.4}%", .{ @tagName( indT ), "0", prevCapital, revenue, expense, margin, activityTarget * 100.0 });
+          utl.log( .CONT, @src(), "{s:<12}: {s:>8} | {d:>16.1}$ |  +{d:<8.4} -{d:<8.4} | {d:>7.4} {d:>10.4}%", .{ @tagName( indT ), "0", prevCapital, revenue, expense, margin, activityTarget * 100.0 });
 
           econ.indState.zero( .EXPENSE,  indT );
           econ.indState.zero( .REVENUE,  indT );
@@ -1190,7 +1190,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       if( popC > utl.EPS )
       {
-        utl.log( .INFO, 0, @src(), "$ LOGGING POP FACTORS ({s}) :", .{ @tagName( popT )});
+        utl.log( .INFO, @src(), "$ LOGGING POP FACTORS ({s}) :", .{ @tagName( popT )});
 
         const baseFatality = popT.getMetric_f64( .FATALITY );
         const baseNatality = popT.getMetric_f64( .NATALITY );
@@ -1202,7 +1202,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
         var maxStarveRate : f64 = 0.0;
         var minResAccess  : f64 = 1.0;
 
-        utl.qlog( .CONT, 0, @src(), "Access rates  : " );
+        utl.qlog( .CONT, @src(), "Access rates  : " );
 
         for( 0..resTypeC )| r |
         {
@@ -1214,11 +1214,11 @@ fn updateFlowAllSums( self : *EconSolver ) void
             const access = self.grpResFlowData.get( .POP, .OPR_ACS, resT );
             minResAccess = @min( minResAccess, access );
 
-            utl.log( .CONT, 0, @src(), "- {s:<8} = {d:.4}", .{ @tagName( resT ), access });
+            utl.log( .CONT, @src(), "- {s:<8} = {d:.4}", .{ @tagName( resT ), access });
 
             if( access < 1.0 - utl.EPS )
             {
-              utl.log( .CONT, 0, @src(), "@ Experiencing {s} shortages !", .{ @tagName( resT ) });
+              utl.log( .CONT, @src(), "@ Experiencing {s} shortages !", .{ @tagName( resT ) });
 
               maxStarveRate = @max( maxStarveRate, mortRate * utl.pow( f64, 1.0 - access, RES_MODIFIER_EXPONENT ));
             }
@@ -1228,7 +1228,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
         avgPopStarveRate += maxStarveRate;
 
-        utl.log( .CONT, 0, @src(), "Starve Rate   : {d:.6}", .{ maxStarveRate });
+        utl.log( .CONT, @src(), "Starve Rate   : {d:.6}", .{ maxStarveRate });
 
 
         const deathRate = baseFatality + maxStarveRate;
@@ -1236,7 +1236,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
         avgPopDeathRate += deathRate;
 
-        utl.log( .CONT, 0, @src(), "Death Rate    : {d:.6}", .{ deathRate });
+        utl.log( .CONT, @src(), "Death Rate    : {d:.6}", .{ deathRate });
 
 
         // ================ NATALITY ================
@@ -1252,9 +1252,9 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
         avgPopBirthRate += birthRate;
 
-        utl.log( .CONT, 0, @src(), "Birth Rate    : {d:.6}", .{ birthRate });
-        utl.log( .CONT, 0, @src(), "Res Modifier  : {d:.8}", .{ resModifier });
-        utl.log( .CONT, 0, @src(), "Job Modifier  : {d:.8}", .{ jobModifier });
+        utl.log( .CONT, @src(), "Birth Rate    : {d:.6}", .{ birthRate });
+        utl.log( .CONT, @src(), "Res Modifier  : {d:.8}", .{ resModifier });
+        utl.log( .CONT, @src(), "Job Modifier  : {d:.8}", .{ jobModifier });
 
 
         // ================ POP DELTA ================
@@ -1263,7 +1263,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
         const nextPop = utl.clmp( popC + births - deaths, 0.0, popCap );
 
-        utl.log( .CONT, 0, @src(), "New Pop count : {d:.0}", .{ nextPop });
+        utl.log( .CONT, @src(), "New Pop count : {d:.0}", .{ nextPop });
 
 
         // Push pop metrics to econ
@@ -1405,8 +1405,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   pub fn logPopMetrics( self : *const EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ POPULATION : Count ( Capacity )  [ Delta | Births Deaths ( Starved )]  Fulfilment Rate" );
-    utl.qlog( .CONT, 0, @src(), "$ ======================================================================================" );
+    utl.qlog( .INFO, @src(), "$ POPULATION : Count ( Capacity )  [ Delta | Births Deaths ( Starved )]  Fulfilment Rate" );
+    utl.qlog( .CONT, @src(), "$ ======================================================================================" );
 
     inline for( 0..popTypeC )| p |
     {
@@ -1421,15 +1421,15 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       const flmLvl  : f64 = self.econ.popState.get( .FLM_LVL, popT ) * 100;
 
-      utl.log( .CONT, 0, @src(), "{s:<8}: {d:<12.0} / {d:<12.0} [ {d:<8.0} | +{d:<8.0} -{d:<8.0} ( -{d:<8.0} )]  {d:>7.3}%",
+      utl.log( .CONT, @src(), "{s:<8}: {d:<12.0} / {d:<12.0} [ {d:<8.0} | +{d:<8.0} -{d:<8.0} ( -{d:<8.0} )]  {d:>7.3}%",
         .{ @tagName( popT ), popC, popL, delta, births, deaths, starved, flmLvl });
     }
   }
 
   pub inline fn logInfMetrics( self : *const EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ INFRASTRUCTURE : Count ( Bonus )  [ Delta ]  Usage rate" );
-    utl.qlog( .CONT, 0, @src(), "$ =======================================================" );
+    utl.qlog( .INFO, @src(), "$ INFRASTRUCTURE : Count ( Bonus )  [ Delta ]  Usage rate" );
+    utl.qlog( .CONT, @src(), "$ =======================================================" );
 
     inline for( 0..infTypeC )| f |
     {
@@ -1443,15 +1443,15 @@ fn updateFlowAllSums( self : *EconSolver ) void
       const bonus  : f64 = infC * infT.getMetric_f64( .CAPACITY );
       const useLvl : f64 = self.econ.infState.get( .USE_LVL, infT ) * 100.0;
 
-      utl.log( .CONT, 0, @src(), "{s:<10}: {d:<10.0} ( +{d:<14.0} ) [ {d:<8.0} ]  {d:>6.2}%",
+      utl.log( .CONT, @src(), "{s:<10}: {d:<10.0} ( +{d:<14.0} ) [ {d:<8.0} ]  {d:>6.2}%",
         .{ @tagName( infT ), infC, bonus, delta, useLvl });
     }
   }
 
   pub inline fn logIndMetrics( self : *const EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ INDUSTRY : Count  [ Delta ]  Activity rate / Target rate" );
-    utl.qlog( .CONT, 0, @src(), "$ ========================================================" );
+    utl.qlog( .INFO, @src(), "$ INDUSTRY : Count  [ Delta ]  Activity rate / Target rate" );
+    utl.qlog( .CONT, @src(), "$ ========================================================" );
 
     inline for( 0..indTypeC )| d |
     {
@@ -1465,15 +1465,15 @@ fn updateFlowAllSums( self : *EconSolver ) void
       const actLvl    : f64 = self.econ.indState.get( .ACT_LVL,  indT ) * 100;
       const actTarget : f64 = self.econ.indState.get( .ACT_TRGT, indT ) * 100;
 
-      utl.log( .CONT, 0, @src(), "{s:<12}: {d:<10.0} [ {d:<8.0} ]  {d:>6.2}% / {d:>6.2}%",
+      utl.log( .CONT, @src(), "{s:<12}: {d:<10.0} [ {d:<8.0} ]  {d:>6.2}% / {d:>6.2}%",
         .{ @tagName( indT ), indC, delta, actLvl, actTarget });
     }
   }
 
   pub inline fn logResMetrics( self : *const EconSolver ) void
   {
-    utl.qlog( .INFO, 0, @src(), "$ RESOURCE : Count / Capacity ( % )  [ Delta | Prod Cons Decay ]  Access Rate  ( Price )" );
-    utl.qlog( .CONT, 0, @src(), "$ ======================================================================================" );
+    utl.qlog( .INFO, @src(), "$ RESOURCE : Count / Capacity ( % )  [ Delta | Prod Cons Decay ]  Access Rate  ( Price )" );
+    utl.qlog( .CONT, @src(), "$ ======================================================================================" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -1491,7 +1491,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       const avgAcs : f64 = self.genResFlowData.get( .OPR_ACS, resT );
 
-      utl.log( .CONT, 0, @src(), "{s:<8} : {d:<14.0} / {d:<14.0} ( {d:>6.2}% )  [ {d:<12.0} |  +{d:<12.0} -{d:<12.0} -{d:<12.0} ] {d:>10.3}  ( {d:>8.6}$ )",
+      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} / {d:<14.0} ( {d:>6.2}% )  [ {d:<12.0} |  +{d:<12.0} -{d:<12.0} -{d:<12.0} ] {d:>10.3}  ( {d:>8.6}$ )",
         .{ @tagName( resT ), resC, resL, resLimPrcnt, delta, prod, cons, decay, avgAcs, resP });
     }
   }
@@ -1516,9 +1516,9 @@ pub fn debugTestEcon( econ : *ecn.Economy ) void
   tmpSolver.calcBldMaxFlow();
 
 
-  utl.qlog( .INFO, 0, @src(), "$ TESTING ECON PROFITABILITY :" );
+  utl.qlog( .INFO, @src(), "$ TESTING ECON PROFITABILITY :" );
 
-  utl.qlog( .INFO, 0, @src(), "# RES DELTA :" );
+  utl.qlog( .INFO, @src(), "# RES DELTA :" );
 
   inline for( 0..resTypeC )| r |
   {
@@ -1531,10 +1531,10 @@ pub fn debugTestEcon( econ : *ecn.Economy ) void
     var ratio : f64 = 0.0;
     if( prod > utl.EPS ){ ratio = delta / prod; }
 
-    utl.log( .CONT, 0, @src(), "{s:<8} | +{d:<12.0} -{d:<12.0} = {d:<12.0} ( {d:<6.2}% )", .{ @tagName( resT ), prod, cons, delta, ratio * 100.0 });
+    utl.log( .CONT, @src(), "{s:<8} | +{d:<12.0} -{d:<12.0} = {d:<12.0} ( {d:<6.2}% )", .{ @tagName( resT ), prod, cons, delta, ratio * 100.0 });
   }
 
-  utl.qlog( .INFO, 0, @src(), "# POP PROFITABILITY :" );
+  utl.qlog( .INFO, @src(), "# POP PROFITABILITY :" );
 
   inline for( 0..popTypeC )| p |
   {
@@ -1558,10 +1558,10 @@ pub fn debugTestEcon( econ : *ecn.Economy ) void
     var margin : f64 = 0.0;
     if( revenue > utl.EPS ){ margin = profit / revenue; }
 
-    utl.log( .CONT, 0, @src(), "{s:<8} : {d:<8.0} | +{d:<10.0} -{d:<10.0} = {d:<10.0} ( {d:>6.2}% )", .{ @tagName( popT ), popC, revenue, expense, profit, margin * 100.0 });
+    utl.log( .CONT, @src(), "{s:<8} : {d:<8.0} | +{d:<10.0} -{d:<10.0} = {d:<10.0} ( {d:>6.2}% )", .{ @tagName( popT ), popC, revenue, expense, profit, margin * 100.0 });
   }
 
-  utl.qlog( .INFO, 0, @src(), "# IND PROFITABILITY :" );
+  utl.qlog( .INFO, @src(), "# IND PROFITABILITY :" );
 
   inline for( 0..indTypeC )| d |
   {
@@ -1590,7 +1590,7 @@ pub fn debugTestEcon( econ : *ecn.Economy ) void
     var margin : f64 = 0.0;
     if( revenue > utl.EPS ){ margin = profit / revenue; }
 
-    utl.log( .CONT, 0, @src(), "{s:<12}: {d:<8.0} | +{d:<10.0} -{d:<10.0} -{d:<10.0} = {d:<10.0} ( {d:>6.2}% )", .{ @tagName( indT ), indC, revenue, expense, mntCosts, profit, margin * 100.0 });
+    utl.log( .CONT, @src(), "{s:<12}: {d:<8.0} | +{d:<10.0} -{d:<10.0} -{d:<10.0} = {d:<10.0} ( {d:>6.2}% )", .{ @tagName( indT ), indC, revenue, expense, mntCosts, profit, margin * 100.0 });
   }
 
 //tmpSolver.logAllMetrics();
@@ -1636,7 +1636,7 @@ fn testResFlowInvariant( self : *const EconSolver, phaseName : []const u8 ) void
 
       if( @abs( popSum - popGrp ) > RES_INV_OFST_TOL )
       {
-        utl.log( .WARN, 0, @src(), "[{s}] POP/{s}/{s}: Σagent={d:.6} grp={d:.6} (Δ={d:.6})",
+        utl.log( .WARN, @src(), "[{s}] POP/{s}/{s}: Σagent={d:.6} grp={d:.6} (Δ={d:.6})",
           .{ phaseName, @tagName( action ), @tagName( resT ), popSum, popGrp, popSum - popGrp });
 
         violations += 1;
@@ -1654,7 +1654,7 @@ fn testResFlowInvariant( self : *const EconSolver, phaseName : []const u8 ) void
 
       if( @abs( infSum - infGrp ) > RES_INV_OFST_TOL )
       {
-        utl.log( .WARN, 0, @src(), "[{s}] INF/{s}/{s}: Σagent={d:.6} grp={d:.6} (Δ={d:.6})",
+        utl.log( .WARN, @src(), "[{s}] INF/{s}/{s}: Σagent={d:.6} grp={d:.6} (Δ={d:.6})",
           .{ phaseName, @tagName( action ), @tagName( resT ), infSum, infGrp, infSum - infGrp });
 
         violations += 1;
@@ -1672,7 +1672,7 @@ fn testResFlowInvariant( self : *const EconSolver, phaseName : []const u8 ) void
 
       if( @abs( indSum - indGrp ) > RES_INV_OFST_TOL )
       {
-        utl.log( .WARN, 0, @src(), "[{s}] IND/{s}/{s}: Σagent={d:.6} grp={d:.6} (Δ={d:.6})",
+        utl.log( .WARN, @src(), "[{s}] IND/{s}/{s}: Σagent={d:.6} grp={d:.6} (Δ={d:.6})",
           .{ phaseName, @tagName( action ), @tagName( resT ), indSum, indGrp, indSum - indGrp });
 
         violations += 1;
@@ -1685,7 +1685,7 @@ fn testResFlowInvariant( self : *const EconSolver, phaseName : []const u8 ) void
 
       if( @abs( grpSum - genVal ) > RES_INV_OFST_TOL )
       {
-        utl.log( .WARN, 0, @src(), "[{s}] GEN/{s}/{s}: Σgrp={d:.6} gen={d:.6} (Δ={d:.6})",
+        utl.log( .WARN, @src(), "[{s}] GEN/{s}/{s}: Σgrp={d:.6} gen={d:.6} (Δ={d:.6})",
           .{ phaseName, @tagName( action ), @tagName( resT ), grpSum, genVal, grpSum - genVal });
 
         violations += 1;
@@ -1695,6 +1695,6 @@ fn testResFlowInvariant( self : *const EconSolver, phaseName : []const u8 ) void
 
   if( violations > 0 )
   {
-    utl.log( .ERROR, 0, @src(), "[{s}] resFlow invariant: {d} violations", .{ phaseName, violations });
+    utl.log( .ERROR, @src(), "[{s}] resFlow invariant: {d} violations", .{ phaseName, violations });
   }
 }

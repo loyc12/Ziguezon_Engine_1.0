@@ -52,7 +52,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .tileShape = .HEX2,
   }, .RANDOM );
 
-  if( tlm == null ){ utl.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
+  if( tlm == null ){ utl.qlog( .ERROR, @src(), "Failed to create tilemap" ); }
 
   var worldGrid : *eng.Tilemap = tlm.?;
 

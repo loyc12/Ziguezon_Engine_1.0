@@ -54,7 +54,7 @@ pub const CompManager = struct
   {
     if( self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "CompManager is already initialized : returning" );
+      utl.qlog( .WARN, @src(), "CompManager is already initialized : returning" );
       return;
     }
 
@@ -68,7 +68,7 @@ pub const CompManager = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "CompManager is uninitialized : returning" );
+      utl.qlog( .WARN, @src(), "CompManager is uninitialized : returning" );
       return;
     }
 
@@ -89,19 +89,19 @@ pub const CompManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot register CompStore for type {s} : CompManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot register CompStore for type {s} : CompManager is uninitialized", .{ typeName });
       return false;
     }
     if( self.stores.contains( typeName ))
     {
-      utl.log( .WARN, 0, @src(), "Cannot register CompStore for type {s} : type already registered", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot register CompStore for type {s} : type already registered", .{ typeName });
       return false;
     }
 
     const StoreType = CompStoreFactory( CompType );
     const store = self.alloc.create( StoreType ) catch
     {
-      utl.log( .ERROR, 0, @src(), "Failed to allocate CompStore for type {s}", .{ typeName });
+      utl.log( .ERROR, @src(), "Failed to allocate CompStore for type {s}", .{ typeName });
       return false;
     };
 
@@ -116,7 +116,7 @@ pub const CompManager = struct
     })
     catch
     {
-      utl.log( .ERROR, 0, @src(), "Failed to register CompStore for type {s}", .{ typeName });
+      utl.log( .ERROR, @src(), "Failed to register CompStore for type {s}", .{ typeName });
 
       store.deinit();
       self.alloc.destroy( store );
@@ -133,13 +133,13 @@ pub const CompManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot unregister CompStore for type {s} : CompManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot unregister CompStore for type {s} : CompManager is uninitialized", .{ typeName });
       return false;
     }
 
     const entry = self.stores.get( typeName ) orelse
     {
-      utl.log( .DEBUG, 0, @src(), "Cannot unregister CompStore for type {s} : type not registered", .{ typeName });
+      utl.log( .DEBUG, @src(), "Cannot unregister CompStore for type {s} : type not registered", .{ typeName });
       return false;
     };
 
@@ -155,7 +155,7 @@ pub const CompManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot get CompStore for type {s} : CompManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot get CompStore for type {s} : CompManager is uninitialized", .{ typeName });
       return null;
     }
 
@@ -171,7 +171,7 @@ pub const CompManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot remove Entity {d} from CompStores : CompManager is uninitialized", .{ entityId });
+      utl.log( .WARN, @src(), "Cannot remove Entity {d} from CompStores : CompManager is uninitialized", .{ entityId });
       result.failedCount = 1;
       return result;
     }

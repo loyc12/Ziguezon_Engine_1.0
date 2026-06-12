@@ -22,11 +22,11 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
     /// Initializes sparse hash-map storage.
     pub fn init( self : *CompStore, alloc : std.mem.Allocator ) void
     {
-      utl.log( .INFO, 0, @src(), "Initializing sparse CompStore for type {s}", .{ TypeName });
+      utl.log( .INFO, @src(), "Initializing sparse CompStore for type {s}", .{ TypeName });
 
       if( self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Sparse CompStore for type {s} is already initialized : returning", .{ TypeName } );
+        utl.log( .WARN, @src(), "Sparse CompStore for type {s} is already initialized : returning", .{ TypeName } );
         return;
       }
 
@@ -37,11 +37,11 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
     /// Releases sparse storage.
     pub fn deinit( self : *CompStore ) void
     {
-      utl.log( .INFO, 0, @src(), "Deinitializing sparse CompStore for type {s}", .{ TypeName });
+      utl.log( .INFO, @src(), "Deinitializing sparse CompStore for type {s}", .{ TypeName });
 
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Sparse CompStore for type {s} is unnitialized : returning", .{ TypeName } );
+        utl.log( .WARN, @src(), "Sparse CompStore for type {s} is unnitialized : returning", .{ TypeName } );
         return;
       }
 
@@ -55,12 +55,12 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot add to sparse CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot add to sparse CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
       if( id == 0 )
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot add Entity 0 to sparse CompStore for type {s}", .{ TypeName });
+        utl.log( .DEBUG, @src(), "Cannot add Entity 0 to sparse CompStore for type {s}", .{ TypeName });
         return false;
       }
 
@@ -69,12 +69,12 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
         if( !result.found_existing )
         {
           result.value_ptr.* = value;
-          utl.log( .TRACE, 0, @src(), "Added Entity {d} to sparse CompStore for type {s}", .{ id, TypeName });
+          utl.log( .TRACE, @src(), "Added Entity {d} to sparse CompStore for type {s}", .{ id, TypeName });
           return true;
         }
         else
         {
-          utl.log( .WARN, 0, @src(), "Cannot add Entity {d} to sparse CompStore for type {s} : key already in use", .{ id, TypeName });
+          utl.log( .WARN, @src(), "Cannot add Entity {d} to sparse CompStore for type {s} : key already in use", .{ id, TypeName });
           return false;
         }
       }
@@ -85,17 +85,17 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot remove from sparse CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot remove from sparse CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
       if( self.data.remove( id ))
       {
-        utl.log( .TRACE, 0, @src(), "Removed Entity {d} from sparse CompStore for type {s}", .{ id, TypeName });
+        utl.log( .TRACE, @src(), "Removed Entity {d} from sparse CompStore for type {s}", .{ id, TypeName });
         return true;
       }
       else
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot remove Entity {d} from sparse CompStore for type {s} : key not found", .{ id, TypeName });
+        utl.log( .DEBUG, @src(), "Cannot remove Entity {d} from sparse CompStore for type {s} : key not found", .{ id, TypeName });
         return false;
       }
     }
@@ -105,7 +105,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot obtain from sparse CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot obtain from sparse CompStore for type {s} : uninitialized", .{ TypeName } );
         return null;
       }
       if( self.data.getPtr( id ))| ptr |
@@ -114,7 +114,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       }
       else
       {
-        utl.log( .WARN, 0, @src(), "Cannot find entity with id {d} in sparse CompStore for type {s}", .{ id, TypeName });
+        utl.log( .WARN, @src(), "Cannot find entity with id {d} in sparse CompStore for type {s}", .{ id, TypeName });
       }
       return null;
     }
@@ -124,7 +124,7 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot peer into sparse CompStore for type {s} : uninitialized", .{ TypeName } );
+        utl.log( .WARN, @src(), "Cannot peer into sparse CompStore for type {s} : uninitialized", .{ TypeName } );
         return false;
       }
       return self.data.getPtr( id ) != null;

@@ -51,13 +51,13 @@ pub const EngineConfigs = struct
 
   pub fn loadConfigs( self : *EngineConfigs, module : anytype ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "Initializing engine configs..." );
+    utl.qlog( .TRACE, @src(), "Initializing engine configs..." );
 
     var foundConfigs : bool = false;
 
     if( @typeInfo( module ) != .@"struct" )
     {
-      utl.log( .ERROR, 0, @src(), "EngineConfigs.loadConfigs() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
+      utl.log( .ERROR, @src(), "EngineConfigs.loadConfigs() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
       return;
     }
 
@@ -94,7 +94,7 @@ pub const EngineConfigs = struct
 
 
     // Logging the outcome
-    if( foundConfigs ){ utl.qlog( .INFO, 0, @src(), "$ Successfully initialized configs from given module\n" ); }
-    else {              utl.qlog( .WARN, 0, @src(), "$ Failed to find any valid configs from given module\n" ); }
+    if( foundConfigs ){ utl.qlog( .INFO, @src(), "$ Successfully initialized configs from given module\n" ); }
+    else {              utl.qlog( .WARN, @src(), "$ Failed to find any valid configs from given module\n" ); }
   }
 };

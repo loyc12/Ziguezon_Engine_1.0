@@ -152,7 +152,7 @@ pub const WorldCam = struct
 
   pub fn clampOnArea( self : *WorldCam, area : Box2 ) void
   {
-    utl.log( .TRACE, 0, @src(), "Clamping WorldCam on area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
+    utl.log( .TRACE, @src(), "Clamping WorldCam on area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
 
     var viewBox = self.toViewBox();
     viewBox.clampOnArea( area.getTopLeft(), area.getBottomRight() );
@@ -162,7 +162,7 @@ pub const WorldCam = struct
   }
   pub fn clampInArea( self : *WorldCam, area : Box2 ) void
   {
-    utl.log( .TRACE, 0, @src(), "Clamping WorldCam in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
+    utl.log( .TRACE, @src(), "Clamping WorldCam in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
 
     var viewBox = self.toViewBox();
     viewBox.clampInArea( area.getTopLeft(), area.getBottomRight() );
@@ -172,7 +172,7 @@ pub const WorldCam = struct
   }
   pub fn clampOnPoint( self : *WorldCam, point : Vec2 ) void
   {
-    utl.log( .TRACE, 0, @src(), "Clamping WorldCam on point ( {d}:{d} )", .{ point.x, point.y });
+    utl.log( .TRACE, @src(), "Clamping WorldCam on point ( {d}:{d} )", .{ point.x, point.y });
 
     var viewBox = self.toViewBox();
     viewBox.clampOnPoint( point );
@@ -182,7 +182,7 @@ pub const WorldCam = struct
   }
   pub fn clampCenterInArea( self : *WorldCam, area : Box2 ) void
   {
-    utl.log( .TRACE, 0, @src(), "Clamping WorldCam center in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
+    utl.log( .TRACE, @src(), "Clamping WorldCam center in area ( from {d}:{d} to {d}:{d} )", .{ area.getTopLeft().x, area.getTopLeft().y, area.getBottomRight().x, area.getBottomRight().y });
 
     self.cam.pos.x = utl.clmp( self.cam.pos.x, area.getMinX(), area.getMaxX() );
     self.cam.pos.y = utl.clmp( self.cam.pos.y, area.getMinY(), area.getMaxY() );

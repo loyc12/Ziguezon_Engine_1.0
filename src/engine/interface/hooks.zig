@@ -90,11 +90,11 @@ pub const GameHooks = struct
 
   pub fn loadHooks( self : *GameHooks, module : anytype ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "Initializing game hooks..." );
+    utl.qlog( .TRACE, @src(), "Initializing game hooks..." );
 
     if( @typeInfo( module ) != .@"struct" )
     {
-      utl.log( .ERROR, 0, @src(), "GameHooks.loadHooks() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
+      utl.log( .ERROR, @src(), "GameHooks.loadHooks() expects a struct ( module ) type, got a {} instead", .{ @typeName( module ) });
       return;
     }
 
@@ -128,14 +128,14 @@ pub const GameHooks = struct
 
 
     self.checkHookValidities();
-    utl.qlog( .CONT, 0, @src(), "" );
-    utl.qlog( .INFO, 0, @src(), "$ Available game hooks initialized\n" );
+    utl.qlog( .CONT, @src(), "" );
+    utl.qlog( .INFO, @src(), "$ Available game hooks initialized\n" );
   }
 
 
   pub fn checkHookValidities( self : *const GameHooks ) void
   {
-    utl.qlog( .DEBUG, 0, @src(), "# Checking game hook validity...\n" );
+    utl.qlog( .DEBUG, @src(), "# Checking game hook validity...\n" );
 
     inline for ( @typeInfo( GameHooks ).@"struct".fields )| field |
     {
@@ -145,11 +145,11 @@ pub const GameHooks = struct
       if( fieldPtr )| func |
       {
         _ = func;
-        utl.log( .CONT, 0, @src(), "$ '{s}'\tGame hook WAS set", .{ fieldName });
+        utl.log( .CONT, @src(), "$ '{s}'\tGame hook WAS set", .{ fieldName });
       }
       else
       {
-        utl.log( .CONT, 0, @src(), "@ '{s}'\tGame hook NOT set", .{ fieldName });
+        utl.log( .CONT, @src(), "@ '{s}'\tGame hook NOT set", .{ fieldName });
       }
     }
   }
@@ -188,7 +188,7 @@ pub const GameHooks = struct
 
     if( hookFunct  )| f |
     {
-      utl.log( .TRACE, 0, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
+      utl.log( .TRACE, @src(), "Calling game hook '{s}'", .{ @tagName( tag ) });
       f( cntx );
       return;
     }

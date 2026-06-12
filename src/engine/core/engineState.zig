@@ -12,14 +12,14 @@ pub fn changeState( ng : *Engine, targetState : EngineState ) void
 {
   if( targetState == ng.state )
   {
-    utl.log( .WARN, 0, @src(), "@ State is already {s}, no change needed", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "@ State is already {s}, no change needed", .{ @tagName( ng.state ) });
     return;
   }
-  else { utl.qlog( .TRACE, 0, @src(), "Changing state" ); }
+  else { utl.qlog( .TRACE, @src(), "Changing state" ); }
 
   if( @intFromEnum( targetState ) > @intFromEnum( ng.state ) )
   {
-    utl.log( .DEBUG, 0, @src(), "# Increasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
+    utl.log( .DEBUG, @src(), "# Increasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
 
     while( ng.state != targetState )
     {
@@ -34,7 +34,7 @@ pub fn changeState( ng : *Engine, targetState : EngineState ) void
   }
   else
   {
-    utl.log( .DEBUG, 0, @src(), "# Decreasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
+    utl.log( .DEBUG, @src(), "# Decreasing state from {s} to {s}", .{ @tagName( ng.state ), @tagName( targetState )});
 
     while( ng.state != targetState )
     {
@@ -56,10 +56,10 @@ pub fn start( ng : *Engine ) void
 {
   if( ng.state != .OFF )
   {
-    utl.log( .WARN, 0, @src(), "@ Cannot start the engine from state {s}", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "@ Cannot start the engine from state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else { utl.qlog( .TRACE, 0, @src(), "# Starting the engine..." ); }
+  else { utl.qlog( .TRACE, @src(), "# Starting the engine..." ); }
 
   // Initialize relevant raylib components
   {
@@ -71,27 +71,27 @@ pub fn start( ng : *Engine ) void
 
     if( !utl.ray.isAudioDeviceReady() )
     {
-      utl.qlog( .INFO, 0, @src(), "& Initializing audio device..." );
+      utl.qlog( .INFO, @src(), "& Initializing audio device..." );
       utl.ray.initAudioDevice();
-      utl.qlog( .INFO, 0, @src(), "$ Audio device initialized !" );
+      utl.qlog( .INFO, @src(), "$ Audio device initialized !" );
     }
   }
 
   // Initialize relevant engine managers
   {
-    utl.qlog( .INFO, 0, @src(), "# Initializing engine substructs..." );
+    utl.qlog( .INFO, @src(), "# Initializing engine substructs..." );
 
     ng.resourceManager.init(   utl.getDefaultAlloc() );
     ng.tilemapManager.init(    utl.getDefaultAlloc() );
     ng.world.init(             utl.getDefaultAlloc() );
     ng.uiManager.init(         utl.getDefaultAlloc() );
 
-    utl.qlog( .INFO, 0, @src(), "$ Engine substructs initialized !" );
+    utl.qlog( .INFO, @src(), "$ Engine substructs initialized !" );
   }
 
   eng.tryHook( .OnGameStart, ng );
 
-  utl.qlog( .INFO, 0, @src(), "& Hello, world !\n" );
+  utl.qlog( .INFO, @src(), "& Hello, world !\n" );
   ng.state = .STARTED;
 }
 
@@ -99,35 +99,35 @@ pub fn stop( ng : *Engine ) void
 {
   if( ng.state != .STARTED )
   {
-    utl.log( .WARN, 0, @src(), "@ Cannot stop the engine from state {s}", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "@ Cannot stop the engine from state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else { utl.qlog( .TRACE, 0, @src(), "# Stoping the engine..." ); }
+  else { utl.qlog( .TRACE, @src(), "# Stoping the engine..." ); }
 
   eng.tryHook( .OnGameStop, ng );
 
   // Deinitialize relevant engine managers
   {
-    utl.qlog( .INFO, 0, @src(), "# Deinitializing engine substructs..." );
+    utl.qlog( .INFO, @src(), "# Deinitializing engine substructs..." );
 
     ng.uiManager.deinit();
     ng.world.deinit();
     ng.tilemapManager.deinit();
     ng.resourceManager.deinit();
 
-    utl.qlog( .INFO, 0, @src(), "$ Engine substructs deinitialized !" );
+    utl.qlog( .INFO, @src(), "$ Engine substructs deinitialized !" );
   }
 
   // Deinitialize relevant raylib components
   {
     if( utl.ray.isAudioDeviceReady() )
     {
-      utl.qlog( .INFO, 0, @src(), "& Closing audio device..." );
+      utl.qlog( .INFO, @src(), "& Closing audio device..." );
       utl.ray.closeAudioDevice();
     }
   }
   ng.state = .OFF;
-  utl.qlog( .INFO, 0, @src(), "& Goodbye, cruel world...\n" );
+  utl.qlog( .INFO, @src(), "& Goodbye, cruel world...\n" );
 }
 
 
@@ -137,10 +137,10 @@ pub fn open( ng : *Engine ) void
 {
   if( ng.state != .STARTED )
   {
-    utl.log( .WARN, 0, @src(), "@ Cannot open the game from state {s}", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "@ Cannot open the game from state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else { utl.qlog( .TRACE, 0, @src(), "# Launching the game..." ); }
+  else { utl.qlog( .TRACE, @src(), "# Launching the game..." ); }
 
   // Initialize relevant raylib components
   {
@@ -153,7 +153,7 @@ pub fn open( ng : *Engine ) void
 
     if( !utl.ray.isWindowReady() ) // TODO : move this to its own functions eventually ?
     {
-      utl.qlog( .INFO, 0, @src(), "& Opening the window..." );
+      utl.qlog( .INFO, @src(), "& Opening the window..." );
 
       utl.ray.initWindow(
         @intCast( eng.G_CNFGS.Startup_Window_Width  ),
@@ -170,17 +170,17 @@ pub fn open( ng : *Engine ) void
   // TODO : Start the game loop in a second thread here ?
 
   ng.state = .OPENED;
-  utl.log( .DEBUG, 0, @src(), "& Window initialized with size {d}x{d}\n", .{ utl.getScreenWidth(), utl.getScreenHeight() });
+  utl.log( .DEBUG, @src(), "& Window initialized with size {d}x{d}\n", .{ utl.getScreenWidth(), utl.getScreenHeight() });
 }
 
 pub fn close( ng : *Engine ) void
 {
   if( ng.state != .OPENED )
   {
-    utl.log( .WARN, 0, @src(), "@ Cannot close the game from state {s}", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "@ Cannot close the game from state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else { utl.qlog( .TRACE, 0, @src(), "# Stopping the game..." ); }
+  else { utl.qlog( .TRACE, @src(), "# Stopping the game..." ); }
 
   eng.tryHook( .OnGameClose, ng );
 
@@ -188,13 +188,13 @@ pub fn close( ng : *Engine ) void
   {
     if( utl.ray.isWindowReady() )
     {
-      utl.qlog( .INFO, 0, @src(), "& Closing the window..." );
+      utl.qlog( .INFO, @src(), "& Closing the window..." );
       utl.ray.closeWindow();
     }
   }
 
   ng.state = .STARTED;
-  utl.qlog( .INFO, 0, @src(), "& Cya !\n" );
+  utl.qlog( .INFO, @src(), "& Cya !\n" );
 }
 
 
@@ -204,10 +204,10 @@ pub fn play( ng : *Engine ) void
 {
   if( ng.state != .OPENED )
   {
-    utl.log( .WARN, 0, @src(), "@ Cannot resume the game from state {s}", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "@ Cannot resume the game from state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else { utl.qlog( .TRACE, 0, @src(), "# Resuming the game..." ); }
+  else { utl.qlog( .TRACE, @src(), "# Resuming the game..." ); }
 
   eng.tryHook( .OnGameResume, ng );
   ng.state = .PLAYING;
@@ -221,10 +221,10 @@ pub fn pause( ng : *Engine ) void
 {
   if( ng.state != .PLAYING )
   {
-    utl.log( .WARN, 0, @src(), "@ Cannot pause the game from state {s}", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "@ Cannot pause the game from state {s}", .{ @tagName( ng.state ) });
     return;
   }
-  else { utl.qlog( .TRACE, 0, @src(), "# Pausing the game..." ); }
+  else { utl.qlog( .TRACE, @src(), "# Pausing the game..." ); }
 
   eng.tryHook( .OnGamePause, ng );
   ng.state = .OPENED;
@@ -232,14 +232,14 @@ pub fn pause( ng : *Engine ) void
 
 pub fn togglePause( ng : *Engine ) void
 {
-  utl.qlog( .TRACE, 0, @src(), "# Toggling pause..." );
+  utl.qlog( .TRACE, @src(), "# Toggling pause..." );
   switch( ng.state )
   {
     .OPENED  => { play(  ng ); },
     .PLAYING => { pause( ng ); },
     else =>
     {
-      utl.log( .WARN, 0, @src(), "@ Cannot toggle pause from state {s}", .{ @tagName( ng.state ) });
+      utl.log( .WARN, @src(), "@ Cannot toggle pause from state {s}", .{ @tagName( ng.state ) });
       return;
     },
   }

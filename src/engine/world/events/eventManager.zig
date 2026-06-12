@@ -34,7 +34,7 @@ pub const EventManager = struct
   {
     if( self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "EventManager is already initialized : returning" );
+      utl.qlog( .WARN, @src(), "EventManager is already initialized : returning" );
       return;
     }
 
@@ -51,7 +51,7 @@ pub const EventManager = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "EventManager is uninitialized : returning" );
+      utl.qlog( .WARN, @src(), "EventManager is uninitialized : returning" );
       return;
     }
 
@@ -77,19 +77,19 @@ pub const EventManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot register EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot register EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
       return false;
     }
     if( self.queues.contains( typeName ))
     {
-      utl.log( .WARN, 0, @src(), "Cannot register EventQueue for type {s} : type already registered", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot register EventQueue for type {s} : type already registered", .{ typeName });
       return false;
     }
 
     const QueueType = evtQueue.EventQueueFactory( EventType );
     const queue = self.alloc.create( QueueType ) catch
     {
-      utl.log( .ERROR, 0, @src(), "Failed to allocate EventQueue for type {s}", .{ typeName });
+      utl.log( .ERROR, @src(), "Failed to allocate EventQueue for type {s}", .{ typeName });
       return false;
     };
 
@@ -105,7 +105,7 @@ pub const EventManager = struct
     })
     catch
     {
-      utl.log( .ERROR, 0, @src(), "Failed to register EventQueue for type {s}", .{ typeName });
+      utl.log( .ERROR, @src(), "Failed to register EventQueue for type {s}", .{ typeName });
 
       queue.deinit();
       self.alloc.destroy( queue );
@@ -122,13 +122,13 @@ pub const EventManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot unregister EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot unregister EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
       return false;
     }
 
     const entry = self.queues.get( typeName ) orelse
     {
-      utl.log( .DEBUG, 0, @src(), "Cannot unregister EventQueue for type {s} : type not registered", .{ typeName });
+      utl.log( .DEBUG, @src(), "Cannot unregister EventQueue for type {s} : type not registered", .{ typeName });
       return false;
     };
 
@@ -144,7 +144,7 @@ pub const EventManager = struct
 
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot get EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
+      utl.log( .WARN, @src(), "Cannot get EventQueue for type {s} : EventManager is uninitialized", .{ typeName });
       return null;
     }
 
@@ -200,7 +200,7 @@ pub const EventManager = struct
   {
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot clear EventManager : uninitialized", .{} );
+      utl.log( .WARN, @src(), "Cannot clear EventManager : uninitialized", .{} );
       return;
     }
 
@@ -225,7 +225,7 @@ pub const EventManager = struct
   {
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot begin EventManager tick : uninitialized", .{} );
+      utl.log( .WARN, @src(), "Cannot begin EventManager tick : uninitialized", .{} );
       return;
     }
 

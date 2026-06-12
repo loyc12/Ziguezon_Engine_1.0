@@ -22,7 +22,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     .tileShape = .RECT,
   }, .T1 );
 
-  if( tlm == null ){ utl.qlog( .ERROR, 0, @src(), "Failed to create tilemap" ); }
+  if( tlm == null ){ utl.qlog( .ERROR, @src(), "Failed to create tilemap" ); }
 
   var grid : *eng.Tilemap = tlm.?;
 

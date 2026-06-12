@@ -144,7 +144,7 @@ pub fn GetDrawer( comptime Transform : type ) type
       // Validation pass
       if( sides == 0 )
       {
-        utl.qlog(.ERROR, 0, @src(), "Cannot draw a polygon with 0 sides");
+        utl.qlog(.ERROR, @src(), "Cannot draw a polygon with 0 sides");
         return false;
       }
 
@@ -152,7 +152,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( count > out.len )
       {
-        utl.qlog(.ERROR, 0, @src(), "Polygon side count exceeds temporary vertex buffer");
+        utl.qlog(.ERROR, @src(), "Polygon side count exceeds temporary vertex buffer");
         return false;
       }
 
@@ -201,7 +201,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( !calcPolyVertices( radii, a, sides, verts[ 0.. ]))
       {
-        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        utl.qlog( .ERROR, @src(), "Failed to fill vertex array" );
         return;
       }
 
@@ -238,7 +238,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( !calcPolyVertices( radii, a, sides, verts[ 0.. ]))
       {
-        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        utl.qlog( .ERROR, @src(), "Failed to fill vertex array" );
         return;
       }
 
@@ -276,17 +276,17 @@ pub fn GetDrawer( comptime Transform : type ) type
     {
       if( sides < 5 )
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with fewer than 5 vertices" );
+        utl.qlog( .ERROR, @src(), "Cannot draw a star with fewer than 5 vertices" );
         return;
       }
       if( skipFactor == 0 )
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skip factor of 0" );
+        utl.qlog( .ERROR, @src(), "Cannot draw a star with a skip factor of 0" );
         return;
       }
       if( skipFactor >= sides )
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skipFactor equal or greater than sides : use modulo for that" );
+        utl.qlog( .ERROR, @src(), "Cannot draw a star with a skipFactor equal or greater than sides : use modulo for that" );
         return;
       }
 
@@ -294,7 +294,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( skip == 1 )
       {
-        utl.qlog( .TRACE, 0, @src(), "Not a star : drawing a polygon instead" );
+        utl.qlog( .TRACE, @src(), "Not a star : drawing a polygon instead" );
 
         poly( pos, radii, a, col, sides );
         return;
@@ -306,7 +306,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( !calcPolyVertices( radii, a, sides, verts[ 0.. ] ))
       {
-        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        utl.qlog( .ERROR, @src(), "Failed to fill vertex array" );
         return;
       }
 
@@ -332,17 +332,17 @@ pub fn GetDrawer( comptime Transform : type ) type
     {
       if( sides < 5 )
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with fewer than 5 vertices" );
+        utl.qlog( .ERROR, @src(), "Cannot draw a star with fewer than 5 vertices" );
         return;
       }
       if( skipFactor == 0 )
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skip factor of 0" );
+        utl.qlog( .ERROR, @src(), "Cannot draw a star with a skip factor of 0" );
         return;
       }
       if( skipFactor >= sides )
       {
-        utl.qlog( .ERROR, 0, @src(), "Cannot draw a star with a skipFactor equal or greater than sides : use modulo for that" );
+        utl.qlog( .ERROR, @src(), "Cannot draw a star with a skipFactor equal or greater than sides : use modulo for that" );
         return;
       }
 
@@ -350,7 +350,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( skip == 1 )
       {
-        utl.qlog( .TRACE, 0, @src(), "Not a star : drawing a polygon instead" );
+        utl.qlog( .TRACE, @src(), "Not a star : drawing a polygon instead" );
 
         polyPerim( pos, radii, a, col, sides, width );
         return;
@@ -362,7 +362,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( !calcPolyVertices( radii, a, sides, verts[ 0.. ] ))
       {
-        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        utl.qlog( .ERROR, @src(), "Failed to fill vertex array" );
         return;
       }
 
@@ -391,7 +391,7 @@ pub fn GetDrawer( comptime Transform : type ) type
 
       if( !calcPolyVertices( radii, a, sides, verts[ 0.. ] ))
       {
-        utl.qlog( .ERROR, 0, @src(), "Failed to fill vertex array" );
+        utl.qlog( .ERROR, @src(), "Failed to fill vertex array" );
         return;
       }
 

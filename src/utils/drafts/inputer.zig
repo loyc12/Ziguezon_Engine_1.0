@@ -60,14 +60,14 @@ pub fn openFile( data : *QuickfileData ) void
 {
   if( data.isOpened )
   {
-    utl.log( .ERROR, 0, @src(), "File already opened '{s}'", .{ data.path });
+    utl.log( .ERROR, @src(), "File already opened '{s}'", .{ data.path });
     return;
   }
 
   if( std.fs.cwd().openFile( data.path, .{} ))| f |{ data.file = f; }
   else | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to open file '{s}' : {}", .{ data.path, err });
+    utl.log( .ERROR, @src(), "Failed to open file '{s}' : {}", .{ data.path, err });
     data.isOpened = false;
     return;
   }
@@ -83,7 +83,7 @@ pub fn closeFile( data : *QuickfileData ) void
 {
   if( !data.isOpened )
   {
-    utl.log( .WARN, 0, @src(), "Cannot close file '{s}' : already closed", .{ data.path });
+    utl.log( .WARN, @src(), "Cannot close file '{s}' : already closed", .{ data.path });
     return;
   }
 
@@ -95,14 +95,14 @@ pub fn readFileLine( data : *QuickfileData ) void
 {
   if( !data.isOpened )
   {
-    utl.log( .WARN, 0, @src(), "Cannot read from file '{s}' : file is closed", .{ data.path });
+    utl.log( .WARN, @src(), "Cannot read from file '{s}' : file is closed", .{ data.path });
     return;
   }
 
   if( data.reader.interface.takeDelimiter( LINE_DELIMITER ))| l |{ data.lineBuffer = l; }
   else | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to read file line : {}", .{ err });
+    utl.log( .ERROR, @src(), "Failed to read file line : {}", .{ err });
     return;
   }
 

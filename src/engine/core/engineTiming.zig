@@ -78,11 +78,11 @@ pub const EngineTiming = struct
 
   pub fn updateLoopTiming( self: *EngineTiming, isPlaying : bool ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "Updating engine time trackers" );
+    utl.qlog( .TRACE, @src(), "Updating engine time trackers" );
 
     if( utl.G_EPOCH == null )
     {
-      utl.qlog( .WARN, 0, @src(), "Global Epoch not set : setting it now");
+      utl.qlog( .WARN, @src(), "Global Epoch not set : setting it now");
       utl.G_EPOCH = utl.getNow();
     }
 
@@ -95,7 +95,7 @@ pub const EngineTiming = struct
     else
     {
       self.loopDelta = .{};
-      utl.qlog( .WARN, 0, @src(), "# EngineTiming.loopEpoch was not set");
+      utl.qlog( .WARN, @src(), "# EngineTiming.loopEpoch was not set");
     }
     self.loopEpoch  = now;
     self.loopCount += 1;
@@ -128,7 +128,7 @@ pub const EngineTiming = struct
     }
     else
     {
-      utl.qlog( .WARN, 0, @src(), "# EngineTiming.lastTickTime is not set");
+      utl.qlog( .WARN, @src(), "# EngineTiming.lastTickTime is not set");
     }
 
     self.lastTickTime  = now;
@@ -176,7 +176,7 @@ pub const EngineTiming = struct
     }
     else
     {
-      utl.qlog( .WARN, 0, @src(), "# EngineTiming.lastFrameTime is not set");
+      utl.qlog( .WARN, @src(), "# EngineTiming.lastFrameTime is not set");
     }
 
     self.lastFrameTime  = now;
@@ -207,14 +207,14 @@ pub const EngineTiming = struct
 
   pub inline fn setTargetTickRate( self: *EngineTiming, newTickRate : u16 ) void
   {
-    utl.log( .TRACE, 0, @src(), "Setting tick rate to to {}", .{ newTickRate });
+    utl.log( .TRACE, @src(), "Setting tick rate to to {}", .{ newTickRate });
 
     self.targetTickDelta = Duration.fromTimeRate( @floatFromInt( newTickRate ));
   }
 
   pub inline fn setTargetFrameRate( self: *EngineTiming, newFrameRate : u16 ) void
   {
-    utl.log( .TRACE, 0, @src(), "Setting frame rate to to {}", .{ newFrameRate });
+    utl.log( .TRACE, @src(), "Setting frame rate to to {}", .{ newFrameRate });
 
     self.targetFrameDelta = Duration.fromTimeRate( @floatFromInt( newFrameRate ));
   }

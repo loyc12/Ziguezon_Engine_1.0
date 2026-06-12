@@ -48,7 +48,7 @@ pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, rules : *FloodRule )
   // Explicit stack avoids recursive flood fill and is bounded by the tile count.
   const stack = alloc.alloc( *Tile, tlmp.getTileCount() ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Stack initialization error : {} : returning", .{ err });
+    utl.log( .ERROR, @src(), "Stack initialization error : {} : returning", .{ err });
     return;
   };
   defer alloc.free( stack );
@@ -57,7 +57,7 @@ pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, rules : *FloodRule )
 
   if( tlmp.isFloodMarked( start ) or !rules.filter( start ))
   {
-    utl.qlog( .TRACE, 0, @src(), "Invalid start location for floodFill : returning" );
+    utl.qlog( .TRACE, @src(), "Invalid start location for floodFill : returning" );
     return;
   }
 
@@ -79,7 +79,7 @@ pub fn floodFillWithParams( tlmp : *Tilemap, start : *Tile, rules : *FloodRule )
         if( tlmp.isFloodMarked( nTile ) or !rules.filter( nTile ) ){ continue; }
         if( stackLen >= stack.len )
         {
-          utl.qlog( .ERROR, 0, @src(), "Flood-fill stack exceeded tile count : returning" );
+          utl.qlog( .ERROR, @src(), "Flood-fill stack exceeded tile count : returning" );
           return;
         }
 

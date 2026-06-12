@@ -57,7 +57,7 @@ pub const World = struct
   {
     if( self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "World is already initialized : returning" );
+      utl.qlog( .WARN, @src(), "World is already initialized : returning" );
       return;
     }
 
@@ -74,7 +74,7 @@ pub const World = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "World is uninitialized : returning" );
+      utl.qlog( .WARN, @src(), "World is uninitialized : returning" );
       return;
     }
 
@@ -94,14 +94,14 @@ pub const World = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot create Entity : World is uninitialized" );
+      utl.qlog( .WARN, @src(), "Cannot create Entity : World is uninitialized" );
       return .{};
     }
 
     const entityVal = self.entityIdRegistry.getNewEntity();
     self.activeEntities.put( entityVal.id, {} ) catch
     {
-      utl.log( .ERROR, 0, @src(), "Failed to mark Entity {d} alive", .{ entityVal.id });
+      utl.log( .ERROR, @src(), "Failed to mark Entity {d} alive", .{ entityVal.id });
       return .{};
     };
 
@@ -124,17 +124,17 @@ pub const World = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot destroy Entity : World is uninitialized" );
+      utl.qlog( .WARN, @src(), "Cannot destroy Entity : World is uninitialized" );
       return false;
     }
     if( entityId == 0 )
     {
-      utl.qlog( .DEBUG, 0, @src(), "Cannot destroy Entity 0" );
+      utl.qlog( .DEBUG, @src(), "Cannot destroy Entity 0" );
       return false;
     }
     if( !self.isEntityAlive( entityId ))
     {
-      utl.log( .DEBUG, 0, @src(), "Cannot destroy Entity {d} : Entity is not alive", .{ entityId });
+      utl.log( .DEBUG, @src(), "Cannot destroy Entity {d} : Entity is not alive", .{ entityId });
       return false;
     }
 
@@ -330,7 +330,7 @@ pub const World = struct
   {
     if( !self.isInit )
     {
-      utl.log( .WARN, 0, @src(), "Cannot emit Event for type {s} : World is uninitialized", .{ @typeName( EventType )});
+      utl.log( .WARN, @src(), "Cannot emit Event for type {s} : World is uninitialized", .{ @typeName( EventType )});
       return false;
     }
 
@@ -365,7 +365,7 @@ pub const World = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot tick World : uninitialized" );
+      utl.qlog( .WARN, @src(), "Cannot tick World : uninitialized" );
       return;
     }
 
@@ -404,14 +404,14 @@ pub const World = struct
     const relationCleanup = self.relationManager.removeEntity( entityId );
     if( !relationCleanup.isSuccess() )
     {
-      utl.log( .ERROR, 0, @src(), "Failed to clean up Entity {d} from {d} RelationStores", .{ entityId, relationCleanup.failedCount });
+      utl.log( .ERROR, @src(), "Failed to clean up Entity {d} from {d} RelationStores", .{ entityId, relationCleanup.failedCount });
       return false;
     }
 
     const compCleanup = self.compManager.removeEntity( entityId );
     if( !compCleanup.isSuccess() )
     {
-      utl.log( .ERROR, 0, @src(), "Failed to clean up Entity {d} from {d} CompStores", .{ entityId, compCleanup.failedCount });
+      utl.log( .ERROR, @src(), "Failed to clean up Entity {d} from {d} CompStores", .{ entityId, compCleanup.failedCount });
       return false;
     }
 

@@ -151,9 +151,6 @@ pub const logger = @import( "io/logger.zig" );
 pub const log   = logger.log;  // for argument-formatting logging
 pub const qlog  = logger.qlog; // for quick logging ( no args )
 
-pub const resetTmpTimer = logger.resetTmpTimer;
-pub const logTmpTimer   = logger.logTmpTimer;
-
 
 // ================ CLI COLOURS ================
 
@@ -377,8 +374,8 @@ pub inline fn deinitAllUtils() void
 
   switch( G_ALLOC.deinit() )
   {
-    .ok   => qlog( .INFO, 0, @src(), "$ Default allocator deinitialized without leaks" ),
-    .leak => log(  .WARN, 0, @src(), "@ Default allocator detected leaked memory : {d} bytes still in use", .{ bytesInUse } ),
+    .ok   => qlog( .INFO, @src(), "$ Default allocator deinitialized without leaks" ),
+    .leak => log(  .WARN, @src(), "@ Default allocator detected leaked memory : {d} bytes still in use", .{ bytesInUse } ),
   }
 
   logger.deinitFile();

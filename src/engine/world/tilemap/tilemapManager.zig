@@ -22,7 +22,7 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
+      utl.qlog( .ERROR, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
     self.maxId += 1;
@@ -33,7 +33,7 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning id 0" );
+      utl.qlog( .ERROR, @src(), "Tilemap manager is not initialized : returning id 0" );
       return 0;
     }
     return self.maxId;
@@ -43,7 +43,7 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : cannot recalculate maxId" );
+      utl.qlog( .ERROR, @src(), "Tilemap manager is not initialized : cannot recalculate maxId" );
       return;
     }
     var newMaxId: u32 = 0;
@@ -55,11 +55,11 @@ pub const TilemapManager = struct
 
     if( newMaxId < self.maxId )
     {
-      utl.log( .TRACE, 0, @src(), "Recalculated maxId {d} is less than previous maxId {d}", .{ newMaxId, self.maxId });
+      utl.log( .TRACE, @src(), "Recalculated maxId {d} is less than previous maxId {d}", .{ newMaxId, self.maxId });
     }
     else if( newMaxId > self.maxId )
     {
-      utl.log( .WARN, 0, @src(), "Recalculated maxId {d} is greater than previous maxId {d}", .{ newMaxId, self.maxId });
+      utl.log( .WARN, @src(), "Recalculated maxId {d} is greater than previous maxId {d}", .{ newMaxId, self.maxId });
     }
 
     self.maxId = newMaxId;
@@ -69,12 +69,12 @@ pub const TilemapManager = struct
   {
     if( id <= 0 )
     {
-      utl.qlog( .WARN, 0, @src(), "Tilemap Id cannot be 0 or less" );
+      utl.qlog( .WARN, @src(), "Tilemap Id cannot be 0 or less" );
       return false;
     }
     if( id > self.maxId )
     {
-      utl.log( .WARN, 0, @src(), "Tilemap Id {d} is greater than maxId {d}", .{ id, self.maxId });
+      utl.log( .WARN, @src(), "Tilemap Id {d} is greater than maxId {d}", .{ id, self.maxId });
       return false;
     }
     return true;
@@ -86,19 +86,19 @@ pub const TilemapManager = struct
   {
     if( !self.isInit )
     {
-      utl.qlog( .ERROR, 0, @src(), "Tilemap manager is not initialized : returning null" );
+      utl.qlog( .ERROR, @src(), "Tilemap manager is not initialized : returning null" );
       return null;
     }
 
     if( !self.isIdValid( id ))
     {
-      utl.log( .WARN, 0, @src(), "Tilemap Id {d} is not valid", .{ id });
+      utl.log( .WARN, @src(), "Tilemap Id {d} is not valid", .{ id });
       return null;
     }
 
     for( self.tilemapList.items, 0 .. )| tlmp, index |{ if( tlmp.id == id ){ return index; }}
 
-    utl.log( .TRACE, 0, @src(), "Tilemap with Id {d} not found", .{ id });
+    utl.log( .TRACE, @src(), "Tilemap with Id {d} not found", .{ id });
     return null;
   }
 
@@ -106,22 +106,22 @@ pub const TilemapManager = struct
   {
     if( self.tilemapList.len == 0 )
     {
-      utl.qlog( .WARN, 0, @src(), "No tilemapList available" );
+      utl.qlog( .WARN, @src(), "No tilemapList available" );
       return false;
     }
     if( index == null )
     {
-      utl.qlog( .WARN, 0, @src(), "Index is null" );
+      utl.qlog( .WARN, @src(), "Index is null" );
       return false;
     }
     if( index < 0 )
     {
-      utl.log( .WARN, 0, @src(), "Index {d} is negative", .{ index });
+      utl.log( .WARN, @src(), "Index {d} is negative", .{ index });
       return false;
     }
     if( index >= self.tilemapList.items.len )
     {
-      utl.log( .WARN, 0, @src(), "Index {d} is out of bounds ( 0 to {d} )", .{ index, self.tilemapList.len });
+      utl.log( .WARN, @src(), "Index {d} is out of bounds ( 0 to {d} )", .{ index, self.tilemapList.len });
       return false;
     }
     return true;
@@ -131,11 +131,11 @@ pub const TilemapManager = struct
 
   pub fn init( self : *TilemapManager, allocator : std.mem.Allocator ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "# Initializing Tilemap manager..." );
+    utl.qlog( .TRACE, @src(), "# Initializing Tilemap manager..." );
 
     if( self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "@ Tilemap manager is already initialized" );
+      utl.qlog( .WARN, @src(), "@ Tilemap manager is already initialized" );
       return;
     }
 
@@ -143,16 +143,16 @@ pub const TilemapManager = struct
     self.tilemapList = .empty;
     self.isInit      = true;
 
-    utl.qlog( .INFO, 0, @src(), "$ Tilemap manager initialized !\n" );
+    utl.qlog( .INFO, @src(), "$ Tilemap manager initialized !\n" );
   }
 
   pub fn deinit( self : *TilemapManager ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "# Deinitializing Tilemap manager..." );
+    utl.qlog( .TRACE, @src(), "# Deinitializing Tilemap manager..." );
 
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "@ Tilemap manager was not initialized" );
+      utl.qlog( .WARN, @src(), "@ Tilemap manager was not initialized" );
       return;
     }
 
@@ -163,36 +163,36 @@ pub const TilemapManager = struct
 
     self.isInit    = false;
     self.allocator = undefined;
-    utl.qlog( .INFO, 0, @src(), "$ Tilemap manager deinitialized\n" );
+    utl.qlog( .INFO, @src(), "$ Tilemap manager deinitialized\n" );
   }
 
   // ================================ TILEMAP MANAGEMENT FUNCTIONS ================================
 
   pub fn loadTilemapFromParams( self : *TilemapManager, params : Tilemap, fillType : eng.tilemap.TileType ) ?*Tilemap
   {
-    utl.qlog( .TRACE, 0, @src(), "Adding new Tilemap" );
+    utl.qlog( .TRACE, @src(), "Adding new Tilemap" );
 
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
+      utl.qlog( .WARN, @src(), "Tilemap manager is not initialized" );
       return null;
     }
 
     var tmp = Tilemap.createTilemapFromParams( params, fillType, self.allocator ) orelse
     {
-      utl.qlog( .ERROR, 0, @src(), "Failed to create Tilemap from params" );
+      utl.qlog( .ERROR, @src(), "Failed to create Tilemap from params" );
       return null;
     };
 
     tmp.id = self.getNewId();
     if( params.id != 0 and params.id != tmp.id )
     {
-      utl.log( .WARN, 0, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
+      utl.log( .WARN, @src(), "Dummy id ({d}) differs from given id ({d})", .{ params.id, tmp.id });
     }
 
     self.tilemapList.append( self.allocator, tmp ) catch | err |
     {
-      utl.log( .ERROR, 0, @src(), "Failed to add Tilemap: {}", .{ err });
+      utl.log( .ERROR, @src(), "Failed to add Tilemap: {}", .{ err });
       return null;
     };
 
@@ -204,11 +204,11 @@ pub const TilemapManager = struct
 
   pub fn loadDefaultTilemap( self : *TilemapManager ) ?*Tilemap
   {
-    utl.qlog( .TRACE, 0, @src(), "Creating default Tilemap" );
+    utl.qlog( .TRACE, @src(), "Creating default Tilemap" );
 
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
+      utl.qlog( .WARN, @src(), "Tilemap manager is not initialized" );
       return null;
     }
 
@@ -219,11 +219,11 @@ pub const TilemapManager = struct
 
   pub fn getTilemap( self : *TilemapManager, id : u32 ) ?*Tilemap
   {
-    utl.log( .TRACE, 0, @src(), "Getting Tilemap with Id {d}", .{ id });
+    utl.log( .TRACE, @src(), "Getting Tilemap with Id {d}", .{ id });
 
     const index = self.getIndexOf( id ) orelse
     {
-      utl.log( .TRACE, 0, @src(), "Tilemap with Id {d} not found : returning null", .{ id });
+      utl.log( .TRACE, @src(), "Tilemap with Id {d} not found : returning null", .{ id });
       return null;
     };
 
@@ -236,7 +236,7 @@ pub const TilemapManager = struct
 
     if( index == null )
     {
-      utl.log( .WARN, 0, @src(), "Tilemap with Id {d} not found : returning", .{ id });
+      utl.log( .WARN, @src(), "Tilemap with Id {d} not found : returning", .{ id });
       return;
     }
 
@@ -245,16 +245,16 @@ pub const TilemapManager = struct
     tlmp.deinit( self.allocator );
     _ = self.tilemapList.swapRemove( index );
 
-    utl.log( .DEBUG, 0, @src(), "Tilemap with Id {d} deleted", .{ id });
+    utl.log( .DEBUG, @src(), "Tilemap with Id {d} deleted", .{ id });
   }
 
   pub fn deleteAllMarkedTilemaps( self : *TilemapManager ) void
   {
-    utl.qlog( .TRACE, 0, @src(), "Deleting all Tilemaps marked for deletion" );
+    utl.qlog( .TRACE, @src(), "Deleting all Tilemaps marked for deletion" );
 
     if( !self.isInit )
     {
-      utl.qlog( .WARN, 0, @src(), "Tilemap manager is not initialized" );
+      utl.qlog( .WARN, @src(), "Tilemap manager is not initialized" );
       return;
     }
 
@@ -276,7 +276,7 @@ pub const TilemapManager = struct
 
   pub fn renderTilemapHitboxes( self : *TilemapManager ) void // TODO : have this take in a renderer construct and pass it to Body.renderHitbox()
   {
-    utl.qlog( .TRACE, 0, @src(), "Rendering Tilemap hitboxes" );
+    utl.qlog( .TRACE, @src(), "Rendering Tilemap hitboxes" );
 
     for( self.tilemapList.items )| *tlmp  |{ if( tlmp.isActive() )
     {
@@ -297,7 +297,7 @@ pub const TilemapManager = struct
   {
     _ = ng;
 
-    utl.qlog( .TRACE, 0, @src(), "Rendering active Tilemaps" );
+    utl.qlog( .TRACE, @src(), "Rendering active Tilemaps" );
 
     for( self.tilemapList.items )| *tlmp |{ if( tlmp.isActive() )
     {

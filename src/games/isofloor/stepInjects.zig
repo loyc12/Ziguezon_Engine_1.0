@@ -69,12 +69,12 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     eng.G_ENG.camera.setZoom(   1.0 );
     eng.G_ENG.camera.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reseted" );
+    utl.qlog( .INFO, @src(), "Camera reseted" );
   }
 
   var worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( World ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -89,7 +89,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     const tile = worldGrid.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, worldGrid.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, worldGrid.id });
       return;
     };
 
@@ -97,7 +97,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
     if( utl.ray.isMouseButtonPressed( utl.ray.MouseButton.left ))
     {
-      utl.log( .INFO, 0, @src(), "Left-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+      utl.log( .INFO, @src(), "Left-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
       data.ground = switch( data.ground )
       {
@@ -111,7 +111,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
     if( utl.ray.isMouseButtonPressed( utl.ray.MouseButton.right ))
     {
-      utl.log( .INFO, 0, @src(), "Right-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+      utl.log( .INFO, @src(), "Right-clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
       data.object = switch( data.object )
       {
@@ -133,7 +133,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
     return;
   };
 
@@ -178,7 +178,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
 {
   const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
     return;
   };
 

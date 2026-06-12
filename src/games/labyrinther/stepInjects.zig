@@ -37,12 +37,12 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     eng.G_ENG.camera.setZoom(   1.0 );
     eng.G_ENG.camera.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reseted" );
+    utl.qlog( .INFO, @src(), "Camera reseted" );
   }
 
   var mazeMap = ng.tilemapManager.getTilemap( stateInj.MAZE_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
     return;
   };
 
@@ -84,11 +84,11 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   // If left clicked on tile, colour its neighbours
   if( worldCoords != null and utl.ray.isMouseButtonPressed( utl.ray.MouseButton.left ))
   {
-    utl.log( .INFO, 0, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
+    utl.log( .INFO, @src(), "Clicked on tile at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
 
     var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
       return;
     };
 
@@ -100,7 +100,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     {
       const n = mazeMap.getNeighbourTile( clickedTile.mapCoords, dir ) orelse
       {
-        utl.log( .TRACE, 0, @src(), "No neighbour in direction {s} found for tile at {d}:{d} : continuing", .{ @tagName( dir ), clickedTile.mapCoords.x, clickedTile.mapCoords.y });
+        utl.log( .TRACE, @src(), "No neighbour in direction {s} found for tile at {d}:{d} : continuing", .{ @tagName( dir ), clickedTile.mapCoords.x, clickedTile.mapCoords.y });
         continue;
       };
 
@@ -113,7 +113,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
       return;
     };
 
@@ -127,7 +127,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     const clickedTile = mazeMap.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, 0, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
       return;
     };
 
@@ -140,7 +140,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   const mazeMap = ng.tilemapManager.getTilemap( stateInj.MAZE_ID ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.MAZE_ID });
+    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.MAZE_ID });
     return;
   };
 

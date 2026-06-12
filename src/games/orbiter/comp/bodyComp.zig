@@ -94,7 +94,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   {
     if( self.radius < utl.EPS )
     {
-      utl.log( .WARN, 0, @src(), "BodyComp radius not set for {s} : will result in area errors", .{ @tagName( self.name )});
+      utl.log( .WARN, @src(), "BodyComp radius not set for {s} : will result in area errors", .{ @tagName( self.name )});
     }
     const econ : *ecn.Economy = self.getEcon( loc );
 
@@ -113,7 +113,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     }
     else if( activate )
     {
-      utl.log( .ERROR, 0, @src(), "Failed to initialize economy at {s}_{s} : invalid location", .{ @tagName( self.name ), @tagName( loc )});
+      utl.log( .ERROR, @src(), "Failed to initialize economy at {s}_{s} : invalid location", .{ @tagName( self.name ), @tagName( loc )});
     }
   }
 
@@ -121,7 +121,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
   {
     if( self.radius < utl.EPS )
     {
-      utl.log( .WARN, 0, @src(), "BodyComp radius not set for {s} : will result in area errors", .{ @tagName( self.name )});
+      utl.log( .WARN, @src(), "BodyComp radius not set for {s} : will result in area errors", .{ @tagName( self.name )});
     }
 
     for( 0..gdf.EconLoc.count )| i |

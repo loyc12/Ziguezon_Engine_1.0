@@ -255,10 +255,10 @@ pub const Economy = struct
     const areaUsed = self.areaData.get( .USED );
     const areaCap  = self.areaData.get( .CAP  );
 
-    utl.qlog( .INFO, 0, @src(), "$ Logging general metrics :" );
-    utl.log(  .CONT, 0, @src(), "Step count  : {d:.6}", .{ self.stepCount });
-    utl.log(  .CONT, 0, @src(), "Sunshine    : {d:.6} / {d:.6}", .{ self.sunAccess, self.sunshine });
-    utl.log(  .CONT, 0, @src(), "Development : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
+    utl.qlog( .INFO, @src(), "$ Logging general metrics :" );
+    utl.log(  .CONT, @src(), "Step count  : {d:.6}", .{ self.stepCount });
+    utl.log(  .CONT, @src(), "Sunshine    : {d:.6} / {d:.6}", .{ self.sunAccess, self.sunshine });
+    utl.log(  .CONT, @src(), "Development : {d:.0} / {d:.0} ( {d:.2}% )", .{ areaUsed, areaCap, ( areaUsed / areaCap) * 100.0 });
   }
 
 
@@ -327,7 +327,7 @@ pub const Economy = struct
 
     if( newCount - oldCount != value )
     {
-      utl.log( .WARN, 0, @src(), "@ Tried to add {d} pops to economy, but only had space for {d}", .{ value, newCount - oldCount });
+      utl.log( .WARN, @src(), "@ Tried to add {d} pops to economy, but only had space for {d}", .{ value, newCount - oldCount });
     }
     self.setPopCount( popT, newCount );
   }
@@ -338,7 +338,7 @@ pub const Economy = struct
 
     if( oldCount - newCount != value )
     {
-      utl.log( .WARN, 0, @src(), "@ Tried to remove {d} pops from economy, but only had {d} left", .{ value, oldCount - newCount });
+      utl.log( .WARN, @src(), "@ Tried to remove {d} pops from economy, but only had {d} left", .{ value, oldCount - newCount });
     }
     self.setPopCount( popT, newCount );
   }
@@ -404,7 +404,7 @@ pub const Economy = struct
 
     if( value != count )
     {
-      utl.log( .WARN, 0, @src(), "@ Tried to remove {d} resT of type {s} from economy, but only had {d} left", .{ value, @tagName( resT ), count });
+      utl.log( .WARN, @src(), "@ Tried to remove {d} resT of type {s} from economy, but only had {d} left", .{ value, @tagName( resT ), count });
     }
   }
 
@@ -432,7 +432,7 @@ pub const Economy = struct
 
     if( value != count )
     {
-      utl.log( .WARN, 0, @src(), "@ Tried to remove {d} infT of type {s} from economy, but only had {d} left", .{ value, @tagName( infT ), count });
+      utl.log( .WARN, @src(), "@ Tried to remove {d} infT of type {s} from economy, but only had {d} left", .{ value, @tagName( infT ), count });
     }
   }
 
@@ -460,7 +460,7 @@ pub const Economy = struct
 
     if( value != count )
     {
-      utl.log( .WARN, 0, @src(), "@ Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indT ), count });
+      utl.log( .WARN, @src(), "@ Tried to remove {d} ind of type {s} from economy, but only had {d} left", .{ value, @tagName( indT ), count });
     }
   }
 
@@ -519,7 +519,7 @@ pub const Economy = struct
     }
     else
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot get ecology factor : uninitialized" );
+      utl.qlog( .WARN, @src(), "Cannot get ecology factor : uninitialized" );
       return 0.0;
     }
   }
@@ -583,7 +583,7 @@ pub const Economy = struct
     }
     else
     {
-      utl.log( .WARN, 0, @src(), "Negative available area in location of type {s} : using {d:.2} / {d:.2}", .{ @tagName( self.location ), areaUsed, areaCap });
+      utl.log( .WARN, @src(), "Negative available area in location of type {s} : using {d:.2} / {d:.2}", .{ @tagName( self.location ), areaUsed, areaCap });
       self.areaData.zero( .AVAIL );
     }
   }
@@ -595,13 +595,13 @@ pub const Economy = struct
   {
     if( utl.areContEqual( c, .{ .none = {} }))
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to build .none construct : aborting" );
+      utl.qlog( .WARN, @src(), "Trying to build .none construct : aborting" );
       return 0;
     }
 
     if( !c.canBeBuiltIn( self.location, self.hasAtmo ))
     {
-      utl.qlog( .WARN, 0, @src(), "Invalid location conditions : aborting" );
+      utl.qlog( .WARN, @src(), "Invalid location conditions : aborting" );
       return 0;
     }
 
@@ -624,12 +624,12 @@ pub const Economy = struct
 
       if( areaAvail < areaCost )
       {
-      // utl.qlog( .WARN, 0, @src(), "Not enough area for a single unit : aborting" );
+      // utl.qlog( .WARN, @src(), "Not enough area for a single unit : aborting" );
         return 0;
       }
       if( areaAvail < builtAmount * areaCost )
       {
-      //utl.qlog( .WARN, 0, @src(), "Not enough area : adjusting amount" );
+      //utl.qlog( .WARN, @src(), "Not enough area : adjusting amount" );
         builtAmount = @divFloor( areaAvail, areaCost );
       }
 
@@ -670,7 +670,7 @@ pub const Economy = struct
   {
     if( utl.areContEqual( c, .{ .none = {} }))
     {
-      utl.qlog( .WARN, 0, @src(), "Trying to destruct .none construct : aborting" );
+      utl.qlog( .WARN, @src(), "Trying to destruct .none construct : aborting" );
       return 0;
     }
 
@@ -723,7 +723,7 @@ pub const Economy = struct
     }
     else
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot tick ecology : uninitialized" );
+      utl.qlog( .WARN, @src(), "Cannot tick ecology : uninitialized" );
     }
   }
 
@@ -756,7 +756,7 @@ pub const Economy = struct
     }
     else
     {
-      utl.qlog( .WARN, 0, @src(), "Cannot tick build queue : uninitialized" );
+      utl.qlog( .WARN, @src(), "Cannot tick build queue : uninitialized" );
     }
 
   }

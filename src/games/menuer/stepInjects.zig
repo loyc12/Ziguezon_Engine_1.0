@@ -111,7 +111,7 @@ pub fn buildUi( ng : *eng.Engine ) void
     }
   ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to create menuer UI panel : {}", .{ err });
+    utl.log( .ERROR, @src(), "Failed to create menuer UI panel : {}", .{ err });
     return;
   };
 
@@ -221,7 +221,7 @@ fn buildManagedUi( ng : *eng.Engine ) void
     }
   ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to create menuer managed back panel : {}", .{ err });
+    utl.log( .ERROR, @src(), "Failed to create menuer managed back panel : {}", .{ err });
     return;
   };
 
@@ -234,7 +234,7 @@ fn buildManagedUi( ng : *eng.Engine ) void
     }
   ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to create menuer managed front panel : {}", .{ err });
+    utl.log( .ERROR, @src(), "Failed to create menuer managed front panel : {}", .{ err });
     return;
   };
 
@@ -300,13 +300,13 @@ fn buildManagedUi( ng : *eng.Engine ) void
 
   BACK_HANDLE = ng.uiManager.registerPanel( back, .{ .key = utl.uiKey( "menuer.manager.back" ), .layer = 5, .z = 0 } ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to register managed back panel : {}", .{ err });
+    utl.log( .ERROR, @src(), "Failed to register managed back panel : {}", .{ err });
     return;
   };
 
   FRONT_HANDLE = ng.uiManager.registerPanel( front, .{ .key = utl.uiKey( "menuer.manager.front" ), .layer = 5, .z = 1 } ) catch | err |
   {
-    utl.log( .ERROR, 0, @src(), "Failed to register managed front panel : {}", .{ err });
+    utl.log( .ERROR, @src(), "Failed to register managed front panel : {}", .{ err });
     return;
   };
 }
@@ -561,7 +561,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     eng.G_ENG.camera.setZoom(   1.0 );
     eng.G_ENG.camera.cam.pos = .{};
-    utl.qlog( .INFO, 0, @src(), "Camera reset" );
+    utl.qlog( .INFO, @src(), "Camera reset" );
   }
 }
 

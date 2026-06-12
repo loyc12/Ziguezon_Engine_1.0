@@ -37,15 +37,15 @@ pub fn fromBodyEconPair( pair : BodyEconPair ) BodyEconSplit
 pub inline fn debugLogTravelCosts( departure : gdf.BodyEconPair, arrival : gdf.BodyEconPair ) void
 {
   const tData1 = gdf.trvlSlvr.estimateTransferPair( departure, arrival );
-  utl.log( .CONT, 0, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE",  .{ @tagName( departure ), @tagName( arrival ), tData1.deltaV, tData1.deltaT, tData1.deltaE });
+  utl.log( .CONT, @src(), "{s} > {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE",  .{ @tagName( departure ), @tagName( arrival ), tData1.deltaV, tData1.deltaT, tData1.deltaE });
 
   const tData2 = gdf.trvlSlvr.estimateTransferPair( arrival, departure );
-  utl.log( .CONT, 0, @src(), "{s} < {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE\n", .{ @tagName( departure ), @tagName( arrival ), tData2.deltaV, tData2.deltaT, tData2.deltaE });
+  utl.log( .CONT, @src(), "{s} < {s}\t: {d:.3} km/s\t| {d:.2} days\t| {d:.1} dE\n", .{ @tagName( departure ), @tagName( arrival ), tData2.deltaV, tData2.deltaT, tData2.deltaE });
 }
 
 pub inline fn debugLogTravelCostsList( body : gdf.BodyName, loc : gdf.EconLoc ) void
 {
-  utl.qlog( .INFO, 0, @src(), "& Logging travel metrics :\n" );
+  utl.qlog( .INFO, @src(), "& Logging travel metrics :\n" );
 
   const departure = gdf.toBodyEconPair( body, loc );
 
@@ -58,7 +58,7 @@ pub inline fn debugLogTravelCostsList( body : gdf.BodyName, loc : gdf.EconLoc ) 
       gdf.debugLogTravelCosts( departure, gdf.toBodyEconPair( body, loc2 ));
     }
   }
-  utl.qlog( .CONT, 0, @src(), "----------------------------------------------------------------\n" );
+  utl.qlog( .CONT, @src(), "----------------------------------------------------------------\n" );
 
   for( gdf.bodyOrder )| body2 |
   {

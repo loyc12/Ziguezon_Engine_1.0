@@ -14,7 +14,7 @@ pub fn initCriticals() void
 //std.debug.print( "allocator.ptr    = {}\n", .{ alloc.ptr    });
 //std.debug.print( "allocater.vtable = {}\n", .{ alloc.vtable });
 
-  utl.qlog( .TRACE, 0, @src(), "# Initializing all subsystems..." );
+  utl.qlog( .TRACE, @src(), "# Initializing all subsystems..." );
 
   utl.G_EPOCH = utl.getNow();
   eng.G_ENG.rng.randInit();
@@ -25,16 +25,16 @@ pub fn initCriticals() void
   eng.loadConfigs( ngi );
   eng.loadHooks(   ngi );
 
-  utl.qlog( .INFO, 0, @src(), "$ Initialized all subsystems !\n" );
+  utl.qlog( .INFO, @src(), "$ Initialized all subsystems !\n" );
 }
 
 pub fn deinitCriticals() void
 {
-  utl.qlog( .TRACE, 0, @src(), "# Deinitializing all subsystems..." );
+  utl.qlog( .TRACE, @src(), "# Deinitializing all subsystems..." );
 
   utl.deinitAllUtils();
 
-  utl.qlog( .INFO, 0, @src(), "$ Deinitialized all subsystems !\n" );
+  utl.qlog( .INFO, @src(), "$ Deinitialized all subsystems !\n" );
 }
 
 

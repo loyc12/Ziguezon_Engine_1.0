@@ -156,11 +156,11 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     /// Initializes row storage and source/target indexes.
     pub fn init( self : *RelStore, alloc : std.mem.Allocator ) void
     {
-      utl.log( .INFO, 0, @src(), "Initializing RelationStore for type {s}", .{ TypeName });
+      utl.log( .INFO, @src(), "Initializing RelationStore for type {s}", .{ TypeName });
 
       if( self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "RelationStore for type {s} is already initialized : returning", .{ TypeName });
+        utl.log( .WARN, @src(), "RelationStore for type {s} is already initialized : returning", .{ TypeName });
         return;
       }
 
@@ -174,11 +174,11 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     /// Releases relation rows and indexes.
     pub fn deinit( self : *RelStore ) void
     {
-      utl.log( .INFO, 0, @src(), "Deinitializing RelationStore for type {s}", .{ TypeName });
+      utl.log( .INFO, @src(), "Deinitializing RelationStore for type {s}", .{ TypeName });
 
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "RelationStore for type {s} is uninitialized : returning", .{ TypeName });
+        utl.log( .WARN, @src(), "RelationStore for type {s} is uninitialized : returning", .{ TypeName });
         return;
       }
 
@@ -197,19 +197,19 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot add relation row for type {s} : uninitialized", .{ TypeName });
         return false;
       }
       if( sourceId == 0 or targetId == 0 )
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot add relation row for type {s} : source and target ids must be non-zero", .{ TypeName });
+        utl.log( .DEBUG, @src(), "Cannot add relation row for type {s} : source and target ids must be non-zero", .{ TypeName });
         return false;
       }
 
       const key = RelationKey.init( sourceId, targetId );
       if( self.data.contains( key ))
       {
-        utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : source {d} target {d} already exists", .{ TypeName, sourceId, targetId });
+        utl.log( .WARN, @src(), "Cannot add relation row for type {s} : source {d} target {d} already exists", .{ TypeName, sourceId, targetId });
         return false;
       }
       if( !self.canAddCardinality( sourceId, targetId )){ return false; }
@@ -237,7 +237,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot remove relation row for type {s} : uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot remove relation row for type {s} : uninitialized", .{ TypeName });
         return false;
       }
 
@@ -249,7 +249,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     {
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot inspect RelationStore for type {s} : uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot inspect RelationStore for type {s} : uninitialized", .{ TypeName });
         return false;
       }
 
@@ -267,7 +267,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
 
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot get relation row for type {s} : uninitialized", .{ TypeName });
+        utl.log( .WARN, @src(), "Cannot get relation row for type {s} : uninitialized", .{ TypeName });
         return null;
       }
 
@@ -281,7 +281,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
 
       if( !self.isInit )
       {
-        utl.log( .WARN, 0, @src(), "Cannot remove Entity {d} from RelationStore for type {s} : uninitialized", .{ entityId, TypeName });
+        utl.log( .WARN, @src(), "Cannot remove Entity {d} from RelationStore for type {s} : uninitialized", .{ entityId, TypeName });
         result.failedCount = 1;
         return result;
       }
@@ -358,7 +358,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     {
       if( !self.data.contains( key ))
       {
-        utl.log( .DEBUG, 0, @src(), "Cannot remove relation row for type {s} : source {d} target {d} not found", .{ TypeName, key.sourceId, key.targetId });
+        utl.log( .DEBUG, @src(), "Cannot remove relation row for type {s} : source {d} target {d} not found", .{ TypeName, key.sourceId, key.targetId });
         return false;
       }
 
@@ -368,7 +368,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
 
       if( !sourceRemoved or !targetRemoved or !dataRemoved )
       {
-        utl.log( .ERROR, 0, @src(), "RelationStore index mismatch while removing type {s} source {d} target {d}", .{ TypeName, key.sourceId, key.targetId });
+        utl.log( .ERROR, @src(), "RelationStore index mismatch while removing type {s} source {d} target {d}", .{ TypeName, key.sourceId, key.targetId });
         return false;
       }
 
@@ -437,7 +437,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
         {
           if( links.items.len > 0 )
           {
-            utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : source {d} already has a target", .{ TypeName, sourceId });
+            utl.log( .WARN, @src(), "Cannot add relation row for type {s} : source {d} already has a target", .{ TypeName, sourceId });
             return false;
           }
         },
@@ -451,7 +451,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
         {
           if( links.items.len > 0 )
           {
-            utl.log( .WARN, 0, @src(), "Cannot add relation row for type {s} : target {d} already has a source", .{ TypeName, targetId });
+            utl.log( .WARN, @src(), "Cannot add relation row for type {s} : target {d} already has a source", .{ TypeName, targetId });
             return false;
           }
         },

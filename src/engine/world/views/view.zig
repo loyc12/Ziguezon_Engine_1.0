@@ -70,7 +70,7 @@ pub fn CompView( comptime CompTypes : anytype ) type
         const CompType = @field( CompTypes, field.name );
         @field( stores, field.name ) = world.getCompStore( CompType ) orelse
         {
-          utl.log( .WARN, 0, @src(), "Cannot build ComponentView : CompStore for type {s} is not registered", .{ @typeName( CompType )});
+          utl.log( .WARN, @src(), "Cannot build ComponentView : CompStore for type {s} is not registered", .{ @typeName( CompType )});
           return null;
         };
       }

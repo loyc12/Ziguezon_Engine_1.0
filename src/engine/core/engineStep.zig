@@ -10,13 +10,13 @@ pub fn stepEngineLoop( ng : *Engine ) void
 {
   if( !ng.isOpened() )
   {
-    utl.log( .WARN, 0, @src(), "Cannot start the game loop in state {s}", .{ @tagName( ng.state ) });
+    utl.log( .WARN, @src(), "Cannot start the game loop in state {s}", .{ @tagName( ng.state ) });
     return;
   }
 
-  utl.qlog( .TRACE, 0, @src(), "Starting the game loop..." );
+  utl.qlog( .TRACE, @src(), "Starting the game loop..." );
   eng.tryHook( .OnLoopStart, ng );
-  utl.qlog( .INFO, 0, @src(), "& Game loop started\n" );
+  utl.qlog( .INFO, @src(), "& Game loop started\n" );
 
 
   while( !utl.ray.windowShouldClose() )
@@ -34,9 +34,9 @@ pub fn stepEngineLoop( ng : *Engine ) void
     }
   }
 
-  utl.qlog( .TRACE, 0, @src(), "Stopping the game loop..." );
+  utl.qlog( .TRACE, @src(), "Stopping the game loop..." );
   eng.tryHook( .OnLoopEnd, ng );
-  utl.qlog( .INFO, 0, @src(), "& Game loop stopped\n" );
+  utl.qlog( .INFO, @src(), "& Game loop stopped\n" );
 }
 
 
@@ -58,11 +58,11 @@ inline fn tryUpdateInputs( ng : *Engine ) bool
 
 inline fn updateInputs( ng : *Engine ) void
 {
-  utl.qlog( .TRACE, 0, @src(), "Getting inputs..." );
+  utl.qlog( .TRACE, @src(), "Getting inputs..." );
   {
     if( utl.ray.isWindowResized() )
     {
-      utl.qlog( .TRACE, 0, @src(), "Updating camera dimensions" );
+      utl.qlog( .TRACE, @src(), "Updating camera dimensions" );
       eng.G_ENG.camera.updateView();
     }
   }
@@ -80,7 +80,7 @@ pub inline fn forceUpdateInputs( ng : *Engine ) void
 {
   if( !ng.isOpened() )
   {
-    utl.qlog( .WARN, 0, @src(), "@ Cannot force this step if the game is not opened yet" );
+    utl.qlog( .WARN, @src(), "@ Cannot force this step if the game is not opened yet" );
     return;
   }
 
@@ -110,7 +110,7 @@ pub inline fn forceTickWorld( ng : *Engine ) void
 {
   if( !ng.isOpened() )
   {
-    utl.qlog( .WARN, 0, @src(), "@ Cannot force this step if the game is not opened yet" );
+    utl.qlog( .WARN, @src(), "@ Cannot force this step if the game is not opened yet" );
     return;
   }
 
@@ -121,7 +121,7 @@ pub inline fn forceTickWorld( ng : *Engine ) void
 
 inline fn tickWorld( ng : *Engine, isForced : bool ) void
 {
-  utl.qlog( .TRACE, 0, @src(), "Ticking..." );
+  utl.qlog( .TRACE, @src(), "Ticking..." );
 
   const tickContext : eng.TickInfo =
   .{
@@ -142,7 +142,7 @@ inline fn tickWorld( ng : *Engine, isForced : bool ) void
 
 inline fn tickTilemaps( ng : *Engine ) void
 {
-  utl.qlog( .TRACE, 0, @src(), "Updating Tilemap game logic..." );
+  utl.qlog( .TRACE, @src(), "Updating Tilemap game logic..." );
 
   ng.tilemapManager.tickActiveTilemaps( ng );
   ng.tilemapManager.deleteAllMarkedTilemaps();
@@ -165,7 +165,7 @@ pub inline fn forceRenderFrame( ng : *Engine ) void
 {
   if( !ng.isOpened() )
   {
-    utl.qlog( .WARN, 0, @src(), "@ Cannot force this step if the game is not opened yet" );
+    utl.qlog( .WARN, @src(), "@ Cannot force this step if the game is not opened yet" );
     return;
   }
 
@@ -175,7 +175,7 @@ pub inline fn forceRenderFrame( ng : *Engine ) void
 
 inline fn renderFrame( ng : *Engine ) void
 {
-  utl.qlog( .TRACE, 0, @src(), "Rendering..." );
+  utl.qlog( .TRACE, @src(), "Rendering..." );
 
   utl.ray.beginDrawing();
   defer utl.ray.endDrawing();
@@ -206,7 +206,7 @@ inline fn renderFrame( ng : *Engine ) void
 
 inline fn renderTilemaps( ng : *Engine ) void
 {
-  utl.qlog( .TRACE, 0, @src(), "Updating Tilemap visuals..." );
+  utl.qlog( .TRACE, @src(), "Updating Tilemap visuals..." );
 
   ng.tilemapManager.renderActiveTilemaps( ng );
 

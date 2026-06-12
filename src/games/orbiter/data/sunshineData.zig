@@ -31,7 +31,7 @@ pub const StarShine = struct
 
     if( !data.isInit )
     {
-      utl.qlog( .ERROR, 0, @src(), "Tried to init sunshine from uninitialized stellar data" );
+      utl.qlog( .ERROR, @src(), "Tried to init sunshine from uninitialized stellar data" );
       return false;
     }
 

@@ -223,13 +223,13 @@ pub const Shape2D = enum( u8 )
     {
       .RLIN, .DLIN, =>
       {
-        utl.log( .WARN, 0, @src(), "Lines are not valid base shapes for 3D geometries" );
+        utl.log( .WARN, @src(), "Lines are not valid base shapes for 3D geometries" );
         return false;
       },
 
       .STR5, .STR6, .STR7, .STR8, .STR9, .STR10, .STR12 =>
       {
-          utl.log( .WARN, 0, @src(), "Stars are not valid base shapes for 3D geometries" );
+          utl.log( .WARN, @src(), "Stars are not valid base shapes for 3D geometries" );
           return false;
       },
 

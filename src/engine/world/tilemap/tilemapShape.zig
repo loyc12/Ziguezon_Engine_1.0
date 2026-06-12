@@ -160,7 +160,7 @@ pub fn getCoordsFromAbsPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
 
   if( !area.isOnPoint( pos )) // Quick check to see if pos is even in tilemap bounds
   {
-    utl.log( .TRACE, 0, @src(), "Position {d},{d} is out of tilemap bounding box", .{ pos.x, pos.y });
+    utl.log( .TRACE, @src(), "Position {d},{d} is out of tilemap bounding box", .{ pos.x, pos.y });
     return null;
   }
 
@@ -372,7 +372,7 @@ pub fn getCoordsFromRelPos( tlmp : *const Tilemap, pos : Vec2 ) ?Coords2
       return .{ .x = @intFromFloat( gridX ), .y = @intFromFloat( gridY )};
     },
 
-    //else => utl.log( .WARN, 0, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
+    //else => utl.log( .WARN, @src(), "getCoordsFromRelPos() is not implemented for tile shape {s}", .{ @tagName( tlmp.tileShape )}),
   }
 
   return null;
@@ -485,7 +485,7 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, mapCoords : Coords2, direction
   }
   orelse
   {
-    utl.log( .TRACE, 0, @src(), "Tilemap shape {s} does not support direction {s}", .{ @tagName( tlmp.tileShape ), @tagName( direction )});
+    utl.log( .TRACE, @src(), "Tilemap shape {s} does not support direction {s}", .{ @tagName( tlmp.tileShape ), @tagName( direction )});
     return null;
   };
 
@@ -542,7 +542,7 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
 {
   if( !tlmp.isCoordsValid( tile.mapCoords ))
   {
-    utl.log( .ERROR, 0, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.mapCoords.x, tile.mapCoords.y, tlmp.id });
+    utl.log( .ERROR, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.mapCoords.x, tile.mapCoords.y, tlmp.id });
     return;
   }
 
@@ -551,13 +551,13 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
 
   if( tile.tType == .EMPTY )
   {
-    utl.qlog( .TRACE, 0, @src(), "Cannot draw an empty tile : returning" );
+    utl.qlog( .TRACE, @src(), "Cannot draw an empty tile : returning" );
     return;
   }
 
   if( !viewBox.doesOverlap( tileBox ))
   {
-    utl.qlog( .TRACE, 0, @src(), "not drawing tiles outside of viewbox : returning" );
+    utl.qlog( .TRACE, @src(), "not drawing tiles outside of viewbox : returning" );
     return;
   }
 

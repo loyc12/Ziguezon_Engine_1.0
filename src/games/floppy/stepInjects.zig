@@ -41,7 +41,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
       var diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
       {
-        utl.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
+        utl.log( .WARN, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
         return;
       };
 
@@ -49,7 +49,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
       diskTransform.vel = stateInj.diskStartVel;
       diskTransform.acc = .{};
 
-      utl.qlog( .INFO, 0, @src(), "Game reseted" );
+      utl.qlog( .INFO, @src(), "Game reseted" );
     }
   }
 
@@ -71,14 +71,14 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
   var diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
+    utl.log( .WARN, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
 
   var diskShape = ng.world.getComp( eng.ShapeComp, DISK_ID.* ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
+    utl.log( .WARN, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
@@ -117,7 +117,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
   if( hitbox.getBottomY() > hHeight )
   {
-    utl.log( .DEBUG, 0, @src(), "Disk {d} has fallen off the screen", .{ DISK_ID.* });
+    utl.log( .DEBUG, @src(), "Disk {d} has fallen off the screen", .{ DISK_ID.* });
     IS_GAME_OVER = true;
     return;
   }
@@ -128,10 +128,10 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
   // DEBUG INFO
 
-  //utl.qlog( .DEBUG, 0, @src(), "DISK DATA" );
-  //utl.log(  .CONT,  0, @src(), "pos.y :{}", .{ disk.pos.y });
-  //utl.log(  .CONT,  0, @src(), "vel.y :{}", .{ disk.vel.y });
-  //utl.log(  .CONT,  0, @src(), "acc.y :{}", .{ disk.acc.y });
+  //utl.qlog( .DEBUG, @src(), "DISK DATA" );
+  //utl.log(  .CONT, @src(), "pos.y :{}", .{ disk.pos.y });
+  //utl.log(  .CONT, @src(), "vel.y :{}", .{ disk.vel.y });
+  //utl.log(  .CONT, @src(), "acc.y :{}", .{ disk.acc.y });
 
 }
 
@@ -145,13 +145,13 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
   const diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
+    utl.log( .WARN, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
   const diskShape = ng.world.getComp( eng.ShapeComp, DISK_ID.* ) orelse
   {
-    utl.log( .WARN, 0, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
+    utl.log( .WARN, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
@@ -167,7 +167,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   // Convert the score to strings
   const s_slice = std.fmt.bufPrint( &s_buff, "{d}", .{ SCORE }) catch | err |
   {
-      utl.log(.ERROR, 0, @src(), "Failed to format score : {}", .{err});
+      utl.log(.ERROR, @src(), "Failed to format score : {}", .{err});
       return;
   };
 
