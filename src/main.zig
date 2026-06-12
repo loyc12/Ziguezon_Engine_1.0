@@ -18,12 +18,13 @@ pub fn initCriticals() void
 
   utl.G_EPOCH = utl.getNow();
   eng.G_ENG.rng.randInit();
-  eng.G_ENG.initTimers();
 
   utl.initAllUtils();
 
   eng.loadConfigs( ngi );
   eng.loadHooks(   ngi );
+
+  eng.G_ENG.initTimers();
 
   utl.qlog( .INFO, @src(), "$ Initialized all subsystems !\n" );
 }
