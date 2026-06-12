@@ -1,6 +1,5 @@
 
 ZiguezonEngine
-*.log
 LanguageRef.txt
 *.tmp*
 *.old*
@@ -13,7 +12,8 @@ zig-out*
 
 
 # Logs #
-*logs/.log
+*./logs*
+*.log*
 *out.txt
 
 # Prerequisites
