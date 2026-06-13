@@ -1,4 +1,4 @@
-# Producers subtypes
+# Facility subtypes
 
 ## Growth
 

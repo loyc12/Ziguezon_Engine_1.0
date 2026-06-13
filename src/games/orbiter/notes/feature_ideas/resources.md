@@ -32,6 +32,7 @@
 
 - foodstuffs
 - appliances
+- propellant
 - clean water
 - clean air
 - dirty water

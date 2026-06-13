@@ -1,4 +1,4 @@
-# Population subtypes
+# Population types
 
 - dependant
 - worker
