@@ -16,7 +16,7 @@ The player is closer to the planning office of a young space-faring
 civilization than an empire commander. The player wins by enabling outcomes,
 not by clicking individual units.
 
-The unit of play is the economy, not the individual ship, factory, or colony
+The unit of play is the economy, not the individual ship, facility, or colony
 building. Time is measured in weeks and years. The economy should mostly run
 automatically, with the player intervening at structural and strategic levels.
 
@@ -86,11 +86,23 @@ route-timing windows, route supply costs, and route specialization.
 Game feel wins over strict realism when realism becomes bookkeeping. Realism is
 valuable when it creates interesting decisions.
 
+The game should convey early-to-late space colonization with enough realism to
+feel faithful to plausible future space settlement. Isaac Arthur-style
+colonization scale and Aurora 4X-style systemic readability are important
+inspirations. When realism, compute cost, and gameplay feel conflict, choose the
+abstraction that preserves the space-colonization feel while keeping the
+simulation stable and playable.
+
 ## Economic Model
 
 Each settled body or location should become an increasingly independent local
-economy with supply, demand, industry, population, infrastructure, ecology, and
-government state.
+economy with supply, demand, facilities, population, resources, capacities, and
+eventual government state.
+
+The near-term MVP is primarily an economic-simulation sandbox. Player controls
+are useful when they help test or steer the economy, but the first priority is
+bringing the economy back to a stable, autonomous, inspectable state on the
+reworked systems.
 
 Trade should emerge from:
 
@@ -117,11 +129,21 @@ work, energy, food, materials, and capacity are the base invariants. Money and
 prices are signals that affect agent decisions and transactions; they should
 not replace physical accounting.
 
+Capacity resources are special resources. They represent local availability
+rather than transportable stock: labor, area, storage, power capacity, housing,
+construction effort, compute, and similar constraints. They should be priced by
+availability and produced by facilities or population.
+
 ## Interplanetary Trade
 
 Trade should be largely automatic, market-driven, and constrained by
 infrastructure and orbital mechanics. The player shapes trade structurally
 rather than operationally.
+
+For the MVP, trade can be abstract: route-specific trader agents buy from a
+source economy, sell wholesale to a destination economy on the next tick, and
+internalize profits or losses. Transport costs should be mass-based and
+cost-gated. Capacity resources cannot be transported, and migration is deferred.
 
 Strategic trade elements include:
 
@@ -221,13 +243,17 @@ Control should form a gradient:
 Political pressure sources include underinvestment, supply instability, unfair
 exploitation, and economic isolation.
 
-## Infrastructure, Industry, And Vessels
+Politics is not part of the immediate MVP. Taxes and subsidies may exist as
+economic controls, but autonomy, laws, unrest, welfare, and local-governor
+behavior should wait until the core economy and trade loop is stable.
 
-Infrastructure is one of the main player expression systems. Infrastructure
-and industry should support the economic loop rather than become a manual
+## Facilities And Vessels
+
+Facilities are the stable combined concept for current infrastructure and
+industry. They should support the economic loop rather than become a manual
 building game.
 
-Candidate infrastructure and industry families include:
+Candidate facility families include:
 
 * habitation and housing;
 * worksites, shipyards, colleges, and laboratories;
@@ -237,7 +263,7 @@ Candidate infrastructure and industry families include:
 * service structures such as data centers and marketplaces;
 * power, water, transit, launch, mass-driver, and elevator networks.
 
-Important infrastructure roles include resource logistics, construction
+Important facility roles include resource logistics, construction
 ability, habitable area, population amenities, trade amenities, and ecological
 modification.
 
@@ -296,6 +322,10 @@ Avoid early implementation of:
 No deepening of simulation systems unless they already generate meaningful
 gameplay, already create player decisions, the existing version is already fun,
 or no critical systems are missing elsewhere.
+
+The economic simulation is the core of the game, but the project should not
+lose sight of becoming playable. Once the economy is stable, future design work
+should establish a clearer gameplay core beyond vague policy-lever ideas.
 
 ## North Star
 

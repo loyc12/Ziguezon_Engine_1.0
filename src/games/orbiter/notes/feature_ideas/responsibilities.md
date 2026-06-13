@@ -17,7 +17,7 @@
 - production
 - consumption
 - supply/demand
-- industry
+- facilities
 - population
 - births/deaths
 - growth/decay
@@ -41,4 +41,3 @@
 - colonial directives
 - economic levers
 - political levers
-

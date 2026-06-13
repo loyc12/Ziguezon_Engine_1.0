@@ -1,89 +1,289 @@
 # Orbiter Goals
 
-This file records rework-specific target state for Orbiter. The broad game
-design belongs in [design_doc.md](design_doc.md). Broad design and
-engineering philosophy belongs in [design_philo.md](design_philo.md).
+This file records the target state for the current Orbiter rework. Broad game
+design belongs in [design_doc.md](design_doc.md), broad design philosophy
+belongs in [design_philo.md](design_philo.md), current implementation facts
+belong in [reference.md](reference.md), and deferred ideas belong in
+[feature_ideas/ideas.md](feature_ideas/ideas.md).
 
-Current implementation facts belong in [reference.md](reference.md).
 Implementation sequencing belongs in [roadmap.md](roadmap.md). Short active
 tasks belong in [todo.md](todo.md).
 
-## 1. Status
+## 1. MVP Purpose
 
-These goals are intentionally under review. The older Orbiter design direction
-was broad and partly stale relative to the current implementation and the
-expected engine stabilization work.
+The MVP is an economic-simulation recovery target, not a full gameplay target.
+Its purpose is to bring Orbiter's economy back to a stable, active,
+autonomous state using the reworked underlying systems.
 
-Until this file is rebuilt in detail, treat it as the stable high-level intake
-for the next Orbiter rework rather than a complete subsystem specification.
+Exact stability criteria should be chosen by the user during tuning rather than
+locked in this file.
 
-## 2. Current Rework Intent
+The MVP should prove that economies can remain active and stable through
+automatic trade. Phase 2 should start with Terra and Luna, then add Venus as the
+final third-economy test:
 
-The next Orbiter rework should preserve the macro-scale premise while replacing
-debug scaffolding with deliberate game systems. The high-level direction is
-still close to the desired game, but many established subsystem details should
-be considered provisional and open to teardown or rebuild.
+* Terra;
+* Luna;
+* Venus.
 
-The likely rework endpoint should define:
+Colonization, explicit win/loss goals, politics, migration, vessel logistics,
+and heavy player-facing gameplay can wait. Player controls are incidental for
+this MVP and should exist mainly where they help sandbox, stabilize, or inspect
+the economic simulation.
 
-* a playable economy loop across three interdependent economies, initially
-  Terra, Luna, and Venus;
-* a replacement for `debugAutoBuild()` using real agent, government, or player
-  order paths;
-* coherent construction funding, materials, effort, cancellation, and refunds;
-* a narrow but real player lever for investment or policy;
-* the first automatic inter-economy trade path;
-* the boundary between abstract logistics and future vessel-mediated logistics;
-* which politics and autonomy concepts are explicitly deferred until after the
-  MVP loop works;
-* which current economy data tables should survive, shrink, or be rebuilt.
+## 2. MVP Phases
 
-The MVP should avoid politics as an active gameplay layer. Government,
-autonomy, unrest, legislation, and policy divergence can remain represented as
-future-facing data or design hooks, but they should not drive the first playable
-loop unless a later design pass explicitly promotes them.
+### Phase 1 - Terra Baseline
 
-## 3. Non-Negotiable Direction
+Phase 1 restores Terra to a stable autonomous single-economy baseline on the
+new model.
 
-Orbiter should remain a macro-scale game. The core loop should not become:
+Success means Terra can run without `debugAutoBuild()` as the central growth
+driver and without depending on knowingly obsolete economy structures.
 
-* per-ship tactical command;
-* factory-by-factory production micromanagement;
-* repetitive manual shipment routing;
-* combat-first strategy;
-* simulation depth that creates no player decision.
+Phase 1 should establish:
 
-The simulation should stay physically grounded. Money, prices, and policy
-should influence agent behavior and transactions without replacing resource,
-capacity, time, and logistics accounting.
+* the resource and capacity-resource model;
+* the `Facility` model replacing the old industry/infrastructure split;
+* population split into dependants and workers;
+* the economy update pipeline that succeeds the current `econSolver`;
+* construction, finance, and capacity enforcement inside that pipeline;
+* enough logging and inspection to diagnose one economy from a tick trace.
 
-`G_DATA` may remain as the game-owned global state holder for broadly accessed
-Orbiter runtime data, similar in spirit to how `D_CONST` holds mostly-constant
-data. The rework target is not to eliminate all global access. The target is to
-keep ownership clear, avoid accidental hidden simulation state, and keep
-mutable data explicit enough to reason about, reset, and eventually serialize.
+### Phase 2 - Trade, Luna, And Venus
 
-## 4. Known Goal Rework Inputs
+Phase 2 adds the inter-economy trade sandbox. It should prove Terra and Luna
+first, then add Venus as a final stability test.
 
-The next rewrite should explicitly decide these tensions instead of inheriting
-them silently:
+Success means Terra and Luna can trade automatically and remain stable under
+preset or simple player-adjustable taxes and subsidies, then Venus can be added
+without breaking the sandbox.
 
-* the current game is a simulation/debug sandbox, not a playable loop;
-* broad design docs still assume automatic economic growth, trade, and policy
-  that are not implemented;
-* government types and monetary state exist, but government behavior is a stub
-  and should not be part of the first MVP gameplay loop;
-* transfer estimation exists, but trade signals, cargo records, tariffs, and
-  arrival accounting do not;
-* vessel metrics exist, but vessels have no state, lifecycle, movement, or
-  cargo integration;
-* construction currently depends on a transitional queue and debug automation;
-* `G_DATA` should be kept, but its contents and boundaries need review so it
-  remains an intentional game-owned state surface rather than miscellaneous
-  hidden state;
-* the reused economy solver may still conflict with future scaling,
-  serialization, or inspectability goals;
-* the resource, infrastructure, industry, settlement, and population target
-  surfaces may be too broad for the next playable slice;
-* many currently established subsystem designs may need significant rework
-  before they are suitable foundations for the three-economy MVP.
+Phase 2 should establish:
+
+* automatic route-based trade;
+* route-local `TRADER` agents;
+* mass-based trade costs;
+* extractable-resource accessibility;
+* Luna as a high-accessibility mineral source;
+* Venus as a third-economy role chosen during Phase 2;
+* enough route taxation and subsidy behavior to stabilize or destabilize the
+  sandbox deliberately.
+
+Non-critical systems that are needed by Phase 2 can be scaffolded in Phase 1,
+but they should not distract from restoring Terra first.
+
+## 3. Player Controls
+
+The MVP player surface can stay narrow.
+
+Expected controls:
+
+* taxes and subsidies for trade routes;
+* taxes and subsidies for `EconAgent` groups;
+* preset starting subsidies where needed to produce a stable demonstration
+  economy.
+
+Taxes and subsidies are defined by, paid to, and paid from the `GOVERNMENT`
+agent. For the MVP, `GOVERNMENT` is the government agent currently controlled by
+the player; later governance work may separate it from direct player control.
+Taxes apply relative to how much money the target made. Subsidies apply relative
+to how much money the target spent. This should apply uniformly to route traders
+and other `EconAgent` groups.
+
+Do not add colonization controls, settlement expansion workflows, direct
+facility placement, manual shipment routing, per-ship command, or explicit
+game goals for this MVP unless the user revises the target.
+
+## 4. Economy Ownership And Locations
+
+Economies should become game-owned data rather than body-owned arrays. The
+game should hold a global economy array addressed by simple `u32` economy
+indices. If the array ever needs to exceed 1000 economies, the code should
+throw or otherwise force an explicit design review rather than silently scaling
+past the intended model.
+
+Bodies, settlements, routes, and future mobile entities should reference
+economies by index or pointer rather than owning the economy data directly.
+
+`G_DATA` should remain the game-owned holder for broadly accessed Orbiter
+runtime state, similar in spirit to `D_CONST` for mostly-constant data. The
+goal is clear ownership and reset behavior, not eliminating game-global state.
+
+`EconLoc` needs heavy rework. It should split into `SettlementType` for economy
+logic and placement plus `BodyLocation` for body-relevant travel-cost locations.
+
+Near-term settlement types:
+
+* surface;
+* subsurface;
+* aerial;
+* orbital.
+
+For the MVP, keep one orbital economy per body. Later, bodies should be able to
+host multiple orbital economies, such as one per Lagrange point and one per
+orbit height, and the star should be able to host an arbitrary number of
+solar-orbit economies such as an asteroid-belt aggregate that excludes directly
+defined bodies. Lagrange-point economy locations need a future design pass and
+can wait until after the MVP.
+
+## 5. Resources And Capacity Resources
+
+Resources need a revamp.
+
+Some current economy values should become capacity resources. Capacity
+resources are special resources that represent local availability rather than
+transportable stock. Current `WORK` is the model to generalize.
+
+Capacity resources:
+
+* are not transported by trade;
+* are priced by availability rather than by ordinary stock flow;
+* are produced or exposed by facilities, population, settlements, or local
+  conditions;
+* are calculated through the unified economy update pipeline for now;
+* may be cached later only if profiling or area-use complexity justifies it.
+
+Likely capacity resources include labor, area, housing, storage, construction
+effort, power capacity, compute, and research.
+
+Other resources should be implemented or reserved according to the categories
+in [feature_ideas/resources.md](feature_ideas/resources.md). Non-MVP resources
+can remain as commented-out enum values until the system stabilizes.
+
+`DEPOT` should stay as the singular storage facility for now. Resources should
+still declare which facility stores them, but `DEPOT` storage capacity should
+aggregate into one shared capacity pool rather than one lane per resource. If
+produced resources exceed usable storage, unstoreable resources should be
+wasted proportionally to production this tick. This waste should be calculated
+at the end of the economy update pass, before quantities are published back to
+the economy state.
+
+Extractable resources should gain a static accessibility rate for MVP. Luna
+should have higher mineral accessibility than Terra and Venus.
+
+## 6. Facilities
+
+`Facility` is the stable name for the merged industry/infrastructure concept.
+Do not keep a separate implementation split for the MVP unless the code proves
+it is still useful internally.
+
+Facilities can be categorized for readability and data layout:
+
+* growth;
+* extraction;
+* manufacturing;
+* service;
+* transportation;
+* capacity.
+
+Facility categories and subtypes should follow
+[feature_ideas/facilities.md](feature_ideas/facilities.md). Non-MVP facilities
+can remain as commented-out enum values until the facility model stabilizes.
+
+Facilities may produce ordinary resources or capacity resources. Former
+infrastructure such as housing, depots, habitats, networks, and construction
+capacity should become facilities that expose or produce the relevant
+capacities.
+
+## 7. EconAgents
+
+`EconAgent` should be the common enum group for economy actors.
+
+Near-term agent groups:
+
+* one agent entry for each facility enum value present in an economy, not one
+  per facility instance;
+* `POPULATION` as a whole-economy population agent for MVP;
+* `TRADER` per trade route;
+* one `GOVERNMENT` instance for the economy.
+
+Agents are the interface between resource access, finance, taxes, subsidies,
+construction requests, and trade. The MVP does not need complex agent
+inventories. Route-local `TRADER` inventory and broader agent-owned
+inventories are deferred unless next-tick wholesale trade proves insufficient.
+
+## 8. Population
+
+Population should split into subtypes for the MVP:
+
+* dependants;
+* workers.
+
+Births create dependants. Dependants convert into workers at a fixed rate.
+
+Dependants and workers can have the same MVP consumption values, but each type
+should declare its consumption separately so later education, wealth, law,
+class, or role rules can diverge cleanly.
+
+Worker output should feed the labor/capacity-resource model. Education,
+wealth, laws, migration, owners, managers, engineers, and other population
+subtypes are deferred.
+
+## 9. Economy Update Pipeline
+
+The economy update system is the largest MVP rework.
+
+The current economy state, `econSolver`, `econBuilder`, build queue, capacity
+calculation, prices, finance, and construction behavior need to be reviewed as
+one system. The successor should be better organized and split into smaller
+files where separation of concern is overdue.
+
+The MVP update pipeline should:
+
+* calculate ordinary resource flows;
+* calculate capacity-resource availability and prices;
+* update population consumption, production, births, deaths, and type
+  conversion;
+* update facility production, consumption, access, and activity;
+* enforce storage, area, housing, construction, labor, and power constraints;
+* process construction and deconstruction through coherent funding, materials,
+  effort, cancellation, and refund rules;
+* process agent finances, taxes, subsidies, savings, and losses;
+* publish inspectable economy state without relying on debug-only automation.
+
+The current `debugAutoBuild()` path is temporary scaffolding. It should be
+retired once real agent, government, or player-order paths can maintain the
+economy.
+
+## 10. Trade
+
+MVP trade should be automatic and abstract.
+
+Each trade route should have its own `TRADER` agent. The trader buys resources
+from the source economy and sells them wholesale in the destination economy on
+the next tick. The trader internalizes profits and losses.
+
+Trade should:
+
+* move ordinary resources only;
+* exclude capacity resources;
+* exclude migration;
+* base transport cost on transported resource mass;
+* use route taxes and subsidies;
+* use transfer-cost gating rather than vessel movement.
+
+For the MVP, use the current roughly-realistic `deltaE` path or a best-case /
+clamped variant so route costs do not explode when the current transfer window
+is bad. Dynamic `deltaV`, dynamic `deltaT`, transfer windows, travel delay, and
+vessel-mediated cargo are post-MVP concerns.
+
+## 11. Deferred But Important
+
+The MVP should not discard future design space. Preserve these as constraints
+or idea parking rather than direct work:
+
+* colonization and settlement founding;
+* politics, autonomy, unrest, welfare, laws, and local governors;
+* ship modules, vessel logistics, arcships, and cyclers;
+* dynamic transfer windows and realistic route timing;
+* agent-owned inventories beyond route-local trade needs;
+* migration;
+* education, wealth, law, and class-based population conversion;
+* lightweight economy variants for automated mines, ship-bound economies, and
+  regional aggregates;
+* broader game goals, crises, victory/failure framing, and fun-focused player
+  loops.
+
+Do not silently delete older ideas. Move them into `feature_ideas/`, mark them
+post-MVP, or ask the user before discarding them.

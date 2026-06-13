@@ -1,4 +1,9 @@
-# Facility subtypes
+# Facility Subtypes
+
+Facility is the stable name for the combined industry/infrastructure concept.
+Facilities may still be categorized by role so UI and data remain readable.
+Non-MVP entries can stay as commented-out enum values until the facility system
+stabilizes.
 
 ## Growth
 
@@ -33,7 +38,7 @@
 - depots
 - battery banks
 
-## Transportation /
+## Transportation
 
 - power network
 - water network
@@ -43,6 +48,5 @@
 - space elevator
 
 ## Capacity
-
 
 

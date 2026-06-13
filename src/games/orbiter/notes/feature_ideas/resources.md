@@ -1,4 +1,10 @@
-# Resource subtypes
+# Resource Subtypes
+
+Resources should be grouped by category. Non-MVP entries can stay as
+commented-out enum values until the resource system stabilizes.
+
+Capacity resources are special: they are availability-priced,
+non-transportable, and often behave like current `WORK`.
 
 ## Capacity
 

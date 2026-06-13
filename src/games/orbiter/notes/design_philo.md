@@ -24,13 +24,18 @@ Aggregate behavior is the sum of local decisions.
 The solver coordinates allocation. It should not act as a global oracle that
 knows the best answer for the whole economy.
 
-### Component-First, State-Explicit
+### Game-Owned State, Explicit Boundaries
 
 Persistent simulation state should be explicit plain data accessed through
 typed keys and data matrices. Behavior should live in functions over that data.
 
-Hidden mutable globals should not be reachable from simulation code. If state
-cannot be serialized, it probably should not persist.
+Game-owned global state is acceptable when it is an intentional ownership
+surface. `G_DATA` can hold broadly accessed mutable Orbiter runtime state, just
+as `D_CONST` holds mostly-constant data. The problem to avoid is miscellaneous
+hidden state with unclear lifetime, reset behavior, or serialization path.
+
+If state cannot be reasoned about, reset, inspected, or eventually serialized,
+it probably should not persist.
 
 ### Multi-Scale By Construction
 
@@ -41,6 +46,10 @@ near-linear in the number of agents, or have an explicit aggregation path.
 Aggregation, variable tick rates, and background-economy handling are
 first-class design concerns, not late optimizations.
 
+Do not force the MVP into one update model that makes later lightweight economy
+types hard to add. Automated mines, ship-bound economies, regional aggregates,
+and background economies should remain possible even if they are deferred.
+
 ### High-Level Readability
 
 The simulation should be inspectable. Logs are first-class. Significant
@@ -48,6 +57,11 @@ metrics should be accumulated even when no UI consumes them yet.
 
 Debug output should show the same values the solver uses, not disconnected
 summaries. If a balancing pass requires reading the source, logs are missing.
+
+The codebase should become more integrated and holistic as systems are reworked,
+but not by imposing an abstract architecture doctrine. Prefer concise,
+practical, locally understandable code shaped by the actual problem and the
+project's existing style.
 
 ## Design Heuristics
 
@@ -78,6 +92,21 @@ Prefer mechanics that fit inside an existing loop, such as another resource
 type or consumer class, over mechanics that introduce a new top-level pass.
 The solver phase order is the simulation spine.
 
+Special cases are acceptable when they model real economic differences, but
+they should be named and isolated. Capacity resources, settlement types, and
+trader agents are deliberate model concepts, not accidental bypasses.
+
+### What Can Wait?
+
+The project has a tendency to deepen simulation before proving the playable
+loop. Defer systems that do not support the next stable economic sandbox,
+especially politics, colonization, migration, ship modules, and detailed
+demographics.
+
+Do not defer the core economy rework when later features depend on it being
+stable. Resource/capacity accounting, facilities, population, trade, and the
+economy update pipeline are foundational.
+
 ### Can A Contributor Read It Cold?
 
 Names, comments, and structure should be self-explanatory at the file level.
@@ -96,6 +125,11 @@ the roadmap from the new insight before implementation significantly diverges.
 Solver phases, such as `stepEcon`, are the spine. New behavior should get a
 new phase function or extend an existing phase. Bypassing phase order requires
 a strong justification.
+
+During the economy rework, it is acceptable to replace `stepEcon` with a
+better-organized successor pipeline if that makes resource, capacity,
+facility, population, construction, trade, and finance behavior easier to
+reason about.
 
 Use `f64` inside solvers. Round only when publishing back to state or at
 explicit integer boundaries.
