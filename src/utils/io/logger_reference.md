@@ -113,8 +113,8 @@ rather than several interleaved `std.debug.print` fragments.
 
 The reusable output primitives live in `src/utils/io/outputer.zig`:
 
-* `FixedStream`: fixed-size buffer with an explicit truncation marker;
-* `NamedFileSink`: create/truncate/write/close wrapper for a single file;
+* `GetFixedStream`: fixed-size buffer with an explicit truncation marker;
+* `GetNamedFileSink`: create/truncate/write/close wrapper for a single file;
 * `formatTaggedFileName`: helper for `debug_INFO.log`-style paths.
 
 For file logging:

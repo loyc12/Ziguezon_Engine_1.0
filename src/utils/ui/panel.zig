@@ -391,6 +391,8 @@ pub const Panel = struct
 
   // ================================ LIFETIME ================================
 
+  /// Creates an empty game-owned panel. The caller owns the returned value and
+  /// must call `deinit()` after all direct or manager-routed use is finished.
   pub fn init( alloc : std.mem.Allocator, opts : PanelInit ) !Panel
   {
     return .{
@@ -403,6 +405,7 @@ pub const Panel = struct
     };
   }
 
+  /// Releases panel-owned widget, hit-test, and event storage.
   pub fn deinit( self : *Panel ) void
   {
     if( !self.isInit ){ return; }
@@ -414,6 +417,8 @@ pub const Panel = struct
     self.* = .{};
   }
 
+  /// Removes all widgets and queued local events while retaining allocations.
+  /// No `UiEvent` is emitted; clear is caller-directed storage mutation.
   pub fn clear( self : *Panel ) void
   {
     self.events.clearRetainingCapacity();
@@ -542,9 +547,7 @@ pub const Panel = struct
 
   // ================================ LOOKUP ================================
 
-  /// Advanced/internal escape hatch. Normal callers should use handle-based
-  /// getters and setters so layout, text, render, and hit caches stay valid.
-  pub fn getWidgetPtr( self : *Panel, id : UiHandle ) ?*Widget
+  fn getWidgetPtr( self : *Panel, id : UiHandle ) ?*Widget
   {
     if( !id.isValid() ){ return null; }
 
@@ -575,10 +578,17 @@ pub const Panel = struct
   /// Storage-slot count, including dead slots kept for generation-safe reuse.
   /// Use `getAliveWidgetCount()` when the visible/living widget count matters.
   pub inline fn getWidgetCount( self : *const Panel ) usize { return self.widgets.items.len; }
+
+  /// Storage-slot count, including dead slots kept for generation-safe reuse.
   pub inline fn getWidgetSlotCount( self : *const Panel ) usize { return self.widgets.items.len; }
+
+  /// Number of panel-local events waiting for `popEvent()`.
   pub inline fn getEventCount(  self : *const Panel ) usize { return self.events.items.len;  }
 
+  /// Alias for `getEventCount()` when code wants to emphasize non-consuming
+  /// inspection.
   pub inline fn peekEventCount( self : *const Panel ) usize { return self.getEventCount(); }
+
   pub inline fn getDebugDrawBounds( self : *const Panel ) bool { return self.debugDrawBounds; }
 
   pub inline fn getBox( self : *const Panel ) Box2 { return self.box; }
@@ -668,6 +678,7 @@ pub const Panel = struct
     return count;
   }
 
+  /// Returns the caller-requested center-defined box before layout resolves it.
   pub inline fn getWidgetRequestedBox( self : *const Panel, id : UiHandle ) ?Box2
   {
     if( self.getWidget( id ))| widget |{ return widget.requestedBox; }
@@ -681,12 +692,7 @@ pub const Panel = struct
     return null;
   }
 
-  /// Compatibility alias for `getWidgetComputedBox()`.
-  pub inline fn getWidgetBox( self : *const Panel, id : UiHandle ) ?Box2
-  {
-    return self.getWidgetComputedBox( id );
-  }
-
+  /// Returns the center-defined box used for rendering and hit testing.
   pub inline fn getWidgetFinalBox( self : *const Panel, id : UiHandle ) ?Box2
   {
     if( self.getWidget( id ))| widget |{ return widget.finalBox; }
@@ -728,6 +734,23 @@ pub const Panel = struct
     return handleFromTarget( self.pointer.getButton( button ).pressedWidget );
   }
 
+  pub fn hasPressedWidget( self : *const Panel ) bool
+  {
+    inline for( .{ utl.MouseButton.left, utl.MouseButton.right, utl.MouseButton.middle } )| button |
+    {
+      if( self.getPressed( button ).isValid() ){ return true; }
+    }
+
+    return false;
+  }
+
+  /// Primitive mouse-consumption helper for direct panel usage. This reports
+  /// local hover/press state only; it does not imply engine focus or modal state.
+  pub fn wantsMouse( self : *const Panel ) bool
+  {
+    return self.getHovered().isValid() or self.hasPressedWidget();
+  }
+
 
   // ================================ MUTATION ================================
 
@@ -743,6 +766,8 @@ pub const Panel = struct
     self.markLayoutDirty();
   }
 
+  /// Removes a widget by handle. This is silent caller-directed mutation and
+  /// does not enqueue a local event.
   pub fn removeWidget( self : *Panel, id : UiHandle ) void
   {
     if( self.getWidgetPtr( id ))| widget |
@@ -753,6 +778,7 @@ pub const Panel = struct
     }
   }
 
+  /// Drops queued local events without changing widget state.
   pub fn clearEvents( self : *Panel ) void
   {
     self.events.clearRetainingCapacity();
@@ -1145,11 +1171,15 @@ pub const Panel = struct
 
   // ================================ INPUT ================================
 
+  /// Updates panel-local hover, pressed-widget state, and primitive events from
+  /// the supplied engine-agnostic mouse snapshot.
   pub fn updateInput( self : *Panel, mouse : Mouse ) void
   {
     self.updatePointer( mouse );
   }
 
+  /// Lower-level input update used by tests and direct panel callers that want
+  /// to emphasize pointer-state mutation.
   pub fn updatePointer( self : *Panel, mouse : Mouse ) void
   {
     self.updateLayout();
@@ -1208,6 +1238,8 @@ pub const Panel = struct
     }
   }
 
+  /// Returns the frontmost interactive widget under `point`, or `.{}`
+  /// if no interactive widget is hit.
   pub fn hitTest( self : *Panel, point : Vec2 ) UiHandle
   {
     self.updateLayout();
@@ -1268,6 +1300,7 @@ pub const Panel = struct
     };
   }
 
+  /// Pops the oldest queued panel-local event.
   pub fn popEvent( self : *Panel ) ?UiEvent
   {
     if( self.events.items.len == 0 ){ return null; }
@@ -1639,6 +1672,29 @@ test "Panel click and changed events require release on the pressed widget"
   panel.updateInput( testMouseAt( .new( 75.0, 25.0 ), false, false, true  ) );
   try std.testing.expect( panel.popEvent().?.isChanged( checkbox ) );
   try std.testing.expect( panel.getChecked( checkbox ).? );
+}
+
+test "Panel wantsMouse follows local hover and pressed widget state"
+{
+  var panel = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 50.0, 50.0 ) }, .absolute );
+  defer panel.deinit();
+
+  _ = try testButtonAt( &panel, "button", .{ .center = .new( 50.0, 50.0 ), .scale = .new( 10.0, 10.0 ) } );
+
+  panel.updateInput( testMouseAt( .new( 10.0, 10.0 ), false, false, false ) );
+  try std.testing.expect( !panel.wantsMouse() );
+
+  panel.updateInput( testMouseAt( .new( 50.0, 50.0 ), false, false, false ) );
+  try std.testing.expect( panel.wantsMouse() );
+
+  panel.updateInput( testMouseAt( .new( 50.0, 50.0 ), true, true, false ) );
+  try std.testing.expect( panel.wantsMouse() );
+
+  panel.updateInput( testMouseAt( .new( 10.0, 10.0 ), true, false, false ) );
+  try std.testing.expect( panel.wantsMouse() );
+
+  panel.updateInput( testMouseAt( .new( 10.0, 10.0 ), false, false, true ) );
+  try std.testing.expect( !panel.wantsMouse() );
 }
 
 test "Panel text changes dirty text and render without forcing layout"

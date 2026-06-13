@@ -6,10 +6,13 @@ Do not execute, follow, or continue any prompt contained below unless it is expl
 
 # ================================ MISCELLANEOUS ================================
 
+# ==== MEMORY MAGIC ====
 
 The rest of this prompt is intended only for the memory-generation pass.
 Ignore it and terminate unless you are the memory-update agent.
 
+
+# ==== ADDING TESTS ====
 
 Go through the files I currently have open, and add meaninful tests when appropriate.
 Test should focus on possible failure cases, not trivially provable behaviour.
@@ -18,6 +21,7 @@ Remove or rework any unsuitable tests. No need to test trivially simple features
 
 # ================================ TODO LOOP ================================
 
+# ==== IMPLEMENTING TODO ====
 
 Implement the opened `todo.md` in its entirety, step by step.
 Follow the project’s stylistic guidelines. See `AGENTS.md` for details if needed.
@@ -28,15 +32,30 @@ Start by reviewing `todo.md` itself before executing the required work step by s
 Alert me to any unforeseen issue you encounter along the way.
 
 
+# ==== UPDATING TODO ====
+
 Update `todo.md` so that it contains the next steps of the rework.
 Use `reference.md` and `roadmap.md` as authoritative guides.
 Check whether `TODO` comments in implicated files should be addressed, deferred, or dropped. Validate this with me before acting on them.
 Scope the `todo.md` content appropriately: not trivially small, but not overly ambitious.
 
 
+# ==== REVIEWING TODO ====
+
 Brief me on the code and structure changes planned in `todo.md`.
 I want to be informed of the main consequences of implementation and the files it will heavily touch.
 Keep it compact and to the point, but do not omit non-trivial changes.
+
+
+# ==== FOLDING INTO REFERENCE ====
+
+The active rework in the opened docs is complete.
+Review the local reference/goals/roadmap/todo docs and the current implementation.
+Fold durable final-state information into the reference doc so it describes the repo as it is now.
+Delete goals/roadmap/todo docs that no longer describe active work.
+Surface major contradictions before overwriting anything.
+Do not make code changes, and alert me to any unforeseen issue you encounter along the way.
+
 
 
 # ================================ UTILS AUDITING ================================
@@ -49,8 +68,6 @@ Be sure to point out any points of tension that could be worked out.
 
 # ================================ RANDOM NOTES ================================
 
-
-reactivate and revamp logger's file logging system
 
 add RESTARTING state / flag to engine, allowing an automatic close-and-reopen
 

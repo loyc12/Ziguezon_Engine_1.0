@@ -18,5 +18,8 @@ Prefer succinct, direct answers with minimal embellishment.
 - When adding or auditing tests, focus on meaningful failure cases; skip trivially
   provable behavior and remove or rework unsuitable tests.
 
-For broad refactors, new modules, or uncertain formatting decisions, read
-[`docs/code_style.md`](docs/code_style.md).
+For broad refactors, new modules, or uncertain formatting decisions,
+read [`docs/code_style.md`](docs/code_style.md).
+
+For creating or substantially editing reference.md or goals.md docs, or questions about
+roadmap.md and todo.md read [`docs/doc_guidelines.md`](docs/doc_guidelines.md).

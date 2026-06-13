@@ -57,7 +57,7 @@ const EXPECT_FILE_SETUP_FAILURE : bool  = loggerConfig.expect_file_setup_failure
 
 // ================================ FILE STATE ================================
 
-const FileSlot = out.NamedFileSink( LOG_NAME_LEN );
+const FileSlot = out.GetNamedFileSink( LOG_NAME_LEN );
 
 var AggregateLogFile : FileSlot = FileSlot{};
 var LevelLogFiles    : [ LogLevel.count ]FileSlot = [_]FileSlot{ FileSlot{} } ** LogLevel.count;
@@ -73,7 +73,7 @@ const LogStamp = struct
 };
 
 /// Fixed-size formatter used to build one complete log record before flushing.
-const LogStream = out.FixedStream( LOG_BUFF_LEN, LOG_TRUNC_MSG );
+const LogStream = out.GetFixedStream( LOG_BUFF_LEN, LOG_TRUNC_MSG );
 
 fn parseLogLevel( comptime text : [] const u8 ) LogLevel
 {

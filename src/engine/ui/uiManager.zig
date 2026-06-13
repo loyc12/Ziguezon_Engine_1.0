@@ -108,7 +108,14 @@ pub const UiManager = struct
     if( !self.isInit ){ return; }
 
     self.events.clearRetainingCapacity();
-    self.panels.clearRetainingCapacity();
+    for( self.panels.items )| *reg |
+    {
+      reg.isAlive = false;
+      reg.panel   = null;
+      reg.gen     = nextGeneration( reg.gen );
+      reg.handle  = .{};
+    }
+
     self.hoveredPanel = .{};
     self.capturedPanel = [_]UiPanelHandle{ .{} } ** MouseButton.count;
     self.nextOrder = 1;
@@ -127,9 +134,7 @@ pub const UiManager = struct
     {
       if( slot.isAlive ){ continue; }
 
-      var gen = slot.gen +% 1;
-      if( gen == 0 ){ gen = 1; }
-
+      const gen = nextGeneration( slot.gen );
       const handle = UiPanelHandle.fromIndexGen( @intCast( i ), gen );
       slot.* = self.makeRegistration( handle, panel, config, gen );
       return handle;
@@ -173,12 +178,7 @@ pub const UiManager = struct
     reg.isAlive = false;
     reg.panel   = null;
 
-    if( self.hoveredPanel.isEq( handle )){ self.hoveredPanel = .{}; }
-
-    for( &self.capturedPanel )| *captured |
-    {
-      if( captured.isEq( handle )){ captured.* = .{}; }
-    }
+    self.clearInputStateFor( handle );
 
     return true;
   }
@@ -233,9 +233,47 @@ pub const UiManager = struct
   pub inline fn getEventCount( self : *const UiManager ) usize { return self.events.items.len; }
   pub inline fn getHoveredPanel( self : *const UiManager ) UiPanelHandle { return self.hoveredPanel; }
 
+  pub fn getHoveredWidget( self : *const UiManager ) utl.UiHandle
+  {
+    const reg = self.getRegistration( self.hoveredPanel ) orelse return .{};
+    const panel = reg.panel orelse return .{};
+    return panel.getHovered();
+  }
+
   pub inline fn getCapturedPanel( self : *const UiManager, button : MouseButton ) UiPanelHandle
   {
     return self.capturedPanel[ button.toIndex() ];
+  }
+
+  pub fn getCapturedWidget( self : *const UiManager, button : MouseButton ) utl.UiHandle
+  {
+    const reg = self.getRegistration( self.getCapturedPanel( button )) orelse return .{};
+    const panel = reg.panel orelse return .{};
+    return panel.getPressed( button );
+  }
+
+  pub fn hasCapturedPanel( self : *const UiManager ) bool
+  {
+    inline for( .{ MouseButton.left, MouseButton.right, MouseButton.middle } )| button |
+    {
+      if( self.getCapturedPanel( button ).isValid() ){ return true; }
+    }
+
+    return false;
+  }
+
+  pub inline fn hasPendingEvents( self : *const UiManager ) bool
+  {
+    return self.events.items.len > 0;
+  }
+
+  /// Mouse-consumption boundary for game code. This does not imply keyboard
+  /// focus, modal blocking, or global hotkey suppression.
+  pub fn wantsMouse( self : *const UiManager ) bool
+  {
+    return self.hoveredPanel.isValid()
+      or self.hasCapturedPanel()
+      or self.hasPendingEvents();
   }
 
   pub fn getPanelAtDrawIndex( self : *const UiManager, drawIdx : usize ) UiPanelHandle
@@ -259,12 +297,20 @@ pub const UiManager = struct
 
   pub fn setPanelVisible( self : *UiManager, handle : UiPanelHandle, isVisible : bool ) void
   {
-    if( self.getRegistrationPtr( handle ))| reg |{ reg.isVisible = isVisible; }
+    if( self.getRegistrationPtr( handle ))| reg |
+    {
+      reg.isVisible = isVisible;
+      if( !isVisible ){ self.clearInputStateFor( handle ); }
+    }
   }
 
   pub fn setPanelInputEnabled( self : *UiManager, handle : UiPanelHandle, isInputEnabled : bool ) void
   {
-    if( self.getRegistrationPtr( handle ))| reg |{ reg.isInputEnabled = isInputEnabled; }
+    if( self.getRegistrationPtr( handle ))| reg |
+    {
+      reg.isInputEnabled = isInputEnabled;
+      if( !isInputEnabled ){ self.clearInputStateFor( handle ); }
+    }
   }
 
   pub fn setPanelDrawEnabled( self : *UiManager, handle : UiPanelHandle, isDrawEnabled : bool ) void
@@ -359,7 +405,6 @@ pub const UiManager = struct
       const reg = &self.panels.items[ idx ];
       cursor = idx;
 
-      if( !reg.isVisible or !reg.isDrawEnabled ){ continue; }
       if( reg.panel )| panel |{ panel.draw(); }
     }
   }
@@ -397,6 +442,7 @@ pub const UiManager = struct
     for( self.panels.items, 0.. )| *reg, i |
     {
       if( !reg.isAlive ){ continue; }
+      if( !reg.isVisible or !reg.isDrawEnabled ){ continue; }
       if( cursor )| cursorIdx |
       {
         if( !isDrawAfter( reg, &self.panels.items[ cursorIdx ] )){ continue; }
@@ -413,6 +459,16 @@ pub const UiManager = struct
     }
 
     return bestIdx;
+  }
+
+  fn clearInputStateFor( self : *UiManager, handle : UiPanelHandle ) void
+  {
+    if( self.hoveredPanel.isEq( handle )){ self.hoveredPanel = .{}; }
+
+    for( &self.capturedPanel )| *captured |
+    {
+      if( captured.isEq( handle )){ captured.* = .{}; }
+    }
   }
 };
 
@@ -431,6 +487,12 @@ fn appendUniqueRoute( routes : []UiPanelHandle, count : *usize, handle : UiPanel
   if( count.* >= routes.len ){ return; }
   routes[ count.* ] = handle;
   count.* += 1;
+}
+
+fn nextGeneration( gen : u32 ) u32
+{
+  const next = gen +% 1;
+  return if( next == 0 ) 1 else next;
 }
 
 fn isDrawBefore( a : *const UiPanelRegistration, b : *const UiPanelRegistration ) bool

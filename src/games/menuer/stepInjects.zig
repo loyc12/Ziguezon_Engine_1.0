@@ -470,22 +470,6 @@ fn updateManagerDebug( ng : *eng.Engine ) void
   }
 }
 
-fn uiWantsMouse( panel : *utl.Panel ) bool
-{
-  return panel.getHovered().isValid()
-    or panel.getPressed( .left   ).isValid()
-    or panel.getPressed( .right  ).isValid()
-    or panel.getPressed( .middle ).isValid();
-}
-
-fn managerWantsMouse( ng : *eng.Engine ) bool
-{
-  return ng.uiManager.getHoveredPanel().isValid()
-    or ng.uiManager.getCapturedPanel( .left   ).isValid()
-    or ng.uiManager.getCapturedPanel( .right  ).isValid()
-    or ng.uiManager.getCapturedPanel( .middle ).isValid();
-}
-
 fn drawFinalBoxMarker( panel : *utl.Panel ) void
 {
   if( panel.getWidgetFinalBox( MOVE_BUTTON ))| box |
@@ -525,7 +509,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     handleUiEvents( panel );
     updateDebugLabel( panel );
 
-    wantsMouse = uiWantsMouse( panel );
+    wantsMouse = panel.wantsMouse();
   }
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.u ))
@@ -542,7 +526,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   }
 
   updateManagerDebug( ng );
-  wantsMouse = wantsMouse or managerWantsMouse( ng );
+  wantsMouse = wantsMouse or ng.uiManager.wantsMouse();
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.p )){ ng.togglePause(); }
 
