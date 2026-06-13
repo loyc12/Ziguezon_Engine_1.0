@@ -46,7 +46,7 @@ Phase 1 should establish:
 * the resource and capacity-resource model;
 * the `Facility` model replacing the old industry/infrastructure split;
 * population split into dependants and workers;
-* the economy update pipeline that succeeds the current `econSolver`;
+* the `econPipeline` system that succeeds the current `econSolver`;
 * construction, finance, and capacity enforcement inside that pipeline;
 * enough logging and inspection to diagnose one economy from a tick trace.
 
@@ -66,7 +66,7 @@ Phase 2 should establish:
 * mass-based trade costs;
 * extractable-resource accessibility;
 * Luna as a high-accessibility mineral source;
-* Venus as a third-economy role chosen during Phase 2;
+* Venus as a food producer enabled by its high solar access;
 * enough route taxation and subsidy behavior to stabilize or destabilize the
   sandbox deliberately.
 
@@ -79,10 +79,10 @@ The MVP player surface can stay narrow.
 
 Expected controls:
 
-* taxes and subsidies for trade routes;
-* taxes and subsidies for `EconAgent` groups;
-* preset starting subsidies where needed to produce a stable demonstration
-  economy.
+* Phase 2 taxes and subsidies for trade routes;
+* Phase 2 taxes and subsidies for `EconAgent` groups;
+* Phase 2 preset starting subsidies where needed to produce a stable
+  demonstration economy.
 
 Taxes and subsidies are defined by, paid to, and paid from the `GOVERNMENT`
 agent. For the MVP, `GOVERNMENT` is the government agent currently controlled by
@@ -90,6 +90,8 @@ the player; later governance work may separate it from direct player control.
 Taxes apply relative to how much money the target made. Subsidies apply relative
 to how much money the target spent. This should apply uniformly to route traders
 and other `EconAgent` groups.
+
+Phase 1 should not rely on taxes or subsidies for Terra stability.
 
 Do not add colonization controls, settlement expansion workflows, direct
 facility placement, manual shipment routing, per-ship command, or explicit
@@ -144,20 +146,24 @@ Capacity resources:
 * are calculated through the unified economy update pipeline for now;
 * may be cached later only if profiling or area-use complexity justifies it.
 
-Likely capacity resources include labor, area, housing, storage, construction
+Likely capacity resources include labour, area, housing, storage, construction
 effort, power capacity, compute, and research.
 
 Other resources should be implemented or reserved according to the categories
 in [feature_ideas/resources.md](feature_ideas/resources.md). Non-MVP resources
 can remain as commented-out enum values until the system stabilizes.
+Starred entries in that file are mandatory Phase 1 resources. Unstarred entries
+may be implemented in Phase 2 if directly relevant, but otherwise defer to
+post-MVP.
+
+`FUEL` should be removed from the MVP resource model after Phase 0 renaming and
+audit work. A replacement propellant/fuel model is post-MVP.
 
 `DEPOT` should stay as the singular storage facility for now. Resources should
 still declare which facility stores them, but `DEPOT` storage capacity should
 aggregate into one shared capacity pool rather than one lane per resource. If
 produced resources exceed usable storage, unstoreable resources should be
-wasted proportionally to production this tick. This waste should be calculated
-at the end of the economy update pass, before quantities are published back to
-the economy state.
+wasted proportionally to production this tick.
 
 Extractable resources should gain a static accessibility rate for MVP. Luna
 should have higher mineral accessibility than Terra and Venus.
@@ -180,6 +186,9 @@ Facilities can be categorized for readability and data layout:
 Facility categories and subtypes should follow
 [feature_ideas/facilities.md](feature_ideas/facilities.md). Non-MVP facilities
 can remain as commented-out enum values until the facility model stabilizes.
+Starred entries in that file are mandatory Phase 1 facilities. Unstarred
+entries may be implemented in Phase 2 if directly relevant, but otherwise defer
+to post-MVP.
 
 Facilities may produce ordinary resources or capacity resources. Former
 infrastructure such as housing, depots, habitats, networks, and construction
@@ -198,10 +207,10 @@ Near-term agent groups:
 * `TRADER` per trade route;
 * one `GOVERNMENT` instance for the economy.
 
-Agents are the interface between resource access, finance, taxes, subsidies,
-construction requests, and trade. The MVP does not need complex agent
-inventories. Route-local `TRADER` inventory and broader agent-owned
-inventories are deferred unless next-tick wholesale trade proves insufficient.
+Agents are the interface between resource access, finance, construction
+requests, and trade. Phase 2 adds taxes and subsidies through the same agent
+surface. Broader agent-owned inventories are deferred unless route-local
+`TRADER` inventory proves the pattern is needed elsewhere.
 
 ## 8. Population
 
@@ -216,7 +225,7 @@ Dependants and workers can have the same MVP consumption values, but each type
 should declare its consumption separately so later education, wealth, law,
 class, or role rules can diverge cleanly.
 
-Worker output should feed the labor/capacity-resource model. Education,
+Worker output should feed the labour/capacity-resource model. Education,
 wealth, laws, migration, owners, managers, engineers, and other population
 subtypes are deferred.
 
@@ -226,8 +235,8 @@ The economy update system is the largest MVP rework.
 
 The current economy state, `econSolver`, `econBuilder`, build queue, capacity
 calculation, prices, finance, and construction behavior need to be reviewed as
-one system. The successor should be better organized and split into smaller
-files where separation of concern is overdue.
+one system. The successor is `econPipeline`; it should be better organized and
+split into smaller files where separation of concern is overdue.
 
 The MVP update pipeline should:
 
@@ -236,10 +245,12 @@ The MVP update pipeline should:
 * update population consumption, production, births, deaths, and type
   conversion;
 * update facility production, consumption, access, and activity;
-* enforce storage, area, housing, construction, labor, and power constraints;
+* process maintenance before construction;
+* enforce storage, area, housing, construction, labour, and energy constraints;
 * process construction and deconstruction through coherent funding, materials,
   effort, cancellation, and refund rules;
-* process agent finances, taxes, subsidies, savings, and losses;
+* process agent finances, savings, and losses, with taxes and subsidies added
+  in Phase 2;
 * publish inspectable economy state without relying on debug-only automation.
 
 The current `debugAutoBuild()` path is temporary scaffolding. It should be
@@ -254,6 +265,9 @@ Each trade route should have its own `TRADER` agent. The trader buys resources
 from the source economy and sells them wholesale in the destination economy on
 the next tick. The trader internalizes profits and losses.
 
+Bidirectional routes should use two directional `TRADER` agents so each
+direction can keep its own revenues, costs, profitability, and inventory.
+
 Trade should:
 
 * move ordinary resources only;
@@ -263,10 +277,12 @@ Trade should:
 * use route taxes and subsidies;
 * use transfer-cost gating rather than vessel movement.
 
-For the MVP, use the current roughly-realistic `deltaE` path or a best-case /
-clamped variant so route costs do not explode when the current transfer window
-is bad. Dynamic `deltaV`, dynamic `deltaT`, transfer windows, travel delay, and
-vessel-mediated cargo are post-MVP concerns.
+For the MVP, use a simple `deltaV` transfer-cost gate so route costs do not
+explode when the current transfer window is bad. Dynamic `deltaT`, transfer
+windows, travel delay, and vessel-mediated cargo are post-MVP concerns.
+
+`TRADER` agents should have a simple inventory with add/remove accessors. This
+can later become in-transit packets if route timing or vessel logistics need it.
 
 ## 11. Deferred But Important
 
@@ -278,6 +294,7 @@ or idea parking rather than direct work:
 * ship modules, vessel logistics, arcships, and cyclers;
 * dynamic transfer windows and realistic route timing;
 * agent-owned inventories beyond route-local trade needs;
+* proper debt and fiscal-management behavior beyond temporary negative savings;
 * migration;
 * education, wealth, law, and class-based population conversion;
 * lightweight economy variants for automated mines, ship-bound economies, and

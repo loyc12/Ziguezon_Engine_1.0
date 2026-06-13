@@ -48,11 +48,11 @@ roles. Defer this unless next-tick wholesale trade proves too limiting.
 
 The current transfer estimator exposes approximate `deltaE`, `deltaV`, and
 `deltaT`. Long term, trade should account for dynamic transfer windows, dynamic
-fuel cost, supply cost, and travel time.
+fuel cost from `deltaV`, supply cost, and travel time.
 
-For the MVP, use a simpler transfer-cost gate. It can use current or best-case
-`deltaE`, likely clamped or reviewed so bad temporary transfer geometry does
-not explode route costs and prevent stable test economies.
+For the MVP, use a simpler `deltaV` transfer-cost gate. It can use current,
+best-case, or clamped `deltaV`, reviewed so bad temporary transfer geometry
+does not explode route costs and prevent stable test economies.
 
 Transfer windows should become important later: a trade route may wait for a
 cheaper or faster window rather than departing immediately.
@@ -75,7 +75,9 @@ become difficult to add.
 ## Population Depth
 
 The MVP only needs dependants and workers. Births create dependants, and
-dependants convert into workers at a fixed rate.
+dependants convert into workers at a fixed rate. A roughly 1/20 per-year
+conversion rate is the current MVP target, implemented as a close per-week
+float ratio.
 
 Later conversion rules may depend on education, wealth, laws, culture, or local
 policy. That depth should wait until the simple two-type loop is stable and
@@ -114,6 +116,11 @@ agents by default.
 
 Non-MVP resources and facilities may stay as commented-out enum values while
 the systems stabilize.
+
+`FUEL` should be removed from the MVP after Phase 0 and replaced much later by
+a propellant/fuel model.
+
+Code and docs should use Canadian spelling, including `LABOUR`.
 
 ## Codebase Integration
 
