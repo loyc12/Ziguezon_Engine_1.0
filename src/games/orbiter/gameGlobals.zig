@@ -5,6 +5,7 @@ const utl = @import( "utils" );
 pub const gdf = @import( "gameDef.zig" );
 
 const bodyCount = gdf.G_CONSTS.bodyCount;
+const maxEconomyCount = 1000;
 
 
 // ================ GAMEDATA STRUCTS ================
@@ -19,6 +20,75 @@ pub const GameData = struct
 
   bodyRegistry   : BodyRegistry = .{},
   orbitParentIds : [ bodyCount ]eng.EntityId = std.mem.zeroes([ bodyCount ]eng.EntityId ),
+
+  economies : EconomyStore = .{},
+};
+
+
+/// Fixed, game-owned economy storage for the Phase 1 ownership migration.
+/// The 1000-entry limit is intentional: exceeding it requires reviewing the
+/// economy model instead of silently growing runtime state.
+pub const EconomyStore = struct
+{
+  items : [ maxEconomyCount ]gdf.ecn.Economy = std.mem.zeroes([ maxEconomyCount ]gdf.ecn.Economy ),
+  count : usize = 0,
+
+
+  pub inline fn clear( self : *EconomyStore ) void
+  {
+    self.items = std.mem.zeroes([ maxEconomyCount ]gdf.ecn.Economy );
+    self.count = 0;
+  }
+
+  pub fn create( self : *EconomyStore, loc : gdf.EconLoc ) ?gdf.EconomyId
+  {
+    if( self.count >= maxEconomyCount )
+    {
+      utl.log( .ERROR, @src(), "Cannot create economy at {s} : Phase 1 review required before exceeding {d} economies", .{ @tagName( loc ), maxEconomyCount });
+      return null;
+    }
+
+    const id = gdf.EconomyId.fromIdx( self.count );
+
+    self.items[ id.toIdx() ].softInit( loc );
+    self.count += 1;
+
+    return id;
+  }
+
+  pub inline fn get( self : *EconomyStore, id : gdf.EconomyId ) ?*gdf.ecn.Economy
+  {
+    if( !id.isValid() ){ return null; }
+    if( id.toIdx() >= self.count ){ return null; }
+
+    return &self.items[ id.toIdx() ];
+  }
+
+  pub inline fn getConst( self : *const EconomyStore, id : gdf.EconomyId ) ?*const gdf.ecn.Economy
+  {
+    if( !id.isValid() ){ return null; }
+    if( id.toIdx() >= self.count ){ return null; }
+
+    return &self.items[ id.toIdx() ];
+  }
+
+  /// Ticks live economies by storage order instead of walking body components.
+  pub fn tickAll( self : *EconomyStore ) u32
+  {
+    var econCount : u32 = 0;
+
+    for( 0..self.count )| idx |
+    {
+      const econ = &self.items[ idx ];
+
+      if( econ.tryTick( econ.sunshine ))
+      {
+        econCount += 1;
+      }
+    }
+
+    return econCount;
+  }
 };
 
 
@@ -246,6 +316,7 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
 {
   G_DATA.views.clear();
   G_DATA.bodyRegistry.clear();
+  G_DATA.economies.clear();
   clearOrbitParentCache();
 
   if( !ng.world.registerComp( eng.TransComp ))
@@ -326,6 +397,7 @@ pub fn unregisterOrbiterStores( ng : *eng.Engine ) void
   _ = ng.world.unregisterComp( eng.TransComp     );
 
   clearOrbitParentCache();
+  G_DATA.economies.clear();
 }
 
 

@@ -71,7 +71,7 @@ fn initStellarBody( view : *gdf.BodyTransView, orbitComp : *orb.OrbitComp, bodyC
     {
       const loc = gdf.EconLoc.fromIdx( l );
 
-      if( bodyComp.bodyType.canHostEconLoc( loc ))
+      if( loc == .GROUND or loc == .ORBIT )
       {
         if( bodyName != .TERRA or loc != .GROUND )
         {
@@ -117,6 +117,7 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
   const bodyView = gbl.G_DATA.views.getBodyTrans( ng ) orelse return;
 
   gbl.G_DATA.bodyRegistry.clear();
+  gbl.G_DATA.economies.clear();
   gbl.clearOrbitParentCache();
 
   // Setting up relevant components
@@ -299,8 +300,6 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
   {
     utl.qlog( .DEBUG, @src(), "# ================================ Ticking all econs once ================================" );
 
-    var econCount : u32 = 0;
-
     for( gdf.bodyOrder )| bodyName |
     {
       if( bodyName == gdf.G_CONSTS.starBody ){ continue; }
@@ -311,14 +310,15 @@ pub fn tickGlobalEconomy( view : *gdf.BodyTransView, starPos : utl.Vec2 ) void
 
       if( trans != null and body != null )
       {
-        econCount += body.?.tickAllEcons( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
+        body.?.updateOrbitData( trans.?.pos.toVec2(), trans.?.vel.toVec2(), starPos );
       }
       else
       {
-        utl.log( .WARN, @src(), "Failed to get all required components to tick economy of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
+        utl.log( .WARN, @src(), "Failed to get all required components to update economy orbit data of body {s} on entity #{d}", .{ @tagName( bodyName ), id });
       }
     }
 
+    const econCount = gbl.G_DATA.economies.tickAll();
     utl.log( .DEBUG, @src(), "Ticked {d} distinct economies", .{ econCount });
   }
   utl.log( .DEBUG, @src(), "==== Ticked global economy {d} time(s) ====", .{ stepCount });

@@ -91,8 +91,8 @@ pub const TravelData = struct // NOTE : invalid if deltaV < EPS
 // Most recent positional data for any econ
 pub var econOrbitalData : utl.GenDataLine( OrbitalData, BodyEconPair ) = .{};
 
-/// Also updates econ's sunshine value
-pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gdf.EconLoc, bodyPos : Vec2, bodyVel : Vec2, starPos : Vec2 ) void
+/// Updates body-location orbital data and the attached economy's raw sunshine.
+pub fn updateOrbitDataEntry( bodyComp : *bdy.BodyComp, loc : gdf.EconLoc, bodyPos : Vec2, bodyVel : Vec2, starPos : Vec2 ) void
 {
   // TODO : get precise pos and vel for L1-L5 points instead of using orbiter's
   const econPos = bodyPos;
@@ -121,8 +121,12 @@ pub fn updateOrbitalDataEntry( bodyComp : *bdy.BodyComp, loc : gdf.EconLoc, body
     // Radial velocity
     data.radVel = econVel.dot( radDir );
 
-    // Also updating sunshine for econ
-    bodyComp.getEcon( loc ).sunshine = gbl.SUNSHINE.getShineAt( distSqr );
+    // Also updating sunshine for the optional economy attached to this body
+    // location. Lagrange travel locations can exist without live economies.
+    if( bodyComp.getEcon( loc ))| econ |
+    {
+      econ.sunshine = gbl.SUNSHINE.getShineAt( distSqr );
+    }
   }
 
   gbl.ECON_ORBIT_DATA.set( gdf.toBodyEconPair( bodyComp.name, loc ), data );

@@ -20,7 +20,8 @@ currently combines:
 * an engine `World` relation for orbit parentage;
 * static data grids for bodies, resources, population, infrastructure,
   industry, vessels, power, government, and transfer data;
-* body-local economy slots for ground, orbit, and Lagrange-point locations;
+* game-owned economy storage referenced by body/location economy ids;
+* body-location travel data for ground, orbit, and Lagrange-point locations;
 * a weekly economy solver;
 * a transitional build queue;
 * debug automation and log-heavy validation surfaces.
@@ -40,7 +41,12 @@ global runtime state through `G_DATA`.
 * `TargetInfo` for target selection and camera-follow state;
 * cached `CompView` values in `OrbiterViews`;
 * `BodyRegistry`, which maps `BodyName` values to live engine `EntityId`s;
-* `orbitParentIds`, a cache derived from the `Orbits` relation store.
+* `orbitParentIds`, a cache derived from the `Orbits` relation store;
+* `EconomyStore`, a fixed game-owned economy array addressed by `EconomyId`.
+
+`EconomyStore` currently reserves 1000 entries. Attempting to create more logs
+an error and returns no id so the economy model is reviewed before expanding
+runtime state.
 
 `OnGameStart` loads static data matrices. `OnGameOpen` registers World stores
 and initializes the stellar system. `OnGameClose` destroys registered body
@@ -149,13 +155,23 @@ Public transfer data:
 * `TravelData` with `deltaE`, `deltaV`, and `deltaT`;
 * `estimateTransferPair()` as a pair-wrapper over `estimateTransfer()`.
 
-`updateOrbitalDataEntry()` updates per-economy orbital snapshots and the
-economy's current raw sunshine. Lagrange-point positions are still approximated
-from the parent body position/velocity in this snapshot path.
+`BodyComp.updateOrbitData()` updates cached body-location orbital snapshots
+through `updateOrbitDataEntry()`, which also publishes the attached economy's
+current raw sunshine. Lagrange-point positions are still approximated from the
+parent body position/velocity in this snapshot path.
 
 ## 6. Economy Locations And Activation
 
-Each `BodyComp` owns an `[EconLoc.count]Economy` array.
+Economies are owned by `G_DATA.economies`. Each `BodyComp` stores an
+`[EconLoc.count]EconomyId` reference array and `BodyComp.getEcon()` is only a
+compatibility helper over the game-owned store.
+
+Economy ticks iterate directly over `G_DATA.economies` in storage order.
+Body iteration is still used immediately before each economy tick to refresh
+orbit/sunshine data for economies attached to bodies.
+
+`EconomyId.INVALID` marks body/location slots that do not currently refer to a
+live economy entry.
 
 `EconLoc` values are:
 
@@ -167,25 +183,49 @@ Each `BodyComp` owns an `[EconLoc.count]Economy` array.
 * `L4`;
 * `L5`.
 
-`softInitAllEcons()` initializes all locations as valid but inactive shells.
-`quickInitEcon()` hard-initializes a location only if the body type can host it.
+`EconLoc` remains the compatibility boundary for transfer/orbit code.
+`BodyLocation` reserves the body-relative travel/orbit vocabulary, while
+`SettlementType` carries economy-rule settlement form:
+
+* `surface`;
+* `subsurface`;
+* `aerial`;
+* `orbital`.
+
+Current MVP body settlement metadata is:
+
+* Terra -> `surface`;
+* Luna -> `subsurface`;
+* Venus -> `aerial`.
+
+`softInitAllEcons()` creates inactive game-owned shells for supported MVP
+economy locations: ground where the body has settlement metadata and one orbit
+economy for each non-star body. Stress-test startup can still use a temporary
+surface fallback for bodies without settlement metadata.
+
+`quickInitEcon()` hard-initializes a location only if the body type can host it
+and the Phase 1 settlement mapping allows it. Lagrange locations remain valid
+body locations for transfer estimation, but Lagrange settlement economies are
+deferred.
 
 At startup:
 
 * Terra ground is activated and debug-seeded with `debugSetEconState(10_000,
   sunshine)`;
-* stress-test mode can activate every legal non-Terra/non-ground duplicate
-  location with a smaller debug seed;
+* stress-test mode can activate non-Terra ground/orbit economies with a smaller
+  debug seed;
 * there is no player or government path that activates new locations yet.
 
-Terra is hardcoded as atmospheric. Other ground bodies currently hard-init with
-no atmosphere. Non-ground economies get a large abstract area and no atmosphere.
+Terra surface remains hardcoded as atmospheric. Aerial settlements initialize
+with atmosphere, and subsurface or orbital settlements initialize without it.
+Orbital economies get a large abstract area.
 
 ## 7. Economy State
 
 `Economy` owns:
 
-* location, validity, activity, atmosphere, step count, sunshine, and sun access;
+* compatibility location, settlement type, validity, activity, atmosphere, step
+  count, sunshine, and sun access;
 * optional `EcoState`;
 * optional `BuildQueue`;
 * resource state;
@@ -216,7 +256,7 @@ atmosphere.
 
 Current resources:
 
-* `WORK`;
+* `LABOUR`;
 * `FUEL`;
 * `FOOD`;
 * `WATER`;
@@ -226,14 +266,16 @@ Current resources:
 * `PART`.
 
 Resource metrics include mass, decay rate, deprecated growth rate, storage rate,
-base price, price elasticity, and price dampening. `WORK` stores through
-`HOUSING`; all other resources currently store through `DEPOT`.
+capacity-resource flag, transportability flag, base price, price elasticity, and
+price dampening. `LABOUR` is the first capacity-like, non-transportable
+resource and stores through `HOUSING`; ordinary resources currently store
+through `DEPOT`.
 
 Current population types:
 
-* `HUMAN`.
+* `WORKER`.
 
-Human population produces `WORK`, consumes `FOOD`, `WATER`, `POWER`, and
+Worker population produces `LABOUR`, consumes `FOOD`, `WATER`, `POWER`, and
 `PART`, and has mortality pressure from water, food, and power shortages.
 
 Current infrastructure:

@@ -14,7 +14,7 @@ on sequencing, dependencies, and unresolved implementation choices.
 Orbiter currently has:
 
 * a live solar-system body/orbit simulation;
-* body-owned economy arrays keyed by `EconLoc`;
+* a game-owned economy array referenced by body/location economy ids;
 * local economy state for resources, population, infrastructure, industries,
   ecology, government money, and construction queues;
 * a single reused global `EconSolver`;
@@ -85,7 +85,9 @@ Phase 1 is the core economic rewrite. It should end with Terra running without
 
 ### 4.1 Economy Ownership And Location Split
 
-Required work:
+Status: complete for the Phase 1A scaffold.
+
+Implemented:
 
 * move economies toward a game-owned global array addressed by `u32` indices;
 * add an explicit review/error path if the array would exceed 1000 economies;
@@ -102,10 +104,11 @@ Required work:
   * Luna as `subsurface`;
   * Venus as `aerial`;
 * keep one orbital economy per body for MVP;
+* tick live economies by direct iteration over the game-owned economy array;
 * defer Lagrange economy locations, multiple orbital layers, star-hosted
   arbitrary locations, asteroid-belt aggregate economies, and mobile economies.
 
-Validation:
+Validation targets:
 
 * Terra initializes through the new ownership path;
 * body/orbit rendering and target selection still work;
@@ -113,18 +116,21 @@ Validation:
 
 ### 4.2 Resource And Capacity Model
 
-Required work:
+Initial Phase 1A prep is complete:
 
 * add the resource metadata needed to distinguish ordinary resources from
   capacity resources;
 * mark capacity resources as non-transportable;
+
+Remaining work:
+
 * model capacity-resource prices from availability rather than ordinary stock
   flow;
 * keep capacity calculation inside the unified economy update pipeline for
   now;
 * reserve caching for later profiling or area-use complexity;
-* keep current `WORK` behavior as the transition model for labour-like
-  capacity, but rename it to `LABOUR` using Canadian spelling;
+* keep current `LABOUR` behavior as the transition model for labour-like
+  capacity;
 * remove `FUEL` after Phase 0 once dependent code can be updated safely;
 * keep `DEPOT` as the singular storage facility;
 * let resources still declare their storage facility;

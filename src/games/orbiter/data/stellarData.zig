@@ -36,6 +36,18 @@ pub const StellarBodyName = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( i    ); }
 
+  /// MVP settlement form for bodies that should have a Phase 1 local economy.
+  pub inline fn getDefaultSettlementType( self : @This() ) ?gdf.SettlementType
+  {
+    return switch( self )
+    {
+      .TERRA => .surface,
+      .LUNA  => .subsurface,
+      .VENUS => .aerial,
+      else   => null,
+    };
+  }
+
   SOL,
 
 
@@ -198,6 +210,7 @@ pub const StellarBodyType = enum( u8 )
 
   pub inline fn getEconLocCount( self : StellarBodyType ) usize
   {
+    if( self == .STAR ){ return 0; }
     return 2 + self.getLPCount();
   }
 

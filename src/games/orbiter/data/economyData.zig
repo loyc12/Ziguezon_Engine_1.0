@@ -12,11 +12,25 @@ const InfType = gdf.InfType;
 const IndType = gdf.IndType;
 
 
+// ================================ ECONOMY IDENTITY ================================
+
+/// Index into game-owned economy storage.
+/// `.INVALID` marks body slots that do not currently refer to a live economy.
+pub const EconomyId = enum( u32 )
+{
+  INVALID = std.math.maxInt( u32 ),
+  _,
+
+  pub inline fn toIdx(   self : @This() ) usize   { return @intCast( @intFromEnum( self )); }
+  pub inline fn fromIdx( idx  : usize   ) @This() { return @enumFromInt( @as( u32, @intCast( idx ))); }
+  pub inline fn isValid( self : @This() ) bool    { return self != .INVALID; }
+};
+
+
 // ================================ ECONOMY LOCATION ENUM ================================
 
 /// Temporary combined economy-location and body-location enum.
-/// TODO: Split this into `SettlementType` for economy rules and `BodyLocation`
-/// for travel/orbital placement once economies move out of `BodyComp`.
+/// TODO: Keep removing economy-rule dependencies from this compatibility enum.
 pub const EconLoc = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -52,6 +66,62 @@ pub const EconLoc = enum( u8 )
       .L5  => 5,
       else => 0,
     };
+  }
+};
+
+
+// ================================ LOCATION SPLIT ENUMS ================================
+
+/// Economy-rule settlement form for Phase 1 economy initialization.
+pub const SettlementType = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
+
+  surface,
+  subsurface,
+  aerial,
+  orbital,
+
+  /// Temporary bridge while live economy APIs still receive `EconLoc`.
+  pub inline fn fromCompatLocation( loc : EconLoc ) SettlementType
+  {
+    return switch( loc )
+    {
+      .GROUND => .surface,
+      else    => .orbital,
+    };
+  }
+};
+
+/// Body-relative location used by travel/orbit code.
+/// `EconLoc` still carries the live compatibility API until transfer code is
+/// migrated to this enum.
+pub const BodyLocation = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
+  pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
+
+  GROUND,
+  ORBIT,
+  L1,
+  L2,
+  L3,
+  L4,
+  L5,
+
+  pub inline fn toCompatEconLoc( self : BodyLocation ) EconLoc
+  {
+    return @enumFromInt( self.toIdx() );
+  }
+
+  pub inline fn fromCompatEconLoc( loc : EconLoc ) BodyLocation
+  {
+    return @enumFromInt( loc.toIdx() );
   }
 };
 

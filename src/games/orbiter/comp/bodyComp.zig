@@ -12,6 +12,8 @@ const EconLoc  = gdf.EconLoc;
 const BodyName = gdf.BodyName;
 const BodyType = gdf.BodyType;
 
+const invalidEconomyIds = [_]gdf.EconomyId{ .INVALID } ** EconLoc.count;
+
 
 pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 {
@@ -29,9 +31,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 //temp   : f32 =               390.0, // Kelvins    ( Dk )
 //tilt   : f32 =                 0.0, // Radians
 
-  // TODO: Phase 1 moves economies to game-owned storage; BodyComp should keep
-  // economy references/indices instead of owning every location slot directly.
-  econArray : [ EconLoc.count ]ecn.Economy = std.mem.zeroes([ EconLoc.count ]ecn.Economy ),
+  econIds : [ EconLoc.count ]gdf.EconomyId = invalidEconomyIds,
 
 
   // Sphere surface area : 4πr^2
@@ -86,10 +86,55 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   // ================================ ECONOMIES ================================
 
-  /// Returns the body-owned economy slot for the current pre-Phase-1 storage model.
-  pub fn getEcon( self : *BodyComp, econLoc : EconLoc ) *ecn.Economy
+  /// Returns the game-owned economy referenced by this body/location pair.
+  pub inline fn getEcon( self : *const BodyComp, econLoc : EconLoc ) ?*ecn.Economy
   {
-    return &self.econArray[ econLoc.toIdx() ];
+    return gbl.G_DATA.economies.get( self.econIds[ econLoc.toIdx() ] );
+  }
+
+  pub inline fn getEconConst( self : *const BodyComp, econLoc : EconLoc ) ?*const ecn.Economy
+  {
+    return gbl.G_DATA.economies.getConst( self.econIds[ econLoc.toIdx() ] );
+  }
+
+  fn getSettlementType( self : *const BodyComp, loc : EconLoc ) ?gdf.SettlementType
+  {
+    return switch( loc )
+    {
+      .GROUND => self.name.getDefaultSettlementType() orelse
+        if( gdf.G_FLAGS.STRESS_TEST ) .surface else null, // TODO: replace stress fallback with real body settlement data.
+      .ORBIT  => .orbital,
+
+      // TODO: Add Lagrange settlement economies after the Phase 1A ownership
+      // path is stable. Travel can still use L1-L5 as body locations.
+      else    => null,
+    };
+  }
+
+  fn ensureEconId( self : *BodyComp, loc : EconLoc ) ?gdf.EconomyId
+  {
+    if( !self.bodyType.canHostEconLoc( loc )){ return null; }
+    if( self.getSettlementType( loc ) == null ){ return null; }
+
+    const id = &self.econIds[ loc.toIdx() ];
+    if( id.*.isValid() ){ return id.*; }
+
+    id.* = gbl.G_DATA.economies.create( loc ) orelse .INVALID;
+    if( !id.*.isValid() )
+    {
+      utl.log( .ERROR, @src(), "Failed to allocate economy reference for {s}_{s}", .{ @tagName( self.name ), @tagName( loc )});
+      return null;
+    }
+
+    return id.*;
+  }
+
+  fn softInitEcon( self : *BodyComp, loc : EconLoc ) void
+  {
+    const id   = self.ensureEconId( loc ) orelse return;
+    const econ = gbl.G_DATA.economies.get( id ) orelse return;
+
+    econ.softInitForSettlement( loc, self.getSettlementType( loc ).? );
   }
 
   /// NOTE : bodyComp.radius needs to be set beforehand
@@ -99,18 +144,39 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
     {
       utl.log( .WARN, @src(), "BodyComp radius not set for {s} : will result in area errors", .{ @tagName( self.name )});
     }
-    const econ : *ecn.Economy = self.getEcon( loc );
 
-    econ.softInit( loc );
+    const settlementType = self.getSettlementType( loc ) orelse
+    {
+      if( activate )
+      {
+        utl.log( .WARN, @src(), "Deferred economy initialization at {s}_{s} : no Phase 1 settlement type", .{ @tagName( self.name ), @tagName( loc )});
+      }
+      return;
+    };
+
+    const econ : *ecn.Economy = self.getEcon( loc ) orelse blk:
+    {
+      const id = self.ensureEconId( loc ) orelse return;
+      break :blk gbl.G_DATA.economies.get( id ) orelse return;
+    };
+
+    econ.softInitForSettlement( loc, settlementType );
 
     // Checking if the econ is valid and active according to bodyType and activate
     if( self.bodyType.canHostEconLoc( loc ))
     {
       if( loc == .GROUND )
       {
-        if( self.name == .TERRA ){ econ.hardInit( loc, self.getSurfaceArea(), 0.25, true  ); } // TERRA is hardcoded to have an atmosphere
-        else{                      econ.hardInit( loc, self.getSurfaceArea(), 0.50, false ); }
-      } else{                      econ.hardInit( loc, 1_000_000_000_000_000, 1.00, false ); }
+        const hasAtmo = switch( settlementType )
+        {
+          .surface => self.name == .TERRA, // TERRA preserves the old atmospheric baseline.
+          .aerial  => true,
+          else     => false,
+        };
+        const landCover : f64 = if( settlementType == .surface ) 0.25 else 0.50;
+
+        econ.hardInitForSettlement( loc, settlementType, self.getSurfaceArea(), landCover, hasAtmo );
+      } else{ econ.hardInitForSettlement( loc, settlementType, 1_000_000_000_000_000, 1.00, false ); }
 
       econ.isActive = activate;
     }
@@ -122,43 +188,33 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   pub fn softInitAllEcons( self : *BodyComp ) void
   {
+    self.econIds = invalidEconomyIds;
+
     if( self.radius < utl.EPS )
     {
       utl.log( .WARN, @src(), "BodyComp radius not set for {s} : will result in area errors", .{ @tagName( self.name )});
     }
 
-    for( 0..gdf.EconLoc.count )| i |
-    {
-      const loc  : gdf.EconLoc  = .fromIdx( i );
-      const econ : *ecn.Economy = self.getEcon( loc );
-
-      econ.softInit( loc );
-    }
+    self.softInitEcon( .GROUND );
+    self.softInitEcon( .ORBIT  );
   }
 
-  /// returns the number of econs ticked
-  pub fn tickAllEcons( self : *BodyComp, orbiterPos : utl.Vec2, orbiterVel : utl.Vec2, starPos : utl.Vec2 ) u32
+  /// Updates cached orbital/sunshine data for each economy attached to this body.
+  pub fn updateOrbitData( self : *BodyComp, orbiterPos : utl.Vec2, orbiterVel : utl.Vec2, starPos : utl.Vec2 ) void
   {
-    var econCount : u32 = 0;
-
-    for( 0..self.bodyType.getEconLocCount() )| i |
+    for( 0..gdf.EconLoc.count )| i |
     {
-      const loc  : gdf.EconLoc  = .fromIdx( i );
-      const econ : *ecn.Economy = self.getEcon( loc );
+      const loc : gdf.EconLoc = .fromIdx( i );
+      const econ = self.getEcon( loc ) orelse continue;
+      if( !econ.isActive ){ continue; }
 
-      gdf.updateOrbitalDataEntry( self, loc, orbiterPos, orbiterVel, starPos );
-
-      if( econ.tryTick( econ.sunshine )) // NOTE : econ sunshine updated in updateOrbitalDataEntry()
-      {
-        econCount += 1;
-      }
+      gdf.updateOrbitDataEntry( self, loc, orbiterPos, orbiterVel, starPos );
     }
-    return econCount;
   }
 
   pub fn logEcon( self : *const BodyComp, loc : gdf.EconLoc ) void
   {
-    const econ : *const ecn.Economy = self.getEcon( loc );
+    const econ : *const ecn.Economy = self.getEconConst( loc ) orelse return;
 
     if( econ.isActive ) // TODO : Activate locs when player build infra there
     {
@@ -170,7 +226,7 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   pub fn debugSetEconState( self : *BodyComp, loc : gdf.EconLoc, value : u64, sunshine : f64 ) void
   {
-    const econ : *ecn.Economy = self.getEcon( loc );
+    const econ : *ecn.Economy = self.getEcon( loc ) orelse return;
 
     if( econ.isActive ) // TODO : Activate locs when player build infra there
     {

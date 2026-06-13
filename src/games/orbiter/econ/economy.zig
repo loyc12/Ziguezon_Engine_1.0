@@ -35,11 +35,12 @@ const MIN_RES_CAP = 10_000.0;
 
 pub const Economy = struct
 {
-  location  : EconLoc,
+  location       : EconLoc = .GROUND,
+  settlementType : gdf.SettlementType = .surface,
 
   isValid   : bool = false,
   isActive  : bool = false,
-  hasAtmo   : bool,
+  hasAtmo   : bool = false,
 
   stepCount : u64 = 0,
   sunshine  : f64 = 0.0, // How much sunlight reachs the econ's location from the sun
@@ -63,7 +64,7 @@ pub const Economy = struct
 
   pub inline fn newDeadEcon( loc : EconLoc ) Economy
   {
-    var econ : Economy = .{ .location = loc, .hasAtmo = false };
+    var econ : Economy = .{};
 
     econ.softInit( loc );
 
@@ -72,10 +73,17 @@ pub const Economy = struct
 
   pub inline fn softInit( self : *Economy, loc : EconLoc ) void
   {
+    self.softInitForSettlement( loc, .fromCompatLocation( loc ) );
+  }
+
+  /// Resets lifecycle flags while preserving the new settlement-rule metadata.
+  pub inline fn softInitForSettlement( self : *Economy, loc : EconLoc, settlementType : gdf.SettlementType ) void
+  {
     self.isValid    = true;
     self.isActive   = false;
     self.hasAtmo    = false;
     self.location   = loc;
+    self.settlementType = settlementType;
     self.ecology    = null;
     self.buildQueue = null;
   }
@@ -83,7 +91,7 @@ pub const Economy = struct
 
   pub inline fn newLiveEcon( loc : EconLoc, area : f64, landCover : f64, atmo : bool ) Economy
   {
-    var econ : Economy = .{ .location = loc, .hasAtmo = atmo };
+    var econ : Economy = .{};
 
     econ.hardInit( loc, area, landCover, atmo );
 
@@ -92,7 +100,14 @@ pub const Economy = struct
 
   pub inline fn hardInit( self : *Economy, loc : EconLoc, area : f64, landCover : f64, atmo : bool ) void
   {
-    self.softInit( loc );
+    self.hardInitForSettlement( loc, .fromCompatLocation( loc ), area, landCover, atmo );
+  }
+
+  /// Fully initializes an economy using settlement metadata instead of deriving
+  /// economy rules from the temporary `EconLoc` compatibility value.
+  pub inline fn hardInitForSettlement( self : *Economy, loc : EconLoc, settlementType : gdf.SettlementType, area : f64, landCover : f64, atmo : bool ) void
+  {
+    self.softInitForSettlement( loc, settlementType );
 
     self.hasAtmo  = atmo;
 
@@ -813,7 +828,7 @@ pub const Economy = struct
     {
       const resT = ResType.fromIdx( r );
 
-      if( resT != .LABOUR ) // TODO : update once multiple storage types exist
+      if( !resT.isCapacityLike() )
       {
         const resC = self.resState.get( .COUNT, resT );
         const resL = self.resState.get( .LIMIT, resT );

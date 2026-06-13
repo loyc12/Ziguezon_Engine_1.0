@@ -89,6 +89,9 @@ pub const bldr_d = @import( "data/builderData.zig"    );
 pub const gvmt_d = @import( "data/governmentData.zig" );
 
 pub const EconLoc           = ecnm_d.EconLoc;
+pub const EconomyId         = ecnm_d.EconomyId;
+pub const SettlementType    = ecnm_d.SettlementType;
+pub const BodyLocation      = ecnm_d.BodyLocation;
 pub const BodyType          = stlr_d.StellarBodyType;
 pub const BodyName          = stlr_d.StellarBodyName;
 pub const StellarMetricEnum = stlr_d.StellarMetricEnum;
@@ -110,7 +113,7 @@ pub const fromBodyEconPair  = trvl_d.fromBodyEconPair;
 pub const OrbitalData       = trvl_d.OrbitalData;
 pub const TravelData        = trvl_d.TravelData;
 
-pub const updateOrbitalDataEntry  = trvl_d.updateOrbitalDataEntry;
+pub const updateOrbitDataEntry    = trvl_d.updateOrbitDataEntry;
 pub const debugLogTravelCosts     = trvl_d.debugLogTravelCosts;
 pub const debugLogTravelCostsList = trvl_d.debugLogTravelCostsList;
 

@@ -35,6 +35,16 @@ pub const ResType = enum( u8 )
     };
   }
 
+  pub inline fn isCapacityLike( self : ResType ) bool
+  {
+    return self.getMetric_f64( .IS_CAPACITY ) > 0.5;
+  }
+
+  pub inline fn isTransportable( self : ResType ) bool
+  {
+    return self.getMetric_f64( .IS_TRANSPORTABLE ) > 0.5;
+  }
+
   pub fn getMetric_f32( self : ResType, metric : ResMetricEnum ) f32
   {
     return resMetricData.get( self, metric );
@@ -66,6 +76,9 @@ pub const ResMetricEnum = enum( u8 )
   DECAY_RATE,  // Natural decay  ( peremption )
   GROWTH_RATE, // Natural growth ( natural bounty ) // NOTE : deprecated for now : no natural growth occurs
   STORE_RATE,  // Units of space taken per res in their respective InfStore
+
+  IS_CAPACITY,      // Capacity-like resources are availability-priced local capability.
+  IS_TRANSPORTABLE, // Trade/route prep flag; capacity resources should not move.
 
   PRICE_BASE,  // Base cost per unit
   PRICE_ELAS,  // Price variation elasticity exponent
@@ -102,6 +115,16 @@ pub const ResStateEnum = enum( u8 )
 pub fn loadResourceData() void
 {
   resMetricData.fillWith( 0.0 );
+
+  inline for( 0..ResType.count )| r |
+  {
+    const resT = ResType.fromIdx( r );
+
+    resMetricData.set( resT, .IS_TRANSPORTABLE, 1.0 );
+  }
+
+  resMetricData.set( .LABOUR, .IS_CAPACITY,      1.0 );
+  resMetricData.set( .LABOUR, .IS_TRANSPORTABLE, 0.0 );
 
 
   // ================================ MASS ================================
@@ -196,4 +219,3 @@ pub fn loadResourceData() void
 
   resMetricData.isInit = true;
 }
-
