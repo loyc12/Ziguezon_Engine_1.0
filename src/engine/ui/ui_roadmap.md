@@ -1,7 +1,8 @@
 # Engine UI Roadmap
 
-This roadmap records engine-side UI phase order. `ui_reference.md` is the design
-authority for `src/engine/ui`.
+This roadmap records engine-side UI phase order from the current
+[ui_reference.md](ui_reference.md) baseline toward the target state in
+[ui_goals.md](ui_goals.md).
 
 ## 1. Completed - Minimal Manager
 

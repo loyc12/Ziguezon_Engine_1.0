@@ -1,7 +1,8 @@
 # Engine UI TODO
 
-Next implementation slices for `src/engine/ui`. `ui_reference.md` is the design
-authority. `ui_roadmap.md` is the phase-order authority.
+Next implementation slices for `src/engine/ui`. [ui_reference.md](ui_reference.md)
+describes the current baseline. [ui_goals.md](ui_goals.md) describes the target
+state. [ui_roadmap.md](ui_roadmap.md) is the phase-order authority.
 
 ## 1. Current Baseline
 

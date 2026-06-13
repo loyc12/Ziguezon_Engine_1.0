@@ -1,9 +1,13 @@
 # Engine UI Reference
 
-This file is the design authority for engine-side UI orchestration. It is
-functionally independent from `src/utils/ui/ui_reference.md`: the engine may use
-the utility primitives, but engine policy, routing, and lifecycle decisions live
-here.
+This file is the descriptive baseline for engine-side UI orchestration.
+Target design belongs in [ui_goals.md](ui_goals.md). Implementation order
+belongs in [ui_roadmap.md](ui_roadmap.md). Active task slices belong in
+[ui_todo.md](ui_todo.md).
+
+This file is functionally independent from `src/utils/ui/reference.md`: the
+engine may use the utility primitives, but engine policy, routing, and lifecycle
+decisions live here.
 
 ## 1. Scope
 

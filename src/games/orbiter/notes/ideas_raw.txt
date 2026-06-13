@@ -1,1 +1,0 @@
-1. Split HUMAN pops into classes / employment types ( use total count for consumption calcs ? )

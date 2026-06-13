@@ -1,414 +1,141 @@
-# ENGINE REWORK ROADMAP - ZIGUEZON ENGINE
+# Engine World Rework Roadmap
 
-This file holds implementation sequencing and migration notes for the
-world/entity/simulation rework.
+This file records implementation order from the current
+[engine_rework_reference.md](engine_rework_reference.md) baseline toward the
+target state in [engine_rework_goals.md](engine_rework_goals.md).
 
-The guiding reference is:
+## 1. Current Starting Point
 
-    engine/world/engine_rework_reference.md
+The world rework has already landed:
 
-If this roadmap conflicts with the reference, the reference takes precedence.
-Terminology follows the reference file's keyword section.
+* active entity tracking;
+* entity destruction with fact cleanup;
+* packed and sparse component stores;
+* explicit component storage policy declarations;
+* component add/get/has/remove APIs;
+* component views with generation invalidation;
+* relation stores with source/target indexes;
+* relation cardinality policies;
+* dataless relation facts queried by presence;
+* typed transient event queues;
+* event metadata with sequence, tick order, base tick, and primary entity;
+* generic entity, component, and relation events;
+* `World.tick(...)` event tick metadata.
 
+The remaining work should build on those facts rather than re-plan them as
+future phases.
 
-## Current Starting Point
+## 2. Next - Reconcile Existing Fact Systems
 
-Phase 1 completed the current World-owned component foundation, ending with the
-packed-store and component-view slices:
+Goal: harden the entity/component/relation/event baseline before adding another
+major fact family.
 
-- `Engine` owns one `World`.
-- `World` owns entity-id creation and typed component stores.
-- `EngineStep` forwards consumed base ticks through `World.tick(TickInfo)`.
-- Packed and sparse component stores are implemented.
-- Component types must declare an explicit `compStorePolicy`.
-- `floppy`, `ping`, and `orbiter` use World-owned typed component stores.
-- `ping` and `orbiter` use `CompView` / `ComponentView` for transient typed
-  store access.
-- Borrowed component-store compatibility was removed.
-- Relations, events, rules, traits, archetypes, particle/effects systems,
-  logical scheduling, broad queries, and entity destruction remain deferred.
+Required work:
 
-## Build Direction
+* audit World APIs against current tests and live game use;
+* ensure relation cleanup and component cleanup semantics are documented and
+  tested together through `World.destroyEntity()`;
+* ensure generic event queues are registered where games or tests depend on
+  emitted entity/component/relation events;
+* decide whether transient event queues need a small retained-history option
+  before rules/reactions consume events;
+* keep `CompView` component-only until broad query semantics exist.
 
-The engine rework should build toward `World` as the central engine-owned
-simulation database.
+## 3. Next - Traits And Metaproperties
 
-The target is not a pure ECS. The target is a fact-oriented simulation layer
-where entity identity, components, relations, events, traits, archetypes,
-particle/effects systems, schedules, queries, views, rules, and reactions can
-be defined, stored, inspected, and run cleanly.
+Goal: add the canonical classification path before marker components or
+relation-shaped tags spread further.
 
-Remaining sequence:
+Required work:
 
-1. Add active entity tracking and component cleanup hooks.
+* define trait/metaproperty payload and dataless forms;
+* add typed trait registration, application, removal, and querying;
+* integrate trait cleanup with entity destruction;
+* emit generic trait events when registered;
+* provide at least one small generic example, such as `Selectable` or
+  `Visible`;
+* document when to choose component, relation, or trait.
 
-2. Implement `World.destroyEntity()` once every registered component path can
-   participate in cleanup.
+## 4. Next - Broad Queries And Views
 
-3. Keep component views component-only until relation/event/trait query
-   semantics exist.
+Goal: let systems, UI, and debug tools inspect stored facts without mutating
+storage internals directly.
 
-4. Do not add marker-component support. Traits/metaproperties are the canonical
-   way to mark, tag, classify, or flag entities.
+Required work:
 
-5. Add relation storage as the first major `World` extension after entity and
-   component cleanup are stable.
+* keep current `CompView` as the narrow component fast path;
+* add query helpers only where there is a concrete system, game, or debug need;
+* cover components, relations, events, and traits before touching archetypes or
+  particles;
+* avoid creating hidden fact ownership inside query/view helpers.
 
-6. Keep at least one minimal generic reference relation in engine code.
+## 5. Later - Rules, Systems, And Commands
 
-7. Add generic event records/queues after entity, component, and relation
-   ownership is stable. This means reworking the current event system entirely.
+Goal: give games a clean path for executable simulation logic that observes
+facts and requests changes.
 
-8. Keep at least one minimal generic reference event in engine code.
+Required work:
 
-9. Add rule/reaction support after events exist.
+* define command records and queues separately from events;
+* add minimal system registration/execution support;
+* add a small rule/reaction layer after event and query semantics are stable;
+* keep the first generic example small and game-agnostic;
+* preserve explicit phase and event ordering.
 
-10. Keep at least one minimal generic reference rule/reaction in engine code.
+## 6. Later - Archetypes And Templates
 
-11. Add traits/metaproperties after the base World fact model is usable.
+Goal: support reusable bundles of initial facts.
 
-12. Keep at least one minimal generic reference trait/metaproperty in engine
-    code.
+Required work:
 
-13. Add archetypes/templates for bundles of initial facts.
+* define archetype/template declarations;
+* allow spawning component, relation, trait, and event initialization bundles;
+* keep archetype definitions distinct from entity rows unless explicitly stored
+  as facts;
+* provide one minimal generic example.
 
-14. Keep at least one minimal generic reference archetype/template in engine
-    code.
+## 7. Later - Scheduler
 
-15. Add World logical-time and scheduler support progressively, driven by base
-    ticks received from the existing `EngineTiming` system.
+Goal: run World logical work inside engine-owned base ticks.
 
-16. Add broad query helpers progressively, driven by real game and debug needs.
-
-17. Keep `engine/world/context` reserved for future save/load/replay-facing
-    world context work. Do not implement it until reusable save/load
-    primitives exist in `utils`.
-
-18. Add first-class particle/effects infrastructure after events, rules, render
-    adapters, and relevant query/view helpers are stable.
-
-
-## World Responsibilities
-
-`World` should eventually organize:
-
-- entity identity and lifecycle
-- component tables
-- relation tables
-- event records / event queues
-- rules and reactions
-- traits / metaproperties for marking and classification
-- archetypes / templates
-- particle/effect records, emitters, configs, and pools
-- logical simulation time and scheduling
-- query and view helpers
-- context records for future save/load/replay-facing world state
-
-Entities should remain identifiers. Components, relations, events, traits, and
-other World-owned records are facts that make those identifiers meaningful.
-
-The user-facing API should let game code express common simulation operations
-without manually handling registry casts or container internals at every call
-site:
-
-- create entity
-- add component
-- add relation
-- emit event
-- apply trait
-- spawn archetype
-- trigger effect
-- run/query systems
-
-
-## Implementation Phases
-
-### Phase 2: Entity Lifecycle And Cleanup
-
-Add active entity validity, entity destruction, and registered-store cleanup.
-
-Keep this slice small:
-
-- active entity tracking
-- entity existence checks for World-owned operations
-- erased component cleanup callbacks for destroyed entities
-- `World.destroyEntity()` once every registered component path can clean up
-- tests for destroy cleanup across packed and sparse component stores
-
-Avoid adding relations, events, rules, traits, or archetypes in this slice
-unless they are required to prevent a bad lifecycle boundary.
-
-`World` must still not add another base-tick pacing loop. Preserve the existing
-flow:
-
-1. `EngineTiming` measures elapsed real time and determines when base ticks are
-   due.
-2. `EngineStep` consumes due or forced ticks.
-3. `EngineStep` forwards a tick context into `World.tick(...)`.
-4. `World` executes the simulation phases for that base tick.
-
-The initial tick context should expose the existing tick index and relevant
-timing values without moving their ownership out of `EngineTiming`.
-
-### 2. Component Storage And Views
-
-Keep the current component storage and view foundation stable while later World
-features are added.
-
-Default storage should stay sensible. Performance-relevant storage policy
-choices should be explicit on the fact payload type passed to the store
-generator.
-
-Prefer packed arrays, sparse sets, hash maps, indexed tables, and
-relation-specific indexes unless profiling proves another structure is
-justified.
-
-The generic engine-owned components in `baseComps.zig` currently opt into
-.PACKED`. Keep packed storage focused on contiguous iteration and cache locality, and
-keep sparse storage focused on rare, optional, or lookup-oriented components.
-
-Do not add storage special cases for marker components or dataless tag
-components. Component stores are for per-entity payload-bearing facts.
-Classification belongs in traits/metaproperties.
-
-Component views should remain transient typed access helpers. They are not the
-full future query system over relations, events, traits, archetypes, or history.
-
-### 3. Relations
-
-Add first-class relation storage for facts that connect entities.
-
-Initial engine examples should stay generic:
-
-- Entity1 -> Owns      -> Entity2
-- Entity1 -> Contains  -> Entity2
-- Entity1 -> ParentOf  -> Entity2
-- Entity1 -> MemberOf  -> Entity2
-- Entity1 -> LinkedTo  -> Entity2
-- Entity1 -> DependsOn -> Entity2
-
-Do not use relations as mere tags. Use a relation only when both endpoints are
-meaningful entities. `MemberOf` means membership in another entity, such as a
-group, container, inventory, selection set, or collection that has identity,
-state, lifecycle, rules, or query value of its own. If the target would only
-exist to hold a label, model the label as a trait/metaproperty instead.
-
-Relation storage should move toward:
-
-- source/target queries
-- reverse lookups
-- cardinality policies
-- cleanup behavior when entities are destroyed
-
-### 4. Events
-
-Add events as facts that record something happened, not only as callbacks.
-
-Initial engine examples should stay generic:
-
-- EntityCreated
-- EntityDestroyed
-- ComponentAdded
-- ComponentRemoved
-- RelationAdded
-- RelationRemoved
-- TraitApplied
-- TraitRemoved
-- EffectTriggered
-
-Support transient events first if that is the smallest useful slice, but do not
-block retained event history for debugging, UI, replay, audit, or future
-history systems.
-
-### 5. Rules And Reactions
-
-Add a minimal rule/reaction layer once events exist.
-
-Rules should be able to observe:
-
-- components
-- relations
-- events
-- traits
-- time/schedules
-
-Rules should be able to emit:
-
-- commands
-- events
-- component changes
-- relation changes
-- trait changes
-- effect triggers
-
-Keep the first engine example minimal and generic. Game-specific rule content
-belongs under `games/`.
-
-### 6. Traits And Archetypes
-
-Add traits/metaproperties for reusable classification facts.
-
-Traits/metaproperties are the canonical replacement for marker components and
-relation-shaped tags. Use them for facts like "selectable", "visible",
-"simulated", or other presence-style classifications.
-
-Initial engine examples should stay generic:
-
-- Selectable
-- Visible
-- Simulated
-- Container
-- Indexed
-
-Add archetypes/templates for bundles of initial facts after traits and the base
-World fact model is usable.
-
-Except for the engine's focus on simulation-heavy games, engine-level traits and
-archetypes should stay genre-agnostic.
-
-### 7. Scheduler
-
-Add scheduling support after the base World fact model is stable enough to run
-systems cleanly.
-
-The scheduler is World-specific, but it is not a replacement for `EngineTiming`.
-It runs inside `World.tick(...)` and schedules logical simulation work relative
-to base ticks received from Engine.
-
-The design must leave room for:
-
-- systems that run every Engine base tick
-- logical World time and game-defined time scales
-- scheduled systems
-- delayed events
-- temporary time-bound rules
-
-The first scheduler can be simple. It must not assume simulation time is render
-time, and it must not independently decide when Engine base ticks occur.
-
-### 8. Queries And Views
-
-Add query/view helpers so simulation-heavy games, debug tools, and UI can
-inspect the world without mutating internals directly.
-
-Queries should eventually cover stored fact families:
-
-- components
-- relations
-- events
-- traits
-- archetypes
-- effect records and emitters
-
-UI and debug tools should read through queries/views and emit commands/events
-instead of reaching into storage internals.
-
-### 9. Context
-
-Reserve `engine/world/context` for future save/load/replay-facing World state.
-
-This folder should eventually hold World context records, snapshot adapters,
-and related state-description helpers once `utils` has reusable save/load or
-serialization primitives.
-
-For now, do not wire this folder into runtime code. The active rework should
-continue through entity cleanup, relations, events, rules, traits, archetypes,
-scheduler, and broad queries before context work becomes implementation-ready.
-
-### 10. First-Class Particles And Effects
-
-Add first-class particle/effects infrastructure after the event/rule path and
-render adapters are stable enough to drive effects from world facts.
-
-This should be treated as a peer engine system with components, relations,
-events, rules, traits, and archetypes. It is not just a rendering shortcut.
-
-Particles that are only visual should not be entities. Use entities for
-gameplay-relevant projectiles, hazards, selectable objects, or anything that
-participates in components, relations, rules, or collision. Use a particle pool
-for smoke, sparks, trails, impact dust, brief feedback effects, and similar
-transient visual effects.
-
-The target split is:
-
-- emitter components on entities for persistent effect sources;
-- world events, commands, or rules for effect triggers;
-- `ParticleConfigs` or equivalent config records for effect definitions and
-  spawn ranges;
-- deterministic seeds where replay/debug paths need them;
-- a packed transient particle pool for simulation and rendering;
-- render systems/adapters that draw particles without exposing pool internals
-  to game code.
-
-For save/load and replay, prefer recording deterministic effect triggers,
-configs, and seeds over serializing individual particle rows. Individual
-particles should be excluded from normal saves unless a later feature
-explicitly needs retained visual-effect state.
-
-`games/ping` should eventually replace pseudo-particle entities with this
-system, but not before the generic event/rule/render pieces exist. Treat that
-as the first concrete migration proof for the particle/effects system.
-
-
-## Architectural Boundaries
-
-Keep ownership aligned with the reference document:
-
-- `utils` owns reusable primitives: data structures, math, timing, logging,
-  RNG, generic drawing helpers, generic camera primitives, and non-world UI
-  primitives.
-- `engine/core` owns runtime orchestration: `Engine`, lifecycle, timing loop,
-  `EngineTiming`, base-tick/frame pacing, hooks, configs, and phase order.
-- `engine/world` owns simulation infrastructure: `World`, entities,
-  components, relations, events, rules, traits, archetypes, particle/effects
-  records and pools, logical simulation time, scheduler, queries/views, and
-  future context records for save/load/replay-facing world state.
-- `engine/render` owns world-facing render adapters: `WorldCam`, world-space
-  drawing wrappers, sprite/world render helpers, particle/effects render
-  helpers, and debug render systems.
-- `games` owns domain-specific simulation content, including game effect
-  configs.
-
-Simulation facts should not depend on rendering. Render systems read simulation
-facts and draw them.
-
-
-## Implementation Constraints
-
-- Keep this file focused on build order, migration steps, API sketches,
-  compatibility notes, and unresolved implementation details.
-- Keep principles and architectural intent in
-  `engine/world/engine_rework_reference.md`.
-- Keep engine-level examples minimal and generic.
-- Except for the engine's focus on simulation-heavy games, keep engine-level
-  systems, examples, traits, and archetypes genre-agnostic.
-- Treat particle/effects infrastructure as first-class, while keeping
-  game-specific effect content under `games/`.
-- Do not add specialized simulation content to `engine/world`.
-- Do not grow a large built-in content library.
-- Prefer fact tables, explicit metadata, relation indexes, and query/view
-  helpers over hidden object graphs.
-- Use `Policy` for single-axis enum choices and `Config` for structs grouping
-  multiple policies/settings. Keep single-policy fact declarations direct, such
-  as `compStorePolicy` and `cardinalityPolicy`, until a fact family needs more
-  than one independent policy.
-- Avoid linked-list storage unless a specific profile proves it is justified.
-- Prefer ids over raw pointers as persistent truth.
-- Preserve room for future save/load, deterministic replay, debugging, and
-  event history without building those full systems yet.
-- Keep `engine/world/context` dormant until reusable save/load primitives exist
-  in `utils`.
-- Keep phase order and event ordering explicit.
-- Keep `EngineTiming` as the sole base-tick/frame pacing authority; World logical
-  time and scheduling must build on ticks forwarded by Engine.
-- Keep game-specific components, relations, events, traits, rules,
-  archetypes, effects, particle configs, views, and UI bindings under `games/`.
-
-
-## Success Condition
-
-A user can build a fact-oriented simulation with many entities and many
-relationships, define their own simulation types cleanly, choose storage
-policies when needed, drive first-class effects from world facts, inspect what
-the world contains, and rely on a small set of generic engine examples as
-reference patterns.
+Required work:
+
+* keep `EngineTiming` as the base-tick/frame-pacing authority;
+* build scheduling inside `World.tick(...)`;
+* support systems that run every base tick;
+* support game-defined cadences;
+* support delayed events and temporary rules;
+* avoid a competing `shouldTick()` loop inside World.
+
+## 8. Later - Particles And Effects
+
+Goal: add first-class effect infrastructure driven by world facts.
+
+Required work:
+
+* define effect trigger records or commands;
+* add particle/effect configs and deterministic seeds where needed;
+* add packed transient particle pools;
+* add render adapters that draw particles without exposing pool internals;
+* migrate a concrete game proof only after generic events/rules/render pieces
+  are stable.
+
+## 9. Later - Context
+
+Goal: reserve the context path for save/load/replay-facing world state.
+
+Do not wire `engine/world/context` into runtime code until reusable
+serialization/save-load primitives exist in `utils` and the base fact model is
+stable enough to describe.
+
+## 10. Implementation Constraints
+
+* Keep target design in `engine_rework_goals.md`.
+* Keep current facts in `engine_rework_reference.md`.
+* Keep active task slices in `engine_rework_todo.md`.
+* Keep engine-level examples minimal and generic.
+* Keep game-specific facts under `src/games`.
+* Prefer explicit ids, policies, and fact tables over hidden object graphs.
+* Do not add marker-component support; use traits/metaproperties for
+  classification.
+* Do not run formatting passes such as `zig fmt`.

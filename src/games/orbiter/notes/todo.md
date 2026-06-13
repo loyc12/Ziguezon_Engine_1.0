@@ -9,7 +9,12 @@
 | `[~]` | in progress |
 | `[x]` | finished    |
 
-This file is a narrowed-down, actionable view of [economy_upgrade.md](roadmaps/economy_upgrade.md) — focused on the easy / quick changes, the core `econSolver` + `econBuilder` rework (roadmap Tier 1.1 Stage A + Stage B), and the precursors needed before that rework can start. Tier 1.2+ (financial integration, agent self-build, government, trade, etc.) live in the roadmap only. This file is the implementation checklist: tickable boxes, no higher-level design discussion — consult `economy_upgrade.md` for the why.
+This file is a narrowed-down, actionable view of [roadmap.md](roadmap.md),
+focused on the easy / quick changes, the core `econSolver` + `econBuilder`
+rework, and the precursors needed before that rework can start. Later financial
+integration, agent self-build, government, trade, and politics work lives in the
+roadmap only. This file is the implementation checklist: tickable boxes, no
+higher-level design discussion.
 
 ## Section dependencies
 
