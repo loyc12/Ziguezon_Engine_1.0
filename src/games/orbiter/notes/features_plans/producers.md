@@ -1,4 +1,4 @@
-# Industrial subtypes
+# Producers subtypes
 
 ## Growth
 
@@ -30,8 +30,10 @@
 
 - datacenter
 - marketplace
+- depots
+- battery banks
 
-## Transportation
+## Transportation /
 
 - power network
 - water network
@@ -40,6 +42,7 @@
 - massdriver
 - space elevator
 
+## Capacity
 
 
 
