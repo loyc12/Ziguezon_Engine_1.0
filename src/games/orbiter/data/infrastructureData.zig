@@ -9,8 +9,11 @@ const gdf = @import( "../gameDef.zig"    );
 const ResType  = @import( "resourceData.zig" ).ResType;
 
 
-// NOTE : This represent the "Service" portion of the economy, aka the non-resource producing consumers
+// TODO: Fold this infrastructure-side data into the unified `Facility` model
+// during Phase 1. It remains split from industry while behaviour is unchanged.
+// NOTE : This represents the "Service" portion of the economy, aka the non-resource producing consumers
 
+/// Infrastructure-side facility type for the pre-Phase-1 economy model.
 pub const InfType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;

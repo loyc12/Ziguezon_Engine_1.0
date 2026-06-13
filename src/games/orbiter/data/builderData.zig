@@ -117,9 +117,9 @@ pub const Construct = union( ConstructTag ) // Union of buildable things
 };
 
 
-// ================================ REQUESTER ================================
+// ================================ ECON AGENT ================================
 
-pub const RequesterTag = enum( u4 )
+pub const EconAgentTag = enum( u4 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -131,7 +131,10 @@ pub const RequesterTag = enum( u4 )
   none,
 };
 
-pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
+/// Economy actor that owns or requests build-queue work.
+/// TODO: Merge this with the broader Phase 1 `EconAgent` group model when
+/// facility, population, government, and route traders share one agent surface.
+pub const EconAgent = union( EconAgentTag )
 {
   popT : PopType,
   infT : InfType,
@@ -141,7 +144,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
   none : void,
 
 
-  pub fn getAgentSavings( econ : *ecn.Economy, q : Requester ) f64
+  pub fn getAgentSavings( econ : *ecn.Economy, q : EconAgent ) f64
   {
     return switch( q )
     {
@@ -154,7 +157,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
     };
   }
 
-  pub fn addAgentSavings( econ : *ecn.Economy, q : Requester, val : f64 ) void
+  pub fn addAgentSavings( econ : *ecn.Economy, q : EconAgent, val : f64 ) void
   {
     switch( q )
     {
@@ -168,7 +171,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
 
 
     // Debug logging
-    const requesterName = switch( q )
+    const agentName = switch( q )
     {
       .popT => | p | @tagName( p ),
       .infT => | f | @tagName( f ),
@@ -178,10 +181,10 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
       .none => "*NONE*",
     };
 
-    utl.log( .DEBUG, @src(), "# Gave {d:.2}$ to {s}", .{ val, requesterName });
+    utl.log( .DEBUG, @src(), "# Gave {d:.2}$ to {s}", .{ val, agentName });
   }
 
-  pub fn subAgentSavings( econ : *ecn.Economy, q : Requester, val : f64 ) void
+  pub fn subAgentSavings( econ : *ecn.Economy, q : EconAgent, val : f64 ) void
   {
     switch( q )
     {
@@ -195,7 +198,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
 
 
     // Debug logging
-    const requesterName = switch( q )
+    const agentName = switch( q )
     {
       .popT => | p | @tagName( p ),
       .infT => | f | @tagName( f ),
@@ -205,7 +208,7 @@ pub const Requester = union( RequesterTag ) // Union of builder (sub)agents
       .none => "*NONE*",
     };
 
-    utl.log( .DEBUG, @src(), "# Took {d:.2}$ from {s}", .{ val, requesterName });
+    utl.log( .DEBUG, @src(), "# Took {d:.2}$ from {s}", .{ val, agentName });
   }
 };
 
@@ -242,7 +245,7 @@ pub const BuildEntry = struct
   unitCount    : f64 = 0.0, // How many units are there left to build
 
   construct : Construct     = .{ .none = {} },
-  requester : Requester     = .{ .none = {} },
+  agent : EconAgent     = .{ .none = {} },
   entryType : EntryTypeEnum = .CNSTR,
 
   priority : u8 = 0, // Higher priority entries should be built first
@@ -257,7 +260,7 @@ pub const BuildEntry = struct
     self.unitCount    = 0.0;
 
     self.construct = .{ .none = {} };
-    self.requester = .{ .none = {} };
+    self.agent = .{ .none = {} };
     self.entryType = .CNSTR;
 
     self.priority = 0;
@@ -511,7 +514,7 @@ pub const BuildEntry = struct
 
   pub inline fn isValid( self : *const BuildEntry ) bool
   {
-    switch( self.requester )
+    switch( self.agent )
     {
       .none => return false,
        else => {},
@@ -538,14 +541,14 @@ pub const BuildEntry = struct
   pub inline fn matchesWithPart( self : BuildEntry, other : BuildEntry ) bool
   {
     if( !utl.areContEqual( self.construct, other.construct )){ return false; }
-    if( !utl.areContEqual( self.requester, other.requester )){ return false; }
+    if( !utl.areContEqual( self.agent, other.agent )){ return false; }
 
     return true;
   }
   pub inline fn matchesWithFull( self : BuildEntry, other : BuildEntry ) bool
   {
     if( !utl.areContEqual( self.construct, other.construct )){ return false; }
-    if( !utl.areContEqual( self.requester, other.requester )){ return false; }
+    if( !utl.areContEqual( self.agent, other.agent )){ return false; }
     if( !utl.areContEqual( self.entryType, other.entryType )){ return false; }
 
     return true;
@@ -611,7 +614,7 @@ pub const BuildEntry = struct
     //.vesT => | v | @tagName( v ),
       .none => "*NONE*",
     };
-    const requesterName = switch( self.requester )
+    const agentName = switch( self.agent )
     {
       .popT => | p | @tagName( p ),
       .infT => | f | @tagName( f ),
@@ -627,7 +630,7 @@ pub const BuildEntry = struct
       .DESTR => "DESTROYING",
     };
 
-    utl.log( .CONT, @src(), "# {s} -> {s} {d:.0} units of {s}", .{ requesterName, entryType, self.unitCount, constructName });
+    utl.log( .CONT, @src(), "# {s} -> {s} {d:.0} units of {s}", .{ agentName, entryType, self.unitCount, constructName });
   }
 
   pub inline fn debugLogComplex( self : *const BuildEntry ) void
@@ -645,7 +648,7 @@ pub const BuildEntry = struct
 //unitCount    : f64 = 0.0, // How many units are there left to build
 //
 //construct : Construct     = .{ .none = {} },
-//requester : Requester     = .{ .none = {} },
+//agent : EconAgent     = .{ .none = {} },
 //entryType : EntryTypeEnum = .CNSTR,
 //
 //priority : u8 = 0, // Higher priority entries should be built first

@@ -90,7 +90,7 @@ pub inline fn stepEcon( econ : *ecn.Economy ) *const EconSolver
   solver.updateFlowConsSums(); // Recompiles all individualized consumption values into relevant grouped metrics
 
   solver.applyGenResCons(); // Applies all resource consumption to the economy
-  solver.applyResDecay();   // Decays unsued resources leftover based on individual rates ( 100% for WORK )
+  solver.applyResDecay();   // Decays unsued resources leftover based on individual rates ( 100% for LABOUR )
 
 //testResFlowInvariant( &solver, "CONS PHASE" );
 }
@@ -1177,7 +1177,7 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   fn updatePopCount( self : *EconSolver ) void
   {
-    const jobAccess : f64 = @max( utl.EPS, self.genResFlowData.get( .OPR_ACS, .WORK ));
+    const jobAccess : f64 = @max( utl.EPS, self.genResFlowData.get( .OPR_ACS, .LABOUR ));
 
     var avgPopStarveRate : f64 = 0.0;
     var avgPopDeathRate  : f64 = 0.0;

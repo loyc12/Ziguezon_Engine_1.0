@@ -9,8 +9,11 @@ const ResType  = @import( "resourceData.zig" ).ResType;
 const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
 
 
-// NOTE : This represent the "Manufacture" portion of the economy, aka the resource producing consumers
+// TODO: Fold this industry-side data into the unified `Facility` model during
+// Phase 1. It remains split from infrastructure while behaviour is unchanged.
+// NOTE : This represents the "Manufacture" portion of the economy, aka the resource producing consumers
 
+/// Industry-side facility type for the pre-Phase-1 economy model.
 pub const IndType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -256,7 +259,7 @@ pub fn loadIndustryData() void
 
   // ================================ RESOURCES ================================
   // All values per facility per tick (week) at full activity
-  // WORK unit: person-weeks. A worker producing 0.45 pw means each WORK unit ≈ 2.22 people
+  // LABOUR unit: person-weeks. A worker producing 0.45 pw means each LABOUR unit ≈ 2.22 people
 
 
   // ---- AGRONOMIC ----
@@ -264,7 +267,7 @@ pub fn loadIndustryData() void
   // Produces ~500 t of grain/produce per week (50 ha × 10 t/ha harvest, amortised weekly)
   // Consumes significant water for irrigation: ~2,500 t/week (50mm/week over 50 ha)
 
-  indResMetricTable.set( .AGRONOMIC, .CONS, .WORK,    55.0 );
+  indResMetricTable.set( .AGRONOMIC, .CONS, .LABOUR,    55.0 );
   indResMetricTable.set( .AGRONOMIC, .CONS, .WATER, 5000.0 );
   indResMetricTable.set( .AGRONOMIC, .PROD, .FOOD,   500.0 ); // NOTE: reduced by sunAccess and ecoFactor
 
@@ -274,7 +277,7 @@ pub fn loadIndustryData() void
   // Very water-efficient (~90% recirculation), but power-hungry (LEDs)
   // Higher yield per area but lower total output than a 50ha farm
 
-  indResMetricTable.set( .HYDROPONIC, .CONS, .WORK,   90.0 );
+  indResMetricTable.set( .HYDROPONIC, .CONS, .LABOUR,   90.0 );
   indResMetricTable.set( .HYDROPONIC, .CONS, .WATER, 200.0 );
   indResMetricTable.set( .HYDROPONIC, .CONS, .POWER, 500.0 );
   indResMetricTable.set( .HYDROPONIC, .PROD, .FOOD,  300.0 ); // NOTE : Less total output but no sunAccess/ecoFactor dependency
@@ -285,7 +288,7 @@ pub fn loadIndustryData() void
   // Produces ~50,000 m³/week (serves ~70,000 people at 0.7 t/person/week)
   // Very power-intensive (5 kWh per m³ for desalination)
 
-  indResMetricTable.set( .WATER_PLANT, .CONS, .WORK,    180.0 );
+  indResMetricTable.set( .WATER_PLANT, .CONS, .LABOUR,    180.0 );
   indResMetricTable.set( .WATER_PLANT, .CONS, .POWER,   200.0 );
   indResMetricTable.set( .WATER_PLANT, .PROD, .WATER, 40000.0 );
 
@@ -295,7 +298,7 @@ pub fn loadIndustryData() void
   // Produces ~100 MW × 168 h × 0.20 capacity factor = ~3,360 MWh/week
   // Needs water for panel washing: ~50 t/week
 
-  indResMetricTable.set( .SOLAR_PLANT, .CONS, .WORK,    40.0 );
+  indResMetricTable.set( .SOLAR_PLANT, .CONS, .LABOUR,    40.0 );
   indResMetricTable.set( .SOLAR_PLANT, .CONS, .WATER,   50.0 );
   indResMetricTable.set( .SOLAR_PLANT, .PROD, .POWER, 3000.0 ); // NOTE: reduced by sunAccess
 
@@ -305,7 +308,7 @@ pub fn loadIndustryData() void
   // Produces 500 MW × 168 h × 0.85 capacity factor = ~71,400 MWh/week
   // Consumes deuterium/tritium (FUEL) and cooling water
 
-  indResMetricTable.set( .POWER_PLANT, .CONS, .WORK,    200.0 );
+  indResMetricTable.set( .POWER_PLANT, .CONS, .LABOUR,    200.0 );
   indResMetricTable.set( .POWER_PLANT, .CONS, .WATER,   500.0 );
   indResMetricTable.set( .POWER_PLANT, .CONS, .FUEL,     10.0 );
   indResMetricTable.set( .POWER_PLANT, .PROD, .POWER, 20000.0 );
@@ -316,7 +319,7 @@ pub fn loadIndustryData() void
   // Produces fusion fuel from raw feedstock
   // Very power and water hungry
 
-  indResMetricTable.set( .REFINERY, .CONS, .WORK,  150.0 );
+  indResMetricTable.set( .REFINERY, .CONS, .LABOUR,  150.0 );
   indResMetricTable.set( .REFINERY, .CONS, .WATER, 200.0 );
   indResMetricTable.set( .REFINERY, .CONS, .POWER, 500.0 );
   indResMetricTable.set( .REFINERY, .PROD, .FUEL,   50.0 );
@@ -327,7 +330,7 @@ pub fn loadIndustryData() void
   // Extracts ~5,000 t/week of usable ore from ~50,000 t of overburden
   // Consumes water for dust suppression and ore washing
 
-  indResMetricTable.set( .GROUND_MINE, .CONS, .WORK,   300.0 );
+  indResMetricTable.set( .GROUND_MINE, .CONS, .LABOUR,   300.0 );
   indResMetricTable.set( .GROUND_MINE, .CONS, .POWER, 1000.0 );
   indResMetricTable.set( .GROUND_MINE, .CONS, .WATER, 2500.0 );
   indResMetricTable.set( .GROUND_MINE, .PROD, .ORE,   5000.0 );
@@ -338,7 +341,7 @@ pub fn loadIndustryData() void
   // Converts ore to ingot at roughly 4:3 by mass (ore contains ~50-80% metal)
   // Very power-intensive (electric arc furnaces)
 
-  indResMetricTable.set( .FOUNDRY, .CONS, .WORK,   300.0 );
+  indResMetricTable.set( .FOUNDRY, .CONS, .LABOUR,   300.0 );
   indResMetricTable.set( .FOUNDRY, .CONS, .POWER,  500.0 );
   indResMetricTable.set( .FOUNDRY, .CONS, .ORE,   5000.0 );
   indResMetricTable.set( .FOUNDRY, .PROD, .INGOT, 4000.0 );
@@ -347,9 +350,9 @@ pub fn loadIndustryData() void
   // ---- FACTORY ----
   // Large manufacturing plant, ~675 total staff
   // Converts ingots to finished parts ( 75% yield, rest is scrap/waste )
-  // Moderate power, high skill labor
+  // Moderate power, high skill labour
 
-  indResMetricTable.set( .FACTORY, .CONS, .WORK,   300.0 );
+  indResMetricTable.set( .FACTORY, .CONS, .LABOUR,   300.0 );
   indResMetricTable.set( .FACTORY, .CONS, .POWER,  200.0 );
   indResMetricTable.set( .FACTORY, .CONS, .INGOT, 2000.0 );
   indResMetricTable.set( .FACTORY, .PROD, .PART,  1500.0 );

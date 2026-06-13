@@ -157,7 +157,7 @@ pub const Economy = struct
 
   pub inline fn debugSetPopCounts(  self : *Economy, value : u64 ) void
   {
-    self.setPopCount( .HUMAN, value * gdf.G_FLAGS.DEFAULT_POP );
+    self.setPopCount( .WORKER, value * gdf.G_FLAGS.DEFAULT_POP );
   }
 
   pub inline fn debugSetResCounts(  self : *Economy, value : u64 ) void
@@ -174,7 +174,7 @@ pub const Economy = struct
 
       amount *= switch( resT )
       {
-        .WORK  => 1.00,
+        .LABOUR  => 1.00,
         .FUEL  => 0.05,
         .FOOD  => 0.25,
         .WATER => 0.25,
@@ -813,7 +813,7 @@ pub const Economy = struct
     {
       const resT = ResType.fromIdx( r );
 
-      if( resT != .WORK ) // TODO : update once multiple storage types exist
+      if( resT != .LABOUR ) // TODO : update once multiple storage types exist
       {
         const resC = self.resState.get( .COUNT, resT );
         const resL = self.resState.get( .LIMIT, resT );

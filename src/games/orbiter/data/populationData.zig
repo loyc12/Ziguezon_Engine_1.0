@@ -16,15 +16,16 @@ pub const PopType = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
-  HUMAN,
+  WORKER,
 
-  // TODO : add other pop types here eventually
+  // TODO: Add DEPENDANT in Phase 1 and route births plus worker conversion
+  // through the population update pipeline.
 
   pub inline fn getInfStore( self : PopType ) InfType // TODO : move to data array ?
   {
     return switch( self )
     {
-      .HUMAN => .HOUSING,  // TODO : update once multiple pop types exist
+      .WORKER => .HOUSING,
     //else   => .HOUSING,
     };
   }
@@ -117,7 +118,7 @@ pub const PopStateEnum = enum( u8 )
 
   // TODO : Hook in the monetary values below properly
   EXPENSE,  // Amount of money spent to fulfill their needs
-  REVENUE,  // Amount of money gained by via WORK production
+  REVENUE,  // Amount of money gained by via LABOUR production
   SAVINGS,  // Stored profits from previous ticks ( decays via inflation )
 
   FLM_LVL,  // How fulfilled their needs ended up being last tick
@@ -134,11 +135,11 @@ pub fn loadPopulationData() void
 
   // ================================ BASE METRICS ================================
 
-  popMetricData.set( .HUMAN, .MASS,      0.0600 ); // In tons ( 60 Kgs )
-  popMetricData.set( .HUMAN, .HSNG_COST, 1.0000 ); // Housing "space" neede for each pop
-  popMetricData.set( .HUMAN, .POLLUTION, 0.0500 ); // ~2.6 tCO2e/yr - first-world all-electric
-  popMetricData.set( .HUMAN, .NATALITY,  0.0003 ); // ~1.6% annual — colony growth rate
-  popMetricData.set( .HUMAN, .FATALITY,  0.0001 ); // ~0.5% annual — advanced medicine, ~200yr life expectancy
+  popMetricData.set( .WORKER, .MASS,      0.0600 ); // In tons ( 60 Kgs )
+  popMetricData.set( .WORKER, .HSNG_COST, 1.0000 ); // Housing "space" neede for each pop
+  popMetricData.set( .WORKER, .POLLUTION, 0.0500 ); // ~2.6 tCO2e/yr - first-world all-electric
+  popMetricData.set( .WORKER, .NATALITY,  0.0003 ); // ~1.6% annual — colony growth rate
+  popMetricData.set( .WORKER, .FATALITY,  0.0001 ); // ~0.5% annual — advanced medicine, ~200yr life expectancy
 
 
   popMetricData.isInit = true;
@@ -147,23 +148,22 @@ pub fn loadPopulationData() void
   // ================================ RESOURCE METRICS ================================
   // NOTE : Per week. Units in gameDefs
 
-  popResMetricTable.set( .HUMAN, .PROD, .WORK,  0.350 ); // 0.45 prod - 0.10 cons
-//popResMetricTable.set( .HUMAN, .CONS, .WORK,  0.450 ); // Average workweek
-//popResMetricTable.set( .HUMAN, .CONS, .WORK,  0.200 ); // Services consumption
+  popResMetricTable.set( .WORKER, .PROD, .LABOUR,  0.350 ); // 0.45 prod - 0.10 cons
+//popResMetricTable.set( .WORKER, .CONS, .LABOUR,  0.450 ); // Average workweek
+//popResMetricTable.set( .WORKER, .CONS, .LABOUR,  0.200 ); // Services consumption
 
-//popResMetricTable.set( .HUMAN, .CONS, .FUEL,  0.000 ); // All transport is electric
-  popResMetricTable.set( .HUMAN, .CONS, .FOOD,  0.015 );
-  popResMetricTable.set( .HUMAN, .CONS, .WATER, 0.500 );
-  popResMetricTable.set( .HUMAN, .CONS, .POWER, 0.500 ); // 0.4 base + 0.1 for electric transport
-  popResMetricTable.set( .HUMAN, .CONS, .PART,  0.003 );
+//popResMetricTable.set( .WORKER, .CONS, .FUEL,  0.000 ); // All transport is electric
+  popResMetricTable.set( .WORKER, .CONS, .FOOD,  0.015 );
+  popResMetricTable.set( .WORKER, .CONS, .WATER, 0.500 );
+  popResMetricTable.set( .WORKER, .CONS, .POWER, 0.500 ); // 0.4 base + 0.1 for electric transport
+  popResMetricTable.set( .WORKER, .CONS, .PART,  0.003 );
 
   // Mortality rates at ZERO access (per week)
   // Scaled by (1 - access)^exponent for partial shortages
-  popResMetricTable.set( .HUMAN, .MORT, .WATER, 0.0200 ); // Dehydration — lethal in days, mass death in 1-2 weeks
-  popResMetricTable.set( .HUMAN, .MORT, .FOOD,  0.0100 ); // Starvation  — serious in 3 weeks, mass death in 4-8 weeks
-  popResMetricTable.set( .HUMAN, .MORT, .POWER, 0.0005 ); // Exposure    — environment dependent, slow killer
+  popResMetricTable.set( .WORKER, .MORT, .WATER, 0.0200 ); // Dehydration — lethal in days, mass death in 1-2 weeks
+  popResMetricTable.set( .WORKER, .MORT, .FOOD,  0.0100 ); // Starvation  — serious in 3 weeks, mass death in 4-8 weeks
+  popResMetricTable.set( .WORKER, .MORT, .POWER, 0.0005 ); // Exposure    — environment dependent, slow killer
 
 
   popResMetricTable.isInit = true;
 }
-

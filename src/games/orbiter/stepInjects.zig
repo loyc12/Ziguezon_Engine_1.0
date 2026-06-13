@@ -64,7 +64,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
     const homeId = gbl.G_DATA.bodyRegistry.idOf( gdf.G_CONSTS.homeBody );
     var mainEcon = bodyView.get( gdf.bdy.BodyComp, homeId ).?.getEcon( .GROUND );
 
-    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.zero  )){ mainEcon.addPopCount( .HUMAN,        100000 ); }
+    if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.zero  )){ mainEcon.addPopCount( .WORKER,        100000 ); }
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.one   )){ mainEcon.addResCount( .fromIdx( 0 ), 100000 ); }
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.two   )){ mainEcon.addResCount( .fromIdx( 1 ), 100000 ); }
     if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.three )){ mainEcon.addResCount( .fromIdx( 2 ), 100000 ); }

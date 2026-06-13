@@ -35,7 +35,7 @@ Alert me to any unforeseen issue you encounter along the way.
 # ==== UPDATING TODO ====
 
 Update `todo.md` so that it contains the next steps of the rework.
-Use `reference.md` and `roadmap.md` as authoritative guides.
+Use `goals.md` and `roadmap.md` as authoritative guides.
 Check whether `TODO` comments in implicated files should be addressed, deferred, or dropped. Validate this with me before acting on them.
 Scope the `todo.md` content appropriately: not trivially small, but not overly ambitious.
 

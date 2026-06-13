@@ -14,6 +14,9 @@ const IndType = gdf.IndType;
 
 // ================================ ECONOMY LOCATION ENUM ================================
 
+/// Temporary combined economy-location and body-location enum.
+/// TODO: Split this into `SettlementType` for economy rules and `BodyLocation`
+/// for travel/orbital placement once economies move out of `BodyComp`.
 pub const EconLoc = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -21,9 +24,9 @@ pub const EconLoc = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This() {  return @enumFromInt( i    ); }
 
-  GROUND, // Does not garantee breathable atmosphere
+  GROUND, // Does not guarantee breathable atmosphere
   ORBIT,
-  L1,     // Lagrange Points
+  L1,     // Lagrange points
   L2,
   L3,
   L4,
@@ -63,9 +66,9 @@ pub const AgentGroupEnum = enum( u8 )
   pub inline fn toIdx( self : @This() ) usize { return @intFromEnum( self ); }
   pub inline fn fromIdx( i : usize ) @This()  { return @enumFromInt( i ); }
 
-  POP, // Population     ( PopType )
-  INF, // Infrastructure ( InfType )
-  IND, // Industrial     ( IndType )
+  POP, // Population                   ( PopType )
+  INF, // Infrastructure-side facility ( InfType )
+  IND, // Industry-side facility       ( IndType )
 //COM, // Commercial     ( import, export, )
 //GOV, // Government     ( aka the player )
 //NAT, // Non-agent      ( disaster, decay, etc )

@@ -47,7 +47,7 @@ const AUTO_DECAY_INF_FACTOR   : f64 = 0.00002; // Fraction of pop count to decay
 const AUTO_DECAY_ASSEMBLY_F   : f64 = 0.00025; // Min ASSEMBLY count as a fraction of population count
 
 
-const AUTO_BUILD_WORK_THRESH  : f64 = 0.90000; // Min WORK supply/demand ratio required before expanding industry
+const AUTO_BUILD_LABOUR_THRESH  : f64 = 0.90000; // Min LABOUR supply/demand ratio required before expanding industry
 const AUTO_BUILD_IND_THRESH   : f64 = 0.80000; // Industry activity target above which it grows
 const AUTO_BUILD_IND_FACTOR   : f64 = 0.00002; // Fraction of pop count to build per tick at full scale (ind)
 const AUTO_BUILD_ACCESS_LIMIT : f64 =    32.0; // Stored/demand ratio above which build amounts are dampened
@@ -150,7 +150,7 @@ pub fn debugAutoBuild( self : *Economy ) void
 
     // ======== INDUSTRY ========
 
-    const workAcs = self.resState.get( .ACCESS, .WORK );
+    const labourAcs = self.resState.get( .ACCESS, .LABOUR );
 
     for( 0..indTypeC )| d |
     {
@@ -161,15 +161,15 @@ pub fn debugAutoBuild( self : *Economy ) void
         const actTrgt : f64 = self.indState.get( .ACT_TRGT, indT );
 
         // Don't expand industry if we can't staff what we already have
-        const needWork : bool = ( indT.getResMetric_f64( .CONS, .WORK ) > utl.EPS );
-        const canBuild : bool = ( !needWork or workAcs > AUTO_BUILD_WORK_THRESH );
+        const needLabour : bool = ( indT.getResMetric_f64( .CONS, .LABOUR ) > utl.EPS );
+        const canBuild : bool = ( !needLabour or labourAcs > AUTO_BUILD_LABOUR_THRESH );
 
         if( canBuild and actTrgt > AUTO_BUILD_IND_THRESH )
         {
           // Scale build amount : at THRESH build 0, at 1.0+ build full amount
           var scale : f64 = 1.0;
               scale *= ( actTrgt - AUTO_BUILD_IND_THRESH  ) / ( 1.0 - AUTO_BUILD_IND_THRESH  );
-              scale *= ( workAcs - AUTO_BUILD_WORK_THRESH ) / ( 1.0 - AUTO_BUILD_WORK_THRESH );
+              scale *= ( labourAcs - AUTO_BUILD_LABOUR_THRESH ) / ( 1.0 - AUTO_BUILD_LABOUR_THRESH );
               scale  = @min( AUTO_BUILD_MAX_SCALE, scale  );
 
           var amount : f64 = scale * popC * AUTO_BUILD_IND_FACTOR;

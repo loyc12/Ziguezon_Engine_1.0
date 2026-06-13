@@ -29,6 +29,8 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 //temp   : f32 =               390.0, // Kelvins    ( Dk )
 //tilt   : f32 =                 0.0, // Radians
 
+  // TODO: Phase 1 moves economies to game-owned storage; BodyComp should keep
+  // economy references/indices instead of owning every location slot directly.
   econArray : [ EconLoc.count ]ecn.Economy = std.mem.zeroes([ EconLoc.count ]ecn.Economy ),
 
 
@@ -84,12 +86,13 @@ pub const BodyComp = struct // DISTINCT FROM ENGINE BUILTIN COMP
 
   // ================================ ECONOMIES ================================
 
+  /// Returns the body-owned economy slot for the current pre-Phase-1 storage model.
   pub fn getEcon( self : *BodyComp, econLoc : EconLoc ) *ecn.Economy
   {
     return &self.econArray[ econLoc.toIdx() ];
   }
 
-  /// NOTE : bodyComp.radius needs to be set beforhand
+  /// NOTE : bodyComp.radius needs to be set beforehand
   pub fn quickInitEcon( self : *BodyComp, loc : EconLoc, activate : bool ) void
   {
     if( self.radius < utl.EPS )

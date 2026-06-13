@@ -21,7 +21,7 @@ const bld = gdf.bldr_d;
 
 const BuildEntry = bld.BuildEntry;
 const Construct  = bld.Construct;
-const Requester  = bld.Requester;
+const EconAgent  = bld.EconAgent;
 const EntryType  = bld.EntryTypeEnum;
 const EntryMode  = bld.EntryModeEnum;
 
@@ -63,11 +63,11 @@ pub const BuildQueue = struct
     return queue;
   }
 
-  pub fn hasMatchingEntry( self : *BuildQueue, c : Construct, q : Requester ) bool
+  pub fn hasMatchingEntry( self : *BuildQueue, c : Construct, q : EconAgent ) bool
   {
     for( self.entries )| e |
     {
-      if( e.matchesWithPart( .{ .construct = c, .requester = q }))
+      if( e.matchesWithPart( .{ .construct = c, .agent = q }))
       {
         return true;
       }
@@ -77,7 +77,7 @@ pub const BuildQueue = struct
 
 // ================================ EXTERNAL API ================================
 
-  pub fn tryAddEntry( self : *BuildQueue, c : Construct, q : Requester, t : EntryType, m : EntryMode, count : u64 ) bool
+  pub fn tryAddEntry( self : *BuildQueue, c : Construct, q : EconAgent, t : EntryType, m : EntryMode, count : u64 ) bool
   {
     const count_f : f64 = @floatFromInt( count );
 
@@ -119,7 +119,7 @@ pub const BuildQueue = struct
     return false;
   }
 
-  fn addNewEntry( self : *BuildQueue, c : Construct, q : Requester, t : EntryType, m : EntryMode, count : f64 ) bool
+  fn addNewEntry( self : *BuildQueue, c : Construct, q : EconAgent, t : EntryType, m : EntryMode, count : f64 ) bool
   {
     if( m == .CANCEL )
     {
@@ -136,7 +136,7 @@ pub const BuildQueue = struct
     self.entries[ self.maxEntryCount ] =
     .{
       .construct = c,
-      .requester = q,
+      .agent = q,
       .entryType = t,
       .unitCount = count,
       .priority  = 1,
@@ -150,7 +150,7 @@ pub const BuildQueue = struct
   }
 
   /// Returns the unused funds
-  pub fn tryFundEntry( self : *BuildQueue, econ : *const ecn.Economy, c : Construct, q : Requester, t : EntryType, funds : f64 ) f64
+  pub fn tryFundEntry( self : *BuildQueue, econ : *const ecn.Economy, c : Construct, q : EconAgent, t : EntryType, funds : f64 ) f64
   {
     if( t == .DESTR ){ return funds; } // Destruction will never need funds
 
@@ -163,7 +163,7 @@ pub const BuildQueue = struct
       {
         var e = &self.entries[ idx ];
 
-        if( e.matchesWithFull( .{ .construct = c, .requester = q, .entryType = t }))
+        if( e.matchesWithFull( .{ .construct = c, .agent = q, .entryType = t }))
         {
           remainingFunds = e.tryGrantFunds( econ, funds );
           e.debugLogComplex();
@@ -178,7 +178,7 @@ pub const BuildQueue = struct
   {
     const e = &self.entries[ idx ];
 
-    // Calculated requester refund
+    // Calculated agent refund
     var refund = e.stashedFunds;
 
     inline for( 0..resTypeC )| r |
@@ -194,7 +194,7 @@ pub const BuildQueue = struct
     }
     if( refund > utl.EPS )
     {
-      Requester.addAgentSavings( econ, e.requester, refund );
+      EconAgent.addAgentSavings( econ, e.agent, refund );
     }
 
     e.reset(); // NOTE : Invalidates entry so it is remove on the next compactEntries() call

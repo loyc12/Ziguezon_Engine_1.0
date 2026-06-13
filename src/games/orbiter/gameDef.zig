@@ -36,7 +36,7 @@ pub const Orbits = struct
 // ======== Resource units ========
 
 // DEFAULT   : Metric Ton     ( t   ) = 1_000 kg
-// WORK      : Workweek       ( Ww  ) = 40 h
+// LABOUR      : Workweek       ( Ww  ) = 40 h
 // POWER     : Megawatt-hour  ( MWh ) = 1_000_000 Wh
 
 // NOTE : 1 kg of FOOD  represents about 1 kcal
@@ -94,7 +94,7 @@ pub const BodyName          = stlr_d.StellarBodyName;
 pub const StellarMetricEnum = stlr_d.StellarMetricEnum;
 
 pub const Construct         = bldr_d.Construct;
-pub const Requester         = bldr_d.Requester;
+pub const EconAgent         = bldr_d.EconAgent;
 
 pub const rbtc_d = @import( "data/orbitRelationData.zig" );
 pub const trvl_d = @import( "data/travelData.zig"      );
