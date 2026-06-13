@@ -2,8 +2,8 @@
 
 This file is the descriptive snapshot for the current Orbiter implementation.
 When this file disagrees with code, inspect code first and refresh this file.
-Broad game design belongs in [../design_doc.md](../design_doc.md) and
-[../design_philo.md](../design_philo.md). Rework target state belongs in
+Broad game design belongs in [design_doc.md](design_doc.md) and
+[design_philo.md](design_philo.md). Rework target state belongs in
 [goals.md](goals.md). Implementation order belongs in [roadmap.md](roadmap.md).
 Active task slices belong in [todo.md](todo.md).
 

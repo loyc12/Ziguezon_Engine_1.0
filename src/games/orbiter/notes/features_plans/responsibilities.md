@@ -12,7 +12,7 @@
 - commerce
 - migration
 
-## Economics
+## Economics ( MVP focus )
 
 - production
 - consumption
@@ -24,7 +24,7 @@
 - investment
 - construction
 
-## Politics
+## Politics ( not MVP focus )
 
 - embargoes
 - taxes

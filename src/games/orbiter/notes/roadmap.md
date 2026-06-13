@@ -3,7 +3,7 @@
 This file is the high-level implementation guide from the current
 [reference.md](reference.md) baseline toward the rework target state in
 [goals.md](goals.md). Broad game design belongs in
-[../design_doc.md](../design_doc.md) and [../design_philo.md](../design_philo.md).
+[design_doc.md](design_doc.md) and [design_philo.md](design_philo.md).
 
 Detailed active tasks belong in [todo.md](todo.md).
 
