@@ -2,7 +2,11 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-pub var GRID_ID : u32 = 0;
+const tlmp = utl.legacy_tilemap;
+
+const Tilemap = tlmp.Tilemap;
+
+pub var GRID : Tilemap = .{};
 
 pub const GRID_WIDTH  = 128;
 pub const GRID_HEIGHT = 128;
@@ -25,6 +29,15 @@ pub var NOISE_GEN : utl.Noise2D =
   .octaveCount = 6,
 };
 
+/// Returns the game-owned grid after `OnGameOpen` initializes it.
+pub fn getGrid() ?*Tilemap
+{
+  if( GRID.isInit() ){ return &GRID; }
+
+  utl.qlog( .WARN, @src(), "Granulater grid is not initialized" );
+  return null;
+}
+
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
@@ -36,20 +49,21 @@ pub fn OnGameStart( ng : *eng.Engine ) void
 
 pub fn OnGameOpen( ng : *eng.Engine ) void
 {
-  const tlm = ng.tilemapManager.loadTilemapFromParams(
+  _ = ng;
+
+  GRID = Tilemap.createTilemapFromParams(
   .{
     .mapPos    = .{ .x = 0,   .y = 0   },
     .mapSize   = .{ .x = 128, .y = 128 },
     .tileScale = .{ .x = 64,  .y = 64  },
     .tileShape = .RECT,
-  }, .T1 );
+  }, .T1, utl.getDefaultAlloc() ) orelse
+  {
+    utl.qlog( .ERROR, @src(), "Failed to create tilemap" );
+    return;
+  };
 
-  if( tlm == null ){ utl.qlog( .ERROR, @src(), "Failed to create tilemap" ); }
-
-  var worldGrid : *eng.Tilemap = tlm.?;
-
-  GRID_ID = worldGrid.id;
-
+  var worldGrid = &GRID;
 
   var min_noise : f32 = 1.0;
   var max_noise : f32 = 0.0;
@@ -59,7 +73,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
+    const tile : *tlmp.Tile = &worldGrid.tileArray[ index ];
 
     const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 
@@ -72,5 +86,10 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
   utl.log( .INFO, @src(), "Min : {d}, Max : {d}", .{ min_noise, max_noise });
 }
 
+pub fn OnGameClose( ng : *eng.Engine ) void
+{
+  _ = ng;
 
+  if( GRID.isInit() ){ GRID.deinit( utl.getDefaultAlloc() ); }
+}
 

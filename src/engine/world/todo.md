@@ -112,11 +112,6 @@ Unrelated to this slice:
 * `src/engine/world/entity.zig:22` compact lifecycle mask idea;
 * `src/engine/world/components/baseComps.zig:77` LOD/minScale note.
 
-Post `legacy_tilemap` migration cleanup:
-
-* remove remaining engine-world documentation references to tilemap after the code
-  is moved to `src/utils/legacy_tilemap`.
-
 ## 6. Explicit Non-Goals
 
 * no archetype/template spawning;

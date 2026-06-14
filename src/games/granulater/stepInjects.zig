@@ -9,8 +9,9 @@ const Angle   = utl.Angle;
 const Vec2    = utl.Vec2;
 const VecA    = utl.VecA;
 const Box2    = utl.Box2;
-const Tile    = eng.Tile;
-const TileMap = eng.Tilemap;
+const tlmp    = utl.legacy_tilemap;
+const Tile    = tlmp.Tile;
+const TileMap = tlmp.Tilemap;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
@@ -55,11 +56,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     utl.qlog( .INFO, @src(), "Camera reset" );
   }
 
-  var worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  var worldGrid = stateInj.getGrid() orelse return;
 
   // Keep the camera over the world grid
   eng.G_ENG.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
@@ -76,7 +73,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
       const clickedTile = worldGrid.getTile( worldCoords.? ) orelse
       {
-        utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, worldGrid.id });
+        utl.log( .WARN, @src(), "No tile found at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
         return;
       };
 
@@ -114,7 +111,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
     for( 0 .. worldGrid.getTileCount() )| index |
     {
-      const tile : *eng.Tile = &worldGrid.tileArray[ index ];
+      const tile : *Tile = &worldGrid.tileArray[ index ];
 
       const noise : f32 = NOISE_GEN.warpedFractalSample( tile.mapCoords.toVec2().mulVal( NOISE_SCALE ));
 
@@ -131,11 +128,9 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
 pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
-  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  _ = ng;
+
+  const worldGrid = stateInj.getGrid() orelse return;
 
   const tileCount = worldGrid.getTileCount();
 
@@ -145,11 +140,9 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
 pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
-  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  _ = ng;
+
+  const worldGrid = stateInj.getGrid() orelse return;
 
   const tileCount = worldGrid.getTileCount();
 
@@ -188,11 +181,8 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
       tile.colour.b += 128;
     }
   }
-}
 
-pub fn OffRenderWorld( ng : *eng.Engine ) void
-{
-  _ = ng; // Prevent unused variable warning
+  worldGrid.drawSelf( eng.G_ENG.camera.toViewBox(), eng.wDraw );
 }
 
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
@@ -211,11 +201,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   if( SELECTED_TILE )| tile |
   {
-    const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-    {
-      utl.log( .WARN, @src(), "Tilemap with Id {d} ( World Grid ) not found", .{ stateInj.GRID_ID });
-      return;
-    };
+    const worldGrid = stateInj.getGrid() orelse return;
 
     const data = getTileData( worldGrid, tile ) orelse return;
 

@@ -9,6 +9,9 @@ const Angle  = utl.Angle;
 const Vec2   = utl.Vec2;
 const VecA   = utl.VecA;
 const Box2   = utl.Box2;
+const tlmp   = utl.legacy_tilemap;
+const Tile   = tlmp.Tile;
+const Tilemap = tlmp.Tilemap;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
@@ -44,7 +47,7 @@ const shaker : utl.Shake2D = .{
 
 // ================================ HELPER FUNCTIONS ================================
 
-fn setMinecolour( tile : *eng.Tile ) void
+fn setMinecolour( tile : *Tile ) void
 {
   switch( tile.tType )
   {
@@ -56,7 +59,7 @@ fn setMinecolour( tile : *eng.Tile ) void
 }
 
 
-fn blowUpMine( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile, damage : u32 ) void
+fn blowUpMine( ng : *eng.Engine, grid : *Tilemap, tile : *Tile, damage : u32 ) void
 {
   FLAG_COUNT += 1;
   shake_prog  = 0.0;
@@ -91,14 +94,14 @@ fn blowUpMine( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile, damage :
   {
     for( 0 .. grid.getTileCount() )| index |
     {
-      const iTile : *eng.Tile = &grid.tileArray[ index ];
+      const iTile : *Tile = &grid.tileArray[ index ];
 
       setMinecolour( iTile );
     }
   }
 }
 
-fn getNeighbourMineCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) u32
+fn getNeighbourMineCount( ng : *eng.Engine, grid : *Tilemap, tile : *Tile ) u32
 {
   _ = ng;
 
@@ -119,7 +122,7 @@ fn getNeighbourMineCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Til
   return res;
 }
 
-fn getNeighbourFlagCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) u32
+fn getNeighbourFlagCount( ng : *eng.Engine, grid : *Tilemap, tile : *Tile ) u32
 {
   _ = ng;
 
@@ -140,7 +143,7 @@ fn getNeighbourFlagCount( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Til
   return res;
 }
 
-fn initGrid( ng : *eng.Engine, grid : *eng.Tilemap, startTile : *eng.Tile ) void
+fn initGrid( ng : *eng.Engine, grid : *Tilemap, startTile : *Tile ) void
 {
   _ = ng;
 
@@ -158,7 +161,7 @@ fn initGrid( ng : *eng.Engine, grid : *eng.Tilemap, startTile : *eng.Tile ) void
   {
     const remaingingTileCount = tileCount - index; // preemptively decrease the count to avoid duplicating code
 
-    var tile : *eng.Tile = &grid.tileArray[ index ];
+    var tile : *Tile = &grid.tileArray[ index ];
 
     // Prevents having tiles at or around the first clicked cell
     if( tile.mapCoords.isEq( startTile.mapCoords )){ continue; }
@@ -199,7 +202,7 @@ fn initGrid( ng : *eng.Engine, grid : *eng.Tilemap, startTile : *eng.Tile ) void
 
 
 // revealing a tile
-fn leftCLickTile( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) void
+fn leftCLickTile( ng : *eng.Engine, grid : *Tilemap, tile : *Tile ) void
 {
   // Does nothing if a flagged tile was clicked
   if( tile.colour.isEq( .blue  )){  return; }
@@ -247,7 +250,7 @@ fn leftCLickTile( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) void
 }
 
 // (un)flagging a tile
-fn rightCLickTile( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) void
+fn rightCLickTile( ng : *eng.Engine, grid : *Tilemap, tile : *Tile ) void
 {
   _ = ng;
   _ = grid;
@@ -280,7 +283,7 @@ fn rightCLickTile( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) voi
 }
 
 
-fn floodDiscoverCheck( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile ) void
+fn floodDiscoverCheck( ng : *eng.Engine, grid : *Tilemap, tile : *Tile ) void
 {
   // Recursion safety bound
   if( tile.tType != TILE_HIDDEN  ){ return; }
@@ -318,13 +321,13 @@ fn floodDiscoverCheck( ng : *eng.Engine, grid : *eng.Tilemap, tile : *eng.Tile )
   }
 }
 
-fn playerHasWon( ng : *eng.Engine, grid : *eng.Tilemap ) bool
+fn playerHasWon( ng : *eng.Engine, grid : *Tilemap ) bool
 {
   _ = ng;
 
   for( 0 .. grid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &grid.tileArray[ index ];
+    const tile : *Tile = &grid.tileArray[ index ];
 
     if( tile.tType == TILE_HIDDEN ){ return false; }
   }
@@ -342,11 +345,7 @@ pub fn OnLoopStart( ng : *eng.Engine ) void
 
 pub fn OnInputUpdate( ng : *eng.Engine ) void
 {
-  var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  var grid = stateInj.getGrid() orelse return;
 
   // Shake the screen on mine explosion
   if( shake_prog < 0.2 )
@@ -425,26 +424,18 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
 pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
-  const grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  _ = ng;
 
-  _ = grid; // Prevent unused variable warning
+  _ = stateInj.getGrid() orelse return;
 }
 
 
 pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
-  // NOTE : All active bodies are rendered after the function is called, so no need to render them here.
+  _ = ng;
 
-  _ = ng; // Prevent unused variable warning
-}
-
-pub fn OffRenderWorld( ng : *eng.Engine ) void
-{
-  _ = ng; // Prevent unused variable warning
+  const grid = stateInj.getGrid() orelse return;
+  grid.drawSelf( eng.G_ENG.camera.toViewBox(), eng.wDraw );
 }
 
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
@@ -501,11 +492,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   const screenCenter = utl.ray.getWorldToScreen2D( .{ .x = 0, .y = 0 }, eng.G_ENG.camera.toRayCam() );
 
 
-  var grid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Grid ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  var grid = stateInj.getGrid() orelse return;
 
   const scale2 = utl.getScreenSize().div( grid.mapSize.toVec2() ).?;
 
@@ -528,7 +515,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   for( 0 .. grid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &grid.tileArray[ index ];
+    const tile : *Tile = &grid.tileArray[ index ];
 
     const tileCenter = eng.G_ENG.camera.worldToScreen( grid.getAbsTilePos( tile.mapCoords ).toVec2() );
 

@@ -9,8 +9,6 @@ pub const EngineConfigs = struct
 {
   // Debug Flags
 
-  DebugDraw_Tilemap : bool = false,
-  DebugDraw_Tile    : bool = false,
   DebugDraw_FPS     : bool = false,
 
   // Feature Flag
@@ -62,8 +60,6 @@ pub const EngineConfigs = struct
     }
 
     // Debug Flags
-    if( @hasDecl( module, "DebugDraw_Tilemap"         )){ self.DebugDraw_Tilemap         = @field( module, "DebugDraw_Tilemap"         ); foundConfigs = true; }
-    if( @hasDecl( module, "DebugDraw_Tile"            )){ self.DebugDraw_Tile            = @field( module, "DebugDraw_Tile"            ); foundConfigs = true; }
     if( @hasDecl( module, "DebugDraw_FPS"             )){ self.DebugDraw_FPS             = @field( module, "DebugDraw_FPS"             ); foundConfigs = true; }
 
     // Feature Flags

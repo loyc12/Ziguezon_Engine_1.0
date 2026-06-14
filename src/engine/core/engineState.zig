@@ -81,10 +81,9 @@ pub fn start( ng : *Engine ) void
   {
     utl.qlog( .INFO, @src(), "# Initializing engine substructs..." );
 
-    ng.resourceManager.init(   utl.getDefaultAlloc() );
-    ng.tilemapManager.init(    utl.getDefaultAlloc() );
-    ng.world.init(             utl.getDefaultAlloc() );
-    ng.uiManager.init(         utl.getDefaultAlloc() );
+    ng.resourceManager.init( utl.getDefaultAlloc() );
+    ng.world.init(           utl.getDefaultAlloc() );
+    ng.uiManager.init(       utl.getDefaultAlloc() );
 
     utl.qlog( .INFO, @src(), "$ Engine substructs initialized !" );
   }
@@ -112,7 +111,6 @@ pub fn stop( ng : *Engine ) void
 
     ng.uiManager.deinit();
     ng.world.deinit();
-    ng.tilemapManager.deinit();
     ng.resourceManager.deinit();
 
     utl.qlog( .INFO, @src(), "$ Engine substructs deinitialized !" );

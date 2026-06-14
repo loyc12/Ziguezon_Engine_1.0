@@ -9,6 +9,9 @@ const Angle  = utl.Angle;
 const Vec2   = utl.Vec2;
 const VecA   = utl.VecA;
 const Box2   = utl.Box2;
+const tlmp   = utl.legacy_tilemap;
+const Tile   = tlmp.Tile;
+const Tilemap = tlmp.Tilemap;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
@@ -40,7 +43,7 @@ const ENEMY_ID  : u32 = (  7 * 16 ) + 1;
 const sScale  : f32 = 32 * 0.08839;
 const sOffset : f32 = sScale / 4;
 
-fn getTileData( worldGrid : *eng.Tilemap, tile : *eng.Tile ) ?*TileData
+fn getTileData( worldGrid : *Tilemap, tile : *Tile ) ?*TileData
 {
   const index = worldGrid.getTileIndex( tile.mapCoords ) orelse return null;
   return &stateInj.TILEMAP_DATA[ index ];
@@ -72,11 +75,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     utl.qlog( .INFO, @src(), "Camera reseted" );
   }
 
-  var worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( World ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  var worldGrid = stateInj.getGrid() orelse return;
 
   // Keep the camera looking over the map area
   eng.G_ENG.camera.clampCenterInArea( worldGrid.getMapBoundingBox() );
@@ -89,7 +88,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     const tile = worldGrid.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, worldGrid.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
       return;
     };
 
@@ -131,15 +130,13 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
 pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
-  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  _ = ng;
+
+  const worldGrid = stateInj.getGrid() orelse return;
 
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
+    const tile : *Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
 
@@ -168,24 +165,14 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
 pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
-  // NOTE : All active bodies are rendered after the function is called, so no need to render them here.
+  const worldGrid = stateInj.getGrid() orelse return;
 
-  _ = ng; // Prevent unused variable warning
-}
-
-
-pub fn OffRenderWorld( ng : *eng.Engine ) void
-{
-  const worldGrid = ng.tilemapManager.getTilemap( stateInj.GRID_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.GRID_ID });
-    return;
-  };
+  worldGrid.drawSelf( eng.G_ENG.camera.toViewBox(), eng.wDraw );
 
   // Draw base floor everywhere that isn't empty
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
+    const tile : *Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.ground == .Empty ){ continue; }
@@ -200,7 +187,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   // Draw non-floor ground tiles
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
+    const tile : *Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.ground == .Empty or data.ground == .Floor ){ continue; }
@@ -224,7 +211,7 @@ pub fn OffRenderWorld( ng : *eng.Engine ) void
   // Draw objects onto floor
   for( 0 .. worldGrid.getTileCount() )| index |
   {
-    const tile : *eng.Tile = &worldGrid.tileArray[ index ];
+    const tile : *Tile = &worldGrid.tileArray[ index ];
     const data : *TileData = &stateInj.TILEMAP_DATA[ index ];
 
     if( data.object == .Empty ){ continue; }

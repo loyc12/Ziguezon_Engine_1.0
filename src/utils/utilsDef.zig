@@ -229,6 +229,13 @@ pub const Shape2D = shape2D.Shape2D;
 pub const Shape3D = shape3D.Shape3D;
 
 
+// ================================ LEGACY UTILITY SHORTHANDS ================================
+
+// ======== TILEMAP ========
+
+pub const legacy_tilemap = @import( "legacy_tilemap/legacyTilemap.zig" );
+
+
 
 // ================================ RENDER SHORTHANDS ================================
 

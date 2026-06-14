@@ -112,11 +112,6 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics
   gUtl.renderOrbiters( view );
 }
 
-pub fn OffRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics()
-{
-  _ = ng; // Prevent unused variable warning
-}
-
 
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
 pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphics()

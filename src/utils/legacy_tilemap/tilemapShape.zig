@@ -1,9 +1,10 @@
 const std     = @import( "std" );
-const eng     = @import( "engine" );
 const utl = @import( "utils" );
 
-const Tile    = eng.Tile;
-const Tilemap = eng.Tilemap;
+const tilemapCore = @import( "tilemap.zig" );
+
+const Tile    = tilemapCore.Tile;
+const Tilemap = tilemapCore.Tilemap;
 
 const Angle   = utl.Angle;
 const Box2    = utl.Box2;
@@ -20,7 +21,7 @@ const IR3     = utl.IR3;
 const HR2     = utl.HR2;
 const HR3     = utl.HR3;
 
-const MARGIN_FACTOR = 0.96; // Factor to scale down tiles, leaving a margin between them // TODO : move this to engineSettings
+const MARGIN_FACTOR = 0.96; // Factor to scale down tiles, leaving a margin between them. // TODO: Move this to a caller-provided render config if needed.
 
 const RECT_FACTOR = 1.0; // 1x1 square              R = HR2
 const TRIA_FACTOR = utl.getPolyCircumRad( 1.0, 3 );
@@ -41,7 +42,7 @@ pub const TilemapShape = enum( u8 )
   HEX1, // <_> ( pointy top )
   HEX2, // <_> (  flat top  )
 
-//PEN1, // ( upright ) // TODO : implement me
+//PEN1, // ( upright ) // TODO: Implement if a legacy game needs pentagon grids.
 //PEN2, // ( sideway )
 
   pub inline fn getEdgeCount( self : TilemapShape ) u8
@@ -495,7 +496,7 @@ pub fn getNeighbourCoords( tlmp : *const Tilemap, mapCoords : Coords2, direction
 
 // ================================ TILE DRAWING ================================
 
-pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO : make me fit the visuals better ( especially for DIAMS )
+pub fn getMapBoundingBox( tlmp : *const Tilemap ) Box2 // TODO: Tighten bounds for non-rectangular visuals if culling becomes visible.
 {
 
   var viewableScale = tlmp.mapSize.toVec2();
@@ -533,16 +534,19 @@ pub fn getTileBoundingBox( tlmp : *const Tilemap, relPos : Vec2 ) Box2
   //  .DIAM => return Box2.newPolyAABB( absPos, radii, angle,                              4 ),
   //  .HEX1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg( 90 ),                 6 ),
   //  .HEX2 => return Box2.newPolyAABB( absPos, radii, angle,                              6 ),
-  //  .TRI1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg(  1.0 * 90.0 ),        3 ), // TODO : handle triangle orientation
-  //  .TRI2 => return Box2.newPolyAABB( absPos, radii, angle.subDeg(( 1.0 * 90.0 ) - 90 ), 3 ), // TODO : handle triangle orientation
+  //  .TRI1 => return Box2.newPolyAABB( absPos, radii, angle.addDeg(  1.0 * 90.0 ),        3 ), // TODO: Handle triangle orientation.
+  //  .TRI2 => return Box2.newPolyAABB( absPos, radii, angle.subDeg(( 1.0 * 90.0 ) - 90 ), 3 ), // TODO: Handle triangle orientation.
   //};
 }
 
-pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *const Box2) void
+/// Draws a tile using the caller-provided drawer namespace.
+/// The drawer is normally an engine world drawer, but it is passed explicitly so
+/// the legacy utility stays engine-agnostic.
+pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *const Box2, comptime drawer : type ) void
 {
   if( !tlmp.isCoordsValid( tile.mapCoords ))
   {
-    utl.log( .ERROR, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ tile.mapCoords.x, tile.mapCoords.y, tlmp.id });
+    utl.log( .ERROR, @src(), "Tile at position {d}:{d} does not exist in tilemap", .{ tile.mapCoords.x, tile.mapCoords.y });
     return;
   }
 
@@ -569,13 +573,13 @@ pub fn drawTileShape( tlmp : *const Tilemap, tile : *const Tile, viewBox : *cons
 
   switch( tlmp.tileShape )
   {
-    .RECT => eng.wDraw.rect( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
-    .DIAM => eng.wDraw.diam( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
+    .RECT => drawer.rect( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
+    .DIAM => drawer.diam( absPos.toVec2(), displayRadii, absPos.a, tile.colour ),
 
-    .HEX1 => eng.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a.addDeg( 90.0 ), tile.colour ),
-    .HEX2 => eng.wDraw.hexa( absPos.toVec2(), displayRadii, absPos.a,                tile.colour ),
+    .HEX1 => drawer.hexa( absPos.toVec2(), displayRadii, absPos.a.addDeg( 90.0 ), tile.colour ),
+    .HEX2 => drawer.hexa( absPos.toVec2(), displayRadii, absPos.a,                tile.colour ),
 
-    .TRI1 => eng.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
-    .TRI2 => eng.wDraw.tria( absPos.toVec2(), displayRadii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
+    .TRI1 => drawer.tria( absPos.toVec2(), displayRadii, absPos.a.addDeg(  dParity * 90.0 ),        tile.colour ),
+    .TRI2 => drawer.tria( absPos.toVec2(), displayRadii, absPos.a.subDeg(( dParity * 90.0 ) - 90 ), tile.colour ),
   }
 }

@@ -38,10 +38,9 @@ pub const HookTag = enum( u8 )
 
 
   OnRenderBckgrnd = 30, // Called to render the background ( at the start )
-  OnRenderOverlay = 31, // Called to render overlays ( at the start )
-
   OnRenderWorld   = 32, // Called to render the world ( at the start )
-  OffRenderWorld  = 33, // Called to render the world ( at the end )
+  OnRenderOverlay = 34, // Called to render overlays ( at the start )
+
 
 };
 
@@ -80,10 +79,9 @@ pub const GameHooks = struct
   OffTickUpdate   : ?HookFunc = null,
 
   OnRenderBckgrnd : ?HookFunc = null,
+  OnRenderWorld   : ?HookFunc = null,
   OnRenderOverlay : ?HookFunc = null,
 
-  OnRenderWorld   : ?HookFunc = null,
-  OffRenderWorld  : ?HookFunc = null,
 
 
   // ================================ GAME ADAPTER HOOK LOADING ================================
@@ -121,10 +119,8 @@ pub const GameHooks = struct
 
     // Rendering Hooks
     if( @hasDecl( module, "OnRenderBckgrnd" )) self.OnRenderBckgrnd = @field( module, "OnRenderBckgrnd" );
-    if( @hasDecl( module, "OnRenderOverlay" )) self.OnRenderOverlay = @field( module, "OnRenderOverlay" );
-
     if( @hasDecl( module, "OnRenderWorld"   )) self.OnRenderWorld   = @field( module, "OnRenderWorld"   );
-    if( @hasDecl( module, "OffRenderWorld"  )) self.OffRenderWorld  = @field( module, "OffRenderWorld"  );
+    if( @hasDecl( module, "OnRenderOverlay" )) self.OnRenderOverlay = @field( module, "OnRenderOverlay" );
 
 
     self.checkHookValidities();
@@ -180,10 +176,8 @@ pub const GameHooks = struct
       .OffTickUpdate  => self.OffTickUpdate,
 
       .OnRenderBckgrnd => self.OnRenderBckgrnd,
-      .OnRenderOverlay => self.OnRenderOverlay,
-
       .OnRenderWorld   => self.OnRenderWorld,
-      .OffRenderWorld  => self.OffRenderWorld,
+      .OnRenderOverlay => self.OnRenderOverlay,
     };
 
     if( hookFunct  )| f |

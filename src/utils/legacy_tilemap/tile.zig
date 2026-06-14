@@ -23,8 +23,8 @@ pub const TileFlags = enum( u8 )
 };
 
 
-/// Built-in tile type ids.
-/// Games can map these to their own meaning while the engine keeps generic helpers.
+/// Built-in legacy tile type ids.
+/// Games can map these generic slots to their own local meaning.
 pub const TileType = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
@@ -44,9 +44,7 @@ pub const TileType = enum( u8 )
   // Tile modifier types
 
   PARITY = 254, // Use row & column paritiy colours
-  RANDOM = 255, // For random tile generation only
 
-  // an enum method... ? in THIS economy ?!
   /// Returns a debug/default display colour for built-in tile types.
   pub fn getTileTypeColour( self : TileType ) utl.Colour
   {
@@ -56,8 +54,8 @@ pub const TileType = enum( u8 )
 
     //.T_ ...
 
-      .PARITY, .RANDOM => .magenta, // Won't ever be seen in normal usecase
-      else             => .nWhite,  // Idem
+      .PARITY => .magenta, // Won't ever be seen in normal usecase
+      else    => .nWhite,  // Idem
     };
   }
 };
@@ -68,7 +66,7 @@ pub const TileType = enum( u8 )
 pub const Tile = struct
 {
   // ================ PROPERTIES ================
-  tType : TileType    = .EMPTY, // TODO : store as u16 instead, so that it can be customized more easily (?)
+  tType : TileType    = .EMPTY, // TODO: Store as u16 if legacy games outgrow the built-in type slots.
   flags : utl.Bfd8    = .new( TileFlags.DEFAULT ),
 
   // ======== GRID POS DATA ========
@@ -77,7 +75,7 @@ pub const Tile = struct
 
   // ======== RENDERING DATA ======== ( DEBUG )
   colour : utl.Colour = .transpa,
-  relPos : ?utl.Vec2  = null, // Position relative to tilemap origin. if null, needs to be (re)calculated
+  relPos : ?utl.Vec2  = null, // Cached tilemap-relative position. Reset when shape/scale changes.
 
   // ================ FLAG MANAGEMENT ================
 

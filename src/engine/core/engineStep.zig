@@ -131,23 +131,12 @@ inline fn tickWorld( ng : *Engine, isForced : bool ) void
     .isForced      = isForced,
   };
 
-  // Compatibility hooks and tilemaps retain their current relative order.
   eng.tryHook( .OnTickUpdate, ng );
   {
     ng.world.tick( tickContext );
-    tickTilemaps( ng );
   }
   eng.tryHook( .OffTickUpdate, ng );
 }
-
-inline fn tickTilemaps( ng : *Engine ) void
-{
-  utl.qlog( .TRACE, @src(), "Updating Tilemap game logic..." );
-
-  ng.tilemapManager.tickActiveTilemaps( ng );
-  ng.tilemapManager.deleteAllMarkedTilemaps();
-}
-
 
 // ======== VISUAL RENDERING ========
 
@@ -189,10 +178,6 @@ inline fn renderFrame( ng : *Engine ) void
   utl.ray.beginMode2D( eng.G_ENG.camera.toRayCam() );
   {
     eng.tryHook( .OnRenderWorld, ng );
-
-    renderTilemaps( ng );
-
-    eng.tryHook( .OffRenderWorld, ng );
   }
   utl.ray.endMode2D();
 
@@ -203,19 +188,6 @@ inline fn renderFrame( ng : *Engine ) void
     drawDebugTpsCount( ng );
   }
 }
-
-inline fn renderTilemaps( ng : *Engine ) void
-{
-  utl.qlog( .TRACE, @src(), "Updating Tilemap visuals..." );
-
-  ng.tilemapManager.renderActiveTilemaps( ng );
-
-  if( eng.G_CNFGS.DebugDraw_Tilemap )
-  {
-    ng.tilemapManager.renderTilemapHitboxes();
-  }
-}
-
 
 // ======== DEBUG INFO ========
 

@@ -5,9 +5,6 @@ const utl = @import( "utils" );
 // ================================ ENGINE CONFIGS ================================
 
 // Engine Debug Flags
-
-//pub const DebugDraw_Tilemap = true;
-//pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
 
 

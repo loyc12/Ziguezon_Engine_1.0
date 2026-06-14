@@ -1,13 +1,4 @@
-// REWORK NOTE: Reframe Tilemap as World-managed spatial simulation data rather
-// than an Engine-managed object. Preserve its specialized grid representation,
-// but separate simulation state from rendering/lifecycle concerns and expose it
-// through World queries, systems, and entity/relation links where appropriate.
-
-// REWORK NOTE : This is not a pressing matter. Do not implement these changes
-// without explicit orders to do so by the user
-
 const std = @import( "std" );
-const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const Box2    = utl.Box2;
@@ -34,7 +25,6 @@ pub const TilemapFlags = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-  DELETE  = 0b10000000, // Grid is marked for deletion
   IS_INIT = 0b01000000, // Grid is initialized
   ACTIVE  = 0b00100000, // Grid is active and can be used
 //MORE... = 0b00010000, //
@@ -50,13 +40,11 @@ pub const TilemapFlags = enum( u8 )
 };
 
 
-/// Grid of lightweight tiles with world position, tile scale, and shape metadata.
-/// Tilemaps are still a specialized world utility; future rework may route them
-/// through World-managed facts and queries.
+/// Legacy grid of lightweight tiles with world position, tile scale, and shape
+/// metadata. Games own tilemap values directly and drive lifecycle/rendering.
 pub const Tilemap = struct
 {
   // ================ PROPERTIES ================
-  id    : u32 = 0,
   flags : utl.Bfd8 = .new( TilemapFlags.DEFAULT ),
 
   // ======== GRID DATA ========
@@ -79,7 +67,6 @@ pub const Tilemap = struct
   pub inline fn addFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags.addFlag( @intFromEnum( flag )); }
   pub inline fn delFlag(     self : *Tilemap, flag  : TilemapFlags )             void { self.flags.delFlag( @intFromEnum( flag )); }
 
-  pub inline fn canBeDel( self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.DELETE  ); }
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.IS_INIT ); }
   pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.ACTIVE  ); }
 
@@ -132,11 +119,11 @@ pub const Tilemap = struct
   /// Allocates the tile array and fills every cell with `fillType`.
   pub fn init( self : *Tilemap, allocator : std.mem.Allocator, fillType : TileType ) void
   {
-    utl.log( .TRACE, @src(), "Initializing Tilemap {d}", .{ self.id });
+    utl.qlog( .TRACE, @src(), "Initializing Tilemap" );
 
     if( self.isInit() )
     {
-      utl.log( .ERROR, @src(), "Tilemap {d} is already initialized, cannot reinitialize", .{ self.id });
+      utl.qlog( .ERROR, @src(), "Tilemap is already initialized, cannot reinitialize" );
       return;
     }
     if( self.mapSize.x <= 0 or self.mapSize.y <= 0 )
@@ -165,25 +152,24 @@ pub const Tilemap = struct
   /// Releases the tile array and marks the tilemap inactive/deleted.
   pub fn deinit( self : *Tilemap, allocator : std.mem.Allocator ) void
   {
-    utl.log( .TRACE, @src(), "Deinitializing Tilemap {d}", .{ self.id });
+    if( !self.isInit() ){ return; }
 
-    if( !self.isInit() )
-    {
-      utl.log( .ERROR, @src(), "Tilemap {d} is not initialized, cannot deinitialize", .{ self.id });
-      return;
-    }
+    utl.qlog( .DEBUG, @src(), "# Deinitializing Tilemap" );
+
     allocator.free( self.tileArray );
+
     self.tileArray = &.{};
     self.floodMark = 0;
-    self.setFlag( TilemapFlags.DELETE,  true );
+
     self.setFlag( TilemapFlags.IS_INIT, false );
     self.setFlag( TilemapFlags.ACTIVE,  false );
+
   }
 
   /// Creates a fresh tilemap by copying safe setup fields from `params`.
   pub fn createTilemapFromParams( params : Tilemap, fillType : TileType, allocator : std.mem.Allocator ) ?Tilemap
   {
-    if( params.isInit() ){ utl.qlog( .WARN, @src(), "Params shoul not be an initialized tilemap"); }
+    if( params.isInit() ){ utl.qlog( .WARN, @src(), "Params should not be an initialized tilemap"); }
 
     var flags = params.flags;
     flags.filterField( TilemapFlags.TO_CPY );
@@ -206,7 +192,7 @@ pub const Tilemap = struct
     _ = filePath;
     _ = allocator;
 
-    // TODO : implement me
+    // TODO: Implement file-backed tilemap loading if legacy games need it.
 
     utl.qlog( .ERROR, @src(), "Tilemap loading from file is not yet implemented");
     return null;
@@ -246,7 +232,7 @@ pub const Tilemap = struct
   {
     if( !self.isInit() )
     {
-      utl.log( .ERROR, @src(), "Tilemap {d} is not initialized, cannot get tile at {d}:{d}", .{ self.id, mapCoords.x, mapCoords.y });
+      utl.log( .ERROR, @src(), "Tilemap is not initialized, cannot get tile at {d}:{d}", .{ mapCoords.x, mapCoords.y });
       return null;
     }
     if( !self.isCoordsValid( mapCoords )){ return null; }
@@ -301,19 +287,19 @@ pub const Tilemap = struct
   {
     if( self.tileShape == shape )
     {
-      utl.log( .DEBUG, @src(), "Tilemap {d} already has tile shape {s}, no change needed", .{ self.id, @tagName( shape )});
+      utl.log( .DEBUG, @src(), "Tilemap already has tile shape {s}, no change needed", .{ @tagName( shape )});
       return;
     }
 
-    utl.log( .INFO, @src(), "Changing tilemap {d} shape from {s} to {s}", .{ self.id, @tagName( self.tileShape ), @tagName( shape )});
+    utl.log( .INFO, @src(), "Changing tilemap shape from {s} to {s}", .{ @tagName( self.tileShape ), @tagName( shape )});
 
-    self.resetCachedTilePos();
+    self.resetCachedTilePos(); // Cached relative positions depend on tile shape.
     self.tileShape = shape;
   }
 
   pub inline fn resetCachedTilePos( self : *Tilemap ) void
   {
-    utl.log( .INFO, @src(), "@ Resetting cached tile positions for tilemap {d}", .{ self.id });
+    utl.qlog( .INFO, @src(), "@ Resetting cached tile positions for tilemap" );
 
     for( 0 .. self.getTileCount() )| index |{ self.tileArray[ index ].relPos = null; }
   }
@@ -322,11 +308,11 @@ pub const Tilemap = struct
 
   pub fn fillWithTileFlagVal( self : *Tilemap, flag : TileFlags, val : bool ) void
   {
-    utl.log( .DEBUG, @src(), "@ Mass changing tile flags for tilemap {d}", .{ self.id });
+    utl.qlog( .DEBUG, @src(), "@ Mass changing tile flags for tilemap" );
 
     if( !self.isInit() )
     {
-      utl.log( .ERROR, @src(), "Tilemap {d} is not initialized, cannot fill grid with given flag value", .{ self.id });
+      utl.qlog( .ERROR, @src(), "Tilemap is not initialized, cannot fill grid with given flag value" );
       return;
     }
 
@@ -336,11 +322,12 @@ pub const Tilemap = struct
     }
   }
 
+  /// Fills every tile with a concrete type. Random fill is game-owned now.
   pub fn fillWithType( self : *Tilemap, tileType : TileType ) void
   {
     if( !self.isInit() )
     {
-      utl.log( .ERROR, @src(), "Tilemap {d} is not initialized, cannot fill grid with type {s}", .{ self.id, @tagName( tileType )});
+      utl.log( .ERROR, @src(), "Tilemap is not initialized, cannot fill grid with type {s}", .{ @tagName( tileType )});
       return;
     }
 
@@ -352,31 +339,15 @@ pub const Tilemap = struct
         continue;
       };
 
-      var tmpType : TileType = undefined;
-
-      if( tileType != .RANDOM ){ tmpType = tileType; }
-      else switch( eng.G_ENG.rng.getClampedInt( 1, 8 ))
-      {
-        1    => tmpType = .T1,
-        2    => tmpType = .T2,
-        3    => tmpType = .T3,
-        4    => tmpType = .T4,
-        5    => tmpType = .T5,
-        6    => tmpType = .T6,
-        7    => tmpType = .T7,
-        8    => tmpType = .T8,
-        else => unreachable, // Should never happen
-      }
-
-      const col = switch( tmpType )
+      const col = switch( tileType )
       {
         .PARITY => tileCoords.getParityColour(),
-        else    => tmpType.getTileTypeColour(),
+        else    => tileType.getTileTypeColour(),
       };
 
       self.tileArray[ index ] = Tile
       {
-        .tType     = tmpType,
+        .tType     = tileType,
         .colour    = col,
         .mapCoords = tileCoords,
       };
@@ -387,7 +358,7 @@ pub const Tilemap = struct
   {
     if( !self.isInit() )
     {
-      utl.log( .ERROR, @src(), "Tilemap {d} is not initialized, cannot fill grid with given colour", .{ self.id });
+      utl.qlog( .ERROR, @src(), "Tilemap is not initialized, cannot fill grid with given colour" );
       return;
     }
 
@@ -446,13 +417,13 @@ pub const Tilemap = struct
   //{
   //  if( !self.isCoordsValid( mapCoords ))
   //  {
-  //    utl.log( .ERROR, @src(), "Cannot check if tile at {d}:{d} is on screen in tilemap {d} : coords are invalid", .{ mapCoords.x, mapCoords.y, self.id });
+  //    utl.log( .ERROR, @src(), "Cannot check if tile at {d}:{d} is on screen : coords are invalid", .{ mapCoords.x, mapCoords.y });
   //    return false;
   //  }
   //
   //  const tilePos = self.getTileWorldPos( mapCoords ) orelse
   //  {
-  //    utl.log( .ERROR, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ mapCoords.x, mapCoords.y, self.id });
+  //    utl.log( .ERROR, @src(), "Tile at position {d}:{d} does not exist in tilemap", .{ mapCoords.x, mapCoords.y });
   //    return false;
   //  };
   //
@@ -470,34 +441,33 @@ pub const Tilemap = struct
     return tlmpShape.getTileBoundingBox( self, relPos );
   }
 
-  fn drawSingleTile( self : *const Tilemap, mapCoords : Coords2, viewBox : *const Box2 ) void
+  fn drawSingleTile( self : *const Tilemap, mapCoords : Coords2, viewBox : *const Box2, comptime drawer : type ) void
   {
     if( !self.isCoordsValid( mapCoords ))
     {
-      utl.log( .ERROR, @src(), "Unable to draw tile at position {d}:{d} in tilemap {d} : coords are invalid", .{ mapCoords.x, mapCoords.y, self.id });
+      utl.log( .ERROR, @src(), "Unable to draw tile at position {d}:{d} : coords are invalid", .{ mapCoords.x, mapCoords.y });
       return;
     }
 
     const tile = self.getTile( mapCoords ) orelse
     {
-      utl.log( .ERROR, @src(), "Tile at position {d}:{d} does not exist in tilemap {d}", .{ mapCoords.x, mapCoords.y, self.id });
+      utl.log( .ERROR, @src(), "Tile at position {d}:{d} does not exist in tilemap", .{ mapCoords.x, mapCoords.y });
       return;
     };
 
-    tlmpShape.drawTileShape( self, tile, viewBox );
+    tlmpShape.drawTileShape( self, tile, viewBox, drawer );
   }
 
-  pub fn drawSelf( self : *const Tilemap ) void
+  /// Draws active legacy tiles through a caller-provided world drawer.
+  pub fn drawSelf( self : *const Tilemap, viewBox : Box2, comptime drawer : type ) void
   {
-    utl.log( .TRACE, @src(), "Drawing Tilemap {d} at position {d}:{d} with scale {d}:{d}", .{ self.id, self.mapPos.x, self.mapPos.y, self.mapSize.x, self.mapSize.y });
+    utl.log( .TRACE, @src(), "Drawing Tilemap at position {d}:{d} with scale {d}:{d}", .{ self.mapPos.x, self.mapPos.y, self.mapSize.x, self.mapSize.y });
 
     if( !self.isInit() )
     {
-      utl.log( .ERROR, @src(), "Tilemap {d} is not initialized, cannot draw", .{ self.id });
+      utl.qlog( .ERROR, @src(), "Tilemap is not initialized, cannot draw" );
       return;
     }
-
-    const viewBox = eng.G_ENG.camera.toViewBox();
 
     if( !viewBox.doesOverlap( self.getMapBoundingBox() )){ return; } // Quick check to see if tilemap is even in view
 
@@ -508,23 +478,23 @@ pub const Tilemap = struct
         utl.log( .ERROR, @src(), "Tile index {d} is out of bounds for tilemap with scale {d}:{d}", .{ index, self.mapSize.x, self.mapSize.y });
         continue;
       };
-      self.drawSingleTile( mapCoords, &viewBox );
+      self.drawSingleTile( mapCoords, &viewBox, drawer );
     }
   }
 
   pub fn findHitTileCoords( self : *const Tilemap, worldPos : Vec2 ) ?Coords2
   {
-    utl.log( .TRACE, @src(), "Finding hit tile at p {d}:{d} for Tilemap {d}", .{ worldPos.x, worldPos.y, self.id });
+    utl.log( .TRACE, @src(), "Finding hit tile at p {d}:{d}", .{ worldPos.x, worldPos.y });
 
     if( !self.isInit() )
     {
-      utl.log( .WARN, @src(), "Tilemap {d} is not initialized, cannot find hit tile : returning null", .{ self.id });
+      utl.qlog( .WARN, @src(), "Tilemap is not initialized, cannot find hit tile : returning null" );
       return null;
     }
 
     return tlmpShape.getCoordsFromAbsPos( self, worldPos ) orelse
     {
-      utl.log( .TRACE, @src(), "Failed to get tile coordinates in tilemap {d} at {d}:{d} : return null", .{ self.id, worldPos.x, worldPos.y });
+      utl.log( .TRACE, @src(), "Failed to get tile coordinates at {d}:{d} : return null", .{ worldPos.x, worldPos.y });
       return null;
     };
   }
@@ -575,4 +545,18 @@ test "Tilemap flood fill uses generation marks"
   try std.testing.expectEqual( @as( u32, 2 ), tlmp.floodMark );
   try std.testing.expectEqual( TileType.T4, tlmp.tileArray[ 0 ].tType );
   try std.testing.expectEqual( @as( u32, 2 ), tlmp.tileArray[ 0 ].floodMark );
+}
+
+test "Tilemap hex neighbour lookup respects shape topology"
+{
+  var tlmp : Tilemap = .{ .mapSize = .{ .x = 3, .y = 3 }, .tileShape = .HEX1 };
+
+  tlmp.init( std.testing.allocator, .T1 );
+  defer tlmp.deinit( std.testing.allocator );
+
+  const center = Coords2{ .x = 1, .y = 1 };
+
+  try std.testing.expectEqual( Coords2{ .x = 0, .y = 1 }, tlmp.getNeighbourCoords( center, .WE ).? );
+  try std.testing.expectEqual( Coords2{ .x = 1, .y = 0 }, tlmp.getNeighbourCoords( center, .NE ).? );
+  try std.testing.expect( tlmp.getNeighbourCoords( center, .NO ) == null );
 }

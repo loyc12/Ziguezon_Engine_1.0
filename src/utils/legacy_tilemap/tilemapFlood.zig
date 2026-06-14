@@ -1,10 +1,10 @@
-const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-const Tile         = eng.Tile;
-const Tilemap      = eng.Tilemap;
+const tilemapCore = @import( "tilemap.zig" );
 
-const TileType = eng.TileType;
+const Tile     = tilemapCore.Tile;
+const Tilemap  = tilemapCore.Tilemap;
+const TileType = tilemapCore.TileType;
 
 
 // ================================ FLOODRULE STRUCT ================================
@@ -14,7 +14,7 @@ fn changeDefault( r : *FloodRule, t : *Tile ) void { _ = r; _ = t; return; }
 
 pub const FloodRule = struct
 {
-  // TODO : implement a "max travel distance for ranged floodfills"
+  // TODO: Add a max travel distance for bounded/ranged flood fills.
 
   filterData : Tile = .{},
   changeData : Tile = .{},

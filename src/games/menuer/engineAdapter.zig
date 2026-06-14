@@ -7,9 +7,6 @@ const utl = @import( "utils" );
 
 
 // Debug Flags
-
-  pub const DebugDraw_Tilemap = true;
-  pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = false;
 
 
@@ -62,16 +59,15 @@ const gameState = @import( "stateInjects.zig" );
 
 const gameStep  = @import( "stepInjects.zig" );
 
-  pub const OnLoopStart = gameStep.OnLoopStart;
-  pub const OnLoopEnd   = gameStep.OnLoopEnd;
+  pub const OnLoopStart  = gameStep.OnLoopStart;
+  pub const OnLoopEnd    = gameStep.OnLoopEnd;
   pub const OnLoopUpdate = gameStep.OnLoopUpdate;
 
-  pub const OnInputUpdate   = gameStep.OnInputUpdate;
-  pub const OnTickUpdate    = gameStep.OnTickUpdate;
+  pub const OnInputUpdate = gameStep.OnInputUpdate;
+  pub const OnTickUpdate  = gameStep.OnTickUpdate;
 
   pub const OnRenderBckgrnd = gameStep.OnRenderBckgrnd;
+  pub const OnRenderWorld   = gameStep.OnRenderWorld;
   pub const OnRenderOverlay = gameStep.OnRenderOverlay;
 
-  pub const OnRenderWorld   = gameStep.OnRenderWorld;
-  pub const OffRenderWorld  = gameStep.OffRenderWorld;
 

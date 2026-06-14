@@ -253,12 +253,6 @@ The following folders or files are currently placeholders or minimal notes:
 
 These should not be described as complete systems until code and tests exist.
 
-## 11. Tilemap
-
-The older tilemap path still lives under `src/engine/world/tilemap`. It is not
-the main fact-oriented World rework surface. Do not use tilemap code as proof
-that the new World relation/event/trait systems are complete.
-
 ## 12. Boundaries
 
 `engine/world` owns simulation facts and fact managers. It should not depend on

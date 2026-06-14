@@ -33,10 +33,9 @@ pub const Engine = struct
   rng    : utl.Randomiser    = .{},
 
   // Engine Managers
-  world           : eng.World                     = .{},
-  tilemapManager  : eng.tilemapMgr.TilemapManager = .{}, // NOTE : will be move to World eventually
-  resourceManager : eng.resMgr.ResourceManager    = .{},
-  uiManager       : eng.UiManager                 = .{},
+  world           : eng.World                  = .{},
+  resourceManager : eng.resMgr.ResourceManager = .{},
+  uiManager       : eng.UiManager              = .{},
 
 
 

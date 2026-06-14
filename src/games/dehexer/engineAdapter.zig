@@ -6,9 +6,6 @@ const utl = @import( "utils" );
 
 // Engine Debug Flags
 
-//pub const DebugDraw_Tilemap = true;
-//pub const DebugDraw_Tile    = true;
-
 
 // Engine Feature Flag
 
@@ -30,6 +27,7 @@ const gameState = @import( "stateInjects.zig" );
 
   pub const OnGameStart = gameState.OnGameStart;
   pub const OnGameOpen  = gameState.OnGameOpen;
+  pub const OnGameClose = gameState.OnGameClose;
 
 
 const gameStep  = @import( "stepInjects.zig" );
@@ -42,5 +40,4 @@ const gameStep  = @import( "stepInjects.zig" );
   pub const OnTickUpdate      = gameStep.OnTickUpdate;
 
   pub const OnRenderWorld    = gameStep.OnRenderWorld;
-  pub const OffRenderWorld   = gameStep.OffRenderWorld;
   pub const OnRenderOverlay  = gameStep.OnRenderOverlay;

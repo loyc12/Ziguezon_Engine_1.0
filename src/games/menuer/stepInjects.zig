@@ -564,11 +564,6 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
   _ = ng;
 }
 
-pub fn OffRenderWorld( ng : *eng.Engine ) void
-{
-  _ = ng;
-}
-
 pub fn OnRenderOverlay( ng : *eng.Engine ) void
 {
   if( ng.isPaused() )

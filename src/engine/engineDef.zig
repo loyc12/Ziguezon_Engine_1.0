@@ -34,7 +34,6 @@ pub var G_ENG : Engine = .{};
 // ================ MANAGERS ================
 
 pub const resMgr     = @import( "resources/resourceManager.zig" );
-pub const tilemapMgr = @import( "world/tilemap/tilemapManager.zig" );
 pub const worldMgr   = @import( "world/worldManager.zig" );
 pub const uiMgr      = @import( "ui/uiManager.zig" );
 
@@ -53,20 +52,6 @@ pub const wDraw   = @import( "render/drawerWorld.zig" );
 pub const wSprite = @import( "render/spriteWorld.zig" );
 
 pub const WorldCam = wCam.WorldCam;
-
-
-// ================ TILEMAP ================
-
-pub const tilemap = @import( "world/tilemap/tilemap.zig" );
-
-pub const Tile      = tilemap.Tile;
-pub const TileType  = tilemap.TileType;
-pub const TileFlags = tilemap.TileFlags;
-
-pub const Tilemap      = tilemap.Tilemap;
-pub const TilemapShape = tilemap.TilemapShape;
-pub const TilemapFlags = tilemap.TilemapFlags;
-pub const FloodRule    = tilemap.FloodRule;
 
 
 // ================ ECS ================

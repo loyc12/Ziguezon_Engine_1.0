@@ -40,11 +40,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
     utl.qlog( .INFO, @src(), "Camera reseted" );
   }
 
-  var mazeMap = ng.tilemapManager.getTilemap( stateInj.MAZE_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Maze ) not found", .{ stateInj.MAZE_ID });
-    return;
-  };
+  var mazeMap = stateInj.getMaze() orelse return;
 
   // Keep the camera inside over the maze area
   eng.G_ENG.camera.clampCenterInArea( mazeMap.getMapBoundingBox() );
@@ -88,7 +84,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
     var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
       return;
     };
 
@@ -113,7 +109,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     var clickedTile = mazeMap.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
       return;
     };
 
@@ -127,7 +123,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   {
     const clickedTile = mazeMap.getTile( worldCoords.? ) orelse
     {
-      utl.log( .WARN, @src(), "No tile found at {d}:{d} in tilemap {d}", .{ worldCoords.?.x, worldCoords.?.y, mazeMap.id });
+      utl.log( .WARN, @src(), "No tile found at {d}:{d}", .{ worldCoords.?.x, worldCoords.?.y });
       return;
     };
 
@@ -138,11 +134,9 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
 pub fn OnTickUpdate( ng : *eng.Engine ) void
 {
-  const mazeMap = ng.tilemapManager.getTilemap( stateInj.MAZE_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Tilemap with Id {d} ( Example Tilemap ) not found", .{ stateInj.MAZE_ID });
-    return;
-  };
+  _ = ng;
+
+  const mazeMap = stateInj.getMaze() orelse return;
 
   _ = mazeMap; // Prevent unused variable warning
 }
@@ -150,15 +144,12 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
 pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
-  // NOTE : All active bodies are rendered after the function is called, so no need to render them here.
+  _ = ng;
 
-  _ = ng; // Prevent unused variable warning
+  const mazeMap = stateInj.getMaze() orelse return;
+  mazeMap.drawSelf( eng.G_ENG.camera.toViewBox(), eng.wDraw );
 }
 
-pub fn OffRenderWorld( ng : *eng.Engine ) void
-{
-  _ = ng; // Prevent unused variable warning
-}
 
 // NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
 pub fn OnRenderOverlay( ng : *eng.Engine ) void

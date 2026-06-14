@@ -5,9 +5,6 @@ const utl = @import( "utils" );
 // ================================ ENGINE CONFIGS ================================
 
 // Debug Flags
-
-  pub const DebugDraw_Tilemap = true;
-  pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
 
   pub const Startup_Window_Title  : [ :0 ] const u8 = "Ziguezon Engine - DebugEnv";
