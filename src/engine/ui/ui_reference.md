@@ -176,7 +176,7 @@ Engine UI implementation changes should run:
 
 * `zig build`;
 * `zig build test`;
-* `zig build -Dengine_interface_path=src/games/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`
+* `zig build -Dengine_adapter_path=src/games/menuer/engineAdapter.zig -Dexecutable_name=ui_menuer_test`
   when the sandbox or visible UI surface changes.
 
 Do not run formatting passes such as `zig fmt`.

@@ -284,7 +284,7 @@ zig build test
 If a utility change also alters the visible `menuer` proof surface, also run:
 
 ```sh
-zig build -Dengine_interface_path=src/games/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test
+zig build -Dengine_adapter_path=src/games/menuer/engineAdapter.zig -Dexecutable_name=ui_menuer_test
 ```
 
 Do not run formatting passes such as `zig fmt`.

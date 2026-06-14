@@ -5,7 +5,7 @@ const utl = @import( "utils" );
 const Duration = utl.Duration;
 const Instant  = utl.Instant;
 
-// TODO : move these constants to engine settings
+// TODO : move these constants to engine configs
 
 const TICK_BUFF_LEN   = 8;
 const FRAME_BUFF_LEN  = 16;

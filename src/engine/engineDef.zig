@@ -1,11 +1,11 @@
 const std = @import( "std" );
 const utl = @import( "utils" );
 
-// ================================ GAME INTERFACES ================================
+// ================================ GAME ADAPTER ================================
 
-// ================ ENGINE SETTINGS ================
+// ================ ENGINE CONFIGS ================
 
-const  cnfg_i = @import( "interface/configs.zig" );
+const  cnfg_i = @import( "gameAdapter/configs.zig" );
 pub var G_CNFGS : cnfg_i.EngineConfigs = .{};
 
 pub inline fn loadConfigs( module : anytype ) void { G_CNFGS.loadConfigs( module ); }
@@ -13,7 +13,7 @@ pub inline fn loadConfigs( module : anytype ) void { G_CNFGS.loadConfigs( module
 
 // ================ GAME HOOKS ================
 
-const  hook_i = @import( "interface/hooks.zig" );
+const  hook_i = @import( "gameAdapter/hooks.zig" );
 pub var G_HOOKS : hook_i.GameHooks = .{};
 
 pub const HookCntx = hook_i.HookCntx;
@@ -136,11 +136,11 @@ test "engine world declarations"
   utl.G_EPOCH = utl.getNow();
 
   std.testing.refAllDecls( worldMgr );
-  std.testing.refAllDecls( trt );
-  std.testing.refAllDecls( tmgr );
-  std.testing.refAllDecls( evt );
-  std.testing.refAllDecls( eque );
-  std.testing.refAllDecls( emgr );
-  std.testing.refAllDecls( elog );
-  std.testing.refAllDecls( uiMgr );
+  std.testing.refAllDecls( trt      );
+  std.testing.refAllDecls( tmgr     );
+  std.testing.refAllDecls( evt      );
+  std.testing.refAllDecls( eque     );
+  std.testing.refAllDecls( emgr     );
+  std.testing.refAllDecls( elog     );
+  std.testing.refAllDecls( uiMgr    );
 }

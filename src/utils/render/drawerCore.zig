@@ -16,7 +16,7 @@ pub fn GetDrawer( comptime Transform : type ) type
   {
     const Self = @This();
 
-    pub const BASE_LINE_WIDTH : f64 = 2.0; // TODO : Move to engine settings
+    pub const BASE_LINE_WIDTH : f64 = 2.0; // TODO : Move to engine configs
 
 
     // ================ BASIC DRAWING FUNCTIONS ================

@@ -2,7 +2,7 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-// ================================ GAME HOOKS ================================
+// ================================ GAME ADAPTER HOOKS ================================
 
 // This enum defines the tags for each game hook
 // These tags are used to identify which hook to call in the GameHooks struct
@@ -71,7 +71,7 @@ pub const GameHooks = struct
 
   OnLoopStart  : ?HookFunc = null,
   OnLoopEnd    : ?HookFunc = null,
-  OnLoopUpdate  : ?HookFunc = null,
+  OnLoopUpdate : ?HookFunc = null,
 
   OnInputUpdate   : ?HookFunc = null,
 //OffInputUpdate  : ?HookFunc = null,
@@ -86,7 +86,7 @@ pub const GameHooks = struct
   OffRenderWorld  : ?HookFunc = null,
 
 
-  // ================================ GAME HOOKS FUNCTIONS ================================
+  // ================================ GAME ADAPTER HOOK LOADING ================================
 
   pub fn loadHooks( self : *GameHooks, module : anytype ) void
   {
@@ -179,11 +179,11 @@ pub const GameHooks = struct
       .OnTickUpdate   => self.OnTickUpdate,
       .OffTickUpdate  => self.OffTickUpdate,
 
-      .OnRenderBckgrnd  => self.OnRenderBckgrnd,
-      .OnRenderOverlay  => self.OnRenderOverlay,
+      .OnRenderBckgrnd => self.OnRenderBckgrnd,
+      .OnRenderOverlay => self.OnRenderOverlay,
 
-      .OnRenderWorld    => self.OnRenderWorld,
-      .OffRenderWorld   => self.OffRenderWorld,
+      .OnRenderWorld   => self.OnRenderWorld,
+      .OffRenderWorld  => self.OffRenderWorld,
     };
 
     if( hookFunct  )| f |

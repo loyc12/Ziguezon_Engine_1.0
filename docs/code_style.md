@@ -83,6 +83,7 @@ switch( ng.state )
 - Prefer direct iteration and mutation over abstraction-heavy designs.
 - Prefer practical, performance-aware solutions over framework-heavy designs.
 - Extract reused logic when it clearly reduces meaningful duplication.
+- Check for existing utils function before implementing your own helpers.
 - Keep ownership explicit through manager `init` and `deinit` functions.
 - Initialize resources in dependency order and deinitialize them in reverse
   order.

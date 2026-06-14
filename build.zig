@@ -127,7 +127,7 @@ const MessageStep = struct
 fn addGameExecutable(
   b              : *std.Build,
   executableName : []const u8,
-  interfacePath  : []const u8,
+  adapterPath    : []const u8,
   target         : std.Build.ResolvedTarget,
   optimize       : std.builtin.OptimizeMode,
   loggerOptions  : LoggerBuildOptions,
@@ -186,16 +186,16 @@ fn addGameExecutable(
     .optimize         = optimize,
   });
 
-  const interface = b.createModule(
+  const adapter = b.createModule(
   .{
-    .root_source_file = b.path( interfacePath ),
+    .root_source_file = b.path( adapterPath ),
     .target           = target,
     .optimize         = optimize,
   });
 
-  exe.root_module.addImport( "utils",     utils     );
-  exe.root_module.addImport( "engine",    engine    );
-  exe.root_module.addImport( "interface", interface ); // Public engine interface // TODO : review naming convention for it
+  exe.root_module.addImport( "utils",   utils   );
+  exe.root_module.addImport( "engine",  engine  );
+  exe.root_module.addImport( "adapter", adapter );
 
   utils.addImport( "raylib", raylib );
   utils.addImport( "utils",  utils  );
@@ -205,8 +205,8 @@ fn addGameExecutable(
   engine.addImport( "utils",  utils  );
   engine.addImport( "engine", engine );
 
-  interface.addImport( "engine", engine );
-  interface.addImport( "utils",  utils  );
+  adapter.addImport( "engine", engine );
+  adapter.addImport( "utils",  utils  );
 
   return .{
     .exe       = exe,
@@ -229,12 +229,12 @@ pub fn build( b : *std.Build ) void
 
 
   // Build options ( additional, specifiable cli arguments )
-  const tmp_engine_interface_path = b.option(
+  const tmp_engine_adapter_path = b.option(
     []const u8,
-    "engine_interface_path",
-    "Path to a game's engineInterface implementations ( default : src/games/gameFolder/engineInterface.zig )"
+    "engine_adapter_path",
+    "Path to a game's engineAdapter implementation ( default : src/games/gameFolder/engineAdapter.zig )"
   );
-  const interface_path = if( tmp_engine_interface_path )| path | path else "src/games/debug/engineInterface.zig";
+  const adapter_path = if( tmp_engine_adapter_path )| path | path else "src/games/debug/engineAdapter.zig";
 
   const tmp_executable_name = b.option(
     []const u8,
@@ -290,7 +290,7 @@ pub fn build( b : *std.Build ) void
     .showColour    = if( tmp_logger_show_colour    )| show  | show  else true,
   };
 
-  const gameBuild = addGameExecutable( b, executable_name, interface_path, target, optimize, loggerOptions );
+  const gameBuild = addGameExecutable( b, executable_name, adapter_path, target, optimize, loggerOptions );
   const exe       = gameBuild.exe;
 
   b.installArtifact( exe );
@@ -330,18 +330,18 @@ pub fn build( b : *std.Build ) void
 
   const games =
   .{
-    .{ "debug",       "src/games/debug/engineInterface.zig"       }, // Default
+    .{ "debug",       "src/games/debug/engineAdapter.zig"       }, // Default
 
-    .{ "menuer",      "src/games/menuer/engineInterface.zig"      },
-    .{ "ping",        "src/games/ping/engineInterface.zig"        },
-    .{ "floppy",      "src/games/floppy/engineInterface.zig"      },
-    .{ "dehexer",     "src/games/dehexer/engineInterface.zig"     },
-    .{ "isofloor",    "src/games/isofloor/engineInterface.zig"    },
-    .{ "politator",   "src/games/politator/engineInterface.zig"   },
-    .{ "granulater",  "src/games/granulater/engineInterface.zig"  },
-    .{ "labyrinther", "src/games/labyrinther/engineInterface.zig" },
+    .{ "menuer",      "src/games/menuer/engineAdapter.zig"      },
+    .{ "ping",        "src/games/ping/engineAdapter.zig"        },
+    .{ "floppy",      "src/games/floppy/engineAdapter.zig"      },
+    .{ "dehexer",     "src/games/dehexer/engineAdapter.zig"     },
+    .{ "isofloor",    "src/games/isofloor/engineAdapter.zig"    },
+    .{ "politator",   "src/games/politator/engineAdapter.zig"   },
+    .{ "granulater",  "src/games/granulater/engineAdapter.zig"  },
+    .{ "labyrinther", "src/games/labyrinther/engineAdapter.zig" },
 
-    .{ "orbiter",     "src/games/orbiter/engineInterface.zig"     },
+    .{ "orbiter",     "src/games/orbiter/engineAdapter.zig"     },
 
   };
 
@@ -486,7 +486,7 @@ pub fn build( b : *std.Build ) void
     .showColour     = true,
   };
 
-  const logger_file_build      = addGameExecutable( b, "logger_file_validation", interface_path, target, optimize, loggerFileOptions );
+  const logger_file_build      = addGameExecutable( b, "logger_file_validation", adapter_path, target, optimize, loggerFileOptions );
   const logger_file_tests      = b.addTest(.{ .root_module = logger_file_build.utilsMod });
   const run_logger_file_tests  = b.addRunArtifact( logger_file_tests );
   const logger_file_test_step  = b.step( "test_logger_files", "Runs logger file-sink validation with file logging enabled" );
@@ -504,7 +504,7 @@ pub fn build( b : *std.Build ) void
     .expectFileSetupFailure = true,
   };
 
-  const logger_file_failure_build     = addGameExecutable( b, "logger_file_failure_validation", interface_path, target, optimize, loggerFileFailureOptions );
+  const logger_file_failure_build     = addGameExecutable( b, "logger_file_failure_validation", adapter_path, target, optimize, loggerFileFailureOptions );
   const logger_file_failure_tests     = b.addTest(.{ .root_module = logger_file_failure_build.utilsMod });
   const run_logger_file_failure_tests = b.addRunArtifact( logger_file_failure_tests );
   const logger_file_failure_step      = b.step( "test_logger_file_failure", "Runs logger file setup-failure fallback validation" );

@@ -2,7 +2,7 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-// ================================ ENGINE SETTINGS ================================
+// ================================ ENGINE CONFIGS ================================
 
 // Engine Debug Flags
 

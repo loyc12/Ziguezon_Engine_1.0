@@ -5,7 +5,7 @@ const utl = @import( "utils" );
 
 // ================================ INITIALIZATION / DEINITIALIZATION ================================
 
-const ngi = @import( "interface" );
+const adp = @import( "adapter" );
 
 pub fn initCriticals() void
 {
@@ -21,8 +21,8 @@ pub fn initCriticals() void
 
   utl.initAllUtils();
 
-  eng.loadConfigs( ngi );
-  eng.loadHooks(   ngi );
+  eng.loadConfigs( adp );
+  eng.loadHooks(   adp );
 
   eng.G_ENG.initTimers();
 

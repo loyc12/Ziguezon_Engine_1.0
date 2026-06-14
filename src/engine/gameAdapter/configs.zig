@@ -2,7 +2,7 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-// ================================ ENGINE CONFIGS ================================
+// ================================ GAME ADAPTER CONFIGS ================================
 
 
 pub const EngineConfigs = struct
@@ -47,7 +47,7 @@ pub const EngineConfigs = struct
 
 
 
-  // ================================ ENGINE CONFIGURATION FUNCTIONS ================================
+  // ================================ GAME ADAPTER CONFIG LOADING ================================
 
   pub fn loadConfigs( self : *EngineConfigs, module : anytype ) void
   {

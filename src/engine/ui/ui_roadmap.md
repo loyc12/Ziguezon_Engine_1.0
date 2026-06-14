@@ -109,6 +109,6 @@ Manager logic changes:
 
 Sandbox or visible UI-surface changes:
 
-* also run `zig build -Dengine_interface_path=src/games/menuer/engineInterface.zig -Dexecutable_name=ui_menuer_test`.
+* also run `zig build -Dengine_adapter_path=src/games/menuer/engineAdapter.zig -Dexecutable_name=ui_menuer_test`.
 
 Do not run formatting passes such as `zig fmt`.

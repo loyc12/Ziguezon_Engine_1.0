@@ -2,15 +2,15 @@ const std = @import( "std" );
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-// ================================ ENGINE SETTINGS ================================
-// NOTE : All engine settings have a default value - see engineSettingHandler.zig for more info on those
+// ================================ ENGINE CONFIGS ================================
+// NOTE : All engine configs have a default value - see gameAdapter/configs.zig for more info on those
 
 
 // Debug Flags
 
   pub const DebugDraw_Tilemap = true;
   pub const DebugDraw_Tile    = true;
-  pub const DebugDraw_FPS     = false;
+  pub const DebugDraw_FPS     = true;
 
 
 // Feature Flag
@@ -26,7 +26,7 @@ const utl = @import( "utils" );
 //pub const Startup_Window_Width     : u16 = 1080;
 //pub const Startup_Window_Height    : u16 = 720;
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Empty Template";
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Ui test";
 
 
 // Graphical Values
@@ -50,28 +50,32 @@ const utl = @import( "utils" );
 
 const gameState = @import( "stateInjects.zig" );
 
-  pub const OnGameStart  = gameState.OnGameStart; // NOTE : Initialize resources in the OnGameStart Hook
-  pub const OnGameStop   = gameState.OnGameStop;
+  pub const OnGameStart = gameState.OnGameStart; // NOTE : Initialize resources in the OnGameStart Hook
+  pub const OnGameStop  = gameState.OnGameStop;
 
-  pub const OnGameOpen   = gameState.OnGameOpen;  // NOTE : Instanciate bodies in the OnGameOpen Hook
-  pub const OnGameClose  = gameState.OnGameClose;
+  pub const OnGameOpen  = gameState.OnGameOpen;  // NOTE : Instanciate bodies in the OnGameOpen Hook
+  pub const OnGameClose = gameState.OnGameClose;
 
-  pub const OnGameResume = gameState.OnGameResume;
-  pub const OnGamePause  = gameState.OnGamePause;
+  pub const OnGameResume  = gameState.OnGameResume;
+  pub const OnGamePause = gameState.OnGamePause;
 
 
 const gameStep  = @import( "stepInjects.zig" );
 
-  pub const OnLoopStart = gameStep.OnLoopStart;
-  pub const OnLoopEnd   = gameStep.OnLoopEnd;
-  pub const OnLoopUpdate = gameStep.OnLoopUpdate;
+  pub const OnLoopStart      = gameStep.OnLoopStart;
+  pub const OnLoopEnd        = gameStep.OnLoopEnd;
+  pub const OnLoopUpdate      = gameStep.OnLoopUpdate;
+
 
   pub const OnInputUpdate   = gameStep.OnInputUpdate;
-  pub const OnTickUpdate    = gameStep.OnTickUpdate;
+  pub const OffInputUpdate  = gameStep.OffInputUpdate;
 
-  pub const OnRenderBckgrnd = gameStep.OnRenderBckgrnd;
-  pub const OnRenderOverlay = gameStep.OnRenderOverlay;
+  pub const OnTickUpdate      = gameStep.OnTickUpdate;
 
-  pub const OnRenderWorld   = gameStep.OnRenderWorld;
-  pub const OffRenderWorld  = gameStep.OffRenderWorld;
 
+  pub const OnRenderBckgrnd  = gameStep.OnRenderBckgrnd;
+
+  pub const OnRenderWorld    = gameStep.OnRenderWorld;
+  pub const OffRenderWorld   = gameStep.OffRenderWorld;
+
+  pub const OnRenderOverlay  = gameStep.OnRenderOverlay;

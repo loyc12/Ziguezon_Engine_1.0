@@ -7,8 +7,8 @@ const g_def = @import( "gameDef.zig"    );
 const g_utl = @import( "gameUtils.zig"   );
 
 
-// ================================ ENGINE SETTINGS ================================
-// NOTE : All engine settings have a default value - see engineSettingHandler.zig for more info on those
+// ================================ ENGINE CONFIGS ================================
+// NOTE : All engine configs have a default value - see gameAdapter/configs.zig for more info on those
 
 
 // Debug Flags

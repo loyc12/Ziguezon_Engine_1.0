@@ -1,12 +1,10 @@
 const std = @import( "std" );
 const eng = @import( "engine" );
 
-// ================================ ENGINE SETTINGS ================================
+// ================================ ENGINE CONFIGS ================================
 
 // Engine Debug Flags
 
-//pub const DebugDraw_Tilemap = true;
-//pub const DebugDraw_Tile    = true;
   pub const DebugDraw_FPS     = true;
 
 
@@ -14,15 +12,9 @@ const eng = @import( "engine" );
 
 
 
-// Window Startup Values
+// Engine Global Startup Values
 
-  pub const Startup_Target_TickRate  : u16 = 1;
-  pub const Startup_Target_FrameRate : u16 = 120;
-
-//pub const Startup_Window_Width     : u16 = 2048;
-//pub const Startup_Window_Height    : u16 = 1024;
-
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Orbiter";
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Granulater";
 
 
 // ================================ GAME HOOKS ================================
