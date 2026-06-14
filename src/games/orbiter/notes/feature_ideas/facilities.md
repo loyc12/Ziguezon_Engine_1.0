@@ -11,8 +11,8 @@ in Phase 2 if directly useful; otherwise defer them to post-MVP.
 ## Growth
 
 - habitat*
-- appartment*
-- worksite*
+- appartment* ( renamed from HOUSING )
+- assembly*
 - shipyard
 - college
 - laboratory
@@ -21,18 +21,18 @@ in Phase 2 if directly useful; otherwise defer them to post-MVP.
 
 - solar plant*
 - fusion plant
-- water facility*
+- water facility* ( renamed from WATER_PLANT )
 - waste facility
-- mine*          ( multiple )
+- mine_ore*          ( multiple subtypes eventually )
 - agronomics*
 - hydroponics*
 
 ## Manufacturing
 
-- ore refinery*
+- ore refinery*  ( renamed from FOUNDRY )
 - gas refinery
-- manufacture    ( multiple - electrical )
-- factory*       ( multiple - mechanical )
+- factory*       ( multiple subtypes eventually - mechanical )
+- manufacture    ( multiple subtypes eventually - electrical )
 
 ## Service
 

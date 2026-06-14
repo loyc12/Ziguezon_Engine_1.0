@@ -9,8 +9,9 @@ const gdf = @import( "../gameDef.zig"    );
 const ResType  = @import( "resourceData.zig" ).ResType;
 
 
-// TODO: Fold this infrastructure-side data into the unified `Facility` model
-// during Phase 1. It remains split from industry while behaviour is unchanged.
+// NOTE: `facilityData.zig` now mirrors this infrastructure-side data for the
+// Phase 1 Facility model. This live path remains hooked into runtime behavior
+// until the later facility-state migration.
 // NOTE : This represents the "Service" portion of the economy, aka the non-resource producing consumers
 
 /// Infrastructure-side facility type for the pre-Phase-1 economy model.

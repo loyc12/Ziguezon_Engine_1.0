@@ -447,8 +447,7 @@ pub const Economy = struct
       const resT = ResType.fromIdx( r );
       const storeRate = resT.getMetric_f64( .STORE_RATE );
 
-      const prevLimit : f64 = self.resState.get( .LIMIT, resT );
-      var   nextLimit  : f64 = 0.0;
+      var nextLimit : f64 = 0.0;
 
       if( resT.usesSharedDepot() )
       {
@@ -474,8 +473,7 @@ pub const Economy = struct
         }
       }
 
-      self.resState.set( .LIMIT,   resT, nextLimit );
-      self.resState.set( .LIMIT_D, resT, nextLimit - prevLimit );
+      self.resState.set( .LIMIT, resT, nextLimit );
 
     }
   }

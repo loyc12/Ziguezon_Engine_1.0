@@ -644,6 +644,7 @@ pub const ECON_ORBIT_DATA   = &trde_d.econOrbitalData;
     const popl_d = @import( "data/populationData.zig"     );
     const nfrs_d = @import( "data/infrastructureData.zig" );
     const ndst_d = @import( "data/industryData.zig"       );
+    const facl_d = @import( "data/facilityData.zig"       );
 
 pub const POWR_DATA = &powr_d.powerData;
 pub const VESL_DATA = &vesl_d.vesselData;
@@ -651,6 +652,7 @@ pub const RSRC_DATA = &rsrc_d.resourceData;
 pub const POPL_DATA = &popl_d.populationData;
 pub const NFRS_DATA = &nfrs_d.infrastructureData;
 pub const NDST_DATA = &ndst_d.industryData;
+pub const FACL_DATA = &facl_d.facilityMetricData;
 
 
     const sshn_d = @import( "data/sunshineData.zig" );
@@ -668,6 +670,7 @@ pub fn loadStaticDataMatrices() void
   popl_d.loadPopulationData();
   nfrs_d.loadInfrastructureData();
   ndst_d.loadIndustryData();
+  facl_d.loadFacilityData();
 
   if( !debugCheckDataInit() )
   {
@@ -690,10 +693,13 @@ pub fn debugCheckDataInit() bool
   if( !nfrs_d.infResMetricTable.isInit ){ return false; }
   if( !ndst_d.indResMetricTable.isInit ){ return false; }
   if( !ndst_d.extractableAccessData.isInit ){ return false; }
+  if( !facl_d.facilityResMetricTable.isInit ){ return false; }
 
   if( !popl_d.popMetricData.isInit ){ return false; }
   if( !nfrs_d.infMetricData.isInit ){ return false; }
   if( !ndst_d.indMetricData.isInit ){ return false; }
+  if( !facl_d.facilityMetricData.isInit ){ return false; }
+  if( !facl_d.facilityCapacityData.isInit ){ return false; }
 
   return true;
 }

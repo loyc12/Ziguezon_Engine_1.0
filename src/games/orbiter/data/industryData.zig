@@ -11,8 +11,9 @@ const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
 const BodyName = gdf.BodyName;
 
 
-// TODO: Fold this industry-side data into the unified `Facility` model during
-// Phase 1. It remains split from infrastructure while behaviour is unchanged.
+// NOTE: `facilityData.zig` now mirrors this industry-side data for the Phase 1
+// Facility model. This live path remains hooked into runtime behavior until the
+// later facility-state migration.
 // NOTE : This represents the "Manufacture" portion of the economy, aka the resource producing consumers
 
 /// Industry-side facility type for the pre-Phase-1 economy model.
@@ -76,7 +77,8 @@ pub const IndType = enum( u8 )
 
   pub inline fn getPowerSrc( self : IndType ) PowerSrc
   {
-    return switch( self ) // TODO : move to data array
+    // TODO: Redesign power-source rules before moving this to Facility metadata.
+    return switch( self )
     {
       .AGRONOMIC   => .SOLAR,
       .SOLAR_PLANT => .SOLAR,
@@ -238,18 +240,18 @@ pub fn loadIndustryData() void
   // ================================ BUILD COST ================================
   // Unit : Abstract "building complexity"
 
-  indMetricData.set( .AGRONOMIC,   .AREA_COST, 1.00 ); // 50 ha — large mechanized farm
-  indMetricData.set( .HYDROPONIC,  .AREA_COST, 1.00 ); //  5 ha — vertical, compact footprint
-  indMetricData.set( .WATER_PLANT, .AREA_COST, 1.00 ); //  5 ha — treatment plant + settling basins
-  indMetricData.set( .SOLAR_PLANT, .AREA_COST, 1.00 ); // 50 ha — 100 MW solar farm (~2 ha/MW)
-  indMetricData.set( .POWER_PLANT, .AREA_COST, 1.00 ); //  3 ha — fusion plant, very compact per MW
+  indMetricData.set( .AGRONOMIC,   .CNST_COST, 1.00 ); // 50 ha — large mechanized farm
+  indMetricData.set( .HYDROPONIC,  .CNST_COST, 1.00 ); //  5 ha — vertical, compact footprint
+  indMetricData.set( .WATER_PLANT, .CNST_COST, 1.00 ); //  5 ha — treatment plant + settling basins
+  indMetricData.set( .SOLAR_PLANT, .CNST_COST, 1.00 ); // 50 ha — 100 MW solar farm (~2 ha/MW)
+  indMetricData.set( .POWER_PLANT, .CNST_COST, 1.00 ); //  3 ha — fusion plant, very compact per MW
 
-  indMetricData.set( .REFINERY,    .AREA_COST, 1.00 ); // 10 ha — processing plant + tank farm
-  indMetricData.set( .GROUND_MINE, .AREA_COST, 1.00 ); // 50 ha — open pit + tailings + processing
-  indMetricData.set( .FOUNDRY,     .AREA_COST, 1.00 ); // 20 ha — smelter + slag yards + cooling
-  indMetricData.set( .FACTORY,     .AREA_COST, 1.00 ); // 15 ha — assembly halls + logistics yard
+  indMetricData.set( .REFINERY,    .CNST_COST, 1.00 ); // 10 ha — processing plant + tank farm
+  indMetricData.set( .GROUND_MINE, .CNST_COST, 1.00 ); // 50 ha — open pit + tailings + processing
+  indMetricData.set( .FOUNDRY,     .CNST_COST, 1.00 ); // 20 ha — smelter + slag yards + cooling
+  indMetricData.set( .FACTORY,     .CNST_COST, 1.00 ); // 15 ha — assembly halls + logistics yard
 
-  indMetricData.set( .PROBE_MINE,  .AREA_COST, 0.00 ); //  1 ha — launch pad / control station
+  indMetricData.set( .PROBE_MINE,  .CNST_COST, 0.00 ); //  1 ha — launch pad / control station
 
 
   // ================================ POLLUTION ================================

@@ -155,12 +155,10 @@ Validation:
 
 ### 4.3 Facility Model
 
-Required work:
+Implemented:
 
 * introduce `Facility` as the implementation name for the merged
   industry/infrastructure concept;
-* use the starred facility entries in `feature_ideas/facilities.md` as the
-  mandatory Phase 1 set;
 * keep facility categories for data readability:
   * growth;
   * extraction;
@@ -168,11 +166,25 @@ Required work:
   * service;
   * transportation;
   * capacity;
-* migrate current infrastructure data into facility data where it produces or
-  exposes capacities;
-* migrate current industry data into facility data where it consumes or
-  produces ordinary resources;
-* preserve non-MVP facility entries as commented-out enum candidates;
+* introduce `FacilityType` in `data/facilityData.zig`;
+* mirror current infrastructure and industry identities into `FacilityType`;
+* add mapping helpers between `FacilityType` and the live `InfType` / `IndType`
+  surfaces;
+* mirror current infrastructure data where it produces or exposes capacities;
+* mirror current industry data where it consumes or produces ordinary resources;
+* separate facility capacity outputs into area, storage, housing, and
+  construction capacity rows;
+* preserve non-MVP facility entries as commented-out enum candidates.
+
+Remaining work:
+
+* decide and implement the power-source model before moving solar/grid behavior
+  from `IndType.getPowerSrc()` into facility metadata;
+* use the starred facility entries in `feature_ideas/facilities.md` as the
+  mandatory Phase 1 set once final names and power-source rules are settled;
+* migrate live economy state from `infState` / `indState` to facility state;
+* migrate solver, construction, ecology, finance, and debug growth paths onto
+  facilities;
 * remove or isolate old infrastructure/industry code paths once equivalent
   facility behavior exists.
 

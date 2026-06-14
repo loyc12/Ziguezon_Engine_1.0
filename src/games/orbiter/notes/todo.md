@@ -5,40 +5,39 @@ This file tracks the active task loop for the current Orbiter rework. Use
 [goals.md](goals.md) as the target-state authority, and
 [roadmap.md](roadmap.md) as the implementation sequence.
 
-Phase 1B resource/storage scaffold is complete. The next slice starts Phase 1C
-from roadmap section 4.3: introduce the first unified `Facility` data surface
-without replacing the whole economy solver yet.
+Phase 1C static `FacilityType` data baseline is complete. The next slice should
+settle facility/resource naming and power-source behavior, then verify the
+storage-waste attribution dependency before the facility runtime migration
+starts.
 
-## Phase 1C - Facility Data Baseline
+## Phase 1D - Power Sources And Waste Attribution
 
-Goal: create a compact, inspectable `Facility` model that can express the
-current infrastructure and industry roles before the solver, construction, and
-agent layers are migrated onto it.
+Goal: define the power-source model that facilities will use, and make the
+storage-waste accounting dependency explicit for the future `econPipeline`.
 
-This slice should stay focused. Do not replace `EconSolver`, remove
-`Infrastructure`/`Industry` runtime state, split population, add trade routes,
-or remove `debugAutoBuild()` yet. Those need later slices once facility data can
-represent the old behavior cleanly.
+This slice should stay focused. Do not migrate live economy state from
+`InfType` / `IndType` to `FacilityType`, replace `EconSolver`, replace
+`BuildQueue`, split population, or add trade routes yet.
 
 ## Validated Direction
 
-The first facility pass is a parallel static data/model surface, not a live
-runtime migration.
+Long-term decisions from the Phase 1C intake:
 
-Validated decisions:
-
-* name the new enum `FacilityType`;
-* create `src/games/orbiter/data/facilityData.zig`;
-* preserve existing infrastructure and industry names unless a specific name is
-  clearly misleading in the new facility vocabulary;
-* keep `InfType`, `IndType`, `infState`, `indState`, `EconSolver`,
-  `BuildQueue`, and `debugAutoBuild()` hooked into live logic for this slice;
-* copy existing infrastructure/industry values into facility-shaped data, but
-  do not rebalance consumption, production, maintenance, or build costs yet;
-* leave power-source redesign for the next pass after the facility data shape is
-  present;
-* defer production-share proportional storage waste until the future
-  `econPipeline` pass can preserve producer attribution.
+* power-source behavior should be redesigned in this pass, not folded into
+  `FacilityType` ad hoc;
+* production-share proportional storage waste should wait until the accounting
+  path can preserve producer attribution;
+* live infrastructure and industry runtime paths remain hooked until a later
+  facility-state migration;
+* the current `FacilityType` data surface is the static mirror that later
+  migration work should target;
+* `REFINERY` and `PROBE_MINE` are not desirable long-term `FacilityType` cases;
+* facility and resource names should be reviewed before more metadata depends on
+  them, including replacing names such as `GROUND_MINE` with names like
+  `MINE_ORE` and moving outputs toward resources such as `BASE_METALS`, later
+  `RARE_EARTHS`, and a better name for regolith-like bulk material;
+* facility and resource data comments must preserve unit context. Unit notes are
+  balancing data, not cosmetic comments, especially for data-matrix values.
 
 ## 1. Archive Before New Major Rewrites
 
@@ -47,116 +46,134 @@ version into `src/.oldFiles/` with the same relative path. Do not edit archived
 files and keep only one archived version unless the user explicitly asks for
 another.
 
-Likely new archive candidates for this slice:
+Likely archive candidates for this slice:
 
-* `src/games/orbiter/data/facilityData.zig`, if replacing an existing draft;
-* `src/games/orbiter/gameDef.zig`, if the public type exports change;
-* `src/games/orbiter/gameGlobals.zig`, if static data loading changes;
-* any current infrastructure/industry file that receives more than pointer or
-  compatibility comments.
+* `src/games/orbiter/data/powerData.zig`;
+* `src/games/orbiter/data/facilityData.zig`, if power metadata is added there;
+* `src/games/orbiter/data/industryData.zig`, if `getPowerSrc()` changes;
+* `src/games/orbiter/econ/econSolver.zig`, if storage-waste accounting changes.
 
-Files already archived during Phase 1A or Phase 1B can be edited without
-creating another copy unless the user asks for a second archive.
+Files already archived during Phase 1A, 1B, or 1C can be edited without creating
+another copy unless the user asks for a second archive.
 
-## 2. Define The Facility Surface
+## 2. Review Facility And Resource Names
 
-Add the smallest useful `Facility` data layer:
+Clean up static `FacilityType` naming before attaching power-source or pipeline
+metadata to unstable enum cases:
 
-* introduce `FacilityType` or a clearly better name if implementation makes one
-  obvious;
-* preserve current infrastructure/industry names as either direct facility enum
-  cases or documented compatibility mapping;
-* keep facility categories for readability:
-  * growth;
-  * extraction;
-  * manufacturing;
-  * service;
-  * transportation;
-  * capacity;
-* keep non-MVP facility ideas as commented-out candidates, not active data;
-* expose mass, area cost, construction effort, pollution, capacity output, and
-  resource input/output/cost rows where they already exist in old data.
-
-Validation:
-
-* the new data surface compiles;
-* current infrastructure and industry roles can be represented without guessing;
-* no old runtime state is removed before equivalent behavior is ready.
-
-## 3. Map Current Infrastructure And Industry
-
-Create a migration map from old data to facilities:
-
-* `HABITAT`, `DEPOT`, `HOUSING`, and `ASSEMBLY` should map to capacity/service
-  roles;
-* `AGRONOMIC`, `HYDROPONIC`, `WATER_PLANT`, `SOLAR_PLANT`, `POWER_PLANT`,
-  `REFINERY`, `GROUND_MINE`, `FOUNDRY`, `FACTORY`, and `PROBE_MINE` should map
-  to extraction/manufacturing/growth roles;
-* preserve existing `canBeBuiltIn()` behavior either directly or through a
-  documented compatibility helper;
-* document where solar/grid power-source behavior currently maps, but do not
-  port it to facility metadata until the next pass defines power-source rules;
-* do not merge old state grids yet unless the facility layer can fully replace
-  them in one obvious step.
+* remove undesirable static facility enum cases such as `REFINERY` and
+  `PROBE_MINE`;
+* review current industry-derived names and rename unclear cases into the new
+  facility naming scheme;
+* prefer output- or role-oriented names where that is clearer, such as
+  `MINE_ORE` instead of `GROUND_MINE`;
+* check resource-output names before wiring facility rows deeper into future
+  logic, especially `ORE` / `INGOT` and likely replacements such as
+  `BASE_METALS`, later `RARE_EARTHS`, and a better name for regolith-like bulk
+  material;
+* keep or port unit comments when renaming resources/facilities, especially
+  resource and facility data-matrix rows;
+* keep live `IndType` compatibility names untouched unless this slice explicitly
+  grows into a runtime migration.
 
 Validation:
 
-* a future migration can identify which old enum case each facility replaces;
-* Terra's current seeded setup has a facility equivalent for every live old
-  infrastructure and industry count.
+* facility names should read as stable data vocabulary, not old implementation
+  leftovers;
+* touched data rows should still state units directly or point to the relevant
+  unit comment block;
+* removed static facility cases must not break live infrastructure/industry
+  runtime behavior.
 
-## 4. Resource And Capacity Rows
+## 3. Define Power-Source Semantics
 
-Keep the data rows broad enough for Phase 1 but avoid solving the whole economy:
+Clarify what `PowerSrc` means before moving it into facilities:
 
-* represent ordinary resource consumption and production for facilities;
-* represent maintenance and build costs without hardcoding `PART` as the only
-  possible resource in the new shape;
-* represent capacity outputs such as housing, storage, area, and construction
-  effort explicitly;
-* keep `LABOUR` as the current worker-provided capacity resource;
-* avoid adding construction-effort as a live resource until the pipeline slice.
+* decide whether `GRID`, `SOLAR`, and later candidates such as fueled or beamed
+  power are facility input modes, production scalers, transport modes, or a
+  mix of those;
+* decide whether solar access should scale only production or both production
+  and input consumption as it currently does for solar-powered industries;
+* decide how local power production should differ from facilities that merely
+  require grid electricity;
+* keep the first rule set small enough for current facilities.
 
 Validation:
 
-* existing values can be copied or mapped without changing live economy numbers;
-* data comments distinguish active behavior from future capacity-resource work.
+* the resulting model should explain current `AGRONOMIC`, `SOLAR_PLANT`, and
+  `PROBE_MINE` solar behavior without making non-solar facilities ambiguous;
+* unresolved future power modes should be documented as TODOs, not implemented.
 
-## 5. TODO Comment Review - Pending User Validation
+## 4. Add Static Power Metadata
 
-Do not edit, remove, or expand these source TODO comments until the user
-validates their disposition.
+Once semantics are clear, add the smallest useful static data surface:
 
-Suggested address in Phase 1C:
+* either extend `powerData.zig` or add facility-facing power metadata in
+  `facilityData.zig`;
+* keep `IndType.getPowerSrc()` as the live compatibility path unless the
+  replacement is fully equivalent;
+* if facility power metadata is added, mirror current solar/grid assignments for
+  current industry-backed facilities;
+* do not change live economy behavior unless the compatibility path remains
+  visibly equivalent.
 
-* `data/infrastructureData.zig`: facility-fold TODOs can be replaced once the
-  new facility surface is present.
-* `data/industryData.zig`: facility-fold TODOs can be replaced once the new
-  facility surface is present.
+Validation:
+
+* `FacilityType` should expose enough power metadata for the future solver
+  migration;
+* current game behavior should not change unless explicitly documented.
+
+## 5. Storage Waste Attribution Prep
+
+Prepare production-share waste without forcing the full pipeline rewrite:
+
+* inspect the current shared-depot overflow path in `econSolver.clampResStocks()`;
+* confirm the current storage-use proportional waste remains the compatibility
+  rule until `econPipeline` can preserve producer attribution;
+* identify what producer attribution is missing from current flow buffers;
+* document the exact producer-attribution data the future pipeline pass must
+  carry;
+* leave new attribution buffers for `econPipeline` unless the user explicitly
+  promotes this slice into a pipeline-prep implementation.
+
+Validation:
+
+* current overflow logging must remain clear;
+* resource accounting must not silently lose stock;
+* the reason production-share waste waits for `econPipeline` should stay visible
+  in `roadmap.md` or this file.
+
+## 6. TODO Comment Review
+
+Review these source TODOs during the pass:
+
+* `data/industryData.zig`: `getPowerSrc()` should either become a compatibility
+  wrapper around new power metadata or keep a TODO explaining why it cannot move
+  yet.
+* `econ/econSolver.zig`: the shared-depot overflow comment should keep explaining
+  why production-share proportional waste waits for `econPipeline` producer
+  attribution.
 
 Suggested defer:
 
-* `data/industryData.zig`: `getPowerSrc()` should not be ported yet. Add a note
-  that power-source behavior needs a dedicated design pass before it becomes
-  facility metadata.
-* `data/resourceData.zig`: `getInfStore()` data-backed routing should wait
-  until storage facilities survive the facility migration.
-* `data/resourceData.zig`: individualized `LIMIT_D` can be stripped once no live
-  code depends on it. Keep cached per-resource `LIMIT` only if compatibility
-  logs/caps still need it during the facility migration.
-* `econ/econSolver.zig`: production-share proportional storage waste should
-  wait for the future `econPipeline` pass ordering.
+* full facility-state migration;
+* replacing `EconSolver` with `econPipeline`;
+* construction-effort as a live resource;
+* capacity-resource price modeling;
+* removing `FUEL` or replacing the MVP resource set wholesale;
+* extractable-accessibility tuning beyond naming/data dependency notes;
+* route-facing power transfer behavior.
 
-## 6. Out Of Scope For This Slice
+## 7. Out Of Scope For This Slice
 
-Do not do these as part of Phase 1C unless the user changes the scope:
+Do not do these as part of Phase 1D unless the user changes the scope:
 
 * removing old `InfType`, `IndType`, `infState`, or `indState`;
-* migrating `EconSolver` to `econPipeline`;
+* migrating all solver phases onto `FacilityType`;
 * replacing `BuildQueue`;
+* modeling capacity-resource prices;
+* removing `FUEL` from the resource model;
 * dependant/worker population split;
 * route trade or `TRADER` agents;
 * taxes, subsidies, or government behavior;
-* Lagrange, mobile, asteroid-belt, or star-hosted economies;
-* tuning Luna mineral access or Venus food production;
-* redesigning or migrating power-source behavior.
+* tuning Luna mineral access or Venus food production.

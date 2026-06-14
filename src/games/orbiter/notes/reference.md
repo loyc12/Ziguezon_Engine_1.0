@@ -283,7 +283,8 @@ through the shared `DEPOT` pool.
 resources it now means the maximum that resource could hold if the current
 shared depot were dedicated to it. Actual depot usage is aggregate storage use:
 `COUNT * STORE_RATE` summed across stockpiled resources. `LABOUR` does not
-consume depot capacity.
+consume depot capacity. The old individualized `LIMIT_D` state lane has been
+removed.
 
 Current population types:
 
@@ -325,10 +326,28 @@ grid keyed by body and resource. It currently declares equal placeholder `ORE`
 accessibility for Terra, Luna, and Venus; no Luna mineral advantage or Venus
 food-production tuning is active yet.
 
-Known data caveat: `IndMetricEnum.CNST_COST` exists, but the industry
-`loadIndustryData()` build-cost section currently writes `.AREA_COST` instead
-of `.CNST_COST`. Treat industry construction-effort data as suspect until that
-loader is fixed.
+Static facility data exists in `facilityData.zig`. It introduces `FacilityType`
+as the unified identity for current infrastructure and industry roles, plus:
+
+* `FacilityCategory` for growth, extraction, manufacturing, service,
+  transportation, and capacity grouping;
+* `facilityMetricData` for mass, area cost, construction effort cost, and
+  pollution;
+* `facilityCapacityData` for explicit area, storage, housing, and construction
+  capacity outputs;
+* `facilityResMetricTable` for consumption, production, build, and maintenance
+  resource rows;
+* `LegacyFacility` plus mapping helpers back to `InfType` and `IndType`.
+
+This facility surface is loaded and init-checked with the other Orbiter static
+data, but it is not the live runtime path yet. Current economy state,
+`EconSolver`, `BuildQueue`, and debug auto-build still read `InfType`,
+`IndType`, `infState`, and `indState`.
+
+Known data caveat: the live industry `loadIndustryData()` build-cost section
+currently writes `.AREA_COST` instead of `.CNST_COST`. The facility mirror keeps
+area cost and construction effort separated, but live economy behavior is still
+controlled by the legacy industry tables until the runtime migration.
 
 `PowerSrc` exists with `GRID` and `SOLAR`, but its metric grid only has a dummy
 metric. It is currently used mainly by industry to decide whether production is

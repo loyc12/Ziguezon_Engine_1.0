@@ -117,7 +117,6 @@ pub const ResStateEnum = enum( u8 )
   COUNT_D,  // Net total change last tick
 
   LIMIT,    // Current storage capacity
-  LIMIT_D,  // TODO : USE ME
 
   PRICE,    // Market price last tick
   PRICE_D,  // Price change last tick
