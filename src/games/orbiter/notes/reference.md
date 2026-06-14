@@ -42,11 +42,18 @@ global runtime state through `G_DATA`.
 * cached `CompView` values in `OrbiterViews`;
 * `BodyRegistry`, which maps `BodyName` values to live engine `EntityId`s;
 * `orbitParentIds`, a cache derived from the `Orbits` relation store;
-* `EconomyStore`, a fixed game-owned economy array addressed by `EconomyId`.
+* `EconomyStore`, a game-owned economy container addressed by `EconomyId`.
 
-`EconomyStore` currently reserves 1000 entries. Attempting to create more logs
-an error and returns no id so the economy model is reviewed before expanding
-runtime state.
+`EconomyStore` uses allocator-backed contiguous storage. It starts with
+`initialEconomyCapacity`, grows by `economyAllocChunkSize`, and keeps `G_DATA`
+from owning the full economy buffer inline. `clear()` drops live entries while
+retaining allocated capacity; `deinit()` releases the backing storage during
+Orbiter store teardown.
+
+`EconomyId` values are stable indices into the current storage order while the
+store is live. Current code appends economies and does not remove individual
+entries, so existing ids remain valid until the store is cleared or
+deinitialized.
 
 `OnGameStart` loads static data matrices. `OnGameOpen` registers World stores
 and initializes the stellar system. `OnGameClose` destroys registered body
@@ -166,9 +173,9 @@ Economies are owned by `G_DATA.economies`. Each `BodyComp` stores an
 `[EconLoc.count]EconomyId` reference array and `BodyComp.getEcon()` is only a
 compatibility helper over the game-owned store.
 
-Economy ticks iterate directly over `G_DATA.economies` in storage order.
-Body iteration is still used immediately before each economy tick to refresh
-orbit/sunshine data for economies attached to bodies.
+Economy ticks iterate directly over the live entries in `G_DATA.economies` in
+storage order. Body iteration is still used immediately before each economy
+tick to refresh orbit/sunshine data for economies attached to bodies.
 
 `EconomyId.INVALID` marks body/location slots that do not currently refer to a
 live economy entry.

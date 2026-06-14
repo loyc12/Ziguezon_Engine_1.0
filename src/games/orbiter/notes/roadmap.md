@@ -14,7 +14,7 @@ on sequencing, dependencies, and unresolved implementation choices.
 Orbiter currently has:
 
 * a live solar-system body/orbit simulation;
-* a game-owned economy array referenced by body/location economy ids;
+* a game-owned economy container referenced by body/location economy ids;
 * local economy state for resources, population, infrastructure, industries,
   ecology, government money, and construction queues;
 * a single reused global `EconSolver`;
@@ -89,8 +89,9 @@ Status: complete for the Phase 1A scaffold.
 
 Implemented:
 
-* move economies toward a game-owned global array addressed by `u32` indices;
-* add an explicit review/error path if the array would exceed 1000 economies;
+* move economies toward a game-owned global container addressed by `u32` indices;
+* use allocator-backed chunk growth so the global runtime state object does not
+  own a large fixed economy array directly;
 * replace direct body-owned economy ownership with references from bodies,
   settlements, or routes;
 * split location concepts:
@@ -104,7 +105,7 @@ Implemented:
   * Luna as `subsurface`;
   * Venus as `aerial`;
 * keep one orbital economy per body for MVP;
-* tick live economies by direct iteration over the game-owned economy array;
+* tick live economies by direct iteration over live game-owned economy entries;
 * defer Lagrange economy locations, multiple orbital layers, star-hosted
   arbitrary locations, asteroid-belt aggregate economies, and mobile economies.
 

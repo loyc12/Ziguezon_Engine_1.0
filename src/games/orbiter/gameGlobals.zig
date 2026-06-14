@@ -5,7 +5,8 @@ const utl = @import( "utils" );
 pub const gdf = @import( "gameDef.zig" );
 
 const bodyCount = gdf.G_CONSTS.bodyCount;
-const maxEconomyCount = 1000;
+const initialEconomyCapacity = 16;
+const economyAllocChunkSize  = 16;
 
 
 // ================ GAMEDATA STRUCTS ================
@@ -25,33 +26,108 @@ pub const GameData = struct
 };
 
 
-/// Fixed, game-owned economy storage for the Phase 1 ownership migration.
-/// The 1000-entry limit is intentional: exceeding it requires reviewing the
-/// economy model instead of silently growing runtime state.
+/// Game-owned economy storage for the Phase 1 ownership migration.
+/// Keeps the global state object small while expanding live storage in chunks.
 pub const EconomyStore = struct
 {
-  items : [ maxEconomyCount ]gdf.ecn.Economy = std.mem.zeroes([ maxEconomyCount ]gdf.ecn.Economy ),
-  count : usize = 0,
+  alloc  : std.mem.Allocator = undefined,
+  list   : std.ArrayList( gdf.ecn.Economy ) = .empty,
+
+  isInit : bool = false,
+
+
+  pub fn init( self : *EconomyStore, alloc : std.mem.Allocator ) bool
+  {
+    if( self.isInit ){ return true; }
+
+    self.alloc  = alloc;
+    self.list   = .empty;
+    self.isInit = true;
+
+    if( !self.ensureCapacity( initialEconomyCapacity ))
+    {
+      self.deinit();
+      return false;
+    }
+
+    return true;
+  }
+
+  pub fn deinit( self : *EconomyStore ) void
+  {
+    if( !self.isInit ){ return; }
+
+    self.list.deinit( self.alloc );
+    self.* = .{};
+  }
 
 
   pub inline fn clear( self : *EconomyStore ) void
   {
-    self.items = std.mem.zeroes([ maxEconomyCount ]gdf.ecn.Economy );
-    self.count = 0;
+    if( !self.isInit ){ return; }
+
+    self.list.clearRetainingCapacity();
+  }
+
+  pub inline fn getCount( self : *const EconomyStore ) usize
+  {
+    return self.list.items.len;
+  }
+
+  /// Returns the highest live economy index, or null when storage is empty.
+  pub inline fn getMaxEconIdx( self : *const EconomyStore ) ?usize
+  {
+    const count = self.getCount();
+    if( count == 0 ){ return null; }
+
+    return count - 1;
+  }
+
+  fn ensureCapacity( self : *EconomyStore, neededCapacity : usize ) bool
+  {
+    if( !self.isInit )
+    {
+      utl.qlog( .ERROR, @src(), "Cannot grow EconomyStore : uninitialized" );
+      return false;
+    }
+    if( self.list.capacity >= neededCapacity ){ return true; }
+
+    var newCapacity = self.list.capacity;
+    if( newCapacity == 0 ){ newCapacity = initialEconomyCapacity; }
+
+    while( newCapacity < neededCapacity )
+    {
+      newCapacity += economyAllocChunkSize;
+    }
+
+    self.list.ensureTotalCapacityPrecise( self.alloc, newCapacity ) catch
+    {
+      utl.log( .ERROR, @src(), "Failed to grow EconomyStore to {d} entries", .{ newCapacity });
+      return false;
+    };
+
+    return true;
   }
 
   pub fn create( self : *EconomyStore, loc : gdf.EconLoc ) ?gdf.EconomyId
   {
-    if( self.count >= maxEconomyCount )
+    if( !self.isInit )
     {
-      utl.log( .ERROR, @src(), "Cannot create economy at {s} : Phase 1 review required before exceeding {d} economies", .{ @tagName( loc ), maxEconomyCount });
+      utl.log( .ERROR, @src(), "Cannot create economy at {s} : EconomyStore is uninitialized", .{ @tagName( loc )});
       return null;
     }
 
-    const id = gdf.EconomyId.fromIdx( self.count );
+    const nextIdx = self.getCount();
+    if( !self.ensureCapacity( nextIdx + 1 ))
+    {
+      utl.log( .ERROR, @src(), "Cannot create economy at {s} : failed to expand storage", .{ @tagName( loc )});
+      return null;
+    }
 
-    self.items[ id.toIdx() ].softInit( loc );
-    self.count += 1;
+    const id = gdf.EconomyId.fromIdx( nextIdx );
+
+    self.list.appendAssumeCapacity( .{} );
+    self.list.items[ id.toIdx() ].softInit( loc );
 
     return id;
   }
@@ -59,17 +135,17 @@ pub const EconomyStore = struct
   pub inline fn get( self : *EconomyStore, id : gdf.EconomyId ) ?*gdf.ecn.Economy
   {
     if( !id.isValid() ){ return null; }
-    if( id.toIdx() >= self.count ){ return null; }
+    if( id.toIdx() >= self.getCount() ){ return null; }
 
-    return &self.items[ id.toIdx() ];
+    return &self.list.items[ id.toIdx() ];
   }
 
   pub inline fn getConst( self : *const EconomyStore, id : gdf.EconomyId ) ?*const gdf.ecn.Economy
   {
     if( !id.isValid() ){ return null; }
-    if( id.toIdx() >= self.count ){ return null; }
+    if( id.toIdx() >= self.getCount() ){ return null; }
 
-    return &self.items[ id.toIdx() ];
+    return &self.list.items[ id.toIdx() ];
   }
 
   /// Ticks live economies by storage order instead of walking body components.
@@ -77,10 +153,8 @@ pub const EconomyStore = struct
   {
     var econCount : u32 = 0;
 
-    for( 0..self.count )| idx |
+    for( self.list.items )| *econ |
     {
-      const econ = &self.items[ idx ];
-
       if( econ.tryTick( econ.sunshine ))
       {
         econCount += 1;
@@ -316,7 +390,6 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
 {
   G_DATA.views.clear();
   G_DATA.bodyRegistry.clear();
-  G_DATA.economies.clear();
   clearOrbitParentCache();
 
   if( !ng.world.registerComp( eng.TransComp ))
@@ -370,6 +443,20 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
     return false;
   }
 
+  if( !G_DATA.economies.init( utl.getDefaultAlloc() ))
+  {
+    _ = ng.world.unregisterRelation( gdf.Orbits    );
+    _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
+    _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
+    _ = ng.world.unregisterComp( eng.SpriteComp    );
+    _ = ng.world.unregisterComp( eng.ShapeComp     );
+    _ = ng.world.unregisterComp( eng.TransComp     );
+
+    utl.qlog( .ERROR, @src(), "Failed to initialize EconomyStore" );
+    return false;
+  }
+  G_DATA.economies.clear();
+
   return true;
 }
 
@@ -397,7 +484,7 @@ pub fn unregisterOrbiterStores( ng : *eng.Engine ) void
   _ = ng.world.unregisterComp( eng.TransComp     );
 
   clearOrbitParentCache();
-  G_DATA.economies.clear();
+  G_DATA.economies.deinit();
 }
 
 

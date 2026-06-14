@@ -94,9 +94,9 @@ near-term vocabulary.
 Mobile, quarry, split orbital layers, arbitrary solar-orbit settlements, and
 star-hosted multiple locations are deferred ideas.
 
-Economies should eventually be game-owned data referenced by entities,
-settlements, bodies, or routes. Body-owned economy arrays are a transitional
-shape.
+Economies are now game-owned data referenced by bodies through ids. Future
+settlements, routes, and mobile entities should keep using references into the
+game-owned economy container rather than owning economy state directly.
 
 ## Resources And Facilities
 

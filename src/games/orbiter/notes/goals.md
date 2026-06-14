@@ -100,10 +100,9 @@ game goals for this MVP unless the user revises the target.
 ## 4. Economy Ownership And Locations
 
 Economies should become game-owned data rather than body-owned arrays. The
-game should hold a global economy array addressed by simple `u32` economy
-indices. If the array ever needs to exceed 1000 economies, the code should
-throw or otherwise force an explicit design review rather than silently scaling
-past the intended model.
+game should hold a global economy container addressed by simple `u32` economy
+indices. Storage should start small, grow in reviewed chunks, and avoid making
+the global runtime state object own a large fixed array directly.
 
 Bodies, settlements, routes, and future mobile entities should reference
 economies by index or pointer rather than owning the economy data directly.
