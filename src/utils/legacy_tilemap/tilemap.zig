@@ -274,7 +274,7 @@ pub const Tilemap = struct
       return null;
     };
 
-    index -= 1;
+    index -= 1; // NOTE : Can underflow !!
     index = @mod( index, self.getTileCount() );
 
     return &self.tileArray[ index ];
