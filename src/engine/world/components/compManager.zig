@@ -215,10 +215,17 @@ pub const CompManager = struct
       {
         const store : *CompStoreFactory( CompType ) = @ptrCast( @alignCast( storePtr ));
 
-        if( !store.isInit ){ return .FAILED;  }
+        if( !store.isInit )
+        {
+          utl.log( .WARN, @src(), "Cannot remove Entity {d} from CompStore for type {s} : uninitialized", .{ entityId, @typeName( CompType )});
+          return .FAILED;
+        }
         if( !store.has( entityId )){ return .MISSING; }
 
-        return if( store.remove( entityId )) .REMOVED else .FAILED;
+        if( store.remove( entityId )){ return .REMOVED; }
+
+        utl.log( .ERROR, @src(), "Failed to remove Entity {d} from CompStore for type {s}", .{ entityId, @typeName( CompType )});
+        return .FAILED;
       }
     }.call;
   }

@@ -23,11 +23,24 @@ pub const EventMeta = struct
 /// `EventType` is a user-defined plain Zig struct, not an engine enum value.
 pub fn EventRecord( comptime EventType : type ) type
 {
+  assertEventPayloadType( EventType );
+
   return struct
   {
     meta  : EventMeta = .{},
     value : EventType,
   };
+}
+
+/// Rejects event payload shapes that cannot act as plain queued facts.
+/// Dataless structs are valid so presence-style event facts remain possible.
+pub fn assertEventPayloadType( comptime EventType : type ) void
+{
+  switch( @typeInfo( EventType ))
+  {
+    .@"struct" => {},
+    else       => @compileError( "Event type " ++ @typeName( EventType ) ++ " must be a plain struct payload. Dataless structs are valid event facts." ),
+  }
 }
 
 /// Generic engine event emitted after an entity id becomes live.
@@ -72,15 +85,25 @@ pub const RelationRemoved = struct
   relationTypeName : []const u8 = "",
 };
 
+/// Generic engine event emitted after a trait is applied.
+pub const TraitApplied = struct
+{
+  entityId      : EntityId   = 0,
+  traitTypeName : []const u8 = "",
+};
+
+/// Generic engine event emitted after a trait is removed.
+pub const TraitRemoved = struct
+{
+  entityId      : EntityId   = 0,
+  traitTypeName : []const u8 = "",
+};
+
 /// Infers a primary entity id from common field names in plain event structs.
 /// Events without `entityId`, `sourceId`, or `targetId` simply return null.
 pub fn inferPrimaryEntity( comptime EventType : type, value : EventType ) ?EntityId
 {
-  switch( @typeInfo( EventType ))
-  {
-    .@"struct" => {},
-    else       => return null,
-  }
+  assertEventPayloadType( EventType );
 
   if( @hasField( EventType, "entityId" )){ return value.entityId; }
   if( @hasField( EventType, "sourceId" )){ return value.sourceId; }

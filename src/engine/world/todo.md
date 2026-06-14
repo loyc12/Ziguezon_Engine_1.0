@@ -7,79 +7,115 @@ implementation order.
 
 ## 1. Current Baseline
 
-* Entity creation, liveness checks, and destruction exist.
-* Component stores and component views exist.
-* Relation stores, indexes, cleanup, and cardinality policies exist.
-* Typed transient event queues and generic entity/component/relation events
-  exist.
-* Commands, systems, rules, traits, archetypes, scheduler, broad queries,
-  particles/effects, and context are still placeholder or minimal surfaces.
+The previous baseline reconciliation and initial trait implementation are
+complete.
 
-## 2. Guardrails
+Live foundation:
 
-* Do not describe relations or events as future-only work; they are live.
+* entity creation, liveness checks, destruction, and fact cleanup;
+* packed and sparse component stores;
+* component views with generation invalidation;
+* relation stores, source/target indexes, and cardinality policies;
+* dataless relation facts queried by presence;
+* typed transient event queues and generic entity/component/relation/trait
+  events;
+* trait registration, application, removal, presence querying, and cleanup;
+* `Persistent` as the first generic trait example.
+
+The next roadmap slice is broad read-only query/view support.
+
+## 2. Slice Goal
+
+Add a practical read-only inspection layer for components, relations, events,
+and traits without turning query helpers into owners of simulation facts.
+
+Primary users are:
+
+* future systems that need repeated read access;
+* debug/inspection UI;
+* game code that needs clearer fact traversal than reaching into store internals.
+
+This slice should be useful on its own, but it should stop before commands,
+systems, rules, archetypes, scheduler, particles/effects, or save/load context.
+
+## 3. Guardrails
+
+* Keep `CompView` as the narrow component fast path.
+* Query/view helpers are transient and read-only.
+* Do not add hidden ownership, cached mutable fact state, or retained event
+  history.
+* Do not merge UI state into simulation `World`.
 * Do not add marker components for classification.
-* Components must carry entity data; dataless components are invalid.
-* Traits must stay dataless; payload-bearing traits are invalid.
-* Add storage policies or config bundles only when a concrete use case needs
-  them.
-* Keep `CompView` component-only until broad query semantics are designed.
-* Keep `EngineTiming` as the base-tick and frame-pacing authority.
+* Do not add storage policies or config bundles without a concrete use case.
 * Keep game-specific fact types under `src/games`.
-* Destroy entity ids last, after World-owned fact cleanup has run.
 * Do not run formatting passes such as `zig fmt`.
 
-## 3. Baseline Reconciliation
+## 4. Implementation Tasks
 
-Tasks:
+1. Define the query/view boundary in code comments.
+   * `queries/query.zig` should become the broad read-only query home.
+   * `views/view.zig` should stay focused on `CompView`.
+   * Queries may wrap existing store APIs, but should not own or mutate facts.
 
-* Audit `World.destroyEntity()` tests for combined relation and component
-  cleanup coverage.
-* Verify generic event emission behavior when event queues are not registered.
-* Verify generic event emission behavior when queues are registered before
-  entity/component/relation operations.
-* Ensure cleanup functions log their own concrete failures through `log()`.
-* Keep `EventManager` queues transient for now; do not integrate retained event
-  history until a concrete debug or rules/reactions use case needs it.
-* Keep `EventManager.clearAll()` / `countAll()` if they cover current game and
-  test needs.
-* Audit event payload validation and add easy checks for unfit event types
-  without blocking dataless event facts.
-* Update any stale docs or TODO comments that still describe relations/events
-  as unimplemented.
+2. Add missing read-only traversal primitives.
+   * Add a read-only entity-id iterator or equivalent for trait sets.
+   * Add read-only event queue inspection that does not pop or retain records.
+   * Expose relation source/target iteration through `World` wrappers if the
+     query layer needs it.
+   * Keep direct component iteration routed through existing component stores
+     and `CompView`.
 
-## 4. Trait Implementation Criteria
+3. Implement a compact first query surface.
+   * Prefer small helpers that compose existing component, relation, event, and
+     trait APIs over a large query DSL.
+   * Cover common presence checks and traversal paths first.
+   * Reject unsupported broad-query shapes explicitly instead of guessing.
+   * Leave archetype and particle/effect query integration out of this slice.
 
-Implementation decisions:
+4. Add meaningful tests.
+   * Query helpers should fail cleanly on uninitialized worlds, unregistered
+     stores, dead entities, and stale component views.
+   * Read-only event inspection must not remove records.
+   * Trait traversal must not expose mutable trait storage.
+   * Relation source/target query behavior should preserve existing
+     cardinality/index semantics.
 
-* traits are dataless classification facts;
-* components are the dataful per-entity fact path;
-* future trait metadata, if needed, is type-level metadata, not per-entity data;
-* trait events follow existing generic event behavior and emit only when their
-  event queues are registered;
-* `Persistent` is the first generic trait example, marking entities whose
-  related facts should be save-relevant once save/load exists.
+5. Refresh docs after implementation.
+   * Update `reference.md` with the live query/view shape.
+   * Trim `roadmap.md` so completed query work is moved into the baseline.
+   * Replace this `todo.md` with the next active slice after validation.
 
-Tasks:
+## 5. TODO Comment Audit For Validation
 
-* Define the zero-sized trait declaration shape.
-* Add typed trait registration, application, removal, and presence querying.
-* Reject payload-bearing traits at compile time when practical.
-* Integrate trait cleanup before entity ids are invalidated by destruction.
-* Add generic `TraitApplied` and `TraitRemoved` events.
-* Add the dataless `Persistent` example trait.
-* Document and enforce component vs relation vs trait selection rules.
+No source TODO comments were changed while preparing this plan. Proposed
+handling:
 
-## 5. Deferred
+* Address in this slice:
+  * `src/engine/world/queries/query.zig:1` broad query placeholder.
+* Defer until later roadmap slices:
+  * `src/engine/world/commands/command.zig:1`;
+  * `src/engine/world/commands/commandQueue.zig:1`;
+  * `src/engine/world/systems/system.zig:1`;
+  * `src/engine/world/rules/rule.zig:1`;
+  * `src/engine/world/scheduler/scheduler.zig:1`;
+  * `src/engine/world/archetypes/archetype.zig:1`;
+  * `src/engine/world/components/baseComps.zig:178` particle-system TODO.
+* Defer as unrelated to this slice:
+  * `src/engine/world/entity.zig:22` compact lifecycle mask idea;
+  * tilemap flood, shape, tile type, and bounding-box TODOs;
+  * `src/engine/world/components/baseComps.zig:77` LOD/minScale note.
+* Validate before dropping or rewriting:
+  * `src/engine/world/tilemap/tilemapManager.zig:277` still references
+    `Body.renderHitbox()`;
+  * `src/engine/world/tilemap/tilemapManager.zig:296` still references a
+    renderer-construct cleanup.
 
-Do not start these until baseline reconciliation and the initial trait
-implementation are complete:
+## 6. Explicit Non-Goals
 
-* broad query/view helpers;
-* command queues;
-* system registration/execution;
-* rules/reactions;
-* archetypes/templates;
-* scheduler;
-* particles/effects;
-* context/save-load-facing records.
+* no command queues;
+* no system execution;
+* no rules/reactions;
+* no archetype/template spawning;
+* no scheduler implementation;
+* no particle/effect pools;
+* no save/load or retained event history.

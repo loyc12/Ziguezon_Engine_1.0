@@ -295,6 +295,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
         {
           keys.append( self.alloc, RelationKey.init( entityId, targetId )) catch
           {
+            utl.log( .ERROR, @src(), "Failed to queue source cleanup key for RelationStore type {s} Entity {d}", .{ TypeName, entityId });
             result.failedCount = 1;
             return result;
           };
@@ -308,6 +309,7 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
 
           keys.append( self.alloc, RelationKey.init( sourceId, entityId )) catch
           {
+            utl.log( .ERROR, @src(), "Failed to queue target cleanup key for RelationStore type {s} Entity {d}", .{ TypeName, entityId });
             result.failedCount = 1;
             return result;
           };
@@ -323,7 +325,11 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       for( keys.items )| key |
       {
         if( self.removeKey( key )){ result.removedCount += 1; }
-        else{ result.failedCount += 1; }
+        else
+        {
+          utl.log( .ERROR, @src(), "Failed to clean relation row for type {s} source {d} target {d}", .{ TypeName, key.sourceId, key.targetId });
+          result.failedCount += 1;
+        }
       }
 
       return result;

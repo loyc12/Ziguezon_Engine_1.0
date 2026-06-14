@@ -6,6 +6,8 @@ const comp    = @import( "components/component.zig" );
 const compMgr = @import( "components/compManager.zig" );
 const rel     = @import( "relations/relation.zig" );
 const relMgr  = @import( "relations/relationManager.zig" );
+const trt     = @import( "traits/trait.zig" );
+const trtMgr  = @import( "traits/traitManager.zig" );
 const evt     = @import( "events/event.zig" );
 const evtMgr  = @import( "events/eventManager.zig" );
 const evtQue  = @import( "events/eventQueue.zig" );
@@ -18,6 +20,8 @@ const CompManager          = compMgr.CompManager;
 const CompStoreFactory     = comp.CompStoreFactory;
 const RelationManager      = relMgr.RelationManager;
 const RelationStoreFactory = rel.RelationStoreFactory;
+const TraitManager         = trtMgr.TraitManager;
+const TraitSetFactory      = trt.TraitSetFactory;
 const EventManager         = evtMgr.EventManager;
 const EventQueueFactory    = evtQue.EventQueueFactory;
 const Duration             = utl.Duration;
@@ -36,13 +40,14 @@ pub const TickInfo = struct
 
 /// Central simulation database for entity identity and World-owned facts.
 /// Games create entities here, register typed fact stores, then add/query
-/// components, relations, and events through this API.
+/// components, relations, traits, and events through this API.
 pub const World = struct
 {
   activeEntities   : std.AutoHashMap( EntityId, void ) = undefined,
   entityIdRegistry : EntityIdRegistry = .{},
   compManager      : CompManager      = .{},
   relationManager  : RelationManager  = .{},
+  traitManager     : TraitManager     = .{},
   eventManager     : EventManager     = .{},
   viewGeneration   : u64              = 0,
 
@@ -69,7 +74,7 @@ pub const World = struct
   }
 
   /// Releases all World-owned stores and invalidates existing entity ids.
-  /// Component/relation/event pointers obtained from this World become stale.
+  /// Component/relation/trait/event pointers obtained from this World become stale.
   pub fn deinit( self : *World ) void
   {
     if( !self.isInit )
@@ -89,7 +94,7 @@ pub const World = struct
   // ================================ ENTITY FUNCTIONS ================================
 
   /// Creates a live entity id.
-  /// The returned entity has no components or relations until added explicitly.
+  /// The returned entity has no components, relations, or traits until added explicitly.
   pub inline fn createEntity( self : *World ) Entity
   {
     if( !self.isInit )
@@ -118,8 +123,8 @@ pub const World = struct
     return self.activeEntities.contains( entityId );
   }
 
-  /// Destroys a live entity and removes its relation/component facts.
-  /// Relation cleanup runs before component cleanup so dangling endpoints vanish first.
+  /// Destroys a live entity and removes its relation/component/trait facts.
+  /// Fact cleanup finishes before the entity id is invalidated.
   pub fn destroyEntity( self : *World, entityId : EntityId ) bool
   {
     if( !self.isInit )
@@ -303,6 +308,61 @@ pub const World = struct
   }
 
 
+  // ================================ OWNED TRAIT FUNCTIONS ================================
+
+  /// Registers presence storage for one dataless trait type.
+  pub inline fn registerTrait( self : *World, comptime TraitType : type ) bool
+  {
+    return self.traitManager.register( TraitType );
+  }
+
+  /// Removes storage for a trait type and drops all matching trait rows.
+  pub inline fn unregisterTrait( self : *World, comptime TraitType : type ) bool
+  {
+    return self.traitManager.unregister( TraitType );
+  }
+
+  /// Returns the typed trait set, or null if the type is unregistered.
+  pub inline fn getTraitSet( self : *World, comptime TraitType : type ) ?*TraitSetFactory( TraitType )
+  {
+    return self.traitManager.getSet( TraitType );
+  }
+
+  /// Applies one dataless classification trait to a live entity.
+  /// Use components instead when the fact needs per-entity payload data.
+  pub inline fn applyTrait( self : *World, comptime TraitType : type, entityId : EntityId ) bool
+  {
+    if( !self.isEntityAlive( entityId )){ return false; }
+
+    const set = self.getTraitSet( TraitType ) orelse return false;
+    if( !set.apply( entityId )){ return false; }
+
+    self.emitRegisteredEvent( evt.TraitApplied, .{ .entityId = entityId, .traitTypeName = @typeName( TraitType )});
+    return true;
+  }
+
+  /// Tests whether a live entity currently has a trait.
+  pub inline fn hasTrait( self : *World, comptime TraitType : type, entityId : EntityId ) bool
+  {
+    if( !self.isEntityAlive( entityId )){ return false; }
+
+    const set = self.getTraitSet( TraitType ) orelse return false;
+    return set.has( entityId );
+  }
+
+  /// Removes one dataless classification trait from a live entity.
+  pub inline fn removeTrait( self : *World, comptime TraitType : type, entityId : EntityId ) bool
+  {
+    if( !self.isEntityAlive( entityId )){ return false; }
+
+    const set = self.getTraitSet( TraitType ) orelse return false;
+    if( !set.remove( entityId )){ return false; }
+
+    self.emitRegisteredEvent( evt.TraitRemoved, .{ .entityId = entityId, .traitTypeName = @typeName( TraitType )});
+    return true;
+  }
+
+
   // ================================ OWNED EVENT FUNCTIONS ================================
 
   /// Registers a transient queue for one event fact type.
@@ -384,12 +444,14 @@ pub const World = struct
   {
     self.compManager.init( alloc );
     self.relationManager.init( alloc );
+    self.traitManager.init( alloc );
     self.eventManager.init( alloc );
   }
 
   inline fn deinitFactManagers( self : *World ) void
   {
     self.eventManager.deinit();
+    self.traitManager.deinit();
     self.relationManager.deinit();
     self.compManager.deinit();
   }
@@ -412,6 +474,13 @@ pub const World = struct
     if( !compCleanup.isSuccess() )
     {
       utl.log( .ERROR, @src(), "Failed to clean up Entity {d} from {d} CompStores", .{ entityId, compCleanup.failedCount });
+      return false;
+    }
+
+    const traitCleanup = self.traitManager.removeEntity( entityId );
+    if( !traitCleanup.isSuccess() )
+    {
+      utl.log( .ERROR, @src(), "Failed to clean up Entity {d} from {d} TraitSets", .{ entityId, traitCleanup.failedCount });
       return false;
     }
 
@@ -758,6 +827,130 @@ test "World destroyEntity removes source and target relation rows"
   try std.testing.expect(  world.hasRelation( TestRel, keptAId, keptBId ));
 }
 
+test "World owns typed trait CRUD and registration lifecycle"
+{
+  const Selectable = struct {};
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect(  world.registerTrait( Selectable ));
+  try std.testing.expect( !world.registerTrait( Selectable ));
+  try std.testing.expect(  world.getTraitSet( Selectable ) != null );
+
+  const entityId = world.createEntity().id;
+
+  try std.testing.expect(  world.applyTrait(  Selectable, entityId ));
+  try std.testing.expect(  world.hasTrait(    Selectable, entityId ));
+  try std.testing.expect( !world.applyTrait(  Selectable, entityId ));
+  try std.testing.expect(  world.removeTrait( Selectable, entityId ));
+  try std.testing.expect( !world.hasTrait(    Selectable, entityId ));
+
+  try std.testing.expect( world.unregisterTrait( Selectable ));
+  try std.testing.expect( world.getTraitSet(   Selectable ) == null );
+  try std.testing.expect( world.registerTrait(   Selectable ));
+}
+
+test "World deinit releases registered owned trait sets"
+{
+  const Selectable = struct {};
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+
+  try std.testing.expect( world.registerTrait( Selectable ));
+  try std.testing.expect( world.applyTrait( Selectable, world.createEntity().id ));
+
+  world.deinit();
+  try std.testing.expect( !world.traitManager.isInit );
+}
+
+test "World trait API rejects dead and unregistered entities"
+{
+  const Selectable = struct {};
+
+  var world : World = .{};
+
+  try std.testing.expect( !world.registerTrait( Selectable ));
+  try std.testing.expect( !world.applyTrait(    Selectable, 1 ));
+  try std.testing.expect( !world.hasTrait(      Selectable, 1 ));
+  try std.testing.expect( !world.removeTrait(   Selectable, 1 ));
+
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  const entityId = world.createEntity().id;
+
+  try std.testing.expect( !world.applyTrait(  Selectable, entityId ));
+  try std.testing.expect( !world.hasTrait(    Selectable, entityId ));
+  try std.testing.expect( !world.removeTrait( Selectable, entityId ));
+
+  try std.testing.expect( world.registerTrait( Selectable ));
+
+  try std.testing.expect( !world.applyTrait(  Selectable, 0  ));
+  try std.testing.expect( !world.applyTrait(  Selectable, 99 ));
+  try std.testing.expect( !world.hasTrait(    Selectable, 99 ));
+  try std.testing.expect( !world.removeTrait( Selectable, 99 ));
+
+  try std.testing.expect(  world.applyTrait( Selectable, entityId ));
+  try std.testing.expect(  world.destroyEntity( entityId ));
+  try std.testing.expect( !world.applyTrait(  Selectable, entityId ));
+  try std.testing.expect( !world.hasTrait(    Selectable, entityId ));
+  try std.testing.expect( !world.removeTrait( Selectable, entityId ));
+}
+
+test "World destroyEntity removes component relation and trait facts together"
+{
+  const TestComp = struct
+  {
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const TestRel = struct
+  {
+    value : u32 = 0,
+  };
+  const Selectable = struct {};
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp(     TestComp   ));
+  try std.testing.expect( world.registerRelation( TestRel    ));
+  try std.testing.expect( world.registerTrait(    Selectable ));
+
+  const destroyedId = world.createEntity().id;
+  const targetId    = world.createEntity().id;
+  const sourceId    = world.createEntity().id;
+  const keptId      = world.createEntity().id;
+
+  try std.testing.expect( world.addComp( TestComp, destroyedId, .{ .value = 10 }));
+  try std.testing.expect( world.addComp( TestComp, keptId,      .{ .value = 20 }));
+  try std.testing.expect( world.addRelation( TestRel, destroyedId, targetId,    .{ .value = 30 }));
+  try std.testing.expect( world.addRelation( TestRel, sourceId,    destroyedId, .{ .value = 40 }));
+  try std.testing.expect( world.applyTrait( Selectable, destroyedId ));
+  try std.testing.expect( world.applyTrait( Selectable, keptId      ));
+
+  const compStore = world.getCompStore(     TestComp   ).?;
+  const relStore  = world.getRelationStore( TestRel    ).?;
+  const traitSet  = world.getTraitSet(      Selectable ).?;
+
+  try std.testing.expect( world.destroyEntity( destroyedId ));
+
+  try std.testing.expect( !world.isEntityAlive( destroyedId ));
+  try std.testing.expect( !compStore.has( destroyedId ));
+  try std.testing.expect( !relStore.has( destroyedId, targetId    ));
+  try std.testing.expect( !relStore.has( sourceId,    destroyedId ));
+  try std.testing.expect( !traitSet.has( destroyedId ));
+
+  try std.testing.expect(  world.isEntityAlive( keptId ));
+  try std.testing.expect(  compStore.has( keptId ));
+  try std.testing.expect(  traitSet.has(  keptId ));
+}
+
 test "World owns typed event queue API and registration lifecycle"
 {
   const TestEvent = struct
@@ -817,7 +1010,7 @@ test "World event API rejects uninitialized worlds and unregistered queues"
   try std.testing.expect( !world.clearEvents( TestEvent ));
 }
 
-test "World emits registered generic entity component and relation events"
+test "World leaves generic entity component relation and trait events silent when queues are absent"
 {
   const TestComp = struct
   {
@@ -829,6 +1022,43 @@ test "World emits registered generic entity component and relation events"
   {
     value : u32 = 0,
   };
+  const Selectable = struct {};
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp(     TestComp   ));
+  try std.testing.expect( world.registerRelation( TestRel    ));
+  try std.testing.expect( world.registerTrait(    Selectable ));
+
+  const sourceId = world.createEntity().id;
+  const targetId = world.createEntity().id;
+
+  try std.testing.expect( world.addComp(      TestComp,   sourceId, .{ .value = 1 }));
+  try std.testing.expect( world.addRelation(  TestRel,    sourceId, targetId, .{ .value = 2 }));
+  try std.testing.expect( world.applyTrait(   Selectable, sourceId ));
+  try std.testing.expect( world.removeTrait(  Selectable, sourceId ));
+  try std.testing.expect( world.removeRelation( TestRel,  sourceId, targetId ));
+  try std.testing.expect( world.removeComp(     TestComp, sourceId ));
+  try std.testing.expect( world.destroyEntity( sourceId ));
+
+  try std.testing.expect( world.eventManager.countAll() == 0 );
+}
+
+test "World emits registered generic entity component relation and trait events"
+{
+  const TestComp = struct
+  {
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const TestRel = struct
+  {
+    value : u32 = 0,
+  };
+  const Selectable = struct {};
 
   var world : World = .{};
   world.init( std.testing.allocator );
@@ -840,6 +1070,8 @@ test "World emits registered generic entity component and relation events"
   try std.testing.expect( world.registerEvent( evt.ComponentRemoved ));
   try std.testing.expect( world.registerEvent( evt.RelationAdded    ));
   try std.testing.expect( world.registerEvent( evt.RelationRemoved  ));
+  try std.testing.expect( world.registerEvent( evt.TraitApplied     ));
+  try std.testing.expect( world.registerEvent( evt.TraitRemoved     ));
 
   world.tick( .{ .baseTickIndex = 14 });
 
@@ -853,6 +1085,9 @@ test "World emits registered generic entity component and relation events"
   try std.testing.expect( world.registerRelation( TestRel ));
   try std.testing.expect( world.addRelation(    TestRel, sourceId, targetId, .{ .value = 2 }));
   try std.testing.expect( world.removeRelation( TestRel, sourceId, targetId ));
+  try std.testing.expect( world.registerTrait( Selectable ));
+  try std.testing.expect( world.applyTrait(    Selectable, sourceId ));
+  try std.testing.expect( world.removeTrait(   Selectable, sourceId ));
   try std.testing.expect( world.destroyEntity( sourceId ));
 
   const createdA = world.popEvent( evt.EntityCreated ).?;
@@ -861,6 +1096,8 @@ test "World emits registered generic entity component and relation events"
   const compRem  = world.popEvent( evt.ComponentRemoved ).?;
   const relAdd   = world.popEvent( evt.RelationAdded ).?;
   const relRem   = world.popEvent( evt.RelationRemoved ).?;
+  const traitAdd  = world.popEvent( evt.TraitApplied ).?;
+  const traitRem  = world.popEvent( evt.TraitRemoved ).?;
   const destroyed = world.popEvent( evt.EntityDestroyed ).?;
 
   try std.testing.expect( createdA.value.entityId == sourceId );
@@ -870,6 +1107,8 @@ test "World emits registered generic entity component and relation events"
   try std.testing.expect( relAdd.value.sourceId   == sourceId );
   try std.testing.expect( relAdd.value.targetId   == targetId );
   try std.testing.expect( relRem.value.sourceId   == sourceId );
+  try std.testing.expect( traitAdd.value.entityId == sourceId );
+  try std.testing.expect( traitRem.value.entityId == sourceId );
   try std.testing.expect( destroyed.value.entityId == sourceId );
 
   try std.testing.expect( createdA.meta.sequence       == 0  );
@@ -878,7 +1117,9 @@ test "World emits registered generic entity component and relation events"
   try std.testing.expect( compRem.meta.sequence        == 3  );
   try std.testing.expect( relAdd.meta.sequence         == 4  );
   try std.testing.expect( relRem.meta.sequence         == 5  );
-  try std.testing.expect( destroyed.meta.sequence      == 6  );
+  try std.testing.expect( traitAdd.meta.sequence       == 6  );
+  try std.testing.expect( traitRem.meta.sequence       == 7  );
+  try std.testing.expect( destroyed.meta.sequence      == 8  );
   try std.testing.expect( destroyed.meta.baseTickIndex.? == 14 );
 }
 

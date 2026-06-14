@@ -9,7 +9,7 @@ Active task slices belong in [todo.md](todo.md).
 
 `src/engine/world` owns the engine's simulation infrastructure. The current
 implementation is already beyond the original component-only foundation:
-entities, components, relations, and event queues are live. Several later
+entities, components, relations, traits, and event queues are live. Several later
 folders still contain placeholders for future systems.
 
 When this file disagrees with code, inspect code first and refresh this file.
@@ -24,6 +24,7 @@ The main runtime surface is `World` in `worldManager.zig`.
 * an `EntityIdRegistry`;
 * `CompManager`;
 * `RelationManager`;
+* `TraitManager`;
 * `EventManager`;
 * component-view generation tracking.
 
@@ -43,6 +44,7 @@ operations that attach or inspect facts reject dead entities.
 * rejects uninitialized, invalid, and dead ids;
 * removes relation facts for the entity first;
 * removes component facts for the entity after relation cleanup;
+* removes trait facts before invalidating the entity id;
 * removes the id from the live set;
 * emits `EntityDestroyed` when that event type is registered.
 
@@ -65,7 +67,7 @@ Current policies:
 * `.PACKED` for array-backed storage with an entity-to-row index;
 * `.SPARSE` for hash-map storage.
 
-Zero-sized component payloads are rejected. Use future traits/metaproperties for
+Zero-sized component payloads are rejected. Use traits/metaproperties for
 classification instead of empty marker components.
 
 World component APIs include:
@@ -129,6 +131,8 @@ Events are live as typed transient queues.
 * event metadata;
 * the plain Zig event payload.
 
+Event payload types must be structs. Dataless event structs are valid.
+
 `EventMeta` tracks:
 
 * monotonic event sequence;
@@ -149,10 +153,44 @@ World event APIs include:
 * `clearEvents`;
 * `getEventCount`.
 
-Generic event payloads currently include entity, component, and relation event
-types. Event queues are transient; retained event history is not implemented.
+Generic event payloads currently include entity, component, relation, and trait
+event types. Event queues are transient; retained event history is not
+implemented.
 
-## 8. Timing
+## 8. Traits
+
+Traits are live as dataless typed classification facts.
+
+`TraitSetFactory(TraitType)` stores entity-id presence only. Trait declarations
+must be empty zero-sized struct types. Field-bearing or payload-bearing trait
+types are rejected at compile time; per-entity data belongs in components.
+
+The generic engine trait example is:
+
+* `Persistent`, marking entities whose related facts should be save-relevant
+  once save/load exists.
+
+World trait APIs include:
+
+* `registerTrait`;
+* `unregisterTrait`;
+* `getTraitSet`;
+* `applyTrait`;
+* `hasTrait`;
+* `removeTrait`.
+
+Applying or removing a trait requires the entity to be live. Destroying an
+entity removes its trait rows before the entity id is invalidated. Generic
+trait events are emitted when those event queues are registered.
+
+Use these selection rules:
+
+* components for per-entity payload state;
+* relations for source-target facts between entities;
+* traits for dataless classification, flags, tags, and presence facts;
+* events for queued records that something happened.
+
+## 9. Timing
 
 `TickInfo` is the timing snapshot passed into World once per consumed engine
 base tick. It includes:
@@ -165,14 +203,13 @@ base tick. It includes:
 `World.tick(...)` begins event tick metadata for the base tick. World does not
 own base-tick pacing; that remains an engine timing responsibility.
 
-## 9. Placeholder Systems
+## 10. Placeholder Systems
 
 The following folders or files are currently placeholders or minimal notes:
 
 * `commands`;
 * `systems`;
 * `rules`;
-* `traits`;
 * `archetypes`;
 * `queries`;
 * `views` beyond component views;
@@ -182,13 +219,13 @@ The following folders or files are currently placeholders or minimal notes:
 
 These should not be described as complete systems until code and tests exist.
 
-## 10. Tilemap
+## 11. Tilemap
 
 The older tilemap path still lives under `src/engine/world/tilemap`. It is not
 the main fact-oriented World rework surface. Do not use tilemap code as proof
 that the new World relation/event/trait systems are complete.
 
-## 11. Boundaries
+## 12. Boundaries
 
 `engine/world` owns simulation facts and fact managers. It should not depend on
 game-specific concepts or rendering-specific behavior.
@@ -197,7 +234,7 @@ Rendering should read simulation facts through render adapters. Games own their
 domain-specific components, relations, events, traits, archetypes, systems, and
 views.
 
-## 12. Validation
+## 13. Validation
 
 Docs-only changes need no build.
 

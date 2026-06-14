@@ -17,49 +17,18 @@ The world rework has already landed:
 * relation stores with source/target indexes;
 * relation cardinality policies;
 * dataless relation facts queried by presence;
+* trait sets for dataless classification facts;
+* trait registration, apply/remove, presence query, and destruction cleanup;
 * typed transient event queues;
 * event metadata with sequence, tick order, base tick, and primary entity;
-* generic entity, component, and relation events;
+* generic entity, component, relation, and trait events;
+* `Persistent` as the first generic trait example;
 * `World.tick(...)` event tick metadata.
 
 The remaining work should build on those facts rather than re-plan them as
 future phases.
 
-## 2. Next - Reconcile Existing Fact Systems
-
-Goal: harden the entity/component/relation/event baseline before adding another
-major fact family.
-
-Required work:
-
-* audit World APIs against current tests and live game use;
-* ensure relation cleanup and component cleanup semantics are documented and
-  tested together through `World.destroyEntity()`;
-* ensure generic event queues are registered where games or tests depend on
-  emitted entity/component/relation events;
-* keep transient event queues queue-only for now; integrate bounded retained
-  history only after a concrete debug or rules/reactions use case needs it;
-* make cleanup functions log their own concrete failures through `log()`, while
-  manager-level cleanup results stay compact;
-* keep `CompView` component-only until broad query semantics exist.
-
-## 3. Next - Traits And Metaproperties
-
-Goal: add the canonical classification path before marker components or
-relation-shaped tags spread further.
-
-Required work:
-
-* define traits/metaproperties as dataless classification facts;
-* reject payload-bearing traits and keep per-entity data in components;
-* add typed trait registration, application, removal, and presence querying;
-* integrate trait cleanup before entity ids are invalidated by destruction;
-* emit generic trait events only when those event queues are registered;
-* provide `Persistent` as the first small generic trait example for future
-  save-relevant entities and their related facts;
-* document and enforce obvious component, relation, event, and trait misuse.
-
-## 4. Next - Broad Queries And Views
+## 2. Next - Broad Queries And Views
 
 Goal: let systems, UI, and debug tools inspect stored facts without mutating
 storage internals directly.
@@ -72,7 +41,7 @@ Required work:
   particles;
 * avoid creating hidden fact ownership inside query/view helpers.
 
-## 5. Later - Rules, Systems, And Commands
+## 3. Later - Rules, Systems, And Commands
 
 Goal: give games a clean path for executable simulation logic that observes
 facts and requests changes.
@@ -85,7 +54,7 @@ Required work:
 * keep the first generic example small and game-agnostic;
 * preserve explicit phase and event ordering.
 
-## 6. Later - Archetypes And Templates
+## 4. Later - Archetypes And Templates
 
 Goal: support reusable bundles of initial facts.
 
@@ -97,7 +66,7 @@ Required work:
   as facts;
 * provide one minimal generic example.
 
-## 7. Later - Scheduler
+## 5. Later - Scheduler
 
 Goal: run World logical work inside engine-owned base ticks.
 
@@ -110,7 +79,7 @@ Required work:
 * support delayed events and temporary rules;
 * avoid a competing `shouldTick()` loop inside World.
 
-## 8. Later - Particles And Effects
+## 6. Later - Particles And Effects
 
 Goal: add first-class effect infrastructure driven by world facts.
 
@@ -123,7 +92,7 @@ Required work:
 * migrate a concrete game proof only after generic events/rules/render pieces
   are stable.
 
-## 9. Later - Context
+## 7. Later - Context
 
 Goal: reserve the context path for save/load/replay-facing world state.
 
@@ -131,7 +100,7 @@ Do not wire `engine/world/context` into runtime code until reusable
 serialization/save-load primitives exist in `utils` and the base fact model is
 stable enough to describe.
 
-## 10. Implementation Constraints
+## 8. Implementation Constraints
 
 * Keep target design in `goals.md`.
 * Keep current facts in `reference.md`.

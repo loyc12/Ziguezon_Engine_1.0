@@ -40,7 +40,7 @@ pub fn getCompStorePolicy( comptime CompType : type ) CompStorePolicy
 // ================ COMPONENT STORE FUNCTIONS ================
 
 /// Resolves the concrete store type for a component payload.
-/// Empty marker components are rejected; use future traits for classification.
+/// Empty marker components are rejected; use traits for classification.
 pub fn CompStoreFactory( comptime CompType : type ) type
 {
   if( @sizeOf( CompType ) == 0 )

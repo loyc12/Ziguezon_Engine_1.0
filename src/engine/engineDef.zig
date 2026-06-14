@@ -96,6 +96,13 @@ pub const RelationKey          = rel.RelationKey;
 pub const RelationLimitPolicy  = rel.RelationLimitPolicy;
 pub const LinkedTo             = rel.LinkedTo;
 
+const trt  = @import( "world/traits/trait.zig" );
+const tmgr = @import( "world/traits/traitManager.zig" );
+
+pub const TraitSetFactory = trt.TraitSetFactory;
+pub const TraitManager    = tmgr.TraitManager;
+pub const Persistent      = trt.Persistent;
+
 const evt  = @import( "world/events/event.zig" );
 const eque = @import( "world/events/eventQueue.zig" );
 const emgr = @import( "world/events/eventManager.zig" );
@@ -113,6 +120,8 @@ pub const ComponentAdded   = evt.ComponentAdded;
 pub const ComponentRemoved = evt.ComponentRemoved;
 pub const RelationAdded    = evt.RelationAdded;
 pub const RelationRemoved  = evt.RelationRemoved;
+pub const TraitApplied     = evt.TraitApplied;
+pub const TraitRemoved     = evt.TraitRemoved;
 
 
 pub const baseComp = @import( "world/components/baseComps.zig" );
@@ -127,6 +136,8 @@ test "engine world declarations"
   utl.G_EPOCH = utl.getNow();
 
   std.testing.refAllDecls( worldMgr );
+  std.testing.refAllDecls( trt );
+  std.testing.refAllDecls( tmgr );
   std.testing.refAllDecls( evt );
   std.testing.refAllDecls( eque );
   std.testing.refAllDecls( emgr );
