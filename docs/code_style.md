@@ -126,6 +126,7 @@ switch( ng.state )
   - `force...` when scheduling restrictions are intentionally bypassed
   - `load...`, `render...`, `tick...`, and `delete...` for lifecycle operations
 - Suggest clearer names when existing names are ambiguous.
+- Use `get...` for const getters, and `getMut...` for mutable getters when adding new functions.
 
 ## Comments And Logging
 
