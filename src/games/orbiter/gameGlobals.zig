@@ -324,7 +324,7 @@ pub fn refreshOrbitParentCacheEntry( ng : *eng.Engine, bodyName : gdf.BodyName )
     return false;
   };
 
-  var iter = store.sourceIterator( bodyId );
+  var iter = store.getRelToSource( bodyId );
   const first = iter.next();
 
   if( bodyName == gdf.G_CONSTS.starBody )

@@ -72,3 +72,5 @@ Be sure to point out any points of tension that could be worked out.
 add RESTARTING state / flag to engine, allowing an automatic close-and-reopen
 
 tilemap rendering is way too slow
+
+rename accessors like getXxx to getMutXxx and getXxxConst to getXxx, to make mutability explicit

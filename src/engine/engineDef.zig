@@ -88,6 +88,10 @@ const view = @import( "world/views/view.zig" );
 pub const CompView         = view.CompView;
 pub const ComponentView    = view.CompView;
 
+const query = @import( "world/queries/query.zig" );
+
+pub const WorldQuery = query.WorldQuery;
+
 
 const rel  = @import( "world/relations/relation.zig" );
 
@@ -136,6 +140,7 @@ test "engine world declarations"
   utl.G_EPOCH = utl.getNow();
 
   std.testing.refAllDecls( worldMgr );
+  std.testing.refAllDecls( query    );
   std.testing.refAllDecls( trt      );
   std.testing.refAllDecls( tmgr     );
   std.testing.refAllDecls( evt      );

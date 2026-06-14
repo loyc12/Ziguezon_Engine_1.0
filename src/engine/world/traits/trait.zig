@@ -61,6 +61,21 @@ pub fn TraitSetFactory( comptime TraitType : type ) type
     const TypeName = @typeName( TraitType );
     const Set      = @This();
 
+    const EntityMap = std.AutoHashMap( EntityId, void );
+
+    /// Iterates entity ids that currently have this trait.
+    /// Yields ids by value and never exposes the mutable trait set.
+    pub const EntityIterator = struct
+    {
+      iter : EntityMap.KeyIterator,
+
+      pub fn next( self : *EntityIterator ) ?EntityId
+      {
+        const idPtr = self.iter.next() orelse return null;
+        return idPtr.*;
+      }
+    };
+
     alloc    : std.mem.Allocator              = undefined,
     entities : std.AutoHashMap( EntityId, void ) = undefined,
 
@@ -155,6 +170,18 @@ pub fn TraitSetFactory( comptime TraitType : type ) type
       }
 
       return self.entities.contains( entityId );
+    }
+
+    /// Returns a read-only iterator over entity ids with this trait.
+    pub fn getEntityIterator( self : *const Set ) ?EntityIterator
+    {
+      if( !self.isInit )
+      {
+        utl.log( .WARN, @src(), "Cannot iterate TraitSet for type {s} : uninitialized", .{ TypeName });
+        return null;
+      }
+
+      return .{ .iter = self.entities.keyIterator() };
     }
 
     /// Removes this trait from one entity during World destruction cleanup.

@@ -119,8 +119,20 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
       return null;
     }
 
+    /// Returns a read-only payload pointer for an entity id, or null.
+    pub fn getConst( self : *const CompStore, id : EntityId ) ?*const CompType
+    {
+      if( !self.isInit )
+      {
+        utl.log( .WARN, @src(), "Cannot inspect sparse CompStore for type {s} : uninitialized", .{ TypeName } );
+        return null;
+      }
+
+      return self.data.getPtr( id );
+    }
+
     /// Returns true when the entity id has a row in this store.
-    pub fn has( self : *CompStore, id : EntityId ) bool
+    pub fn has( self : *const CompStore, id : EntityId ) bool
     {
       if( !self.isInit )
       {
@@ -132,6 +144,12 @@ pub fn SparseCompStoreFactory( comptime CompType : type ) type
 
     /// Returns the underlying hash-map iterator over rows.
     pub fn iterator( self : *CompStore ) @TypeOf( self.data.iterator() )
+    {
+      return self.data.iterator();
+    }
+
+    /// Returns the underlying hash-map iterator without exposing mutable rows.
+    pub fn iteratorConst( self : *const CompStore ) @TypeOf( self.data.iterator() )
     {
       return self.data.iterator();
     }

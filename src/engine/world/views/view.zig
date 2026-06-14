@@ -4,6 +4,9 @@ const utl = @import( "utils" );
 const comp     = @import( "../components/component.zig" );
 const EntityId = @import( "../entity.zig" ).EntityId;
 
+// `CompView` stays intentionally component-only. Broad World inspection belongs
+// in `queries/query.zig`, while this file remains the narrow fast path for
+// repeated access to a known set of component stores.
 
 fn StoreTupleType( comptime CompTypes : anytype ) type
 {
@@ -89,7 +92,21 @@ pub fn CompView( comptime CompTypes : anytype ) type
     }
 
     /// Returns the cached store for one component type included in this view.
-    pub fn store( self : *View, comptime CompType : type ) *comp.CompStoreFactory( CompType )
+    pub fn getStore( self : *View, comptime CompType : type ) *comp.CompStoreFactory( CompType )
+    {
+      const fields = std.meta.fields( @TypeOf( CompTypes ));
+
+      inline for( fields )| field |
+      {
+        const ViewCompType = @field( CompTypes, field.name );
+        if( ViewCompType == CompType ){ return @field( self.stores, field.name ); }
+      }
+
+      @compileError( "ComponentView does not contain component type " ++ @typeName( CompType ));
+    }
+
+    /// Returns the cached store as read-only for one component type in this view.
+    pub fn getConstStore( self : *const View, comptime CompType : type ) *const comp.CompStoreFactory( CompType )
     {
       const fields = std.meta.fields( @TypeOf( CompTypes ));
 
@@ -105,19 +122,31 @@ pub fn CompView( comptime CompTypes : anytype ) type
     /// Looks up a component row through the cached store.
     pub inline fn get( self : *View, comptime CompType : type, id : EntityId ) ?*CompType
     {
-      return self.store( CompType ).get( id );
+      return self.getStore( CompType ).get( id );
+    }
+
+    /// Looks up a read-only component row through the cached store.
+    pub inline fn getConst( self : *const View, comptime CompType : type, id : EntityId ) ?*const CompType
+    {
+      return self.getConstStore( CompType ).getConst( id );
     }
 
     /// Tests whether an entity has the component row in the cached store.
-    pub inline fn has( self : *View, comptime CompType : type, id : EntityId ) bool
+    pub inline fn has( self : *const View, comptime CompType : type, id : EntityId ) bool
     {
-      return self.store( CompType ).has( id );
+      return self.getConstStore( CompType ).has( id );
     }
 
     /// Returns the iterator for one cached component store.
-    pub inline fn iterator( self : *View, comptime CompType : type ) @TypeOf( self.store( CompType ).iterator() )
+    pub inline fn getIterator( self : *View, comptime CompType : type ) @TypeOf( self.getStore( CompType ).iterator() )
     {
-      return self.store( CompType ).iterator();
+      return self.getStore( CompType ).iterator();
+    }
+
+    /// Returns the read-only iterator for one cached component store.
+    pub inline fn getConstIterator( self : *const View, comptime CompType : type ) @TypeOf( self.getConstStore( CompType ).iteratorConst() )
+    {
+      return self.getConstStore( CompType ).iteratorConst();
     }
   };
 }

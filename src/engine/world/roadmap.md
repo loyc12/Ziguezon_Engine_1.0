@@ -23,25 +23,14 @@ The world rework has already landed:
 * event metadata with sequence, tick order, base tick, and primary entity;
 * generic entity, component, relation, and trait events;
 * `Persistent` as the first generic trait example;
-* `World.tick(...)` event tick metadata.
+* `World.tick(...)` event tick metadata;
+* read-only component, relation, event, and trait inspection helpers;
+* `WorldQuery` as the current transient read-only query facade.
 
 The remaining work should build on those facts rather than re-plan them as
 future phases.
 
-## 2. Next - Broad Queries And Views
-
-Goal: let systems, UI, and debug tools inspect stored facts without mutating
-storage internals directly.
-
-Required work:
-
-* keep current `CompView` as the narrow component fast path;
-* add query helpers only where there is a concrete system, game, or debug need;
-* cover components, relations, events, and traits before touching archetypes or
-  particles;
-* avoid creating hidden fact ownership inside query/view helpers.
-
-## 3. Later - Rules, Systems, And Commands
+## 2. Next - Rules, Systems, And Commands
 
 Goal: give games a clean path for executable simulation logic that observes
 facts and requests changes.
@@ -54,7 +43,7 @@ Required work:
 * keep the first generic example small and game-agnostic;
 * preserve explicit phase and event ordering.
 
-## 4. Later - Archetypes And Templates
+## 3. Later - Archetypes And Templates
 
 Goal: support reusable bundles of initial facts.
 
@@ -62,11 +51,12 @@ Required work:
 
 * define archetype/template declarations;
 * allow spawning component, relation, trait, and event initialization bundles;
+* add archetype query integration only after the stored archetype shape exists;
 * keep archetype definitions distinct from entity rows unless explicitly stored
   as facts;
 * provide one minimal generic example.
 
-## 5. Later - Scheduler
+## 4. Later - Scheduler
 
 Goal: run World logical work inside engine-owned base ticks.
 
@@ -79,7 +69,7 @@ Required work:
 * support delayed events and temporary rules;
 * avoid a competing `shouldTick()` loop inside World.
 
-## 6. Later - Particles And Effects
+## 5. Later - Particles And Effects
 
 Goal: add first-class effect infrastructure driven by world facts.
 
@@ -92,7 +82,7 @@ Required work:
 * migrate a concrete game proof only after generic events/rules/render pieces
   are stable.
 
-## 7. Later - Context
+## 6. Later - Context
 
 Goal: reserve the context path for save/load/replay-facing world state.
 
@@ -100,7 +90,7 @@ Do not wire `engine/world/context` into runtime code until reusable
 serialization/save-load primitives exist in `utils` and the base fact model is
 stable enough to describe.
 
-## 8. Implementation Constraints
+## 7. Implementation Constraints
 
 * Keep target design in `goals.md`.
 * Keep current facts in `reference.md`.

@@ -104,6 +104,14 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       value_ptr : ?*RelType = null,
     };
 
+    /// Read-only relation iterator item used by query helpers.
+    /// `value_ptr` is null for dataless relation facts.
+    pub const ConstEntry = struct
+    {
+      key       : RelationKey,
+      value_ptr : ?*const RelType = null,
+    };
+
     /// Iterates relations from one fixed source or one fixed target.
     pub const Iterator = struct
     {
@@ -114,6 +122,44 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       index   : usize           = 0,
 
       pub fn next( self : *Iterator ) ?Entry
+      {
+        while( self.index < self.links.len )
+        {
+          const linkId = self.links[ self.index ];
+          self.index += 1;
+
+          const key = switch( self.mode )
+          {
+            .SOURCE => RelationKey.init( self.fixedId, linkId       ),
+            .TARGET => RelationKey.init( linkId,       self.fixedId ),
+          };
+
+          if( !self.store.data.contains( key )){ continue; }
+
+          if( isDatalessRelation( RelType ))
+          {
+            return .{ .key = key };
+          }
+          else
+          {
+            return .{ .key = key, .value_ptr = self.store.data.getPtr( key ) };
+          }
+        }
+
+        return null;
+      }
+    };
+
+    /// Iterates relations from one fixed source or target without mutable payload access.
+    pub const ConstIterator = struct
+    {
+      store   : *const RelStore,
+      links   : []const EntityId = &[_]EntityId{},
+      fixedId : EntityId        = 0,
+      mode    : IteratorMode    = .SOURCE,
+      index   : usize           = 0,
+
+      pub fn next( self : *ConstIterator ) ?ConstEntry
       {
         while( self.index < self.links.len )
         {
@@ -274,6 +320,24 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
       return self.data.getPtr( RelationKey.init( sourceId, targetId ));
     }
 
+    /// Returns a read-only payload pointer for an exact relation row.
+    /// Dataless relations must use `has`.
+    pub fn getConst( self : *const RelStore, sourceId : EntityId, targetId : EntityId ) ?*const RelType
+    {
+      if( isDatalessRelation( RelType ))
+      {
+        @compileError( "Relation type " ++ TypeName ++ " has zero size. Use hasRelation / has on dataless relation facts instead of getRelation / get." );
+      }
+
+      if( !self.isInit )
+      {
+        utl.log( .WARN, @src(), "Cannot inspect relation row for type {s} : uninitialized", .{ TypeName });
+        return null;
+      }
+
+      return self.data.getPtr( RelationKey.init( sourceId, targetId ));
+    }
+
     /// Removes every row where the entity is either source or target.
     pub fn removeEntity( self : *RelStore, entityId : EntityId ) RelationCleanupResult
     {
@@ -336,7 +400,18 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     }
 
     /// Iterates rows where `sourceId` is the source endpoint.
-    pub fn sourceIterator( self : *RelStore, sourceId : EntityId ) Iterator
+    pub fn getRelToSource( self : *RelStore, sourceId : EntityId ) Iterator
+    {
+      if( self.sourceIndex.getPtr( sourceId ))| links |
+      {
+        return .{ .store = self, .links = links.items, .fixedId = sourceId, .mode = .SOURCE };
+      }
+
+      return .{ .store = self, .fixedId = sourceId, .mode = .SOURCE };
+    }
+
+    /// Iterates rows where `sourceId` is the source endpoint without mutable payload access.
+    pub fn getConstRelToSource( self : *const RelStore, sourceId : EntityId ) ConstIterator
     {
       if( self.sourceIndex.getPtr( sourceId ))| links |
       {
@@ -347,7 +422,18 @@ pub fn RelationStoreFactory( comptime RelType : type ) type
     }
 
     /// Iterates rows where `targetId` is the target endpoint.
-    pub fn targetIterator( self : *RelStore, targetId : EntityId ) Iterator
+    pub fn getRelToTarget( self : *RelStore, targetId : EntityId ) Iterator
+    {
+      if( self.targetIndex.getPtr( targetId ))| links |
+      {
+        return .{ .store = self, .links = links.items, .fixedId = targetId, .mode = .TARGET };
+      }
+
+      return .{ .store = self, .fixedId = targetId, .mode = .TARGET };
+    }
+
+    /// Iterates rows where `targetId` is the target endpoint without mutable payload access.
+    pub fn getConstRelToTarget( self : *const RelStore, targetId : EntityId ) ConstIterator
     {
       if( self.targetIndex.getPtr( targetId ))| links |
       {
@@ -532,7 +618,7 @@ test "RelationStore source and target iterators use indexes"
 
   var sourceCount : usize = 0;
   var sourceSum   : u32   = 0;
-  var srcIter = store.sourceIterator( 1 );
+  var srcIter = store.getRelToSource( 1 );
   while( srcIter.next() )| entry |
   {
     sourceCount += 1;
@@ -542,7 +628,7 @@ test "RelationStore source and target iterators use indexes"
 
   var targetCount : usize = 0;
   var targetSum   : u32   = 0;
-  var tgtIter = store.targetIterator( 2 );
+  var tgtIter = store.getRelToTarget( 2 );
   while( tgtIter.next() )| entry |
   {
     targetCount += 1;
@@ -574,7 +660,7 @@ test "RelationStore remove repairs all indexes"
   try std.testing.expect( !store.has(   1, 2 ));
 
   var sourceCount : usize = 0;
-  var srcIter = store.sourceIterator( 1 );
+  var srcIter = store.getRelToSource( 1 );
   while( srcIter.next() )| entry |
   {
     sourceCount += 1;
@@ -582,7 +668,7 @@ test "RelationStore remove repairs all indexes"
   }
 
   var targetCount : usize = 0;
-  var tgtIter = store.targetIterator( 2 );
+  var tgtIter = store.getRelToTarget( 2 );
   while( tgtIter.next() )| entry |
   {
     targetCount += 1;

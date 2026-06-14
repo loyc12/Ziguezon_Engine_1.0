@@ -79,6 +79,7 @@ World component APIs include:
 * `getCompViewGeneration`;
 * `addComp`;
 * `getComp`;
+* `getCompConst`;
 * `hasComp`;
 * `removeComp`.
 
@@ -91,10 +92,39 @@ registered.
 cache store pointers and use `World.viewGeneration` to detect invalidation
 after component store registration changes.
 
-Current views are component-only. They are not the future broad query system for
-relations, events, traits, archetypes, or history.
+Views remain component-only. They are not the broad query surface for relations,
+events, traits, archetypes, or history.
 
-## 6. Relations
+Read-only component view helpers include `getConst` and `iteratorConst`.
+Mutable `get` and `iterator` remain available for systems that intentionally
+edit component rows.
+
+## 6. Queries
+
+`WorldQuery` in `queries/query.zig` is the broad read-only inspection facade.
+It is transient and wraps an initialized `World`; it does not own facts, cache
+mutable store state, retain event history, or replace `CompView`.
+
+Current query helpers cover:
+
+* entity liveness through `hasEntity`;
+* component presence and read-only point lookup through `hasComp` and
+  `getComp`;
+* component view validation through `isCompViewValid`, `hasViewComp`, and
+  `getViewComp`;
+* relation presence, read-only payload lookup, and source/target traversal
+  through `hasRelation`, `getRelation`, `getRelationsFrom`, and
+  `getRelationsTo`;
+* trait presence and read-only entity-id traversal through `hasTrait` and
+  `getTraitEntityIterator`;
+* event count, indexed peek, and queue traversal through `getEventCount`,
+  `peekEvent`, and `getEventIterator`.
+
+Unsupported broad-query shapes are rejected explicitly by
+`rejectUnsupportedBroadQuery`; archetype, particle/effect, command, rule,
+system, and save/load query integration are still outside the live surface.
+
+## 7. Relations
 
 Relations are live as typed source-target fact stores.
 
@@ -115,14 +145,17 @@ World relation APIs include:
 * `getRelationStore`;
 * `addRelation`;
 * `getRelation`;
+* `getRelationConst`;
 * `hasRelation`;
-* `removeRelation`.
+* `removeRelation`;
+* `getRelationsFrom`;
+* `getRelationsTo`.
 
 Adding a relation requires both endpoints to be live. Removing or destroying an
 entity cleans relation rows that reference it. Generic relation events are
 emitted when those event queues are registered.
 
-## 7. Events
+## 8. Events
 
 Events are live as typed transient queues.
 
@@ -150,6 +183,8 @@ World event APIs include:
 * `getEventQueue`;
 * `emitEvent`;
 * `popEvent`;
+* `peekEvent`;
+* `getEventIterator`;
 * `clearEvents`;
 * `getEventCount`.
 
@@ -157,7 +192,7 @@ Generic event payloads currently include entity, component, relation, and trait
 event types. Event queues are transient; retained event history is not
 implemented.
 
-## 8. Traits
+## 9. Traits
 
 Traits are live as dataless typed classification facts.
 
@@ -177,7 +212,8 @@ World trait APIs include:
 * `getTraitSet`;
 * `applyTrait`;
 * `hasTrait`;
-* `removeTrait`.
+* `removeTrait`;
+* `getTraitEntityIterator`.
 
 Applying or removing a trait requires the entity to be live. Destroying an
 entity removes its trait rows before the entity id is invalidated. Generic
@@ -190,7 +226,7 @@ Use these selection rules:
 * traits for dataless classification, flags, tags, and presence facts;
 * events for queued records that something happened.
 
-## 9. Timing
+## 10. Timing
 
 `TickInfo` is the timing snapshot passed into World once per consumed engine
 base tick. It includes:
@@ -203,7 +239,7 @@ base tick. It includes:
 `World.tick(...)` begins event tick metadata for the base tick. World does not
 own base-tick pacing; that remains an engine timing responsibility.
 
-## 10. Placeholder Systems
+## 11. Placeholder Systems
 
 The following folders or files are currently placeholders or minimal notes:
 
@@ -211,8 +247,6 @@ The following folders or files are currently placeholders or minimal notes:
 * `systems`;
 * `rules`;
 * `archetypes`;
-* `queries`;
-* `views` beyond component views;
 * `scheduler`;
 * `particles`;
 * `context`.

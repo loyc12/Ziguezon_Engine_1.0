@@ -189,10 +189,10 @@ pub const EventManager = struct
   }
 
   /// Counts queued records for one event type.
-  pub fn count( self : *EventManager, comptime EventType : type ) usize
+  pub fn getEventCount( self : *EventManager, comptime EventType : type ) usize
   {
     const queue = self.getQueue( EventType ) orelse return 0;
-    return queue.count();
+    return queue.getEventCount();
   }
 
   /// Clears every registered event queue without unregistering any type.
@@ -209,7 +209,7 @@ pub const EventManager = struct
   }
 
   /// Counts queued records across every registered event queue.
-  pub fn countAll( self : *EventManager ) usize
+  pub fn getToalEvetnCount( self : *EventManager ) usize
   {
     if( !self.isInit ){ return 0; }
 
@@ -279,7 +279,7 @@ pub const EventManager = struct
       fn call( queuePtr : *anyopaque ) usize
       {
         const queue : *evtQueue.EventQueueFactory( EventType ) = @ptrCast( @alignCast( queuePtr ));
-        return queue.count();
+        return queue.getEventCount();
       }
     }.call;
   }
@@ -326,7 +326,7 @@ test "EventManager emits pops and preserves global metadata order"
 
   try std.testing.expect( manager.emit( TestEvent, .{ .entityId = 11, .value = 10 }));
   try std.testing.expect( manager.emit( TestEvent, .{ .entityId = 12, .value = 20 }));
-  try std.testing.expect( manager.count( TestEvent ) == 2 );
+  try std.testing.expect( manager.getEventCount( TestEvent ) == 2 );
 
   const first  = manager.pop( TestEvent ).?;
   const second = manager.pop( TestEvent ).?;
@@ -360,14 +360,14 @@ test "EventManager clears typed and all queues"
   try std.testing.expect( manager.register( EventB ));
   try std.testing.expect( manager.emit( EventA, .{ .value = 1 }));
   try std.testing.expect( manager.emit( EventB, .{ .value = 2 }));
-  try std.testing.expect( manager.countAll() == 2 );
+  try std.testing.expect( manager.getToalEvetnCount() == 2 );
 
   try std.testing.expect( manager.clear( EventA ));
-  try std.testing.expect( manager.count( EventA ) == 0 );
-  try std.testing.expect( manager.count( EventB ) == 1 );
+  try std.testing.expect( manager.getEventCount( EventA ) == 0 );
+  try std.testing.expect( manager.getEventCount( EventB ) == 1 );
 
   manager.clearAll();
-  try std.testing.expect( manager.countAll() == 0 );
+  try std.testing.expect( manager.getToalEvetnCount() == 0 );
 }
 
 test "EventManager rejects uninitialized and unregistered operations"
@@ -407,5 +407,5 @@ test "EventManager deinit releases registered queues"
 
   manager.deinit();
   try std.testing.expect( !manager.isInit );
-  try std.testing.expect( manager.countAll() == 0 );
+  try std.testing.expect( manager.getToalEvetnCount() == 0 );
 }

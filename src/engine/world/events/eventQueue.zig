@@ -15,6 +15,23 @@ pub fn EventQueueFactory( comptime EventType : type ) type
     const Queue    = @This();
     const Record   = evt.EventRecord( EventType );
 
+    /// Iterates queued records without popping them.
+    /// The iterator becomes stale when the queue is cleared, popped, or deinitialized.
+    pub const ConstIterator = struct
+    {
+      records : []const Record = &[_]Record{},
+      index   : usize          = 0,
+
+      pub fn next( self : *ConstIterator ) ?*const Record
+      {
+        if( self.index >= self.records.len ){ return null; }
+
+        const index = self.index;
+        self.index += 1;
+        return &self.records[ index ];
+      }
+    };
+
     alloc   : std.mem.Allocator       = undefined,
     records : std.ArrayList( Record ) = .empty,
 
@@ -112,11 +129,36 @@ pub fn EventQueueFactory( comptime EventType : type ) type
       return self.records.orderedRemove( 0 );
     }
 
+    /// Returns a read-only record pointer without removing it.
+    pub fn peek( self : *const Queue, index : usize ) ?*const Record
+    {
+      if( !self.isInit )
+      {
+        utl.log( .WARN, @src(), "Cannot inspect EventRecord for type {s} : EventQueue is uninitialized", .{ TypeName });
+        return null;
+      }
+      if( index >= self.records.items.len ){ return null; }
+
+      return &self.records.items[ index ];
+    }
+
     /// Returns the number of queued records.
-    pub inline fn count( self : *const Queue ) usize
+    pub inline fn getEventCount( self : *const Queue ) usize
     {
       if( !self.isInit ){ return 0; }
       return self.records.items.len;
+    }
+
+    /// Returns a read-only iterator over currently queued records.
+    pub fn getIteratorConst( self : *const Queue ) ConstIterator
+    {
+      if( !self.isInit )
+      {
+        utl.log( .WARN, @src(), "Cannot inspect EventQueue for type {s} : uninitialized", .{ TypeName });
+        return .{};
+      }
+
+      return .{ .records = self.records.items };
     }
 
     /// Drops queued records while keeping allocated capacity for reuse.
@@ -149,7 +191,7 @@ test "EventQueue push pop preserves insertion order"
 
   try std.testing.expect( queue.push( .{ .value = 10 }));
   try std.testing.expect( queue.push( .{ .value = 20 }));
-  try std.testing.expect( queue.count() == 2 );
+  try std.testing.expect( queue.getEventCount() == 2 );
 
   const first  = queue.pop().?;
   const second = queue.pop().?;
@@ -172,11 +214,11 @@ test "EventQueue supports empty pop clear and dataless facts"
   try std.testing.expect( queue.pop() == null );
   try std.testing.expect( queue.push( .{} ));
   try std.testing.expect( queue.push( .{} ));
-  try std.testing.expect( queue.count() == 2 );
+  try std.testing.expect( queue.getEventCount() == 2 );
 
   queue.clear();
 
-  try std.testing.expect( queue.count() == 0 );
+  try std.testing.expect( queue.getEventCount() == 0 );
   try std.testing.expect( queue.pop() == null );
 }
 
@@ -194,5 +236,5 @@ test "EventQueue deinit releases storage"
 
   queue.deinit();
   try std.testing.expect( !queue.isInit );
-  try std.testing.expect( queue.count() == 0 );
+  try std.testing.expect( queue.getEventCount() == 0 );
 }

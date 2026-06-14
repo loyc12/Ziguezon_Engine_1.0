@@ -214,6 +214,16 @@ pub const World = struct
     return store.get( entityId );
   }
 
+  /// Returns a read-only component pointer for a live entity, or null.
+  /// Query helpers use this path so inspection code cannot mutate component rows.
+  pub inline fn getCompConst( self : *World, comptime CompType : type, entityId : EntityId ) ?*const CompType
+  {
+    if( !self.isEntityAlive( entityId )){ return null; }
+
+    const store = self.getCompStore( CompType ) orelse return null;
+    return store.getConst( entityId );
+  }
+
   /// Tests whether a live entity currently has a component row of this type.
   pub inline fn hasComp( self : *World, comptime CompType : type, entityId : EntityId ) bool
   {
@@ -285,6 +295,21 @@ pub const World = struct
     return store.get( sourceId, targetId );
   }
 
+  /// Returns a read-only payload pointer for a source-target relation.
+  /// Dataless relation facts must use `hasRelation` instead.
+  pub inline fn getRelationConst( self : *World, comptime RelType : type, sourceId : EntityId, targetId : EntityId ) ?*const RelType
+  {
+    if( rel.isDatalessRelation( RelType ))
+    {
+      @compileError( "Relation type " ++ @typeName( RelType ) ++ " has zero size. Use hasRelation on dataless relation facts instead of getRelation." );
+    }
+
+    if( !self.areEntitiesAlive( sourceId, targetId )){ return null; }
+
+    const store = self.getRelationStore( RelType ) orelse return null;
+    return store.getConst( sourceId, targetId );
+  }
+
   /// Tests whether a source-target relation fact exists.
   /// This is the correct lookup API for dataless relation facts.
   pub inline fn hasRelation( self : *World, comptime RelType : type, sourceId : EntityId, targetId : EntityId ) bool
@@ -305,6 +330,26 @@ pub const World = struct
 
     self.emitRegisteredEvent( evt.RelationRemoved, .{ .sourceId = sourceId, .targetId = targetId, .relationTypeName = @typeName( RelType )});
     return true;
+  }
+
+  /// Iterates relation rows where `sourceId` is the source endpoint.
+  /// Returns null for uninitialized Worlds, dead sources, or unregistered relation stores.
+  pub inline fn getRelationsFrom( self : *World, comptime RelType : type, sourceId : EntityId ) ?rel.RelationStoreFactory( RelType ).ConstIterator
+  {
+    if( !self.isEntityAlive( sourceId )){ return null; }
+
+    const store = self.getRelationStore( RelType ) orelse return null;
+    return store.sourceIteratorConst( sourceId );
+  }
+
+  /// Iterates relation rows where `targetId` is the target endpoint.
+  /// Returns null for uninitialized Worlds, dead targets, or unregistered relation stores.
+  pub inline fn getRelationsTo( self : *World, comptime RelType : type, targetId : EntityId ) ?rel.RelationStoreFactory( RelType ).ConstIterator
+  {
+    if( !self.isEntityAlive( targetId )){ return null; }
+
+    const store = self.getRelationStore( RelType ) orelse return null;
+    return store.targetIteratorConst( targetId );
   }
 
 
@@ -362,6 +407,16 @@ pub const World = struct
     return true;
   }
 
+  /// Iterates live entity ids that currently have a trait.
+  /// Returns null when the World or trait set is unavailable.
+  pub inline fn getTraitEntityIterator( self : *World, comptime TraitType : type ) ?trt.TraitSetFactory( TraitType ).EntityIterator
+  {
+    if( !self.isInit ){ return null; }
+
+    const set = self.getTraitSet( TraitType ) orelse return null;
+    return set.entityIterator();
+  }
+
 
   // ================================ OWNED EVENT FUNCTIONS ================================
 
@@ -404,6 +459,25 @@ pub const World = struct
     return self.eventManager.pop( EventType );
   }
 
+  /// Returns a read-only queued event record by queue index without popping it.
+  pub inline fn peekEvent( self : *World, comptime EventType : type, index : usize ) ?*const evt.EventRecord( EventType )
+  {
+    if( !self.isInit ){ return null; }
+
+    const queue = self.getEventQueue( EventType ) orelse return null;
+    return queue.peek( index );
+  }
+
+  /// Iterates queued event records without popping them.
+  /// The returned iterator is transient and becomes stale when the queue changes.
+  pub inline fn getEventIterator( self : *World, comptime EventType : type ) ?evtQue.EventQueueFactory( EventType ).ConstIterator
+  {
+    if( !self.isInit ){ return null; }
+
+    const queue = self.getEventQueue( EventType ) orelse return null;
+    return queue.getIteratorConst();
+  }
+
   /// Clears queued records for one event type without unregistering it.
   pub inline fn clearEvents( self : *World, comptime EventType : type ) bool
   {
@@ -413,7 +487,7 @@ pub const World = struct
   /// Returns the number of queued records for one event type.
   pub inline fn getEventCount( self : *World, comptime EventType : type ) usize
   {
-    return self.eventManager.count( EventType );
+    return self.eventManager.getEventCount( EventType );
   }
 
 
@@ -1043,7 +1117,7 @@ test "World leaves generic entity component relation and trait events silent whe
   try std.testing.expect( world.removeComp(     TestComp, sourceId ));
   try std.testing.expect( world.destroyEntity( sourceId ));
 
-  try std.testing.expect( world.eventManager.countAll() == 0 );
+  try std.testing.expect( world.eventManager.getToalEvetnCount() == 0 );
 }
 
 test "World emits registered generic entity component relation and trait events"

@@ -83,7 +83,7 @@ pub const Tilemap = struct
   pub inline fn isInit(   self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.IS_INIT ); }
   pub inline fn isActive( self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.ACTIVE  ); }
 
-  pub inline fn viewDBG(  self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.DEBUG   ); }
+  pub inline fn debugDrawable( self : *const Tilemap ) bool { return self.hasFlag( TilemapFlags.DEBUG ); }
 
 
   // ================ CHECKERS ================
@@ -487,7 +487,7 @@ pub const Tilemap = struct
     tlmpShape.drawTileShape( self, tile, viewBox );
   }
 
-  pub fn drawTilemap( self : *const Tilemap ) void
+  pub fn drawSelf( self : *const Tilemap ) void
   {
     utl.log( .TRACE, @src(), "Drawing Tilemap {d} at position {d}:{d} with scale {d}:{d}", .{ self.id, self.mapPos.x, self.mapPos.y, self.mapSize.x, self.mapSize.y });
 

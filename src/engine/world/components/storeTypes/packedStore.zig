@@ -25,6 +25,13 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       value_ptr : *CompType,
     };
 
+    /// Read-only iterator item for query helpers and inspection UIs.
+    pub const ConstEntry = struct
+    {
+      key_ptr   : *const EntityId,
+      value_ptr : *const CompType,
+    };
+
     /// Iterates current packed rows in storage order.
     /// Storage order may change after removals.
     pub const Iterator = struct
@@ -33,6 +40,26 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       index : usize = 0,
 
       pub fn next( self : *Iterator ) ?Entry
+      {
+        if( self.index >= self.store.entityIds.items.len ){ return null; }
+
+        const index = self.index;
+        self.index += 1;
+
+        return .{
+          .key_ptr   = &self.store.entityIds.items[ index ],
+          .value_ptr = &self.store.values.items[ index ],
+        };
+      }
+    };
+
+    /// Iterates current packed rows without exposing mutable component payloads.
+    pub const ConstIterator = struct
+    {
+      store : *const CompStore,
+      index : usize = 0,
+
+      pub fn next( self : *ConstIterator ) ?ConstEntry
       {
         if( self.index >= self.store.entityIds.items.len ){ return null; }
 
@@ -181,8 +208,21 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
       return &self.values.items[ index ];
     }
 
+    /// Returns a read-only payload pointer for an entity id, or null.
+    pub fn getConst( self : *const CompStore, id : EntityId ) ?*const CompType
+    {
+      if( !self.isInit )
+      {
+        utl.log( .WARN, @src(), "Cannot inspect packed CompStore for type {s} : uninitialized", .{ TypeName } );
+        return null;
+      }
+
+      const index = self.indices.get( id ) orelse return null;
+      return &self.values.items[ index ];
+    }
+
     /// Returns true when the entity id has a row in this store.
-    pub fn has( self : *CompStore, id : EntityId ) bool
+    pub fn has( self : *const CompStore, id : EntityId ) bool
     {
       if( !self.isInit )
       {
@@ -194,6 +234,12 @@ pub fn PackedCompStoreFactory( comptime CompType : type ) type
 
     /// Returns an iterator over packed rows.
     pub fn iterator( self : *CompStore ) Iterator
+    {
+      return .{ .store = self };
+    }
+
+    /// Returns a read-only iterator over packed rows.
+    pub fn iteratorConst( self : *const CompStore ) ConstIterator
     {
       return .{ .store = self };
     }
