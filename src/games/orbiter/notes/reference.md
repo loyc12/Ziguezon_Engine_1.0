@@ -273,10 +273,17 @@ Current resources:
 * `PART`.
 
 Resource metrics include mass, decay rate, deprecated growth rate, storage rate,
-capacity-resource flag, transportability flag, base price, price elasticity, and
-price dampening. `LABOUR` is the first capacity-like, non-transportable
-resource and stores through `HOUSING`; ordinary resources currently store
-through `DEPOT`.
+capacity-resource flag, stockpiled-resource flag, transportability flag,
+access-pricing prep flag, base price, price elasticity, and price dampening.
+`LABOUR` is the first capacity-like, non-transportable, access-priced prep
+resource and stores through `HOUSING`; ordinary stockpiled resources store
+through the shared `DEPOT` pool.
+
+`ResState.LIMIT` remains per-resource for compatibility. For shared-depot
+resources it now means the maximum that resource could hold if the current
+shared depot were dedicated to it. Actual depot usage is aggregate storage use:
+`COUNT * STORE_RATE` summed across stockpiled resources. `LABOUR` does not
+consume depot capacity.
 
 Current population types:
 
@@ -312,6 +319,11 @@ Current industries:
 Industry metrics include mass, area cost, construction effort cost, and
 pollution. Industry resource matrices define operational consumption,
 operational production, `PART` build cost, and `PART` maintenance cost.
+
+Industry data also owns a temporary Phase 2-facing extractable accessibility
+grid keyed by body and resource. It currently declares equal placeholder `ORE`
+accessibility for Terra, Luna, and Venus; no Luna mineral advantage or Venus
+food-production tuning is active yet.
 
 Known data caveat: `IndMetricEnum.CNST_COST` exists, but the industry
 `loadIndustryData()` build-cost section currently writes `.AREA_COST` instead
@@ -388,7 +400,8 @@ The solver updates:
 * industry activity from target and resource access;
 * resource consumption and decay;
 * resource production;
-* resource stock clamps;
+* resource stock clamps, including shared `DEPOT` overflow for ordinary
+  stockpiled resources;
 * resource prices from flow demand/supply;
 * population finances and savings;
 * industry finances, savings, and next-tick activity targets;
@@ -410,6 +423,11 @@ Stubbed or inactive solver surfaces include:
 
 `debugTestEcon()` and `testResFlowInvariant()` exist as validation helpers.
 The invariant helper is not called in the normal phase order.
+
+Overflow waste is tracked in the solver's transient `ResStockEnum.DESTR` lane
+and is shown in resource logs. Shared-depot overflow is currently distributed
+by current storage use; production-share proportional waste is deferred until
+the later pipeline pass ordering exists.
 
 ## 11. Build Queue
 

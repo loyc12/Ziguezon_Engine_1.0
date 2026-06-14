@@ -689,6 +689,7 @@ pub fn debugCheckDataInit() bool
   if( !popl_d.popResMetricTable.isInit ){ return false; }
   if( !nfrs_d.infResMetricTable.isInit ){ return false; }
   if( !ndst_d.indResMetricTable.isInit ){ return false; }
+  if( !ndst_d.extractableAccessData.isInit ){ return false; }
 
   if( !popl_d.popMetricData.isInit ){ return false; }
   if( !nfrs_d.infMetricData.isInit ){ return false; }

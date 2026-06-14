@@ -40,9 +40,24 @@ pub const ResType = enum( u8 )
     return self.getMetric_f64( .IS_CAPACITY ) > 0.5;
   }
 
+  pub inline fn isStockpiled( self : ResType ) bool
+  {
+    return self.getMetric_f64( .IS_STOCKPILED ) > 0.5;
+  }
+
   pub inline fn isTransportable( self : ResType ) bool
   {
     return self.getMetric_f64( .IS_TRANSPORTABLE ) > 0.5;
+  }
+
+  pub inline fn usesAccessPricing( self : ResType ) bool
+  {
+    return self.getMetric_f64( .PRICE_FROM_ACCESS ) > 0.5;
+  }
+
+  pub inline fn usesSharedDepot( self : ResType ) bool
+  {
+    return self.isStockpiled() and self.getInfStore() == .DEPOT;
   }
 
   pub fn getMetric_f32( self : ResType, metric : ResMetricEnum ) f32
@@ -77,8 +92,10 @@ pub const ResMetricEnum = enum( u8 )
   GROWTH_RATE, // Natural growth ( natural bounty ) // NOTE : deprecated for now : no natural growth occurs
   STORE_RATE,  // Units of space taken per res in their respective InfStore
 
-  IS_CAPACITY,      // Capacity-like resources are availability-priced local capability.
-  IS_TRANSPORTABLE, // Trade/route prep flag; capacity resources should not move.
+  IS_CAPACITY,          // Capacity-like resources are local capability, not ordinary stock.
+  IS_STOCKPILED,        // Stockpiled resources consume ordinary shared storage.
+  IS_TRANSPORTABLE,     // Trade/route prep flag; capacity resources should not move.
+  PRICE_FROM_ACCESS,    // Phase 1B prep: price from availability instead of stock flow.
 
   PRICE_BASE,  // Base cost per unit
   PRICE_ELAS,  // Price variation elasticity exponent
@@ -120,11 +137,14 @@ pub fn loadResourceData() void
   {
     const resT = ResType.fromIdx( r );
 
+    resMetricData.set( resT, .IS_STOCKPILED,    1.0 );
     resMetricData.set( resT, .IS_TRANSPORTABLE, 1.0 );
   }
 
-  resMetricData.set( .LABOUR, .IS_CAPACITY,      1.0 );
-  resMetricData.set( .LABOUR, .IS_TRANSPORTABLE, 0.0 );
+  resMetricData.set( .LABOUR, .IS_CAPACITY,       1.0 );
+  resMetricData.set( .LABOUR, .IS_STOCKPILED,     0.0 );
+  resMetricData.set( .LABOUR, .IS_TRANSPORTABLE,  0.0 );
+  resMetricData.set( .LABOUR, .PRICE_FROM_ACCESS, 1.0 );
 
 
   // ================================ MASS ================================

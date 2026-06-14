@@ -117,11 +117,20 @@ Validation targets:
 
 ### 4.2 Resource And Capacity Model
 
-Initial Phase 1A prep is complete:
+Implemented:
 
 * add the resource metadata needed to distinguish ordinary resources from
   capacity resources;
 * mark capacity resources as non-transportable;
+* mark stockpiled resources separately from capacity-like resources;
+* add an access-pricing prep flag for later capacity-resource pricing;
+* keep current `LABOUR` behavior as the transition model for labour-like
+  capacity;
+* keep `DEPOT` as the singular storage facility;
+* aggregate ordinary stockpiled resources into one shared `DEPOT` storage pool;
+* exclude `LABOUR` from shared depot usage;
+* publish per-resource overflow waste through solver logs and `ResStockEnum.DESTR`;
+* add equal Terra/Luna/Venus `ORE` accessibility placeholders for later tuning.
 
 Remaining work:
 
@@ -130,16 +139,13 @@ Remaining work:
 * keep capacity calculation inside the unified economy update pipeline for
   now;
 * reserve caching for later profiling or area-use complexity;
-* keep current `LABOUR` behavior as the transition model for labour-like
-  capacity;
 * remove `FUEL` after Phase 0 once dependent code can be updated safely;
-* keep `DEPOT` as the singular storage facility;
-* let resources still declare their storage facility;
-* aggregate `DEPOT` into one shared storage capacity pool;
-* calculate excess-storage waste proportionally near the end of the economy
-  update, before state publication;
-* add static accessibility for extractable resources where Phase 1 data needs
-  it, but defer route-facing Luna tuning to Phase 2.
+* let resources keep declaring their storage facility until data-backed storage
+  routing replaces `getInfStore()`;
+* move excess-storage waste to production-share proportional accounting after
+  the economy pipeline can preserve producer attribution;
+* expose extractable accessibility in extraction output or access when Phase 2
+  begins route-facing Luna tuning.
 
 Validation:
 

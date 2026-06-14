@@ -8,6 +8,8 @@ const gdf = @import( "../gameDef.zig"    );
 const ResType  = @import( "resourceData.zig" ).ResType;
 const PowerSrc = @import( "powerData.zig"    ).PowerSrc;
 
+const BodyName = gdf.BodyName;
+
 
 // TODO: Fold this industry-side data into the unified `Facility` model during
 // Phase 1. It remains split from infrastructure while behaviour is unchanged.
@@ -175,12 +177,27 @@ pub const IndStateEnum = enum( u8 )
 };
 
 
+// ================================ EXTRACTABLE RESOURCE ACCESSIBILITY GRID ================================
+// NOTE : Static Phase 2-facing prep. Industry owns this temporary surface
+// because extraction output still lives in `IndType` until the Facility model.
+
+pub var extractableAccessData : utl.GenDataGrid( f64, BodyName, ResType ) = .{};
+
+/// Returns the static resource accessibility placeholder for extraction tuning.
+/// Zero means the resource has no declared local extraction surface yet.
+pub inline fn getExtractableAccess( bodyName : BodyName, resT : ResType ) f64
+{
+  return extractableAccessData.get( bodyName, resT );
+}
+
+
 // ================================ DATA INITIALIZATION ================================
 
 pub fn loadIndustryData() void
 {
-  indMetricData.fillWith(     0.0 );
-  indResMetricTable.fillWith( 0.0 );
+  indMetricData.fillWith(         0.0 );
+  indResMetricTable.fillWith(     0.0 );
+  extractableAccessData.fillWith( 0.0 );
 
 
   // ================================ MASS ================================
@@ -402,6 +419,16 @@ pub fn loadIndustryData() void
 
   indResMetricTable.set( .PROBE_MINE,  .MAINT, .PART, 0.0 ); // Needs to be fully autonomous. maybe use a "shelflife" countdown instead
 
-
   indResMetricTable.isInit = true;
+
+
+  // ================================ EXTRACTABLE ACCESSIBILITY ================================
+  // Placeholder values only. Do not read these as Luna/Venus tuning yet; Phase 2
+  // will decide actual mineral and food-production advantages.
+
+  extractableAccessData.set( .TERRA, .ORE, 1.0 );
+  extractableAccessData.set( .LUNA,  .ORE, 1.0 );
+  extractableAccessData.set( .VENUS, .ORE, 1.0 );
+
+  extractableAccessData.isInit = true;
 }

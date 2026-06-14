@@ -29,7 +29,7 @@ Avoid pointless code duplication, and remove deprecated code left behind by your
 Add `//` comments and `///` descriptions to code blocks and functions whose purpose would be ambiguous to novices.
 Add `// TODO:` comments when a code block is intentionally left incomplete for now.
 Start by reviewing `todo.md` itself before executing the required work step by step.
-Alert me to any unforeseen issue you encounter along the way.
+Alert me to any unforeseen issue you encounter along the way, or significant decisions that need resolving appear.
 
 
 # ==== UPDATING TODO ====

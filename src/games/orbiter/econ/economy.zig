@@ -179,6 +179,9 @@ pub const Economy = struct
   {
     _ = value;
 
+    const depotSeedUse = self.getDepotStorageCapacity() * 0.20;
+    const depotWeight  = self.getDebugDepotSeedWeight();
+
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
@@ -187,7 +190,7 @@ pub const Economy = struct
     // Start at 20% of cap - leaves room for production without crashing prices
       var amount = resL * 0.2;
 
-      amount *= switch( resT )
+      const seedWeight = switch( resT )
       {
         .LABOUR  => 1.00,
         .FUEL  => 0.05,
@@ -198,6 +201,18 @@ pub const Economy = struct
         .INGOT => 0.25,
         .PART  => 0.05,
       };
+
+      if( resT.usesSharedDepot() and depotWeight > utl.EPS )
+      {
+        // Shared storage seed: distribute one depot fill target across ordinary
+        // resources instead of filling each resource as if it had its own depot.
+        const storeRate = resT.getMetric_f64( .STORE_RATE );
+        amount = ( depotSeedUse * seedWeight / depotWeight ) / storeRate;
+      }
+      else
+      {
+        amount *= seedWeight;
+      }
 
       amount = @ceil( amount );
 
@@ -361,28 +376,102 @@ pub const Economy = struct
 
   // ================================ RESSOURCES ================================
 
-  pub fn updateResCaps( self : *Economy ) void
+  fn getDebugDepotSeedWeight( self : *const Economy ) f64
   {
+    _ = self;
+
+    var totalWeight : f64 = 0.0;
+
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
-      const infT = resT.getInfStore();
-      const infC = self.infState.get(  .COUNT, infT );
 
-      const capacity  = infT.getMetric_f64( .CAPACITY    );
-      const storeRate = resT.getMetric_f64( .STORE_RATE  );
+      if( resT.usesSharedDepot() )
+      {
+        totalWeight += switch( resT )
+        {
+          .FUEL  => 0.05,
+          .FOOD  => 0.25,
+          .WATER => 0.25,
+          .POWER => 0.25,
+          .ORE   => 0.25,
+          .INGOT => 0.25,
+          .PART  => 0.05,
+          else   => 0.00,
+        };
+      }
+    }
+
+    return totalWeight;
+  }
+
+  /// Returns the single ordinary-resource depot pool for the current economy.
+  pub inline fn getDepotStorageCapacity( self : *const Economy ) f64
+  {
+    const depotCount = self.infState.get( .COUNT, .DEPOT );
+    const depotCap   = InfType.DEPOT.getMetric_f64( .CAPACITY );
+
+    return MIN_RES_CAP + ( depotCount * depotCap );
+  }
+
+  pub inline fn getResStorageUse( self : *const Economy, resT : ResType, amount : f64 ) f64
+  {
+    _ = self;
+
+    if( !resT.usesSharedDepot() ){ return 0.0; }
+
+    return amount * resT.getMetric_f64( .STORE_RATE );
+  }
+
+  pub fn getDepotStorageUse( self : *const Economy ) f64
+  {
+    var used : f64 = 0.0;
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resT = ResType.fromIdx( r );
+      const resC = self.resState.get( .COUNT, resT );
+
+      used += self.getResStorageUse( resT, resC );
+    }
+
+    return used;
+  }
+
+  pub fn updateResCaps( self : *Economy ) void
+  {
+    const depotCapacity = self.getDepotStorageCapacity();
+
+    inline for( 0..resTypeC )| r |
+    {
+      const resT = ResType.fromIdx( r );
+      const storeRate = resT.getMetric_f64( .STORE_RATE );
 
       const prevLimit : f64 = self.resState.get( .LIMIT, resT );
       var   nextLimit  : f64 = 0.0;
 
-      if( storeRate > utl.EPS )
+      if( resT.usesSharedDepot() )
       {
-        nextLimit =  MIN_RES_CAP + ( infC * capacity / storeRate );
+        // Compatibility limit: maximum stock if the shared depot were dedicated
+        // to this resource. Actual overflow uses aggregate depot consumption.
+        nextLimit = depotCapacity / @max( storeRate, utl.EPS );
       }
       else
       {
-        // Infinite storage ( or resource doesn't need storage )
-        nextLimit = MIN_RES_CAP + ( infC * capacity / utl.EPS );
+        const infT = resT.getInfStore();
+        const infC = self.infState.get(  .COUNT, infT );
+
+        const capacity = infT.getMetric_f64( .CAPACITY );
+
+        if( storeRate > utl.EPS )
+        {
+          nextLimit =  MIN_RES_CAP + ( infC * capacity / storeRate );
+        }
+        else
+        {
+          // Infinite storage ( or resource doesn't need storage )
+          nextLimit = MIN_RES_CAP + ( infC * capacity / utl.EPS );
+        }
       }
 
       self.resState.set( .LIMIT,   resT, nextLimit );
@@ -822,21 +911,10 @@ pub const Economy = struct
 
 
     // DEPOT
-    var maxDepotUse : f64 = 0.0;
+    const depotCap = self.getDepotStorageCapacity();
+    const depotUse = self.getDepotStorageUse();
 
-    inline for( 0..resTypeC )| r |
-    {
-      const resT = ResType.fromIdx( r );
-
-      if( !resT.isCapacityLike() )
-      {
-        const resC = self.resState.get( .COUNT, resT );
-        const resL = self.resState.get( .LIMIT, resT );
-
-        maxDepotUse = @max( maxDepotUse, resC / resL );
-      }
-    }
-    self.infState.set( .USE_LVL, .DEPOT, maxDepotUse );
+    self.infState.set( .USE_LVL, .DEPOT, depotUse / depotCap );
 
 
   // TODO : Activate once INF is added as a real agent
@@ -926,4 +1004,27 @@ test "Economy constructors initialize required fields"
   try std.testing.expectEqual( EconLoc.GROUND, live.location );
   try std.testing.expectEqual( false, live.hasAtmo );
   try std.testing.expect( live.buildQueue != null );
+}
+
+test "Economy DEPOT usage sums ordinary resource storage"
+{
+  gdf.rsrc_d.loadResourceData();
+  gdf.nfrs_d.loadInfrastructureData();
+
+  var econ = Economy.newLiveEcon( .GROUND, 1000.0, 1.0, true );
+
+  econ.infState.set( .COUNT, .HOUSING, 1.0 );
+  econ.infState.set( .COUNT, .DEPOT,   1.0 );
+  econ.updatePopCaps();
+  econ.updateResCaps();
+
+  const depotCap = econ.getDepotStorageCapacity();
+
+  econ.resState.set( .COUNT, .LABOUR, depotCap );
+  econ.resState.set( .COUNT, .FOOD,   depotCap * 0.25 );
+  econ.resState.set( .COUNT, .ORE,    depotCap * 0.25 );
+
+  econ.updateInfUsage();
+
+  try std.testing.expectApproxEqAbs( @as( f64, 0.5 ), econ.infState.get( .USE_LVL, .DEPOT ), 0.0001 );
 }

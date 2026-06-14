@@ -904,29 +904,72 @@ fn updateFlowAllSums( self : *EconSolver ) void
 // ================================ FINANCES PHASE ================================
 
 
-  fn clampResStocks( self : *EconSolver ) void      // TODO : save the wasted amounts as metrics
+  fn clampResStocks( self : *EconSolver ) void
   {
+    var depotUse : f64 = 0.0;
+
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );
-      const resL = self.econ.resState.get( .LIMIT, resT );
-      const resC = self.resStockData.get(  .FINAL, resT );
 
-      if( resC > resL )
+      if( resT.usesSharedDepot() )
       {
-        // Clamp stock but do NOT adjust production metrics
-        // Industries consumed final inputs and produced final outputs
-        // The overflow is a storage problem, not a production problem
-        // Prices will naturally suppress overproduction via supply > demand
+        const resC = self.resStockData.get( .FINAL, resT );
 
-        const destroyed : f64 = @ceil( @max( 0.0, resC - resL ));
+        depotUse += self.econ.getResStorageUse( resT, resC );
+      }
+      else
+      {
+        const resL = self.econ.resState.get( .LIMIT, resT );
+        const resC = self.resStockData.get(  .FINAL, resT );
 
-        self.resStockData.set( .DESTR, resT, destroyed );
-        self.resStockData.sub( .FINAL, resT, destroyed );
+        if( resC > resL )
+        {
+          // Clamp stock but do NOT adjust production metrics
+          // Industries consumed final inputs and produced final outputs
+          // The overflow is a storage problem, not a production problem
+          // Prices will naturally suppress overproduction via supply > demand
 
-        utl.log( .WARN, @src(), "{s:<8} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resT ), resC, resL, resC - resL });
+          const destroyed : f64 = @ceil( @max( 0.0, resC - resL ));
+
+          self.resStockData.set( .DESTR, resT, destroyed );
+          self.resStockData.sub( .FINAL, resT, destroyed );
+
+          utl.log( .WARN, @src(), "{s:<8} stock overflow : {d:.0} clamped to {d:.0} ( {d:.0} wasted )", .{ @tagName( resT ), resC, resL, resC - resL });
+        }
       }
     }
+
+    const depotCap = self.econ.getDepotStorageCapacity();
+
+    if( depotUse <= depotCap ){ return; }
+
+    const overflowUse = depotUse - depotCap;
+
+    // Shared-depot overflow is distributed by current storage use. Production-
+    // share waste waits for the later econPipeline pass ordering.
+    inline for( 0..resTypeC )| r |
+    {
+      const resT = ResType.fromIdx( r );
+
+      if( resT.usesSharedDepot() )
+      {
+        const resC     = self.resStockData.get( .FINAL, resT );
+        const storeUse = self.econ.getResStorageUse( resT, resC );
+
+        if( storeUse > utl.EPS )
+        {
+          const storeRate  = resT.getMetric_f64( .STORE_RATE );
+          const wastedUse  = overflowUse * ( storeUse / depotUse );
+          const destroyed  = @min( resC, @ceil( wastedUse / @max( storeRate, utl.EPS )));
+
+          self.resStockData.set( .DESTR, resT, destroyed );
+          self.resStockData.sub( .FINAL, resT, destroyed );
+        }
+      }
+    }
+
+    utl.log( .WARN, @src(), "DEPOT shared stock overflow : {d:.0} / {d:.0} storage used ( {d:.0} wasted )", .{ depotUse, depotCap, overflowUse });
   }
 
 //fn updateComFinances( self : *EconSolver ) void
@@ -969,7 +1012,9 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
       const resC = self.resStockData.get( .FINAL, resT );
 
-      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} | {d:>8.6}$ | {d:>8.6}$ > {d:>8.6}$ | {d:>6.3}% ( {d:>6.2}% )", .{ @tagName( resT ), resC, basePrice, oldPrice, newPrice, offPrcnt, dltPrcnt });
+      const priceMode : []const u8 = if( resT.usesAccessPricing() ) "acs" else "stk";
+
+      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} | {s:<3} | {d:>8.6}$ | {d:>8.6}$ > {d:>8.6}$ | {d:>6.3}% ( {d:>6.2}% )", .{ @tagName( resT ), resC, priceMode, basePrice, oldPrice, newPrice, offPrcnt, dltPrcnt });
 
       self.econ.resState.set( .PRICE,   resT, newPrice );
       self.econ.resState.set( .PRICE_D, resT, dltPrice );
@@ -1472,8 +1517,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
 
   pub inline fn logResMetrics( self : *const EconSolver ) void
   {
-    utl.qlog( .INFO, @src(), "$ RESOURCE : Count / Capacity ( % )  [ Delta | Prod Cons Decay ]  Access Rate  ( Price )" );
-    utl.qlog( .CONT, @src(), "$ ======================================================================================" );
+    utl.qlog( .INFO, @src(), "$ RESOURCE : Count / Capacity ( % )  [ Delta | Prod Cons Decay Waste ]  Access Rate  ( Price )" );
+    utl.qlog( .CONT, @src(), "$ ============================================================================================" );
 
     inline for( 0..resTypeC )| r |
     {
@@ -1487,12 +1532,13 @@ fn updateFlowAllSums( self : *EconSolver ) void
       const prod   : f64 = self.genResFlowData.get( .TOT_PROD, resT );
       const cons   : f64 = self.genResFlowData.get( .TOT_CONS, resT );
       const decay  : f64 = self.resStockData.get(   .DECAY,    resT );
+      const destr  : f64 = self.resStockData.get(   .DESTR,    resT );
       const delta  : f64 = prod - cons;
 
       const avgAcs : f64 = self.genResFlowData.get( .OPR_ACS, resT );
 
-      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} / {d:<14.0} ( {d:>6.2}% )  [ {d:<12.0} |  +{d:<12.0} -{d:<12.0} -{d:<12.0} ] {d:>10.3}  ( {d:>8.6}$ )",
-        .{ @tagName( resT ), resC, resL, resLimPrcnt, delta, prod, cons, decay, avgAcs, resP });
+      utl.log( .CONT, @src(), "{s:<8} : {d:<14.0} / {d:<14.0} ( {d:>6.2}% )  [ {d:<12.0} |  +{d:<12.0} -{d:<12.0} -{d:<12.0} -{d:<12.0} ] {d:>10.3}  ( {d:>8.6}$ )",
+        .{ @tagName( resT ), resC, resL, resLimPrcnt, delta, prod, cons, decay, destr, avgAcs, resP });
     }
   }
 };
