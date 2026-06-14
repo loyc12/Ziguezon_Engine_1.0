@@ -2,9 +2,8 @@
 
 This file is the descriptive baseline for the current world/entity/simulation
 implementation. Target design belongs in
-[engine_rework_goals.md](engine_rework_goals.md). Implementation order belongs
-in [engine_rework_roadmap.md](engine_rework_roadmap.md). Active task slices
-belong in [engine_rework_todo.md](engine_rework_todo.md).
+[goals.md](goals.md). Implementation order belongs in [roadmap.md](roadmap.md).
+Active task slices belong in [todo.md](todo.md).
 
 ## 1. Purpose
 

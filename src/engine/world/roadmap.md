@@ -1,8 +1,8 @@
 # Engine World Rework Roadmap
 
 This file records implementation order from the current
-[engine_rework_reference.md](engine_rework_reference.md) baseline toward the
-target state in [engine_rework_goals.md](engine_rework_goals.md).
+[reference.md](reference.md) baseline toward the target state in
+[goals.md](goals.md).
 
 ## 1. Current Starting Point
 
@@ -37,8 +37,10 @@ Required work:
   tested together through `World.destroyEntity()`;
 * ensure generic event queues are registered where games or tests depend on
   emitted entity/component/relation events;
-* decide whether transient event queues need a small retained-history option
-  before rules/reactions consume events;
+* keep transient event queues queue-only for now; integrate bounded retained
+  history only after a concrete debug or rules/reactions use case needs it;
+* make cleanup functions log their own concrete failures through `log()`, while
+  manager-level cleanup results stay compact;
 * keep `CompView` component-only until broad query semantics exist.
 
 ## 3. Next - Traits And Metaproperties
@@ -48,13 +50,14 @@ relation-shaped tags spread further.
 
 Required work:
 
-* define trait/metaproperty payload and dataless forms;
-* add typed trait registration, application, removal, and querying;
-* integrate trait cleanup with entity destruction;
-* emit generic trait events when registered;
-* provide at least one small generic example, such as `Selectable` or
-  `Visible`;
-* document when to choose component, relation, or trait.
+* define traits/metaproperties as dataless classification facts;
+* reject payload-bearing traits and keep per-entity data in components;
+* add typed trait registration, application, removal, and presence querying;
+* integrate trait cleanup before entity ids are invalidated by destruction;
+* emit generic trait events only when those event queues are registered;
+* provide `Persistent` as the first small generic trait example for future
+  save-relevant entities and their related facts;
+* document and enforce obvious component, relation, event, and trait misuse.
 
 ## 4. Next - Broad Queries And Views
 
@@ -130,12 +133,13 @@ stable enough to describe.
 
 ## 10. Implementation Constraints
 
-* Keep target design in `engine_rework_goals.md`.
-* Keep current facts in `engine_rework_reference.md`.
-* Keep active task slices in `engine_rework_todo.md`.
+* Keep target design in `goals.md`.
+* Keep current facts in `reference.md`.
+* Keep active task slices in `todo.md`.
 * Keep engine-level examples minimal and generic.
 * Keep game-specific facts under `src/games`.
 * Prefer explicit ids, policies, and fact tables over hidden object graphs.
 * Do not add marker-component support; use traits/metaproperties for
   classification.
+* Do not add storage policies or config bundles without a concrete use case.
 * Do not run formatting passes such as `zig fmt`.

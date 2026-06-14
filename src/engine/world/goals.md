@@ -1,9 +1,9 @@
 # Engine World Rework Goals
 
 This file is the target-state authority for the world/entity/simulation rework.
-Current implementation facts belong in [engine_rework_reference.md](engine_rework_reference.md).
-Implementation order belongs in [engine_rework_roadmap.md](engine_rework_roadmap.md).
-Active task slices belong in [engine_rework_todo.md](engine_rework_todo.md).
+Current implementation facts belong in [reference.md](reference.md).
+Implementation order belongs in [roadmap.md](roadmap.md).
+Active task slices belong in [todo.md](todo.md).
 
 ## 1. Direction
 
@@ -55,18 +55,21 @@ identifiers meaningful.
 ## 3. Fact Model
 
 Components are for per-entity payload state. They should stay data-first, with
-behavior in systems and rendering in render adapters.
+behavior in systems and rendering in render adapters. Component types must carry
+entity data; dataless components are invalid.
 
 Relations are source-target facts between meaningful entities. They should be
 used for ownership, containment, membership, dependencies, links, and similar
 relationships. They should not become a tag system.
 
 Events record that something happened. Commands request change; events prove
-that a change or occurrence was recorded.
+that a change or occurrence was recorded. Event payloads should stay plain
+queueable facts, with obvious invalid event shapes rejected when practical.
 
-Traits/metaproperties are the canonical classification path for tags, labels,
-flags, and presence-style facts. Do not add marker-component support as the
-main classification mechanism.
+Traits/metaproperties are the canonical dataless classification path for tags,
+labels, flags, and presence-style facts. Traits may eventually have type-level
+metadata, but they must not hold per-entity payload data. Do not add
+marker-component support as the main classification mechanism.
 
 Archetypes/templates create reusable bundles of initial facts. Archetype
 definitions are not entity rows unless explicitly stored as facts.
@@ -92,7 +95,8 @@ manually handling registry casts or container internals:
 * run/query systems.
 
 Storage policy remains configurable, but it should not dominate ordinary
-game-facing code.
+game-facing code. Add policies and policy bundles only when a concrete use case
+needs them.
 
 ## 5. Storage And Policies
 
@@ -109,10 +113,11 @@ Prefer:
 * relation-specific indexes.
 
 Use a single enum policy when there is one behavior axis. Introduce config
-structs only when multiple independent choices need to travel together.
+structs only when multiple independent choices need to travel together. Do not
+add policies or configs preemptively.
 
 Dataless facts should be queried through presence APIs. Payload retrieval APIs
-should reject zero-sized payloads.
+should reject zero-sized payloads. Traits should use presence APIs only.
 
 ## 6. Time And Scheduling
 
@@ -172,7 +177,7 @@ copy patterns:
 * at least one component type;
 * at least one relation type;
 * at least one event type;
-* at least one trait/metaproperty type;
+* at least one trait/metaproperty type, such as `Persistent`;
 * at least one archetype/template;
 * at least one rule/reaction example;
 * at least one particle/effect example.
