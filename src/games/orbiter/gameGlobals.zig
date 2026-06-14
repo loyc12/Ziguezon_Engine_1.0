@@ -688,18 +688,20 @@ pub fn debugCheckDataInit() bool
   if( !powr_d.powerMetricData.isInit ){ return false; }
   if( !vesl_d.vesMetricData.isInit   ){ return false; }
 
-  if( !rsrc_d.resMetricData.isInit     ){ return false; }
-  if( !popl_d.popResMetricTable.isInit ){ return false; }
-  if( !nfrs_d.infResMetricTable.isInit ){ return false; }
-  if( !ndst_d.indResMetricTable.isInit ){ return false; }
-  if( !ndst_d.extractableAccessData.isInit ){ return false; }
+  if( !rsrc_d.resMetricData.isInit          ){ return false; }
+  if( !rsrc_d.resBooleanData.isInit         ){ return false; }
+  if( !popl_d.popResMetricTable.isInit      ){ return false; }
+  if( !nfrs_d.infResMetricTable.isInit      ){ return false; }
+  if( !ndst_d.indResMetricTable.isInit      ){ return false; }
+  if( !ndst_d.extractableAccessData.isInit  ){ return false; }
   if( !facl_d.facilityResMetricTable.isInit ){ return false; }
 
-  if( !popl_d.popMetricData.isInit ){ return false; }
-  if( !nfrs_d.infMetricData.isInit ){ return false; }
-  if( !ndst_d.indMetricData.isInit ){ return false; }
-  if( !facl_d.facilityMetricData.isInit ){ return false; }
-  if( !facl_d.facilityCapacityData.isInit ){ return false; }
+  if( !popl_d.popMetricData.isInit        ){ return false; }
+  if( !nfrs_d.infMetricData.isInit        ){ return false; }
+  if( !ndst_d.indMetricData.isInit        ){ return false; }
+  if( !facl_d.facilityMetricData.isInit    ){ return false; }
+  if( !facl_d.facilityBooleanData.isInit   ){ return false; }
+  if( !facl_d.facilityCapacityData.isInit  ){ return false; }
 
   return true;
 }

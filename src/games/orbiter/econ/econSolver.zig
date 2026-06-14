@@ -947,7 +947,8 @@ fn updateFlowAllSums( self : *EconSolver ) void
     const overflowUse = depotUse - depotCap;
 
     // Shared-depot overflow is distributed by current storage use. Production-
-    // share waste waits for the later econPipeline pass ordering.
+    // share waste waits for `econPipeline`, which needs per-producer output
+    // attribution before it can destroy overflow by this tick's producers.
     inline for( 0..resTypeC )| r |
     {
       const resT = ResType.fromIdx( r );

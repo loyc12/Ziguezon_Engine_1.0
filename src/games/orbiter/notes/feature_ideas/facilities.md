@@ -23,7 +23,7 @@ in Phase 2 if directly useful; otherwise defer them to post-MVP.
 - fusion plant
 - water facility* ( renamed from WATER_PLANT )
 - waste facility
-- mine_ore*          ( multiple subtypes eventually )
+- ORE_MINE*          ( multiple subtypes eventually )
 - agronomics*
 - hydroponics*
 

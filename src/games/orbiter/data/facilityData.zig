@@ -40,24 +40,22 @@ pub const FacilityType = enum( u8 )
 //ELEVATOR,     // Future surface-orbit transport capacity
 
   // Growth / extraction / manufacturing facilities
-  AGRONOMIC,    // Generates food from land, water, labour, and solar access
-  HYDROPONIC,   // Generates food from water, power, and labour
-  WATER_PLANT,  // Generates water
-  SOLAR_PLANT,  // Generates power from solar access
-  POWER_PLANT,  // Generates power from fuel
+  AGRONOMIC,      // Generates food from land, water, labour, and solar access
+  HYDROPONIC,     // Generates food from water, power, and labour
+  WATER_FACILITY, // Generates water
+  SOLAR_PLANT,    // Generates power from solar access
+  FUSION_PLANT,   // Generates power from fuel
 
-  REFINERY,     // Refines fuel
-  GROUND_MINE,  // Extracts ore from ground sites
-  FOUNDRY,      // Converts ore into ingots
-  FACTORY,      // Converts ingots into parts
-
-  PROBE_MINE,   // Extracts ore through autonomous probes
+  ORE_MINE,       // Extracts base metals from ground sites
+  ORE_REFINERY,   // Converts base metals into ingots
+  FACTORY,        // Converts ingots into parts
 
 //SHIPYARD,
 //COLLEGE,
 //LABORATORY,
 //WASTE_PLANT,
 //GAS_REFINERY,
+//PROBE_MINE,
 //POWER_NETWORK,
 //WATER_NETWORK,
 //TRANSIT_NETWORK,
@@ -76,15 +74,13 @@ pub const FacilityType = enum( u8 )
       .AGRONOMIC,
       .HYDROPONIC   => .GROWTH,
 
-      .WATER_PLANT,
+      .WATER_FACILITY,
       .SOLAR_PLANT,
-      .POWER_PLANT,
-      .REFINERY,
-      .GROUND_MINE,
-      .PROBE_MINE   => .EXTRACTION,
+      .FUSION_PLANT,
+      .ORE_MINE       => .EXTRACTION,
 
-      .FOUNDRY,
-      .FACTORY      => .MANUFACTURING,
+      .ORE_REFINERY,
+      .FACTORY        => .MANUFACTURING,
     };
   }
 
@@ -99,20 +95,24 @@ pub const FacilityType = enum( u8 )
     };
   }
 
-  pub inline fn fromIndType( indT : IndType ) FacilityType
+  /// Returns the static facility equivalent for legacy industry cases that
+  /// remain part of the Phase 1 facility model. `null` marks legacy-only cases
+  /// that should not receive new facility metadata.
+  pub inline fn fromIndType( indT : IndType ) ?FacilityType
   {
     return switch( indT )
     {
-      .AGRONOMIC   => .AGRONOMIC,
-      .HYDROPONIC  => .HYDROPONIC,
-      .WATER_PLANT => .WATER_PLANT,
-      .SOLAR_PLANT => .SOLAR_PLANT,
-      .POWER_PLANT => .POWER_PLANT,
-      .REFINERY    => .REFINERY,
-      .GROUND_MINE => .GROUND_MINE,
-      .FOUNDRY     => .FOUNDRY,
-      .FACTORY     => .FACTORY,
-      .PROBE_MINE  => .PROBE_MINE,
+      .AGRONOMIC    => .AGRONOMIC,
+      .HYDROPONIC   => .HYDROPONIC,
+      .WATER_PLANT  => .WATER_FACILITY,
+      .SOLAR_PLANT  => .SOLAR_PLANT,
+      .POWER_PLANT  => .FUSION_PLANT,
+      .GROUND_MINE  => .ORE_MINE,
+      .FOUNDRY      => .ORE_REFINERY,
+      .FACTORY      => .FACTORY,
+
+      .REFINERY,
+      .PROBE_MINE   => null,
     };
   }
 
@@ -125,16 +125,14 @@ pub const FacilityType = enum( u8 )
       .HOUSING      => .{ .infT = .HOUSING  },
       .ASSEMBLY     => .{ .infT = .ASSEMBLY },
 
-      .AGRONOMIC    => .{ .indT = .AGRONOMIC   },
-      .HYDROPONIC   => .{ .indT = .HYDROPONIC  },
-      .WATER_PLANT  => .{ .indT = .WATER_PLANT },
-      .SOLAR_PLANT  => .{ .indT = .SOLAR_PLANT },
-      .POWER_PLANT  => .{ .indT = .POWER_PLANT },
-      .REFINERY     => .{ .indT = .REFINERY    },
-      .GROUND_MINE  => .{ .indT = .GROUND_MINE },
-      .FOUNDRY      => .{ .indT = .FOUNDRY     },
-      .FACTORY      => .{ .indT = .FACTORY     },
-      .PROBE_MINE   => .{ .indT = .PROBE_MINE  },
+      .AGRONOMIC      => .{ .indT = .AGRONOMIC   },
+      .HYDROPONIC     => .{ .indT = .HYDROPONIC  },
+      .WATER_FACILITY => .{ .indT = .WATER_PLANT },
+      .SOLAR_PLANT    => .{ .indT = .SOLAR_PLANT },
+      .FUSION_PLANT   => .{ .indT = .POWER_PLANT },
+      .ORE_MINE       => .{ .indT = .GROUND_MINE },
+      .ORE_REFINERY   => .{ .indT = .FOUNDRY     },
+      .FACTORY        => .{ .indT = .FACTORY     },
     };
   }
 
@@ -175,6 +173,16 @@ pub const FacilityType = enum( u8 )
     return @intFromFloat( facilityCapacityData.get( self, capacity ));
   }
 
+  pub inline fn getBool( self : FacilityType, flag : FacilityBoolEnum ) bool
+  {
+    return facilityBooleanData.get( self, flag );
+  }
+
+  pub inline fn isSolarScaled( self : FacilityType ) bool
+  {
+    return self.getBool( .IS_SOLAR_SCALED );
+  }
+
   pub fn getResMetric_f32( self : FacilityType, metric : FacilityResMetricEnum, resT : ResType ) f32
   {
     return @floatCast( facilityResMetricTable.get( self, metric, resT ));
@@ -213,6 +221,19 @@ pub const FacilityCategory = enum( u8 )
   SERVICE,
   TRANSPORTATION,
   CAPACITY,
+};
+
+
+// ================================ FACILITY BOOLEAN GRID ================================
+// NOTE : Mostly-static per-facility flags
+
+pub var facilityBooleanData : utl.GenDataGrid( bool, FacilityType, FacilityBoolEnum ) = .{};
+
+pub const FacilityBoolEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  IS_SOLAR_SCALED, // Production output is scaled by local sun access.
 };
 
 
@@ -269,15 +290,17 @@ pub const FacilityResMetricEnum = enum( u8 )
 
 pub fn loadFacilityData() void
 {
-  facilityMetricData.fillWith(    0.0 );
-  facilityCapacityData.fillWith(  0.0 );
+  facilityBooleanData.fillWith(  false );
+  facilityMetricData.fillWith(     0.0 );
+  facilityCapacityData.fillWith(   0.0 );
   facilityResMetricTable.fillWith( 0.0 );
 
   loadLegacyInfrastructureFacilities();
   loadLegacyIndustryFacilities();
 
-  facilityMetricData.isInit    = true;
-  facilityCapacityData.isInit  = true;
+  facilityBooleanData.isInit    = true;
+  facilityMetricData.isInit     = true;
+  facilityCapacityData.isInit   = true;
   facilityResMetricTable.isInit = true;
 }
 
@@ -339,67 +362,54 @@ fn loadLegacyIndustryFacilities() void
   // MASS is Gt, AREA_COST is km2, CNST_COST is abstract build effort,
   // and POLLUTION mirrors the legacy tCO2e-ish per-week industry values.
 
-  facilityMetricData.set( .AGRONOMIC,   .MASS, 0.000_000_002 );
-  facilityMetricData.set( .HYDROPONIC,  .MASS, 0.000_000_015 );
-  facilityMetricData.set( .WATER_PLANT, .MASS, 0.000_000_020 );
-  facilityMetricData.set( .SOLAR_PLANT, .MASS, 0.000_000_010 );
-  facilityMetricData.set( .POWER_PLANT, .MASS, 0.000_000_080 );
-
-  facilityMetricData.set( .REFINERY,    .MASS, 0.000_000_050 );
-  facilityMetricData.set( .GROUND_MINE, .MASS, 0.000_000_100 );
-  facilityMetricData.set( .FOUNDRY,     .MASS, 0.000_000_060 );
-  facilityMetricData.set( .FACTORY,     .MASS, 0.000_000_040 );
-
-  facilityMetricData.set( .PROBE_MINE,  .MASS, 0.000_000_001 );
+  facilityMetricData.set( .AGRONOMIC,      .MASS, 0.000_000_002 );
+  facilityMetricData.set( .HYDROPONIC,     .MASS, 0.000_000_015 );
+  facilityMetricData.set( .WATER_FACILITY, .MASS, 0.000_000_020 );
+  facilityMetricData.set( .SOLAR_PLANT,    .MASS, 0.000_000_010 );
+  facilityMetricData.set( .FUSION_PLANT,   .MASS, 0.000_000_080 );
+  facilityMetricData.set( .ORE_MINE,       .MASS, 0.000_000_100 );
+  facilityMetricData.set( .ORE_REFINERY,   .MASS, 0.000_000_060 );
+  facilityMetricData.set( .FACTORY,        .MASS, 0.000_000_040 );
 
 
-  facilityMetricData.set( .AGRONOMIC,   .AREA_COST, 0.50 );
-  facilityMetricData.set( .HYDROPONIC,  .AREA_COST, 0.05 );
-  facilityMetricData.set( .WATER_PLANT, .AREA_COST, 0.05 );
-  facilityMetricData.set( .SOLAR_PLANT, .AREA_COST, 0.50 );
-  facilityMetricData.set( .POWER_PLANT, .AREA_COST, 0.03 );
-
-  facilityMetricData.set( .REFINERY,    .AREA_COST, 0.10 );
-  facilityMetricData.set( .GROUND_MINE, .AREA_COST, 0.50 );
-  facilityMetricData.set( .FOUNDRY,     .AREA_COST, 0.20 );
-  facilityMetricData.set( .FACTORY,     .AREA_COST, 0.15 );
-
-  facilityMetricData.set( .PROBE_MINE,  .AREA_COST, 0.01 );
+  facilityMetricData.set( .AGRONOMIC,      .AREA_COST, 0.50 );
+  facilityMetricData.set( .HYDROPONIC,     .AREA_COST, 0.05 );
+  facilityMetricData.set( .WATER_FACILITY, .AREA_COST, 0.05 );
+  facilityMetricData.set( .SOLAR_PLANT,    .AREA_COST, 0.50 );
+  facilityMetricData.set( .FUSION_PLANT,   .AREA_COST, 0.03 );
+  facilityMetricData.set( .ORE_MINE,       .AREA_COST, 0.50 );
+  facilityMetricData.set( .ORE_REFINERY,   .AREA_COST, 0.20 );
+  facilityMetricData.set( .FACTORY,        .AREA_COST, 0.15 );
 
 
-  facilityMetricData.set( .AGRONOMIC,   .CNST_COST, 1.00 );
-  facilityMetricData.set( .HYDROPONIC,  .CNST_COST, 1.00 );
-  facilityMetricData.set( .WATER_PLANT, .CNST_COST, 1.00 );
-  facilityMetricData.set( .SOLAR_PLANT, .CNST_COST, 1.00 );
-  facilityMetricData.set( .POWER_PLANT, .CNST_COST, 1.00 );
-
-  facilityMetricData.set( .REFINERY,    .CNST_COST, 1.00 );
-  facilityMetricData.set( .GROUND_MINE, .CNST_COST, 1.00 );
-  facilityMetricData.set( .FOUNDRY,     .CNST_COST, 1.00 );
-  facilityMetricData.set( .FACTORY,     .CNST_COST, 1.00 );
-
-  facilityMetricData.set( .PROBE_MINE,  .CNST_COST, 0.00 );
+  facilityMetricData.set( .AGRONOMIC,      .CNST_COST, 1.00 );
+  facilityMetricData.set( .HYDROPONIC,     .CNST_COST, 1.00 );
+  facilityMetricData.set( .WATER_FACILITY, .CNST_COST, 1.00 );
+  facilityMetricData.set( .SOLAR_PLANT,    .CNST_COST, 1.00 );
+  facilityMetricData.set( .FUSION_PLANT,   .CNST_COST, 1.00 );
+  facilityMetricData.set( .ORE_MINE,       .CNST_COST, 1.00 );
+  facilityMetricData.set( .ORE_REFINERY,   .CNST_COST, 1.00 );
+  facilityMetricData.set( .FACTORY,        .CNST_COST, 1.00 );
 
 
-  facilityMetricData.set( .AGRONOMIC,   .POLLUTION,  8.0 );
-  facilityMetricData.set( .HYDROPONIC,  .POLLUTION,  1.0 );
-  facilityMetricData.set( .WATER_PLANT, .POLLUTION,  2.0 );
-  facilityMetricData.set( .SOLAR_PLANT, .POLLUTION,  0.0 );
-  facilityMetricData.set( .POWER_PLANT, .POLLUTION,  4.0 );
-
-  facilityMetricData.set( .REFINERY,    .POLLUTION, 20.0 );
-  facilityMetricData.set( .GROUND_MINE, .POLLUTION, 40.0 );
-  facilityMetricData.set( .FOUNDRY,     .POLLUTION, 30.0 );
-  facilityMetricData.set( .FACTORY,     .POLLUTION, 20.0 );
-
-  facilityMetricData.set( .PROBE_MINE,  .POLLUTION,  0.0 );
+  facilityMetricData.set( .AGRONOMIC,      .POLLUTION,  8.0 );
+  facilityMetricData.set( .HYDROPONIC,     .POLLUTION,  1.0 );
+  facilityMetricData.set( .WATER_FACILITY, .POLLUTION,  2.0 );
+  facilityMetricData.set( .SOLAR_PLANT,    .POLLUTION,  0.0 );
+  facilityMetricData.set( .FUSION_PLANT,   .POLLUTION,  4.0 );
+  facilityMetricData.set( .ORE_MINE,       .POLLUTION, 40.0 );
+  facilityMetricData.set( .ORE_REFINERY,   .POLLUTION, 30.0 );
+  facilityMetricData.set( .FACTORY,        .POLLUTION, 20.0 );
 
 
   // ================================ OPERATIONAL RESOURCE FLOWS ================================
   // All values are per facility per tick (week) at full activity.
   // LABOUR is person-weeks, POWER is MWh, and stockpiled materials are metric tons.
-  // TODO: Redesign power-source behavior before moving solar/grid scaling into
-  // facility metadata. The live path still uses `IndType.getPowerSrc()`.
+  // Solar-scaled facilities should multiply production by local sun access
+  // after the live solver migrates from legacy `IndType` data.
+
+  facilityBooleanData.set( .AGRONOMIC,   .IS_SOLAR_SCALED, true );
+  facilityBooleanData.set( .SOLAR_PLANT, .IS_SOLAR_SCALED, true );
 
   facilityResMetricTable.set( .AGRONOMIC, .CONS, .LABOUR,    55.0 );
   facilityResMetricTable.set( .AGRONOMIC, .CONS, .WATER,   5000.0 );
@@ -410,72 +420,57 @@ fn loadLegacyIndustryFacilities() void
   facilityResMetricTable.set( .HYDROPONIC, .CONS, .POWER,   500.0 );
   facilityResMetricTable.set( .HYDROPONIC, .PROD, .FOOD,    300.0 );
 
-  facilityResMetricTable.set( .WATER_PLANT, .CONS, .LABOUR,   180.0 );
-  facilityResMetricTable.set( .WATER_PLANT, .CONS, .POWER,    200.0 );
-  facilityResMetricTable.set( .WATER_PLANT, .PROD, .WATER,  40000.0 );
+  facilityResMetricTable.set( .WATER_FACILITY, .CONS, .LABOUR,   180.0 );
+  facilityResMetricTable.set( .WATER_FACILITY, .CONS, .POWER,    200.0 );
+  facilityResMetricTable.set( .WATER_FACILITY, .PROD, .WATER,  40000.0 );
 
   facilityResMetricTable.set( .SOLAR_PLANT, .CONS, .LABOUR,   40.0 );
   facilityResMetricTable.set( .SOLAR_PLANT, .CONS, .WATER,    50.0 );
   facilityResMetricTable.set( .SOLAR_PLANT, .PROD, .POWER,  3000.0 );
 
-  facilityResMetricTable.set( .POWER_PLANT, .CONS, .LABOUR,   200.0 );
-  facilityResMetricTable.set( .POWER_PLANT, .CONS, .WATER,    500.0 );
-  facilityResMetricTable.set( .POWER_PLANT, .CONS, .FUEL,      10.0 );
-  facilityResMetricTable.set( .POWER_PLANT, .PROD, .POWER,  20000.0 );
+  facilityResMetricTable.set( .FUSION_PLANT, .CONS, .LABOUR,   200.0 );
+  facilityResMetricTable.set( .FUSION_PLANT, .CONS, .WATER,    500.0 );
+  facilityResMetricTable.set( .FUSION_PLANT, .CONS, .FUEL,      10.0 );
+  facilityResMetricTable.set( .FUSION_PLANT, .PROD, .POWER,  20000.0 );
 
-  facilityResMetricTable.set( .REFINERY, .CONS, .LABOUR, 150.0 );
-  facilityResMetricTable.set( .REFINERY, .CONS, .WATER,  200.0 );
-  facilityResMetricTable.set( .REFINERY, .CONS, .POWER,  500.0 );
-  facilityResMetricTable.set( .REFINERY, .PROD, .FUEL,    50.0 );
+  facilityResMetricTable.set( .ORE_MINE, .CONS, .LABOUR,       300.0 );
+  facilityResMetricTable.set( .ORE_MINE, .CONS, .POWER,       1000.0 );
+  facilityResMetricTable.set( .ORE_MINE, .CONS, .WATER,       2500.0 );
+  facilityResMetricTable.set( .ORE_MINE, .PROD, .BASE_METALS, 5000.0 );
 
-  facilityResMetricTable.set( .GROUND_MINE, .CONS, .LABOUR,  300.0 );
-  facilityResMetricTable.set( .GROUND_MINE, .CONS, .POWER,  1000.0 );
-  facilityResMetricTable.set( .GROUND_MINE, .CONS, .WATER,  2500.0 );
-  facilityResMetricTable.set( .GROUND_MINE, .PROD, .ORE,    5000.0 );
-
-  facilityResMetricTable.set( .FOUNDRY, .CONS, .LABOUR,  300.0 );
-  facilityResMetricTable.set( .FOUNDRY, .CONS, .POWER,   500.0 );
-  facilityResMetricTable.set( .FOUNDRY, .CONS, .ORE,    5000.0 );
-  facilityResMetricTable.set( .FOUNDRY, .PROD, .INGOT,  4000.0 );
+  facilityResMetricTable.set( .ORE_REFINERY, .CONS, .LABOUR,       300.0 );
+  facilityResMetricTable.set( .ORE_REFINERY, .CONS, .POWER,        500.0 );
+  facilityResMetricTable.set( .ORE_REFINERY, .CONS, .BASE_METALS, 5000.0 );
+  facilityResMetricTable.set( .ORE_REFINERY, .PROD, .INGOT,       4000.0 );
 
   facilityResMetricTable.set( .FACTORY, .CONS, .LABOUR,  300.0 );
   facilityResMetricTable.set( .FACTORY, .CONS, .POWER,   200.0 );
   facilityResMetricTable.set( .FACTORY, .CONS, .INGOT,  2000.0 );
   facilityResMetricTable.set( .FACTORY, .PROD, .PART,   1500.0 );
 
-  facilityResMetricTable.set( .PROBE_MINE, .PROD, .ORE, 10.0 );
-
 
   // ================================ RESOURCE COSTS ================================
   // BUILD is t of PART needed to construct one facility.
   // MAINT is the weekly fraction of that PART cost consumed for upkeep.
 
-  facilityResMetricTable.set( .AGRONOMIC,   .BUILD, .PART,   500.0 );
-  facilityResMetricTable.set( .HYDROPONIC,  .BUILD, .PART,  8000.0 );
-  facilityResMetricTable.set( .WATER_PLANT, .BUILD, .PART, 10000.0 );
-  facilityResMetricTable.set( .SOLAR_PLANT, .BUILD, .PART,  5000.0 );
-  facilityResMetricTable.set( .POWER_PLANT, .BUILD, .PART, 80000.0 );
-
-  facilityResMetricTable.set( .REFINERY,    .BUILD, .PART, 20000.0 );
-  facilityResMetricTable.set( .GROUND_MINE, .BUILD, .PART, 15000.0 );
-  facilityResMetricTable.set( .FOUNDRY,     .BUILD, .PART, 25000.0 );
-  facilityResMetricTable.set( .FACTORY,     .BUILD, .PART, 20000.0 );
-
-  facilityResMetricTable.set( .PROBE_MINE,  .BUILD, .PART,  1000.0 );
+  facilityResMetricTable.set( .AGRONOMIC,      .BUILD, .PART,   500.0 );
+  facilityResMetricTable.set( .HYDROPONIC,     .BUILD, .PART,  8000.0 );
+  facilityResMetricTable.set( .WATER_FACILITY, .BUILD, .PART, 10000.0 );
+  facilityResMetricTable.set( .SOLAR_PLANT,    .BUILD, .PART,  5000.0 );
+  facilityResMetricTable.set( .FUSION_PLANT,   .BUILD, .PART, 80000.0 );
+  facilityResMetricTable.set( .ORE_MINE,       .BUILD, .PART, 15000.0 );
+  facilityResMetricTable.set( .ORE_REFINERY,   .BUILD, .PART, 25000.0 );
+  facilityResMetricTable.set( .FACTORY,        .BUILD, .PART, 20000.0 );
 
 
-  facilityResMetricTable.set( .AGRONOMIC,   .MAINT, .PART,   500.0 * 0.0004 );
-  facilityResMetricTable.set( .HYDROPONIC,  .MAINT, .PART,  8000.0 * 0.0006 );
-  facilityResMetricTable.set( .WATER_PLANT, .MAINT, .PART, 10000.0 * 0.0006 );
-  facilityResMetricTable.set( .SOLAR_PLANT, .MAINT, .PART,  5000.0 * 0.0004 );
-  facilityResMetricTable.set( .POWER_PLANT, .MAINT, .PART, 80000.0 * 0.0008 );
-
-  facilityResMetricTable.set( .REFINERY,    .MAINT, .PART, 20000.0 * 0.0008 );
-  facilityResMetricTable.set( .GROUND_MINE, .MAINT, .PART, 15000.0 * 0.0010 );
-  facilityResMetricTable.set( .FOUNDRY,     .MAINT, .PART, 25000.0 * 0.0010 );
-  facilityResMetricTable.set( .FACTORY,     .MAINT, .PART, 20000.0 * 0.0008 );
-
-  facilityResMetricTable.set( .PROBE_MINE,  .MAINT, .PART, 0.0 );
+  facilityResMetricTable.set( .AGRONOMIC,      .MAINT, .PART,   500.0 * 0.0004 );
+  facilityResMetricTable.set( .HYDROPONIC,     .MAINT, .PART,  8000.0 * 0.0006 );
+  facilityResMetricTable.set( .WATER_FACILITY, .MAINT, .PART, 10000.0 * 0.0006 );
+  facilityResMetricTable.set( .SOLAR_PLANT,    .MAINT, .PART,  5000.0 * 0.0004 );
+  facilityResMetricTable.set( .FUSION_PLANT,   .MAINT, .PART, 80000.0 * 0.0008 );
+  facilityResMetricTable.set( .ORE_MINE,       .MAINT, .PART, 15000.0 * 0.0010 );
+  facilityResMetricTable.set( .ORE_REFINERY,   .MAINT, .PART, 25000.0 * 0.0010 );
+  facilityResMetricTable.set( .FACTORY,        .MAINT, .PART, 20000.0 * 0.0008 );
 }
 
 
@@ -484,10 +479,11 @@ fn loadLegacyIndustryFacilities() void
 test "FacilityType maps current infrastructure and industry types"
 {
   try std.testing.expectEqual( FacilityType.HOUSING,     FacilityType.fromInfType( .HOUSING    ));
-  try std.testing.expectEqual( FacilityType.GROUND_MINE, FacilityType.fromIndType( .GROUND_MINE ));
+  try std.testing.expectEqual( @as( ?FacilityType, .ORE_MINE ), FacilityType.fromIndType( .GROUND_MINE ));
+  try std.testing.expectEqual( @as( ?FacilityType, null ),       FacilityType.fromIndType( .PROBE_MINE  ));
 
   try std.testing.expect( FacilityType.HOUSING.toLegacy().infT == .HOUSING );
-  try std.testing.expect( FacilityType.GROUND_MINE.toLegacy().indT == .GROUND_MINE );
+  try std.testing.expect( FacilityType.ORE_MINE.toLegacy().indT == .GROUND_MINE );
 }
 
 test "facility data separates capacity outputs from base metrics"
@@ -496,6 +492,16 @@ test "facility data separates capacity outputs from base metrics"
 
   try std.testing.expectApproxEqAbs( @as( f64, 100.0 ), FacilityType.HOUSING.getCapacity_f64( .HOUSING ), 0.0001 );
   try std.testing.expectApproxEqAbs( @as( f64, 5000.0 ), FacilityType.DEPOT.getCapacity_f64( .STORAGE ), 0.0001 );
-  try std.testing.expectApproxEqAbs( @as( f64, 0.50 ), FacilityType.GROUND_MINE.getMetric_f64( .AREA_COST ), 0.0001 );
-  try std.testing.expectApproxEqAbs( @as( f64, 1.00 ), FacilityType.GROUND_MINE.getMetric_f64( .CNST_COST ), 0.0001 );
+  try std.testing.expectApproxEqAbs( @as( f64, 0.50 ), FacilityType.ORE_MINE.getMetric_f64( .AREA_COST ), 0.0001 );
+  try std.testing.expectApproxEqAbs( @as( f64, 1.00 ), FacilityType.ORE_MINE.getMetric_f64( .CNST_COST ), 0.0001 );
+}
+
+test "facility boolean data marks solar-scaled production"
+{
+  loadFacilityData();
+
+  try std.testing.expect( FacilityType.AGRONOMIC.isSolarScaled() );
+  try std.testing.expect( FacilityType.SOLAR_PLANT.isSolarScaled() );
+  try std.testing.expect( !FacilityType.HYDROPONIC.isSolarScaled() );
+  try std.testing.expect( !FacilityType.FUSION_PLANT.isSolarScaled() );
 }

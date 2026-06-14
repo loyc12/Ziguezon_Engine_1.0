@@ -77,7 +77,8 @@ pub const IndType = enum( u8 )
 
   pub inline fn getPowerSrc( self : IndType ) PowerSrc
   {
-    // TODO: Redesign power-source rules before moving this to Facility metadata.
+    // TODO: Strip `PowerSrc` after live production scales from Facility
+    // `IS_SOLAR_SCALED` metadata instead of this legacy compatibility hook.
     return switch( self )
     {
       .AGRONOMIC   => .SOLAR,
@@ -346,23 +347,23 @@ pub fn loadIndustryData() void
 
   // ---- GROUND_MINE ----
   // Large open-pit mine, ~675 total staff
-  // Extracts ~5,000 t/week of usable ore from ~50,000 t of overburden
+  // Extracts ~5,000 t/week of usable base metals from ~50,000 t of overburden
   // Consumes water for dust suppression and ore washing
 
   indResMetricTable.set( .GROUND_MINE, .CONS, .LABOUR,   300.0 );
   indResMetricTable.set( .GROUND_MINE, .CONS, .POWER, 1000.0 );
   indResMetricTable.set( .GROUND_MINE, .CONS, .WATER, 2500.0 );
-  indResMetricTable.set( .GROUND_MINE, .PROD, .ORE,   5000.0 );
+  indResMetricTable.set( .GROUND_MINE, .PROD, .BASE_METALS,   5000.0 );
 
 
   // ---- FOUNDRY ----
   // Steel/aluminium smelter, ~675 total staff
-  // Converts ore to ingot at roughly 4:3 by mass (ore contains ~50-80% metal)
+  // Converts base metals to ingot at roughly 4:3 by mass
   // Very power-intensive (electric arc furnaces)
 
   indResMetricTable.set( .FOUNDRY, .CONS, .LABOUR,   300.0 );
   indResMetricTable.set( .FOUNDRY, .CONS, .POWER,  500.0 );
-  indResMetricTable.set( .FOUNDRY, .CONS, .ORE,   5000.0 );
+  indResMetricTable.set( .FOUNDRY, .CONS, .BASE_METALS,   5000.0 );
   indResMetricTable.set( .FOUNDRY, .PROD, .INGOT, 4000.0 );
 
 
@@ -380,7 +381,7 @@ pub fn loadIndustryData() void
   // ---- PROBE_MINE ----
   // Autonomous asteroid mining probe, 0 workers
 
-  indResMetricTable.set( .PROBE_MINE, .PROD, .ORE, 10.0 );
+  indResMetricTable.set( .PROBE_MINE, .PROD, .BASE_METALS, 10.0 );
 
 
   // TODO : move away from PARTS only construction and maintenance
@@ -428,9 +429,9 @@ pub fn loadIndustryData() void
   // Placeholder values only. Do not read these as Luna/Venus tuning yet; Phase 2
   // will decide actual mineral and food-production advantages.
 
-  extractableAccessData.set( .TERRA, .ORE, 1.0 );
-  extractableAccessData.set( .LUNA,  .ORE, 1.0 );
-  extractableAccessData.set( .VENUS, .ORE, 1.0 );
+  extractableAccessData.set( .TERRA, .BASE_METALS, 1.0 );
+  extractableAccessData.set( .LUNA,  .BASE_METALS, 1.0 );
+  extractableAccessData.set( .VENUS, .BASE_METALS, 1.0 );
 
   extractableAccessData.isInit = true;
 }

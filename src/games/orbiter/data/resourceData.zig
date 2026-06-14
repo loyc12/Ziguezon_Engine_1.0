@@ -20,7 +20,7 @@ pub const ResType = enum( u8 )
   WATER,
   POWER,
 
-  ORE,
+  BASE_METALS,
   INGOT,
   PART,  // Complex industrial / consumer eletronics and machinery
 //STRUC, // Simple structural material ( steel, concrete, etc ) // TODO : IMPLEMENT ME
@@ -37,22 +37,22 @@ pub const ResType = enum( u8 )
 
   pub inline fn isCapacityLike( self : ResType ) bool
   {
-    return self.getMetric_f64( .IS_CAPACITY ) > 0.5;
+    return self.getBool( .IS_CAPACITY );
   }
 
   pub inline fn isStockpiled( self : ResType ) bool
   {
-    return self.getMetric_f64( .IS_STOCKPILED ) > 0.5;
+    return self.getBool( .IS_STOCKPILED );
   }
 
   pub inline fn isTransportable( self : ResType ) bool
   {
-    return self.getMetric_f64( .IS_TRANSPORTABLE ) > 0.5;
+    return self.getBool( .IS_TRANSPORTABLE );
   }
 
   pub inline fn usesAccessPricing( self : ResType ) bool
   {
-    return self.getMetric_f64( .PRICE_FROM_ACCESS ) > 0.5;
+    return self.getBool( .PRICE_FROM_ACCESS );
   }
 
   pub inline fn usesSharedDepot( self : ResType ) bool
@@ -76,6 +76,11 @@ pub const ResType = enum( u8 )
   {
     return @intFromFloat( resMetricData.get( self, metric ));
   }
+
+  pub inline fn getBool( self : ResType, flag : ResBoolEnum ) bool
+  {
+    return resBooleanData.get( self, flag );
+  }
 };
 
 
@@ -92,14 +97,25 @@ pub const ResMetricEnum = enum( u8 )
   GROWTH_RATE, // Natural growth ( natural bounty ) // NOTE : deprecated for now : no natural growth occurs
   STORE_RATE,  // Units of space taken per res in their respective InfStore
 
-  IS_CAPACITY,          // Capacity-like resources are local capability, not ordinary stock.
-  IS_STOCKPILED,        // Stockpiled resources consume ordinary shared storage.
-  IS_TRANSPORTABLE,     // Trade/route prep flag; capacity resources should not move.
-  PRICE_FROM_ACCESS,    // Phase 1B prep: price from availability instead of stock flow.
-
   PRICE_BASE,  // Base cost per unit
   PRICE_ELAS,  // Price variation elasticity exponent
   PRICE_DAMP,  // Price updating lerp factor
+};
+
+
+// ================================ RESOURCE BOOLEAN GRID ================================
+// NOTE : Mostly-static per-resource flags
+
+pub var resBooleanData : utl.GenDataGrid( bool, ResType, ResBoolEnum ) = .{};
+
+pub const ResBoolEnum = enum( u8 )
+{
+  pub const count = @typeInfo( @This() ).@"enum".fields.len;
+
+  IS_CAPACITY,       // Capacity-like resources are local capability, not ordinary stock.
+  IS_STOCKPILED,     // Stockpiled resources consume ordinary shared storage.
+  IS_TRANSPORTABLE,  // Trade/route prep flag; capacity resources should not move.
+  PRICE_FROM_ACCESS, // Phase 1B prep: price from availability instead of stock flow.
 };
 
 
@@ -130,48 +146,49 @@ pub const ResStateEnum = enum( u8 )
 
 pub fn loadResourceData() void
 {
-  resMetricData.fillWith( 0.0 );
+  resMetricData.fillWith(  0.0   );
+  resBooleanData.fillWith( false );
 
   inline for( 0..ResType.count )| r |
   {
     const resT = ResType.fromIdx( r );
 
-    resMetricData.set( resT, .IS_STOCKPILED,    1.0 );
-    resMetricData.set( resT, .IS_TRANSPORTABLE, 1.0 );
+    resBooleanData.set( resT, .IS_STOCKPILED,    true );
+    resBooleanData.set( resT, .IS_TRANSPORTABLE, true );
   }
 
-  resMetricData.set( .LABOUR, .IS_CAPACITY,       1.0 );
-  resMetricData.set( .LABOUR, .IS_STOCKPILED,     0.0 );
-  resMetricData.set( .LABOUR, .IS_TRANSPORTABLE,  0.0 );
-  resMetricData.set( .LABOUR, .PRICE_FROM_ACCESS, 1.0 );
+  resBooleanData.set( .LABOUR, .IS_CAPACITY,       true  );
+  resBooleanData.set( .LABOUR, .IS_STOCKPILED,     false );
+  resBooleanData.set( .LABOUR, .IS_TRANSPORTABLE,  false );
+  resBooleanData.set( .LABOUR, .PRICE_FROM_ACCESS, true  );
 
 
   // ================================ MASS ================================
 
-  resMetricData.set( .LABOUR,  .MASS, 0.0 );
-  resMetricData.set( .FUEL,  .MASS, 2.0 );
+  resMetricData.set( .LABOUR,      .MASS, 0.0 );
+  resMetricData.set( .FUEL,        .MASS, 2.0 );
 
-  resMetricData.set( .FOOD,  .MASS, 2.0 );
-  resMetricData.set( .WATER, .MASS, 2.0 );
-  resMetricData.set( .POWER, .MASS, 0.0 );
+  resMetricData.set( .FOOD,        .MASS, 2.0 );
+  resMetricData.set( .WATER,       .MASS, 2.0 );
+  resMetricData.set( .POWER,       .MASS, 0.0 );
 
-  resMetricData.set( .ORE,   .MASS, 5.0 );
-  resMetricData.set( .INGOT, .MASS, 4.0 );
-  resMetricData.set( .PART,  .MASS, 3.0 );
+  resMetricData.set( .BASE_METALS, .MASS, 5.0 );
+  resMetricData.set( .INGOT,       .MASS, 4.0 );
+  resMetricData.set( .PART,        .MASS, 3.0 );
 
 
   // ================================ DECAY RATE ================================
 
-  resMetricData.set( .LABOUR,  .DECAY_RATE, 1.00 );
-  resMetricData.set( .FUEL,  .DECAY_RATE, 0.03 );
+  resMetricData.set( .LABOUR,      .DECAY_RATE, 1.00 );
+  resMetricData.set( .FUEL,        .DECAY_RATE, 0.03 );
 
-  resMetricData.set( .FOOD,  .DECAY_RATE, 0.05 );
-  resMetricData.set( .WATER, .DECAY_RATE, 0.03 );
-  resMetricData.set( .POWER, .DECAY_RATE, 0.05 );
+  resMetricData.set( .FOOD,        .DECAY_RATE, 0.05 );
+  resMetricData.set( .WATER,       .DECAY_RATE, 0.03 );
+  resMetricData.set( .POWER,       .DECAY_RATE, 0.05 );
 
-  resMetricData.set( .ORE,   .DECAY_RATE, 0.01 );
-  resMetricData.set( .INGOT, .DECAY_RATE, 0.01 );
-  resMetricData.set( .PART,  .DECAY_RATE, 0.01 );
+  resMetricData.set( .BASE_METALS, .DECAY_RATE, 0.01 );
+  resMetricData.set( .INGOT,       .DECAY_RATE, 0.01 );
+  resMetricData.set( .PART,        .DECAY_RATE, 0.01 );
 
 
   // ================================ GROWTH RATE ================================
@@ -187,54 +204,71 @@ pub fn loadResourceData() void
   // Lower values = more of that resource fits per DEPOT unit
   // WATER and POWER have high flow but compact storage (tanks, grid buffers)
 
-  resMetricData.set( .LABOUR,  .STORE_RATE, 1.00 ); // Has its own "storage" ( housing ) // NOTE : Should be more than enough in every situation
-  resMetricData.set( .FUEL,  .STORE_RATE, 1.00 ); // Dense liquid, standard containers
+  resMetricData.set( .LABOUR,      .STORE_RATE, 1.00 ); // Has its own "storage" ( housing ) // NOTE : Should be more than enough in every situation
+  resMetricData.set( .FUEL,        .STORE_RATE, 1.00 ); // Dense liquid, standard containers
 
-  resMetricData.set( .FOOD,  .STORE_RATE, 1.00 ); // Standard bulk storage
-  resMetricData.set( .WATER, .STORE_RATE, 0.05 ); // 1t water = 1m³, tanks hold 20× more per unit // NOTE : Temp fix until WATER gets its own storage
-  resMetricData.set( .POWER, .STORE_RATE, 0.05 ); // Grid buffers, 1 MWh takes minimal space      // NOTE : Temp fix until POWER gets its own storage
+  resMetricData.set( .FOOD,        .STORE_RATE, 1.00 ); // Standard bulk storage
+  resMetricData.set( .WATER,       .STORE_RATE, 0.05 ); // 1t water = 1m³, tanks hold 20× more per unit // NOTE : Temp fix until WATER gets its own storage
+  resMetricData.set( .POWER,       .STORE_RATE, 0.05 ); // Grid buffers, 1 MWh takes minimal space      // NOTE : Temp fix until POWER gets its own storage
 
-  resMetricData.set( .ORE,   .STORE_RATE, 1.00 ); // Bulk piles, standard
-  resMetricData.set( .INGOT, .STORE_RATE, 1.00 ); // Stacked,    standard
-  resMetricData.set( .PART,  .STORE_RATE, 1.00 ); // Palletized, standard
+  resMetricData.set( .BASE_METALS, .STORE_RATE, 1.00 ); // Bulk piles, standard
+  resMetricData.set( .INGOT,       .STORE_RATE, 1.00 ); // Stacked,    standard
+  resMetricData.set( .PART,        .STORE_RATE, 1.00 ); // Palletized, standard
 
   // ================================ PRICES ================================
 
-  resMetricData.set( .LABOUR,  .PRICE_BASE, 0.0050 );
-  resMetricData.set( .FUEL,  .PRICE_BASE, 0.1000 );
+  resMetricData.set( .LABOUR,      .PRICE_BASE, 0.0050 );
+  resMetricData.set( .FUEL,        .PRICE_BASE, 0.1000 );
 
-  resMetricData.set( .FOOD,  .PRICE_BASE, 0.0200 );
-  resMetricData.set( .WATER, .PRICE_BASE, 0.0005 );
-  resMetricData.set( .POWER, .PRICE_BASE, 0.0010 );
+  resMetricData.set( .FOOD,        .PRICE_BASE, 0.0200 );
+  resMetricData.set( .WATER,       .PRICE_BASE, 0.0005 );
+  resMetricData.set( .POWER,       .PRICE_BASE, 0.0010 );
 
-  resMetricData.set( .ORE,   .PRICE_BASE, 0.0100 );
-  resMetricData.set( .INGOT, .PRICE_BASE, 0.0300 );
-  resMetricData.set( .PART,  .PRICE_BASE, 0.0900 );
-
-
-  resMetricData.set( .LABOUR,  .PRICE_ELAS, 0.50 ); // Stable - labour market shouldn't oscillate wildly
-  resMetricData.set( .FUEL,  .PRICE_ELAS, 0.60 ); // Moderate - industrial commodity
-
-  resMetricData.set( .FOOD,  .PRICE_ELAS, 0.80 ); // High - essential, price must spike during shortage
-  resMetricData.set( .WATER, .PRICE_ELAS, 0.80 ); // High - essential
-  resMetricData.set( .POWER, .PRICE_ELAS, 0.70 ); // High-moderate - essential but more substitutable
-
-  resMetricData.set( .ORE,   .PRICE_ELAS, 0.50 ); // Low - bulk commodity, stable
-  resMetricData.set( .INGOT, .PRICE_ELAS, 0.60 ); // Low-moderate - processed commodity
-  resMetricData.set( .PART,  .PRICE_ELAS, 0.70 ); // Moderate - high-value, competed over by many consumers
+  resMetricData.set( .BASE_METALS, .PRICE_BASE, 0.0100 );
+  resMetricData.set( .INGOT,       .PRICE_BASE, 0.0300 );
+  resMetricData.set( .PART,        .PRICE_BASE, 0.0900 );
 
 
-  resMetricData.set( .LABOUR,  .PRICE_DAMP, 0.15 ); // Slow - labour market has inertia
-  resMetricData.set( .FUEL,  .PRICE_DAMP, 0.20 ); // Moderate
+  resMetricData.set( .LABOUR,      .PRICE_ELAS, 0.50 ); // Stable - labour market shouldn't oscillate wildly
+  resMetricData.set( .FUEL,        .PRICE_ELAS, 0.60 ); // Moderate - industrial commodity
 
-  resMetricData.set( .FOOD,  .PRICE_DAMP, 0.25 ); // Fast - perishable, must react quickly
-  resMetricData.set( .WATER, .PRICE_DAMP, 0.25 ); // Fast - essential
-  resMetricData.set( .POWER, .PRICE_DAMP, 0.20 ); // Moderate - grid has some buffer
+  resMetricData.set( .FOOD,        .PRICE_ELAS, 0.80 ); // High - essential, price must spike during shortage
+  resMetricData.set( .WATER,       .PRICE_ELAS, 0.80 ); // High - essential
+  resMetricData.set( .POWER,       .PRICE_ELAS, 0.70 ); // High-moderate - essential but more substitutable
 
-  resMetricData.set( .ORE,   .PRICE_DAMP, 0.10 ); // Slow - stockpiles buffer shocks
-  resMetricData.set( .INGOT, .PRICE_DAMP, 0.15 ); // Slow
-  resMetricData.set( .PART,  .PRICE_DAMP, 0.20 ); // Moderate - high demand from multiple sectors
+  resMetricData.set( .BASE_METALS, .PRICE_ELAS, 0.50 ); // Low - bulk commodity, stable
+  resMetricData.set( .INGOT,       .PRICE_ELAS, 0.60 ); // Low-moderate - processed commodity
+  resMetricData.set( .PART,        .PRICE_ELAS, 0.70 ); // Moderate - high-value, competed over by many consumers
 
 
-  resMetricData.isInit = true;
+  resMetricData.set( .LABOUR,      .PRICE_DAMP, 0.15 ); // Slow - labour market has inertia
+  resMetricData.set( .FUEL,        .PRICE_DAMP, 0.20 ); // Moderate
+
+  resMetricData.set( .FOOD,        .PRICE_DAMP, 0.25 ); // Fast - perishable, must react quickly
+  resMetricData.set( .WATER,       .PRICE_DAMP, 0.25 ); // Fast - essential
+  resMetricData.set( .POWER,       .PRICE_DAMP, 0.20 ); // Moderate - grid has some buffer
+
+  resMetricData.set( .BASE_METALS, .PRICE_DAMP, 0.10 ); // Slow - stockpiles buffer shocks
+  resMetricData.set( .INGOT,       .PRICE_DAMP, 0.15 ); // Slow
+  resMetricData.set( .PART,        .PRICE_DAMP, 0.20 ); // Moderate - high demand from multiple sectors
+
+  resMetricData.isInit   = true;
+  resBooleanData.isInit  = true;
+}
+
+
+// ================================ TESTS ================================
+
+test "resource boolean data separates flags from numeric metrics"
+{
+  loadResourceData();
+
+  try std.testing.expect( ResType.LABOUR.isCapacityLike() );
+  try std.testing.expect( ResType.LABOUR.usesAccessPricing() );
+  try std.testing.expect( !ResType.LABOUR.isStockpiled() );
+  try std.testing.expect( !ResType.LABOUR.isTransportable() );
+
+  try std.testing.expect( ResType.BASE_METALS.isStockpiled() );
+  try std.testing.expect( ResType.BASE_METALS.isTransportable() );
+  try std.testing.expect( !ResType.BASE_METALS.isCapacityLike() );
 }

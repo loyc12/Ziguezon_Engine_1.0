@@ -192,14 +192,14 @@ pub const Economy = struct
 
       const seedWeight = switch( resT )
       {
-        .LABOUR  => 1.00,
-        .FUEL  => 0.05,
-        .FOOD  => 0.25,
-        .WATER => 0.25,
-        .POWER => 0.25,
-        .ORE   => 0.25,
-        .INGOT => 0.25,
-        .PART  => 0.05,
+        .LABOUR      => 1.00,
+        .FUEL        => 0.05,
+        .FOOD        => 0.25,
+        .WATER       => 0.25,
+        .POWER       => 0.25,
+        .BASE_METALS => 0.25,
+        .INGOT       => 0.25,
+        .PART        => 0.05,
       };
 
       if( resT.usesSharedDepot() and depotWeight > utl.EPS )
@@ -390,14 +390,14 @@ pub const Economy = struct
       {
         totalWeight += switch( resT )
         {
-          .FUEL  => 0.05,
-          .FOOD  => 0.25,
-          .WATER => 0.25,
-          .POWER => 0.25,
-          .ORE   => 0.25,
-          .INGOT => 0.25,
-          .PART  => 0.05,
-          else   => 0.00,
+          .FUEL        => 0.05,
+          .FOOD        => 0.25,
+          .WATER       => 0.25,
+          .POWER       => 0.25,
+          .BASE_METALS => 0.25,
+          .INGOT       => 0.25,
+          .PART        => 0.05,
+          else         => 0.00,
         };
       }
     }
@@ -1018,9 +1018,9 @@ test "Economy DEPOT usage sums ordinary resource storage"
 
   const depotCap = econ.getDepotStorageCapacity();
 
-  econ.resState.set( .COUNT, .LABOUR, depotCap );
-  econ.resState.set( .COUNT, .FOOD,   depotCap * 0.25 );
-  econ.resState.set( .COUNT, .ORE,    depotCap * 0.25 );
+  econ.resState.set( .COUNT, .LABOUR,      depotCap );
+  econ.resState.set( .COUNT, .FOOD,        depotCap * 0.25 );
+  econ.resState.set( .COUNT, .BASE_METALS, depotCap * 0.25 );
 
   econ.updateInfUsage();
 

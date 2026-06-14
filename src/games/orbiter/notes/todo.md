@@ -6,13 +6,14 @@ This file tracks the active task loop for the current Orbiter rework. Use
 [roadmap.md](roadmap.md) as the implementation sequence.
 
 Phase 1C static `FacilityType` data baseline is complete. The next slice should
-settle facility/resource naming and power-source behavior, then verify the
-storage-waste attribution dependency before the facility runtime migration
-starts.
+settle facility/resource naming, separate boolean data from numeric metrics,
+mark solar-scaled facilities, and verify the storage-waste attribution
+dependency before the facility runtime migration starts.
 
-## Phase 1D - Power Sources And Waste Attribution
+## Phase 1D - Facility Naming And Waste Attribution
 
-Goal: define the power-source model that facilities will use, and make the
+Goal: stabilize the static facility/resource vocabulary, use boolean data grids
+for flags, leave `PowerSrc` as a temporary legacy hook, and make the
 storage-waste accounting dependency explicit for the future `econPipeline`.
 
 This slice should stay focused. Do not migrate live economy state from
@@ -23,8 +24,9 @@ This slice should stay focused. Do not migrate live economy state from
 
 Long-term decisions from the Phase 1C intake:
 
-* power-source behavior should be redesigned in this pass, not folded into
-  `FacilityType` ad hoc;
+* power-source behavior should not be folded into `FacilityType` ad hoc;
+* `PowerSrc` should stay only as a temporary legacy accessibility fix until
+  facility solar scaling replaces it;
 * production-share proportional storage waste should wait until the accounting
   path can preserve producer attribution;
 * live infrastructure and industry runtime paths remain hooked until a later
@@ -34,7 +36,7 @@ Long-term decisions from the Phase 1C intake:
 * `REFINERY` and `PROBE_MINE` are not desirable long-term `FacilityType` cases;
 * facility and resource names should be reviewed before more metadata depends on
   them, including replacing names such as `GROUND_MINE` with names like
-  `MINE_ORE` and moving outputs toward resources such as `BASE_METALS`, later
+  `ORE_MINE` and moving outputs toward resources such as `BASE_METALS`, later
   `RARE_EARTHS`, and a better name for regolith-like bulk material;
 * facility and resource data comments must preserve unit context. Unit notes are
   balancing data, not cosmetic comments, especially for data-matrix values.
@@ -48,10 +50,12 @@ another.
 
 Likely archive candidates for this slice:
 
-* `src/games/orbiter/data/powerData.zig`;
-* `src/games/orbiter/data/facilityData.zig`, if power metadata is added there;
+* `src/games/orbiter/data/facilityData.zig`;
 * `src/games/orbiter/data/industryData.zig`, if `getPowerSrc()` changes;
 * `src/games/orbiter/econ/econSolver.zig`, if storage-waste accounting changes.
+
+If the later power-source decision edits or deletes `PowerSrc`, archive
+`src/games/orbiter/data/powerData.zig` before that pass.
 
 Files already archived during Phase 1A, 1B, or 1C can be edited without creating
 another copy unless the user asks for a second archive.
@@ -66,10 +70,10 @@ metadata to unstable enum cases:
 * review current industry-derived names and rename unclear cases into the new
   facility naming scheme;
 * prefer output- or role-oriented names where that is clearer, such as
-  `MINE_ORE` instead of `GROUND_MINE`;
+  `ORE_MINE` instead of `GROUND_MINE`;
 * check resource-output names before wiring facility rows deeper into future
-  logic, especially `ORE` / `INGOT` and likely replacements such as
-  `BASE_METALS`, later `RARE_EARTHS`, and a better name for regolith-like bulk
+  logic. `ORE` has become `BASE_METALS`; later passes still need to decide
+  whether to add `RARE_EARTHS` and a better name for regolith-like bulk
   material;
 * keep or port unit comments when renaming resources/facilities, especially
   resource and facility data-matrix rows;
@@ -85,43 +89,40 @@ Validation:
 * removed static facility cases must not break live infrastructure/industry
   runtime behavior.
 
-## 3. Define Power-Source Semantics
+## 3. Add Boolean Data Grids
 
-Clarify what `PowerSrc` means before moving it into facilities:
+Move static flags out of numeric metric grids and into boolean data grids:
 
-* decide whether `GRID`, `SOLAR`, and later candidates such as fueled or beamed
-  power are facility input modes, production scalers, transport modes, or a
-  mix of those;
-* decide whether solar access should scale only production or both production
-  and input consumption as it currently does for solar-powered industries;
-* decide how local power production should differ from facilities that merely
-  require grid electricity;
-* keep the first rule set small enough for current facilities.
-
-Validation:
-
-* the resulting model should explain current `AGRONOMIC`, `SOLAR_PLANT`, and
-  `PROBE_MINE` solar behavior without making non-solar facilities ambiguous;
-* unresolved future power modes should be documented as TODOs, not implemented.
-
-## 4. Add Static Power Metadata
-
-Once semantics are clear, add the smallest useful static data surface:
-
-* either extend `powerData.zig` or add facility-facing power metadata in
-  `facilityData.zig`;
-* keep `IndType.getPowerSrc()` as the live compatibility path unless the
-  replacement is fully equivalent;
-* if facility power metadata is added, mirror current solar/grid assignments for
-  current industry-backed facilities;
-* do not change live economy behavior unless the compatibility path remains
-  visibly equivalent.
+* add `resBooleanData` for resource flags such as capacity-like, stockpiled,
+  transportable, and access-priced;
+* add `facilityBooleanData` for facility flags that should not live in numeric
+  metrics;
+* add `IS_SOLAR_SCALED` for facilities whose production should scale by local
+  sunlight after the live solver migrates to facilities;
+* keep boolean grids generic enough for later resource, facility, and data-enum
+  flags.
 
 Validation:
 
-* `FacilityType` should expose enough power metadata for the future solver
-  migration;
-* current game behavior should not change unless explicitly documented.
+* resource boolean helper methods should no longer interpret `f64` `0.0` /
+  `1.0` flags;
+* `AGRONOMIC` and `SOLAR_PLANT` should be marked solar-scaled in
+  `FacilityType`;
+* current live behavior should not change.
+
+## 4. PowerSrc Compatibility
+
+Do not add a new facility power-source metadata table.
+
+Leave `PowerSrc` as a temporary legacy accessibility fix while live production
+still reads `IndType`. Once production scales through `FacilityType` and
+`IS_SOLAR_SCALED`, strip the old `PowerSrc` concept unless a later design pass
+finds a concrete reason to keep it.
+
+Validation:
+
+* no new `FacilityType` power-source metadata should be added in Phase 1D;
+* `IndType.getPowerSrc()` should remain only as a compatibility hook.
 
 ## 5. Storage Waste Attribution Prep
 
@@ -147,9 +148,8 @@ Validation:
 
 Review these source TODOs during the pass:
 
-* `data/industryData.zig`: `getPowerSrc()` should either become a compatibility
-  wrapper around new power metadata or keep a TODO explaining why it cannot move
-  yet.
+* `data/industryData.zig`: `getPowerSrc()` should keep a TODO explaining that
+  it is a temporary compatibility hook until facility solar scaling replaces it.
 * `econ/econSolver.zig`: the shared-depot overflow comment should keep explaining
   why production-share proportional waste waits for `econPipeline` producer
   attribution.

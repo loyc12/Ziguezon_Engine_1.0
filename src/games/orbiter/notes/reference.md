@@ -268,16 +268,16 @@ Current resources:
 * `FOOD`;
 * `WATER`;
 * `POWER`;
-* `ORE`;
+* `BASE_METALS`;
 * `INGOT`;
 * `PART`.
 
 Resource metrics include mass, decay rate, deprecated growth rate, storage rate,
-capacity-resource flag, stockpiled-resource flag, transportability flag,
-access-pricing prep flag, base price, price elasticity, and price dampening.
-`LABOUR` is the first capacity-like, non-transportable, access-priced prep
-resource and stores through `HOUSING`; ordinary stockpiled resources store
-through the shared `DEPOT` pool.
+base price, price elasticity, and price dampening. Resource boolean data holds
+capacity-like, stockpiled, transportable, and access-pricing flags. `LABOUR` is
+the first capacity-like, non-transportable, access-priced prep resource and
+stores through `HOUSING`; ordinary stockpiled resources store through the shared
+`DEPOT` pool.
 
 `ResState.LIMIT` remains per-resource for compatibility. For shared-depot
 resources it now means the maximum that resource could hold if the current
@@ -322,36 +322,55 @@ pollution. Industry resource matrices define operational consumption,
 operational production, `PART` build cost, and `PART` maintenance cost.
 
 Industry data also owns a temporary Phase 2-facing extractable accessibility
-grid keyed by body and resource. It currently declares equal placeholder `ORE`
+grid keyed by body and resource. It currently declares equal placeholder `BASE_METALS`
 accessibility for Terra, Luna, and Venus; no Luna mineral advantage or Venus
 food-production tuning is active yet.
 
 Static facility data exists in `facilityData.zig`. It introduces `FacilityType`
-as the unified identity for current infrastructure and industry roles, plus:
+as the unified identity for current infrastructure and selected industry roles,
+plus:
 
 * `FacilityCategory` for growth, extraction, manufacturing, service,
   transportation, and capacity grouping;
 * `facilityMetricData` for mass, area cost, construction effort cost, and
   pollution;
+* `facilityBooleanData` for static flags such as `IS_SOLAR_SCALED`;
 * `facilityCapacityData` for explicit area, storage, housing, and construction
   capacity outputs;
 * `facilityResMetricTable` for consumption, production, build, and maintenance
   resource rows;
 * `LegacyFacility` plus mapping helpers back to `InfType` and `IndType`.
 
+Current static facility cases are:
+
+* `HABITAT`;
+* `DEPOT`;
+* `HOUSING`;
+* `ASSEMBLY`;
+* `AGRONOMIC`;
+* `HYDROPONIC`;
+* `WATER_FACILITY`;
+* `SOLAR_PLANT`;
+* `FUSION_PLANT`;
+* `ORE_MINE`;
+* `ORE_REFINERY`;
+* `FACTORY`.
+
+`FacilityType.fromIndType()` returns `null` for live legacy industries that
+should not receive new facility metadata yet, currently `REFINERY` and
+`PROBE_MINE`.
+
 This facility surface is loaded and init-checked with the other Orbiter static
 data, but it is not the live runtime path yet. Current economy state,
 `EconSolver`, `BuildQueue`, and debug auto-build still read `InfType`,
 `IndType`, `infState`, and `indState`.
 
-Known data caveat: the live industry `loadIndustryData()` build-cost section
-currently writes `.AREA_COST` instead of `.CNST_COST`. The facility mirror keeps
-area cost and construction effort separated, but live economy behavior is still
-controlled by the legacy industry tables until the runtime migration.
-
 `PowerSrc` exists with `GRID` and `SOLAR`, but its metric grid only has a dummy
-metric. It is currently used mainly by industry to decide whether production is
-sun-access scaled.
+metric. It is a temporary compatibility hook for legacy `IndType` production
+scaling. Static facility data uses `IS_SOLAR_SCALED` instead of a facility
+power-source table; once live production scales from facility data, `PowerSrc`
+should be stripped unless a later design pass finds a concrete reason to keep
+it.
 
 `VesType` exists with probe, shuttle, starship, and station metrics. Vessels do
 not have construction, state, lifecycle, or trade integration.

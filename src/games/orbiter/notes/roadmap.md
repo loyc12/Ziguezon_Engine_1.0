@@ -121,6 +121,7 @@ Implemented:
 
 * add the resource metadata needed to distinguish ordinary resources from
   capacity resources;
+* move resource flags out of numeric metrics and into `resBooleanData`;
 * mark capacity resources as non-transportable;
 * mark stockpiled resources separately from capacity-like resources;
 * add an access-pricing prep flag for later capacity-resource pricing;
@@ -130,7 +131,7 @@ Implemented:
 * aggregate ordinary stockpiled resources into one shared `DEPOT` storage pool;
 * exclude `LABOUR` from shared depot usage;
 * publish per-resource overflow waste through solver logs and `ResStockEnum.DESTR`;
-* add equal Terra/Luna/Venus `ORE` accessibility placeholders for later tuning.
+* add equal Terra/Luna/Venus `BASE_METALS` accessibility placeholders for later tuning.
 
 Remaining work:
 
@@ -174,14 +175,25 @@ Implemented:
 * mirror current industry data where it consumes or produces ordinary resources;
 * separate facility capacity outputs into area, storage, housing, and
   construction capacity rows;
+* add `facilityBooleanData` and mark solar-scaled facility production with
+  `IS_SOLAR_SCALED`;
+* rename static facility cases away from old implementation terms where the new
+  vocabulary is clear:
+  * `WATER_PLANT` -> `WATER_FACILITY`;
+  * `POWER_PLANT` -> `FUSION_PLANT`;
+  * `GROUND_MINE` -> `ORE_MINE`;
+  * `FOUNDRY` -> `ORE_REFINERY`;
+* leave `REFINERY` and `PROBE_MINE` as legacy-only `IndType` cases rather than
+  adding new `FacilityType` metadata for them;
 * preserve non-MVP facility entries as commented-out enum candidates.
 
 Remaining work:
 
-* decide and implement the power-source model before moving solar/grid behavior
-  from `IndType.getPowerSrc()` into facility metadata;
+* keep `PowerSrc` only as a temporary legacy accessibility hook until
+  production scaling moves from `IndType.getPowerSrc()` to facility
+  `IS_SOLAR_SCALED`;
 * use the starred facility entries in `feature_ideas/facilities.md` as the
-  mandatory Phase 1 set once final names and power-source rules are settled;
+  mandatory Phase 1 set once final names are settled;
 * migrate live economy state from `infState` / `indState` to facility state;
 * migrate solver, construction, ecology, finance, and debug growth paths onto
   facilities;
