@@ -23,7 +23,7 @@ const utl = @import( "utils" );
 //pub const Startup_Window_Width     : u16 = 1080;
 //pub const Startup_Window_Height    : u16 = 720;
 
-  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Empty Template";
+  pub const Startup_Window_Title     : [ :0 ] const u8 = "Ziguezon Engine - Menuer testbed";
 
 
 // Graphical Values
