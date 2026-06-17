@@ -7,12 +7,14 @@ const worldMgr = @import( "../worldManager.zig" );
 
 const Rule        = rule.Rule;
 const RuleContext = rule.RuleContext;
+const EntityId    = @import( "../entity.zig" ).EntityId;
 const World       = worldMgr.World;
 const WorldQuery  = query.WorldQuery;
 
 
-/// Small ordered registry for explicit rule/reaction passes.
-/// This does not own a rule graph or schedule temporary rules.
+/// Small ordered registry for explicit simulation rule passes.
+/// Rules cover both broad current-fact passes and event/fact reactions.
+/// This does not own cadence, a rule graph, or temporary rules.
 pub const RuleManager = struct
 {
   alloc : std.mem.Allocator    = undefined,
@@ -107,7 +109,8 @@ pub const RuleManager = struct
   // ================================ EXECUTION FUNCTIONS ================================
 
   /// Evaluates registered rules in order against one initialized World.
-  /// Rules can inspect queued events through WorldQuery without consuming them.
+  /// Rules can inspect current facts or queued events through WorldQuery without
+  /// mutating broad query results.
   pub fn runAll( self : *RuleManager, world : *World ) bool
   {
     if( !self.isInit )
@@ -227,6 +230,53 @@ test "RuleManager observes events and emits commands without consuming events"
 
   try std.testing.expect( world.getEventCount( TestEvent ) == 2 );
   try std.testing.expect( world.popCommand( TestCommand ).?.value.value == 42 );
+}
+
+test "RuleManager reads current facts and emits commands"
+{
+  const TestComp = struct
+  {
+    pub const compStorePolicy : @import( "../components/component.zig" ).CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const TestCommand = struct
+  {
+    entityId : EntityId = 0,
+    value    : u32     = 0,
+  };
+
+  const Runner = struct
+  {
+    var entityId : EntityId = 0;
+
+    fn run( context : *RuleContext ) bool
+    {
+      const comp = context.query.getComp( TestComp, entityId ) orelse return false;
+      return context.enqueueCommand( TestCommand, .{ .entityId = entityId, .value = comp.value + 1 });
+    }
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp(    TestComp ));
+  try std.testing.expect( world.registerCommand( TestCommand ));
+
+  Runner.entityId = world.createEntity().id;
+  try std.testing.expect( world.addComp( TestComp, Runner.entityId, .{ .value = 41 }));
+
+  var manager : RuleManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect( manager.register( .{ .name = "fact-reader", .runFn = Runner.run }));
+  try std.testing.expect( manager.runAll( &world ));
+
+  const record = world.popCommand( TestCommand ).?;
+  try std.testing.expect( record.value.entityId == Runner.entityId );
+  try std.testing.expect( record.value.value    == 42 );
 }
 
 test "RuleManager rejects uninitialized use and uninitialized worlds"

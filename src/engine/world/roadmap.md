@@ -19,29 +19,33 @@ tasks:
   relation/trait events;
 * typed transient command queues, command metadata, and World command APIs;
 * `World.tick(...)` event tick metadata;
-* compact explicit systems with read-only `WorldQuery` access and command
-  emission;
-* compact explicit rules that observe queued events or queried facts and enqueue
-  commands;
+* compact explicit rules with read-only `WorldQuery` access, deterministic
+  ordering, command emission, and event/fact reaction support;
 * read-only component, relation, event, and trait inspection through
   `WorldQuery`.
 
 Those pieces are reference-baseline facts. Future slices should build on them
 instead of treating them as pending phases.
 
-## 2. Current - Archetypes And Templates
+## 2. Current - Archetypes
 
-Goal: support reusable bundles of initial facts.
+Goal: support reusable data-only bundles of initial facts.
 
 Required work:
 
-* define archetype/template declarations;
-* allow spawning component, relation, trait, and event initialization bundles;
-* add command, system, and rule integration only after those surfaces are stable;
+* define `Archetype` declarations;
+* allow spawning component, relation, and trait initialization bundles;
+* add spawn-time event records only if a generic use case is clear;
+* keep command enqueueing, rule registration, and `RuleSet` integration out of
+  the archetype spawn path until those use cases are concrete;
 * add archetype query integration only after the stored archetype shape exists;
 * keep archetype definitions distinct from entity rows unless explicitly stored
   as facts;
 * provide one minimal generic example.
+
+Use `RuleSet` later for reusable groups of executable rules. Do not use
+`Template` as the engine-facing name for this world surface unless a separate
+non-archetype concept appears.
 
 ## 3. Later - Scheduler
 
@@ -51,8 +55,10 @@ Required work:
 
 * keep `EngineTiming` as the base-tick/frame-pacing authority;
 * build scheduling inside `World.tick(...)`;
-* support command/system/rule execution inside explicit World phases;
-* support systems that run every base tick;
+* support command/rule execution inside explicit World phases;
+* support rules that run every base tick;
+* support `RuleSet` registration as a grouping convenience once rule cadence
+  needs are clearer;
 * support game-defined cadences;
 * support delayed events and temporary rules;
 * avoid a competing `shouldTick()` loop inside World.
@@ -86,6 +92,9 @@ stable enough to describe.
 * Keep engine-level examples minimal and generic.
 * Keep game-specific facts under `src/games`.
 * Prefer explicit ids, policies, and fact tables over hidden object graphs.
+* Preserve the no-registration, minimal-runtime-cost rule from `goals.md`:
+  unused systems may have small init/deinit costs, but should not add meaningful
+  per-tick work during standard runtime.
 * Do not add marker-component support; use traits/metaproperties for
   classification.
 * Do not add storage policies or config bundles without a concrete use case.

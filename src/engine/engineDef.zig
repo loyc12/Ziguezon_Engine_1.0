@@ -121,14 +121,6 @@ pub const CommandRecord       = cmd.CommandRecord;
 pub const CommandQueueFactory = cque.CommandQueueFactory;
 pub const CommandManager      = cmgr.CommandManager;
 
-const sys  = @import( "world/systems/system.zig" );
-const smgr = @import( "world/systems/systemManager.zig" );
-
-pub const System        = sys.System;
-pub const SystemContext = sys.SystemContext;
-pub const SystemFn      = sys.SystemFn;
-pub const SystemManager = smgr.SystemManager;
-
 const rule = @import( "world/rules/rule.zig" );
 const rmgr = @import( "world/rules/ruleManager.zig" );
 
@@ -160,8 +152,6 @@ test "engine world declarations"
   std.testing.refAllDecls( cmd      );
   std.testing.refAllDecls( cque     );
   std.testing.refAllDecls( cmgr     );
-  std.testing.refAllDecls( sys      );
-  std.testing.refAllDecls( smgr     );
   std.testing.refAllDecls( rule     );
   std.testing.refAllDecls( rmgr     );
   std.testing.refAllDecls( uiMgr    );

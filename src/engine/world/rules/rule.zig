@@ -7,9 +7,9 @@ const CommandManager = cmdMgr.CommandManager;
 const WorldQuery     = query.WorldQuery;
 
 
-/// Runtime context passed to rule reactions.
-/// Rules inspect events or current facts through `query` and request changes
-/// through commands.
+/// Runtime context passed to executable simulation rules.
+/// Rules inspect current facts or queued events through `query` and request
+/// future changes through commands.
 pub const RuleContext = struct
 {
   query    : WorldQuery,
@@ -22,11 +22,13 @@ pub const RuleContext = struct
   }
 };
 
-/// Callback shape for compact rule reactions.
-/// Returning false signals a failed rule pass without consuming events.
+/// Callback shape for compact simulation rules.
+/// Returning false signals a failed rule pass without consuming events or
+/// retaining history.
 pub const RuleFn = *const fn ( *RuleContext ) bool;
 
 /// Minimal named rule declaration with deterministic order metadata.
+/// Use rules for both broad simulation passes and event/fact reactions.
 pub const Rule = struct
 {
   name  : []const u8,

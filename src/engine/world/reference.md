@@ -9,9 +9,9 @@ Active task slices belong in [todo.md](todo.md).
 
 `src/engine/world` owns the engine's simulation infrastructure. The current
 implementation is already beyond the original component-only foundation:
-entities, components, relations, traits, event queues, command queues, compact
-systems, and compact rules are live. Several later folders still contain
-placeholders for future systems.
+entities, components, relations, traits, event queues, command queues, and
+compact rules are live. Several later folders still contain placeholders for
+future features.
 
 When this file disagrees with code, inspect code first and refresh this file.
 
@@ -98,8 +98,8 @@ Views remain component-only. They are not the broad query surface for relations,
 events, traits, archetypes, or history.
 
 Read-only component view helpers include `getConst` and `iteratorConst`.
-Mutable `get` and `iterator` remain available for systems that intentionally
-edit component rows.
+Mutable `get` and `iterator` remain available for logic that intentionally edits
+component rows.
 
 ## 6. Queries
 
@@ -266,44 +266,34 @@ Use these selection rules:
 * events for queued records that something happened;
 * commands for queued requests that something should change.
 
-## 11. Systems
+## 11. Rules
 
-Systems are live as compact explicit callbacks.
-
-`SystemContext` passes:
-
-* transient read-only `WorldQuery` access;
-* a `CommandManager` pointer for enqueuing requested changes.
-
-`System` stores a name, order value, and callback. `SystemManager` owns an
-ordered list of these declarations and runs them through explicit
-`runAll(world)` calls. Lower `order` values run first; duplicate names are
-rejected.
-
-Systems do not mutate broad query results through the system surface. They
-inspect via `WorldQuery` and request changes through commands. `World` does not
-own or automatically run a system manager yet; scheduler integration is future
-work.
-
-## 12. Rules
-
-Rules are live as compact explicit reactions.
+Rules are live as compact explicit simulation-logic callbacks.
 
 `RuleContext` passes:
 
-* transient read-only `WorldQuery` access, including event peeking/iteration;
+* transient read-only `WorldQuery` access, including component/relation/trait
+  inspection and event peeking/iteration;
 * a `CommandManager` pointer for enqueuing requested changes.
 
 `Rule` stores a name, order value, and callback. `RuleManager` owns an ordered
 list of these declarations and runs them through explicit `runAll(world)` calls.
 Lower `order` values run first; duplicate names are rejected.
 
-Rules may observe queued events or current queried facts and enqueue commands.
-Peeking and iterating events through rules does not consume event records. Broad
-rule graph ownership, temporary rules, and scheduler integration are not
-implemented.
+Rules cover both broad current-fact passes and event/fact reactions. They may
+observe queued events or current queried facts and enqueue commands. Peeking and
+iterating events through rules does not consume event records.
 
-## 13. Timing
+Rules do not mutate broad query results through the rule surface. `World` does
+not own or automatically run a rule manager yet; cadence, phases, broad rule
+graph ownership, temporary rules, and scheduler integration are future work.
+
+`RuleSet` is the planned name for reusable groups of executable rule
+declarations. A RuleSet should be a logic grouping and registration helper, not
+an archetype, not a second callback primitive, and not an owner of entity fact
+rows.
+
+## 12. Timing
 
 `TickInfo` is the timing snapshot passed into World once per consumed engine
 base tick. It includes:
@@ -317,27 +307,27 @@ base tick. It includes:
 World does not own base-tick pacing; that remains an engine timing
 responsibility.
 
-## 14. Future Placeholders
+## 13. Future Placeholders
 
 The following folders or files are currently placeholders or minimal notes:
 
-* `archetypes`;
+* `archetypes`, for data-only reusable initial-fact bundles;
 * `scheduler`;
 * `particles`;
 * `context`.
 
-These should not be described as complete systems until code and tests exist.
+These should not be described as complete features until code and tests exist.
 
-## 15. Boundaries
+## 14. Boundaries
 
 `engine/world` owns simulation facts and fact managers. It should not depend on
 game-specific concepts or rendering-specific behavior.
 
 Rendering should read simulation facts through render adapters. Games own their
-domain-specific components, relations, events, traits, archetypes, systems, and
-views.
+domain-specific components, relations, events, traits, archetypes, rules,
+RuleSets, and views.
 
-## 16. Validation
+## 15. Validation
 
 Docs-only changes need no build.
 

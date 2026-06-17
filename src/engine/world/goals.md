@@ -27,6 +27,7 @@ first-class support for:
 * reactions;
 * traits;
 * archetypes;
+* RuleSets;
 * particles/effects;
 * scheduled simulation;
 * inspection and explanation.
@@ -42,7 +43,8 @@ organize:
 * event records and queues;
 * rules and reactions;
 * traits and metaproperties;
-* archetypes and templates;
+* archetypes;
+* RuleSets;
 * particle/effect records, emitters, configs, and pools;
 * logical simulation time and scheduling;
 * query and view helpers;
@@ -55,7 +57,7 @@ identifiers meaningful.
 ## 3. Fact Model
 
 Components are for per-entity payload state. They should stay data-first, with
-behavior in systems and rendering in render adapters. Component types must carry
+behavior in rules and rendering in render adapters. Component types must carry
 entity data; dataless components are invalid.
 
 Relations are source-target facts between meaningful entities. They should be
@@ -71,14 +73,17 @@ labels, flags, and presence-style facts. Traits may eventually have type-level
 metadata, but they must not hold per-entity payload data. Do not add
 marker-component support as the main classification mechanism.
 
-Archetypes/templates create reusable bundles of initial facts. Archetype
-definitions are not entity rows unless explicitly stored as facts.
+Archetypes create reusable data-only bundles of initial facts. Archetype
+definitions are not entity rows unless explicitly stored as facts, and they do
+not register executable logic as part of spawning.
 
 Queries/views are transient inspection helpers. They should not become hidden
 owners of simulation facts.
 
 Rules/reactions observe facts and emit commands, events, fact changes, or
-effect triggers.
+effect triggers. `RuleSet` is the planned name for reusable groups of rule
+declarations; it is the logic-side counterpart to data-side archetypes, not
+another name for archetypes.
 
 ## 4. User-Facing Shape
 
@@ -92,13 +97,26 @@ manually handling registry casts or container internals:
 * apply trait;
 * spawn archetype;
 * trigger effect;
-* run/query systems.
+* run/query rules or RuleSets.
 
 Storage policy remains configurable, but it should not dominate ordinary
 game-facing code. Add policies and policy bundles only when a concrete use case
 needs them.
 
-## 5. Storage And Policies
+## 5. Runtime Cost Model
+
+World features should follow a no-registration, minimal-runtime-cost rule. If a
+game has not registered a component store, relation store, trait set, event
+queue, command queue, RuleSet, scheduler item, effect pool, archetype registry,
+or context feature, normal per-tick runtime should not scan, update, dispatch,
+or retain work for that feature.
+
+Small setup and teardown costs are acceptable when initializing managers,
+registering typed stores, unregistering typed stores, or deinitializing the
+World. Runtime cost during normal play should scale mainly with the features a
+game explicitly registered and the rows or queued records it actually owns.
+
+## 6. Storage And Policies
 
 Some fact families need packed storage. Others need sparse or lookup-oriented
 storage. Users should be able to choose performance-relevant storage policies
@@ -119,7 +137,7 @@ add policies or configs preemptively.
 Dataless facts should be queried through presence APIs. Payload retrieval APIs
 should reject zero-sized payloads. Traits should use presence APIs only.
 
-## 6. Time And Scheduling
+## 7. Time And Scheduling
 
 `EngineTiming` remains the base-tick and frame-pacing authority.
 
@@ -127,17 +145,19 @@ should reject zero-sized payloads. Traits should use presence APIs only.
 logical simulation time, and runs scheduled work inside that boundary. The
 World scheduler must not implement a competing base-tick loop.
 
+An empty or unused scheduler should add only minimal per-tick bookkeeping.
+
 The target scheduler should support:
 
-* systems that run every base tick;
-* systems that run at slower or faster logical cadences;
+* rules that run every base tick;
+* rules or RuleSets that run at slower or faster logical cadences;
 * delayed events;
 * temporary rules;
 * game-defined logical time scales.
 
-## 7. Effects And Particles
+## 8. Effects And Particles
 
-Particles and effects should be first-class engine systems, but not ordinary
+Particles and effects should be first-class engine features, but not ordinary
 entities by default.
 
 Persistent gameplay objects that emit or receive effects may be entities.
@@ -149,7 +169,7 @@ interaction.
 Effect playback should be driven from world facts, commands, events, rules, and
 deterministic seeds when replay/debug paths need them.
 
-## 8. Boundaries
+## 9. Boundaries
 
 `utils` owns reusable primitives: data structures, math, timing helpers,
 logging, RNG utilities, generic drawing helpers, generic camera primitives,
@@ -159,32 +179,33 @@ generic UI primitives, and the raylib import surface.
 base-tick/frame pacing, hooks, configs, and phase order.
 
 `engine/world` owns simulation infrastructure: `World`, entities, components,
-relations, events, rules, traits, archetypes, particle/effects records and
-pools, logical simulation time, scheduling, queries/views, and future context
-records.
+relations, events, rules, RuleSets, traits, archetypes, particle/effects
+records and pools, logical simulation time, scheduling, queries/views, and
+future context records.
 
 `engine/render` owns world-facing render adapters and debug render systems.
 Simulation facts should not depend on rendering.
 
 `games` owns game-specific components, relations, events, traits, rules,
-archetypes, effect configs, views, and UI bindings.
+RuleSets, archetypes, effect configs, views, and UI bindings.
 
-## 9. Generic Examples
+## 10. Generic Examples
 
-Core engine systems should include only minimal generic examples that help users
+Core engine surfaces should include only minimal generic examples that help users
 copy patterns:
 
 * at least one component type;
 * at least one relation type;
 * at least one event type;
 * at least one trait/metaproperty type, such as `Persistent`;
-* at least one archetype/template;
+* at least one archetype;
 * at least one rule/reaction example;
+* at least one RuleSet example once grouped rule registration exists;
 * at least one particle/effect example.
 
 Do not grow a large built-in content library inside the engine.
 
-## 10. Success Condition
+## 11. Success Condition
 
 A user can build a fact-oriented simulation with many entities and many
 relationships, define their own simulation types cleanly, choose storage

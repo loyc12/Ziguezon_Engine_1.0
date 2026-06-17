@@ -33,7 +33,7 @@ const Duration             = utl.Duration;
 
 
 /// Timing snapshot passed to World once per consumed engine base tick.
-/// Systems should use this as the simulation-time boundary, not wall-clock time.
+/// Scheduler / rules should use this as the simulation-time boundary, not wall-clock time.
 pub const TickInfo = struct
 {
   baseTickIndex : u128     = 0,
@@ -48,7 +48,7 @@ pub const TickInfo = struct
 /// components, relations, traits, and events through this API.
 pub const World = struct
 {
-  activeEntities   : std.AutoHashMap( EntityId, void ) = undefined,
+  activeEntities   : std.AutoHashMap( EntityId, void ) = undefined, // NTOE : Should this be stored in the registry ( or at all ) ?
   entityIdRegistry : EntityIdRegistry = .{},
   compManager      : CompManager      = .{},
   relationManager  : RelationManager  = .{},

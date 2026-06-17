@@ -7,97 +7,93 @@ implementation order.
 
 ## 1. Current Slice
 
-Collapse the separate system surface into the rule surface.
+Build the first data-only `Archetype` surface.
 
-The current `systems` and `rules` implementations are mechanically almost the
-same: ordered callbacks receive read-only `WorldQuery` access and enqueue
-commands. Keep the preferred name `Rule`, and make rules the single executable
-simulation-logic primitive for both:
+The slice should let games define reusable bundles of initial World facts and
+spawn them through `World` without hiding the resulting entity ids. This is a
+data/fact feature, not a logic feature: archetype spawning may attach
+components, relations, and traits, but it must not enqueue commands, register
+rules, register RuleSets, or add scheduler behavior.
 
-* broad simulation passes that inspect current facts;
-* event/fact reactions that enqueue follow-up commands.
+Keep the scope large enough to produce a usable pattern:
 
-This slice should remove duplicated system/rule code before archetypes,
-scheduler phases, particles, or save/load build on top of the wrong boundary.
+* one clear `Archetype` declaration shape;
+* explicit World spawn helpers;
+* component, relation, and trait initialization through existing typed APIs;
+* useful spawn result data for games that need stable ids;
+* focused tests and documentation refresh.
 
 ## 2. Guardrails
 
-* Prefer the name `Rule` over `System` for the unified executable logic surface.
-* Treat “system” as descriptive language only if needed, not as an engine-owned
-  public API type.
-* Do not keep compatibility aliases unless a live caller needs them.
-* Keep rules read-only with respect to broad `WorldQuery` traversal.
-* Rules should continue to emit requested changes through commands.
-* Preserve event queue semantics: peeking and iteration must not pop records.
-* Do not add scheduler cadence, rule phases, temporary rules, delayed events,
-  delayed commands, replay, undo, or retained history in this slice.
-* Keep game-specific rule lists under `src/games`.
+* Use `Archetype` as the engine-facing name. Do not introduce `Template` unless
+  a separate non-archetype concept appears later.
+* Keep archetypes data-only. Do not register executable logic from archetype
+  spawning.
+* Keep command enqueueing, rule registration, RuleSet registration, scheduler
+  integration, and delayed work out of this slice.
+* Do not add spawn-time event emission unless a concrete generic use case
+  appears during implementation.
+* Keep archetype definitions distinct from entity rows unless explicitly stored
+  as facts later.
+* Keep game-specific archetype payloads under `src/games`.
+* Keep engine examples minimal and generic.
+* Preserve the no-registration, minimal-runtime-cost rule from `goals.md`.
+* Do not add marker components for classification; use traits for dataless
+  classification facts.
+* Do not add storage policies or config bundles without a concrete use case.
 * Do not run formatting passes such as `zig fmt`.
 
 ## 3. Implementation Tasks
 
-1. Define the unified rule boundary.
-   * Update `rules/rule.zig` docs so `Rule` covers broad passes and reactions.
-   * Keep `RuleContext` as read-only `WorldQuery` plus command emission.
-   * Make the default interpretation simple: a rule is an explicit callback run
-     by a caller, not a scheduler-owned job.
-   * Preserve the existing `order` field as the deterministic ordering hook.
-   * Do not add `RuleKind`, phases, cadence, or event filters in this merge.
+1. Define the data-only archetype boundary.
+   * Document declaration expectations in `archetypes/archetype.zig`.
+   * Define the minimal `Archetype` fields needed for registration and spawn.
+   * If a fully declarative typed fact list is too heavy for this slice, use a
+     constrained spawn callback, but document it as initial fact attachment only.
+   * Make the allowed spawn work explicit: create entities, attach components,
+     add relations, and apply traits.
 
-2. Move useful system behavior into rules.
-   * Preserve ordered registration and explicit `runAll(world)` behavior.
-   * Preserve duplicate-name and uninitialized-use rejection.
-   * Preserve tests that demonstrate broad fact inspection plus command
-     emission.
-   * Preserve tests that demonstrate event observation without consuming events.
+2. Add the spawn context and result types.
+   * Provide a context that gives the archetype just enough access to attach
+     initial facts through existing `World` APIs.
+   * Provide a result shape that exposes the created root entity and any
+     additional ids the archetype chooses to report.
+   * Keep ownership and cleanup rules clear for ids allocated during a failed
+     spawn.
 
-3. Remove the duplicated system subsystem.
-   * Delete or empty `src/engine/world/systems/system.zig` and
-     `src/engine/world/systems/systemManager.zig` if no live caller remains.
-   * Remove `System`, `SystemContext`, `SystemFn`, and `SystemManager` exports
-     from `src/engine/engineDef.zig`.
-   * Remove system-specific wording from tests, docs, and comments unless it is
-     intentionally descriptive.
-   * Check `src/games` and engine code for live system API references before
-     deleting public exports.
+3. Implement `ArchetypeManager` only as far as registration requires.
+   * Support init/deinit and duplicate-name rejection.
+   * Reject uninitialized registration and spawn operations cleanly.
+   * Keep the manager dormant when no archetypes are registered.
+   * Avoid game-specific archetype registries inside `engine/world`.
 
-4. Keep command integration unchanged.
-   * Rules should still enqueue commands, not directly mutate broad query
-     results.
-   * Command queues should remain typed, transient, ordered, and manually
-     drained.
-   * `World.tick(...)` should keep command/event metadata behavior unchanged
-     unless a direct conflict appears.
+4. Add World-facing spawn helpers.
+   * Route public spawning through `World` so games do not need manager internals.
+   * Create entity ids explicitly through `World.createEntity()`.
+   * Attach facts through existing `addComp`, `addRelation`, and `applyTrait`
+     APIs.
+   * Ensure failed fact attachment cannot be reported as a successful spawn.
+   * If cleanup is implemented, destroy entities created during a failed spawn
+     rather than leaving partially initialized rows.
 
-5. Refresh docs after implementation.
-   * Update `reference.md` so rules are the sole executable logic primitive.
-   * Trim `roadmap.md` so it no longer plans for separate command/system/rule
-     execution.
-   * Move archetypes/templates back to the next active slice after validation.
-   * Replace this `todo.md` with the archetype/template slice once the merge is
-     complete.
+5. Add one minimal generic example.
+   * Keep it genre-agnostic.
+   * Prefer existing generic facts such as `Persistent` or `LinkedTo`.
+   * Avoid adding built-in content that belongs in `src/games`.
 
 6. Add focused tests.
-   * Unified rule tests should cover current-fact inspection plus command
-     emission.
-   * Unified rule tests should cover queued event observation without popping.
-   * Removal tests should ensure no `SystemManager` declarations are still
-     exported through `engineDef.zig`.
-   * Existing command queue and World command API tests should continue to pass.
+   * Registration rejects duplicate names and uninitialized use.
+   * Spawning attaches initial components, relations, and traits.
+   * Missing registered stores or trait/relation sets cause spawn failure.
+   * Partial-spawn cleanup is covered if cleanup is implemented.
+   * Command and event queues are not touched by archetype spawning.
 
-## 4. Design Decisions
+7. Refresh docs after implementation.
+   * Update `reference.md` with the live `Archetype` shape.
+   * Trim `roadmap.md` so completed archetype work moves into the baseline.
+   * Replace this `todo.md` with the next active slice after validation.
 
-The following decisions guide the merge:
-
-* Keep the unified manager name as `RuleManager`.
-* Delete `src/engine/world/systems/` after useful behavior and tests are moved
-  into `rules`.
-* Rules own deterministic ordering now through the existing `order` field.
-* Rules may eventually own cadence metadata, but cadence shape should be decided
-  during the scheduler slice. Do not add cadence enum values, tick intervals, or
-  phase tags during this merge.
-
-## 5. Validation
+## 4. Validation
 
 Run after code changes:
 
@@ -107,27 +103,35 @@ Run after code changes:
 Use targeted tests while developing, but the slice is not complete until the
 world test surface compiles and the relevant tests pass.
 
-## 6. Deferred Work
+Docs-only edits to this file do not require a build.
+
+## 5. Deferred Work
 
 Later roadmap slices:
 
-* `src/engine/world/archetypes/archetype.zig`;
-* `src/engine/world/archetypes/archetypeManager.zig`;
-* `src/engine/world/scheduler/scheduler.zig`;
+* `RuleSet` declarations and grouped rule registration;
+* scheduler phases and rule cadence;
+* delayed events and temporary rules;
+* command execution ownership;
 * `src/engine/world/particles`;
 * `src/engine/world/context`;
-* `src/engine/world/components/baseComps.zig:178` particle-system TODO.
+* archetype query integration after the stored archetype shape exists;
+* spawn-time events, only if a concrete generic use case appears.
 
 Unrelated to this slice:
 
 * `src/engine/world/entity.zig:22` compact lifecycle mask idea;
-* `src/engine/world/components/baseComps.zig:77` LOD/minScale note.
+* `src/engine/world/components/baseComps.zig:77` LOD/minScale note;
+* `src/engine/world/components/baseComps.zig:178` particle-system TODO.
 
-## 7. Explicit Non-Goals
+## 6. Explicit Non-Goals
 
-* no archetype/template spawning;
+* no Template surface;
+* no RuleSet implementation;
 * no scheduler implementation;
+* no command enqueueing from archetype spawning;
+* no rule registration from archetype spawning;
 * no particle/effect pools;
-* no save/load, replay, undo, or retained command/event/rule history;
+* no save/load, replay, undo, or retained command/event/spawn history;
 * no retained UI state inside simulation `World`;
 * no tilemap migration work in this `engine/world` slice.
