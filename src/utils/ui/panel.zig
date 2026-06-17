@@ -1194,7 +1194,7 @@ pub const Panel = struct
     }
 
     const hovered = self.hitTest( mouse.screenPos );
-    self.pointer.setUiHoverTarget( .fromId( self.key ), targetFromHandle( hovered ), mouse.frameTime );
+    self.pointer.setUiHoverTarget( .fromId( self.key ), targetFromHandle( hovered ) );
 
     inline for( .{ utl.MouseButton.left, utl.MouseButton.right, utl.MouseButton.middle } )| button |
     {

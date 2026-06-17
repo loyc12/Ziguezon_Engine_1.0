@@ -22,6 +22,7 @@ engine-owned UI primitives:
 * manager-level event forwarding;
 * draw ordering;
 * manager debug queries;
+* manager hover-duration readout;
 * engine/game input-consumption boundaries.
 
 The engine layer does not redefine widgets, layouts, primitive hit testing, text
@@ -129,6 +130,7 @@ manager-level query should use the same broad shape while being based only on
 current manager state:
 
 * hovered panel;
+* hovered panel duration;
 * captured panel;
 * pending routed events.
 
@@ -146,7 +148,7 @@ first, then moved into `src/utils/ui` only if it remains engine-agnostic.
 * keep the direct utility `Panel` visible;
 * keep manager-routed overlapping panels;
 * keep a manager route toggle while contract behavior is being hardened;
-* centralize manager/mouse readouts in a debug panel when needed;
+* centralize manager/mouse readouts in a debug panel;
 * avoid popup, modal, window, dropdown, slider, and text-input demos until the
   engine or utility layer actually supports those concepts.
 

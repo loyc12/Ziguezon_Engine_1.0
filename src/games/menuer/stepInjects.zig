@@ -5,30 +5,38 @@ const utl = @import( "utils" );
 
 // ================================ UI SANDBOX STATE ================================
 
-var MAIN_PANEL   : ?utl.Panel   = null;
-var BACK_PANEL   : ?utl.Panel   = null;
-var FRONT_PANEL  : ?utl.Panel   = null;
-var TITLE_LABEL  : utl.UiHandle = .{};
-var STATUS_LABEL : utl.UiHandle = .{};
-var DEBUG_LABEL  : utl.UiHandle = .{};
-var BACK_LABEL   : utl.UiHandle = .{};
-var FRONT_LABEL  : utl.UiHandle = .{};
-var FRONT_DEBUG  : utl.UiHandle = .{};
-var ROW_GROUP    : utl.UiHandle = .{};
-var ABS_GROUP    : utl.UiHandle = .{};
-var COUNT_BUTTON : utl.UiHandle = .{};
-var MOVE_BUTTON  : utl.UiHandle = .{};
-var OPTION_CHECK : utl.UiHandle = .{};
-var ABS_BUTTON   : utl.UiHandle = .{};
-var BACK_BUTTON  : utl.UiHandle = .{};
-var FRONT_BUTTON : utl.UiHandle = .{};
-var FRONT_CHECK  : utl.UiHandle = .{};
-var BACK_HANDLE  : eng.UiPanelHandle = .{};
-var FRONT_HANDLE : eng.UiPanelHandle = .{};
-var CLICK_COUNT  : u32          = 0;
-var MOVE_STEP    : u32          = 0;
-var BACK_COUNT   : u32          = 0;
-var FRONT_COUNT  : u32          = 0;
+var MAIN_PANEL          : ?utl.Panel = null;
+var BACK_PANEL          : ?utl.Panel = null;
+var FRONT_PANEL         : ?utl.Panel = null;
+var MANAGER_DEBUG_PANEL : ?utl.Panel = null;
+var TITLE_LABEL         : utl.UiHandle = .{};
+var STATUS_LABEL        : utl.UiHandle = .{};
+var DEBUG_LABEL         : utl.UiHandle = .{};
+var BACK_LABEL          : utl.UiHandle = .{};
+var BACK_DEBUG          : utl.UiHandle = .{};
+var FRONT_LABEL         : utl.UiHandle = .{};
+var FRONT_DEBUG         : utl.UiHandle = .{};
+var MANAGER_DEBUG_TITLE   : utl.UiHandle = .{};
+var MANAGER_DEBUG_MOUSE   : utl.UiHandle = .{};
+var MANAGER_DEBUG_STATE   : utl.UiHandle = .{};
+var MANAGER_DEBUG_HOVER   : utl.UiHandle = .{};
+var MANAGER_DEBUG_CAPTURE : utl.UiHandle = .{};
+var MANAGER_DEBUG_QUEUE   : utl.UiHandle = .{};
+var ROW_GROUP           : utl.UiHandle = .{};
+var ABS_GROUP           : utl.UiHandle = .{};
+var COUNT_BUTTON        : utl.UiHandle = .{};
+var MOVE_BUTTON         : utl.UiHandle = .{};
+var OPTION_CHECK        : utl.UiHandle = .{};
+var ABS_BUTTON          : utl.UiHandle = .{};
+var BACK_BUTTON         : utl.UiHandle = .{};
+var FRONT_BUTTON        : utl.UiHandle = .{};
+var FRONT_CHECK         : utl.UiHandle = .{};
+var BACK_HANDLE         : eng.UiPanelHandle = .{};
+var FRONT_HANDLE        : eng.UiPanelHandle = .{};
+var CLICK_COUNT         : u32 = 0;
+var MOVE_STEP           : u32 = 0;
+var BACK_COUNT          : u32 = 0;
+var FRONT_COUNT         : u32 = 0;
 
 var MANAGER_ROUTE_ENABLED : bool = true;
 
@@ -42,12 +50,18 @@ fn mainPanelBox() utl.Box2
 
 fn backPanelBox() utl.Box2
 {
-  return utl.uiBoxFromTopLeft( .new( 384.0, 96.0 ), .new( 300.0, 190.0 ));
+  return utl.uiBoxFromTopLeft( .new( 384.0, 96.0 ), .new( 300.0, 230.0 ));
 }
 
 fn frontPanelBox() utl.Box2
 {
-  return utl.uiBoxFromTopLeft( .new( 448.0, 154.0 ), .new( 300.0, 190.0 ));
+  return utl.uiBoxFromTopLeft( .new( 448.0, 154.0 ), .new( 300.0, 230.0 ));
+}
+
+fn managerDebugPanelBox() utl.Box2
+{
+  const size = utl.Vec2.new( 430.0, 278.0 );
+  return utl.uiBoxFromTopLeft( .new( utl.getScreenWidth() - size.x - 24.0, 24.0 ), size );
 }
 
 fn buttonConfig() utl.WidgetConfig
@@ -80,6 +94,20 @@ fn managerPanelConfig( fillCol : utl.Colour ) utl.PanelConfig
   var style = utl.UiStyle{};
   style.fillCol = fillCol;
   style.edgeCol = utl.Colour.pGold;
+
+  return .{
+    .layout  = .column,
+    .padding = 10.0,
+    .gap     = 8.0,
+    .style   = style,
+  };
+}
+
+fn debugPanelConfig() utl.PanelConfig
+{
+  var style = utl.UiStyle{};
+  style.fillCol = utl.Colour.nBlack.setA( 210 );
+  style.edgeCol = utl.Colour.pTeal;
 
   return .{
     .layout  = .column,
@@ -249,6 +277,14 @@ fn buildManagedUi( ng : *eng.Engine ) void
     }
   ) catch .{};
 
+  BACK_DEBUG = back.addLabel(
+    .{
+      .key    = utl.uiKey( "menuer.manager.back.debug" ),
+      .text   = "flags pending",
+      .config = labelConfig( 42.0 ),
+    }
+  ) catch .{};
+
   BACK_BUTTON = back.addButton(
     .{
       .key    = utl.uiKey( "menuer.manager.back.button" ),
@@ -264,7 +300,7 @@ fn buildManagedUi( ng : *eng.Engine ) void
     .{
       .key    = utl.uiKey( "menuer.manager.front.label" ),
       .text   = "Managed front panel",
-      .config = labelConfig( 28.0 ),
+      .config = labelConfig( 42.0 ),
     }
   ) catch .{};
 
@@ -290,8 +326,8 @@ fn buildManagedUi( ng : *eng.Engine ) void
   FRONT_DEBUG = front.addLabel(
     .{
       .key    = utl.uiKey( "menuer.manager.front.debug" ),
-      .text   = "manager hover:none capture:none",
-      .config = labelConfig( 54.0 ),
+      .text   = "flags pending",
+      .config = labelConfig( 42.0 ),
     }
   ) catch .{};
 
@@ -309,6 +345,77 @@ fn buildManagedUi( ng : *eng.Engine ) void
     utl.log( .ERROR, @src(), "Failed to register managed front panel : {}", .{ err });
     return;
   };
+
+  buildManagerDebugUi();
+}
+
+fn buildManagerDebugUi() void
+{
+  MANAGER_DEBUG_PANEL = utl.Panel.init(
+    utl.getDefaultAlloc(),
+    .{
+      .key    = utl.uiKey( "menuer.manager.debug.panel" ),
+      .box    = managerDebugPanelBox(),
+      .config = debugPanelConfig(),
+    }
+  ) catch | err |
+  {
+    utl.log( .ERROR, @src(), "Failed to create menuer manager debug panel : {}", .{ err });
+    return;
+  };
+
+  var panel = &( MANAGER_DEBUG_PANEL.? );
+  panel.setDebugDrawBounds( true );
+
+  MANAGER_DEBUG_TITLE = panel.addLabel(
+    .{
+      .key    = utl.uiKey( "menuer.manager.debug.title" ),
+      .text   = "Manager mouse state",
+      .config = labelConfig( 28.0 ),
+    }
+  ) catch .{};
+
+  MANAGER_DEBUG_MOUSE = panel.addLabel(
+    .{
+      .key    = utl.uiKey( "menuer.manager.debug.mouse" ),
+      .text   = "mouse pending",
+      .config = labelConfig( 38.0 ),
+    }
+  ) catch .{};
+
+  MANAGER_DEBUG_STATE = panel.addLabel(
+    .{
+      .key    = utl.uiKey( "menuer.manager.debug.state" ),
+      .text   = "state pending",
+      .config = labelConfig( 38.0 ),
+    }
+  ) catch .{};
+
+  MANAGER_DEBUG_HOVER = panel.addLabel(
+    .{
+      .key    = utl.uiKey( "menuer.manager.debug.hover" ),
+      .text   = "hover pending",
+      .config = labelConfig( 38.0 ),
+    }
+  ) catch .{};
+
+  MANAGER_DEBUG_CAPTURE = panel.addLabel(
+    .{
+      .key    = utl.uiKey( "menuer.manager.debug.capture" ),
+      .text   = "capture pending",
+      .config = labelConfig( 60.0 ),
+    }
+  ) catch .{};
+
+  MANAGER_DEBUG_QUEUE = panel.addLabel(
+    .{
+      .key    = utl.uiKey( "menuer.manager.debug.queue" ),
+      .text   = "queue pending",
+      .config = labelConfig( 38.0 ),
+    }
+  ) catch .{};
+
+  panel.updateLayout();
 }
 
 pub fn closeUi( ng : ?*eng.Engine ) void
@@ -322,27 +429,36 @@ pub fn closeUi( ng : ?*eng.Engine ) void
   if( MAIN_PANEL )| *panel |{ panel.deinit(); }
   if( BACK_PANEL )| *panel |{ panel.deinit(); }
   if( FRONT_PANEL )| *panel |{ panel.deinit(); }
+  if( MANAGER_DEBUG_PANEL )| *panel |{ panel.deinit(); }
 
-  MAIN_PANEL   = null;
-  BACK_PANEL   = null;
-  FRONT_PANEL  = null;
-  TITLE_LABEL  = .{};
-  STATUS_LABEL = .{};
-  DEBUG_LABEL  = .{};
-  BACK_LABEL   = .{};
-  FRONT_LABEL  = .{};
-  FRONT_DEBUG  = .{};
-  ROW_GROUP    = .{};
-  ABS_GROUP    = .{};
-  COUNT_BUTTON = .{};
-  MOVE_BUTTON  = .{};
-  OPTION_CHECK = .{};
-  ABS_BUTTON   = .{};
-  BACK_BUTTON  = .{};
-  FRONT_BUTTON = .{};
-  FRONT_CHECK  = .{};
-  BACK_HANDLE  = .{};
-  FRONT_HANDLE = .{};
+  MAIN_PANEL          = null;
+  BACK_PANEL          = null;
+  FRONT_PANEL         = null;
+  MANAGER_DEBUG_PANEL = null;
+  TITLE_LABEL         = .{};
+  STATUS_LABEL        = .{};
+  DEBUG_LABEL         = .{};
+  BACK_LABEL          = .{};
+  BACK_DEBUG          = .{};
+  FRONT_LABEL         = .{};
+  FRONT_DEBUG         = .{};
+  MANAGER_DEBUG_TITLE   = .{};
+  MANAGER_DEBUG_MOUSE   = .{};
+  MANAGER_DEBUG_STATE   = .{};
+  MANAGER_DEBUG_HOVER   = .{};
+  MANAGER_DEBUG_CAPTURE = .{};
+  MANAGER_DEBUG_QUEUE   = .{};
+  ROW_GROUP           = .{};
+  ABS_GROUP           = .{};
+  COUNT_BUTTON        = .{};
+  MOVE_BUTTON         = .{};
+  OPTION_CHECK        = .{};
+  ABS_BUTTON          = .{};
+  BACK_BUTTON         = .{};
+  FRONT_BUTTON        = .{};
+  FRONT_CHECK         = .{};
+  BACK_HANDLE         = .{};
+  FRONT_HANDLE        = .{};
 }
 
 fn handleUiEvents( panel : *utl.Panel ) void
@@ -419,6 +535,15 @@ fn panelName( handle : eng.UiPanelHandle ) []const u8
   return "none";
 }
 
+fn widgetName( ng : *eng.Engine, panelHandle : eng.UiPanelHandle, widget : utl.UiHandle ) []const u8
+{
+  if( !widget.isValid() ){ return "none"; }
+
+  const reg   = ng.uiManager.getRegistration( panelHandle ) orelse return "stale";
+  const panel = reg.panel orelse return "null";
+  return if( panel.getWidgetKind( widget ))| kind | @tagName( kind ) else "stale";
+}
+
 fn handleManagerEvents( ng : *eng.Engine ) void
 {
   while( ng.uiManager.popEvent() )| event |
@@ -431,7 +556,6 @@ fn handleManagerEvents( ng : *eng.Engine ) void
         {
           BACK_COUNT += 1;
           panel.setTextFmt( BACK_BUTTON, "Back routed ({d})", .{ BACK_COUNT });
-          panel.setTextFmt( BACK_LABEL, "Back panel event #{d}", .{ BACK_COUNT });
         }
       }
     }
@@ -443,31 +567,104 @@ fn handleManagerEvents( ng : *eng.Engine ) void
         {
           FRONT_COUNT += 1;
           panel.setTextFmt( FRONT_BUTTON, "Front routed ({d})", .{ FRONT_COUNT });
-          panel.setTextFmt( FRONT_LABEL, "Front panel event #{d}", .{ FRONT_COUNT });
         }
         else if( event.event.isChanged( FRONT_CHECK ))
         {
           const checked = panel.getChecked( FRONT_CHECK ) orelse false;
-          panel.setTextFmt( FRONT_LABEL, "Front checkbox changed: {}", .{ checked });
+          panel.setTextFmt( FRONT_CHECK, "Manager checkbox: {}", .{ checked });
         }
       }
     }
   }
 }
 
-fn updateManagerDebug( ng : *eng.Engine ) void
+fn updateManagedPanelDebug( ng : *eng.Engine ) void
 {
+  if( BACK_PANEL )| *panel |
+  {
+    if( ng.uiManager.getRegistration( BACK_HANDLE ))| reg |
+    {
+      panel.setTextFmt(
+        BACK_LABEL,
+        "back h:{d}:{d} layer:{d} z:{d} order:{d}",
+        .{ BACK_HANDLE.idx, BACK_HANDLE.gen, reg.layer, reg.z, reg.order }
+      );
+      panel.setTextFmt(
+        BACK_DEBUG,
+        "flags V:{} I:{} D:{} | local events:{d}",
+        .{ reg.isVisible, reg.isInputEnabled, reg.isDrawEnabled, panel.getEventCount() }
+      );
+    }
+  }
+
   if( FRONT_PANEL )| *panel |
   {
-    const hovered  = panelName( ng.uiManager.getHoveredPanel() );
-    const captured = panelName( ng.uiManager.getCapturedPanel( .left ) );
+    if( ng.uiManager.getRegistration( FRONT_HANDLE ))| reg |
+    {
+      panel.setTextFmt(
+        FRONT_LABEL,
+        "front h:{d}:{d} layer:{d} z:{d} order:{d}",
+        .{ FRONT_HANDLE.idx, FRONT_HANDLE.gen, reg.layer, reg.z, reg.order }
+      );
+      panel.setTextFmt(
+        FRONT_DEBUG,
+        "flags V:{} I:{} D:{} | local events:{d}",
+        .{ reg.isVisible, reg.isInputEnabled, reg.isDrawEnabled, panel.getEventCount() }
+      );
+    }
+  }
+}
+
+fn updateManagerDebugPanel( ng : *eng.Engine ) void
+{
+  if( MANAGER_DEBUG_PANEL )| *panel |
+  {
+    panel.setPanelBox( managerDebugPanelBox() );
+
+    const hoveredPanel   = ng.uiManager.getHoveredPanel();
+    const hoveredWidget  = ng.uiManager.getHoveredWidget();
+    const capturedLeft   = ng.uiManager.getCapturedPanel( .left   );
+    const capturedRight  = ng.uiManager.getCapturedPanel( .right  );
+    const capturedMiddle = ng.uiManager.getCapturedPanel( .middle );
 
     panel.setTextFmt(
-      FRONT_DEBUG,
-      "manager:{s} | hover:{s} | capture:{s} | order:{s}>{s}",
-      .{ if( MANAGER_ROUTE_ENABLED ) "on" else "off", hovered, captured, panelName( ng.uiManager.getPanelAtDrawIndex( 1 )), panelName( ng.uiManager.getPanelAtDrawIndex( 0 )) }
+      MANAGER_DEBUG_MOUSE,
+      "mouse {d:.0}:{d:.0} | hover {d}ms",
+      .{ ng.mouse.screenPos.x, ng.mouse.screenPos.y, ng.uiManager.getHoveredPanelTime().toMs() }
     );
+    panel.setTextFmt(
+      MANAGER_DEBUG_STATE,
+      "manager:{s} | wantsMouse:{} | events:{d}",
+      .{ if( MANAGER_ROUTE_ENABLED ) "on" else "off", ng.uiManager.wantsMouse(), ng.uiManager.getEventCount() }
+    );
+    panel.setTextFmt(
+      MANAGER_DEBUG_HOVER,
+      "hover panel:{s} widget:{s}",
+      .{ panelName( hoveredPanel ), widgetName( ng, hoveredPanel, hoveredWidget ) }
+    );
+    panel.setTextFmt(
+      MANAGER_DEBUG_CAPTURE,
+      "capture L:{s}/{s} R:{s}/{s} M:{s}/{s}",
+      .{
+        panelName( capturedLeft   ), widgetName( ng, capturedLeft,   ng.uiManager.getCapturedWidget( .left   )),
+        panelName( capturedRight  ), widgetName( ng, capturedRight,  ng.uiManager.getCapturedWidget( .right  )),
+        panelName( capturedMiddle ), widgetName( ng, capturedMiddle, ng.uiManager.getCapturedWidget( .middle )),
+      }
+    );
+    panel.setTextFmt(
+      MANAGER_DEBUG_QUEUE,
+      "draw order:{s}>{s} | panels:{d}",
+      .{ panelName( ng.uiManager.getPanelAtDrawIndex( 1 )), panelName( ng.uiManager.getPanelAtDrawIndex( 0 )), ng.uiManager.getPanelCount() }
+    );
+
+    panel.updateLayout();
   }
+}
+
+fn updateManagerDebug( ng : *eng.Engine ) void
+{
+  updateManagedPanelDebug( ng );
+  updateManagerDebugPanel( ng );
 }
 
 fn drawFinalBoxMarker( panel : *utl.Panel ) void
@@ -522,10 +719,10 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   if( MANAGER_ROUTE_ENABLED )
   {
     ng.uiManager.updateInput( ng.mouse );
-    handleManagerEvents( ng );
   }
 
   updateManagerDebug( ng );
+  handleManagerEvents( ng );
   wantsMouse = wantsMouse or ng.uiManager.wantsMouse();
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.p )){ ng.togglePause(); }
@@ -578,4 +775,6 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   }
 
   ng.uiManager.drawAll();
+
+  if( MANAGER_DEBUG_PANEL )| *panel |{ panel.draw(); }
 }

@@ -176,12 +176,8 @@ pub const Mouse = struct
 
   // UI-facing hover targets are set by primitive panels or the future manager
   // after hit testing. They are kept generic to avoid an engine dependency.
-  topPanel      : MouseUiTarget = .{},
-  topWidget     : MouseUiTarget = .{},
-  prevTopPanel  : MouseUiTarget = .{},
-  prevTopWidget : MouseUiTarget = .{},
-
-  hoverTime : Duration = .{},
+  topPanel  : MouseUiTarget = .{},
+  topWidget : MouseUiTarget = .{},
 
 
   // ================================ UPDATING ================================
@@ -264,7 +260,6 @@ pub const Mouse = struct
 
     // UI routing should overwrite targets through `setUiHoverTarget()` after
     // hit testing. Raw raylib sampling has no panel context.
-    self.updateHoverTime( deltaTime );
   }
 
   pub inline fn updateButton( self : *Mouse, button : MouseButton, buttonDown : bool, pressed : bool, released : bool, deltaTime : Duration ) void
@@ -280,32 +275,10 @@ pub const Mouse = struct
   pub inline fn hasWorldPos( self : *const Mouse ) bool { return( self.worldPos != null ); }
 
   /// UI hit testing should call this after it finds the current topmost targets.
-  pub fn setUiHoverTarget( self : *Mouse, panel : MouseUiTarget, widget : MouseUiTarget, deltaTime : Duration ) void
+  pub fn setUiHoverTarget( self : *Mouse, panel : MouseUiTarget, widget : MouseUiTarget ) void
   {
-    self.prevTopPanel  = self.topPanel;
-    self.prevTopWidget = self.topWidget;
-
     self.topPanel  = panel;
     self.topWidget = widget;
-
-    self.updateHoverTime( deltaTime );
-  }
-
-  fn updateHoverTime( self : *Mouse, deltaTime : Duration ) void
-  {
-    if( !self.topPanel.isEq( self.prevTopPanel ) or !self.topWidget.isEq( self.prevTopWidget ))
-    {
-      self.hoverTime = .{};
-      return;
-    }
-
-    if( !self.topPanel.isValid() and !self.topWidget.isValid() )
-    {
-      self.hoverTime = .{};
-      return;
-    }
-
-    self.hoverTime = addDuration( self.hoverTime, deltaTime );
   }
 
   pub inline fn setPressedWidget( self : *Mouse, button : MouseButton, widget : MouseUiTarget ) void

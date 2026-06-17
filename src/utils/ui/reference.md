@@ -153,7 +153,6 @@ panel-local pointer state:
 
 * hovered widget;
 * per-button pressed widget;
-* hover duration;
 * button press/release transitions.
 
 Buttons emit `clicked` when press and release happen over the same button.

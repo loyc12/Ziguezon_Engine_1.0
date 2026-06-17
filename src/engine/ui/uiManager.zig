@@ -76,8 +76,9 @@ pub const UiManager = struct
   panels : std.ArrayList( UiPanelRegistration ) = .empty,
   events : std.ArrayList( UiManagerEvent      ) = .empty,
 
-  hoveredPanel  : UiPanelHandle = .{},
-  capturedPanel : [ MouseButton.count ]UiPanelHandle = [_]UiPanelHandle{ .{} } ** MouseButton.count,
+  hoveredPanel     : UiPanelHandle = .{},
+  hoveredPanelTime : utl.Duration  = .{},
+  capturedPanel    : [ MouseButton.count ]UiPanelHandle = [_]UiPanelHandle{ .{} } ** MouseButton.count,
 
   nextOrder : u64  = 1,
   isInit    : bool = false,
@@ -103,6 +104,8 @@ pub const UiManager = struct
     self.* = .{};
   }
 
+  /// Invalidates every outstanding panel handle while retaining manager slot
+  /// and event-list capacity for reuse by the next registration batch.
   pub fn clear( self : *UiManager ) void
   {
     if( !self.isInit ){ return; }
@@ -116,9 +119,10 @@ pub const UiManager = struct
       reg.handle  = .{};
     }
 
-    self.hoveredPanel = .{};
-    self.capturedPanel = [_]UiPanelHandle{ .{} } ** MouseButton.count;
-    self.nextOrder = 1;
+    self.hoveredPanel     = .{};
+    self.hoveredPanelTime = .{};
+    self.capturedPanel    = [_]UiPanelHandle{ .{} } ** MouseButton.count;
+    self.nextOrder        = 1;
   }
 
 
@@ -232,6 +236,7 @@ pub const UiManager = struct
 
   pub inline fn getEventCount( self : *const UiManager ) usize { return self.events.items.len; }
   pub inline fn getHoveredPanel( self : *const UiManager ) UiPanelHandle { return self.hoveredPanel; }
+  pub inline fn getHoveredPanelTime( self : *const UiManager ) utl.Duration { return self.hoveredPanelTime; }
 
   pub fn getHoveredWidget( self : *const UiManager ) utl.UiHandle
   {
@@ -321,12 +326,14 @@ pub const UiManager = struct
 
   // ================================ INPUT ================================
 
+  /// Routes one mouse snapshot to registered panels. Routing is pointer-only:
+  /// it does not imply focus, keyboard capture, or modal blocking.
   pub fn updateInput( self : *UiManager, mouse : Mouse ) void
   {
     if( !self.isInit ){ return; }
 
     const topPanel = self.findTopInputPanelAt( mouse.screenPos );
-    self.hoveredPanel = topPanel;
+    self.updateHoveredPanel( topPanel, mouse.frameTime );
 
     var routed : [ MouseButton.count + 1 ]UiPanelHandle = [_]UiPanelHandle{ .{} } ** ( MouseButton.count + 1 );
     var routeCount : usize = 0;
@@ -463,11 +470,35 @@ pub const UiManager = struct
 
   fn clearInputStateFor( self : *UiManager, handle : UiPanelHandle ) void
   {
-    if( self.hoveredPanel.isEq( handle )){ self.hoveredPanel = .{}; }
+    if( self.hoveredPanel.isEq( handle ))
+    {
+      self.hoveredPanel     = .{};
+      self.hoveredPanelTime = .{};
+    }
 
     for( &self.capturedPanel )| *captured |
     {
       if( captured.isEq( handle )){ captured.* = .{}; }
+    }
+  }
+
+  fn updateHoveredPanel( self : *UiManager, hovered : UiPanelHandle, deltaTime : utl.Duration ) void
+  {
+    if( !hovered.isValid() )
+    {
+      self.hoveredPanel     = .{};
+      self.hoveredPanelTime = .{};
+      return;
+    }
+
+    if( self.hoveredPanel.isEq( hovered ))
+    {
+      self.hoveredPanelTime = addDuration( self.hoveredPanelTime, deltaTime );
+    }
+    else
+    {
+      self.hoveredPanel     = hovered;
+      self.hoveredPanelTime = .{};
     }
   }
 };
@@ -493,6 +524,13 @@ fn nextGeneration( gen : u32 ) u32
 {
   const next = gen +% 1;
   return if( next == 0 ) 1 else next;
+}
+
+fn addDuration( base : utl.Duration, delta : utl.Duration ) utl.Duration
+{
+  return .{
+    .value = std.math.add( i128, base.value, delta.value ) catch std.math.maxInt( i128 ),
+  };
 }
 
 fn isDrawBefore( a : *const UiPanelRegistration, b : *const UiPanelRegistration ) bool
@@ -564,6 +602,95 @@ test "UiManager orders panels by layer z and registration order"
   try std.testing.expect( manager.getPanelAtDrawIndex( 2 ).isEq( hB ));
 }
 
+test "UiManager reuses unregistered panel slots with new generations"
+{
+  var manager : UiManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  var first = try testPanel( .{ .center = .new( 0.0, 0.0 ), .scale = .new( 20.0, 20.0 ) } );
+  defer first.deinit();
+
+  var second = try testPanel( .{ .center = .new( 0.0, 0.0 ), .scale = .new( 20.0, 20.0 ) } );
+  defer second.deinit();
+
+  const stale = try manager.registerPanel( &first, .{} );
+  try std.testing.expect( manager.unregisterPanel( stale ));
+  try std.testing.expect( manager.getRegistration( stale ) == null );
+
+  const fresh = try manager.registerPanel( &second, .{} );
+  try std.testing.expectEqual( stale.idx, fresh.idx );
+  try std.testing.expect( stale.gen != fresh.gen );
+  try std.testing.expect( manager.getRegistration( stale ) == null );
+  try std.testing.expect( manager.getPanelPtr( fresh ) == &second );
+}
+
+test "UiManager keeps panel visibility input and draw flags independent"
+{
+  var manager : UiManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  var invisible = try testPanel( .{ .center = .new( 20.0, 20.0 ), .scale = .new( 10.0, 10.0 ) } );
+  defer invisible.deinit();
+  _ = try invisible.addButton( .{ .box = .{ .center = .new( 20.0, 20.0 ), .scale = .new( 5.0, 5.0 ) } } );
+
+  const invisibleHandle = try manager.registerPanel( &invisible, .{ .isVisible = false } );
+  try std.testing.expect( !manager.getPanelAtDrawIndex( 0 ).isValid() );
+
+  manager.updateInput( testMouseAt( .new( 20.0, 20.0 ), true,  true,  false ) );
+  manager.updateInput( testMouseAt( .new( 20.0, 20.0 ), false, false, true  ) );
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expectEqual( @as( usize, 0 ), manager.getEventCount() );
+
+  manager.setPanelVisible( invisibleHandle, true );
+  manager.setPanelInputEnabled( invisibleHandle, false );
+  try std.testing.expect( manager.getPanelAtDrawIndex( 0 ).isEq( invisibleHandle ));
+
+  manager.updateInput( testMouseAt( .new( 20.0, 20.0 ), true,  true,  false ) );
+  manager.updateInput( testMouseAt( .new( 20.0, 20.0 ), false, false, true  ) );
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expectEqual( @as( usize, 0 ), manager.getEventCount() );
+
+  manager.setPanelInputEnabled( invisibleHandle, true );
+  manager.setPanelDrawEnabled(  invisibleHandle, false );
+  try std.testing.expect( !manager.getPanelAtDrawIndex( 0 ).isValid() );
+
+  manager.updateInput( testMouseAt( .new( 20.0, 20.0 ), true,  true,  false ) );
+  manager.updateInput( testMouseAt( .new( 20.0, 20.0 ), false, false, true  ) );
+  try std.testing.expect( manager.getHoveredPanel().isEq( invisibleHandle ));
+  try std.testing.expectEqual( @as( usize, 1 ), manager.getEventCount() );
+}
+
+test "UiManager routes through lower panel when top panel input is disabled"
+{
+  var manager : UiManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  var lower = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 30.0, 30.0 ) } );
+  defer lower.deinit();
+  const lowerButton = try lower.addButton( .{ .box = .{ .center = .new( 50.0, 50.0 ), .scale = .new( 10.0, 10.0 ) } } );
+
+  var upper = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 30.0, 30.0 ) } );
+  defer upper.deinit();
+  _ = try upper.addButton( .{ .box = .{ .center = .new( 50.0, 50.0 ), .scale = .new( 10.0, 10.0 ) } } );
+
+  const lowerHandle = try manager.registerPanel( &lower, .{ .layer = 0 } );
+  const upperHandle = try manager.registerPanel( &upper, .{ .layer = 1, .isInputEnabled = false } );
+
+  try std.testing.expect( manager.getPanelAtDrawIndex( 0 ).isEq( lowerHandle ));
+  try std.testing.expect( manager.getPanelAtDrawIndex( 1 ).isEq( upperHandle ));
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), true,  true,  false ) );
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), false, false, true  ) );
+
+  const event = manager.popEvent().?;
+  try std.testing.expect( event.panel.isEq( lowerHandle ));
+  try std.testing.expect( event.event.isClicked( lowerButton ));
+  try std.testing.expectEqual( @as( usize, 0 ), manager.getEventCount() );
+}
+
 test "UiManager routes clicks to top panel and forwards events"
 {
   var manager : UiManager = .{};
@@ -612,4 +739,129 @@ test "UiManager keeps captured panel until release outside"
   manager.updateInput( testMouseAt( .new( 95.0, 95.0 ), false, false, true ) );
   try std.testing.expect( !manager.getCapturedPanel( .left ).isValid() );
   try std.testing.expectEqual( @as( usize, 0 ), manager.getEventCount() );
+}
+
+test "UiManager clears capture when a captured panel is unregistered"
+{
+  var manager : UiManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  var panel = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 30.0, 30.0 ) } );
+  defer panel.deinit();
+  _ = try panel.addButton( .{ .box = .{ .center = .new( 50.0, 50.0 ), .scale = .new( 10.0, 10.0 ) } } );
+
+  const handle = try manager.registerPanel( &panel, .{} );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), true, true, false ) );
+  try std.testing.expect( manager.getCapturedPanel( .left ).isEq( handle ));
+  try std.testing.expect( manager.wantsMouse() );
+
+  try std.testing.expect( manager.unregisterPanel( handle ));
+  try std.testing.expect( !manager.getCapturedPanel( .left ).isValid() );
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expect( !manager.wantsMouse() );
+}
+
+test "UiManager clear invalidates handles and retains reusable capacity"
+{
+  var manager : UiManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  var panel = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 30.0, 30.0 ) } );
+  defer panel.deinit();
+  _ = try panel.addButton( .{ .box = .{ .center = .new( 50.0, 50.0 ), .scale = .new( 10.0, 10.0 ) } } );
+
+  const stale = try manager.registerPanel( &panel, .{} );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), true,  true,  false ) );
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), false, false, true  ) );
+  try std.testing.expectEqual( @as( usize, 1 ), manager.getEventCount() );
+
+  const slotCap  = manager.panels.capacity;
+  const eventCap = manager.events.capacity;
+
+  manager.clear();
+  try std.testing.expectEqual( slotCap,  manager.panels.capacity );
+  try std.testing.expectEqual( eventCap, manager.events.capacity );
+  try std.testing.expectEqual( @as( usize, 0 ), manager.getPanelCount() );
+  try std.testing.expect( manager.getRegistration( stale ) == null );
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expect( !manager.getCapturedPanel( .left ).isValid() );
+
+  const fresh = try manager.registerPanel( &panel, .{} );
+  try std.testing.expectEqual( stale.idx, fresh.idx );
+  try std.testing.expect( stale.gen != fresh.gen );
+  try std.testing.expect( manager.getRegistration( stale ) == null );
+}
+
+test "UiManager wantsMouse follows hover capture and pending routed events"
+{
+  var manager : UiManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  var panel = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 30.0, 30.0 ) } );
+  defer panel.deinit();
+  const button = try panel.addButton( .{ .box = .{ .center = .new( 50.0, 50.0 ), .scale = .new( 10.0, 10.0 ) } } );
+
+  const handle = try manager.registerPanel( &panel, .{} );
+  try std.testing.expect( !manager.wantsMouse() );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), false, false, false ) );
+  try std.testing.expect( manager.getHoveredPanel().isEq( handle ));
+  try std.testing.expect( manager.wantsMouse() );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), false, false, false ) );
+  try std.testing.expect( manager.getHoveredPanelTime().value > 0 );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), true, true, false ) );
+  try std.testing.expect( manager.getCapturedPanel( .left ).isEq( handle ));
+  try std.testing.expect( manager.wantsMouse() );
+
+  manager.updateInput( testMouseAt( .new( 90.0, 90.0 ), true, false, false ) );
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expect( manager.getCapturedPanel( .left ).isEq( handle ));
+  try std.testing.expect( manager.wantsMouse() );
+
+  manager.updateInput( testMouseAt( .new( 90.0, 90.0 ), false, false, true ) );
+  try std.testing.expect( !manager.getCapturedPanel( .left ).isValid() );
+  try std.testing.expect( !manager.wantsMouse() );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), true,  true,  false ) );
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), false, false, true  ) );
+  try std.testing.expectEqual( @as( usize, 1 ), manager.getEventCount() );
+
+  manager.updateInput( testMouseAt( .new( 90.0, 90.0 ), false, false, false ) );
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expect( manager.wantsMouse() );
+  try std.testing.expect( manager.popEvent().?.event.isClicked( button ) );
+
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expect( !manager.wantsMouse() );
+}
+
+test "UiManager wantsMouse clears when routing is disabled"
+{
+  var manager : UiManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  var panel = try testPanel( .{ .center = .new( 50.0, 50.0 ), .scale = .new( 30.0, 30.0 ) } );
+  defer panel.deinit();
+  _ = try panel.addButton( .{ .box = .{ .center = .new( 50.0, 50.0 ), .scale = .new( 10.0, 10.0 ) } } );
+
+  const handle = try manager.registerPanel( &panel, .{} );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), true, true, false ) );
+  try std.testing.expect( manager.wantsMouse() );
+
+  manager.setPanelInputEnabled( handle, false );
+  try std.testing.expect( !manager.wantsMouse() );
+
+  manager.updateInput( testMouseAt( .new( 50.0, 50.0 ), false, false, true ) );
+  try std.testing.expect( !manager.getHoveredPanel().isValid() );
+  try std.testing.expect( !manager.getCapturedPanel( .left ).isValid() );
+  try std.testing.expect( !manager.wantsMouse() );
 }
