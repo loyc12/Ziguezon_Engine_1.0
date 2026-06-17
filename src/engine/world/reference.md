@@ -9,8 +9,9 @@ Active task slices belong in [todo.md](todo.md).
 
 `src/engine/world` owns the engine's simulation infrastructure. The current
 implementation is already beyond the original component-only foundation:
-entities, components, relations, traits, and event queues are live. Several later
-folders still contain placeholders for future systems.
+entities, components, relations, traits, event queues, command queues, compact
+systems, and compact rules are live. Several later folders still contain
+placeholders for future systems.
 
 When this file disagrees with code, inspect code first and refresh this file.
 
@@ -26,6 +27,7 @@ The main runtime surface is `World` in `worldManager.zig`.
 * `RelationManager`;
 * `TraitManager`;
 * `EventManager`;
+* `CommandManager`;
 * component-view generation tracking.
 
 `World.init()` initializes entity tracking and fact managers. `World.deinit()`
@@ -121,8 +123,8 @@ Current query helpers cover:
   `peekEvent`, and `getEventIterator`.
 
 Unsupported broad-query shapes are rejected explicitly by
-`rejectUnsupportedBroadQuery`; archetype, particle/effect, command, rule,
-system, and save/load query integration are still outside the live surface.
+`rejectUnsupportedBroadQuery`; archetype, particle/effect, command, scheduler,
+and save/load query integration are still outside the live surface.
 
 ## 7. Relations
 
@@ -192,7 +194,44 @@ Generic event payloads currently include entity, component, relation, and trait
 event types. Event queues are transient; retained event history is not
 implemented.
 
-## 9. Traits
+## 9. Commands
+
+Commands are live as typed transient requested-change queues.
+
+`CommandRecord(CommandType)` stores:
+
+* command metadata;
+* the plain Zig command payload.
+
+Command payload types must be structs. Dataless command structs are valid for
+signal-style requests. Commands describe requested future changes; they are not
+completed-event records and do not own execution behavior.
+
+`CommandMeta` tracks:
+
+* monotonic command sequence;
+* order within the current World tick;
+* base tick index when known.
+
+`CommandManager` owns registered queues by command payload type. Commands are
+enqueued only after their queue type is registered.
+
+World command APIs include:
+
+* `registerCommand`;
+* `unregisterCommand`;
+* `getCommandQueue`;
+* `enqueueCommand`;
+* `popCommand`;
+* `peekCommand`;
+* `getCommandIterator`;
+* `clearCommands`;
+* `getCommandCount`.
+
+Command queues are transient. Retained command history, replay, undo, delayed
+commands, and command execution ownership are not implemented.
+
+## 10. Traits
 
 Traits are live as dataless typed classification facts.
 
@@ -224,9 +263,47 @@ Use these selection rules:
 * components for per-entity payload state;
 * relations for source-target facts between entities;
 * traits for dataless classification, flags, tags, and presence facts;
-* events for queued records that something happened.
+* events for queued records that something happened;
+* commands for queued requests that something should change.
 
-## 10. Timing
+## 11. Systems
+
+Systems are live as compact explicit callbacks.
+
+`SystemContext` passes:
+
+* transient read-only `WorldQuery` access;
+* a `CommandManager` pointer for enqueuing requested changes.
+
+`System` stores a name, order value, and callback. `SystemManager` owns an
+ordered list of these declarations and runs them through explicit
+`runAll(world)` calls. Lower `order` values run first; duplicate names are
+rejected.
+
+Systems do not mutate broad query results through the system surface. They
+inspect via `WorldQuery` and request changes through commands. `World` does not
+own or automatically run a system manager yet; scheduler integration is future
+work.
+
+## 12. Rules
+
+Rules are live as compact explicit reactions.
+
+`RuleContext` passes:
+
+* transient read-only `WorldQuery` access, including event peeking/iteration;
+* a `CommandManager` pointer for enqueuing requested changes.
+
+`Rule` stores a name, order value, and callback. `RuleManager` owns an ordered
+list of these declarations and runs them through explicit `runAll(world)` calls.
+Lower `order` values run first; duplicate names are rejected.
+
+Rules may observe queued events or current queried facts and enqueue commands.
+Peeking and iterating events through rules does not consume event records. Broad
+rule graph ownership, temporary rules, and scheduler integration are not
+implemented.
+
+## 13. Timing
 
 `TickInfo` is the timing snapshot passed into World once per consumed engine
 base tick. It includes:
@@ -236,16 +313,14 @@ base tick. It includes:
 * measured delta;
 * forced-tick flag.
 
-`World.tick(...)` begins event tick metadata for the base tick. World does not
-own base-tick pacing; that remains an engine timing responsibility.
+`World.tick(...)` begins event and command tick metadata for the base tick.
+World does not own base-tick pacing; that remains an engine timing
+responsibility.
 
-## 11. Placeholder Systems
+## 14. Future Placeholders
 
 The following folders or files are currently placeholders or minimal notes:
 
-* `commands`;
-* `systems`;
-* `rules`;
 * `archetypes`;
 * `scheduler`;
 * `particles`;
@@ -253,7 +328,7 @@ The following folders or files are currently placeholders or minimal notes:
 
 These should not be described as complete systems until code and tests exist.
 
-## 12. Boundaries
+## 15. Boundaries
 
 `engine/world` owns simulation facts and fact managers. It should not depend on
 game-specific concepts or rendering-specific behavior.
@@ -262,7 +337,7 @@ Rendering should read simulation facts through render adapters. Games own their
 domain-specific components, relations, events, traits, archetypes, systems, and
 views.
 
-## 13. Validation
+## 16. Validation
 
 Docs-only changes need no build.
 

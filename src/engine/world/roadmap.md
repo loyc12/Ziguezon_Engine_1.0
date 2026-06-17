@@ -17,32 +17,19 @@ tasks:
 * trait sets for dataless classification facts, including `Persistent`;
 * typed transient event queues, event metadata, and generic entity/component/
   relation/trait events;
+* typed transient command queues, command metadata, and World command APIs;
 * `World.tick(...)` event tick metadata;
+* compact explicit systems with read-only `WorldQuery` access and command
+  emission;
+* compact explicit rules that observe queued events or queried facts and enqueue
+  commands;
 * read-only component, relation, event, and trait inspection through
   `WorldQuery`.
 
 Those pieces are reference-baseline facts. Future slices should build on them
 instead of treating them as pending phases.
 
-## 2. Current - Commands, Systems, And Rules
-
-Goal: give games a clean path for executable simulation logic that observes
-facts and requests changes.
-
-This is the active slice in [todo.md](todo.md). It should:
-
-* restore the current query/test baseline before adding new layers;
-* define command records and typed transient command queues;
-* provide the smallest useful command ownership surface;
-* define compact system execution around read-only query access plus command
-  emission;
-* define a minimal rule/reaction boundary that can observe events and enqueue
-  commands.
-
-Do not add scheduler cadence, archetype spawning, particles/effects, save/load,
-replay, retained command history, or UI state in this slice.
-
-## 3. Later - Archetypes And Templates
+## 2. Current - Archetypes And Templates
 
 Goal: support reusable bundles of initial facts.
 
@@ -56,7 +43,7 @@ Required work:
   as facts;
 * provide one minimal generic example.
 
-## 4. Later - Scheduler
+## 3. Later - Scheduler
 
 Goal: run World logical work inside engine-owned base ticks.
 
@@ -70,7 +57,7 @@ Required work:
 * support delayed events and temporary rules;
 * avoid a competing `shouldTick()` loop inside World.
 
-## 5. Later - Particles And Effects
+## 4. Later - Particles And Effects
 
 Goal: add first-class effect infrastructure driven by world facts.
 
@@ -83,7 +70,7 @@ Required work:
 * migrate a concrete game proof only after commands, events, rules, and render
   pieces are stable.
 
-## 6. Later - Context
+## 5. Later - Context
 
 Goal: reserve the context path for save/load/replay-facing world state.
 
@@ -91,7 +78,7 @@ Do not wire `engine/world/context` into runtime code until reusable
 serialization/save-load primitives exist in `utils` and the base fact model is
 stable enough to describe.
 
-## 7. Implementation Constraints
+## 6. Implementation Constraints
 
 * Keep target design in `goals.md`.
 * Keep current facts in `reference.md`.

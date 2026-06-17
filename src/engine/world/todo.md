@@ -7,86 +7,97 @@ implementation order.
 
 ## 1. Current Slice
 
-Build the first executable simulation-logic surface:
+Collapse the separate system surface into the rule surface.
 
-* commands as requested future changes;
-* systems as ordered logic that observes `World` through read-only query access;
-* rules as small event/fact reactions that can enqueue commands.
+The current `systems` and `rules` implementations are mechanically almost the
+same: ordered callbacks receive read-only `WorldQuery` access and enqueue
+commands. Keep the preferred name `Rule`, and make rules the single executable
+simulation-logic primitive for both:
 
-Keep this slice narrow. It should establish the first usable command/system/rule
-contracts without adding archetypes, templates, scheduler cadence, particles,
-save/load, replay, retained history, or UI state.
+* broad simulation passes that inspect current facts;
+* event/fact reactions that enqueue follow-up commands.
+
+This slice should remove duplicated system/rule code before archetypes,
+scheduler phases, particles, or save/load build on top of the wrong boundary.
 
 ## 2. Guardrails
 
-* Keep `WorldQuery` read-only and transient.
-* Keep `CompView` as the narrow component fast path.
-* Commands request changes; events record things that happened.
-* Do not let generic systems mutate arbitrary stores while traversing broad query
-  results.
-* Do not add a scheduler loop inside `World` yet.
-* Do not add archetype/template spawning in this slice.
-* Do not add marker components for classification.
-* Keep game-specific command, system, and rule payloads under `src/games`.
-* Keep engine examples minimal and generic.
+* Prefer the name `Rule` over `System` for the unified executable logic surface.
+* Treat “system” as descriptive language only if needed, not as an engine-owned
+  public API type.
+* Do not keep compatibility aliases unless a live caller needs them.
+* Keep rules read-only with respect to broad `WorldQuery` traversal.
+* Rules should continue to emit requested changes through commands.
+* Preserve event queue semantics: peeking and iteration must not pop records.
+* Do not add scheduler cadence, rule phases, temporary rules, delayed events,
+  delayed commands, replay, undo, or retained history in this slice.
+* Keep game-specific rule lists under `src/games`.
 * Do not run formatting passes such as `zig fmt`.
 
 ## 3. Implementation Tasks
 
-1. Restore the current query/test baseline.
-   * Fix relation source/target iterator API mismatches between `World` and
-     `RelationStoreFactory`.
-   * Fix trait entity iterator API mismatches between `World` and
-     `TraitSetFactory`.
-   * Confirm the current read-only query surface compiles before layering command
-     and system work on top.
+1. Define the unified rule boundary.
+   * Update `rules/rule.zig` docs so `Rule` covers broad passes and reactions.
+   * Keep `RuleContext` as read-only `WorldQuery` plus command emission.
+   * Make the default interpretation simple: a rule is an explicit callback run
+     by a caller, not a scheduler-owned job.
+   * Preserve the existing `order` field as the deterministic ordering hook.
+   * Do not add `RuleKind`, phases, cadence, or event filters in this merge.
 
-2. Define the command boundary.
-   * Document command payload expectations in `commands/command.zig`.
-   * Commands should be plain requested-change facts, not completed-event records.
-   * Reject invalid command payload shapes when the check is simple and useful.
-   * Keep command execution ownership explicit and out of payload declarations.
+2. Move useful system behavior into rules.
+   * Preserve ordered registration and explicit `runAll(world)` behavior.
+   * Preserve duplicate-name and uninitialized-use rejection.
+   * Preserve tests that demonstrate broad fact inspection plus command
+     emission.
+   * Preserve tests that demonstrate event observation without consuming events.
 
-3. Implement a minimal typed command queue.
-   * Store typed command records with ordering metadata.
-   * Support init/deinit, push, pop, peek/count, clear, and iteration without
-     popping.
-   * Reject uninitialized and unregistered operations cleanly.
-   * Keep queues transient; do not retain command history.
+3. Remove the duplicated system subsystem.
+   * Delete or empty `src/engine/world/systems/system.zig` and
+     `src/engine/world/systems/systemManager.zig` if no live caller remains.
+   * Remove `System`, `SystemContext`, `SystemFn`, and `SystemManager` exports
+     from `src/engine/engineDef.zig`.
+   * Remove system-specific wording from tests, docs, and comments unless it is
+     intentionally descriptive.
+   * Check `src/games` and engine code for live system API references before
+     deleting public exports.
 
-4. Add the smallest useful command ownership surface.
-   * Prefer a `CommandManager` only if direct typed queues become awkward.
-   * If added to `World`, keep the API symmetrical with events where practical.
-   * Do not add command replay, undo, delayed commands, or retained history.
+4. Keep command integration unchanged.
+   * Rules should still enqueue commands, not directly mutate broad query
+     results.
+   * Command queues should remain typed, transient, ordered, and manually
+     drained.
+   * `World.tick(...)` should keep command/event metadata behavior unchanged
+     unless a direct conflict appears.
 
-5. Define and implement a compact system surface.
-   * Systems should receive read-only `WorldQuery` access.
-   * Systems should emit commands through the command surface instead of mutating
-     broad stores directly.
-   * Keep registration/order support minimal.
-   * Leave game-specific system lists under `src/games` unless a generic manager
-     has a concrete use case.
+5. Refresh docs after implementation.
+   * Update `reference.md` so rules are the sole executable logic primitive.
+   * Trim `roadmap.md` so it no longer plans for separate command/system/rule
+     execution.
+   * Move archetypes/templates back to the next active slice after validation.
+   * Replace this `todo.md` with the archetype/template slice once the merge is
+     complete.
 
-6. Define a minimal rule/reaction boundary.
-   * Rules may observe events or queried facts and enqueue commands.
-   * Do not implement broad rule graph ownership, temporary rules, or scheduler
-     integration yet.
-   * Preserve event queue semantics: peeking and iteration must not pop records.
+6. Add focused tests.
+   * Unified rule tests should cover current-fact inspection plus command
+     emission.
+   * Unified rule tests should cover queued event observation without popping.
+   * Removal tests should ensure no `SystemManager` declarations are still
+     exported through `engineDef.zig`.
+   * Existing command queue and World command API tests should continue to pass.
 
-7. Add focused tests.
-   * Current query traversal tests should compile and pass first.
-   * Command queues should cover lifecycle, ordering, peek/iteration, clear, and
-     rejection of uninitialized or unregistered operations.
-   * System tests should demonstrate read-only query access plus command emission.
-   * Rule tests should demonstrate event observation without consuming events.
+## 4. Design Decisions
 
-8. Refresh docs after implementation.
-   * Update `reference.md` with the live command/system/rule shape.
-   * Trim `roadmap.md` so completed command/system/rule work moves into the
-     baseline.
-   * Replace this `todo.md` with the next active slice after validation.
+The following decisions guide the merge:
 
-## 4. Validation
+* Keep the unified manager name as `RuleManager`.
+* Delete `src/engine/world/systems/` after useful behavior and tests are moved
+  into `rules`.
+* Rules own deterministic ordering now through the existing `order` field.
+* Rules may eventually own cadence metadata, but cadence shape should be decided
+  during the scheduler slice. Do not add cadence enum values, tick intervals, or
+  phase tags during this merge.
+
+## 5. Validation
 
 Run after code changes:
 
@@ -96,7 +107,7 @@ Run after code changes:
 Use targeted tests while developing, but the slice is not complete until the
 world test surface compiles and the relevant tests pass.
 
-## 5. Deferred Work
+## 6. Deferred Work
 
 Later roadmap slices:
 
@@ -112,11 +123,11 @@ Unrelated to this slice:
 * `src/engine/world/entity.zig:22` compact lifecycle mask idea;
 * `src/engine/world/components/baseComps.zig:77` LOD/minScale note.
 
-## 6. Explicit Non-Goals
+## 7. Explicit Non-Goals
 
 * no archetype/template spawning;
 * no scheduler implementation;
 * no particle/effect pools;
-* no save/load, replay, undo, or retained command/event history;
+* no save/load, replay, undo, or retained command/event/rule history;
 * no retained UI state inside simulation `World`;
 * no tilemap migration work in this `engine/world` slice.

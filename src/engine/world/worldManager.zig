@@ -11,6 +11,9 @@ const trtMgr  = @import( "traits/traitManager.zig" );
 const evt     = @import( "events/event.zig" );
 const evtMgr  = @import( "events/eventManager.zig" );
 const evtQue  = @import( "events/eventQueue.zig" );
+const cmd     = @import( "commands/command.zig" );
+const cmdMgr  = @import( "commands/commandManager.zig" );
+const cmdQue  = @import( "commands/commandQueue.zig" );
 const view    = @import( "views/view.zig" );
 
 const Entity               = entity.Entity;
@@ -24,6 +27,8 @@ const TraitManager         = trtMgr.TraitManager;
 const TraitSetFactory      = trt.TraitSetFactory;
 const EventManager         = evtMgr.EventManager;
 const EventQueueFactory    = evtQue.EventQueueFactory;
+const CommandManager       = cmdMgr.CommandManager;
+const CommandQueueFactory  = cmdQue.CommandQueueFactory;
 const Duration             = utl.Duration;
 
 
@@ -49,6 +54,7 @@ pub const World = struct
   relationManager  : RelationManager  = .{},
   traitManager     : TraitManager     = .{},
   eventManager     : EventManager     = .{},
+  commandManager   : CommandManager   = .{},
   viewGeneration   : u64              = 0,
 
   isInit : bool = false,
@@ -339,7 +345,7 @@ pub const World = struct
     if( !self.isEntityAlive( sourceId )){ return null; }
 
     const store = self.getRelationStore( RelType ) orelse return null;
-    return store.sourceIteratorConst( sourceId );
+    return store.getConstRelToSource( sourceId );
   }
 
   /// Iterates relation rows where `targetId` is the target endpoint.
@@ -349,7 +355,7 @@ pub const World = struct
     if( !self.isEntityAlive( targetId )){ return null; }
 
     const store = self.getRelationStore( RelType ) orelse return null;
-    return store.targetIteratorConst( targetId );
+    return store.getConstRelToTarget( targetId );
   }
 
 
@@ -414,7 +420,7 @@ pub const World = struct
     if( !self.isInit ){ return null; }
 
     const set = self.getTraitSet( TraitType ) orelse return null;
-    return set.entityIterator();
+    return set.getEntityIterator();
   }
 
 
@@ -491,6 +497,79 @@ pub const World = struct
   }
 
 
+  // ================================ OWNED COMMAND FUNCTIONS ================================
+
+  /// Registers a transient queue for one command fact type.
+  /// Commands of this type cannot be enqueued or popped until registered.
+  pub inline fn registerCommand( self : *World, comptime CommandType : type ) bool
+  {
+    return self.commandManager.register( CommandType );
+  }
+
+  /// Removes the queue for a command type and drops any queued command records.
+  pub inline fn unregisterCommand( self : *World, comptime CommandType : type ) bool
+  {
+    return self.commandManager.unregister( CommandType );
+  }
+
+  /// Returns the typed command queue for direct inspection or advanced draining.
+  pub inline fn getCommandQueue( self : *World, comptime CommandType : type ) ?*CommandQueueFactory( CommandType )
+  {
+    return self.commandManager.getQueue( CommandType );
+  }
+
+  /// Appends a typed requested-change command with World-level metadata.
+  /// Commands request future changes; events record changes that already happened.
+  pub inline fn enqueueCommand( self : *World, comptime CommandType : type, value : CommandType ) bool
+  {
+    if( !self.isInit )
+    {
+      utl.log( .WARN, @src(), "Cannot enqueue Command for type {s} : World is uninitialized", .{ @typeName( CommandType )});
+      return false;
+    }
+
+    return self.commandManager.enqueue( CommandType, value );
+  }
+
+  /// Pops the oldest queued command record of this type.
+  /// Returns null when the command type is unregistered or the queue is empty.
+  pub inline fn popCommand( self : *World, comptime CommandType : type ) ?cmd.CommandRecord( CommandType )
+  {
+    return self.commandManager.pop( CommandType );
+  }
+
+  /// Returns a read-only queued command record by queue index without popping it.
+  pub inline fn peekCommand( self : *World, comptime CommandType : type, index : usize ) ?*const cmd.CommandRecord( CommandType )
+  {
+    if( !self.isInit ){ return null; }
+
+    const queue = self.getCommandQueue( CommandType ) orelse return null;
+    return queue.peek( index );
+  }
+
+  /// Iterates queued command records without popping them.
+  /// The returned iterator is transient and becomes stale when the queue changes.
+  pub inline fn getCommandIterator( self : *World, comptime CommandType : type ) ?cmdQue.CommandQueueFactory( CommandType ).ConstIterator
+  {
+    if( !self.isInit ){ return null; }
+
+    const queue = self.getCommandQueue( CommandType ) orelse return null;
+    return queue.getIteratorConst();
+  }
+
+  /// Clears queued records for one command type without unregistering it.
+  pub inline fn clearCommands( self : *World, comptime CommandType : type ) bool
+  {
+    return self.commandManager.clear( CommandType );
+  }
+
+  /// Returns the number of queued records for one command type.
+  pub inline fn getCommandCount( self : *World, comptime CommandType : type ) usize
+  {
+    return self.commandManager.getCommandCount( CommandType );
+  }
+
+
   // ================================ TICK FUNCTIONS ================================
 
   /// Advances World-owned per-tick bookkeeping.
@@ -504,6 +583,7 @@ pub const World = struct
     }
 
     self.eventManager.beginTick( info.baseTickIndex );
+    self.commandManager.beginTick( info.baseTickIndex );
   }
 
 
@@ -520,10 +600,12 @@ pub const World = struct
     self.relationManager.init( alloc );
     self.traitManager.init( alloc );
     self.eventManager.init( alloc );
+    self.commandManager.init( alloc );
   }
 
   inline fn deinitFactManagers( self : *World ) void
   {
+    self.commandManager.deinit();
     self.eventManager.deinit();
     self.traitManager.deinit();
     self.relationManager.deinit();
@@ -1082,6 +1164,77 @@ test "World event API rejects uninitialized worlds and unregistered queues"
   try std.testing.expect( !world.emitEvent( TestEvent, .{ .value = 2 }));
   try std.testing.expect(  world.popEvent( TestEvent ) == null );
   try std.testing.expect( !world.clearEvents( TestEvent ));
+}
+
+test "World owns typed command queue API and registration lifecycle"
+{
+  const TestCommand = struct
+  {
+    entityId : EntityId = 0,
+    value    : u32      = 0,
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect(  world.registerCommand( TestCommand ));
+  try std.testing.expect( !world.registerCommand( TestCommand ));
+  try std.testing.expect(  world.getCommandQueue( TestCommand ) != null );
+
+  world.tick( .{ .baseTickIndex = 9 });
+
+  try std.testing.expect( world.enqueueCommand( TestCommand, .{ .entityId = 1, .value = 42 }));
+  try std.testing.expect( world.enqueueCommand( TestCommand, .{ .entityId = 2, .value = 11 }));
+  try std.testing.expect( world.getCommandCount( TestCommand ) == 2 );
+  try std.testing.expect( world.peekCommand(     TestCommand, 0 ).?.value.value == 42 );
+
+  var count : usize = 0;
+  var sum   : u32   = 0;
+  var iter = world.getCommandIterator( TestCommand ).?;
+  while( iter.next() )| record |
+  {
+    count += 1;
+    sum   += record.value.value;
+  }
+
+  try std.testing.expect( count == 2 );
+  try std.testing.expect( sum   == 53 );
+  try std.testing.expect( world.getCommandCount( TestCommand ) == 2 );
+
+  const record = world.popCommand( TestCommand ).?;
+  try std.testing.expect( record.value.value          == 42 );
+  try std.testing.expect( record.meta.sequence        == 0  );
+  try std.testing.expect( record.meta.tickOrder       == 0  );
+  try std.testing.expect( record.meta.baseTickIndex.? == 9  );
+
+  try std.testing.expect( world.clearCommands( TestCommand ));
+  try std.testing.expect( world.getCommandCount( TestCommand ) == 0 );
+
+  try std.testing.expect( world.unregisterCommand( TestCommand ));
+  try std.testing.expect( world.getCommandQueue(   TestCommand ) == null );
+}
+
+test "World command API rejects uninitialized worlds and unregistered queues"
+{
+  const TestCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  var world : World = .{};
+
+  try std.testing.expect( !world.registerCommand( TestCommand ));
+  try std.testing.expect( !world.enqueueCommand(  TestCommand, .{ .value = 1 }));
+  try std.testing.expect(  world.popCommand(      TestCommand ) == null );
+  try std.testing.expect( !world.clearCommands(   TestCommand ));
+
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( !world.enqueueCommand( TestCommand, .{ .value = 2 }));
+  try std.testing.expect(  world.popCommand(     TestCommand ) == null );
+  try std.testing.expect( !world.clearCommands(  TestCommand ));
 }
 
 test "World leaves generic entity component relation and trait events silent when queues are absent"

@@ -112,6 +112,31 @@ pub const RelationRemoved  = evt.RelationRemoved;
 pub const TraitApplied     = evt.TraitApplied;
 pub const TraitRemoved     = evt.TraitRemoved;
 
+const cmd  = @import( "world/commands/command.zig" );
+const cque = @import( "world/commands/commandQueue.zig" );
+const cmgr = @import( "world/commands/commandManager.zig" );
+
+pub const CommandMeta         = cmd.CommandMeta;
+pub const CommandRecord       = cmd.CommandRecord;
+pub const CommandQueueFactory = cque.CommandQueueFactory;
+pub const CommandManager      = cmgr.CommandManager;
+
+const sys  = @import( "world/systems/system.zig" );
+const smgr = @import( "world/systems/systemManager.zig" );
+
+pub const System        = sys.System;
+pub const SystemContext = sys.SystemContext;
+pub const SystemFn      = sys.SystemFn;
+pub const SystemManager = smgr.SystemManager;
+
+const rule = @import( "world/rules/rule.zig" );
+const rmgr = @import( "world/rules/ruleManager.zig" );
+
+pub const Rule        = rule.Rule;
+pub const RuleContext = rule.RuleContext;
+pub const RuleFn      = rule.RuleFn;
+pub const RuleManager = rmgr.RuleManager;
+
 
 pub const baseComp = @import( "world/components/baseComps.zig" );
 
@@ -132,5 +157,12 @@ test "engine world declarations"
   std.testing.refAllDecls( eque     );
   std.testing.refAllDecls( emgr     );
   std.testing.refAllDecls( elog     );
+  std.testing.refAllDecls( cmd      );
+  std.testing.refAllDecls( cque     );
+  std.testing.refAllDecls( cmgr     );
+  std.testing.refAllDecls( sys      );
+  std.testing.refAllDecls( smgr     );
+  std.testing.refAllDecls( rule     );
+  std.testing.refAllDecls( rmgr     );
   std.testing.refAllDecls( uiMgr    );
 }
