@@ -134,7 +134,7 @@ Resources need a revamp.
 
 Some current economy values should become capacity resources. Capacity
 resources are special resources that represent local availability rather than
-transportable stock. Current `WORK` is the model to generalize.
+transportable stock. Former `WORK`, now `LABOUR`, is the model to generalize.
 
 Capacity resources:
 
@@ -155,8 +155,9 @@ Starred entries in that file are mandatory Phase 1 resources. Unstarred entries
 may be implemented in Phase 2 if directly relevant, but otherwise defer to
 post-MVP.
 
-`FUEL` should be removed from the MVP resource model after Phase 0 renaming and
-audit work. A replacement propellant/fuel model is post-MVP.
+`FUEL` should be removed from the MVP resource model after dependent industry
+and facility rows can be updated safely. A replacement propellant/fuel model is
+post-MVP.
 
 `DEPOT` should stay as the singular storage facility for now. Resources should
 still declare which facility stores them, but `DEPOT` storage capacity should
@@ -206,10 +207,22 @@ Near-term agent groups:
 * `TRADER` per trade route;
 * one `GOVERNMENT` instance for the economy.
 
-Agents are the interface between resource access, finance, construction
-requests, and trade. Phase 2 adds taxes and subsidies through the same agent
-surface. Broader agent-owned inventories are deferred unless route-local
-`TRADER` inventory proves the pattern is needed elsewhere.
+Agents are the identity, ownership, policy, and accounting surface between
+resource access, finance, construction requests, and trade. Phase 2 adds taxes
+and subsidies through the same agent surface.
+
+Agents should generate or gather intents, such as demand, supply, maintenance
+needs, construction requests, savings changes, taxes, subsidies, or trader
+buy/sell intent. They should not own the whole simulation or directly mutate
+shared economy buffers. The pipeline owns canonical per-tick buffers, conflict
+resolution, access rates, final resource/money mutations, and publication.
+
+Use thin agent helpers and explicit pipeline phases by default. Keep hot
+resource/action loops table-driven when that is clearer and cheaper than
+dispatching through agent methods for every data cell.
+
+Broader agent-owned inventories are deferred unless route-local `TRADER`
+inventory proves the pattern is needed elsewhere.
 
 ## 8. Population
 
@@ -237,6 +250,11 @@ calculation, prices, finance, and construction behavior need to be reviewed as
 one system. The successor is `econPipeline`; it should be better organized and
 split into smaller files where separation of concern is overdue.
 
+The pipeline should be built around the combined `FacilityType` surface and the
+`EconAgent` intent boundary rather than around the old infrastructure/industry
+split. Facility runtime migration should happen before the main pipeline
+rewrite so the new solver can target the desired model directly.
+
 The MVP update pipeline should:
 
 * calculate ordinary resource flows;
@@ -248,6 +266,8 @@ The MVP update pipeline should:
 * enforce storage, area, housing, construction, labour, and energy constraints;
 * process construction and deconstruction through coherent funding, materials,
   effort, cancellation, and refund rules;
+* accept agent intents into pipeline-owned buffers, then resolve access,
+  conflicts, and accounting centrally;
 * process agent finances, savings, and losses, with taxes and subsidies added
   in Phase 2;
 * publish inspectable economy state without relying on debug-only automation.

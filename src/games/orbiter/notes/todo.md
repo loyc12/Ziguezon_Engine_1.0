@@ -5,41 +5,46 @@ This file tracks the active task loop for the current Orbiter rework. Use
 [goals.md](goals.md) as the target-state authority, and
 [roadmap.md](roadmap.md) as the implementation sequence.
 
-Phase 1C static `FacilityType` data baseline is complete. The next slice should
-settle facility/resource naming, separate boolean data from numeric metrics,
-mark solar-scaled facilities, and verify the storage-waste attribution
-dependency before the facility runtime migration starts.
+The static resource and `FacilityType` baseline is in place. The next slice
+should move live economy behavior from the old `InfType` / `IndType` split onto
+the combined facility surface and prove behavior invariance before the full
+`econPipeline` rewrite starts.
 
-## Phase 1D - Facility Naming And Waste Attribution
+## Phase 1E - Facility Runtime Migration
 
-Goal: stabilize the static facility/resource vocabulary, use boolean data grids
-for flags, leave `PowerSrc` as a temporary legacy hook, and make the
-storage-waste accounting dependency explicit for the future `econPipeline`.
+Goal: make `FacilityType` the live-facing economy facility surface while
+preserving current Terra behavior closely enough to validate the migration
+before building new pipeline behavior on top of it.
 
-This slice should stay focused. Do not migrate live economy state from
-`InfType` / `IndType` to `FacilityType`, replace `EconSolver`, replace
-`BuildQueue`, split population, or add trade routes yet.
+This slice should stay focused. Do not replace `EconSolver` with
+`econPipeline`, split population, tune Terra stability, add trade routes, add
+taxes/subsidies, or remove `debugAutoBuild()` yet.
 
 ## Validated Direction
 
-Long-term decisions from the Phase 1C intake:
+Current direction from [goals.md](goals.md) and [roadmap.md](roadmap.md):
 
-* power-source behavior should not be folded into `FacilityType` ad hoc;
-* `PowerSrc` should stay only as a temporary legacy accessibility fix until
-  facility solar scaling replaces it;
-* production-share proportional storage waste should wait until the accounting
-  path can preserve producer attribution;
-* live infrastructure and industry runtime paths remain hooked until a later
-  facility-state migration;
-* the current `FacilityType` data surface is the static mirror that later
-  migration work should target;
-* `REFINERY` and `PROBE_MINE` are not desirable long-term `FacilityType` cases;
-* facility and resource names should be reviewed before more metadata depends on
-  them, including replacing names such as `GROUND_MINE` with names like
-  `ORE_MINE` and moving outputs toward resources such as `BASE_METALS`, later
-  `RARE_EARTHS`, and a better name for regolith-like bulk material;
-* facility and resource data comments must preserve unit context. Unit notes are
-  balancing data, not cosmetic comments, especially for data-matrix values.
+* Phase 1 restores Terra as an autonomous single economy before Phase 2 trade;
+* `Facility` is the merged industry/infrastructure concept, but live runtime
+  paths can remain bridged through `InfType` / `IndType` while the migration is
+  staged;
+* `facState` is the preferred short name for live facility state, matching the
+  existing short forms `inf`, `ind`, `pop`, and `res`;
+* `FUEL`, `REFINERY`, and `PROBE_MINE` should be removed before the live
+  `FacilityType` move;
+* `PART` should be renamed to `STRUCTURE` before deeper facility behavior
+  depends on it;
+* `PowerSrc` stays only as temporary compatibility until live production scales
+  through facility `IS_SOLAR_SCALED` metadata;
+* `EconAgent` becomes the shared actor surface for facilities, population,
+  government, and later route traders;
+* `econPipeline` succeeds the current `EconSolver`, but the exact internal split
+  should be chosen after the combined facility surface is live enough to target;
+* construction and maintenance must eventually route through owning agents;
+* `BuildQueue` can be replaced if the audit shows replacement is cleaner than
+  repair;
+* storage overflow remains current storage-use proportional waste until the new
+  pipeline can preserve producer attribution for production-share waste.
 
 ## 1. Archive Before New Major Rewrites
 
@@ -48,132 +53,187 @@ version into `src/.oldFiles/` with the same relative path. Do not edit archived
 files and keep only one archived version unless the user explicitly asks for
 another.
 
-Likely archive candidates for this slice:
-
-* `src/games/orbiter/data/facilityData.zig`;
-* `src/games/orbiter/data/industryData.zig`, if `getPowerSrc()` changes;
-* `src/games/orbiter/econ/econSolver.zig`, if storage-waste accounting changes.
-
-If the later power-source decision edits or deletes `PowerSrc`, archive
-`src/games/orbiter/data/powerData.zig` before that pass.
-
-Files already archived during Phase 1A, 1B, or 1C can be edited without creating
+Files already archived during Phase 1A-1D can be edited without creating
 another copy unless the user asks for a second archive.
 
-## 2. Review Facility And Resource Names
+Likely archive candidates only if this slice makes a major first rewrite there:
 
-Clean up static `FacilityType` naming before attaching power-source or pipeline
-metadata to unstable enum cases:
+* `src/games/orbiter/econ/economy.zig`;
+* `src/games/orbiter/econ/econSolver.zig`, if solver lanes move to
+  `FacilityType` directly;
+* `src/games/orbiter/econ/econAutoBuild.zig`, if debug growth callers move to
+  facility helpers;
+* `src/games/orbiter/econ/econBuilder.zig`, if construction callers move to
+  facility helpers.
 
-* remove undesirable static facility enum cases such as `REFINERY` and
-  `PROBE_MINE`;
-* review current industry-derived names and rename unclear cases into the new
-  facility naming scheme;
-* prefer output- or role-oriented names where that is clearer, such as
-  `ORE_MINE` instead of `GROUND_MINE`;
-* check resource-output names before wiring facility rows deeper into future
-  logic. `ORE` has become `BASE_METALS`; later passes still need to decide
-  whether to add `RARE_EARTHS` and a better name for regolith-like bulk
-  material;
-* keep or port unit comments when renaming resources/facilities, especially
-  resource and facility data-matrix rows;
-* keep live `IndType` compatibility names untouched unless this slice explicitly
-  grows into a runtime migration.
+## 2. Remove Obsolete Resource And Industry Cases
 
-Validation:
+Remove the trivial obsolete pieces before live code moves onto `FacilityType`.
 
-* facility names should read as stable data vocabulary, not old implementation
-  leftovers;
-* touched data rows should still state units directly or point to the relevant
-  unit comment block;
-* removed static facility cases must not break live infrastructure/industry
-  runtime behavior.
+Next implementation work:
 
-## 3. Add Boolean Data Grids
-
-Move static flags out of numeric metric grids and into boolean data grids:
-
-* add `resBooleanData` for resource flags such as capacity-like, stockpiled,
-  transportable, and access-priced;
-* add `facilityBooleanData` for facility flags that should not live in numeric
-  metrics;
-* add `IS_SOLAR_SCALED` for facilities whose production should scale by local
-  sunlight after the live solver migrates to facilities;
-* keep boolean grids generic enough for later resource, facility, and data-enum
-  flags.
+* rename `PART` to `STRUCTURE`;
+* remove `FUEL` from the MVP resource set and update dependent rows/callers;
+* remove `REFINERY` and `PROBE_MINE` from live industry data and any remaining
+  direct callers;
+* keep the old archived files untouched.
 
 Validation:
 
-* resource boolean helper methods should no longer interpret `f64` `0.0` /
-  `1.0` flags;
-* `AGRONOMIC` and `SOLAR_PLANT` should be marked solar-scaled in
+* the code should compile after each small removal/rename step;
+* Terra should still run and remain roughly as stable as the current baseline,
+  even if the economy still crashes after a few simulated years.
+
+## 3. Keep `PowerSrc` As Compatibility
+
+Do not add new facility power-source metadata.
+
+Confirm the current `IndType.getPowerSrc()` path is still only a bridge for live
+production/accessibility behavior. `FacilityType.IS_SOLAR_SCALED` is the target
+surface; `PowerSrc` can be stripped only after live production reads facility
+metadata instead of `IndType`.
+
+Validation:
+
+* `data/industryData.zig` should keep a source TODO or nearby comment explaining
+  why `PowerSrc` still exists;
+* no new `FacilityType` power-source table should be added;
+* current live production behavior should not change in this slice.
+
+## 4. Migrate Live Facility Access
+
+Move the current live `InfType` / `IndType` usage toward `FacilityType` before
+using the combined enum in new implementation.
+
+Next implementation work:
+
+* add `facState` as the live facility-state direction, or start with thin
+  facility-facing wrappers over `infState` / `indState` only if that makes the
+  behavior-invariance pass smaller;
+* route counts, capacity queries, area usage, build costs, maintenance costs,
+  and ecology inputs through facility-facing helpers;
+* keep `FacilityType.toLegacy()` / `fromInfType()` / `fromIndType()` available
+  only as compatibility bridges while old state remains underneath;
+* update debug growth and construction request callers to prefer `FacilityType`
+  where the behavior mapping is direct;
+* remove `PowerSrc` as soon as live production scales from facility solar
+  metadata.
+
+Validation:
+
+* the code compiles and the simulation can be run;
+* current Terra logs should remain close enough to compare before/after
+  behavior;
+* old production and consumption roles should be explainable through
   `FacilityType`;
-* current live behavior should not change.
+* the migration should not introduce new pipeline behavior yet.
 
-## 4. PowerSrc Compatibility
+## 5. Define The `EconAgent` / Pipeline Boundary
 
-Do not add a new facility power-source metadata table.
+Define the agent boundary after the facility surface exists, without turning
+agents into opaque mini-solvers.
 
-Leave `PowerSrc` as a temporary legacy accessibility fix while live production
-still reads `IndType`. Once production scales through `FacilityType` and
-`IS_SOLAR_SCALED`, strip the old `PowerSrc` concept unless a later design pass
-finds a concrete reason to keep it.
+Define:
+
+* the durable `EconAgent` identity/accounting surface for facilities,
+  population, government, and later route traders;
+* population as one monolithic agent until dependant/worker split work happens;
+* government as one monolithic agent until local/stellar government split work
+  has a concrete need;
+* two directional `TRADER` agents per bidirectional route, tied together by
+  route-level accounting or a later savings-equalisation pass;
+* which agent helpers gather demand, supply, maintenance, finance, construction,
+  and policy intent;
+* which pipeline-owned buffers receive those intents;
+* which mutations must remain centralized in the pipeline rather than happening
+  directly inside agents;
+* how producer attribution should be carried later so storage overflow can move
+  from storage-use proportional waste to production-share proportional waste.
+
+Design bias:
+
+* agents should own identity, policy/accounting rules, and intent generation;
+* agents may access their own pipeline scratch state when that is the cleanest
+  way to fund maintenance or construction from savings;
+* the pipeline should own canonical tick buffers, conflict resolution, access
+  rates, final resource/money mutations, and publication;
+* hot resource/action loops should stay table-driven where that is clearer and
+  cheaper than dispatching through agent methods for every cell.
 
 Validation:
 
-* no new `FacilityType` power-source metadata should be added in Phase 1D;
-* `IndType.getPowerSrc()` should remain only as a compatibility hook.
+* pipeline design should target `FacilityType` and `EconAgent`, not legacy
+  infrastructure/industry lanes;
+* logs and data names should make clear which actor paid, earned, received, or
+  lost money;
+* the design should leave room for Phase 2 route taxes/subsidies without adding
+  politics or trade behavior in Phase 1.
 
-## 5. Storage Waste Attribution Prep
+## 6. Replace Or Audit `BuildQueue`
 
-Prepare production-share waste without forcing the full pipeline rewrite:
+Replacement is acceptable. Audit only enough to avoid preserving bugs or losing
+useful behavior during replacement.
 
-* inspect the current shared-depot overflow path in `econSolver.clampResStocks()`;
-* confirm the current storage-use proportional waste remains the compatibility
-  rule until `econPipeline` can preserve producer attribution;
-* identify what producer attribution is missing from current flow buffers;
-* document the exact producer-attribution data the future pipeline pass must
-  carry;
-* leave new attribution buffers for `econPipeline` unless the user explicitly
-  promotes this slice into a pipeline-prep implementation.
+Check these known risks:
+
+* matching or conflict handling can mutate the wrong entry;
+* compaction may not copy entry values correctly;
+* closed-entry dumping can use the wrong index;
+* total-cost helpers mix integer accumulation with `f64` return values;
+* construction money is simplified and not fully routed through accounts;
+* assembly construction effort is not paid through the eventual agent model;
+* `debugAutoBuild()` can still inject construction funding as a stopgap.
+
+Output of this step should be one of:
+
+* a replacement plan if repair is messier than rebuilding;
+* a small repair plan only if the queue is clearly close to the target shape;
+* a short blocker list if `EconAgent` or `econPipeline` decisions must come
+  first.
 
 Validation:
 
-* current overflow logging must remain clear;
-* resource accounting must not silently lose stock;
-* the reason production-share waste waits for `econPipeline` should stay visible
-  in `roadmap.md` or this file.
+* no queue behavior should be changed until the audit result is clear;
+* construction should not create or destroy resources/money except through
+  documented temporary rules.
 
-## 6. TODO Comment Review
+## 7. Source TODO Handling
 
-Review these source TODOs during the pass:
+Validated handling for current TODO comments in implicated files:
 
-* `data/industryData.zig`: `getPowerSrc()` should keep a TODO explaining that
-  it is a temporary compatibility hook until facility solar scaling replaces it.
-* `econ/econSolver.zig`: the shared-depot overflow comment should keep explaining
-  why production-share proportional waste waits for `econPipeline` producer
-  attribution.
+* address now: `data/industryData.zig` `getPowerSrc()` should keep its temporary
+  compatibility TODO/comment;
+* address now: `data/builderData.zig` `EconAgent` TODO belongs to this agent
+  boundary-design slice;
+* address now: `econ/econBuilder.zig` and `data/builderData.zig` construction
+  queue TODOs should be classified during the `BuildQueue` audit;
+* defer: broad `econSolver.zig` generalization and `IMPLEMENT ME` TODOs belong
+  to the later `econPipeline` migration, not isolated cleanup;
+* defer: `econAutoBuild.zig` funding injection stays until real construction and
+  maintenance funding paths exist;
+* defer: `data/populationData.zig` dependant/worker TODOs belong after the
+  facility and agent/pipeline foundations are stable;
+* defer: `data/resourceData.zig` storage-routing TODOs belong to later
+  data-backed storage routing work;
+* defer: `data/economyData.zig` `EconLoc` compatibility cleanup can continue
+  opportunistically, but it is not part of this slice;
+* drop from this file: the previous `econSolver.clampResStocks()` source-TODO
+  review item. The source has an explanatory comment, not a TODO. Keep the
+  producer-attribution dependency as roadmap/todo context only.
 
-Suggested defer:
+Do not add, remove, or rewrite source TODO comments without a matching
+implementation pass or another user approval.
 
-* full facility-state migration;
-* replacing `EconSolver` with `econPipeline`;
-* construction-effort as a live resource;
-* capacity-resource price modeling;
-* removing `FUEL` or replacing the MVP resource set wholesale;
-* extractable-accessibility tuning beyond naming/data dependency notes;
-* route-facing power transfer behavior.
+## 8. Out Of Scope For This Slice
 
-## 7. Out Of Scope For This Slice
+Do not do these as part of Phase 1E unless the user changes the scope:
 
-Do not do these as part of Phase 1D unless the user changes the scope:
-
-* removing old `InfType`, `IndType`, `infState`, or `indState`;
-* migrating all solver phases onto `FacilityType`;
-* replacing `BuildQueue`;
-* modeling capacity-resource prices;
-* removing `FUEL` from the resource model;
-* dependant/worker population split;
-* route trade or `TRADER` agents;
-* taxes, subsidies, or government behavior;
-* tuning Luna mineral access or Venus food production.
+* deleting all `InfType` / `IndType` compatibility surfaces before behavior
+  invariance is validated;
+* replacing the full `EconSolver` with `econPipeline`;
+* implementing capacity-resource pricing;
+* splitting population into dependants and workers;
+* removing `debugAutoBuild()`;
+* route trade, `TRADER` agents, taxes, subsidies, or government behavior;
+* Luna/Venus tuning or extractable-accessibility balancing;
+* colonization, politics, migration, vessel logistics, or explicit game goals.

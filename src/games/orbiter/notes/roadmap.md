@@ -7,372 +7,327 @@ and [design_philo.md](design_philo.md). Deferred ideas belong in
 [feature_ideas/ideas.md](feature_ideas/ideas.md).
 
 Detailed active tasks belong in [todo.md](todo.md). Keep this roadmap focused
-on sequencing, dependencies, and unresolved implementation choices.
+on remaining implementation order, dependencies, and unresolved implementation
+choices.
 
-## 1. Current Starting Point
+## 1. Current Progress
 
-Orbiter currently has:
+The first rework scaffolds are in place:
 
-* a live solar-system body/orbit simulation;
-* a game-owned economy container referenced by body/location economy ids;
-* local economy state for resources, population, infrastructure, industries,
-  ecology, government money, and construction queues;
-* a single reused global `EconSolver`;
-* debug-driven construction and growth through `debugAutoBuild()`;
-* a transitional `BuildQueue`;
-* an approximate transfer estimator;
-* no live trade execution;
-* no real government behavior beyond state/data stubs.
+* economies are game-owned through `G_DATA.economies` / `EconomyStore` and are
+  referenced by `EconomyId`;
+* body economy ownership has moved to economy-id references, with
+  `BodyComp.getEcon()` kept as a compatibility helper;
+* `SettlementType` and `BodyLocation` exist beside the temporary combined
+  `EconLoc`;
+* Terra, Luna, and Venus have MVP settlement metadata, but only Terra is a
+  normal active economy at startup;
+* `LABOUR` replaced the old worker-capacity resource role, and resource flags
+  moved into `resBooleanData`;
+* ordinary stockpiled resources use one shared `DEPOT` storage pool;
+* static `FacilityType` data exists as the merged facility vocabulary, including
+  facility categories, capacities, resource rows, mapping helpers, and
+  `IS_SOLAR_SCALED`;
+* static facility names have moved away from several old implementation names
+  such as `GROUND_MINE` and `FOUNDRY`;
+* current live runtime behavior still uses `InfType`, `IndType`, `infState`,
+  `indState`, `IndType.getPowerSrc()`, `EconSolver`, `BuildQueue`, and
+  `debugAutoBuild()`;
+* no live route trade, trader agents, route taxes/subsidies, or meaningful
+  government behavior exists yet.
 
-The MVP target is not a broad gameplay loop. It is a reworked, stable economic
-sandbox that first restores Terra as an autonomous single economy, then proves
-automatic trade between Terra, Luna, and Venus.
+The MVP target is still a reworked economic sandbox, not a broad gameplay loop:
+first restore Terra as an autonomous single economy, then prove automatic trade
+between Terra, Luna, and Venus.
 
 ## 2. Roadmap Rules
 
 Follow these constraints while sequencing work:
 
 * keep `G_DATA` as the game-owned global runtime state surface;
-* keep current implementation facts in `reference.md`, not here;
-* keep target-state changes in `goals.md`, not here;
+* keep current implementation facts in [reference.md](reference.md);
+* keep target-state design in [goals.md](goals.md);
 * preserve deferred ideas in `feature_ideas/` rather than deleting them;
-* do not build politics, colonization, migration, vessel logistics, or explicit
-  game goals into the MVP;
-* keep taxes and subsidies out of Phase 1; they start in Phase 2;
+* keep taxes and subsidies out of Phase 1;
 * do not let Phase 2 trade work distract from restoring Terra first;
 * run behavior validation after each meaningful economy rewrite slice.
 
-## 3. Phase 0 - Alignment And Safety Rails
+Archive rule: before a file receives its first major Phase 1 rewrite, copy its
+pre-rewrite version into `src/.oldFiles/` with the same relative path. Do not
+edit archived files. Keep only one archived version unless the user explicitly
+asks for another. Files already archived for this rework do not need a second
+archive for normal follow-up edits.
 
-Goal: make the rework vocabulary explicit before changing live behavior.
+## 3. Phase 1 - Terra Baseline
+
+Goal: restore Terra as a stable autonomous single economy on the new model.
+Phase 1 ends when Terra can run without `debugAutoBuild()` as the central
+growth driver.
+
+### 3.1 Facility Runtime Migration
+
+Status: next active loop, tracked in [todo.md](todo.md).
+
+Move live economy behavior from the old infrastructure/industry split onto the
+facility model before building the new pipeline around it. This should be a
+behavior-invariance pass first: switch the live-facing enum/state/helper surface
+to `FacilityType` while preserving current Terra behavior as much as possible.
 
 Required work:
 
-* audit names that will be replaced or split:
-  * `Industry` / `Infrastructure` -> `Facility`;
-  * `EconLoc` -> `SettlementType` plus `BodyLocation`;
-  * current population `HUMAN` -> `dependants` / `workers`;
-  * agent/requester names -> `EconAgent` groups;
-  * `WORK` -> `LABOUR`;
-* perform code-wide compile-clean renames for resources, facilities,
-  population, and old infrastructure/industry instance names where they are
-  simple and mechanically safe;
-* update comments and references during the rename pass;
-* identify all code paths that assume economies are stored inside `BodyComp`;
-* identify all code paths that assume current `EconLoc` values imply economy
-  rules;
-* identify all code paths that hardcode `WORK`, `PART`, `DEPOT`, `ASSEMBLY`,
-  or current infrastructure/industry tables;
-* treat starred entries in `feature_ideas/resources.md` and
-  `feature_ideas/facilities.md` as mandatory Phase 1 entries;
-* keep non-MVP resources/facilities as commented-out enum candidates rather
-  than implementing them early.
-
-Exit condition: the first implementation slice can be described without
-guessing which old concept maps to which new concept.
-
-Archive rule: before a file receives its first major Phase 1 rewrite, copy its
-pre-Phase 1 version into `src/.oldFiles/` with the same relative path. Do not
-edit archived files. Keep only one archived version unless the user explicitly
-asks for another.
-
-## 4. Phase 1 - Terra Baseline
-
-Goal: restore Terra as a stable autonomous single economy on the new model.
-
-Phase 1 is the core economic rewrite. It should end with Terra running without
-`debugAutoBuild()` as the central growth driver.
-
-### 4.1 Economy Ownership And Location Split
-
-Status: complete for the Phase 1A scaffold.
-
-Implemented:
-
-* move economies toward a game-owned global container addressed by `u32` indices;
-* use allocator-backed chunk growth so the global runtime state object does not
-  own a large fixed economy array directly;
-* replace direct body-owned economy ownership with references from bodies,
-  settlements, or routes;
-* split location concepts:
-  * `SettlementType` describes economy rules and physical settlement form;
-  * `BodyLocation` describes body-relevant travel-cost locations;
-* keep MVP settlement types to `surface`, `subsurface`, `aerial`, and
-  `orbital`;
-* define MVP body settlement-type metadata without requiring every body to
-  become a live economy in Phase 1:
-  * Terra as `surface`;
-  * Luna as `subsurface`;
-  * Venus as `aerial`;
-* keep one orbital economy per body for MVP;
-* tick live economies by direct iteration over live game-owned economy entries;
-* defer Lagrange economy locations, multiple orbital layers, star-hosted
-  arbitrary locations, asteroid-belt aggregate economies, and mobile economies.
-
-Validation targets:
-
-* Terra initializes through the new ownership path;
-* body/orbit rendering and target selection still work;
-* old body-local economy assumptions are either removed or explicitly isolated.
-
-### 4.2 Resource And Capacity Model
-
-Implemented:
-
-* add the resource metadata needed to distinguish ordinary resources from
-  capacity resources;
-* move resource flags out of numeric metrics and into `resBooleanData`;
-* mark capacity resources as non-transportable;
-* mark stockpiled resources separately from capacity-like resources;
-* add an access-pricing prep flag for later capacity-resource pricing;
-* keep current `LABOUR` behavior as the transition model for labour-like
-  capacity;
-* keep `DEPOT` as the singular storage facility;
-* aggregate ordinary stockpiled resources into one shared `DEPOT` storage pool;
-* exclude `LABOUR` from shared depot usage;
-* publish per-resource overflow waste through solver logs and `ResStockEnum.DESTR`;
-* add equal Terra/Luna/Venus `BASE_METALS` accessibility placeholders for later tuning.
-
-Remaining work:
-
-* model capacity-resource prices from availability rather than ordinary stock
-  flow;
-* keep capacity calculation inside the unified economy update pipeline for
-  now;
-* reserve caching for later profiling or area-use complexity;
-* remove `FUEL` after Phase 0 once dependent code can be updated safely;
-* let resources keep declaring their storage facility until data-backed storage
-  routing replaces `getInfStore()`;
-* move excess-storage waste to production-share proportional accounting after
-  the economy pipeline can preserve producer attribution;
-* expose extractable accessibility in extraction output or access when Phase 2
-  begins route-facing Luna tuning.
-
-Validation:
-
-* resource totals, capacity availability, prices, and waste are visible in logs;
-* non-transportable capacity resources cannot enter trade or route logic;
-* Terra does not rely on old per-resource storage lanes.
-
-### 4.3 Facility Model
-
-Implemented:
-
-* introduce `Facility` as the implementation name for the merged
-  industry/infrastructure concept;
-* keep facility categories for data readability:
-  * growth;
-  * extraction;
-  * manufacturing;
-  * service;
-  * transportation;
-  * capacity;
-* introduce `FacilityType` in `data/facilityData.zig`;
-* mirror current infrastructure and industry identities into `FacilityType`;
-* add mapping helpers between `FacilityType` and the live `InfType` / `IndType`
-  surfaces;
-* mirror current infrastructure data where it produces or exposes capacities;
-* mirror current industry data where it consumes or produces ordinary resources;
-* separate facility capacity outputs into area, storage, housing, and
-  construction capacity rows;
-* add `facilityBooleanData` and mark solar-scaled facility production with
-  `IS_SOLAR_SCALED`;
-* rename static facility cases away from old implementation terms where the new
-  vocabulary is clear:
-  * `WATER_PLANT` -> `WATER_FACILITY`;
-  * `POWER_PLANT` -> `FUSION_PLANT`;
-  * `GROUND_MINE` -> `ORE_MINE`;
-  * `FOUNDRY` -> `ORE_REFINERY`;
-* leave `REFINERY` and `PROBE_MINE` as legacy-only `IndType` cases rather than
-  adding new `FacilityType` metadata for them;
-* preserve non-MVP facility entries as commented-out enum candidates.
-
-Remaining work:
-
-* keep `PowerSrc` only as a temporary legacy accessibility hook until
-  production scaling moves from `IndType.getPowerSrc()` to facility
-  `IS_SOLAR_SCALED`;
-* use the starred facility entries in `feature_ideas/facilities.md` as the
-  mandatory Phase 1 set once final names are settled;
-* migrate live economy state from `infState` / `indState` to facility state;
-* migrate solver, construction, ecology, finance, and debug growth paths onto
-  facilities;
-* remove or isolate old infrastructure/industry code paths once equivalent
+* rename `PART` to `STRUCTURE` before deeper facility behavior depends on the
+  old name;
+* remove `FUEL`, `REFINERY`, and `PROBE_MINE` before the live `FacilityType`
+  move unless implementation reveals a non-trivial dependency;
+* keep `PowerSrc` as a temporary legacy hook only while live production still
+  reads `IndType`;
+* introduce `facState`, using `fac` as the short form for facilities in contexts
+  alongside names such as `inf`, `ind`, `pop`, and `res`;
+* migrate facility counts, activity/use, capacities, build costs, maintenance,
+  ecology inputs, finance, and debug growth callers to facility-facing helpers;
+* scale live solar production from `FacilityType.IS_SOLAR_SCALED` and local sun
+  access, then remove `PowerSrc` as soon as the live migration is stable;
+* remove or quarantine old infrastructure/industry paths after equivalent
   facility behavior exists.
 
 Validation:
 
-* old Terra production/consumption roles can be expressed through facilities;
-* former infrastructure capacities such as housing, storage, area support, and
-  construction effort flow through the new model;
-* code no longer needs separate implementation paths unless a clear local
-  reason remains.
+* the code compiles and the simulation can run;
+* short/medium simulation behavior remains as stable as the current baseline,
+  where the economy still crashes after a few simulated years;
+* old Terra production and consumption roles still work through facilities;
+* former infrastructure capacities such as area, storage, housing, and
+  construction effort flow through facility data;
+* behavior differences from the old split are intentional, visible, and small
+  enough to diagnose before the pipeline rewrite begins;
+* no new long-term split between infrastructure and industry survives without a
+  clear local reason.
 
-### 4.4 EconAgent Model
+Exit condition:
+
+* live economy code can use the combined facility surface directly enough that
+  `econPipeline` does not need to be designed around the old split.
+
+### 3.2 Agent And Pipeline Shape
+
+Define the durable actor and tick-shape boundaries after the facility surface is
+live enough to target.
 
 Required work:
 
-* introduce `EconAgent` as the common enum group for economy actors;
-* create one agent entry for each facility enum value present in an economy;
-* add `POPULATION` as the whole-economy population agent for MVP;
-* add one `GOVERNMENT` instance per economy;
-* reserve `TRADER` for Phase 2 route agents;
-* route finance, savings, taxes, subsidies, and construction requests through
-  agents;
-* avoid per-facility-instance agents by default.
+* define the durable `EconAgent` surface that will cover facilities,
+  population, government, and later route traders;
+* decide how facility, population, government, and route agents expose demand,
+  supply, finance, construction requests, and policy hooks;
+* keep population as one monolithic `POPULATION` agent until the dependant /
+  worker split exists;
+* keep government as one monolithic `GOVERNMENT` agent until local/stellar
+  government split work has a concrete need;
+* model trade as two directional `TRADER` agents per bidirectional route, but
+  keep them tied to the same route so later financial equalisation or shared
+  route accounting can represent back-and-forth freighter use;
+* decide the first `econPipeline` owner/file split and tick-order shape;
+* audit `BuildQueue`, with replacement allowed if it is cleaner than repair;
+* keep storage overflow as current storage-use proportional waste until the new
+  pipeline can preserve producer attribution.
+
+Agent design guidance:
+
+* use `EconAgent` as an identity, ownership, policy, and accounting boundary;
+* let agents gather or compute their own intents where that keeps rules local,
+  such as desired production, maintenance demand, construction requests,
+  savings, taxes, subsidies, or trader buy/sell intent;
+* allow agents controlled access to their own pipeline scratch state when
+  useful, especially savings/finance state used to fund construction or
+  maintenance;
+* keep the pipeline as the owner of canonical per-tick buffers and final state
+  mutation;
+* have agents submit flow/finance/construction intents to pipeline-owned
+  buffers rather than mutating global resource buffers directly;
+* keep hot resource loops table-driven where possible. Avoid making every
+  resource/action update pay for heavy agent dispatch or unnecessary
+  abstraction;
+* prefer thin agent helpers plus explicit pipeline phases over opaque
+  agent-owned mini-solvers.
 
 Validation:
 
-* existing population/facility money behavior can be expressed through agents;
-* agent finance is structured so `GOVERNMENT` can pay subsidies and receive
-  taxes in Phase 2 without adding politics;
-* logs identify which agent group paid, earned, received, or lost money.
+* the first pipeline implementation can be written against facility and agent
+  concepts rather than legacy infrastructure/industry lanes;
+* logs and data names make clear which actor paid, earned, received, requested,
+  or lost resources/money;
+* the design leaves room for Phase 2 route taxes/subsidies without adding
+  politics or trade behavior in Phase 1.
 
-### 4.5 Population Split
+### 3.3 Resource And Capacity Follow-Through
+
+Complete the resource model changes that need live pipeline support.
 
 Required work:
 
-* replace single `HUMAN` population behavior with `dependants` and `workers`;
-* make births create dependants;
-* convert dependants to workers at a fixed rate;
-* keep MVP consumption values allowed to match, but declared separately;
-* route worker output into the labour/capacity-resource model;
-* defer education, wealth, laws, migration, owners, managers, engineers, and
-  other population subtypes.
+* price capacity resources from availability rather than ordinary stock flow;
+* represent or expose capacity concepts needed by Phase 1, including labour,
+  area, housing, storage, construction effort, and energy/power capacity;
+* keep resource storage routing data-backed enough to replace hardcoded
+  `getInfStore()` behavior when the facility migration makes that practical;
+* update dependent balancing/data after the `FUEL` removal and `PART` ->
+  `STRUCTURE` rename are complete;
+* move shared-depot overflow to production-share proportional waste after
+  producer attribution exists in the pipeline.
 
 Validation:
 
-* population can stabilize without hidden debug injections;
-* worker capacity changes when population composition changes;
-* birth/death/conversion rates are inspectable from logs.
+* capacity resources cannot enter trade or ordinary stock logic;
+* resource totals, capacity availability, prices, and waste remain visible in
+  logs;
+* Terra no longer relies on old per-resource storage lanes.
 
-### 4.6 Economy Update Pipeline
+### 3.4 Economy Update Pipeline
 
-Goal: replace the current `EconSolver` shape with `econPipeline`.
+Replace the current `EconSolver` shape with `econPipeline`.
 
 Required work:
 
-* use `econPipeline` as the successor name unless later implementation shows a
-  better name;
-* define the new economy update owner and file split before moving logic;
-* keep the early version single-threaded unless there is a measured reason to
-  do otherwise;
-* fold solver, builder, finance, maintenance, construction, and capacity
-  enforcement into one coherent update pipeline;
-* separate large files by concern as the new pipeline takes shape;
-* keep the pipeline deterministic and loggable.
+* fold solver, construction, maintenance, finance, capacity enforcement, and
+  state publication into one coherent tick pipeline;
+* keep the early version deterministic and single-threaded unless profiling
+  proves otherwise;
+* split large files by concern only as the new ownership becomes clear;
+* process maintenance before construction;
+* route construction and maintenance funding through owning `EconAgent`s;
+* publish enough per-tick state and logs to explain resource access, capacity
+  access, prices, construction, finance, and population movement.
 
 Suggested pass order:
 
-1. gather local state and static data;
-2. calculate facility and population capacity production;
-3. calculate ordinary resource demand and supply;
-4. calculate capacity-resource availability and prices;
-5. calculate ordinary resource access and prices;
-6. update facility activity;
-7. apply resource consumption/availability outcomes;
-8. update population deaths, births, and dependant-to-worker conversion after
-   this tick's resource consumption has happened;
-9. process maintenance funding/materials/access;
-10. process construction/deconstruction funding, materials, effort,
+1. gather economy state and static data;
+2. resolve prices from the previous tick's state and current availability;
+3. update production/activity targets;
+4. query agents for maximum resource consumption and other demand intents;
+5. compute potential shortages and capacity bottlenecks;
+6. resolve resource and capacity access rates;
+7. query agents for real production and consumption at resolved access/activity;
+8. update stocks and agent finances;
+9. update population deaths, births, and dependant-to-worker conversion after
+   this tick's resource consumption;
+10. process maintenance funding, materials, access, and consequences;
+11. process construction/deconstruction funding, materials, effort,
    cancellation, and refunds;
-11. process agent finances, savings, and losses;
-12. enforce storage and proportional waste;
-13. publish state and logs.
+12. process remaining agent finance changes, savings, and losses;
+13. enforce storage and proportional waste;
+14. publish state and logs.
 
-This pass order is provisional. Change it if implementation reveals a cleaner
-or more correct shape, but document the reason in the roadmap or todo.
+This order is provisional. Change it if implementation reveals a cleaner or
+more correct order, but document the reason in this file or [todo.md](todo.md).
 
 Validation:
 
-* `debugTestEcon()` or its successor can run the Terra economy for long spans;
+* `debugTestEcon()` or its successor can run Terra for long spans;
 * `testResFlowInvariant()` or its successor can check flow accounting;
-* one tick's logs can explain resource access, capacity access, prices,
-  construction, finance, and population movement.
+* one tick's logs can explain the major economic outcomes without reading code.
 
-### 4.7 Construction And Facility Lifecycle
+### 3.5 Construction And Facility Lifecycle
+
+Make construction, maintenance, and facility changes coherent enough to replace
+debug growth.
 
 Required work:
 
-* audit `BuildQueue` and repair it if it is close enough to the target shape;
-* replace `BuildQueue` if repair is larger or messier than rebuilding;
-* fix or replace known queue caveats before relying on long-lived orders;
-* define construction effort as a capacity resource;
-* implement maintenance before construction because it exercises many of the
-  same resource/finance paths with less extra machinery;
-* route construction and maintenance funding through the owning `EconAgent`;
-* allow a temporary stopgap that creates money for construction/maintenance if
-  owner-funded paths block Phase 1 progress;
-* allow negative savings for MVP; proper debt and fiscal-management behavior is
-  post-MVP;
-* let maintenance failure do nothing initially, while keeping hooks clear for
-  future penalties;
-* support construction, deconstruction, cancellation, and refunds coherently;
-* remove `debugAutoBuild()` after real maintenance/growth paths are stable.
-
-Known risks to resolve or replace:
-
-* entry matching mutates the wrong queue slot;
-* compaction currently does not copy entry values correctly;
-* closed-entry dumping can use the wrong index;
-* total-cost helpers mix integer accumulation with `f64` return values;
-* construction money is simplified and not fully routed through accounts.
+* apply the `BuildQueue` audit result: repair it if small, replace it if repair
+  is messier than rebuilding;
+* fix or replace queue matching, compaction, closed-entry handling, total-cost
+  helpers, and simplified money handling before relying on long-lived orders;
+* keep construction effort as a capacity resource or capacity-like pipeline
+  value by default, exposed by `ASSEMBLY` / future construction facilities and
+  likely fed by `LABOUR`;
+* keep construction effort separate from direct `LABOUR` allocation unless a
+  later simplification proves cleaner. A distinct construction-capacity lane
+  keeps build spikes from consuming all available labour and preserves the
+  visible role of construction facilities;
+* support construction, deconstruction, cancellation, and refunds through
+  documented resource and money rules;
+* allow negative savings for MVP if needed; proper debt and fiscal management
+  are post-MVP;
+* let maintenance failure initially be a no-op or simple penalty, but keep the
+  hook explicit;
+* retire `debugAutoBuild()` after real maintenance and growth paths can keep
+  Terra active.
 
 Validation:
 
 * Terra can maintain and grow facilities without debug-only funding injection;
-* construction cannot create or destroy resources/money except through
-  documented rules.
+* construction cannot create or destroy resources or money except through
+  documented temporary rules.
 
-### 4.8 Terra Balancing
+### 3.6 Population Split
+
+Replace the single live `WORKER` population model with the MVP dependant/worker
+split.
 
 Required work:
 
-* use the starred resource and facility entries as the Phase 1 Terra data set;
-* tune starting quantities, facility counts, capacity outputs, and prices;
+* add dependant and worker population state/data;
+* make births create dependants;
+* convert dependants into workers at a fixed rate;
+* keep MVP consumption values allowed to match, but declare them separately;
+* route worker output into the labour/capacity-resource model;
+* keep education, wealth, law, migration, owners, managers, engineers, and
+  other population subtypes deferred.
+
+Validation:
+
+* worker capacity changes when population composition changes;
+* birth, death, and conversion rates are inspectable from logs;
+* population can stabilize without hidden debug injections.
+
+### 3.7 Terra Balancing
+
+Tune the completed Phase 1 model into a stable single-economy sandbox.
+
+Required work:
+
+* use the Phase 1 resource and facility set from `feature_ideas/` as the target
+  data set, adjusted for implementation reality;
+* tune starting quantities, facility counts, capacity outputs, prices,
+  maintenance, construction, and population rates;
 * avoid preset taxes/subsidies in Phase 1;
-* ensure the economy can reach a stable or intentionally inspectable dynamic
-  state without player micromanagement.
+* keep logs focused enough to explain whether instability is caused by
+  resource access, capacity access, finance, construction, or population.
 
 Exit condition:
 
-* Terra runs as a stable autonomous economy under the new model;
-* `debugAutoBuild()` is no longer required for normal Terra stability;
-* logs show the economy is stable for understandable reasons.
+* Terra runs as a stable or deliberately inspectable autonomous economy under
+  the new model;
+* `debugAutoBuild()` is no longer required for normal Terra stability.
 
-## 5. Phase 2 - Trade, Luna, And Venus
+## 4. Phase 2 - Trade, Luna, And Venus
 
-Goal: add automatic inter-economy trade, then prove Terra/Luna before adding
-Venus.
+Goal: add automatic inter-economy trade, prove Terra/Luna first, then add Venus
+as the third-economy stability test.
 
-### 5.1 Trade Route Data
+### 4.1 Trade Route Data And Trader Agents
 
 Required work:
 
-* define route data that references source and destination economy indices;
-* create one `TRADER` agent per route;
-* store route taxes, subsidies, cost settings, and basic activity state;
-* represent each bidirectional route as two directional `TRADER` agents;
-* give each `TRADER` a simple inventory with add/remove accessors, which can
-  later become in-transit packets if needed.
+* define route data that references source and destination economy ids;
+* create one `TRADER` agent per directional route;
+* represent bidirectional routes as two directional traders;
+* store route cost settings, tax/subsidy settings, activity state, and simple
+  trader inventory;
+* keep route-local inventory simple unless timing or vessel logistics later
+  require in-transit packets.
 
-### 5.2 MVP Trade Execution
+### 4.2 MVP Trade Execution
 
 Required work:
 
 * compute source export availability and destination demand;
 * buy ordinary resources from the source economy;
 * sell them wholesale in the destination economy on the next tick;
+* exclude capacity resources and migration;
 * let the `TRADER` agent internalize profit and loss;
-* exclude capacity resources;
-* exclude migration;
-* base transport cost on transported mass;
-* apply route taxes and subsidies through `GOVERNMENT`;
-* calculate taxes proportionally to income this tick, or previous tick if that
-  is cleaner for the pipeline;
-* calculate subsidies proportionally to expenses this tick;
-* allow negative government savings for MVP;
-* expose enough logs to explain route activity.
+* apply route taxes/subsidies through `GOVERNMENT`;
+* expose enough logs to explain route activity and money/resource accounting.
 
 Validation:
 
@@ -380,71 +335,45 @@ Validation:
 * a route can lose money, receive subsidies, or profit without special cases;
 * route trades preserve resource and money accounting under documented rules.
 
-### 5.3 Transfer Cost Gate
+### 4.3 Route Cost Gate
 
 Required work:
 
-* choose a simple MVP route-cost source:
-  * current `travelSolver` `deltaV`, which is already static and roughly
-    best-case;
+* use the current approximate `travelSolver` `deltaV` output as the MVP
+  transfer-cost source;
 * convert `deltaV` and transported mass into a route transport cost;
 * keep dynamic `deltaT`, transfer windows, route delay, and vessel-mediated
-  cargo out of MVP.
+  cargo out of the MVP.
 
 Validation:
 
 * route costs do not explode because of one bad temporary transfer geometry;
 * Terra/Luna trade can remain stable under preset subsidies.
 
-### 5.4 Extractable Resource Accessibility
+### 4.4 Luna And Venus Economy Tuning
 
 Required work:
 
-* add static accessibility rates for extractable resources;
-* make Luna higher-accessibility for mineral extraction than Terra and Venus;
+* replace the current equal extractable-accessibility placeholders with tuned
+  body/resource values;
 * expose accessibility in extraction facility output or access;
-* keep depletion and exploration uncertainty deferred.
-
-Validation:
-
-* Luna has a clear mineral production advantage;
-* Terra/Luna trade can form around minerals without scripted shipments.
-
-### 5.5 Terra And Luna Trade Sandbox
-
-Required work:
-
+* make Luna a higher-accessibility mineral source than Terra and Venus;
 * initialize Luna with the minimum settlement, facility, population, and
   resource state needed for stable trade;
-* define bidirectional Terra/Luna routes;
-* tune taxes/subsidies and starting stocks;
-* inspect whether Terra supplies something Luna needs and Luna supplies
-  minerals back while processing what it can locally.
+* define and tune Terra/Luna routes first;
+* add Venus afterward as a food producer enabled by high solar access;
+* define Terra/Venus and Luna/Venus routes only after Venus is a live,
+  understandable economy.
 
 Exit condition:
 
-* Terra and Luna can trade automatically and remain stable through route and
-  agent taxation/subsidy settings.
+* Terra and Luna can trade automatically and remain stable;
+* Terra, Luna, and Venus can remain active and stable through automatic trade
+  after Venus is added.
 
-### 5.6 Venus As Third Economy
+## 5. Deferred Post-MVP Work
 
-Required work:
-
-* use Venus as a food producer because power cannot be transferred in the MVP;
-* define Venus as a live economy with its settlement type, facility set,
-  population, and resource state;
-* add Terra/Venus and Luna/Venus trade routes after Venus is properly defined
-  as an economy;
-* tune those routes so Venus can participate without destabilizing Terra/Luna;
-* avoid adding colonization, politics, or atmospheric simulation depth.
-
-Exit condition:
-
-* Terra, Luna, and Venus remain active and stable through automatic trade.
-
-## 6. Deferred Post-MVP Work
-
-Keep these out of MVP unless the user explicitly promotes them:
+Keep these out of the MVP unless the user explicitly promotes them:
 
 * colonization and settlement founding;
 * politics, autonomy, unrest, welfare, laws, and local governors;
@@ -453,25 +382,26 @@ Keep these out of MVP unless the user explicitly promotes them:
 * dynamic transfer windows and realistic route timing;
 * route or agent-owned inventories beyond what MVP trade requires;
 * proper debt and fiscal-management behavior beyond negative savings;
-* economy variants such as automated mines, ship-bound economies, cyclers, and
-  regional aggregates;
+* Lagrange settlement economies, multiple orbital layers, star-hosted arbitrary
+  economies, asteroid-belt aggregates, mobile economies, and cyclers;
 * richer player goals, crises, victory/failure conditions, and fun-first
   gameplay loops.
 
-## 7. Open Implementation Decisions
+## 6. Open Implementation Decisions
 
-These should be prompted to the user when they become blockers:
+Prompt the user when one of these becomes a blocker:
 
-* exact Phase 1 file split for economy update, facilities, construction, and
-  finance;
-* exact internal split of `econPipeline`;
-* whether specific `BuildQueue` internals are repaired or replaced after audit;
-* exact behaviour when maintenance is unfunded after the no-op MVP hook;
-* whether taxes use current-tick or previous-tick income;
+* exact file split for `EconAgent`, `econPipeline`, construction, finance, and
+  `facState`;
+* exact replacement shape for `BuildQueue`;
+* exact maintenance-failure behavior after the initial MVP hook;
+* whether construction effort remains a distinct capacity resource or becomes a
+  direct `LABOUR` allocation in a later simplification pass;
 * exact facility/resource data values needed to satisfy the user's stability
-  expectations.
+  expectations;
+* whether taxes use current-tick or previous-tick income in Phase 2.
 
-## 8. Validation
+## 7. Validation
 
 Docs-only changes need no build.
 
@@ -480,8 +410,9 @@ Implementation slices should usually validate with:
 * `zig build`;
 * `zig build check_games`;
 * `zig build test`;
+* flow-invariant tests whenever resource or money accounting changes;
 * long-run Terra economy logs after Phase 1 slices;
 * long-run Terra/Luna and Terra/Luna/Venus trade logs after Phase 2 slices;
-* resource/money flow invariant checks whenever accounting changes.
+* manual simulation runs as the final stability check.
 
 Do not run formatting passes such as `zig fmt`.
