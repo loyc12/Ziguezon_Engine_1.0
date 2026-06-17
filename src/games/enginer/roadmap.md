@@ -1,0 +1,231 @@
+# Enginer Roadmap
+
+This file describes the implementation order from the current `enginer`
+scaffold toward the station-scale simulation described in [design.md](design.md)
+and the validation target in [goals.md](goals.md).
+
+Keep this roadmap focused on sequencing. Design direction belongs in
+`design.md`; active task details can move into a future `todo.md`.
+
+## 1. Preamble - Engine Dependencies
+
+Before serious `enginer` implementation, finish or plan around the engine
+systems that the testbed is meant to validate.
+
+Preferred first:
+
+* finish the data-only `Archetype` surface so station systems, drones,
+  asteroids, chunks, and effects can use reusable spawn/setup declarations
+  instead of hand-rolled construction code;
+* add minimal World scheduling or rule phases before the autonomous station loop
+  depends on production rules, drone assignment, upkeep, market drift,
+  asteroid spawning, and delayed work;
+* clarify command execution ownership so rules can emit requested changes and a
+  predictable World phase applies those changes.
+
+Useful but not blocking:
+
+* retained UI polish can wait until simple overlays and controls become painful;
+* `RuleSet` can wait until plain rules need grouping or cadence management;
+* particles/effects, save/load, replay, and context work can wait until the
+  first station loop is stable.
+
+The visual shell can start before all of this is complete. Deeper simulation
+phases should use the engine surfaces above as soon as they exist rather than
+building permanent game-local substitutes.
+
+## 2. Baseline
+
+Current baseline:
+
+* `enginer` compiles as a game target;
+* the adapter exposes the expected engine hooks and configs;
+* input supports pause, camera zoom, camera reset, and overlay toggle;
+* rendering is still a placeholder overlay;
+* no world-owned station simulation exists yet.
+
+The first implementation goal is a small playable/debuggable vertical slice:
+one station, starter reserves, basic resources, simple visuals, player controls,
+and enough world facts to validate entity lifecycle, components, relations,
+traits, events, rules, and queries in combination.
+
+## 3. Phase 1 - Visual Shell And Controls
+
+Create the first visible station-scale shell.
+
+Work:
+
+* keep the station centered as a grey world-space circle;
+* add darker grey asteroid circles drifting through the background;
+* draw drones as simple world-position markers once drones exist;
+* support zoom in/out without panning;
+* add overlay ledgers for resources, station systems, drones, warnings, and
+  recent events;
+* add controls for pause/resume, reset, spawn asteroid, manual harvest, buy,
+  sell, dump, build system, and overlay toggles.
+
+Validation:
+
+* `zig build enginer`;
+* manual run confirms the shell opens, zoom works, and overlay text does not
+  depend on simulation internals that do not exist yet.
+
+## 4. Phase 2 - Station And Resource Facts
+
+Add the central station simulation state.
+
+Work:
+
+* create the station as the primary persistent entity;
+* add station-owned resource stockpiles for regolith, ice, ore, oxygen, fuel,
+  water, food, power, concrete, metals, electronics, credits, and population;
+* add starter reserve state for finite manually harvestable regolith, ice, and
+  ore in the main asteroid;
+* add basic capacity state for storage, drone slots, processing throughput,
+  power output, hangar throughput, market throughput, and construction capacity;
+* represent built station systems as station-owned child entities where the
+  engine world surface supports it cleanly;
+* add initial systems: hangar, depot, refinery, storage, reactor, shipyard, and
+  assembly.
+
+Validation:
+
+* overlay shows station resources, capacities, systems, and reserve amounts;
+* reset recreates the station cleanly without stale entities or facts;
+* selected/debug output can inspect the station and child systems.
+
+## 5. Phase 3 - Bootstrap And Processing Loop
+
+Build the first resource loop before drones are required.
+
+Work:
+
+* implement manual starter-reserve harvesting;
+* move harvested regolith, ice, and ore into station storage;
+* add simple processing rules:
+  * ice to water and oxygen;
+  * water and power to fuel;
+  * ore to metals;
+  * regolith to concrete;
+  * metals plus power to electronics through assembly;
+  * water, oxygen, and power to food;
+* add storage limits and full-storage warnings;
+* add oxygen, food, and population upkeep;
+* trigger population loss and gameover when life-support failure reaches zero
+  population.
+
+Validation:
+
+* starter reserves decline when harvested;
+* resources enter storage and respect capacity;
+* processing changes stockpiles through visible rules;
+* full storage and life-support failures emit readable events.
+
+## 6. Phase 4 - Asteroids, Chunks, And Drones
+
+Add the autonomous harvest loop.
+
+Work:
+
+* spawn asteroids with size as chunk count;
+* convert small asteroids into one chunk and larger asteroids into multiple
+  harvestable chunks over repeated work;
+* create drones with world positions and simple states: idle, outbound,
+  harvesting, returning, unloading, disabled;
+* use job components for harvest and haul work;
+* assign idle drones automatically based on target availability and player
+  priorities;
+* use timed state changes for drone travel and work while keeping positions
+  visible;
+* emit events for asteroid detected, chunk created, drone launched, harvest
+  completed, drone returned, and logistics blocked.
+
+Validation:
+
+* drones harvest external asteroids without manual resource injection;
+* chunk counts deplete correctly;
+* drone shortage blocks work visibly instead of silently resolving;
+* returned resources feed the same processing/storage loop as manual harvest.
+
+## 7. Phase 5 - Construction And Growth
+
+Let the station expand using direct resources.
+
+Work:
+
+* add build costs for station systems;
+* let storage, reactor, refinery, hangar, depot, shipyard, and assembly systems
+  increase relevant capacities or throughput;
+* route drone construction through the shipyard;
+* make hangar capacity limit active drones;
+* make shipyard capacity or construction throughput limit drone replacement;
+* add basic system damage and repair work if the engine world surface is ready.
+
+Validation:
+
+* building a system consumes resources and creates a station-owned child
+  entity;
+* capacity changes are visible immediately after build completion;
+* drone construction is limited by shipyard and hangar capacity;
+* damaged systems create readable repair work when enabled.
+
+## 8. Phase 6 - Market And Resource Management
+
+Add the first market loop.
+
+Work:
+
+* give each resource a base price and current price;
+* implement instant buy and sell first;
+* nudge prices over time and in response to buying or selling;
+* make buying less efficient than producing in-house;
+* allow dumping resources to free storage;
+* later, route import/export throughput through depot or hangar limits.
+
+Validation:
+
+* surplus resources convert to credits;
+* missing resources can be bought at a cost;
+* repeated buying and selling visibly affects price;
+* dumping creates resource loss and a visible event.
+
+## 9. Phase 7 - Rule Management And Player Priorities
+
+Expose the station-management layer.
+
+Work:
+
+* add player-editable production rules such as threshold-based processing,
+  selling, buying, or pausing production;
+* allow priorities for drone harvesting targets;
+* add limited drone override behavior only after the automated loop works;
+* show active rules, thresholds, and blocked rules in the overlay;
+* keep rule failures explicit through events and warnings.
+
+Validation:
+
+* changing a threshold changes future production or market behavior;
+* disabled or blocked rules are visible;
+* drone automation remains the default and does not require micromanagement.
+
+## 10. Deferred Work
+
+Defer until the first station loop is stable:
+
+* full tech tree;
+* deep drone specialization;
+* advanced market logistics;
+* complex station visuals or animated module silhouettes;
+* real orbital mechanics, collision physics, pathfinding, or grids;
+* fully independent job entities;
+* save/load, replay, or long-history inspection;
+* broad UI polish beyond the controls needed to validate the simulation.
+
+## 11. Roadmap Validation
+
+For code slices, use at least:
+
+* `zig build enginer`;
+* `zig build check_games` when shared build surfaces or game lists change.
+
+Docs-only changes to this file do not require a build.

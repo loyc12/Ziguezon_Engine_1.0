@@ -64,6 +64,9 @@ switch( ng.state )
 - Organize functions by responsibility rather than only by visibility.
 - Keep public facade modules thin and delegate substantial behavior to focused
   implementation modules.
+- Add files and folders, move code, and split modules when it keeps ownership
+  clear and prevents obscure mega-files. Prefer a small set of focused files
+  over one file that hides unrelated responsibilities. Validate before acting.
 
 ```zig
 // ================================ ENGINE IMPLEMENTATIONS ================================

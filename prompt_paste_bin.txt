@@ -77,3 +77,5 @@ rename accessors like getXxx to getMutXxx and getXxxConst to getXxx, to make mut
 make sure facility is abreviated to fac
 
 add a "screenless" launch option so agents can run test log runs.
+
+add a "span" time unit
