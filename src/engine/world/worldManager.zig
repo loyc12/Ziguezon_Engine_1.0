@@ -15,6 +15,9 @@ const cmd     = @import( "commands/command.zig" );
 const cmdMgr  = @import( "commands/commandManager.zig" );
 const cmdQue  = @import( "commands/commandQueue.zig" );
 const view    = @import( "views/view.zig" );
+const arch    = @import( "archetypes/archetype.zig" );
+const archMgr = @import( "archetypes/archetypeManager.zig" );
+const archCtx = @import( "archetypes/spawnContext.zig" );
 
 const Entity               = entity.Entity;
 const EntityId             = entity.EntityId;
@@ -29,6 +32,7 @@ const EventManager         = evtMgr.EventManager;
 const EventQueueFactory    = evtQue.EventQueueFactory;
 const CommandManager       = cmdMgr.CommandManager;
 const CommandQueueFactory  = cmdQue.CommandQueueFactory;
+const ArchetypeSpawnResult = arch.ArchetypeSpawnResult;
 const Duration             = utl.Duration;
 
 
@@ -43,6 +47,11 @@ pub const TickInfo = struct
 };
 
 
+pub const Archetype             = arch.ArchetypeFactory( ArchetypeSpawnContext );
+pub const ArchetypeManager      = archMgr.ArchetypeManagerFactory( Archetype );
+pub const ArchetypeSpawnContext = archCtx.ArchetypeSpawnContextFactory( World );
+
+
 /// Central simulation database for entity identity and World-owned facts.
 /// Games create entities here, register typed fact stores, then add/query
 /// components, relations, traits, and events through this API.
@@ -55,6 +64,7 @@ pub const World = struct
   traitManager     : TraitManager     = .{},
   eventManager     : EventManager     = .{},
   commandManager   : CommandManager   = .{},
+  archetypeManager : ArchetypeManager = .{},
   viewGeneration   : u64              = 0,
 
   isInit : bool = false,
@@ -570,6 +580,40 @@ pub const World = struct
   }
 
 
+  // ================================ ARCHETYPE FUNCTIONS ================================
+
+  /// Registers one data-only archetype declaration for name-based spawning.
+  pub inline fn registerArchetype( self : *World, archetypeVal : Archetype ) bool
+  {
+    return self.archetypeManager.register( archetypeVal );
+  }
+
+  /// Spawns a registered archetype and returns the ids it reports.
+  /// Failed spawns destroy every entity created by the archetype callback.
+  pub fn spawnArchetype( self : *World, name : []const u8 ) ?ArchetypeSpawnResult
+  {
+    if( !self.isInit )
+    {
+      utl.qlog( .WARN, @src(), "Cannot spawn Archetype : World is uninitialized" );
+      return null;
+    }
+
+    const archetypeVal = self.archetypeManager.get( name ) orelse
+    {
+      utl.log( .WARN, @src(), "Cannot spawn Archetype {s} : not registered", .{ name });
+      return null;
+    };
+
+    return self.spawnArchetypeValue( archetypeVal.* );
+  }
+
+  /// Returns the number of registered archetype declarations.
+  pub inline fn getArchetypeCount( self : *const World ) usize
+  {
+    return self.archetypeManager.getCount();
+  }
+
+
   // ================================ TICK FUNCTIONS ================================
 
   /// Advances World-owned per-tick bookkeeping.
@@ -589,6 +633,82 @@ pub const World = struct
 
   // ================================ INTERNAL FUNCTIONS ================================
 
+  fn spawnArchetypeValue( self : *World, archetypeVal : Archetype ) ?ArchetypeSpawnResult
+  {
+    var rollbackEntityIds : std.ArrayList( EntityId ) = .empty;
+    defer rollbackEntityIds.deinit( self.archetypeManager.alloc );
+
+    var cntx : ArchetypeSpawnContext =
+    .{
+      .worldPtr             = self,
+      .rollbackEntityIdsPtr = &rollbackEntityIds,
+    };
+
+    const didSpawn = archetypeVal.spawnFn( &cntx );
+    if( !didSpawn or cntx.didFail or !self.isValidArchetypeSpawnResult( cntx.result, &rollbackEntityIds ))
+    {
+      self.rollbackFailedArchetypeSpawn( &rollbackEntityIds );
+      return null;
+    }
+
+    return cntx.result;
+  }
+
+  fn isValidArchetypeSpawnResult( self : *World, result : ArchetypeSpawnResult, rollbackEntityIds : *const std.ArrayList( EntityId )) bool
+  {
+    if( result.rootId == 0 )
+    {
+      utl.qlog( .WARN, @src(), "Cannot complete Archetype spawn : root entity was not reported" );
+      return false;
+    }
+    if( !self.isRollbackEntityId( rollbackEntityIds, result.rootId ))
+    {
+      utl.log( .WARN, @src(), "Cannot complete Archetype spawn : root Entity {d} was not created by this spawn", .{ result.rootId });
+      return false;
+    }
+
+    for( result.reportedIds[ 0..result.idCount ] )| entry |
+    {
+      if( !self.isRollbackEntityId( rollbackEntityIds, entry.id ))
+      {
+        utl.log( .WARN, @src(), "Cannot complete Archetype spawn : reported Entity {d} was not created by this spawn", .{ entry.id });
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  inline fn isRollbackEntityId( self : *World, rollbackEntityIds : *const std.ArrayList( EntityId ), entityId : EntityId ) bool
+  {
+    if( !self.isEntityAlive( entityId )){ return false; }
+
+    for( rollbackEntityIds.items )| rollbackEntityId |
+    {
+      if( rollbackEntityId == entityId ){ return true; }
+    }
+
+    return false;
+  }
+
+  fn rollbackFailedArchetypeSpawn( self : *World, rollbackEntityIds : *std.ArrayList( EntityId )) void
+  {
+    var index = rollbackEntityIds.items.len;
+    while( index > 0 )
+    {
+      index -= 1;
+
+      const entityId = rollbackEntityIds.items[ index ];
+      if( self.isEntityAlive( entityId ))
+      {
+        if( !self.destroyEntity( entityId ))
+        {
+          utl.log( .ERROR, @src(), "Failed to clean up Archetype-created Entity {d}", .{ entityId });
+        }
+      }
+    }
+  }
+
   inline fn bumpViewGeneration( self : *World ) void
   {
     self.viewGeneration +%= 1;
@@ -601,10 +721,12 @@ pub const World = struct
     self.traitManager.init( alloc );
     self.eventManager.init( alloc );
     self.commandManager.init( alloc );
+    self.archetypeManager.init( alloc );
   }
 
   inline fn deinitFactManagers( self : *World ) void
   {
+    self.archetypeManager.deinit();
     self.commandManager.deinit();
     self.eventManager.deinit();
     self.traitManager.deinit();
@@ -1105,6 +1227,207 @@ test "World destroyEntity removes component relation and trait facts together"
   try std.testing.expect(  world.isEntityAlive( keptId ));
   try std.testing.expect(  compStore.has( keptId ));
   try std.testing.expect(  traitSet.has(  keptId ));
+}
+
+test "World archetype registration rejects duplicates and uninitialized use"
+{
+  const TestArch = struct
+  {
+    const archetype : Archetype =
+    .{
+      .name    = "test.registration",
+      .spawnFn = spawn,
+    };
+
+    fn spawn( cntx : *ArchetypeSpawnContext ) bool
+    {
+      const root = cntx.createEntity();
+      return cntx.setRootEntity( root );
+    }
+  };
+
+  var world : World = .{};
+
+  try std.testing.expect( !world.registerArchetype( TestArch.archetype ));
+  try std.testing.expect(  world.spawnArchetype( TestArch.archetype.name ) == null );
+
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.getArchetypeCount() == 0 );
+  try std.testing.expect(  world.registerArchetype( TestArch.archetype ));
+  try std.testing.expect( !world.registerArchetype( TestArch.archetype ));
+  try std.testing.expect( world.getArchetypeCount() == 1 );
+  try std.testing.expect( world.spawnArchetype( "missing.archetype" ) == null );
+}
+
+test "World archetype spawning attaches initial components relations and traits"
+{
+  const Bundle = struct
+  {
+    const RootComp = struct
+    {
+      pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
+
+      value : u32 = 0,
+    };
+    const ChildComp = struct
+    {
+      pub const compStorePolicy : comp.CompStorePolicy = .PACKED;
+
+      value : u32 = 0,
+    };
+
+    const archetype : Archetype =
+    .{
+      .name    = "test.fact_bundle",
+      .spawnFn = spawn,
+    };
+
+    fn spawn( cntx : *ArchetypeSpawnContext ) bool
+    {
+      const root  = cntx.createEntity();
+      const child = cntx.createEntity();
+
+      return cntx.setRootEntity( root )
+        and cntx.reportEntity( "child", child )
+        and cntx.addComp( RootComp,  root,  .{ .value = 10 })
+        and cntx.addComp( ChildComp, child, .{ .value = 20 })
+        and cntx.addRelation( rel.LinkedTo, root, child, .{} )
+        and cntx.applyTrait( trt.Persistent, root );
+    }
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp(     Bundle.RootComp  ));
+  try std.testing.expect( world.registerComp(     Bundle.ChildComp ));
+  try std.testing.expect( world.registerRelation( rel.LinkedTo     ));
+  try std.testing.expect( world.registerTrait(    trt.Persistent   ));
+  try std.testing.expect( world.registerArchetype( Bundle.archetype ));
+
+  const result  = world.spawnArchetype( Bundle.archetype.name ).?;
+  const rootId  = result.rootId;
+  const childId = result.getReportedId( "child" ).?;
+
+  try std.testing.expect( world.isEntityAlive( rootId  ));
+  try std.testing.expect( world.isEntityAlive( childId ));
+  try std.testing.expect( world.getComp( Bundle.RootComp,  rootId  ).?.value == 10 );
+  try std.testing.expect( world.getComp( Bundle.ChildComp, childId ).?.value == 20 );
+  try std.testing.expect( world.hasRelation( rel.LinkedTo, rootId, childId ));
+  try std.testing.expect( world.hasTrait( trt.Persistent, rootId ));
+}
+
+test "World archetype spawning fails and cleans up when fact stores are missing"
+{
+  const Bundle = struct
+  {
+    const MissingComp = struct
+    {
+      pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
+
+      value : u32 = 0,
+    };
+
+    const missingComp : Archetype =
+    .{
+      .name    = "test.missing_comp",
+      .spawnFn = spawnMissingComp,
+    };
+    const missingRel : Archetype =
+    .{
+      .name    = "test.missing_rel",
+      .spawnFn = spawnMissingRel,
+    };
+    const missingTrait : Archetype =
+    .{
+      .name    = "test.missing_trait",
+      .spawnFn = spawnMissingTrait,
+    };
+
+    fn spawnMissingComp( cntx : *ArchetypeSpawnContext ) bool
+    {
+      const root = cntx.createEntity();
+      return cntx.setRootEntity( root )
+        and cntx.addComp( MissingComp, root, .{ .value = 1 });
+    }
+
+    fn spawnMissingRel( cntx : *ArchetypeSpawnContext ) bool
+    {
+      const root  = cntx.createEntity();
+      const child = cntx.createEntity();
+      return cntx.setRootEntity( root )
+        and cntx.reportEntity( "child", child )
+        and cntx.addRelation( rel.LinkedTo, root, child, .{} );
+    }
+
+    fn spawnMissingTrait( cntx : *ArchetypeSpawnContext ) bool
+    {
+      const root = cntx.createEntity();
+      return cntx.setRootEntity( root )
+        and cntx.applyTrait( trt.Persistent, root );
+    }
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerArchetype( Bundle.missingComp  ));
+  try std.testing.expect( world.registerArchetype( Bundle.missingRel   ));
+  try std.testing.expect( world.registerArchetype( Bundle.missingTrait ));
+
+  try std.testing.expect( world.spawnArchetype( Bundle.missingComp.name  ) == null );
+  try std.testing.expect( !world.isEntityAlive( 1 ));
+
+  try std.testing.expect( world.registerComp( Bundle.MissingComp ));
+  try std.testing.expect( world.spawnArchetype( Bundle.missingRel.name   ) == null );
+  try std.testing.expect( !world.isEntityAlive( 2 ));
+  try std.testing.expect( !world.isEntityAlive( 3 ));
+
+  try std.testing.expect( world.registerRelation( rel.LinkedTo ));
+  try std.testing.expect( world.spawnArchetype( Bundle.missingTrait.name ) == null );
+  try std.testing.expect( !world.isEntityAlive( 4 ));
+}
+
+test "World archetype spawning does not enqueue commands or custom events"
+{
+  const TestArch = struct
+  {
+    const archetype : Archetype =
+    .{
+      .name    = "test.silent_spawn",
+      .spawnFn = spawn,
+    };
+
+    fn spawn( cntx : *ArchetypeSpawnContext ) bool
+    {
+      const root = cntx.createEntity();
+      return cntx.setRootEntity( root );
+    }
+  };
+  const TestCommand = struct
+  {
+    value : u32 = 0,
+  };
+  const TestEvent = struct
+  {
+    value : u32 = 0,
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerCommand( TestCommand ));
+  try std.testing.expect( world.registerEvent(   TestEvent   ));
+  try std.testing.expect( world.registerArchetype( TestArch.archetype ));
+  try std.testing.expect( world.spawnArchetype( TestArch.archetype.name ) != null );
+
+  try std.testing.expect( world.getCommandCount( TestCommand ) == 0 );
+  try std.testing.expect( world.getEventCount(   TestEvent   ) == 0 );
 }
 
 test "World owns typed event queue API and registration lifecycle"

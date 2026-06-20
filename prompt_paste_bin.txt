@@ -26,6 +26,15 @@ Add `//` comments and `///` descriptions to code blocks and functions whose purp
 Add `// TODO:` comments when a code block is intentionally left incomplete for now.
 Start by reviewing `todo.md` itself before executing the required work step by step.
 Alert me to any unforeseen issue you encounter along the way, or significant decisions that need resolving appear.
+If you successfully complete `todo.md` and the next work slice is well defined in `roadmap.md`, both files accordingly.
+
+
+# ==== REVIEWING IMPLEMENTATION ====
+
+Mode: investigate only
+Brief me on the code and architecture changes you implemented via the `todo.md`.
+I want to be informed of how the new feature behaves, is used, and what system it impacts or modifies, if any.
+Keep it compact and to the point, but do not omit non-trivial information.
 
 
 # ==== UPDATING TODO ====
@@ -40,7 +49,7 @@ Scope the `todo.md` content appropriately: not trivially small, but not overly a
 # ==== REVIEWING TODO ====
 
 Mode: investigate only
-Brief me on the code and structure changes planned in `todo.md`.
+Brief me on the code and architecture changes planned in `todo.md`.
 I want to be informed of the main consequences of implementation and the files it will heavily touch.
 Keep it compact and to the point, but do not omit non-trivial changes.
 

@@ -7,90 +7,83 @@ implementation order.
 
 ## 1. Current Slice
 
-Build the first data-only `Archetype` surface.
+Build the first minimal scheduler phase surface.
 
-The slice should let games define reusable bundles of initial World facts and
-spawn them through `World` without hiding the resulting entity ids. This is a
-data/fact feature, not a logic feature: archetype spawning may attach
-components, relations, and traits, but it must not enqueue commands, register
-rules, register RuleSets, or add scheduler behavior.
+The slice should let `World.tick(...)` run registered logical work in an
+explicit, deterministic phase without taking over engine timing. The scheduler
+is a logic feature, not an entity/fact initialization feature: it may run rules
+and later dispatch command execution, but it must not create archetypes,
+register archetypes, emit spawn events, own game-specific systems, or implement
+a competing base-tick loop.
 
-Keep the scope large enough to produce a usable pattern:
+Keep the scope small enough to validate the lifecycle:
 
-* one clear `Archetype` declaration shape;
-* explicit World spawn helpers;
-* component, relation, and trait initialization through existing typed APIs;
-* useful spawn result data for games that need stable ids;
+* one clear scheduler declaration shape;
+* deterministic registration and run order;
+* explicit World-owned phase entry from `World.tick(...)`;
+* read-only query plus command-manager access consistent with the current rule
+  surface;
 * focused tests and documentation refresh.
 
 ## 2. Guardrails
 
-* Use `Archetype` as the engine-facing name. Do not introduce `Template` unless
-  a separate non-archetype concept appears later.
-* Keep archetypes data-only. Do not register executable logic from archetype
-  spawning.
-* Keep command enqueueing, rule registration, RuleSet registration, scheduler
-  integration, and delayed work out of this slice.
-* Do not add spawn-time event emission unless a concrete generic use case
-  appears during implementation.
-* Keep archetype definitions distinct from entity rows unless explicitly stored
-  as facts later.
-* Keep game-specific archetype payloads under `src/games`.
-* Keep engine examples minimal and generic.
+* Keep `EngineTiming` as the base-tick and frame-pacing authority.
+* Run scheduler work from `World.tick(...)`; do not add a separate
+  `shouldTick()` loop inside World.
+* Keep the first scheduler pass minimal: one phase is enough unless existing
+  code proves a second phase is needed.
+* Use existing `Rule`, `RuleContext`, `RuleManager`, `WorldQuery`, and command
+  queue APIs where possible.
+* Do not implement `RuleSet` unless the minimal scheduler cannot be validated
+  without it.
+* Do not add delayed events, temporary rules, particles, effects, save/load,
+  replay, undo, or retained history in this slice.
+* Do not move UI state into simulation `World`.
+* Keep game-specific scheduler content under `src/games`.
 * Preserve the no-registration, minimal-runtime-cost rule from `goals.md`.
-* Do not add marker components for classification; use traits for dataless
-  classification facts.
-* Do not add storage policies or config bundles without a concrete use case.
 * Do not run formatting passes such as `zig fmt`.
 
 ## 3. Implementation Tasks
 
-1. Define the data-only archetype boundary.
-   * Document declaration expectations in `archetypes/archetype.zig`.
-   * Define the minimal `Archetype` fields needed for registration and spawn.
-   * If a fully declarative typed fact list is too heavy for this slice, use a
-     constrained spawn callback, but document it as initial fact attachment only.
-   * Make the allowed spawn work explicit: create entities, attach components,
-     add relations, and apply traits.
+1. Define the scheduler boundary.
+   * Document the first declaration shape in `scheduler/scheduler.zig`.
+   * Decide whether the first surface stores rules directly or owns a
+     `RuleManager` per phase.
+   * Keep the allowed work explicit: query current facts, inspect events, and
+     enqueue commands through existing rule APIs.
+   * Keep command execution ownership deferred unless a tiny explicit phase is
+     required for validation.
 
-2. Add the spawn context and result types.
-   * Provide a context that gives the archetype just enough access to attach
-     initial facts through existing `World` APIs.
-   * Provide a result shape that exposes the created root entity and any
-     additional ids the archetype chooses to report.
-   * Keep ownership and cleanup rules clear for ids allocated during a failed
-     spawn.
+2. Add scheduler lifecycle.
+   * Support init/deinit.
+   * Reject uninitialized registration and run operations cleanly.
+   * Reject duplicate names or phase entries if the chosen shape names them.
+   * Keep the scheduler dormant when no work is registered.
 
-3. Implement `ArchetypeManager` only as far as registration requires.
-   * Support init/deinit and duplicate-name rejection.
-   * Reject uninitialized registration and spawn operations cleanly.
-   * Keep the manager dormant when no archetypes are registered.
-   * Avoid game-specific archetype registries inside `engine/world`.
+3. Add World-owned scheduler wiring.
+   * Add the scheduler manager to `World` init/deinit only after its standalone
+     behavior is tested.
+   * Route logical execution through `World.tick(...)`.
+   * Preserve existing event and command tick metadata behavior.
+   * Ensure scheduler work cannot run on an uninitialized World.
 
-4. Add World-facing spawn helpers.
-   * Route public spawning through `World` so games do not need manager internals.
-   * Create entity ids explicitly through `World.createEntity()`.
-   * Attach facts through existing `addComp`, `addRelation`, and `applyTrait`
-     APIs.
-   * Ensure failed fact attachment cannot be reported as a successful spawn.
-   * If cleanup is implemented, destroy entities created during a failed spawn
-     rather than leaving partially initialized rows.
-
-5. Add one minimal generic example.
+4. Add one minimal generic example.
    * Keep it genre-agnostic.
-   * Prefer existing generic facts such as `Persistent` or `LinkedTo`.
-   * Avoid adding built-in content that belongs in `src/games`.
+   * Prefer a rule that reads existing World facts and enqueues a test command.
+   * Avoid built-in content that belongs in `src/games`.
 
-6. Add focused tests.
+5. Add focused tests.
    * Registration rejects duplicate names and uninitialized use.
-   * Spawning attaches initial components, relations, and traits.
-   * Missing registered stores or trait/relation sets cause spawn failure.
-   * Partial-spawn cleanup is covered if cleanup is implemented.
-   * Command and event queues are not touched by archetype spawning.
+   * Registered scheduler work runs in deterministic order.
+   * `World.tick(...)` runs scheduler work once per consumed base tick.
+   * Rules can inspect facts/events and enqueue commands through existing APIs.
+   * Empty scheduler state adds no observable per-tick work.
+   * Scheduler work does not mutate facts except through explicitly allowed
+     command enqueueing.
 
-7. Refresh docs after implementation.
-   * Update `reference.md` with the live `Archetype` shape.
-   * Trim `roadmap.md` so completed archetype work moves into the baseline.
+6. Refresh docs after implementation.
+   * Update `reference.md` with the live scheduler shape.
+   * Trim `roadmap.md` so completed scheduler work moves into the baseline.
    * Replace this `todo.md` with the next active slice after validation.
 
 ## 4. Validation
@@ -110,12 +103,12 @@ Docs-only edits to this file do not require a build.
 Later roadmap slices:
 
 * `RuleSet` declarations and grouped rule registration;
-* scheduler phases and rule cadence;
+* game-defined cadences beyond the first base-tick phase;
 * delayed events and temporary rules;
-* command execution ownership;
+* command execution ownership beyond enqueueing;
 * `src/engine/world/particles`;
 * `src/engine/world/context`;
-* archetype query integration after the stored archetype shape exists;
+* archetype query integration after a concrete query use case appears;
 * spawn-time events, only if a concrete generic use case appears.
 
 Unrelated to this slice:
@@ -127,10 +120,7 @@ Unrelated to this slice:
 ## 6. Explicit Non-Goals
 
 * no Template surface;
-* no RuleSet implementation;
-* no scheduler implementation;
-* no command enqueueing from archetype spawning;
-* no rule registration from archetype spawning;
+* no archetype behavior changes;
 * no particle/effect pools;
 * no save/load, replay, undo, or retained command/event/spawn history;
 * no retained UI state inside simulation `World`;

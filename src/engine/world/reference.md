@@ -28,6 +28,7 @@ The main runtime surface is `World` in `worldManager.zig`.
 * `TraitManager`;
 * `EventManager`;
 * `CommandManager`;
+* `ArchetypeManager`;
 * component-view generation tracking.
 
 `World.init()` initializes entity tracking and fact managers. `World.deinit()`
@@ -123,8 +124,9 @@ Current query helpers cover:
   `peekEvent`, and `getEventIterator`.
 
 Unsupported broad-query shapes are rejected explicitly by
-`rejectUnsupportedBroadQuery`; archetype, particle/effect, command, scheduler,
-and save/load query integration are still outside the live surface.
+`rejectUnsupportedBroadQuery`; archetype query integration, particle/effect,
+command, scheduler, and save/load query integration are still outside the live
+surface.
 
 ## 7. Relations
 
@@ -266,7 +268,67 @@ Use these selection rules:
 * events for queued records that something happened;
 * commands for queued requests that something should change.
 
-## 11. Rules
+## 11. Archetypes
+
+Archetypes are live as data-only reusable bundles of initial World facts.
+
+`Archetype` is a declaration with:
+
+* `name`, the stable registration key;
+* `spawnFn`, a callback that receives `*ArchetypeSpawnContext` and returns
+  whether initial fact attachment succeeded.
+
+`ArchetypeSpawnContext` lives in `archetypes/spawnContext.zig` and is wired to
+the concrete `World` type by `worldManager.zig`. It intentionally exposes only:
+
+* `createEntity`;
+* `setRootEntity`;
+* `reportEntity`;
+* `addComp`;
+* `addRelation`;
+* `applyTrait`.
+
+Archetype callbacks may create entities, attach components, add relations, and
+apply traits through those helpers. They must not enqueue commands, register
+rules, register RuleSets, add scheduler behavior, or emit archetype-specific
+spawn events.
+
+Spawn callbacks should treat helper failures as fatal. The context records
+failed helper calls, and `World.spawnArchetype()` rejects the result when a
+helper failed, the root entity is missing, or a reported id was not created by
+that spawn.
+
+`ArchetypeSpawnResult` exposes:
+
+* `rootId`, the primary created entity;
+* up to `MAX_REPORTED_SPAWN_IDS` named entity ids for additional created
+  entities.
+
+Failed spawns destroy every entity created by that archetype callback through
+normal `World.destroyEntity()` cleanup before returning `null`.
+
+`ArchetypeManager` owns registered declarations by name. Duplicate names,
+empty names, and uninitialized registration or lookup fail cleanly. The manager
+does not own game-specific payload data and does not add tick work when no
+archetypes are registered.
+
+World archetype APIs include:
+
+* `registerArchetype`;
+* `spawnArchetype`;
+* `getArchetypeCount`.
+
+`PersistentLinkArchetype` in `archetypes/baseArchetypes.zig` is the minimal
+generic engine example. It creates two entities, applies `Persistent` to both,
+links the root to the second entity with `LinkedTo`, and reports the second id
+as `"linked"`.
+
+Archetype spawning uses the existing World fact APIs, so registered generic
+entity/component/relation/trait event queues may still receive the ordinary
+fact events those APIs emit. There is no separate archetype-spawn event in the
+live surface.
+
+## 12. Rules
 
 Rules are live as compact explicit simulation-logic callbacks.
 
@@ -293,7 +355,7 @@ declarations. A RuleSet should be a logic grouping and registration helper, not
 an archetype, not a second callback primitive, and not an owner of entity fact
 rows.
 
-## 12. Timing
+## 13. Timing
 
 `TickInfo` is the timing snapshot passed into World once per consumed engine
 base tick. It includes:
@@ -307,18 +369,17 @@ base tick. It includes:
 World does not own base-tick pacing; that remains an engine timing
 responsibility.
 
-## 13. Future Placeholders
+## 14. Future Placeholders
 
 The following folders or files are currently placeholders or minimal notes:
 
-* `archetypes`, for data-only reusable initial-fact bundles;
 * `scheduler`;
 * `particles`;
 * `context`.
 
 These should not be described as complete features until code and tests exist.
 
-## 14. Boundaries
+## 15. Boundaries
 
 `engine/world` owns simulation facts and fact managers. It should not depend on
 game-specific concepts or rendering-specific behavior.
@@ -327,7 +388,7 @@ Rendering should read simulation facts through render adapters. Games own their
 domain-specific components, relations, events, traits, archetypes, rules,
 RuleSets, and views.
 
-## 15. Validation
+## 16. Validation
 
 Docs-only changes need no build.
 

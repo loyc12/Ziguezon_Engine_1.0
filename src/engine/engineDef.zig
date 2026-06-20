@@ -77,6 +77,18 @@ const query = @import( "world/queries/query.zig" );
 
 pub const WorldQuery = query.WorldQuery;
 
+const arch = @import( "world/archetypes/archetype.zig"       );
+const amgr = @import( "world/archetypes/archetypeManager.zig" );
+const actx = @import( "world/archetypes/spawnContext.zig"     );
+pub const baseArch = @import( "world/archetypes/baseArchetypes.zig" );
+
+pub const Archetype                = worldMgr.Archetype;
+pub const ArchetypeManager         = worldMgr.ArchetypeManager;
+pub const ArchetypeSpawnContext    = worldMgr.ArchetypeSpawnContext;
+pub const ArchetypeSpawnResult     = arch.ArchetypeSpawnResult;
+pub const ArchetypeReportedId      = arch.ArchetypeReportedId;
+pub const PersistentLinkArchetype  = baseArch.PersistentLinkArchetype;
+
 
 const rel  = @import( "world/relations/relation.zig" );
 
@@ -143,6 +155,10 @@ test "engine world declarations"
 
   std.testing.refAllDecls( worldMgr );
   std.testing.refAllDecls( query    );
+  std.testing.refAllDecls( arch     );
+  std.testing.refAllDecls( amgr     );
+  std.testing.refAllDecls( actx     );
+  std.testing.refAllDecls( baseArch );
   std.testing.refAllDecls( trt      );
   std.testing.refAllDecls( tmgr     );
   std.testing.refAllDecls( evt      );
