@@ -102,6 +102,7 @@ pub const time = @import( "time/timeDef.zig" );
 
 pub const Duration = time.Duration;
 pub const Instant  = time.Instant;
+pub const Timespan = time.Timespan;
 
 pub const TimeUnit  = time.TimeUnit;
 pub const TimeRatio = time.TimeRatio;
@@ -402,10 +403,12 @@ test "time primitives separate instants and durations"
 
   const t1 : Instant = .new( 100 );
   const t2 : Instant = .new( 40  );
+  const sp : Timespan = .fromStartEnd( t2, t1 );
 
   try std.testing.expectEqual( @as( i128, 60  ), t1.diff( t2 ).value );
   try std.testing.expectEqual( @as( i128, -60 ), t2.diff( t1 ).value );
   try std.testing.expectEqual( @as( i128, 250_000_000 ), Duration.fromRayDeltaTime( 0.25 ).value );
+  try std.testing.expect( sp.containsInstant( .new( 80 )));
 }
 
 test "GameTimer reports counted laps"

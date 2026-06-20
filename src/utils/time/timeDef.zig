@@ -1,5 +1,6 @@
 pub const duration = @import( "duration.zig" );
 pub const instant  = @import( "instant.zig" );
+pub const timespan = @import( "timespan.zig" );
 pub const timer    = @import( "timerCore.zig" );
 
 pub const gameTimer = @import( "gameTimer.zig" );
@@ -7,6 +8,7 @@ pub const realTimer = @import( "realTimer.zig" );
 
 pub const Duration = duration.Duration;
 pub const Instant  = instant.Instant;
+pub const Timespan = timespan.Timespan;
 
 pub const TimeUnit  = duration.TimeUnit;
 pub const TimeRatio = duration.TimeRatio;

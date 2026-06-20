@@ -489,8 +489,9 @@ fn cleanupLoggerValidationFiles() void
     if( isLevelFileIsActive( level ))
     {
       var nameBuff : [ LOG_NAME_LEN ]u8 = undefined;
-      const name = out.formatTaggedFileName( &nameBuff, LOG_FILE_NAME, @tagName( level ) ) catch continue;
-      deleteFileIfPresent( name );
+      const name = out.formatTaggedFileName( &nameBuff, LOG_FILE_NAME, @tagName( level ) ) catch null;
+
+      if( name )| fileName |{ deleteFileIfPresent( fileName ); }
     }
   }
 }
