@@ -333,7 +333,7 @@ pub fn build( b : *std.Build ) void
     .{ "debug",       "src/games/debug/engineAdapter.zig"       }, // Default
 
     .{ "menuer",      "src/games/menuer/engineAdapter.zig"      },
-    .{ "enginer",     "src/games/enginer/engineAdapter.zig"     },
+    .{ "drifter",     "src/games/drifter/engineAdapter.zig"     },
     .{ "ping",        "src/games/ping/engineAdapter.zig"        },
     .{ "floppy",      "src/games/floppy/engineAdapter.zig"      },
     .{ "dehexer",     "src/games/dehexer/engineAdapter.zig"     },

@@ -1,6 +1,6 @@
-# Enginer Roadmap
+# Drifter Roadmap
 
-This file describes the implementation order from the current `enginer`
+This file describes the implementation order from the current `drifter`
 scaffold toward the station-scale simulation described in [design.md](design.md)
 and the validation target in [goals.md](goals.md).
 
@@ -9,7 +9,7 @@ Keep this roadmap focused on sequencing. Design direction belongs in
 
 ## 1. Preamble - Engine Dependencies
 
-Before serious `enginer` implementation, finish or plan around the engine
+Before serious `drifter` implementation, finish or plan around the engine
 systems that the testbed is meant to validate.
 
 Preferred first:
@@ -38,7 +38,7 @@ building permanent game-local substitutes.
 
 Current baseline:
 
-* `enginer` compiles as a game target;
+* `drifter` compiles as a game target;
 * the adapter exposes the expected engine hooks and configs;
 * input supports pause, camera zoom, camera reset, and overlay toggle;
 * rendering is still a placeholder overlay;
@@ -66,7 +66,7 @@ Work:
 
 Validation:
 
-* `zig build enginer`;
+* `zig build drifter`;
 * manual run confirms the shell opens, zoom works, and overlay text does not
   depend on simulation internals that do not exist yet.
 
@@ -225,7 +225,7 @@ Defer until the first station loop is stable:
 
 For code slices, use at least:
 
-* `zig build enginer`;
+* `zig build drifter`;
 * `zig build check_games` when shared build surfaces or game lists change.
 
 Docs-only changes to this file do not require a build.

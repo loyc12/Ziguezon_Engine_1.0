@@ -53,7 +53,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.t ))
   {
     SHOW_OVERLAY = !SHOW_OVERLAY;
-    utl.log( .DEBUG, @src(), "Enginer overlay is now: {s}", .{ if( SHOW_OVERLAY ) "true" else "false" });
+    utl.log( .DEBUG, @src(), "Drifter overlay is now: {s}", .{ if( SHOW_OVERLAY ) "true" else "false" });
   }
 }
 
@@ -88,7 +88,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
 {
   if( SHOW_OVERLAY )
   {
-    utl.sDraw.textCenter( "ENGINER", utl.getHalfScreenSize(), 96, utl.Colour.green );
+    utl.sDraw.textCenter( "DRIFTER", utl.getHalfScreenSize(), 96, utl.Colour.green );
   }
 
   if( ng.isPaused() )

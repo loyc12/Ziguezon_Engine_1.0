@@ -1,12 +1,12 @@
-# Enginer Design
+# Drifter Design
 
-This file defines the simulation used by `enginer` to validate engine `World`
+This file defines the simulation used by `drifter` to validate engine `World`
 features. The purpose and validation target belong in [goals.md](goals.md).
 Implementation order belongs in [roadmap.md](roadmap.md).
 
 ## 1. Design Role
 
-`enginer` needs a small coherent simulation, not a collection of unrelated
+`drifter` needs a small coherent simulation, not a collection of unrelated
 feature samples.
 
 The design should exist to exercise engine-world systems in combination:
@@ -19,7 +19,7 @@ main anchor for engine-world validation.
 
 ## 2. Premise
 
-`enginer` is a compact asteroid-station growth simulation.
+`drifter` is a compact asteroid-station growth simulation.
 
 A large asteroid has been hollowed into an autonomous station. The station must
 sustain itself and grow by building drones, harvesting smaller drifting

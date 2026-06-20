@@ -87,6 +87,4 @@ make sure facility is abreviated to fac
 
 headless mode for agent debuging
 
-add a "span" time unit
-
 rename enginer to something better

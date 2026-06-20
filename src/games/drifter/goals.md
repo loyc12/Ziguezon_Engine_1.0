@@ -1,7 +1,7 @@
-# Enginer Goals
+# Drifter Goals
 
 This file records the purpose, constraints, and validation target for
-`enginer`, the engine-world feature testbed.
+`drifter`, the engine-world feature testbed.
 
 The game design that makes the testbed run as a coherent simulation belongs in
 [design.md](design.md). Current engine-world facts belong in
@@ -11,7 +11,7 @@ internals belongs in `src/engine/world/roadmap.md` and
 
 ## 1. Purpose
 
-`enginer` should be the game-owned sandbox for engine `World` features,
+`drifter` should be the game-owned sandbox for engine `World` features,
 similar to how `menuer` exercises retained UI features.
 
 The testbed should make world features visible, copyable, and easy for agents
@@ -22,7 +22,7 @@ should be a small but proper simulation, not a menu of unrelated API examples.
 
 ## 2. Simulation Requirement
 
-`enginer` should validate world features through a coherent running simulation.
+`drifter` should validate world features through a coherent running simulation.
 The simulation can be artificial, but it should have enough real state,
 relationships, rules, events, and time progression to expose whether
 engine-world APIs compose correctly.
@@ -37,7 +37,7 @@ debug/player interactions used to drive that simulation.
 
 ## 3. Validation Goals
 
-`enginer` should eventually validate the main world feature families:
+`drifter` should eventually validate the main world feature families:
 
 * stable entity lifecycles across setup, ticking, rendering, and cleanup;
 * component store registration and mutation in live simulation state;
@@ -52,7 +52,7 @@ debug/player interactions used to drive that simulation.
 * world queries, debug views, and inspection overlays.
 
 Each validation slice should be game-owned. Engine examples should stay minimal
-and generic; `enginer` can hold richer combinations that show how those
+and generic; `drifter` can hold richer combinations that show how those
 primitives are meant to be assembled by a real game.
 
 ## 4. Documentation Split
@@ -67,7 +67,7 @@ primitives are meant to be assembled by a real game.
 
 ## 5. Agent Guidelines
 
-Future agents should use `enginer` as an integration harness, not as a dumping
+Future agents should use `drifter` as an integration harness, not as a dumping
 ground.
 
 Prefer one focused simulation slice per feature. Keep names explicit, keep data
@@ -81,14 +81,14 @@ When adding a demo:
 * keep setup in lifecycle hooks, deterministic simulation in tick hooks, and
   inspection/rendering in render hooks;
 * keep game-specific components, relations, traits, events, rules, archetypes,
-  and views under `src/games/enginer`;
+  and views under `src/games/drifter`;
 * update `design.md` when the simulation premise or model changes;
 * update this file only when the purpose, boundaries, or validation target
   changes.
 
 ## 6. Boundaries
 
-`enginer` is allowed to be practical and slightly redundant if that makes engine
+`drifter` is allowed to be practical and slightly redundant if that makes engine
 usage easier to inspect.
 
 It should not:
@@ -102,14 +102,14 @@ It should not:
 
 ## 7. Initial Success
 
-The first usable version should compile as `zig build enginer`, open a small
+The first usable version should compile as `zig build drifter`, open a small
 world-feature simulation, and expose enough visible/debug state that future
 agents can add or validate one world feature at a time.
 
-Near-term success means `enginer` can demonstrate the active engine-world todo
+Near-term success means `drifter` can demonstrate the active engine-world todo
 slice with game-owned data and clear validation behavior, then continue growing
 as later world features land.
 
-Long-term success means `enginer` runs a coherent simulation whose entity,
+Long-term success means `drifter` runs a coherent simulation whose entity,
 component, relation, trait, event, rule, archetype, query, timing, and effect
 usage can validate the engine-world stack as a composed system.
