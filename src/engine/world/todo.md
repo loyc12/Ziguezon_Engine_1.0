@@ -7,84 +7,73 @@ implementation order.
 
 ## 1. Current Slice
 
-Build the first minimal scheduler phase surface.
+Make the existing compact `RuleManager` World-owned.
 
-The slice should let `World.tick(...)` run registered logical work in an
-explicit, deterministic phase without taking over engine timing. The scheduler
-is a logic feature, not an entity/fact initialization feature: it may run rules
-and later dispatch command execution, but it must not create archetypes,
-register archetypes, emit spawn events, own game-specific systems, or implement
-a competing base-tick loop.
+The slice should let games register, inspect, and explicitly run ordered rules
+through `World` without owning `RuleManager` directly. Rules remain named,
+ordered logic declarations that read through `WorldQuery` and request changes by
+enqueuing commands.
 
-Keep the scope small enough to validate the lifecycle:
+Keep the scope small enough to validate ownership:
 
-* one clear scheduler declaration shape;
-* deterministic registration and run order;
-* explicit World-owned phase entry from `World.tick(...)`;
-* read-only query plus command-manager access consistent with the current rule
-  surface;
+* one `RuleManager` owned by `World`;
+* World-facing rule registration and inspection helpers;
+* one explicit World-facing rule run helper;
+* existing read-only query and command emission behavior preserved;
 * focused tests and documentation refresh.
 
 ## 2. Guardrails
 
-* Keep `EngineTiming` as the base-tick and frame-pacing authority.
-* Run scheduler work from `World.tick(...)`; do not add a separate
-  `shouldTick()` loop inside World.
-* Keep the first scheduler pass minimal: one phase is enough unless existing
-  code proves a second phase is needed.
-* Use existing `Rule`, `RuleContext`, `RuleManager`, `WorldQuery`, and command
-  queue APIs where possible.
-* Do not implement `RuleSet` unless the minimal scheduler cannot be validated
-  without it.
-* Do not add delayed events, temporary rules, particles, effects, save/load,
-  replay, undo, or retained history in this slice.
-* Do not move UI state into simulation `World`.
-* Keep game-specific scheduler content under `src/games`.
+* Use the existing `Rule`, `RuleContext`, `RuleManager`, `WorldQuery`, and
+  command queue APIs where possible.
+* Keep rules explicit, named, and ordered.
+* Keep rule runs explicit in this slice; do not automatically run rules from
+  `World.tick(...)` yet.
+* Do not implement command execution ownership in this slice.
+* Do not implement scheduler cadence, delayed events, temporary rules, or
+  `RuleSet`.
+* Do not add particle/effect, context, save/load, replay, undo, or retained
+  history behavior.
+* Do not change archetype behavior or let archetype spawning register rules.
+* Keep game-specific rules under `src/games`.
 * Preserve the no-registration, minimal-runtime-cost rule from `goals.md`.
 * Do not run formatting passes such as `zig fmt`.
 
 ## 3. Implementation Tasks
 
-1. Define the scheduler boundary.
-   * Document the first declaration shape in `scheduler/scheduler.zig`.
-   * Decide whether the first surface stores rules directly or owns a
-     `RuleManager` per phase.
-   * Keep the allowed work explicit: query current facts, inspect events, and
-     enqueue commands through existing rule APIs.
-   * Keep command execution ownership deferred unless a tiny explicit phase is
-     required for validation.
+1. Add rule manager ownership to `World`.
+   * Import the rule surface into `worldManager.zig`.
+   * Add a `RuleManager` field alongside the other fact managers.
+   * Initialize and deinitialize it with the World-owned managers.
+   * Keep an empty World rule manager dormant when no rules are registered.
 
-2. Add scheduler lifecycle.
-   * Support init/deinit.
-   * Reject uninitialized registration and run operations cleanly.
-   * Reject duplicate names or phase entries if the chosen shape names them.
-   * Keep the scheduler dormant when no work is registered.
+2. Add World-facing rule APIs.
+   * Add `registerRule`.
+   * Add `hasRule`.
+   * Add `getRuleCount`.
+   * Add an explicit `runRules` helper that delegates to the owned manager.
+   * Reject uninitialized World use cleanly.
 
-3. Add World-owned scheduler wiring.
-   * Add the scheduler manager to `World` init/deinit only after its standalone
-     behavior is tested.
-   * Route logical execution through `World.tick(...)`.
-   * Preserve existing event and command tick metadata behavior.
-   * Ensure scheduler work cannot run on an uninitialized World.
+3. Preserve rule behavior through World.
+   * Rules must still read current facts through `WorldQuery`.
+   * Rules must still peek or iterate events without consuming them.
+   * Rules must still enqueue commands through the existing command manager.
+   * Rule failure must be visible through the World-facing run helper.
 
-4. Add one minimal generic example.
-   * Keep it genre-agnostic.
-   * Prefer a rule that reads existing World facts and enqueues a test command.
-   * Avoid built-in content that belongs in `src/games`.
-
-5. Add focused tests.
+4. Add focused tests.
+   * World initializes and deinitializes its rule manager.
    * Registration rejects duplicate names and uninitialized use.
-   * Registered scheduler work runs in deterministic order.
-   * `World.tick(...)` runs scheduler work once per consumed base tick.
-   * Rules can inspect facts/events and enqueue commands through existing APIs.
-   * Empty scheduler state adds no observable per-tick work.
-   * Scheduler work does not mutate facts except through explicitly allowed
-     command enqueueing.
+   * World-owned rules run in deterministic order.
+   * Rules can inspect facts and enqueue commands through World-owned execution.
+   * Rules can inspect events without consuming event queues.
+   * Failed rules make `runRules` return failure and stop the run.
 
-6. Refresh docs after implementation.
-   * Update `reference.md` with the live scheduler shape.
-   * Trim `roadmap.md` so completed scheduler work moves into the baseline.
-   * Replace this `todo.md` with the next active slice after validation.
+5. Refresh docs after implementation.
+   * Update `reference.md` with the live World-owned rule surface.
+   * Trim `roadmap.md` so completed rule-manager ownership moves into the
+     baseline.
+   * Replace this `todo.md` with the command execution ownership slice after
+     validation.
 
 ## 4. Validation
 
@@ -102,14 +91,14 @@ Docs-only edits to this file do not require a build.
 
 Later roadmap slices:
 
-* `RuleSet` declarations and grouped rule registration;
+* command handler or executor registration;
+* deterministic command execution and queue consumption;
+* automatic rule and command phases from `World.tick(...)`;
 * game-defined cadences beyond the first base-tick phase;
 * delayed events and temporary rules;
-* command execution ownership beyond enqueueing;
-* `src/engine/world/particles`;
-* `src/engine/world/context`;
-* archetype query integration after a concrete query use case appears;
-* spawn-time events, only if a concrete generic use case appears.
+* `RuleSet` declarations and grouped rule registration;
+* `src/engine/world/particles`, after refinement;
+* `src/engine/world/context`, after refinement.
 
 Unrelated to this slice:
 
@@ -119,7 +108,10 @@ Unrelated to this slice:
 
 ## 6. Explicit Non-Goals
 
-* no Template surface;
+* no automatic `World.tick(...)` rule phase;
+* no command execution ownership;
+* no scheduler cadence;
+* no `RuleSet`;
 * no archetype behavior changes;
 * no particle/effect pools;
 * no save/load, replay, undo, or retained command/event/spawn history;

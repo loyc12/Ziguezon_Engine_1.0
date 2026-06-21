@@ -80,10 +80,14 @@ not register executable logic as part of spawning.
 Queries/views are transient inspection helpers. They should not become hidden
 owners of simulation facts.
 
-Rules/reactions observe facts and emit commands, events, fact changes, or
-effect triggers. `RuleSet` is the planned name for reusable groups of rule
-declarations; it is the logic-side counterpart to data-side archetypes, not
-another name for archetypes.
+Rules/reactions observe facts and request changes through explicit world-owned
+phase boundaries. The default change path should be command emission followed
+by deterministic command execution; direct fact mutation from rule code should
+stay exceptional and documented when a specific phase owns it. Rules may also
+emit events or effect triggers when those are the correct fact shape.
+`RuleSet` is the planned name for reusable groups of rule declarations; it is
+the logic-side counterpart to data-side archetypes, not another name for
+archetypes.
 
 ## 4. User-Facing Shape
 
@@ -96,6 +100,7 @@ manually handling registry casts or container internals:
 * emit event;
 * apply trait;
 * spawn archetype;
+* enqueue and execute commands;
 * trigger effect;
 * run/query rules or RuleSets.
 
@@ -150,6 +155,7 @@ An empty or unused scheduler should add only minimal per-tick bookkeeping.
 The target scheduler should support:
 
 * rules that run every base tick;
+* deterministic command execution after rules request changes;
 * rules or RuleSets that run at slower or faster logical cadences;
 * delayed events;
 * temporary rules;
