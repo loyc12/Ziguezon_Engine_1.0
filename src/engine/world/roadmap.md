@@ -21,9 +21,9 @@ tasks:
 * `World.tick(...)` event tick metadata;
 * engine-owned `WorldManager` wrapping one active concrete `World`;
 * concrete `World` implementation in `core/world.zig`;
-* World-owned compact explicit rules with manager-backed `RuleContext`
-  inspection helpers, deterministic ordering, command emission, visible
-  failure, and event/fact reaction support;
+* World-owned compact explicit rules with manager-backed `RuleContext`,
+  deterministic ordering, command emission, visible failure, and event/fact
+  reaction support;
 * read-only component, relation, event, and trait inspection through
   stateless `WorldQuery` helpers;
 * data-only `Archetype` declarations, registration, World spawn helpers,
@@ -39,23 +39,37 @@ Goal: define how queued commands become world fact changes.
 
 Required work:
 
-* define the command execution boundary and phase ownership;
-* support explicit command handler or executor registration where needed;
+* simplify `RuleContext` into a small manager-pointer bundle before adding
+  `CommandContext`;
+* define a command execution boundary owned by command infrastructure and
+  surfaced through World/WorldManager APIs;
+* add a narrow `CommandContext` that mirrors the manager-pointer context shape
+  without borrowing `RuleContext`;
+* register one command execution callback alongside each command queue when the
+  command type is registered;
+* execute all currently queued commands for one command type through
+  `CommandManager`;
 * keep command execution deterministic and inspectable;
-* report command failures through events, logs, or queued failure records rather
-  than silently dropping requests;
-* decide when command queues are consumed or cleared after execution;
+* pop attempted commands before callback execution;
+* report missing queues or missing callbacks as developer-facing errors with
+  false/failure results;
+* report callback failures with warnings and execution counts, then continue
+  through later queued commands of the same type;
 * keep command payloads as plain requested-change facts;
 * add tests proving commands apply once, in order, and fail visibly.
 
 Exit criterion: queued commands can be executed through a documented
 World-owned phase, successful commands are applied exactly once in deterministic
-order, and failed commands produce visible failure information without leaving
-queue ownership ambiguous.
+order for one command type, and failed attempts produce visible failure
+information without leaving queue ownership ambiguous.
 
 This should happen before broad scheduler cadence work. A scheduler that runs
 rules but leaves requested changes permanently game-local would not validate the
 intended world pipeline.
+
+Defer aggregate all-command-type execution, cross-type ordering, recursive
+commands-calling-commands, retry/pending command semantics, delayed commands,
+and handler replacement after registration until a later design pass.
 
 ## 3. Next - Minimal World Tick Phases
 
@@ -80,7 +94,7 @@ The first pipeline can be intentionally small:
 ```text
 begin tick metadata
 run registered base-tick rules
-execute queued commands
+execute the validated command phase
 finish tick bookkeeping
 ```
 
@@ -138,14 +152,15 @@ Required work:
 * migrate a concrete game proof only after commands, events, rules, and render
   pieces are stable.
 
-## 7. Later - Context
+## 7. Later - Archive
 
-Goal: reserve the context path for save/load/replay-facing world state.
+Goal: define archive-facing world state for save/load/replay with names that do
+not collide with short-lived rule and command callback contexts.
 
 This area needs a refinement pass before implementation work or a todo slice is
 generated from it.
 
-Do not wire `engine/world/context` into runtime code until reusable
+Do not wire `engine/world/archive` into runtime code until reusable
 serialization/save-load primitives exist in `utils` and the base fact model is
 stable enough to describe.
 
@@ -164,6 +179,8 @@ stable enough to describe.
   RuleSet registration, or scheduler behavior to archetype spawning.
 * Keep rules from becoming hidden mutable systems; ordinary fact changes should
   flow through explicit command execution or another documented phase boundary.
+* Keep short-lived rule and command contexts as simple manager-pointer bundles
+  unless a helper removes real ambiguity.
 * Do not add marker-component support; use traits/metaproperties for
   classification.
 * Do not add storage policies or config bundles without a concrete use case.

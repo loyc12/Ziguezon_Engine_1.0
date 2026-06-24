@@ -16,6 +16,8 @@ pub const CommandMeta = struct
 
 /// Typed command record stored in transient command queues.
 /// `CommandType` is a user-defined plain Zig struct, not an executable callback.
+/// Execution functions are registered with the command queue/manager and receive
+/// records of this shape when the command phase drains queued requests.
 pub fn CommandRecord( comptime CommandType : type ) type
 {
   assertCommandPayloadType( CommandType );

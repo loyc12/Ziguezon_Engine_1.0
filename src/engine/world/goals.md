@@ -52,7 +52,7 @@ The concrete `World` should remain the central simulation database under
 * particle/effect records, emitters, configs, and pools;
 * logical simulation time and scheduling;
 * query and view helpers;
-* context records for future save/load/replay-facing state.
+* future archive records for save/load/replay.
 
 Entities remain stable identifiers. Components, relations, events, traits,
 archetypes, effects, and scheduler records are facts that make those
@@ -88,11 +88,26 @@ namespace that receives the inspected World explicitly.
 Rules/reactions observe facts and request changes through explicit world-owned
 phase boundaries. `World` owns registered rule storage through a focused
 `RuleManager`; rules receive a short-lived rule-only context backed by
-World-owned manager pointers, not persistent `World` ownership. The default
-change path should be command emission followed by deterministic command
-execution; direct fact mutation from rule code should stay exceptional and
-documented when a specific phase owns it. Rules may also emit events or effect
-triggers when those are the correct fact shape.
+World-owned manager pointers, not persistent `World` ownership. Rule contexts
+should stay simple pointer bundles rather than duplicate broad manager helper
+APIs unless a helper removes real ambiguity.
+
+The default change path should be command emission followed by deterministic
+command execution. Rules are not required to emit commands; a rule may inspect
+state, validate invariants, emit suitable events/effect triggers, or request no
+work at all. Direct fact mutation from rule code should stay exceptional and
+documented when a specific phase owns it.
+
+Commands are plain requested-change facts with execution registered alongside
+their typed command queue. A command execution callback receives a short-lived
+command-only context and a command record, then returns success or failure.
+Command contexts should mirror the narrow manager-pointer pattern instead of
+borrowing `RuleContext` or future archive machinery. Command execution should
+pop attempted commands before running callbacks, log execution failures,
+continue through later commands of the same type, and leave delayed, pending,
+retry, undo, replay, and cross-type aggregate execution behavior for later
+design passes.
+
 `RuleSet` is the planned name for reusable groups of rule declarations; it is
 the logic-side counterpart to data-side archetypes, not another name for
 archetypes.
@@ -121,7 +136,7 @@ needs them.
 World features should follow a no-registration, minimal-runtime-cost rule. If a
 game has not registered a component store, relation store, trait set, event
 queue, command queue, RuleSet, scheduler item, effect pool, archetype registry,
-or context feature, normal per-tick runtime should not scan, update, dispatch,
+or archive feature, normal per-tick runtime should not scan, update, dispatch,
 or retain work for that feature.
 
 Small setup and teardown costs are acceptable when initializing managers,
@@ -195,7 +210,7 @@ base-tick/frame pacing, hooks, configs, and phase order.
 `engine/world` owns simulation infrastructure: `World`, entities, components,
 relations, events, rules, RuleSets, traits, archetypes, particle/effects
 records and pools, logical simulation time, scheduling, queries/views, future
-context records, and the `WorldManager` facade that the engine owns.
+archive records, and the `WorldManager` facade that the engine owns.
 
 `engine/render` owns world-facing render adapters and debug render systems.
 Simulation facts should not depend on rendering.

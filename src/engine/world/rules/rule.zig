@@ -5,6 +5,9 @@ const cntx = @import( "ruleContext.zig" );
 const RuleContext = cntx.RuleContext;
 
 /// Callback shape for compact simulation rules.
+/// Rules are user-defined logic passes: they may inspect facts, validate
+/// conditions, emit suitable transient facts, or enqueue commands when durable
+/// World mutation is requested. They do not have to emit a command every run.
 /// Returning false signals a failed rule pass without consuming events or
 /// retaining history.
 pub const RuleFn = *const fn ( *RuleContext ) bool;

@@ -10,30 +10,38 @@ implementation order.
 Define the first World-owned command execution boundary.
 
 Rules can now enqueue commands through `RuleContext`, but commands remain
-queued requested-change facts. This slice should decide and implement how
-registered command payloads become deterministic World fact mutations without
-adding scheduler cadence or automatic rule execution from `World.tick(...)`.
+queued requested-change facts. This slice should first simplify `RuleContext`
+to match the intended manager-pointer context shape, then implement how one
+registered command payload type becomes deterministic World fact mutations
+without adding scheduler cadence or automatic rule execution from
+`World.tick(...)`.
 
 Keep the scope small enough to validate ownership:
 
-* command handlers or executors are registered through World-owned surfaces;
-* queued commands execute in deterministic order;
+* rule and command contexts are simple manager-pointer bundles;
+* command execution callbacks are registered when command queues are registered;
+* queued commands of one command type execute in deterministic FIFO order;
 * successful commands apply exactly once;
-* failed commands remain visible through return values, logs, events, or a
-  documented failure queue;
+* attempted commands are popped before their callbacks run;
+* failed command execution logs a warning and remains visible in result counts;
 * queue consumption/clearing ownership is explicit;
-* rules still only request mutation by enqueueing commands.
+* rules may run without enqueueing commands, but command emission remains the
+  default path when a rule wants durable World mutations.
 
 ## 2. Guardrails
 
 * Use existing `CommandManager`, command queue, `World`, and `WorldManager`
   surfaces where possible.
 * Keep command payloads as plain requested-change facts.
+* Keep `CommandContext` separate from `RuleContext`; do not broaden
+  `RuleContext` for command execution.
+* Do not include `CommandManager` in `CommandContext`; commands-calling-commands
+  are deferred until proven useful.
 * Do not run commands automatically from `World.tick(...)` in this slice unless
   the command execution boundary itself cannot be validated explicitly.
 * Do not add scheduler cadence, delayed events, temporary rules, or `RuleSet`.
-* Do not add particle/effect, context, save/load, replay, undo, or retained
-  history behavior.
+* Do not add particle/effect, archive, replay, undo, retry, pending-command, or
+  retained history behavior.
 * Do not change archetype behavior or let archetype spawning register command
   handlers.
 * Keep game-specific command handlers under `src/games` unless a generic engine
@@ -43,34 +51,65 @@ Keep the scope small enough to validate ownership:
 
 ## 3. Implementation Tasks
 
+0. Simplify `RuleContext`.
+   * Remove duplicated helper APIs from `RuleContext`.
+   * Keep only the active-entity map and relevant manager pointers.
+   * Update rule code and tests to call manager functions directly through the
+     context pointers.
+
 1. Define the command execution shape.
-   * Choose the narrow command handler declaration surface.
-   * Decide whether command execution lives in a focused manager or remains a
-     narrow World-owned helper around `CommandManager`.
+   * Add a new `commands/commandContext.zig` file.
+   * Keep `CommandContext` as a small manager-pointer bundle for mutation and
+     event emission.
+   * Do not include `CommandManager` in `CommandContext`.
+   * Use the existing `CommandRecord(CommandType)` as the command instance
+     passed to execution callbacks.
+   * Define command execution callbacks as `bool` functions receiving
+     `*CommandContext` and a command record.
    * Keep the shape concrete; do not add type erasure, factories, or broad
      dispatch layers unless the compiler or ownership boundary requires it.
 
-2. Add World-facing execution APIs.
-   * Register handlers for command payload types.
-   * Execute one command type or all registered command types explicitly.
-   * Report handler failure visibly.
-   * Document whether successful commands are popped before, during, or after
-     execution.
+2. Register execution callbacks with command queues.
+   * Register a command execution function alongside the command type when the
+     queue is generated in `CommandManager`.
+   * Do not support replacing execution callbacks after command registration.
+   * Report duplicate command registration as the existing duplicate queue
+     registration failure.
 
-3. Preserve rule/command separation.
-   * Rules enqueue commands only.
-   * Command handlers own the fact mutation phase.
-   * Event emission from command handlers should use normal World APIs.
+3. Add execution APIs for one command type.
+   * Add queue-level `execCommands(amount, context)`, where `amount == 0`
+     means execute all commands currently queued for that type.
+   * Add `CommandManager.execCommandType(CommandType, amount, context)`.
+   * Add World/WorldManager forwarding surfaces for the same one-type execution.
+   * Pop commands before callback execution.
+   * Continue after callback failure.
+   * Return an execution count/result struct with attempted, succeeded, and
+     failed counts.
+   * Log missing queues or missing execution callbacks as errors with false or
+     failure results.
+   * Log callback execution failures as warnings.
 
-4. Add focused tests.
-   * duplicate handler registration is rejected;
-   * unregistered command execution is a visible no-op or failure;
-   * queued commands execute once in order;
-   * failed command handlers are visible and do not silently drop requests;
+4. Preserve rule/command separation.
+   * Rules are not required to enqueue commands.
+   * Rules may inspect facts, validate invariants, emit suitable events/effect
+     triggers, or request no work.
+   * Rules should use commands as the default path for durable World mutation.
+   * Command execution callbacks own the fact mutation phase.
+   * Command callbacks may emit events for successful simulation outcomes.
+   * Command callback failure itself should not emit simulation events.
+
+5. Add focused tests.
+   * `RuleContext` no longer duplicates manager helper APIs;
+   * duplicate command registration remains rejected;
+   * missing command queue or missing execution callback is visibly reported;
+   * queued commands of one command type execute once in FIFO order;
+   * `amount == 0` executes all commands initially queued for that type;
+   * failed command callbacks are visible, popped, and do not stop later
+     commands of the same type;
    * command execution can mutate components, relations, traits, or events
      through the documented World-owned path.
 
-5. Refresh docs after implementation.
+6. Refresh docs after implementation.
    * Update `reference.md` with the live command execution surface.
    * Trim `roadmap.md` so completed command execution becomes baseline.
    * Keep `goals.md` aligned with the validated command ownership model.
@@ -91,11 +130,13 @@ Docs-only edits to this file do not require a build.
 Later roadmap slices:
 
 * automatic rule and command phases from `World.tick(...)`;
+* aggregate `execAllCommandTypes` behavior and cross-type ordering;
+* recursive commands-calling-commands behavior;
 * game-defined cadences beyond the first base-tick phase;
 * delayed events and temporary rules;
 * `RuleSet` declarations and grouped rule registration;
 * `src/engine/world/particles`, after refinement;
-* `src/engine/world/context`, after refinement.
+* `src/engine/world/archive`, after refinement.
 
 Unrelated to this slice:
 
