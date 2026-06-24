@@ -25,6 +25,7 @@ const RelationStoreFactory = rel.RelationStoreFactory;
 const TraitSetFactory      = trt.TraitSetFactory;
 const EventQueueFactory    = evtQue.EventQueueFactory;
 const CommandQueueFactory  = cmdQue.CommandQueueFactory;
+const CommandExecResult    = cmd.CommandExecResult;
 const Rule                 = rule.Rule;
 const ArchetypeSpawnResult = @import( "archetypes/archetype.zig" ).ArchetypeSpawnResult;
 
@@ -127,7 +128,11 @@ pub const WorldManager = struct
 
   // ================================ COMMAND FUNCTIONS ================================
 
-  pub inline fn registerCommand(   self : *WorldManager, comptime CommandType : type ) bool { return self.world.registerCommand(   CommandType ); }
+  pub inline fn registerCommand(     self : *WorldManager, comptime CommandType : type ) bool { return self.world.registerCommand( CommandType ); }
+  pub inline fn registerCommandExec( self : *WorldManager, comptime CommandType : type, execFn : cmd.CommandExecFn( CommandType )) bool
+  {
+    return self.world.registerCommandExec( CommandType, execFn );
+  }
   pub inline fn unregisterCommand( self : *WorldManager, comptime CommandType : type ) bool { return self.world.unregisterCommand( CommandType ); }
   pub inline fn getCommandQueue(   self : *WorldManager, comptime CommandType : type ) ?*CommandQueueFactory( CommandType ) { return self.world.getCommandQueue( CommandType ); }
 
@@ -138,6 +143,10 @@ pub const WorldManager = struct
   pub inline fn getCommandIterator( self : *WorldManager, comptime CommandType : type ) ?cmdQue.CommandQueueFactory( CommandType ).ConstIterator { return self.world.getCommandIterator( CommandType ); }
   pub inline fn clearCommands(      self : *WorldManager, comptime CommandType : type ) bool  { return self.world.clearCommands(   CommandType ); }
   pub inline fn getCommandCount(    self : *WorldManager, comptime CommandType : type ) usize { return self.world.getCommandCount( CommandType ); }
+  pub inline fn execCommandType(    self : *WorldManager, comptime CommandType : type, amount : usize ) CommandExecResult
+  {
+    return self.world.execCommandType( CommandType, amount );
+  }
 
 
   // ================================ RULE FUNCTIONS ================================
@@ -178,4 +187,41 @@ test "WorldManager owns a single active world facade"
   try std.testing.expect( entityVal.id != 0 );
   try std.testing.expect( manager.isEntityAlive( entityVal.id ));
   try std.testing.expect( manager.getWorld() == &manager.world );
+}
+
+test "WorldManager forwards one-type command execution"
+{
+  const TestCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  const Runner = struct
+  {
+    var sum : u32 = 0;
+
+    fn exec( context : *cmd.CommandContext, record : cmd.CommandRecord( TestCommand )) bool
+    {
+      _ = context;
+      sum += record.value.value;
+      return true;
+    }
+  };
+
+  var manager : WorldManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  Runner.sum = 0;
+
+  try std.testing.expect( manager.registerCommandExec( TestCommand, Runner.exec ));
+  try std.testing.expect( manager.enqueueCommand( TestCommand, .{ .value = 10 }));
+  try std.testing.expect( manager.enqueueCommand( TestCommand, .{ .value = 32 }));
+
+  const result = manager.execCommandType( TestCommand, 0 );
+
+  try std.testing.expect( result.attempted == 2 );
+  try std.testing.expect( result.succeeded == 2 );
+  try std.testing.expect( result.failed    == 0 );
+  try std.testing.expect( Runner.sum == 42 );
 }

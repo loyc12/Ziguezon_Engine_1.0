@@ -9,9 +9,9 @@ Active task slices belong in [todo.md](todo.md).
 
 `src/engine/world` owns the engine's simulation infrastructure. The current
 implementation is already beyond the original component-only foundation:
-entities, components, relations, traits, event queues, command queues, and
-compact rules are live. Several later folders still contain placeholders for
-future features.
+entities, components, relations, traits, event queues, command queues, command
+execution for one registered command type, and compact rules are live. Several
+later folders still contain placeholders for future features.
 
 When this file disagrees with code, inspect code first and refresh this file.
 
@@ -222,11 +222,29 @@ completed-event records and do not own execution behavior.
 * base tick index when known.
 
 `CommandManager` owns registered queues by command payload type. Commands are
-enqueued only after their queue type is registered.
+enqueued only after their queue type is registered. Queue-only registration is
+still available for request buffering, and executable registration stores one
+callback with the queue when the command type is registered.
+
+`CommandContext` lives in `commands/commandContext.zig`. It is built by
+`World.toCommandContext()` for one explicit command drain and borrows:
+
+* the World's live-entity map for liveness checks;
+* component, relation, and trait manager pointers for durable fact mutation;
+* an event manager pointer for successful simulation outcome events.
+
+`CommandContext` does not include `CommandManager`. Recursive
+commands-calling-commands are not part of the live surface.
+
+`CommandExecResult` reports `attempted`, `succeeded`, and `failed` counts.
+Missing queues and missing execution callbacks log errors and return a visible
+failure result. Callback failures log warnings, are counted as failures, and do
+not stop later queued commands of the same type.
 
 World command APIs include:
 
 * `registerCommand`;
+* `registerCommandExec`;
 * `unregisterCommand`;
 * `getCommandQueue`;
 * `enqueueCommand`;
@@ -234,10 +252,22 @@ World command APIs include:
 * `peekCommand`;
 * `getCommandIterator`;
 * `clearCommands`;
-* `getCommandCount`.
+* `getCommandCount`;
+* `toCommandContext`;
+* `execCommandType`.
+
+`CommandQueue.execCommands(amount, context)`,
+`CommandManager.execCommandType(CommandType, amount, context)`,
+`World.execCommandType(CommandType, amount)`, and
+`WorldManager.execCommandType(CommandType, amount)` drain one command type in
+FIFO order. `amount == 0` means every record queued for that command type when
+execution starts. Attempted commands are popped before callbacks run, so a
+successful command applies at most once and a failed command remains visible in
+counts without staying queued.
 
 Command queues are transient. Retained command history, replay, undo, delayed
-commands, and command execution ownership are not implemented.
+commands, pending/retry semantics, cross-type aggregate execution, and handler
+replacement after registration are not implemented.
 
 ## 10. Traits
 
@@ -342,14 +372,14 @@ Rules are live as compact explicit simulation-logic callbacks.
 `World.toRuleContext()` for one explicit rule pass and borrows:
 
 * the World's live-entity map for liveness checks;
-* component, relation, trait, and event manager pointers for read-only
-  inspection helpers;
+* component, relation, trait, and event manager pointers for direct rule
+  inspection;
 * a command manager pointer for enqueuing requested changes.
 
 `RuleContext` does not store `*World`, import `core/world.zig`, or import
-`RuleManager`. Its helper methods intentionally mirror the const inspection
-behavior rules need from `WorldQuery` without recreating the
-`World -> RuleManager -> World` dependency loop.
+`RuleManager`. It is a field-only manager-pointer bundle; rules call the
+borrowed managers directly instead of going through duplicated context helper
+APIs.
 
 `Rule` stores a name, order value, and callback. `RuleManager` owns an ordered
 list of these declarations and runs them through explicit
@@ -357,8 +387,11 @@ list of these declarations and runs them through explicit
 rejected.
 
 Rules cover both broad current-fact passes and event/fact reactions. They may
-observe queued events or current queried facts and enqueue commands. Peeking and
-iterating events through rules does not consume event records.
+observe queued events or current queried facts, validate invariants, emit
+suitable transient facts, enqueue commands, or request no work. Peeking and
+iterating events through rules does not consume event records. Command emission
+is the default path when a rule wants durable World mutation; command callbacks
+own the mutation phase.
 
 `World` owns one `RuleManager` and exposes `registerRule`, `hasRule`,
 `getRuleCount`, `toRuleContext`, and explicit `applyRules()`. `WorldManager`

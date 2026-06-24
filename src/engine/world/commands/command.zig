@@ -1,5 +1,25 @@
 const std = @import( "std" );
 
+const cmdCtx = @import( "commandContext.zig" );
+
+pub const CommandContext = cmdCtx.CommandContext;
+
+
+/// Summary returned after draining queued command records for one command type.
+/// Missing queues or missing callbacks are represented as a visible failure
+/// result so caller-side validation can stay simple.
+pub const CommandExecResult = struct
+{
+  attempted : usize = 0,
+  succeeded : usize = 0,
+  failed    : usize = 0,
+
+  pub inline fn isSuccess( self : CommandExecResult ) bool
+  {
+    return self.failed == 0;
+  }
+};
+
 
 /// Metadata attached when a command is queued.
 /// Command payloads stay plain requested-change facts; execution ownership lives
@@ -27,6 +47,14 @@ pub fn CommandRecord( comptime CommandType : type ) type
     meta  : CommandMeta = .{},
     value : CommandType,
   };
+}
+
+/// Callback shape for executable command payload records.
+/// Callbacks mutate World-owned facts through `CommandContext` and return false
+/// when that one command record failed to apply.
+pub fn CommandExecFn( comptime CommandType : type ) type
+{
+  return *const fn ( *CommandContext, CommandRecord( CommandType )) bool;
 }
 
 /// Rejects command shapes that are not plain requested-change facts.

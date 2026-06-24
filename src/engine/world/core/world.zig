@@ -35,6 +35,8 @@ const EventManager         = evtMgr.EventManager;
 const EventQueueFactory    = evtQue.EventQueueFactory;
 const CommandManager       = cmdMgr.CommandManager;
 const CommandQueueFactory  = cmdQue.CommandQueueFactory;
+const CommandContext       = cmd.CommandContext;
+const CommandExecResult    = cmd.CommandExecResult;
 const Rule                 = rule.Rule;
 const RuleContext          = ruleCtx.RuleContext;
 const RuleManager          = ruleMgr.RuleManager;
@@ -523,6 +525,13 @@ pub const World = struct
     return self.commandManager.register( CommandType );
   }
 
+  /// Registers one command queue with the callback that later drains it.
+  /// Use this for command types that should become durable World fact changes.
+  pub inline fn registerCommandExec( self : *World, comptime CommandType : type, execFn : cmd.CommandExecFn( CommandType )) bool
+  {
+    return self.commandManager.registerExec( CommandType, execFn );
+  }
+
   /// Removes the queue for a command type and drops any queued command records.
   pub inline fn unregisterCommand( self : *World, comptime CommandType : type ) bool
   {
@@ -584,6 +593,37 @@ pub const World = struct
   pub inline fn getCommandCount( self : *World, comptime CommandType : type ) usize
   {
     return self.commandManager.getCommandCount( CommandType );
+  }
+
+  /// Packages World-owned managers into a short-lived command-only context.
+  /// Command callbacks mutate facts through these managers; the context does
+  /// not include `CommandManager`, so command recursion is not introduced here.
+  pub inline fn toCommandContext( self : *World ) CommandContext
+  {
+    return .{
+      .activeEntities  = &self.activeEntities,
+      .compManager     = &self.compManager,
+      .relationManager = &self.relationManager,
+      .traitManager    = &self.traitManager,
+      .eventManager    = &self.eventManager,
+    };
+  }
+
+  /// Executes queued commands for one command type through its registered callback.
+  /// `amount == 0` executes every matching record queued when this call starts.
+  pub fn execCommandType( self : *World, comptime CommandType : type, amount : usize ) CommandExecResult
+  {
+    var result : CommandExecResult = .{};
+
+    if( !self.isInit )
+    {
+      utl.log( .ERROR, @src(), "Cannot execute Commands for type {s} : World is uninitialized", .{ @typeName( CommandType )});
+      result.failed = 1;
+      return result;
+    }
+
+    var context = self.toCommandContext();
+    return self.commandManager.execCommandType( CommandType, amount, &context );
   }
 
 
@@ -1518,7 +1558,7 @@ test "World owns explicit rule registration and execution"
     {
       order[ count ] = 1;
       count += 1;
-      return context.enqueueCommand( TestCommand, .{ .entityId = entityId, .value = 10 });
+      return context.commandManager.enqueue( TestCommand, .{ .entityId = entityId, .value = 10 });
     }
 
     fn second( context : *RuleContext ) bool
@@ -1526,9 +1566,13 @@ test "World owns explicit rule registration and execution"
       order[ count ] = 2;
       count += 1;
 
-      const compVal    = context.getComp( TestComp, entityId ) orelse return false;
-      const eventCount = context.getEventCount( TestEvent );
-      return context.enqueueCommand( TestCommand, .{ .entityId = entityId, .value = compVal.value + @as( u32, @intCast( eventCount ))});
+      if( !context.activeEntities.contains( entityId )){ return false; }
+
+      const store      = context.compManager.getStore( TestComp ) orelse return false;
+      const compVal    = store.getConst( entityId ) orelse return false;
+      const eventCount = context.eventManager.getEventCount( TestEvent );
+
+      return context.commandManager.enqueue( TestCommand, .{ .entityId = entityId, .value = compVal.value + @as( u32, @intCast( eventCount ))});
     }
   };
 
@@ -1584,7 +1628,7 @@ test "World rule failure is visible and stops later rules"
 
     fn later( context : *RuleContext ) bool
     {
-      return context.enqueueCommand( TestCommand, .{ .value = 99 });
+      return context.commandManager.enqueue( TestCommand, .{ .value = 99 });
     }
   };
 
@@ -1732,6 +1776,95 @@ test "World command API rejects uninitialized worlds and unregistered queues"
   try std.testing.expect( !world.enqueueCommand( TestCommand, .{ .value = 2 }));
   try std.testing.expect(  world.popCommand(     TestCommand ) == null );
   try std.testing.expect( !world.clearCommands(  TestCommand ));
+}
+
+test "World executes command callbacks through the command context mutation path"
+{
+  const TestComp = struct
+  {
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const TestRel = struct
+  {
+    value : u32 = 0,
+  };
+  const TestTrait = struct {};
+  const TestEvent = struct
+  {
+    entityId : EntityId = 0,
+    value    : u32      = 0,
+  };
+  const TestCommand = struct
+  {
+    entityId : EntityId = 0,
+    targetId : EntityId = 0,
+    value    : u32      = 0,
+  };
+
+  const Runner = struct
+  {
+    fn exec( context : *CommandContext, record : cmd.CommandRecord( TestCommand )) bool
+    {
+      const entityId = record.value.entityId;
+      const targetId = record.value.targetId;
+
+      if( record.value.value == 999 ){ return false; }
+      if( !context.activeEntities.contains( entityId )){ return false; }
+      if( !context.activeEntities.contains( targetId )){ return false; }
+
+      const compStore = context.compManager.getStore( TestComp ) orelse return false;
+      const compVal   = compStore.get( entityId ) orelse return false;
+      compVal.value += record.value.value;
+
+      const relStore = context.relationManager.getStore( TestRel ) orelse return false;
+      if( !relStore.add( entityId, targetId, .{ .value = record.value.value })){ return false; }
+
+      const traitSet = context.traitManager.getSet( TestTrait ) orelse return false;
+      if( !traitSet.has( entityId ) and !traitSet.apply( entityId )){ return false; }
+
+      return context.eventManager.emit( TestEvent, .{ .entityId = entityId, .value = compVal.value });
+    }
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp(        TestComp    ));
+  try std.testing.expect( world.registerRelation(    TestRel     ));
+  try std.testing.expect( world.registerTrait(       TestTrait   ));
+  try std.testing.expect( world.registerEvent(       TestEvent   ));
+  try std.testing.expect( world.registerCommandExec( TestCommand, Runner.exec ));
+
+  const sourceId = world.createEntity().id;
+  const targetA  = world.createEntity().id;
+  const targetB  = world.createEntity().id;
+
+  try std.testing.expect( world.addComp( TestComp, sourceId, .{ .value = 10 }));
+
+  try std.testing.expect( world.enqueueCommand( TestCommand, .{ .entityId = sourceId, .targetId = targetA, .value = 1   }));
+  try std.testing.expect( world.enqueueCommand( TestCommand, .{ .entityId = sourceId, .targetId = targetB, .value = 999 }));
+  try std.testing.expect( world.enqueueCommand( TestCommand, .{ .entityId = sourceId, .targetId = targetB, .value = 2   }));
+
+  const result = world.execCommandType( TestCommand, 0 );
+
+  try std.testing.expect( result.attempted == 3 );
+  try std.testing.expect( result.succeeded == 2 );
+  try std.testing.expect( result.failed    == 1 );
+  try std.testing.expect( world.getCommandCount( TestCommand ) == 0 );
+
+  try std.testing.expect( world.getComp( TestComp, sourceId ).?.value == 13 );
+  try std.testing.expect( world.hasRelation( TestRel, sourceId, targetA ));
+  try std.testing.expect( world.hasRelation( TestRel, sourceId, targetB ));
+  try std.testing.expect( world.hasTrait(    TestTrait, sourceId ));
+  try std.testing.expect( world.getEventCount( TestEvent ) == 2 );
+
+  const emptyResult = world.execCommandType( TestCommand, 0 );
+  try std.testing.expect( emptyResult.attempted == 0 );
+  try std.testing.expect( emptyResult.succeeded == 0 );
+  try std.testing.expect( emptyResult.failed    == 0 );
 }
 
 test "World leaves generic entity component relation and trait events silent when queues are absent"

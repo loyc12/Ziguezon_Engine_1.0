@@ -187,7 +187,8 @@ test "RuleManager observes events and emits commands without consuming events"
     {
       var count : usize = 0;
       var sum   : u32   = 0;
-      var iter = context.getEventIterator( TestEvent ) orelse return false;
+      const eventQueue = context.eventManager.getQueue( TestEvent ) orelse return false;
+      var iter = eventQueue.getIteratorConst();
       while( iter.next() )| record |
       {
         count += 1;
@@ -195,7 +196,7 @@ test "RuleManager observes events and emits commands without consuming events"
       }
 
       if( count == 0 ){ return false; }
-      return context.enqueueCommand( TestCommand, .{ .value = sum });
+      return context.commandManager.enqueue( TestCommand, .{ .value = sum });
     }
   };
 
@@ -268,8 +269,12 @@ test "RuleManager reads current facts and emits commands"
 
     fn run( context : *RuleContext ) bool
     {
-      const comp = context.getComp( TestComp, entityId ) orelse return false;
-      return context.enqueueCommand( TestCommand, .{ .entityId = entityId, .value = comp.value + 1 });
+      if( !context.activeEntities.contains( entityId )){ return false; }
+
+      const store   = context.compManager.getStore( TestComp ) orelse return false;
+      const compVal = store.getConst( entityId ) orelse return false;
+
+      return context.commandManager.enqueue( TestCommand, .{ .entityId = entityId, .value = compVal.value + 1 });
     }
   };
 

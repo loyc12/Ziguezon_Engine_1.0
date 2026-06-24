@@ -45,8 +45,10 @@ test "Rule observes events and emits commands without consuming events"
   {
     fn run( context : *RuleContext ) bool
     {
-      const eventRecord = context.peekEvent( TestEvent, 0 ) orelse return false;
-      return context.enqueueCommand( TestCommand, .{ .value = eventRecord.value.value + 1 });
+      const eventQueue  = context.eventManager.getQueue( TestEvent ) orelse return false;
+      const eventRecord = eventQueue.peek( 0 ) orelse return false;
+
+      return context.commandManager.enqueue( TestCommand, .{ .value = eventRecord.value.value + 1 });
     }
   };
 

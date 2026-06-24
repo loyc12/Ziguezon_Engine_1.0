@@ -126,11 +126,15 @@ pub const TraitApplied     = evt.TraitApplied;
 pub const TraitRemoved     = evt.TraitRemoved;
 
 const cmd  = @import( "world/commands/command.zig" );
+const ccnt = @import( "world/commands/commandContext.zig" );
 const cque = @import( "world/commands/commandQueue.zig" );
 const cmgr = @import( "world/commands/commandManager.zig" );
 
 pub const CommandMeta         = cmd.CommandMeta;
 pub const CommandRecord       = cmd.CommandRecord;
+pub const CommandExecFn       = cmd.CommandExecFn;
+pub const CommandExecResult   = cmd.CommandExecResult;
+pub const CommandContext      = ccnt.CommandContext;
 pub const CommandQueueFactory = cque.CommandQueueFactory;
 pub const CommandManager      = cmgr.CommandManager;
 

@@ -7,114 +7,91 @@ implementation order.
 
 ## 1. Current Slice
 
-Define the first World-owned command execution boundary.
+Define the first minimal `World.tick(...)` simulation phase pipeline.
 
-Rules can now enqueue commands through `RuleContext`, but commands remain
-queued requested-change facts. This slice should first simplify `RuleContext`
-to match the intended manager-pointer context shape, then implement how one
-registered command payload type becomes deterministic World fact mutations
-without adding scheduler cadence or automatic rule execution from
-`World.tick(...)`.
+`World.tick(...)` currently begins event and command tick metadata only. Rules
+can run through explicit `applyRules()`, and one command type can be drained
+through explicit `execCommandType(...)`. This slice should wire the first
+deterministic base-tick pipeline inside `World.tick(...)` without adding broad
+scheduler cadence, delayed work, temporary rules, or `RuleSet`.
 
-Keep the scope small enough to validate ownership:
+The intentionally small pipeline is:
 
-* rule and command contexts are simple manager-pointer bundles;
-* command execution callbacks are registered when command queues are registered;
-* queued commands of one command type execute in deterministic FIFO order;
-* successful commands apply exactly once;
-* attempted commands are popped before their callbacks run;
-* failed command execution logs a warning and remains visible in result counts;
-* queue consumption/clearing ownership is explicit;
-* rules may run without enqueueing commands, but command emission remains the
-  default path when a rule wants durable World mutations.
+```text
+begin tick metadata
+run registered base-tick rules
+execute the validated command phase
+finish tick bookkeeping
+```
+
+Keep the scope small enough to validate tick ownership:
+
+* `EngineTiming` remains the base-tick/frame-pacing authority;
+* `World.tick(...)` runs once per consumed engine base tick;
+* render frames and input polling do not trigger extra World simulation work;
+* registered rules run in deterministic order during the rule phase;
+* command execution runs after rules request changes;
+* empty rule/command state has minimal runtime cost;
+* the implementation does not introduce a competing `shouldTick()` loop inside
+  World.
 
 ## 2. Guardrails
 
-* Use existing `CommandManager`, command queue, `World`, and `WorldManager`
-  surfaces where possible.
-* Keep command payloads as plain requested-change facts.
-* Keep `CommandContext` separate from `RuleContext`; do not broaden
-  `RuleContext` for command execution.
-* Do not include `CommandManager` in `CommandContext`; commands-calling-commands
-  are deferred until proven useful.
-* Do not run commands automatically from `World.tick(...)` in this slice unless
-  the command execution boundary itself cannot be validated explicitly.
+* Use the existing `World.tick(...)`, `RuleManager`, `CommandManager`,
+  command queue, `World`, and `WorldManager` surfaces where possible.
+* Preserve current event and command metadata setup.
 * Do not add scheduler cadence, delayed events, temporary rules, or `RuleSet`.
-* Do not add particle/effect, archive, replay, undo, retry, pending-command, or
-  retained history behavior.
-* Do not change archetype behavior or let archetype spawning register command
-  handlers.
-* Keep game-specific command handlers under `src/games` unless a generic engine
-  test handler is needed.
+* Do not add particles/effects, archive, replay, undo, retry, pending-command,
+  or retained history behavior.
+* Do not change archetype behavior or let archetype spawning register rules,
+  command handlers, or scheduler work.
+* Do not introduce broad type erasure, factories, dependency-injection layers,
+  or generic dispatch surfaces unless the compiler or ownership boundary proves
+  they are required.
+* If a complete tick command phase requires cross-type ordering or aggregate
+  command execution beyond the validated one-type command boundary, stop and
+  report the exact blocker before widening the design.
 * Preserve the no-registration, minimal-runtime-cost rule from `goals.md`.
 * Do not run formatting passes such as `zig fmt`.
 
 ## 3. Implementation Tasks
 
-0. Simplify `RuleContext`.
-   * Remove duplicated helper APIs from `RuleContext`.
-   * Keep only the active-entity map and relevant manager pointers.
-   * Update rule code and tests to call manager functions directly through the
-     context pointers.
+0. Reconfirm the tick call path.
+   * Verify `engineStep.tickWorld()` still calls `ng.world.tick(tickContext)`
+     once per consumed base tick.
+   * Verify render and input paths do not call `World.tick(...)` directly.
 
-1. Define the command execution shape.
-   * Add a new `commands/commandContext.zig` file.
-   * Keep `CommandContext` as a small manager-pointer bundle for mutation and
-     event emission.
-   * Do not include `CommandManager` in `CommandContext`.
-   * Use the existing `CommandRecord(CommandType)` as the command instance
-     passed to execution callbacks.
-   * Define command execution callbacks as `bool` functions receiving
-     `*CommandContext` and a command record.
-   * Keep the shape concrete; do not add type erasure, factories, or broad
-     dispatch layers unless the compiler or ownership boundary requires it.
+1. Define the minimal tick phase shape.
+   * Keep `World.tick(...)` as the single entry point.
+   * Keep event and command metadata setup at the start of the tick.
+   * Add explicit rule phase execution after metadata setup.
+   * Add the narrowest command phase that can be validated without broad
+     scheduler or cross-type dispatch work.
 
-2. Register execution callbacks with command queues.
-   * Register a command execution function alongside the command type when the
-     queue is generated in `CommandManager`.
-   * Do not support replacing execution callbacks after command registration.
-   * Report duplicate command registration as the existing duplicate queue
-     registration failure.
+2. Preserve explicit rule and command ownership.
+   * `RuleManager` still owns registered rule ordering.
+   * Rules still receive a short-lived field-only `RuleContext`.
+   * Command callbacks still receive a short-lived `CommandContext`.
+   * Rules may emit no commands.
+   * Command callbacks own durable fact mutation.
+   * Command callback failure remains visible and does not emit failure events
+     by itself.
 
-3. Add execution APIs for one command type.
-   * Add queue-level `execCommands(amount, context)`, where `amount == 0`
-     means execute all commands currently queued for that type.
-   * Add `CommandManager.execCommandType(CommandType, amount, context)`.
-   * Add World/WorldManager forwarding surfaces for the same one-type execution.
-   * Pop commands before callback execution.
-   * Continue after callback failure.
-   * Return an execution count/result struct with attempted, succeeded, and
-     failed counts.
-   * Log missing queues or missing execution callbacks as errors with false or
-     failure results.
-   * Log callback execution failures as warnings.
+3. Add focused tests.
+   * `World.tick(...)` begins event and command metadata once per call;
+   * registered rules run during `World.tick(...)` in deterministic order;
+   * commands emitted by tick-run rules execute after the rule phase;
+   * command execution failures remain visible and do not stop later work that
+     belongs to the validated command phase;
+   * empty rule/command state does not require registered work;
+   * explicit manual `applyRules()` behavior remains valid if it is kept.
 
-4. Preserve rule/command separation.
-   * Rules are not required to enqueue commands.
-   * Rules may inspect facts, validate invariants, emit suitable events/effect
-     triggers, or request no work.
-   * Rules should use commands as the default path for durable World mutation.
-   * Command execution callbacks own the fact mutation phase.
-   * Command callbacks may emit events for successful simulation outcomes.
-   * Command callback failure itself should not emit simulation events.
-
-5. Add focused tests.
-   * `RuleContext` no longer duplicates manager helper APIs;
-   * duplicate command registration remains rejected;
-   * missing command queue or missing execution callback is visibly reported;
-   * queued commands of one command type execute once in FIFO order;
-   * `amount == 0` executes all commands initially queued for that type;
-   * failed command callbacks are visible, popped, and do not stop later
-     commands of the same type;
-   * command execution can mutate components, relations, traits, or events
-     through the documented World-owned path.
-
-6. Refresh docs after implementation.
-   * Update `reference.md` with the live command execution surface.
-   * Trim `roadmap.md` so completed command execution becomes baseline.
-   * Keep `goals.md` aligned with the validated command ownership model.
-   * Replace this `todo.md` with the next minimal World tick phase slice after
-     validation.
+4. Refresh docs after implementation.
+   * Update `reference.md` with the live tick phase surface.
+   * Trim `roadmap.md` so minimal tick phases become baseline.
+   * Keep `goals.md` aligned with the validated tick ownership model.
+   * Replace this `todo.md` with the next minimal scheduler-cadence slice only
+     after validation and only if the roadmap still defines it clearly.
 
 ## 4. Validation
 
@@ -129,8 +106,8 @@ Docs-only edits to this file do not require a build.
 
 Later roadmap slices:
 
-* automatic rule and command phases from `World.tick(...)`;
-* aggregate `execAllCommandTypes` behavior and cross-type ordering;
+* aggregate public all-command-type execution and cross-type ordering, unless
+  the minimal tick slice proves a smaller internal phase is required first;
 * recursive commands-calling-commands behavior;
 * game-defined cadences beyond the first base-tick phase;
 * delayed events and temporary rules;

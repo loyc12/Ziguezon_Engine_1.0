@@ -17,13 +17,14 @@ tasks:
 * trait sets for dataless classification facts, including `Persistent`;
 * typed transient event queues, event metadata, and generic entity/component/
   relation/trait events;
-* typed transient command queues, command metadata, and World command APIs;
+* typed transient command queues, command metadata, one-type command execution
+  callbacks, `CommandContext`, and World/WorldManager command execution APIs;
 * `World.tick(...)` event tick metadata;
 * engine-owned `WorldManager` wrapping one active concrete `World`;
 * concrete `World` implementation in `core/world.zig`;
-* World-owned compact explicit rules with manager-backed `RuleContext`,
-  deterministic ordering, command emission, visible failure, and event/fact
-  reaction support;
+* World-owned compact explicit rules with field-only manager-backed
+  `RuleContext`, deterministic ordering, command emission, visible failure,
+  and event/fact reaction support;
 * read-only component, relation, event, and trait inspection through
   stateless `WorldQuery` helpers;
 * data-only `Archetype` declarations, registration, World spawn helpers,
@@ -33,45 +34,7 @@ tasks:
 Those pieces are reference-baseline facts. Future slices should build on them
 instead of treating them as pending phases.
 
-## 2. Current - Command Execution Ownership
-
-Goal: define how queued commands become world fact changes.
-
-Required work:
-
-* simplify `RuleContext` into a small manager-pointer bundle before adding
-  `CommandContext`;
-* define a command execution boundary owned by command infrastructure and
-  surfaced through World/WorldManager APIs;
-* add a narrow `CommandContext` that mirrors the manager-pointer context shape
-  without borrowing `RuleContext`;
-* register one command execution callback alongside each command queue when the
-  command type is registered;
-* execute all currently queued commands for one command type through
-  `CommandManager`;
-* keep command execution deterministic and inspectable;
-* pop attempted commands before callback execution;
-* report missing queues or missing callbacks as developer-facing errors with
-  false/failure results;
-* report callback failures with warnings and execution counts, then continue
-  through later queued commands of the same type;
-* keep command payloads as plain requested-change facts;
-* add tests proving commands apply once, in order, and fail visibly.
-
-Exit criterion: queued commands can be executed through a documented
-World-owned phase, successful commands are applied exactly once in deterministic
-order for one command type, and failed attempts produce visible failure
-information without leaving queue ownership ambiguous.
-
-This should happen before broad scheduler cadence work. A scheduler that runs
-rules but leaves requested changes permanently game-local would not validate the
-intended world pipeline.
-
-Defer aggregate all-command-type execution, cross-type ordering, recursive
-commands-calling-commands, retry/pending command semantics, delayed commands,
-and handler replacement after registration until a later design pass.
-
-## 3. Next - Minimal World Tick Phases
+## 2. Current - Minimal World Tick Phases
 
 Goal: run the first deterministic world simulation pipeline once per game
 update inside engine-owned base ticks.
@@ -104,7 +67,11 @@ frames and input updates do not trigger additional World simulation work.
 
 Add more phases only when a concrete game or engine use case requires them.
 
-## 4. Later - Scheduler Cadence And Delayed Work
+Defer aggregate all-command-type execution, cross-type ordering, recursive
+commands-calling-commands, retry/pending command semantics, delayed commands,
+and handler replacement after registration until a later design pass.
+
+## 3. Later - Scheduler Cadence And Delayed Work
 
 Goal: extend the minimal tick pipeline into reusable scheduling.
 
@@ -122,7 +89,7 @@ Do not use archetype spawning as a scheduler substitute. Archetypes are
 data-only initial-fact bundles; scheduler work should consume existing rules,
 events, commands, and World tick metadata directly.
 
-## 5. Later - RuleSet
+## 4. Later - RuleSet
 
 Goal: add reusable groups of executable rule declarations once plain rules and
 tick phases are proven.
@@ -136,7 +103,7 @@ Required work:
   exists;
 * include one minimal generic example once the shape is stable.
 
-## 6. Later - Particles And Effects
+## 5. Later - Particles And Effects
 
 Goal: add first-class effect infrastructure driven by world facts.
 
@@ -152,7 +119,7 @@ Required work:
 * migrate a concrete game proof only after commands, events, rules, and render
   pieces are stable.
 
-## 7. Later - Archive
+## 6. Later - Archive
 
 Goal: define archive-facing world state for save/load/replay with names that do
 not collide with short-lived rule and command callback contexts.
@@ -164,7 +131,7 @@ Do not wire `engine/world/archive` into runtime code until reusable
 serialization/save-load primitives exist in `utils` and the base fact model is
 stable enough to describe.
 
-## 8. Implementation Constraints
+## 7. Implementation Constraints
 
 * Keep target design in `goals.md`.
 * Keep current facts in `reference.md`.

@@ -18,7 +18,7 @@ Remove or rework any unsuitable tests. No need to test trivially simple features
 
 # ==== IMPLEMENTING TODO ====
 
-Mode: implement
+Mode: implementation
 Implement the opened `todo.md` in its entirety, step by step.
 Follow the project’s stylistic guidelines. See `AGENTS.md` for details if needed.
 Avoid pointless code duplication, and remove deprecated code left behind by your changes.
@@ -26,7 +26,7 @@ Add `//` comments and `///` descriptions to code blocks and functions whose purp
 Add `// TODO:` comments when a code block is intentionally left incomplete for now.
 Start by reviewing `todo.md` itself before executing the required work step by step.
 Alert me to any unforeseen issue you encounter along the way, or significant decisions that need resolving appear.
-If you successfully complete `todo.md` and the next work slice is well defined in `roadmap.md`, both files accordingly.
+If you successfully complete `todo.md` and the next work slice is well defined in `roadmap.md`, update both files accordingly.
 
 
 # ==== REVIEWING IMPLEMENTATION ====

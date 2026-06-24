@@ -17,7 +17,7 @@ pub const CommandManager = struct
     countFn         : *const fn ( *anyopaque ) usize,
   };
 
-  alloc  : std.mem.Allocator                = undefined,
+  alloc  : std.mem.Allocator               = undefined,
   queues : std.StringHashMap( QueueEntry ) = undefined,
 
   nextSequence  : u64   = 0,
@@ -72,6 +72,18 @@ pub const CommandManager = struct
   /// Duplicate registration returns false and keeps the existing queue.
   pub fn register( self : *CommandManager, comptime CommandType : type ) bool
   {
+    return self.registerInternal( CommandType, null );
+  }
+
+  /// Registers one executable command payload type and its drain callback.
+  /// The callback cannot be replaced without unregistering the command type.
+  pub fn registerExec( self : *CommandManager, comptime CommandType : type, execFn : cmd.CommandExecFn( CommandType )) bool
+  {
+    return self.registerInternal( CommandType, execFn );
+  }
+
+  fn registerInternal( self : *CommandManager, comptime CommandType : type, execFn : ?cmd.CommandExecFn( CommandType )) bool
+  {
     const typeName = @typeName( CommandType );
 
     if( !self.isInit )
@@ -94,6 +106,7 @@ pub const CommandManager = struct
 
     queue.* = .{};
     queue.init( self.alloc );
+    queue.execFn = execFn;
 
     self.queues.put( typeName,
     .{
@@ -192,6 +205,30 @@ pub const CommandManager = struct
   {
     const queue = self.getQueue( CommandType ) orelse return 0;
     return queue.getCommandCount();
+  }
+
+  /// Executes queued commands of one registered command type.
+  /// `amount == 0` executes all records queued for that type at call start.
+  pub fn execCommandType( self : *CommandManager, comptime CommandType : type, amount : usize, context : *cmd.CommandContext ) cmd.CommandExecResult
+  {
+    var result : cmd.CommandExecResult = .{};
+    const typeName = @typeName( CommandType );
+
+    if( !self.isInit )
+    {
+      utl.log( .ERROR, @src(), "Cannot execute Commands for type {s} : CommandManager is uninitialized", .{ typeName });
+      result.failed = 1;
+      return result;
+    }
+
+    const queue = self.getQueue( CommandType ) orelse
+    {
+      utl.log( .ERROR, @src(), "Cannot execute Commands for type {s} : queue is not registered", .{ typeName });
+      result.failed = 1;
+      return result;
+    };
+
+    return queue.execCommands( amount, context );
   }
 
   /// Clears every registered command queue without unregistering any type.
@@ -388,4 +425,159 @@ test "CommandManager rejects uninitialized and unregistered operations"
   try std.testing.expect( !manager.enqueue(    TestCommand, .{ .value = 1 }));
   try std.testing.expect( !manager.clear(      TestCommand ));
   try std.testing.expect( !manager.unregister( TestCommand ));
+}
+
+test "CommandManager registers executable queues and rejects replacement"
+{
+  const TestCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  const Runner = struct
+  {
+    fn exec( context : *cmd.CommandContext, record : cmd.CommandRecord( TestCommand )) bool
+    {
+      _ = context;
+      _ = record;
+      return true;
+    }
+  };
+
+  var manager : CommandManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  try std.testing.expect(  manager.registerExec( TestCommand, Runner.exec ));
+  try std.testing.expect( !manager.registerExec( TestCommand, Runner.exec ));
+  try std.testing.expect( !manager.register(     TestCommand ));
+}
+
+test "CommandManager reports missing queue and missing callback execution failures"
+{
+  const MissingCommand = struct
+  {
+    value : u32 = 0,
+  };
+  const NoCallbackCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  var activeEntities : std.AutoHashMap( @import( "../entity.zig" ).EntityId, void ) = .init( std.testing.allocator );
+  defer activeEntities.deinit();
+
+  var comps = @import( "../components/compManager.zig" ).CompManager{};
+  comps.init( std.testing.allocator );
+  defer comps.deinit();
+
+  var relations = @import( "../relations/relationManager.zig" ).RelationManager{};
+  relations.init( std.testing.allocator );
+  defer relations.deinit();
+
+  var traits = @import( "../traits/traitManager.zig" ).TraitManager{};
+  traits.init( std.testing.allocator );
+  defer traits.deinit();
+
+  var events = @import( "../events/eventManager.zig" ).EventManager{};
+  events.init( std.testing.allocator );
+  defer events.deinit();
+
+  var context : cmd.CommandContext =
+  .{
+    .activeEntities  = &activeEntities,
+    .compManager     = &comps,
+    .relationManager = &relations,
+    .traitManager    = &traits,
+    .eventManager    = &events,
+  };
+
+  var manager : CommandManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  const missingQueue = manager.execCommandType( MissingCommand, 0, &context );
+  try std.testing.expect( missingQueue.attempted == 0 );
+  try std.testing.expect( missingQueue.failed    == 1 );
+
+  try std.testing.expect( manager.register( NoCallbackCommand ));
+  try std.testing.expect( manager.enqueue(  NoCallbackCommand, .{ .value = 1 }));
+
+  const missingCallback = manager.execCommandType( NoCallbackCommand, 0, &context );
+  try std.testing.expect( missingCallback.attempted == 0 );
+  try std.testing.expect( missingCallback.failed    == 1 );
+  try std.testing.expect( manager.getCommandCount( NoCallbackCommand ) == 1 );
+}
+
+test "CommandManager executes requested amount in FIFO order"
+{
+  const TestCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  const Runner = struct
+  {
+    var order : [2]u32 = .{ 0, 0 };
+    var count : usize  = 0;
+
+    fn exec( context : *cmd.CommandContext, record : cmd.CommandRecord( TestCommand )) bool
+    {
+      _ = context;
+
+      order[ count ] = record.value.value;
+      count += 1;
+
+      return true;
+    }
+  };
+
+  var activeEntities : std.AutoHashMap( @import( "../entity.zig" ).EntityId, void ) = .init( std.testing.allocator );
+  defer activeEntities.deinit();
+
+  var comps = @import( "../components/compManager.zig" ).CompManager{};
+  comps.init( std.testing.allocator );
+  defer comps.deinit();
+
+  var relations = @import( "../relations/relationManager.zig" ).RelationManager{};
+  relations.init( std.testing.allocator );
+  defer relations.deinit();
+
+  var traits = @import( "../traits/traitManager.zig" ).TraitManager{};
+  traits.init( std.testing.allocator );
+  defer traits.deinit();
+
+  var events = @import( "../events/eventManager.zig" ).EventManager{};
+  events.init( std.testing.allocator );
+  defer events.deinit();
+
+  var context : cmd.CommandContext =
+  .{
+    .activeEntities  = &activeEntities,
+    .compManager     = &comps,
+    .relationManager = &relations,
+    .traitManager    = &traits,
+    .eventManager    = &events,
+  };
+
+  var manager : CommandManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  Runner.order = .{ 0, 0 };
+  Runner.count = 0;
+
+  try std.testing.expect( manager.registerExec( TestCommand, Runner.exec ));
+  try std.testing.expect( manager.enqueue( TestCommand, .{ .value = 10 }));
+  try std.testing.expect( manager.enqueue( TestCommand, .{ .value = 20 }));
+  try std.testing.expect( manager.enqueue( TestCommand, .{ .value = 30 }));
+
+  const result = manager.execCommandType( TestCommand, 2, &context );
+
+  try std.testing.expect( result.attempted == 2 );
+  try std.testing.expect( result.succeeded == 2 );
+  try std.testing.expect( result.failed    == 0 );
+  try std.testing.expect( manager.getCommandCount( TestCommand ) == 1 );
+  try std.testing.expect( Runner.order[ 0 ] == 10 );
+  try std.testing.expect( Runner.order[ 1 ] == 20 );
 }
