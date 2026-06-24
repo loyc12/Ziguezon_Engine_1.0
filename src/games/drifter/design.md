@@ -75,13 +75,27 @@ First-loop resources:
   electronics;
 * market support: credits and per-resource fluctuating base prices.
 
+Power is a resource with special rules. It should stay visible in station
+resource facts, but it is not ordinary cargo: it does not consume storage, and
+the first balanced model should treat it as a per-tick production buffer rather
+than a durable stockpile. Solar panels provide the base consumptionless supply.
+Reactors convert fuel into stronger power output only when demand exceeds the
+free solar supply, and should scale down when less reactor power is needed.
+When available power is below demand, powered production should scale down
+deterministically instead of silently creating or correcting stored power.
+
+Building space is deferred for now. Later it should be a simple scalar capacity
+that construction and events can gain or lose; it should not be harvested or
+stored like a normal resource.
+
 First-loop station systems:
 
 * hangar: drone capacity, launch/return throughput, and market access limiter;
 * depot: buying, selling, dumping, and basic import/export handling;
 * refinery: converts raw resources into basic produced resources;
 * storage: resource capacity;
-* reactor: power production;
+* solar panels: baseline consumptionless power supply;
+* reactor: fuel-to-power conversion for higher output when solar is not enough;
 * shipyard: drone construction and drone replacement;
 * assembly: advanced resource production, including electronics.
 
@@ -184,10 +198,15 @@ capacity or throughput:
 * hangar systems increase drone count;
 * refinery systems increase processing throughput;
 * storage systems increase stock capacity;
-* reactor systems increase power capacity;
+* solar systems increase free baseline power;
+* reactor systems increase fuel-backed power conversion;
 * shipyard systems build and replace drones;
 * depot systems increase import/export throughput;
 * assembly systems produce advanced resources and construction inputs.
+
+Building space should wait until construction and event systems can change it
+meaningfully. When added, it should behave as a scalar limit on station growth,
+not as cargo in shared storage.
 
 Credits exist to convert surplus resources into missing resources through
 market buy/sell behavior. This should be less efficient than producing
@@ -263,6 +282,8 @@ Initial validation scenarios:
   according to active station systems.
 * Capacity loop: storage, drone slots, processing throughput, and power limits
   constrain the simulation without hidden correction.
+* Power loop: solar power covers baseline demand, reactors burn only the fuel
+  needed for unmet demand, and shortages scale powered production down.
 * Growth loop: accumulated resources build a new station system, changing
   capacity and visible/debug state.
 * Market loop: surplus resources sell for credits, missing resources can be

@@ -6,75 +6,79 @@ simulation. [roadmap.md](roadmap.md) defines the broader implementation order.
 
 ## 1. Current Slice
 
-Implement the first deterministic processing rules.
+Add asteroids, chunks, and drones as world-owned facts.
 
-Manual starter-reserve harvesting now moves finite regolith, ice, and ore into
-station storage through public World component APIs. This slice should convert
-those raw stockpiles into the first produced resources through visible,
-deterministic rule passes before drones or external asteroids exist.
+Manual starter-reserve harvesting and deterministic station processing now feed
+the station's shared storage loop. This slice should replace the visual-only
+asteroid shell with the first autonomous harvest path: drifting harvest targets,
+harvestable chunks, and drone facts that can return resources into the same
+storage and processing loop.
 
 ## 2. Scope
 
 In scope:
 
-* add simple processing rules for starter raw stockpiles;
-* convert ice into water and oxygen;
-* convert water and power into fuel;
-* convert ore into metals;
-* convert regolith into concrete;
-* convert metals plus power into electronics;
-* convert water, oxygen, and power into food;
-* respect storage capacity before accepting produced resources;
-* show rule output, blocked storage, and relevant shortages through overlay text
-  and/or logs;
-* keep all durable mutation routed through public World component APIs.
+* add world-owned asteroid facts with simple size or chunk-count state;
+* convert small asteroids into one harvestable chunk;
+* support larger asteroids becoming multiple chunks over repeated work;
+* add world-owned drone facts with simple visible states;
+* route drone unloads into existing station storage through public World
+  component APIs;
+* keep returned raw resources compatible with the current processing loop;
+* show asteroid, chunk, drone, job/block, and returned-resource status through
+  overlay text and/or logs;
+* remove or clearly retire visual-only asteroid state made obsolete by world
+  facts.
 
 Out of scope:
 
-* drones, asteroids, chunks, and jobs as world entities;
-* upkeep rules, market rules, command callbacks, and scheduler behavior;
-* station system child entities;
-* archetype declarations;
 * retained UI widgets;
-* construction, damage, repair, save/load, replay, particles, or effects;
+* market rules, command callbacks, scheduler behavior, and player-editable
+  production rules;
+* construction, station systems, damage, repair, save/load, replay, particles,
+  or effects;
+* advanced pathfinding, collision physics, real orbital mechanics, grids, or
+  detailed travel simulation;
+* life-support upkeep, population loss, and gameover behavior;
 * event output unless the slice deliberately adds the needed event type and
   overlay inspection.
 
 ## 3. Tasks
 
-1. Define local processing recipes.
-   * Pick compact fixed input/output amounts for each first-loop recipe.
-   * Keep recipe numbers local to the Drifter station/resource slice.
-   * Add comments for abstract units, power treatment, and incomplete future
-     hooks.
+1. Define asteroid, chunk, and drone facts.
+   * Keep the first component shapes compact and game-owned.
+   * Include comments for abstract units, temporary state choices, and future
+     scheduler hooks.
+   * Register and unregister the new stores with the Drifter lifecycle.
 
-2. Add rule-pass accounting.
-   * Consume only resources that are available.
-   * Add only produced resources that fit in station storage.
-   * Keep power as the capacity-like energy buffer documented by the manual
-     harvest slice.
-   * Leave no partial mutation when a required component row is missing.
+2. Replace visual-only asteroid ownership.
+   * Spawn asteroids as world entities during open/reset.
+   * Preserve simple visible drifting markers where practical.
+   * Remove deprecated visual-only storage once world facts render correctly.
 
-3. Mutate station facts through World APIs.
-   * Fetch mutable station resource and capacity components from `ng.world`.
-   * Reject processing when station facts are unavailable or incomplete.
-   * Clamp each rule pass to available inputs and available storage.
-   * Avoid hidden correction of invalid or over-capacity state.
+3. Add chunk creation and depletion.
+   * Let small asteroids create one chunk.
+   * Let larger asteroids create multiple chunks through repeated work.
+   * Keep chunk depletion deterministic and visible.
 
-4. Expose processing behavior.
-   * Show current storage use and latest processing/block status.
-   * Keep logs readable enough to validate successful processing and
-     full-storage cases.
-   * Add an event type only if the slice deliberately chooses event inspection.
+4. Add the first drone loop.
+   * Represent drone states: idle, outbound, harvesting, returning, unloading,
+     and disabled.
+   * Assign idle drones to available chunks with simple deterministic priority.
+   * Move returned raw resources into station storage through existing station
+     APIs or narrowly added public station helpers.
+   * Report blocked harvest work when no drones, no targets, or no storage are
+     available.
 
 5. Validate.
    * Run `zig build drifter`.
    * Manually run `drifter` if a graphics session is available.
-   * Confirm processing decreases raw/input stockpiles, increases produced
-     stockpiles, respects storage capacity, and reports blocked processing.
+   * Confirm asteroids/chunks/drones are visible, chunks deplete, returned
+     resources enter station storage, processing consumes returned raw
+     stockpiles, and blocked work is readable.
 
 ## 4. Next Slice Candidate
 
-After the first processing loop is stable, the next roadmap slice should add
-asteroids, chunks, and drones as world-owned facts so autonomous harvesting can
-feed the same storage and processing loop.
+After autonomous harvesting is stable, the next roadmap slice should add
+life-support upkeep, population failure pressure, and station systems as
+station-owned child entities.

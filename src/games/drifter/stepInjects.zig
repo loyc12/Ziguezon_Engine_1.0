@@ -10,6 +10,7 @@ const Vec2 = utl.Vec2;
 const STATION_POS    : Vec2  = .{};
 const STATION_RADIUS : f64   = 96.0;
 const ASTEROID_COUNT : usize = 16;
+const PROCESS_TICK_INTERVAL : u128 = 60;
 
 /// Temporary visual-only asteroid marker used before asteroids become World facts.
 const ShellAsteroid = struct
@@ -28,9 +29,10 @@ const ASTEROID_DRIFT_Y_MAX : f64 = 50.0;
 
 var SHOW_OVERLAY : bool = true;
 // TODO: Replace this visual-only asteroid state with world-owned asteroid facts once the asteroid slice lands.
-var LAST_HARVEST_RESULT : station.ManualHarvestResult = .{};
-var isShellInit         : bool = false;
-var asteroids           : [ ASTEROID_COUNT ]ShellAsteroid = undefined;
+var LAST_HARVEST_RESULT    : station.ManualHarvestResult = .{};
+var LAST_PROCESSING_RESULT : station.ProcessingResult     = .{};
+var isShellInit            : bool = false;
+var asteroids              : [ ASTEROID_COUNT ]ShellAsteroid = undefined;
 
 
 // ================================ SHELL HELPERS ================================
@@ -47,7 +49,8 @@ fn resetDrifter( ng : *eng.Engine ) void
   }
   else
   {
-    LAST_HARVEST_RESULT = .{ .status = .reset, .stationId = station.getStationId() };
+    LAST_HARVEST_RESULT    = .{ .status = .reset, .stationId = station.getStationId() };
+    LAST_PROCESSING_RESULT = .{ .status = .reset, .stationId = station.getStationId() };
   }
 
   utl.qlog( .INFO, @src(), "Drifter reset" );
@@ -140,6 +143,15 @@ fn tickShellVisuals( deltaTime : f64 ) void
   }
 }
 
+/// Runs the temporary fixed-cadence processing pass until engine scheduler
+/// support owns repeated production cadence.
+fn tickStationProcessing( ng : *eng.Engine ) void
+{
+  if( ng.time.tickCount % PROCESS_TICK_INTERVAL != 0 ){ return; }
+
+  LAST_PROCESSING_RESULT = station.tryProcessStation( ng );
+}
+
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 // These functions are called by the engine at various points in the game loop ( see loopLogic() in engine.zig ).
@@ -194,6 +206,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
   tickShellVisuals( @floatCast( ng.time.getTargetTickDeltaFlt() ));
+  tickStationProcessing( ng );
 }
 
 pub fn OffTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() after OnTickUpdate
@@ -280,8 +293,9 @@ fn renderStationFactsOverlay( ng : *eng.Engine ) void
   utl.sDraw.textLeftFmt( "capacity: storage {d:.0}/{d:.0} | drones {d} | process {d:.0} | power {d:.0}", .{ storageUsed, cap.storage, cap.droneSlots, cap.processingThroughput, cap.powerOutput }, .new( 16.0, 320.0 ), 18, utl.Colour.lGray );
 
   renderHarvestStatusOverlay( LAST_HARVEST_RESULT, .new( 16.0, 346.0 ));
+  renderProcessingStatusOverlay( LAST_PROCESSING_RESULT, .new( 16.0, 372.0 ));
 
-  utl.sDraw.textLeftFmt( "throughput: hangar {d:.0} | market {d:.0} | construction {d:.0}", .{ cap.hangarThroughput, cap.marketThroughput, cap.constructionCapacity }, .new( 16.0, 372.0 ), 18, utl.Colour.lGray );
+  utl.sDraw.textLeftFmt( "throughput: hangar {d:.0} | market {d:.0} | construction {d:.0}", .{ cap.hangarThroughput, cap.marketThroughput, cap.constructionCapacity }, .new( 16.0, 398.0 ), 18, utl.Colour.lGray );
 }
 
 /// Draws the latest manual-harvest result without coupling overlay code to the
@@ -329,5 +343,74 @@ inline fn getHarvestStatusColour( status : station.ManualHarvestStatus ) utl.Col
     .idle, .reset => utl.Colour.lGray,
     .harvested   => utl.Colour.pGreen,
     else         => utl.Colour.red,
+  };
+}
+
+/// Draws the latest processing result as a compact production ledger.
+fn renderProcessingStatusOverlay( result : station.ProcessingResult, pos : Vec2 ) void
+{
+  switch( result.status )
+  {
+    .processed =>
+    {
+      if( result.blockedRecipe.len > 0 )
+      {
+        utl.sDraw.textLeftFmt( "process: {d} rules | +W {d:.1} +O2 {d:.1} +F {d:.1} +Food {d:.1} +C {d:.1} +M {d:.1} +E {d:.1} | blocked {s}: {s}", .{
+          result.recipeCount,
+          result.waterProduced,
+          result.oxygenProduced,
+          result.fuelProduced,
+          result.foodProduced,
+          result.concrete,
+          result.metals,
+          result.electronics,
+          result.blockedRecipe,
+          result.blockedNeed,
+        }, pos, 18, utl.Colour.yellow );
+      }
+      else
+      {
+        utl.sDraw.textLeftFmt( "process: {d} rules | +W {d:.1} +O2 {d:.1} +F {d:.1} +Food {d:.1} +C {d:.1} +M {d:.1} +E {d:.1}", .{
+          result.recipeCount,
+          result.waterProduced,
+          result.oxygenProduced,
+          result.fuelProduced,
+          result.foodProduced,
+          result.concrete,
+          result.metals,
+          result.electronics,
+        }, pos, 18, utl.Colour.pGreen );
+      }
+    },
+
+    else =>
+    {
+      utl.sDraw.textLeftFmt( "process: {s}", .{ getProcessingStatusText( result )}, pos, 18, getProcessingStatusColour( result.status ));
+    },
+  }
+}
+
+inline fn getProcessingStatusText( result : station.ProcessingResult ) [ :0 ] const u8
+{
+  return switch( result.status )
+  {
+    .idle               => "idle - waiting for processing tick",
+    .reset              => "reset restored defaults",
+    .processed          => "processed",
+    .stationUnavailable => "blocked - station unavailable",
+    .missingFacts       => "blocked - station fact rows missing",
+    .invalidStorage     => "blocked - invalid storage state",
+    .storageFull        => "blocked - storage full",
+    .shortage           => if( result.blockedNeed.len > 0 ) "blocked - shortage" else "blocked - no inputs",
+  };
+}
+
+inline fn getProcessingStatusColour( status : station.ProcessingStatus ) utl.Colour
+{
+  return switch( status )
+  {
+    .idle, .reset => utl.Colour.lGray,
+    .processed    => utl.Colour.pGreen,
+    else          => utl.Colour.red,
   };
 }

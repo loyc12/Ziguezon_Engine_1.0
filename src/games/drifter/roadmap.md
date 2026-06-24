@@ -53,43 +53,24 @@ Current baseline:
 * manual starter-reserve harvesting is available through `H`, consumes finite
   regolith, ice, and ore reserves, respects storage capacity, and reports the
   latest harvest or blocked state through overlay text and logs;
+* deterministic station processing runs on a temporary fixed cadence, converts
+  starter stockpiles and stored life-support inputs into water, oxygen, fuel,
+  metals, concrete, electronics, and food, consumes power as a non-storage
+  buffer, respects storage capacity, and reports latest output or blocked
+  rules through overlay text and logs;
+* the current power implementation is transitional: power is visible as a
+  resource but still behaves like a finite non-storage buffer until the planned
+  solar/reactor balance pass replaces it;
 * overlay text shows pause state, zoom, asteroid count, station resources,
-  starter reserves, storage use, capacities, harvest status, and controls.
+  starter reserves, storage use, capacities, harvest status, processing status,
+  and controls.
 
 The first implementation goal is a small playable/debuggable vertical slice:
 one station, starter reserves, basic resources, simple visuals, player controls,
 and enough world facts to validate entity lifecycle, components, relations,
 traits, events, rules, and queries in combination.
 
-## 3. Current - Processing Loop
-
-Build the first automatic resource loop before drones are required.
-
-Work:
-
-* add simple processing rules:
-  * ice to water and oxygen;
-  * water and power to fuel;
-  * ore to metals;
-  * regolith to concrete;
-  * metals plus power to electronics through assembly;
-  * water, oxygen, and power to food;
-* add storage limits and full-storage warnings;
-* add oxygen, food, and population upkeep;
-* trigger population loss and gameover when life-support failure reaches zero
-  population;
-* represent built station systems as station-owned child entities where the
-  engine world surface supports it cleanly, after the base station facts and
-  starter loop are stable;
-* add initial systems: hangar, depot, refinery, storage, reactor, shipyard, and
-  assembly after the system-child-entity shape is chosen.
-
-Validation:
-
-* processing changes stockpiles through visible rules;
-* full storage and life-support failures emit readable events.
-
-## 4. Phase 3 - Asteroids, Chunks, And Drones
+## 3. Current - Asteroids, Chunks, And Drones
 
 Add the autonomous harvest loop.
 
@@ -115,12 +96,26 @@ Validation:
 * drone shortage blocks work visibly instead of silently resolving;
 * returned resources feed the same processing/storage loop as manual harvest.
 
-## 5. Phase 4 - Construction And Growth
+## 4. Phase 4 - Life Support, Systems, And Growth
 
-Let the station expand using direct resources.
+Add failure pressure and let the station expand using direct resources.
 
 Work:
 
+* add oxygen, food, and population upkeep;
+* trigger population loss and gameover when life-support failure reaches zero
+  population;
+* represent built station systems as station-owned child entities where the
+  engine world surface supports it cleanly, after the base station facts and
+  starter loop are stable;
+* add initial systems: hangar, depot, refinery, storage, reactor, shipyard, and
+  assembly after the system-child-entity shape is chosen;
+* keep power as a special resource, then replace finite-buffer behavior with a
+  per-tick balance where solar supplies free baseline power, reactors convert
+  only enough fuel to cover unmet demand, and power shortages scale powered
+  production down;
+* defer building space until construction and events can change it; when added,
+  model it as a simple scalar growth limit rather than a stored resource;
 * add build costs for station systems;
 * let storage, reactor, refinery, hangar, depot, shipyard, and assembly systems
   increase relevant capacities or throughput;
@@ -131,13 +126,15 @@ Work:
 
 Validation:
 
+* life-support failure is visible and reduces population;
+* power balance is visible and scales production during shortages;
 * building a system consumes resources and creates a station-owned child
   entity;
 * capacity changes are visible immediately after build completion;
 * drone construction is limited by shipyard and hangar capacity;
 * damaged systems create readable repair work when enabled.
 
-## 6. Phase 5 - Market And Resource Management
+## 5. Phase 5 - Market And Resource Management
 
 Add the first market loop.
 
@@ -157,7 +154,7 @@ Validation:
 * repeated buying and selling visibly affects price;
 * dumping creates resource loss and a visible event.
 
-## 7. Phase 6 - Rule Management And Player Priorities
+## 6. Phase 6 - Rule Management And Player Priorities
 
 Expose the station-management layer.
 
@@ -177,7 +174,7 @@ Validation:
 * disabled or blocked rules are visible;
 * drone automation remains the default and does not require micromanagement.
 
-## 8. Later - Controls And Drones In The Visual Shell
+## 7. Later - Controls And Drones In The Visual Shell
 
 Add controls when their target systems exist instead of keeping placeholder
 buttons.
@@ -194,7 +191,7 @@ Validation:
 * controls call real game behavior;
 * overlay text does not depend on simulation internals that do not exist yet.
 
-## 9. Deferred Work
+## 8. Deferred Work
 
 Defer until the first station loop is stable:
 
@@ -207,7 +204,7 @@ Defer until the first station loop is stable:
 * save/load, replay, or long-history inspection;
 * broad UI polish beyond the controls needed to validate the simulation.
 
-## 10. Roadmap Validation
+## 9. Roadmap Validation
 
 For code slices, use at least:
 

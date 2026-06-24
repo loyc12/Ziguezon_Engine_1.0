@@ -85,6 +85,6 @@ rename accessors like getXxx to getMutXxx and getXxxConst to getXxx, to make mut
 
 make sure facility is abreviated to fac
 
-headless mode for agent debuging
+headless mode for agent debuging ( hard )
 
 Make coding philosophy clear ( simple, unambiguous, direct, performant )
