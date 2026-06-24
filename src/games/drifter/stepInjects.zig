@@ -1,6 +1,7 @@
 const std      = @import( "std"    );
 const eng      = @import( "engine" );
 const utl      = @import( "utils"  );
+const station  = @import( "stationFacts.zig" );
 
 const Vec2 = utl.Vec2;
 
@@ -30,9 +31,22 @@ var asteroids    : [ ASTEROID_COUNT ]ShellAsteroid = undefined;
 
 // ================================ SHELL HELPERS ================================
 
-/// Resets the temporary visual shell. Later slices should replace this with
-/// world-owned station and asteroid facts instead of extending this state model.
-fn resetShell() void
+/// Resets Drifter's current world facts and temporary visual shell.
+/// Asteroids are still visual-only until the asteroid entity slice lands.
+fn resetDrifter( ng : *eng.Engine ) void
+{
+  resetVisualShell();
+
+  if( !station.resetStation( ng ))
+  {
+    utl.qlog( .ERROR, @src(), "Drifter station reset failed" );
+  }
+
+  utl.qlog( .INFO, @src(), "Drifter reset" );
+}
+
+/// Resets only the temporary visual shell and camera.
+fn resetVisualShell() void
 {
   eng.G_ENG.rng.seedInit( utl.getNow().value );
 
@@ -42,13 +56,15 @@ fn resetShell() void
   eng.G_ENG.camera.setZoom(   1.0 );
 
   isShellInit = true;
-  utl.qlog( .INFO, @src(), "Drifter shell reset" );
+  utl.qlog( .INFO, @src(), "Drifter visual shell reset" );
 }
 
 /// Lazily initializes the visual shell for render paths that run before loop start.
 fn ensureShellInit() void
 {
-  if( !isShellInit ){ resetShell(); }
+  if( isShellInit ){ return; }
+
+  resetVisualShell();
 }
 
 /// Creates one temporary asteroid in the current visual shell bounds.
@@ -68,7 +84,7 @@ fn spawnShellAsteroid() ShellAsteroid
   return .{
     .pos      = pos,
     .radius   = randF64( 23.0, 45.0 ),
-    .velocity = .new( randF64( 25.0, 135.0 ), randF64( 60.0, 0.0 )),
+    .velocity = .new( randF64( 25.0, 125.0 ), randF64( 60.0, 0.0 )),
   };
 }
 
@@ -101,7 +117,7 @@ fn tickShellVisuals( deltaTime : f64 ) void
 pub fn OnLoopStart( ng : *eng.Engine ) void // Called by engine.loopLogic()
 {
   _ = ng;
-  resetShell();
+  resetVisualShell();
 }
 
 pub fn OnLoopEnd( ng : *eng.Engine ) void // Called by engine.loopLogic()
@@ -127,7 +143,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   // Reset the shell and camera when r is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
   {
-    resetShell();
+    resetDrifter( ng );
   }
 
   // Toggle the testbed overlay if the T key is pressed
@@ -162,14 +178,15 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics
   _ = ng;
   ensureShellInit();
 
-  eng.wDraw.basicCircle(      STATION_POS, STATION_RADIUS,        utl.Colour.mGray );
-  eng.wDraw.basicCirclePerim( STATION_POS, STATION_RADIUS + 4.0,  utl.Colour.pGray );
+  eng.wDraw.basicCircle(STATION_POS, STATION_RADIUS, utl.Colour.mGray );
 
   for( asteroids )| asteroid |
   {
     eng.wDraw.basicCircle(      asteroid.pos, asteroid.radius,       utl.Colour.sGray );
     eng.wDraw.basicCirclePerim( asteroid.pos, asteroid.radius + 2.0, utl.Colour.dGray );
   }
+
+  eng.wDraw.basicCirclePerim( STATION_POS, STATION_RADIUS + 2.0,  utl.Colour.pGray );
 }
 
 
@@ -189,5 +206,40 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
     utl.sDraw.textLeft(    "DRIFTER SHELL", .new( 16.0,  96.0 ), 24, utl.Colour.pGreen );
     utl.sDraw.textLeftFmt( "state: {s} | zoom: {d:.2} | asteroids: {d}", .{ status, eng.G_ENG.camera.getZoom(), asteroids.len }, .new( 16.0, 128.0 ), 18, utl.Colour.nWhite );
     utl.sDraw.textLeft(    "Enter/Space pause | Wheel zoom | R reset | T overlay", .new( 16.0, 154.0 ), 18, utl.Colour.lGray   );
+
+    renderStationFactsOverlay( ng );
   }
+}
+
+
+// ================================ OVERLAY HELPERS ================================
+
+fn renderStationFactsOverlay( ng : *eng.Engine ) void
+{
+  const facts = station.getStationFactView( ng ) orelse
+  {
+    const stationId = station.getStationId();
+
+    if( stationId == 0 )
+    {
+      utl.sDraw.textLeft( "station facts: unavailable", .new( 16.0, 190.0 ), 18, utl.Colour.red );
+    }
+    else
+    {
+      utl.sDraw.textLeftFmt( "station facts: missing rows or dead entity | id: {d}", .{ stationId }, .new( 16.0, 190.0 ), 18, utl.Colour.red );
+    }
+    return;
+  };
+
+  const res = facts.resources;
+  const rsv = facts.reserves;
+  const cap = facts.capacities;
+
+  utl.sDraw.textLeftFmt( "station id: {d}", .{ facts.stationId }, .new( 16.0, 190.0 ), 18, utl.Colour.pGreen );
+  utl.sDraw.textLeftFmt( "raw: regolith {d:.0} | ice {d:.0} | ore {d:.0}", .{ res.regolith, res.ice, res.ore }, .new( 16.0, 216.0 ), 18, utl.Colour.nWhite );
+  utl.sDraw.textLeftFmt( "stock: oxygen {d:.0} | fuel {d:.0} | water {d:.0} | food {d:.0} | power {d:.0}", .{ res.oxygen, res.fuel, res.water, res.food, res.power }, .new( 16.0, 242.0 ), 18, utl.Colour.nWhite );
+  utl.sDraw.textLeftFmt( "built: concrete {d:.0} | metals {d:.0} | electronics {d:.0} | credits {d:.0} | pop {d:.0}", .{ res.concrete, res.metals, res.electronics, res.credits, res.population }, .new( 16.0, 268.0 ), 18, utl.Colour.nWhite );
+  utl.sDraw.textLeftFmt( "reserves: regolith {d:.0} | ice {d:.0} | ore {d:.0}", .{ rsv.regolith, rsv.ice, rsv.ore }, .new( 16.0, 294.0 ), 18, utl.Colour.lGray );
+  utl.sDraw.textLeftFmt( "capacity: storage {d:.0} | drones {d} | process {d:.0} | power {d:.0}", .{ cap.storage, cap.droneSlots, cap.processingThroughput, cap.powerOutput }, .new( 16.0, 320.0 ), 18, utl.Colour.lGray );
+  utl.sDraw.textLeftFmt( "throughput: hangar {d:.0} | market {d:.0} | construction {d:.0}", .{ cap.hangarThroughput, cap.marketThroughput, cap.constructionCapacity }, .new( 16.0, 346.0 ), 18, utl.Colour.lGray );
 }

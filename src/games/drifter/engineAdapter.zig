@@ -34,9 +34,9 @@ const utl = @import( "utils"  );
 
 //pub const Graphic_Ellipse_Facets : u16 = 64;
 
-//pub const Camera_Zoom_Max  : f32 = 10.0;
-//pub const Camera_Zoom_Min  : f32 = 0.1;
-//pub const Camera_Zoom_Init : f32 = 1.0;
+  pub const Camera_Zoom_Max  : f32 = 4.0;
+  pub const Camera_Zoom_Min  : f32 = 0.5;
+  pub const Camera_Zoom_Init : f32 = 1.0;
 
 
 // Engine Behaviour

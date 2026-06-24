@@ -46,46 +46,46 @@ Current baseline:
 * panning is disabled for the station-centered shell;
 * rendering shows a central station circle and deterministic visual-only
   asteroid circles drifting in the background;
-* overlay text shows pause state, zoom, asteroid count, and controls;
-* no world-owned station simulation exists yet.
+* a single world-owned station entity is created on open/reset and destroyed on
+  close/reset;
+* station resources, starter reserves, and capacities are registered as
+  game-owned component stores;
+* overlay text shows pause state, zoom, asteroid count, station resources,
+  starter reserves, capacities, and controls.
 
 The first implementation goal is a small playable/debuggable vertical slice:
 one station, starter reserves, basic resources, simple visuals, player controls,
 and enough world facts to validate entity lifecycle, components, relations,
 traits, events, rules, and queries in combination.
 
-## 3. Current - Station And Resource Facts
+## 3. Current - Manual Starter-Reserve Harvesting
 
-Add the central station simulation state.
+Consume finite starter reserves and move harvested raw resources into station
+storage.
 
 Work:
 
-* create the station as the primary persistent entity;
-* add station-owned resource stockpiles for regolith, ice, ore, oxygen, fuel,
-  water, food, power, concrete, metals, electronics, credits, and population;
-* add starter reserve state for finite manually harvestable regolith, ice, and
-  ore in the main asteroid;
-* add basic capacity state for storage, drone slots, processing throughput,
-  power output, hangar throughput, market throughput, and construction capacity;
-* represent built station systems as station-owned child entities where the
-  engine world surface supports it cleanly, after base station facts are stable;
-* add initial systems: hangar, depot, refinery, storage, reactor, shipyard, and
-  assembly after the system-child-entity shape is chosen.
+* add a simple manual harvest control against the station's starter reserves;
+* consume finite regolith, ice, and ore reserve amounts;
+* move harvested raw resources into station stockpiles;
+* respect storage capacity and report full-storage blocks visibly;
+* keep output debug-oriented until an event surface is deliberately added for
+  this slice.
 
 Validation:
 
-* overlay shows station resources, capacities, systems, and reserve amounts;
-* reset recreates the station cleanly without stale entities or facts;
-* selected/debug output can inspect the station and child systems.
+* starter reserves decline when harvested;
+* raw resources increase by the harvested amounts;
+* storage capacity blocks excess harvest;
+* reset restores station facts to defaults and removes the previous station
+  entity.
 
-## 4. Phase 2 - Bootstrap And Processing Loop
+## 4. Phase 2 - Processing Loop
 
-Build the first resource loop before drones are required.
+Build the first automatic resource loop before drones are required.
 
 Work:
 
-* implement manual starter-reserve harvesting;
-* move harvested regolith, ice, and ore into station storage;
 * add simple processing rules:
   * ice to water and oxygen;
   * water and power to fuel;
@@ -96,12 +96,15 @@ Work:
 * add storage limits and full-storage warnings;
 * add oxygen, food, and population upkeep;
 * trigger population loss and gameover when life-support failure reaches zero
-  population.
+  population;
+* represent built station systems as station-owned child entities where the
+  engine world surface supports it cleanly, after the base station facts and
+  starter loop are stable;
+* add initial systems: hangar, depot, refinery, storage, reactor, shipyard, and
+  assembly after the system-child-entity shape is chosen.
 
 Validation:
 
-* starter reserves decline when harvested;
-* resources enter storage and respect capacity;
 * processing changes stockpiles through visible rules;
 * full storage and life-support failures emit readable events.
 

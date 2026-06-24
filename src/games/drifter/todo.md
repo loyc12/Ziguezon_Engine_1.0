@@ -6,78 +6,70 @@ simulation. [roadmap.md](roadmap.md) defines the broader implementation order.
 
 ## 1. Current Slice
 
-Start the first world-owned station facts.
+Implement manual starter-reserve harvesting.
 
-The visual shell now exists: the station is drawn at center, deterministic
-visual-only asteroids drift in the background, zoom/reset/overlay controls work,
-and panning is disabled. This slice should attach the first persistent station
-state to the engine `World` without adding processing, market, drones,
-archetypes, or scheduler behavior yet.
+The station now exists as one persistent world entity with game-owned component
+facts for resources, starter reserves, and capacities. This slice should add a
+small player/debug action that consumes finite manual reserves and moves raw
+resources into the station stockpiles while respecting storage capacity.
 
 ## 2. Scope
 
 In scope:
 
-* register game-owned station component types through public World APIs;
-* create one persistent station entity during game open/reset;
-* add starter reserve state for finite manually harvestable regolith, ice, and
-  ore;
-* add initial resource stockpile state for regolith, ice, ore, oxygen, fuel,
-  water, food, power, concrete, metals, electronics, credits, and population;
-* add basic capacity state for storage, drone slots, processing throughput,
-  power output, hangar throughput, market throughput, and construction capacity;
-* expose station resource, reserve, and capacity facts through the existing
-  overlay;
-* keep the current visual shell intact unless it must read the new station
-  facts;
-* reset the station facts cleanly without stale entities or component rows.
+* add a simple manual harvest input or debug control;
+* consume finite starter reserve amounts for regolith, ice, and ore;
+* add harvested raw resources to station stockpiles;
+* respect station storage capacity before accepting harvested resources;
+* expose the result through the existing overlay and/or logs;
+* keep reset behavior restoring default reserves and stockpiles;
+* keep all mutation routed through public World component APIs.
 
 Out of scope:
 
-* station system child entities;
 * drones, asteroids, chunks, and jobs as world entities;
-* manual harvest behavior;
-* processing rules, upkeep rules, market rules, command callbacks, and events;
+* processing rules, upkeep rules, market rules, command callbacks, and
+  scheduler behavior;
+* station system child entities;
 * archetype declarations;
-* scheduler cadence or timed jobs;
 * retained UI widgets;
-* construction, damage, repair, save/load, replay, particles, or effects.
+* construction, damage, repair, save/load, replay, particles, or effects;
+* event output unless the slice deliberately adds the needed event type and
+  overlay inspection.
 
 ## 3. Tasks
 
-1. Define station fact types.
-   * Add compact game-owned component declarations for station resources,
-     starter reserves, and capacities.
-   * Use explicit names that match `design.md`.
-   * Add comments for fields whose units or ownership would be unclear.
+1. Define the manual harvest operation.
+   * Pick a compact fixed harvest amount for regolith, ice, and ore.
+   * Keep the numbers local to the Drifter station/resource slice.
+   * Add comments for units, capacity assumptions, and incomplete future hooks.
 
-2. Register station fact stores.
-   * Register the station component stores during `OnGameOpen` or the nearest
-     reset/setup helper.
-   * Keep registration failures visible through logs.
-   * Do not register unrelated world feature families yet.
+2. Add storage-capacity accounting.
+   * Count the tangible stored resources covered by current station storage.
+   * Do not count credits or population as storage cargo.
+   * Decide whether power is stored capacity cargo or a capacity-like stockpile,
+     and document that choice in code.
 
-3. Create and reset the station entity.
-   * Create one station entity.
-   * Attach the station resource, reserve, and capacity components.
-   * Track the station id in game-owned state only as far as this slice needs.
-   * Ensure reset removes the old station facts before creating a replacement.
+3. Mutate station facts through World APIs.
+   * Fetch mutable station resource and reserve components from `ng.world`.
+   * Reject harvest when station facts are unavailable or incomplete.
+   * Clamp harvest to remaining reserves and available storage.
+   * Leave no partial mutation when a required component row is missing.
 
-4. Expose facts in the overlay.
-   * Read station resources, reserves, and capacities through public World APIs.
-   * Keep the overlay compact and debug-oriented.
-   * Show an explicit unavailable/missing state if setup failed.
+4. Expose harvest behavior.
+   * Add a visible input hint to the overlay.
+   * Show current storage use and the latest harvest/block status.
+   * Keep logs readable enough to validate harvest and full-storage cases.
 
 5. Validate.
    * Run `zig build drifter`.
    * Manually run `drifter` if a graphics session is available.
-   * Confirm reset recreates station facts, overlay values return to defaults,
-     and no stale station entity remains visible through debug output.
+   * Confirm harvesting decreases reserves, increases raw stockpiles, respects
+     storage capacity, reports blocked harvests, and reset restores defaults.
 
 ## 4. Next Slice Candidate
 
-After station facts are stable, the next roadmap slice should implement manual
-starter-reserve harvesting: consume finite reserve amounts, move harvested raw
-resources into station storage, respect storage capacity, and emit visible
-debug output or events only if the required event surface is deliberately added
-in that slice.
+After manual harvesting is stable, the next roadmap slice should implement the
+first processing rules: convert starter raw stockpiles into water, oxygen, fuel,
+metals, concrete, electronics, and food through visible deterministic rule
+passes.

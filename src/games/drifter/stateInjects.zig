@@ -1,5 +1,7 @@
-const std = @import( "std"    );
-const eng = @import( "engine" );
+const std     = @import( "std"              );
+const eng     = @import( "engine"           );
+const utl     = @import( "utils"            );
+const station = @import( "stationFacts.zig" );
 
 // ================================ STATE INJECTION FUNCTIONS ================================
 // These functions are called by the engine whenever it changes state ( see changeState() in engine.zig )
@@ -17,12 +19,20 @@ pub fn OnGameStop( ng : *eng.Engine ) void // Called by engine.stop()
 
 pub fn OnGameOpen( ng : *eng.Engine ) void // Called by engine.open()
 {
-  // Initialize demo worlds, entities, stores, and rules here.
-  _ = ng;
+  if( !station.registerStationStores( ng ))
+  {
+    utl.qlog( .ERROR, @src(), "Drifter station fact stores are unavailable" );
+    return;
+  }
+
+  if( !station.resetStation( ng ))
+  {
+    utl.qlog( .ERROR, @src(), "Drifter station setup failed" );
+  }
 }
 pub fn OnGameClose( ng : *eng.Engine ) void // Called by engine.close()
 {
-  _ = ng;
+  station.unregisterStationStores( ng );
 }
 
 
@@ -34,7 +44,5 @@ pub fn OnGamePause( ng : *eng.Engine ) void // Called by engine.pause()
 {
   _ = ng;
 }
-
-
 
 
