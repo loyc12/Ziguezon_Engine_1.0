@@ -198,15 +198,25 @@ pub fn CommandQueueFactory( comptime CommandType : type ) type
         return result;
       }
 
+      const initialCount = self.records.items.len;
+      const targetCount  = if( amount == 0 or amount > initialCount ) initialCount else amount;
+      if( targetCount == 0 ){ return result; }
+
       const execFn = self.execFn orelse
       {
         utl.log( .ERROR, @src(), "Cannot execute Commands for type {s} : execution callback is missing", .{ TypeName });
-        result.failed = 1;
+        result.attempted = targetCount;
+        result.failed    = targetCount;
+
+        var droppedCount : usize = 0;
+        while( droppedCount < targetCount )
+        {
+          _ = self.pop();
+          droppedCount += 1;
+        }
+
         return result;
       };
-
-      const initialCount = self.records.items.len;
-      const targetCount  = if( amount == 0 or amount > initialCount ) initialCount else amount;
 
       while( result.attempted < targetCount )
       {
@@ -384,7 +394,7 @@ test "CommandQueue executes queued records once in FIFO order"
   try std.testing.expect( Runner.order[ 2 ] == 3 );
 }
 
-test "CommandQueue reports missing execution callback without popping"
+test "CommandQueue reports missing execution callback and drops drained records"
 {
   const TestCommand = struct
   {
@@ -427,8 +437,54 @@ test "CommandQueue reports missing execution callback without popping"
 
   const result = queue.execCommands( 0, &context );
 
-  try std.testing.expect( result.attempted == 0 );
+  try std.testing.expect( result.attempted == 1 );
   try std.testing.expect( result.succeeded == 0 );
   try std.testing.expect( result.failed    == 1 );
-  try std.testing.expect( queue.getCommandCount() == 1 );
+  try std.testing.expect( queue.getCommandCount() == 0 );
+}
+
+test "CommandQueue treats empty queue without callback as a no-op"
+{
+  const TestCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  var activeEntities : std.AutoHashMap( @import( "../entity.zig" ).EntityId, void ) = .init( std.testing.allocator );
+  defer activeEntities.deinit();
+
+  var comps = @import( "../components/compManager.zig" ).CompManager{};
+  comps.init( std.testing.allocator );
+  defer comps.deinit();
+
+  var relations = @import( "../relations/relationManager.zig" ).RelationManager{};
+  relations.init( std.testing.allocator );
+  defer relations.deinit();
+
+  var traits = @import( "../traits/traitManager.zig" ).TraitManager{};
+  traits.init( std.testing.allocator );
+  defer traits.deinit();
+
+  var events = @import( "../events/eventManager.zig" ).EventManager{};
+  events.init( std.testing.allocator );
+  defer events.deinit();
+
+  var context : cmd.CommandContext =
+  .{
+    .activeEntities  = &activeEntities,
+    .compManager     = &comps,
+    .relationManager = &relations,
+    .traitManager    = &traits,
+    .eventManager    = &events,
+  };
+
+  var queue : CommandQueueFactory( TestCommand ) = .{};
+  queue.init( std.testing.allocator );
+  defer queue.deinit();
+
+  const result = queue.execCommands( 0, &context );
+
+  try std.testing.expect( result.attempted == 0 );
+  try std.testing.expect( result.succeeded == 0 );
+  try std.testing.expect( result.failed    == 0 );
 }

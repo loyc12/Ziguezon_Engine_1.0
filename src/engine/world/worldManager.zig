@@ -147,6 +147,7 @@ pub const WorldManager = struct
   {
     return self.world.execCommandType( CommandType, amount );
   }
+  pub inline fn execAllCommands( self : *WorldManager ) CommandExecResult { return self.world.execAllCommands(); }
 
 
   // ================================ RULE FUNCTIONS ================================
@@ -224,4 +225,60 @@ test "WorldManager forwards one-type command execution"
   try std.testing.expect( result.succeeded == 2 );
   try std.testing.expect( result.failed    == 0 );
   try std.testing.expect( Runner.sum == 42 );
+}
+
+test "WorldManager forwards aggregate command execution"
+{
+  const FirstCommand = struct
+  {
+    value : u32 = 0,
+  };
+  const SecondCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  const Runner = struct
+  {
+    var order : [2]u32 = .{ 0, 0 };
+    var count : usize  = 0;
+
+    fn first( context : *cmd.CommandContext, record : cmd.CommandRecord( FirstCommand )) bool
+    {
+      _ = context;
+
+      order[ count ] = record.value.value;
+      count += 1;
+      return true;
+    }
+
+    fn second( context : *cmd.CommandContext, record : cmd.CommandRecord( SecondCommand )) bool
+    {
+      _ = context;
+
+      order[ count ] = record.value.value;
+      count += 1;
+      return true;
+    }
+  };
+
+  var manager : WorldManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  Runner.order = .{ 0, 0 };
+  Runner.count = 0;
+
+  try std.testing.expect( manager.registerCommandExec( FirstCommand,  Runner.first  ));
+  try std.testing.expect( manager.registerCommandExec( SecondCommand, Runner.second ));
+  try std.testing.expect( manager.enqueueCommand( FirstCommand,  .{ .value = 1 }));
+  try std.testing.expect( manager.enqueueCommand( SecondCommand, .{ .value = 2 }));
+
+  const result = manager.execAllCommands();
+
+  try std.testing.expect( result.attempted == 2 );
+  try std.testing.expect( result.succeeded == 2 );
+  try std.testing.expect( result.failed    == 0 );
+  try std.testing.expect( Runner.order[ 0 ] == 1 );
+  try std.testing.expect( Runner.order[ 1 ] == 2 );
 }

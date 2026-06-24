@@ -240,6 +240,8 @@ commands-calling-commands are not part of the live surface.
 Missing queues and missing execution callbacks log errors and return a visible
 failure result. Callback failures log warnings, are counted as failures, and do
 not stop later queued commands of the same type.
+Queued records whose type has no execution callback are dropped during that
+failed drain after the error is logged.
 
 World command APIs include:
 
@@ -254,12 +256,8 @@ World command APIs include:
 * `clearCommands`;
 * `getCommandCount`;
 * `toCommandContext`;
-* `execCommandType`.
-
-Current command execution is typed only. `CommandManager` can clear or count all
-registered queues internally, but the World-facing execution surface does not
-yet include aggregate command execution. Command-type registration order is not
-tracked yet, and `execAllCommands(...)` does not exist yet.
+* `execCommandType`;
+* `execAllCommands`.
 
 `CommandQueue.execCommands(amount, context)`,
 `CommandManager.execCommandType(CommandType, amount, context)`,
@@ -270,10 +268,17 @@ execution starts. Attempted commands are popped before callbacks run, so a
 successful command applies at most once and a failed command remains visible in
 counts without staying queued.
 
+`CommandManager.execAllCommands(context)`, `World.execAllCommands()`, and
+`WorldManager.execAllCommands()` drain every registered command type in
+command-type registration order. Registration order is tracked explicitly and
+does not depend on hash-map iteration order. Aggregate execution continues after
+individual command-type failures so later registered command types still run.
+Queue-only command types with no queued records are no-ops during aggregate
+execution.
+
 Command queues are transient. Retained command history, replay, undo, delayed
-commands, pending/retry semantics, aggregate command execution, explicit
-command execution ordering, and handler replacement after registration are not
-implemented.
+commands, pending/retry semantics, explicit command execution ordering, and
+handler replacement after registration are not implemented.
 
 ## 10. Traits
 
@@ -402,7 +407,8 @@ own the mutation phase.
 `World` owns one `RuleManager` and exposes `registerRule`, `hasRule`,
 `getRuleCount`, `toRuleContext`, and explicit `applyRules()`. `WorldManager`
 forwards registration, inspection, and explicit rule execution to the active
-World. `World.tick(...)` does not automatically run rules yet.
+World. `World.tick(...)` runs registered rules once during the base-tick rule
+phase after event and command metadata setup.
 
 Rules do not mutate broad query results through the rule surface. Cadence,
 automatic phases, broad rule graph ownership, temporary rules, and scheduler
@@ -423,10 +429,19 @@ base tick. It includes:
 * measured delta;
 * forced-tick flag.
 
-`World.tick(...)` begins event and command tick metadata for the base tick. It
-does not currently run rules, execute commands, advance scheduler cadence, or
-finish broader simulation phases. World does not own base-tick pacing; that
-remains an engine timing responsibility.
+`World.tick(...)` advances one consumed engine base tick through the minimal
+World-owned simulation pipeline:
+
+```text
+begin event and command tick metadata
+run registered rules once in deterministic rule order
+execute registered command types once in registration order
+```
+
+World does not own base-tick pacing; that remains an engine timing
+responsibility. Render frames and input polling do not call `World.tick(...)`
+directly. Scheduler cadence, delayed events, temporary rules, and broader
+end-of-tick phases are not implemented.
 
 ## 14. Future Placeholders
 

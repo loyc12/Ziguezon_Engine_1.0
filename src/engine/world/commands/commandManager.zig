@@ -15,10 +15,12 @@ pub const CommandManager = struct
     deinitDestroyFn : *const fn ( std.mem.Allocator, *anyopaque ) void,
     clearFn         : *const fn ( *anyopaque ) void,
     countFn         : *const fn ( *anyopaque ) usize,
+    execAllFn       : *const fn ( *anyopaque, *cmd.CommandContext ) cmd.CommandExecResult,
   };
 
-  alloc  : std.mem.Allocator               = undefined,
-  queues : std.StringHashMap( QueueEntry ) = undefined,
+  alloc             : std.mem.Allocator               = undefined,
+  queues            : std.StringHashMap( QueueEntry ) = undefined,
+  registrationOrder : std.ArrayList( []const u8 )     = .empty,
 
   nextSequence  : u64   = 0,
   nextTickOrder : u64   = 0,
@@ -38,12 +40,13 @@ pub const CommandManager = struct
       return;
     }
 
-    self.alloc         = alloc;
-    self.queues        = .init( alloc );
-    self.nextSequence  = 0;
-    self.nextTickOrder = 0;
-    self.baseTickIndex = null;
-    self.isInit        = true;
+    self.alloc             = alloc;
+    self.queues            = .init( alloc );
+    self.registrationOrder = .empty;
+    self.nextSequence      = 0;
+    self.nextTickOrder     = 0;
+    self.baseTickIndex     = null;
+    self.isInit            = true;
   }
 
   /// Deinitializes and destroys every registered typed command queue.
@@ -59,10 +62,12 @@ pub const CommandManager = struct
     while( iter.next() )| entry |{ entry.deinitDestroyFn( self.alloc, entry.queuePtr ); }
 
     self.queues.deinit();
-    self.nextSequence  = 0;
-    self.nextTickOrder = 0;
-    self.baseTickIndex = null;
-    self.isInit        = false;
+    self.registrationOrder.deinit( self.alloc );
+    self.registrationOrder = .empty;
+    self.nextSequence      = 0;
+    self.nextTickOrder     = 0;
+    self.baseTickIndex     = null;
+    self.isInit            = false;
   }
 
 
@@ -108,17 +113,28 @@ pub const CommandManager = struct
     queue.init( self.alloc );
     queue.execFn = execFn;
 
+    self.registrationOrder.append( self.alloc, typeName ) catch
+    {
+      utl.log( .ERROR, @src(), "Failed to track CommandQueue registration order for type {s}", .{ typeName });
+
+      queue.deinit();
+      self.alloc.destroy( queue );
+      return false;
+    };
+
     self.queues.put( typeName,
     .{
       .queuePtr        = queue,
       .deinitDestroyFn = deinitDestroyQueue( CommandType ),
       .clearFn         = clearQueue(        CommandType ),
       .countFn         = countQueue(        CommandType ),
+      .execAllFn       = execAllQueue(      CommandType ),
     })
     catch
     {
       utl.log( .ERROR, @src(), "Failed to register CommandQueue for type {s}", .{ typeName });
 
+      _ = self.registrationOrder.orderedRemove( self.registrationOrder.items.len - 1 );
       queue.deinit();
       self.alloc.destroy( queue );
       return false;
@@ -145,6 +161,7 @@ pub const CommandManager = struct
     };
 
     if( !self.queues.remove( typeName )){ return false; }
+    self.removeRegisteredType( typeName );
     entry.deinitDestroyFn( self.alloc, entry.queuePtr );
     return true;
   }
@@ -229,6 +246,38 @@ pub const CommandManager = struct
     };
 
     return queue.execCommands( amount, context );
+  }
+
+  /// Executes every registered command type once in registration order.
+  /// Queue-only types without queued records are a no-op; queued records without
+  /// callbacks produce visible failures without blocking later command types.
+  pub fn execAllCommands( self : *CommandManager, context : *cmd.CommandContext ) cmd.CommandExecResult
+  {
+    var result : cmd.CommandExecResult = .{};
+
+    if( !self.isInit )
+    {
+      utl.log( .ERROR, @src(), "Cannot execute all Commands : CommandManager is uninitialized", .{} );
+      result.failed = 1;
+      return result;
+    }
+
+    for( self.registrationOrder.items )| typeName |
+    {
+      const entry = self.queues.get( typeName ) orelse
+      {
+        utl.log( .ERROR, @src(), "Cannot execute Commands for type {s} : registration order points to a missing queue", .{ typeName });
+        result.failed += 1;
+        continue;
+      };
+
+      const typeResult = entry.execAllFn( entry.queuePtr, context );
+      result.attempted += typeResult.attempted;
+      result.succeeded += typeResult.succeeded;
+      result.failed    += typeResult.failed;
+    }
+
+    return result;
   }
 
   /// Clears every registered command queue without unregistering any type.
@@ -317,6 +366,30 @@ pub const CommandManager = struct
         return queue.getCommandCount();
       }
     }.call;
+  }
+
+  fn execAllQueue( comptime CommandType : type ) *const fn ( *anyopaque, *cmd.CommandContext ) cmd.CommandExecResult
+  {
+    return struct
+    {
+      fn call( queuePtr : *anyopaque, context : *cmd.CommandContext ) cmd.CommandExecResult
+      {
+        const queue : *cmdQueue.CommandQueueFactory( CommandType ) = @ptrCast( @alignCast( queuePtr ));
+        return queue.execAllCommands( context );
+      }
+    }.call;
+  }
+
+  fn removeRegisteredType( self : *CommandManager, typeName : []const u8 ) void
+  {
+    for( self.registrationOrder.items, 0.. )| registeredName, index |
+    {
+      if( std.mem.eql( u8, registeredName, typeName ))
+      {
+        _ = self.registrationOrder.orderedRemove( index );
+        return;
+      }
+    }
   }
 };
 
@@ -504,9 +577,106 @@ test "CommandManager reports missing queue and missing callback execution failur
   try std.testing.expect( manager.enqueue(  NoCallbackCommand, .{ .value = 1 }));
 
   const missingCallback = manager.execCommandType( NoCallbackCommand, 0, &context );
-  try std.testing.expect( missingCallback.attempted == 0 );
+  try std.testing.expect( missingCallback.attempted == 1 );
   try std.testing.expect( missingCallback.failed    == 1 );
-  try std.testing.expect( manager.getCommandCount( NoCallbackCommand ) == 1 );
+  try std.testing.expect( manager.getCommandCount( NoCallbackCommand ) == 0 );
+}
+
+test "CommandManager executes all commands in registration order and keeps later work running"
+{
+  const EarlyCommand = struct
+  {
+    value : u32 = 0,
+  };
+  const EmptyNoCallbackCommand = struct
+  {
+    value : u32 = 0,
+  };
+  const MissingCallbackCommand = struct
+  {
+    value : u32 = 0,
+  };
+  const LateCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  const Runner = struct
+  {
+    var order : [2]u32 = .{ 0, 0 };
+    var count : usize  = 0;
+
+    fn early( context : *cmd.CommandContext, record : cmd.CommandRecord( EarlyCommand )) bool
+    {
+      _ = context;
+
+      order[ count ] = record.value.value;
+      count += 1;
+      return true;
+    }
+
+    fn late( context : *cmd.CommandContext, record : cmd.CommandRecord( LateCommand )) bool
+    {
+      _ = context;
+
+      order[ count ] = record.value.value;
+      count += 1;
+      return true;
+    }
+  };
+
+  var activeEntities : std.AutoHashMap( @import( "../entity.zig" ).EntityId, void ) = .init( std.testing.allocator );
+  defer activeEntities.deinit();
+
+  var comps = @import( "../components/compManager.zig" ).CompManager{};
+  comps.init( std.testing.allocator );
+  defer comps.deinit();
+
+  var relations = @import( "../relations/relationManager.zig" ).RelationManager{};
+  relations.init( std.testing.allocator );
+  defer relations.deinit();
+
+  var traits = @import( "../traits/traitManager.zig" ).TraitManager{};
+  traits.init( std.testing.allocator );
+  defer traits.deinit();
+
+  var events = @import( "../events/eventManager.zig" ).EventManager{};
+  events.init( std.testing.allocator );
+  defer events.deinit();
+
+  var context : cmd.CommandContext =
+  .{
+    .activeEntities  = &activeEntities,
+    .compManager     = &comps,
+    .relationManager = &relations,
+    .traitManager    = &traits,
+    .eventManager    = &events,
+  };
+
+  var manager : CommandManager = .{};
+  manager.init( std.testing.allocator );
+  defer manager.deinit();
+
+  Runner.order = .{ 0, 0 };
+  Runner.count = 0;
+
+  try std.testing.expect( manager.registerExec( EarlyCommand, Runner.early ));
+  try std.testing.expect( manager.register(     EmptyNoCallbackCommand     ));
+  try std.testing.expect( manager.register(     MissingCallbackCommand     ));
+  try std.testing.expect( manager.registerExec( LateCommand,  Runner.late  ));
+
+  try std.testing.expect( manager.enqueue( EarlyCommand,           .{ .value = 1 }));
+  try std.testing.expect( manager.enqueue( MissingCallbackCommand, .{ .value = 2 }));
+  try std.testing.expect( manager.enqueue( LateCommand,            .{ .value = 3 }));
+
+  const result = manager.execAllCommands( &context );
+
+  try std.testing.expect( result.attempted == 3 );
+  try std.testing.expect( result.succeeded == 2 );
+  try std.testing.expect( result.failed    == 1 );
+  try std.testing.expect( Runner.order[ 0 ] == 1 );
+  try std.testing.expect( Runner.order[ 1 ] == 3 );
+  try std.testing.expect( manager.getCommandCount( MissingCallbackCommand ) == 0 );
 }
 
 test "CommandManager executes requested amount in FIFO order"

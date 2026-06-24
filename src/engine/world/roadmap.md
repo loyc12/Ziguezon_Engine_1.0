@@ -17,9 +17,11 @@ tasks:
 * trait sets for dataless classification facts, including `Persistent`;
 * typed transient event queues, event metadata, and generic entity/component/
   relation/trait events;
-* typed transient command queues, command metadata, one-type command execution
-  callbacks, `CommandContext`, and World/WorldManager command execution APIs;
-* `World.tick(...)` event tick metadata;
+* typed transient command queues, command metadata, one-type and aggregate
+  command execution callbacks, `CommandContext`, explicit command-type
+  registration order, and World/WorldManager command execution APIs;
+* `World.tick(...)` event and command metadata, deterministic rule phase, and
+  registration-order aggregate command phase;
 * engine-owned `WorldManager` wrapping one active concrete `World`;
 * concrete `World` implementation in `core/world.zig`;
 * World-owned compact explicit rules with field-only manager-backed
@@ -34,56 +36,40 @@ tasks:
 Those pieces are reference-baseline facts. Future slices should build on them
 instead of treating them as pending phases.
 
-## 2. Current - Minimal World Tick Phases
+## 2. Current - First Scheduler Cadence
 
-Goal: run the first deterministic world simulation pipeline once per game
-update inside engine-owned base ticks.
+Goal: add the smallest reusable scheduler surface that can skip or run rule
+work on deterministic base-tick intervals while keeping the validated
+`World.tick(...)` phase order intact.
 
 Required work:
 
 * keep `EngineTiming` as the base-tick/frame-pacing authority;
-* keep `World.tick(...)` as the World-owned entry point for consumed game
-  updates;
-* make clear that `World.tick(...)` is run once per consumed game update/base
-  tick, not during frame rendering or input polling;
-* preserve current event and command tick metadata setup;
-* run registered base-tick rules in a deterministic phase;
-* execute queued commands in command-type registration order through an explicit
-  deterministic aggregate phase;
-* keep an empty scheduler/rule/command state at minimal runtime cost;
-* avoid a competing `shouldTick()` loop inside World.
+* keep `World.tick(...)` as the only world simulation entry point for consumed
+  base ticks;
+* introduce scheduler-owned cadence records without making archetypes,
+  commands, or event queues register scheduled work implicitly;
+* support a base-tick interval for registered rule work;
+* run due scheduled rules before the aggregate command phase, preserving the
+  existing command-after-rules ownership model;
+* keep unscheduled registered rules running every base tick unless the slice
+  explicitly replaces that behavior with an equivalent base-tick cadence;
+* keep empty scheduler state at minimal per-tick cost;
+* avoid delayed events, temporary rules, `RuleSet`, explicit command execution
+  ordering, and recursive command execution in this slice.
 
-The first pipeline can be intentionally small:
+Exit criterion: a rule can be registered with a deterministic base-tick cadence,
+`World.tick(...)` evaluates whether that cadence is due exactly once per
+consumed base tick, due rules can enqueue commands, and the existing aggregate
+command phase executes those commands afterward.
 
-```text
-begin tick metadata
-run registered base-tick rules
-execute registered command types in registration order
-finish tick bookkeeping
-```
+## 3. Later - Delayed Work And Broader Cadence
 
-Exit criterion: each `World.tick(...)` call for one consumed game update runs
-the metadata, rule, and command phases once in deterministic order, while render
-frames and input updates do not trigger additional World simulation work.
-
-Add more phases only when a concrete game or engine use case requires them.
-
-Defer explicit command execution ordering until a concrete use case needs more
-control than registration order. That later system should let command execution
-order be declared when command execution is registered or otherwise
-instantiated, without changing the current typed command payload model.
-
-Also defer recursive commands-calling-commands, retry/pending command semantics,
-delayed commands, and handler replacement after registration until a later
-design pass.
-
-## 3. Later - Scheduler Cadence And Delayed Work
-
-Goal: extend the minimal tick pipeline into reusable scheduling.
+Goal: extend the first scheduler cadence into broader time and delayed-work
+behavior after the minimal rule cadence is proven.
 
 Required work:
 
-* support rules that run at slower or faster logical cadences;
 * support game-defined logical time scales;
 * support delayed events;
 * support temporary rules;

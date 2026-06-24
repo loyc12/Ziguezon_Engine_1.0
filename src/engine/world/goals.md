@@ -110,6 +110,8 @@ ordering policy may be command-type registration order. Explicit command
 execution ordering should be added later when a concrete use case needs more
 control than registration order. Delayed, pending, retry, undo, and replay
 behavior belong to later design passes.
+Queued records for command types without execution callbacks should be logged,
+counted as failed work, and discarded during the failed drain.
 
 `RuleSet` is the planned name for reusable groups of rule declarations; it is
 the logic-side counterpart to data-side archetypes, not another name for

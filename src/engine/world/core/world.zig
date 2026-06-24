@@ -626,6 +626,24 @@ pub const World = struct
     return self.commandManager.execCommandType( CommandType, amount, &context );
   }
 
+  /// Executes all registered command queues once in command registration order.
+  /// This is the aggregate command phase used by `World.tick(...)`; typed
+  /// partial drains should keep using `execCommandType(...)`.
+  pub fn execAllCommands( self : *World ) CommandExecResult
+  {
+    var result : CommandExecResult = .{};
+
+    if( !self.isInit )
+    {
+      utl.qlog( .ERROR, @src(), "Cannot execute all Commands : World is uninitialized" );
+      result.failed = 1;
+      return result;
+    }
+
+    var context = self.toCommandContext();
+    return self.commandManager.execAllCommands( &context );
+  }
+
 
   // ================================ RULE FUNCTIONS ================================
 
@@ -664,7 +682,8 @@ pub const World = struct
   }
 
   /// Runs registered rules once in deterministic order.
-  /// This is explicit for now; `World.tick(...)` does not run rules.
+  /// This remains available for callers that need a manual rule pass outside
+  /// the normal `World.tick(...)` rule phase.
   pub fn applyRules( self : *World ) bool
   {
     if( !self.isInit )
@@ -714,9 +733,10 @@ pub const World = struct
 
   // ================================ TICK FUNCTIONS ================================
 
-  /// Advances World-owned per-tick bookkeeping.
-  /// Currently this establishes event tick metadata; future systems should hook here.
-  pub inline fn tick( self : *World, info : TickInfo ) void
+  /// Advances one consumed engine base tick through the minimal World pipeline.
+  /// The phase order is metadata setup, registered rules, then aggregate
+  /// command execution in command-type registration order.
+  pub fn tick( self : *World, info : TickInfo ) void
   {
     if( !self.isInit )
     {
@@ -726,6 +746,17 @@ pub const World = struct
 
     self.eventManager.beginTick( info.baseTickIndex );
     self.commandManager.beginTick( info.baseTickIndex );
+
+    if( !self.applyRules() )
+    {
+      utl.qlog( .WARN, @src(), "World tick Rule phase reported failure" );
+    }
+
+    const commandResult = self.execAllCommands();
+    if( commandResult.failed > 0 )
+    {
+      utl.log( .WARN, @src(), "World tick Command phase reported {d} failed command(s)", .{ commandResult.failed });
+    }
   }
 
 
@@ -1609,6 +1640,83 @@ test "World owns explicit rule registration and execution"
 
   world.deinit();
   try std.testing.expect( !world.ruleManager.isInit );
+}
+
+test "World tick runs ordered rules then aggregate commands"
+{
+  const TestComp = struct
+  {
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const AddCommand = struct
+  {
+    entityId : EntityId = 0,
+    value    : u32      = 0,
+  };
+
+  const Runner = struct
+  {
+    var entityId        : EntityId = 0;
+    var phaseOrder      : [3]u8    = .{ 0, 0, 0 };
+    var phaseCount      : usize    = 0;
+    var commandBaseTick : ?u128    = null;
+
+    fn firstRule( context : *RuleContext ) bool
+    {
+      phaseOrder[ phaseCount ] = 1;
+      phaseCount += 1;
+
+      return context.commandManager.enqueue( AddCommand, .{ .entityId = entityId, .value = 7 });
+    }
+
+    fn secondRule( context : *RuleContext ) bool
+    {
+      _ = context;
+
+      phaseOrder[ phaseCount ] = 2;
+      phaseCount += 1;
+      return true;
+    }
+
+    fn execAdd( context : *CommandContext, record : cmd.CommandRecord( AddCommand )) bool
+    {
+      phaseOrder[ phaseCount ] = 3;
+      phaseCount += 1;
+      commandBaseTick = record.meta.baseTickIndex;
+
+      const compStore = context.compManager.getStore( TestComp ) orelse return false;
+      const compVal   = compStore.get( record.value.entityId ) orelse return false;
+      compVal.value += record.value.value;
+      return true;
+    }
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerComp(        TestComp   ));
+  try std.testing.expect( world.registerCommandExec( AddCommand, Runner.execAdd ));
+
+  Runner.entityId        = world.createEntity().id;
+  Runner.phaseOrder      = .{ 0, 0, 0 };
+  Runner.phaseCount      = 0;
+  Runner.commandBaseTick = null;
+
+  try std.testing.expect( world.addComp( TestComp, Runner.entityId, .{ .value = 10 }));
+  try std.testing.expect( world.registerRule( .{ .name = "second", .order = 20, .runFn = Runner.secondRule }));
+  try std.testing.expect( world.registerRule( .{ .name = "first",  .order = 10, .runFn = Runner.firstRule  }));
+
+  world.tick( .{ .baseTickIndex = 21 });
+
+  try std.testing.expect( Runner.phaseOrder[ 0 ] == 1 );
+  try std.testing.expect( Runner.phaseOrder[ 1 ] == 2 );
+  try std.testing.expect( Runner.phaseOrder[ 2 ] == 3 );
+  try std.testing.expect( Runner.commandBaseTick.? == 21 );
+  try std.testing.expect( world.getComp( TestComp, Runner.entityId ).?.value == 17 );
+  try std.testing.expect( world.getCommandCount( AddCommand ) == 0 );
 }
 
 test "World rule failure is visible and stops later rules"

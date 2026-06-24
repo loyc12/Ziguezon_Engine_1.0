@@ -7,121 +7,97 @@ implementation order.
 
 ## 1. Current Slice
 
-Define the first minimal `World.tick(...)` simulation phase pipeline.
+Define the first minimal scheduler cadence surface for rule work.
 
-`World.tick(...)` currently begins event and command tick metadata only. Rules
-can run through explicit `applyRules()`, and one command type can be drained
-through explicit `execCommandType(...)`. This slice should wire the first
-deterministic base-tick pipeline inside `World.tick(...)` without adding broad
-scheduler cadence, delayed work, temporary rules, explicit command execution
-ordering, or `RuleSet`.
-
-The intentionally small pipeline is:
+`World.tick(...)` now runs the validated base-tick pipeline:
 
 ```text
-begin tick metadata
-run registered base-tick rules
-execute registered command types in registration order
-finish tick bookkeeping
+begin event and command tick metadata
+run registered rules once in deterministic rule order
+execute registered command types once in registration order
 ```
 
-Keep the scope small enough to validate tick ownership:
+This slice should add the smallest scheduler-owned cadence layer that can run
+rule work on deterministic base-tick intervals without changing the command
+phase, adding delayed work, or introducing `RuleSet`.
+
+Keep the scope small enough to validate cadence ownership:
 
 * `EngineTiming` remains the base-tick/frame-pacing authority;
-* `World.tick(...)` runs once per consumed engine base tick;
-* render frames and input polling do not trigger extra World simulation work;
-* registered rules run in deterministic order during the rule phase;
-* command execution runs after rules request changes;
-* empty rule/command state has minimal runtime cost;
+* `World.tick(...)` remains the only World simulation entry point;
+* scheduler cadence is evaluated once per consumed base tick;
+* scheduled rules run before aggregate command execution;
+* due scheduled rules may enqueue commands;
+* aggregate command execution still runs after rules request changes;
+* empty scheduler state has minimal runtime cost;
 * the implementation does not introduce a competing `shouldTick()` loop inside
   World.
 
 ## 2. Guardrails
 
-* Use the existing `World.tick(...)`, `RuleManager`, `CommandManager`,
-  command queue, `World`, and `WorldManager` surfaces where possible.
-* Preserve current event and command metadata setup.
-* Do not add scheduler cadence, delayed events, temporary rules, or `RuleSet`.
-* Do not add explicit command execution ordering yet. Aggregate command
-  execution should use command-type registration order for this slice.
-* Do not add particles/effects, archive, replay, undo, retry, pending-command,
-  or retained history behavior.
-* Do not change archetype behavior or let archetype spawning register rules,
-  command handlers, or scheduler work.
+* Preserve the existing `World.tick(...)` phase order.
+* Use the existing `scheduler` folder only if it can stay direct and compact.
+* Do not add delayed events, temporary rules, `RuleSet`, particles/effects,
+  archive, replay, undo, retry, pending-command, or retained history behavior.
+* Do not add explicit command execution ordering yet.
+* Do not make archetype spawning register rules, command handlers, scheduler
+  work, or other executable behavior.
 * Do not introduce broad type erasure, factories, dependency-injection layers,
   or generic dispatch surfaces unless the compiler or ownership boundary proves
   they are required.
-* If registration-order aggregate command execution exposes a real ownership or
-  compiler blocker, stop and report the exact issue before widening the design.
+* If cadence scheduling exposes a real ownership or compiler blocker, stop and
+  report the exact issue before widening the design.
 * Preserve the no-registration, minimal-runtime-cost rule from `goals.md`.
 * Do not run formatting passes such as `zig fmt`.
 
 ## 3. Implementation Tasks
 
-0. Reconfirm the tick call path.
-   * Verify `engineStep.tickWorld()` still calls `ng.world.tick(tickContext)`
-     once per consumed base tick.
-   * Verify render and input paths do not call `World.tick(...)` directly.
+0. Reconfirm the current tick baseline.
+   * Verify `World.tick(...)` still begins event and command metadata.
+   * Verify registered rules still run before aggregate commands.
+   * Verify aggregate commands still drain in command-type registration order.
 
-1. Define the minimal tick phase shape.
-   * Keep `World.tick(...)` as the single entry point.
-   * Keep event and command metadata setup at the start of the tick.
-   * Add explicit rule phase execution after metadata setup.
-   * Add aggregate command execution after the rule phase.
-   * Use command-type registration order as the deterministic aggregate
-     execution order.
-   * Keep explicit command execution ordering as later work.
+1. Define the minimal cadence shape.
+   * Add a scheduler-owned record for rule cadence.
+   * Use base-tick interval cadence only for this slice.
+   * Treat interval `1` as every consumed base tick.
+   * Reject or visibly fail invalid interval `0`.
+   * Keep game-defined time scales for later work.
 
-2. Preserve explicit rule and command ownership.
-   * `RuleManager` still owns registered rule ordering.
-   * Rules still receive a short-lived field-only `RuleContext`.
-   * Command callbacks still receive a short-lived `CommandContext`.
-   * Rules may emit no commands.
-   * Command callbacks own durable fact mutation.
-   * Command callback failure remains visible and does not emit failure events
-     by itself.
+2. Wire scheduled rule execution.
+   * `World.tick(...)` should evaluate scheduler cadence once.
+   * Due scheduled rules should run before aggregate command execution.
+   * Rules that are not moved into scheduled cadence should keep their current
+     every-base-tick behavior unless the implementation replaces them with an
+     equivalent interval-1 schedule.
+   * Rule callbacks should still receive short-lived field-only `RuleContext`.
+   * Rule failure should remain visible.
 
-3. Add registration-order aggregate command execution.
-   * Add `CommandManager.execAllCommands(context)`.
-   * Add `World.execAllCommands()`.
-   * Add `WorldManager.execAllCommands()`.
-   * Keep `execCommandType(CommandType, amount)` as the typed partial-drain API.
-   * Track command-type registration order explicitly; do not rely on hash-map
-     iteration order.
-   * Drain all queued commands present for each registered command type in
-     registration order.
-   * Queue-only command types with no queued records should not fail an empty
-     tick.
-   * Queue-only command types with queued records and no execution callback
-     should produce a visible failure result.
-   * Aggregate failures should not prevent later registered command types from
-     running during the same aggregate command phase.
+3. Preserve command ownership.
+   * Commands emitted by due scheduled rules should execute in the existing
+     aggregate command phase.
+   * Command callbacks should still receive short-lived `CommandContext`.
+   * Command callback failure should remain visible and should not emit failure
+     events by itself.
+   * Queued command records without callbacks should still be logged, counted as
+     failed work, and discarded during the failed drain.
 
-4. Wire the base-tick pipeline.
-   * `World.tick(...)` should begin event and command metadata.
-   * `World.tick(...)` should run registered rules once.
-   * `World.tick(...)` should execute aggregate commands once after rules.
-   * Empty rule/command state should keep minimal runtime cost.
+4. Add focused tests.
+   * interval-1 scheduled rules run every `World.tick(...)`;
+   * interval-N scheduled rules run only on due base ticks;
+   * invalid interval `0` is rejected or visibly fails without hidden behavior;
+   * due scheduled rules run before aggregate command execution;
+   * commands emitted by scheduled rules execute after the rule phase;
+   * empty scheduler state does not require registered work;
+   * existing unscheduled rule behavior remains valid or is intentionally
+     replaced by equivalent interval-1 behavior.
 
-5. Add focused tests.
-   * `World.tick(...)` begins event and command metadata once per call;
-   * registered rules run during `World.tick(...)` in deterministic order;
-   * commands emitted by tick-run rules execute after the rule phase;
-   * aggregate command execution uses command-type registration order;
-   * empty queue-only command types do not fail an empty tick;
-   * queued command records without an execution callback produce visible
-     aggregate failures;
-   * command execution failures remain visible and do not stop later work that
-     belongs to the validated command phase;
-   * empty rule/command state does not require registered work;
-   * explicit manual `applyRules()` behavior remains valid if it is kept.
-
-6. Refresh docs after implementation.
-   * Update `reference.md` with the live tick phase surface.
-   * Trim `roadmap.md` so minimal tick phases become baseline.
-   * Keep `goals.md` aligned with the validated tick ownership model.
-   * Replace this `todo.md` with the next minimal scheduler-cadence slice only
-     after validation and only if the roadmap still defines it clearly.
+5. Refresh docs after implementation.
+   * Update `reference.md` with the live scheduler cadence surface.
+   * Trim `roadmap.md` so first scheduler cadence becomes baseline.
+   * Keep `goals.md` aligned with the validated cadence ownership model.
+   * Replace this `todo.md` with the next roadmap slice only after validation
+     and only if the roadmap defines it clearly.
 
 ## 4. Validation
 
@@ -136,11 +112,11 @@ Docs-only edits to this file do not require a build.
 
 Later roadmap slices:
 
+* game-defined logical time scales;
+* delayed events and temporary rules;
 * explicit command execution ordering at command registration or instantiation,
   replacing plain registration order only when a concrete use case needs it;
 * recursive commands-calling-commands behavior;
-* game-defined cadences beyond the first base-tick phase;
-* delayed events and temporary rules;
 * `RuleSet` declarations and grouped rule registration;
 * `src/engine/world/particles`, after refinement;
 * `src/engine/world/archive`, after refinement.
