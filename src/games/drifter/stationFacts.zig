@@ -72,6 +72,38 @@ pub const ManualHarvestBundle = struct
   ore      : f64 = 6.0,
 };
 
+/// Raw cargo bundle returned by manual harvesting or drones.
+/// Amounts are abstract cargo units and are clamped by station storage.
+pub const RawCargo = struct
+{
+  regolith : f64 = 0.0,
+  ice      : f64 = 0.0,
+  ore      : f64 = 0.0,
+};
+
+/// Result state for a raw-resource storage attempt.
+pub const RawStoreStatus = enum
+{
+  emptyCargo,
+  stored,
+  stationUnavailable,
+  missingFacts,
+  storageFull,
+};
+
+/// Summary of a station storage mutation. `stored` may be less than `requested`
+/// when the shared station storage cap clamps the transfer.
+pub const RawStoreResult = struct
+{
+  status      : RawStoreStatus = .emptyCargo,
+  stationId   : eng.EntityId   = 0,
+  requested   : RawCargo       = .{},
+  stored      : RawCargo       = .{},
+  total       : f64            = 0.0,
+  storageUsed : f64            = 0.0,
+  storageCap  : f64            = 0.0,
+};
+
 /// Result state for a manual harvest attempt.
 pub const ManualHarvestStatus = enum
 {
@@ -269,6 +301,12 @@ pub inline fn getStoredCargoUsed( resources : *const StationResources ) f64
        + resources.electronics;
 }
 
+/// Returns total raw cargo for proportional storage clamping.
+pub inline fn getRawCargoTotal( cargo : RawCargo ) f64
+{
+  return cargo.regolith + cargo.ice + cargo.ore;
+}
+
 /// Attempts one player/debug manual harvest against finite starter reserves.
 /// All required station rows are fetched before mutation, so missing facts
 /// reject the operation without partially changing station state.
@@ -280,31 +318,11 @@ pub fn tryManualHarvest( ng : *eng.Engine ) ManualHarvestResult
     return .{ .status = .stationUnavailable, .stationId = STATION_ID };
   }
 
-  const resources = ng.world.getComp( StationResources, STATION_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Manual harvest blocked: StationResources missing for Entity {d}", .{ STATION_ID });
-    return .{ .status = .missingFacts, .stationId = STATION_ID };
-  };
   const reserves = ng.world.getComp( StarterReserves, STATION_ID ) orelse
   {
     utl.log( .WARN, @src(), "Manual harvest blocked: StarterReserves missing for Entity {d}", .{ STATION_ID });
     return .{ .status = .missingFacts, .stationId = STATION_ID };
   };
-  const capacities = ng.world.getComp( StationCapacities, STATION_ID ) orelse
-  {
-    utl.log( .WARN, @src(), "Manual harvest blocked: StationCapacities missing for Entity {d}", .{ STATION_ID });
-    return .{ .status = .missingFacts, .stationId = STATION_ID };
-  };
-
-  const storageUsed = getStoredCargoUsed( resources );
-  const storageCap  = capacities.storage;
-  const storageOpen = @max( 0.0, storageCap - storageUsed );
-
-  if( storageOpen <= utl.EPS )
-  {
-    utl.log( .INFO, @src(), "Manual harvest blocked: storage full ({d:.1}/{d:.1})", .{ storageUsed, storageCap });
-    return .{ .status = .storageFull, .stationId = STATION_ID, .storageUsed = storageUsed, .storageCap = storageCap };
-  }
 
   const regolithWant = @min( MANUAL_HARVEST.regolith, reserves.regolith );
   const iceWant      = @min( MANUAL_HARVEST.ice,      reserves.ice      );
@@ -314,42 +332,113 @@ pub fn tryManualHarvest( ng : *eng.Engine ) ManualHarvestResult
   if( wantedTotal <= utl.EPS )
   {
     utl.log( .INFO, @src(), "Manual harvest blocked: starter reserves empty for Entity {d}", .{ STATION_ID });
-    return .{ .status = .reservesEmpty, .stationId = STATION_ID, .storageUsed = storageUsed, .storageCap = storageCap };
+    return .{ .status = .reservesEmpty, .stationId = STATION_ID };
   }
 
-  // TODO: Replace proportional clamping with resource-priority rules once
-  // player-editable production and dumping priorities exist.
-  const storageRatio = @min( 1.0, storageOpen / wantedTotal );
-  const regolithAdd  = regolithWant * storageRatio;
-  const iceAdd       = iceWant      * storageRatio;
-  const oreAdd       = oreWant      * storageRatio;
-  const totalAdd     = regolithAdd + iceAdd + oreAdd;
+  const storage = tryStoreRawCargo( ng, .{
+    .regolith = regolithWant,
+    .ice      = iceWant,
+    .ore      = oreWant,
+  });
 
-  resources.regolith += regolithAdd;
-  resources.ice      += iceAdd;
-  resources.ore      += oreAdd;
+  if( storage.status == .storageFull )
+  {
+    utl.log( .INFO, @src(), "Manual harvest blocked: storage full ({d:.1}/{d:.1})", .{ storage.storageUsed, storage.storageCap });
+    return .{ .status = .storageFull, .stationId = STATION_ID, .storageUsed = storage.storageUsed, .storageCap = storage.storageCap };
+  }
+  if( storage.status != .stored )
+  {
+    utl.log( .WARN, @src(), "Manual harvest blocked: raw storage status {s}", .{ @tagName( storage.status )});
+    return .{ .status = .missingFacts, .stationId = STATION_ID, .storageUsed = storage.storageUsed, .storageCap = storage.storageCap };
+  }
 
-  reserves.regolith -= regolithAdd;
-  reserves.ice      -= iceAdd;
-  reserves.ore      -= oreAdd;
+  reserves.regolith -= storage.stored.regolith;
+  reserves.ice      -= storage.stored.ice;
+  reserves.ore      -= storage.stored.ore;
 
   utl.log( .INFO, @src(), "Manual harvest Entity {d}: +{d:.1} regolith, +{d:.1} ice, +{d:.1} ore ({d:.1}/{d:.1} storage)", .{
     STATION_ID,
-    regolithAdd,
-    iceAdd,
-    oreAdd,
-    storageUsed + totalAdd,
-    storageCap,
+    storage.stored.regolith,
+    storage.stored.ice,
+    storage.stored.ore,
+    storage.storageUsed,
+    storage.storageCap,
   });
 
   return .{
     .status      = .harvested,
     .stationId   = STATION_ID,
-    .regolith    = regolithAdd,
-    .ice         = iceAdd,
-    .ore         = oreAdd,
-    .total       = totalAdd,
-    .storageUsed = storageUsed + totalAdd,
+    .regolith    = storage.stored.regolith,
+    .ice         = storage.stored.ice,
+    .ore         = storage.stored.ore,
+    .total       = storage.total,
+    .storageUsed = storage.storageUsed,
+    .storageCap  = storage.storageCap,
+  };
+}
+
+/// Adds raw resources to station storage after clamping to shared capacity.
+/// This is intentionally narrow: drones and manual reserve harvesting should
+/// enter the same station stockpile, while production rules stay separate.
+pub fn tryStoreRawCargo( ng : *eng.Engine, cargo : RawCargo ) RawStoreResult
+{
+  const requestedTotal = getRawCargoTotal( cargo );
+  if( requestedTotal <= utl.EPS )
+  {
+    return .{ .status = .emptyCargo, .stationId = STATION_ID, .requested = cargo };
+  }
+
+  if( STATION_ID == 0 or !ng.world.isEntityAlive( STATION_ID ))
+  {
+    return .{ .status = .stationUnavailable, .stationId = STATION_ID, .requested = cargo };
+  }
+
+  const resources = ng.world.getComp( StationResources, STATION_ID ) orelse
+  {
+    return .{ .status = .missingFacts, .stationId = STATION_ID, .requested = cargo };
+  };
+  const capacities = ng.world.getComp( StationCapacities, STATION_ID ) orelse
+  {
+    return .{ .status = .missingFacts, .stationId = STATION_ID, .requested = cargo };
+  };
+
+  const storageUsed = getStoredCargoUsed( resources );
+  const storageCap  = capacities.storage;
+  const storageOpen = @max( 0.0, storageCap - storageUsed );
+
+  if( storageOpen <= utl.EPS )
+  {
+    return .{
+      .status      = .storageFull,
+      .stationId   = STATION_ID,
+      .requested   = cargo,
+      .storageUsed = storageUsed,
+      .storageCap  = storageCap,
+    };
+  }
+
+  // TODO: Replace proportional clamping with resource-priority rules once
+  // player-editable production and dumping priorities exist.
+  const storageRatio = @min( 1.0, storageOpen / requestedTotal );
+  const stored : RawCargo =
+  .{
+    .regolith = cargo.regolith * storageRatio,
+    .ice      = cargo.ice      * storageRatio,
+    .ore      = cargo.ore      * storageRatio,
+  };
+  const storedTotal = getRawCargoTotal( stored );
+
+  resources.regolith += stored.regolith;
+  resources.ice      += stored.ice;
+  resources.ore      += stored.ore;
+
+  return .{
+    .status      = .stored,
+    .stationId   = STATION_ID,
+    .requested   = cargo,
+    .stored      = stored,
+    .total       = storedTotal,
+    .storageUsed = storageUsed + storedTotal,
     .storageCap  = storageCap,
   };
 }

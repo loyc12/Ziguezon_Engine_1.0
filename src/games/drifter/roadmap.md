@@ -42,10 +42,11 @@ Current baseline:
 
 * `drifter` compiles as a game target;
 * the adapter exposes the expected engine hooks and configs;
-* input supports pause, camera zoom, shell reset, and overlay toggle;
+* input supports pause, camera zoom, world reset, manual harvesting, and overlay
+  toggle;
 * panning is disabled for the station-centered shell;
-* rendering shows a central station circle and deterministic visual-only
-  asteroid circles drifting in the background;
+* rendering shows a central station circle plus world-owned asteroid, chunk,
+  and drone markers;
 * a single world-owned station entity is created on open/reset and destroyed on
   close/reset;
 * station resources, starter reserves, and capacities are registered as
@@ -58,45 +59,30 @@ Current baseline:
   metals, concrete, electronics, and food, consumes power as a non-storage
   buffer, respects storage capacity, and reports latest output or blocked
   rules through overlay text and logs;
+* world-owned asteroids spawn on open/reset with chunk-count size state, drift
+  visibly, and release harvestable chunks over repeated drone work;
+* chunks are world-owned temporary entities with raw cargo, source asteroid
+  links by id, reservation state, deterministic depletion, and visible markers;
+* drones are world-owned visible entities with idle, outbound, harvesting,
+  returning, unloading, and disabled states, moving between station and chunks
+  while returning raw cargo into the same station storage loop as manual
+  harvesting;
+* the autonomous harvest loop reports drone assignments, returns, blocked
+  target/storage states, and current asteroid/chunk/drone counts through overlay
+  text and logs;
 * the current power implementation is transitional: power is visible as a
   resource but still behaves like a finite non-storage buffer until the planned
   solar/reactor balance pass replaces it;
-* overlay text shows pause state, zoom, asteroid count, station resources,
-  starter reserves, storage use, capacities, harvest status, processing status,
-  and controls.
+* overlay text shows pause state, zoom, asteroid/chunk/drone counts, station
+  resources, starter reserves, storage use, capacities, manual harvest status,
+  processing status, drone harvest status, and controls.
 
 The first implementation goal is a small playable/debuggable vertical slice:
 one station, starter reserves, basic resources, simple visuals, player controls,
 and enough world facts to validate entity lifecycle, components, relations,
 traits, events, rules, and queries in combination.
 
-## 3. Current - Asteroids, Chunks, And Drones
-
-Add the autonomous harvest loop.
-
-Work:
-
-* spawn asteroids with size as chunk count;
-* convert small asteroids into one chunk and larger asteroids into multiple
-  harvestable chunks over repeated work;
-* create drones with world positions and simple states: idle, outbound,
-  harvesting, returning, unloading, disabled;
-* use job components for harvest and haul work;
-* assign idle drones automatically based on target availability and player
-  priorities;
-* use timed state changes for drone travel and work while keeping positions
-  visible;
-* emit events for asteroid detected, chunk created, drone launched, harvest
-  completed, drone returned, and logistics blocked.
-
-Validation:
-
-* drones harvest external asteroids without manual resource injection;
-* chunk counts deplete correctly;
-* drone shortage blocks work visibly instead of silently resolving;
-* returned resources feed the same processing/storage loop as manual harvest.
-
-## 4. Phase 4 - Life Support, Systems, And Growth
+## 3. Current - Life Support, Systems, Storage Pressure, And Visual Clarity
 
 Add failure pressure and let the station expand using direct resources.
 
@@ -110,6 +96,10 @@ Work:
   starter loop are stable;
 * add initial systems: hangar, depot, refinery, storage, reactor, shipyard, and
   assembly after the system-child-entity shape is chosen;
+* add a minimal manual dumping control before the market slice so full shared
+  storage cannot permanently block ice, regolith, or ore intake;
+* improve debug visuals so asteroid, depleted asteroid, chunk, drone, station,
+  returned-resource, and blocked states are not all gray or outline-only;
 * keep power as a special resource, then replace finite-buffer behavior with a
   per-tick balance where solar supplies free baseline power, reactors convert
   only enough fuel to cover unmet demand, and power shortages scale powered
@@ -127,14 +117,17 @@ Work:
 Validation:
 
 * life-support failure is visible and reduces population;
+* manual dumping can free shared storage and unblock raw-resource gathering;
 * power balance is visible and scales production during shortages;
 * building a system consumes resources and creates a station-owned child
   entity;
 * capacity changes are visible immediately after build completion;
 * drone construction is limited by shipyard and hangar capacity;
+* visual state colors are readable enough to distinguish active, depleted,
+  reserved, returning, unloading, and blocked objects;
 * damaged systems create readable repair work when enabled.
 
-## 5. Phase 5 - Market And Resource Management
+## 4. Phase 5 - Market And Resource Management
 
 Add the first market loop.
 
@@ -154,7 +147,7 @@ Validation:
 * repeated buying and selling visibly affects price;
 * dumping creates resource loss and a visible event.
 
-## 6. Phase 6 - Rule Management And Player Priorities
+## 5. Phase 6 - Rule Management And Player Priorities
 
 Expose the station-management layer.
 
@@ -174,14 +167,15 @@ Validation:
 * disabled or blocked rules are visible;
 * drone automation remains the default and does not require micromanagement.
 
-## 7. Later - Controls And Drones In The Visual Shell
+## 6. Later - Controls And Debug Views
 
 Add controls when their target systems exist instead of keeping placeholder
 buttons.
 
 Work:
 
-* draw drones as simple world-position markers once drones exist;
+* expand drone, asteroid, chunk, system, and station debug views when the
+  underlying behavior needs more than simple markers and overlay lines;
 * add controls for spawn asteroid, manual harvest, buy, sell, dump, build
   system, and overlay toggles in the phase that owns each behavior;
 * keep pause/resume, reset, zoom, and overlay toggles available throughout.
@@ -191,7 +185,7 @@ Validation:
 * controls call real game behavior;
 * overlay text does not depend on simulation internals that do not exist yet.
 
-## 8. Deferred Work
+## 7. Deferred Work
 
 Defer until the first station loop is stable:
 
@@ -204,7 +198,7 @@ Defer until the first station loop is stable:
 * save/load, replay, or long-history inspection;
 * broad UI polish beyond the controls needed to validate the simulation.
 
-## 9. Roadmap Validation
+## 8. Roadmap Validation
 
 For code slices, use at least:
 

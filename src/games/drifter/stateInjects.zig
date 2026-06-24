@@ -1,6 +1,7 @@
 const std     = @import( "std"              );
 const eng     = @import( "engine"           );
 const utl     = @import( "utils"            );
+const harvest = @import( "harvestFacts.zig" );
 const station = @import( "stationFacts.zig" );
 
 // ================================ STATE INJECTION FUNCTIONS ================================
@@ -24,14 +25,28 @@ pub fn OnGameOpen( ng : *eng.Engine ) void // Called by engine.open()
     utl.qlog( .ERROR, @src(), "Drifter station fact stores are unavailable" );
     return;
   }
+  if( !harvest.registerHarvestStores( ng ))
+  {
+    station.unregisterStationStores( ng );
+
+    utl.qlog( .ERROR, @src(), "Drifter harvest fact stores are unavailable" );
+    return;
+  }
 
   if( !station.resetStation( ng ))
   {
     utl.qlog( .ERROR, @src(), "Drifter station setup failed" );
+    return;
+  }
+
+  if( !harvest.resetHarvestFacts( ng ))
+  {
+    utl.qlog( .ERROR, @src(), "Drifter harvest setup failed" );
   }
 }
 pub fn OnGameClose( ng : *eng.Engine ) void // Called by engine.close()
 {
+  harvest.unregisterHarvestStores( ng );
   station.unregisterStationStores( ng );
 }
 
@@ -44,5 +59,4 @@ pub fn OnGamePause( ng : *eng.Engine ) void // Called by engine.pause()
 {
   _ = ng;
 }
-
 

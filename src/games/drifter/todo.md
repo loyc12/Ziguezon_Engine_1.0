@@ -6,79 +6,88 @@ simulation. [roadmap.md](roadmap.md) defines the broader implementation order.
 
 ## 1. Current Slice
 
-Add asteroids, chunks, and drones as world-owned facts.
+Add life-support upkeep, first station systems, storage-pressure recovery, and
+a small visual clarity pass.
 
-Manual starter-reserve harvesting and deterministic station processing now feed
-the station's shared storage loop. This slice should replace the visual-only
-asteroid shell with the first autonomous harvest path: drifting harvest targets,
-harvestable chunks, and drone facts that can return resources into the same
-storage and processing loop.
+Autonomous asteroid harvesting is now stable enough to feed the station's shared
+storage and processing loop. The next slice should add the first pressure that
+makes those resources matter: oxygen/food/population upkeep, station-owned
+system entities, and a minimal way to recover when shared storage fills with
+final resources and blocks raw-resource intake.
 
 ## 2. Scope
 
 In scope:
 
-* add world-owned asteroid facts with simple size or chunk-count state;
-* convert small asteroids into one harvestable chunk;
-* support larger asteroids becoming multiple chunks over repeated work;
-* add world-owned drone facts with simple visible states;
-* route drone unloads into existing station storage through public World
-  component APIs;
-* keep returned raw resources compatible with the current processing loop;
-* show asteroid, chunk, drone, job/block, and returned-resource status through
-  overlay text and/or logs;
-* remove or clearly retire visual-only asteroid state made obsolete by world
-  facts.
+* add game-owned station-system facts as station-owned child entities;
+* add initial system kinds only where they support this slice: hangar, storage,
+  refinery, solar, reactor, shipyard, depot, and assembly can start compact;
+* apply simple life-support upkeep to oxygen and food on a deterministic
+  temporary cadence;
+* make population loss visible when upkeep cannot be paid;
+* keep gameover behavior minimal or logged if the exact flow is not ready;
+* make system facts affect relevant capacity or throughput where direct and
+  low-risk;
+* add a manual dumping control for stored resources so full storage cannot
+  permanently block ice/regolith/ore gathering;
+* add overlay/log status for upkeep, population loss, dumping, and any blocked
+  system work;
+* adjust early visuals so asteroid, depleted asteroid, chunk, drone, station,
+  and blocked states are easier to distinguish than the current mostly-gray
+  palette.
 
 Out of scope:
 
-* retained UI widgets;
-* market rules, command callbacks, scheduler behavior, and player-editable
-  production rules;
-* construction, station systems, damage, repair, save/load, replay, particles,
+* full retained UI widgets;
+* market prices, buying, selling, import/export throughput, and depot logistics
+  beyond a local manual dump recovery control;
+* player-editable production rules and scheduler-owned cadence;
+* construction queues, upgrades, damage, repair, save/load, replay, particles,
   or effects;
 * advanced pathfinding, collision physics, real orbital mechanics, grids, or
   detailed travel simulation;
-* life-support upkeep, population loss, and gameover behavior;
-* event output unless the slice deliberately adds the needed event type and
-  overlay inspection.
+* broad art direction or complex station visuals beyond clear debug-readable
+  colors and simple markers.
 
 ## 3. Tasks
 
-1. Define asteroid, chunk, and drone facts.
-   * Keep the first component shapes compact and game-owned.
-   * Include comments for abstract units, temporary state choices, and future
-     scheduler hooks.
-   * Register and unregister the new stores with the Drifter lifecycle.
+1. Define station-system facts.
+   * Keep the first component shape compact and game-owned.
+   * Register and unregister system stores with the Drifter lifecycle.
+   * Represent station ownership directly through the world surface that is
+     already stable; report if child ownership exposes a broader boundary.
 
-2. Replace visual-only asteroid ownership.
-   * Spawn asteroids as world entities during open/reset.
-   * Preserve simple visible drifting markers where practical.
-   * Remove deprecated visual-only storage once world facts render correctly.
+2. Add life-support upkeep.
+   * Consume oxygen and food on a deterministic temporary cadence.
+   * Reduce population when upkeep cannot be paid.
+   * Log and overlay the latest upkeep result, shortage, and population state.
 
-3. Add chunk creation and depletion.
-   * Let small asteroids create one chunk.
-   * Let larger asteroids create multiple chunks through repeated work.
-   * Keep chunk depletion deterministic and visible.
+3. Connect first system effects.
+   * Let simple system facts affect storage, drone slots, processing throughput,
+     power output, or construction/shipyard/depot capacity where direct.
+   * Keep power behavior compatible with the current finite-buffer transition
+     unless the slice deliberately replaces it.
 
-4. Add the first drone loop.
-   * Represent drone states: idle, outbound, harvesting, returning, unloading,
-     and disabled.
-   * Assign idle drones to available chunks with simple deterministic priority.
-   * Move returned raw resources into station storage through existing station
-     APIs or narrowly added public station helpers.
-   * Report blocked harvest work when no drones, no targets, or no storage are
-     available.
+4. Add manual dumping.
+   * Provide a simple input path to dump one or more stored resources.
+   * Prefer freeing final products first if a one-button debug dump is chosen.
+   * Report dumped amounts and storage recovery through overlay text and logs.
+   * Leave broader market/resource-management rules for the market slice.
 
-5. Validate.
+5. Improve visual readability.
+   * Revise asteroid/chunk/drone/status colors so active, reserved, depleted,
+     returning, unloading, and blocked states are not visually ambiguous.
+   * Avoid relying on gray outlines alone for leftover or depleted asteroids.
+   * Keep the pass small and debug-readable rather than building final art.
+
+6. Validate.
    * Run `zig build drifter`.
-   * Manually run `drifter` if a graphics session is available.
-   * Confirm asteroids/chunks/drones are visible, chunks deplete, returned
-     resources enter station storage, processing consumes returned raw
-     stockpiles, and blocked work is readable.
+   * Confirm upkeep consumes resources, shortages reduce population, dumping can
+     unblock raw-resource gathering, system effects are visible, and the visual
+     status colors are readable in a manual graphics run.
 
 ## 4. Next Slice Candidate
 
-After autonomous harvesting is stable, the next roadmap slice should add
-life-support upkeep, population failure pressure, and station systems as
-station-owned child entities.
+After upkeep and station systems are stable, the next roadmap slice should add
+the first market and resource-management loop: prices, buying, selling, and
+more deliberate dumping rules.

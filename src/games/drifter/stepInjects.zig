@@ -1,47 +1,27 @@
 const std      = @import( "std"    );
 const eng      = @import( "engine" );
 const utl      = @import( "utils"  );
+const harvest  = @import( "harvestFacts.zig" );
 const station  = @import( "stationFacts.zig" );
 
 const Vec2 = utl.Vec2;
 
 // ================================ GLOBAL GAME VARIABLES ================================
 
-const STATION_POS    : Vec2  = .{};
-const STATION_RADIUS : f64   = 96.0;
-const ASTEROID_COUNT : usize = 16;
 const PROCESS_TICK_INTERVAL : u128 = 60;
 
-/// Temporary visual-only asteroid marker used before asteroids become World facts.
-const ShellAsteroid = struct
-{
-  pos      : Vec2,
-  radius   : f64,
-  velocity : Vec2,
-};
-
-const ASTEROID_WRAP_HEIGHT : f64 = 1024.0;
-const ASTEROID_WRAP_WIDTH  : f64 = ASTEROID_WRAP_HEIGHT * 2.0;
-const ASTEROID_SAFE_RADIUS : f64 = STATION_RADIUS + 160.0;
-const ASTEROID_RADIUS_MIN  : f64 = 20.0;
-const ASTEROID_RADIUS_MAX  : f64 = 80.0;
-const ASTEROID_DRIFT_Y_MAX : f64 = 50.0;
-
 var SHOW_OVERLAY : bool = true;
-// TODO: Replace this visual-only asteroid state with world-owned asteroid facts once the asteroid slice lands.
 var LAST_HARVEST_RESULT    : station.ManualHarvestResult = .{};
 var LAST_PROCESSING_RESULT : station.ProcessingResult     = .{};
-var isShellInit            : bool = false;
-var asteroids              : [ ASTEROID_COUNT ]ShellAsteroid = undefined;
+var LAST_DRONE_RESULT      : harvest.HarvestLoopResult    = .{};
 
 
-// ================================ SHELL HELPERS ================================
+// ================================ DRIFTER HELPERS ================================
 
-/// Resets Drifter's current world facts and temporary visual shell.
-/// Asteroids are still visual-only until the asteroid entity slice lands.
+/// Resets Drifter's current world facts and camera-centered debug view.
 fn resetDrifter( ng : *eng.Engine ) void
 {
-  resetVisualShell();
+  resetDrifterView();
 
   if( !station.resetStation( ng ))
   {
@@ -53,94 +33,19 @@ fn resetDrifter( ng : *eng.Engine ) void
     LAST_PROCESSING_RESULT = .{ .status = .reset, .stationId = station.getStationId() };
   }
 
+  if( harvest.resetHarvestFacts( ng ))
+  {
+    LAST_DRONE_RESULT = .{ .status = .reset };
+  }
+
   utl.qlog( .INFO, @src(), "Drifter reset" );
 }
 
-/// Resets only the temporary visual shell and camera.
-fn resetVisualShell() void
+/// Resets only the camera/debug-view placement.
+fn resetDrifterView() void
 {
-  eng.G_ENG.rng.seedInit( utl.getNow().value );
-
-  for( &asteroids )| *asteroid |{ asteroid.* = spawnShellAsteroid(); }
-
-  eng.G_ENG.camera.setCenter( STATION_POS );
-
-  isShellInit = true;
-  utl.qlog( .INFO, @src(), "Drifter visual shell reset" );
-}
-
-/// Lazily initializes the visual shell for render paths that run before loop start.
-fn ensureShellInit() void
-{
-  if( isShellInit ){ return; }
-
-  resetVisualShell();
-}
-
-/// Creates one temporary asteroid in the current visual shell bounds.
-fn spawnShellAsteroid() ShellAsteroid
-{
-  var pos = Vec2.new(
-    randF64( @floatCast( ASTEROID_WRAP_WIDTH  ), 0.0 ),
-    randF64( @floatCast( ASTEROID_WRAP_HEIGHT ), 0.0 ),
-  );
-
-  // Keep the first visual field readable around the station.
-  if( pos.sub( STATION_POS ).len() < ASTEROID_SAFE_RADIUS )
-  {
-    pos.x += if( pos.x >= STATION_POS.x ) ASTEROID_SAFE_RADIUS else -ASTEROID_SAFE_RADIUS;
-  }
-
-  return .{
-    .pos      = pos,
-    .radius   = randLowBiasedF64( ASTEROID_RADIUS_MIN, ASTEROID_RADIUS_MAX ),
-    .velocity = .new( randF64( 25.0, 125.0 ), randSignedLowBiasedF64( ASTEROID_DRIFT_Y_MAX )),
-  };
-}
-
-inline fn randF64( scale : f32, offset : f32 ) f64
-{
-  return @floatCast( eng.G_ENG.rng.getScaledFloat( scale, offset ));
-}
-
-/// Returns a value in [min, max) biased toward min.
-/// Squaring the uniform sample makes large visual asteroids rarer without
-/// hiding them completely.
-inline fn randLowBiasedF64( min : f64, max : f64 ) f64
-{
-  const unit = randUnitF64();
-  return min + (( max - min ) * unit * unit );
-}
-
-/// Returns a signed value whose magnitude is biased toward zero.
-/// Vertical shell drift is visual-only; this keeps fast upward/downward motion
-/// uncommon while preserving both directions.
-inline fn randSignedLowBiasedF64( maxMagnitude : f64 ) f64
-{
-  const sign : f64 = if( eng.G_ENG.rng.getBool() ) 1.0 else -1.0;
-  return sign * randLowBiasedF64( 0.0, maxMagnitude );
-}
-
-inline fn randUnitF64() f64
-{
-  return @floatCast( eng.G_ENG.rng.getFloat( f32 ));
-}
-
-/// Advances visual-only asteroid drift. This is not simulation scheduling.
-fn tickShellVisuals( deltaTime : f64 ) void
-{
-  ensureShellInit();
-
-  for( &asteroids )| *asteroid |
-  {
-    asteroid.pos = asteroid.pos.add( asteroid.velocity.mulVal( deltaTime ));
-
-    // TODO: Replace wrapping with world-owned asteroid spawn/despawn behavior.
-    if( asteroid.pos.x >  ASTEROID_WRAP_WIDTH  ){ asteroid.pos.x = -ASTEROID_WRAP_WIDTH;  }
-    if( asteroid.pos.x < -ASTEROID_WRAP_WIDTH  ){ asteroid.pos.x =  ASTEROID_WRAP_WIDTH;  }
-    if( asteroid.pos.y >  ASTEROID_WRAP_HEIGHT ){ asteroid.pos.y = -ASTEROID_WRAP_HEIGHT; }
-    if( asteroid.pos.y < -ASTEROID_WRAP_HEIGHT ){ asteroid.pos.y =  ASTEROID_WRAP_HEIGHT; }
-  }
+  eng.G_ENG.camera.setCenter( harvest.STATION_POS );
+  utl.qlog( .INFO, @src(), "Drifter view reset" );
 }
 
 /// Runs the temporary fixed-cadence processing pass until engine scheduler
@@ -159,7 +64,7 @@ fn tickStationProcessing( ng : *eng.Engine ) void
 pub fn OnLoopStart( ng : *eng.Engine ) void // Called by engine.loopLogic()
 {
   _ = ng;
-  resetVisualShell();
+  resetDrifterView();
 }
 
 pub fn OnLoopEnd( ng : *eng.Engine ) void // Called by engine.loopLogic()
@@ -182,7 +87,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   if( utl.ray.getMouseWheelMove() > 0.0 ){ eng.G_ENG.camera.zoomBy( 1.1 ); }
   if( utl.ray.getMouseWheelMove() < 0.0 ){ eng.G_ENG.camera.zoomBy( 0.9 ); }
 
-  // Reset the shell and camera when r is pressed
+  // Reset Drifter's world facts and camera when R is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
   {
     resetDrifter( ng );
@@ -194,8 +99,8 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
     SHOW_OVERLAY = !SHOW_OVERLAY;
   }
 
-  // Manual starter harvesting stays as a debug/player bootstrap control until
-  // drones and asteroid jobs own the main harvest loop.
+  // Manual starter harvesting stays as a debug/player bootstrap fallback when
+  // autonomous drone harvesting is blocked.
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.h ))
   {
     LAST_HARVEST_RESULT = station.tryManualHarvest( ng );
@@ -205,7 +110,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 
 pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
-  tickShellVisuals( @floatCast( ng.time.getTargetTickDeltaFlt() ));
+  LAST_DRONE_RESULT = harvest.tickHarvestLoop( ng, @floatCast( ng.time.getTargetTickDeltaFlt() ));
   tickStationProcessing( ng );
 }
 
@@ -224,25 +129,16 @@ pub fn OnRenderBckgrnd( ng : *eng.Engine ) void // Called by engine.renderGraphi
 
 pub fn OnRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics()
 {
-  _ = ng;
-  ensureShellInit();
+  eng.wDraw.basicCircle( harvest.STATION_POS, harvest.STATION_RADIUS, utl.Colour.mGray );
 
-  eng.wDraw.basicCircle(STATION_POS, STATION_RADIUS, utl.Colour.mGray );
+  harvest.renderHarvestWorld( ng );
 
-  for( asteroids )| asteroid |
-  {
-    eng.wDraw.basicCircle(      asteroid.pos, asteroid.radius,       utl.Colour.sGray );
-    eng.wDraw.basicCirclePerim( asteroid.pos, asteroid.radius + 2.0, utl.Colour.dGray );
-  }
-
-  eng.wDraw.basicCirclePerim( STATION_POS, STATION_RADIUS + 2.0,  utl.Colour.pGray );
+  eng.wDraw.basicCirclePerim( harvest.STATION_POS, harvest.STATION_RADIUS + 2.0,  utl.Colour.pGray );
 }
 
 
 pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphics()
 {
-  ensureShellInit();
-
   if( ng.isPaused() )
   {
     utl.sDraw.coverScreenWithCol( utl.Colour.new( 0, 0, 0, 128 ));
@@ -251,9 +147,10 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
   if( SHOW_OVERLAY )
   {
     const status : [:0]const u8 = if( ng.isPaused() ) "paused" else "running";
+    const summary = harvest.getHarvestSummary( ng );
 
-    utl.sDraw.textLeft(    "DRIFTER SHELL", .new( 16.0,  96.0 ), 24, utl.Colour.pGreen );
-    utl.sDraw.textLeftFmt( "state: {s} | zoom: {d:.2} | asteroids: {d}", .{ status, eng.G_ENG.camera.getZoom(), asteroids.len }, .new( 16.0, 128.0 ), 18, utl.Colour.nWhite );
+    utl.sDraw.textLeft(    "DRIFTER", .new( 16.0,  96.0 ), 24, utl.Colour.pGreen );
+    utl.sDraw.textLeftFmt( "state: {s} | zoom: {d:.2} | asteroids: {d} | chunks: {d} | drones: {d}", .{ status, eng.G_ENG.camera.getZoom(), summary.asteroidCount, summary.chunkCount, summary.droneCount }, .new( 16.0, 128.0 ), 18, utl.Colour.nWhite );
     utl.sDraw.textLeft(    "Enter/Space pause | Wheel zoom | H harvest | R reset | T overlay", .new( 16.0, 154.0 ), 18, utl.Colour.lGray );
 
     renderStationFactsOverlay( ng );
@@ -294,8 +191,9 @@ fn renderStationFactsOverlay( ng : *eng.Engine ) void
 
   renderHarvestStatusOverlay( LAST_HARVEST_RESULT, .new( 16.0, 346.0 ));
   renderProcessingStatusOverlay( LAST_PROCESSING_RESULT, .new( 16.0, 372.0 ));
+  renderDroneHarvestOverlay( LAST_DRONE_RESULT, .new( 16.0, 398.0 ));
 
-  utl.sDraw.textLeftFmt( "throughput: hangar {d:.0} | market {d:.0} | construction {d:.0}", .{ cap.hangarThroughput, cap.marketThroughput, cap.constructionCapacity }, .new( 16.0, 398.0 ), 18, utl.Colour.lGray );
+  utl.sDraw.textLeftFmt( "throughput: hangar {d:.0} | market {d:.0} | construction {d:.0}", .{ cap.hangarThroughput, cap.marketThroughput, cap.constructionCapacity }, .new( 16.0, 424.0 ), 18, utl.Colour.lGray );
 }
 
 /// Draws the latest manual-harvest result without coupling overlay code to the
@@ -413,4 +311,43 @@ inline fn getProcessingStatusColour( status : station.ProcessingStatus ) utl.Col
     .processed    => utl.Colour.pGreen,
     else          => utl.Colour.red,
   };
+}
+
+/// Draws the autonomous drone harvest state without depending on mutation code.
+fn renderDroneHarvestOverlay( result : harvest.HarvestLoopResult, pos : Vec2 ) void
+{
+  switch( result.status )
+  {
+    .unloaded =>
+    {
+      utl.sDraw.textLeftFmt( "drones: returned +{d:.1} regolith | +{d:.1} ice | +{d:.1} ore | storage {d:.0}/{d:.0}", .{
+        result.returned.regolith,
+        result.returned.ice,
+        result.returned.ore,
+        result.storageUsed,
+        result.storageCap,
+      }, pos, 18, harvest.getHarvestStatusColour( result.status ));
+    },
+
+    .assigned, .chunkCreated, .harvested =>
+    {
+      utl.sDraw.textLeftFmt( "drones: {s} | drone {d} | chunk {d} | idle {d} busy {d}", .{
+        harvest.getHarvestStatusText( result.status ),
+        result.droneId,
+        result.targetChunkId,
+        result.idleDrones,
+        result.busyDrones,
+      }, pos, 18, harvest.getHarvestStatusColour( result.status ));
+    },
+
+    else =>
+    {
+      utl.sDraw.textLeftFmt( "drones: {s} | idle {d} busy {d} | chunks {d}", .{
+        harvest.getHarvestStatusText( result.status ),
+        result.idleDrones,
+        result.busyDrones,
+        result.chunkCount,
+      }, pos, 18, harvest.getHarvestStatusColour( result.status ));
+    },
+  }
 }
