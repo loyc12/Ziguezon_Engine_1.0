@@ -104,9 +104,12 @@ command-only context and a command record, then returns success or failure.
 Command contexts should mirror the narrow manager-pointer pattern instead of
 borrowing `RuleContext` or future archive machinery. Command execution should
 pop attempted commands before running callbacks, log execution failures,
-continue through later commands of the same type, and leave delayed, pending,
-retry, undo, replay, and cross-type aggregate execution behavior for later
-design passes.
+continue through later commands of the same type, and support deterministic
+aggregate command execution after rules request changes. The first aggregate
+ordering policy may be command-type registration order. Explicit command
+execution ordering should be added later when a concrete use case needs more
+control than registration order. Delayed, pending, retry, undo, and replay
+behavior belong to later design passes.
 
 `RuleSet` is the planned name for reusable groups of rule declarations; it is
 the logic-side counterpart to data-side archetypes, not another name for
@@ -178,7 +181,8 @@ An empty or unused scheduler should add only minimal per-tick bookkeeping.
 The target scheduler should support:
 
 * rules that run every base tick;
-* deterministic command execution after rules request changes;
+* deterministic aggregate command execution after rules request changes;
+* command-type registration order as the first aggregate execution policy;
 * rules or RuleSets that run at slower or faster logical cadences;
 * delayed events;
 * temporary rules;

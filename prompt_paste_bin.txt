@@ -87,6 +87,4 @@ make sure facility is abreviated to fac
 
 headless mode for agent debuging
 
-rename enginer to something better
-
 Make coding philosophy clear ( simple, unambiguous, direct, performant )

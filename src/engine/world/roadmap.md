@@ -48,7 +48,8 @@ Required work:
   tick, not during frame rendering or input polling;
 * preserve current event and command tick metadata setup;
 * run registered base-tick rules in a deterministic phase;
-* execute queued commands in an explicit deterministic phase;
+* execute queued commands in command-type registration order through an explicit
+  deterministic aggregate phase;
 * keep an empty scheduler/rule/command state at minimal runtime cost;
 * avoid a competing `shouldTick()` loop inside World.
 
@@ -57,7 +58,7 @@ The first pipeline can be intentionally small:
 ```text
 begin tick metadata
 run registered base-tick rules
-execute the validated command phase
+execute registered command types in registration order
 finish tick bookkeeping
 ```
 
@@ -67,9 +68,14 @@ frames and input updates do not trigger additional World simulation work.
 
 Add more phases only when a concrete game or engine use case requires them.
 
-Defer aggregate all-command-type execution, cross-type ordering, recursive
-commands-calling-commands, retry/pending command semantics, delayed commands,
-and handler replacement after registration until a later design pass.
+Defer explicit command execution ordering until a concrete use case needs more
+control than registration order. That later system should let command execution
+order be declared when command execution is registered or otherwise
+instantiated, without changing the current typed command payload model.
+
+Also defer recursive commands-calling-commands, retry/pending command semantics,
+delayed commands, and handler replacement after registration until a later
+design pass.
 
 ## 3. Later - Scheduler Cadence And Delayed Work
 

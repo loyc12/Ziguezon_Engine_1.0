@@ -13,14 +13,15 @@ Define the first minimal `World.tick(...)` simulation phase pipeline.
 can run through explicit `applyRules()`, and one command type can be drained
 through explicit `execCommandType(...)`. This slice should wire the first
 deterministic base-tick pipeline inside `World.tick(...)` without adding broad
-scheduler cadence, delayed work, temporary rules, or `RuleSet`.
+scheduler cadence, delayed work, temporary rules, explicit command execution
+ordering, or `RuleSet`.
 
 The intentionally small pipeline is:
 
 ```text
 begin tick metadata
 run registered base-tick rules
-execute the validated command phase
+execute registered command types in registration order
 finish tick bookkeeping
 ```
 
@@ -41,6 +42,8 @@ Keep the scope small enough to validate tick ownership:
   command queue, `World`, and `WorldManager` surfaces where possible.
 * Preserve current event and command metadata setup.
 * Do not add scheduler cadence, delayed events, temporary rules, or `RuleSet`.
+* Do not add explicit command execution ordering yet. Aggregate command
+  execution should use command-type registration order for this slice.
 * Do not add particles/effects, archive, replay, undo, retry, pending-command,
   or retained history behavior.
 * Do not change archetype behavior or let archetype spawning register rules,
@@ -48,9 +51,8 @@ Keep the scope small enough to validate tick ownership:
 * Do not introduce broad type erasure, factories, dependency-injection layers,
   or generic dispatch surfaces unless the compiler or ownership boundary proves
   they are required.
-* If a complete tick command phase requires cross-type ordering or aggregate
-  command execution beyond the validated one-type command boundary, stop and
-  report the exact blocker before widening the design.
+* If registration-order aggregate command execution exposes a real ownership or
+  compiler blocker, stop and report the exact issue before widening the design.
 * Preserve the no-registration, minimal-runtime-cost rule from `goals.md`.
 * Do not run formatting passes such as `zig fmt`.
 
@@ -65,8 +67,10 @@ Keep the scope small enough to validate tick ownership:
    * Keep `World.tick(...)` as the single entry point.
    * Keep event and command metadata setup at the start of the tick.
    * Add explicit rule phase execution after metadata setup.
-   * Add the narrowest command phase that can be validated without broad
-     scheduler or cross-type dispatch work.
+   * Add aggregate command execution after the rule phase.
+   * Use command-type registration order as the deterministic aggregate
+     execution order.
+   * Keep explicit command execution ordering as later work.
 
 2. Preserve explicit rule and command ownership.
    * `RuleManager` still owns registered rule ordering.
@@ -77,16 +81,42 @@ Keep the scope small enough to validate tick ownership:
    * Command callback failure remains visible and does not emit failure events
      by itself.
 
-3. Add focused tests.
+3. Add registration-order aggregate command execution.
+   * Add `CommandManager.execAllCommands(context)`.
+   * Add `World.execAllCommands()`.
+   * Add `WorldManager.execAllCommands()`.
+   * Keep `execCommandType(CommandType, amount)` as the typed partial-drain API.
+   * Track command-type registration order explicitly; do not rely on hash-map
+     iteration order.
+   * Drain all queued commands present for each registered command type in
+     registration order.
+   * Queue-only command types with no queued records should not fail an empty
+     tick.
+   * Queue-only command types with queued records and no execution callback
+     should produce a visible failure result.
+   * Aggregate failures should not prevent later registered command types from
+     running during the same aggregate command phase.
+
+4. Wire the base-tick pipeline.
+   * `World.tick(...)` should begin event and command metadata.
+   * `World.tick(...)` should run registered rules once.
+   * `World.tick(...)` should execute aggregate commands once after rules.
+   * Empty rule/command state should keep minimal runtime cost.
+
+5. Add focused tests.
    * `World.tick(...)` begins event and command metadata once per call;
    * registered rules run during `World.tick(...)` in deterministic order;
    * commands emitted by tick-run rules execute after the rule phase;
+   * aggregate command execution uses command-type registration order;
+   * empty queue-only command types do not fail an empty tick;
+   * queued command records without an execution callback produce visible
+     aggregate failures;
    * command execution failures remain visible and do not stop later work that
      belongs to the validated command phase;
    * empty rule/command state does not require registered work;
    * explicit manual `applyRules()` behavior remains valid if it is kept.
 
-4. Refresh docs after implementation.
+6. Refresh docs after implementation.
    * Update `reference.md` with the live tick phase surface.
    * Trim `roadmap.md` so minimal tick phases become baseline.
    * Keep `goals.md` aligned with the validated tick ownership model.
@@ -106,8 +136,8 @@ Docs-only edits to this file do not require a build.
 
 Later roadmap slices:
 
-* aggregate public all-command-type execution and cross-type ordering, unless
-  the minimal tick slice proves a smaller internal phase is required first;
+* explicit command execution ordering at command registration or instantiation,
+  replacing plain registration order only when a concrete use case needs it;
 * recursive commands-calling-commands behavior;
 * game-defined cadences beyond the first base-tick phase;
 * delayed events and temporary rules;

@@ -256,6 +256,11 @@ World command APIs include:
 * `toCommandContext`;
 * `execCommandType`.
 
+Current command execution is typed only. `CommandManager` can clear or count all
+registered queues internally, but the World-facing execution surface does not
+yet include aggregate command execution. Command-type registration order is not
+tracked yet, and `execAllCommands(...)` does not exist yet.
+
 `CommandQueue.execCommands(amount, context)`,
 `CommandManager.execCommandType(CommandType, amount, context)`,
 `World.execCommandType(CommandType, amount)`, and
@@ -266,8 +271,9 @@ successful command applies at most once and a failed command remains visible in
 counts without staying queued.
 
 Command queues are transient. Retained command history, replay, undo, delayed
-commands, pending/retry semantics, cross-type aggregate execution, and handler
-replacement after registration are not implemented.
+commands, pending/retry semantics, aggregate command execution, explicit
+command execution ordering, and handler replacement after registration are not
+implemented.
 
 ## 10. Traits
 
@@ -417,9 +423,10 @@ base tick. It includes:
 * measured delta;
 * forced-tick flag.
 
-`World.tick(...)` begins event and command tick metadata for the base tick.
-World does not own base-tick pacing; that remains an engine timing
-responsibility.
+`World.tick(...)` begins event and command tick metadata for the base tick. It
+does not currently run rules, execute commands, advance scheduler cadence, or
+finish broader simulation phases. World does not own base-tick pacing; that
+remains an engine timing responsibility.
 
 ## 14. Future Placeholders
 
