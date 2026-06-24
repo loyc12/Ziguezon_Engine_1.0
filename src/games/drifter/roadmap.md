@@ -7,32 +7,34 @@ and the validation target in [goals.md](goals.md).
 Keep this roadmap focused on sequencing. Design direction belongs in
 `design.md`; active task details can move into a future `todo.md`.
 
-## 1. Preamble - Engine Dependencies
+## 1. Preamble - Engine Baseline
 
-Before serious `drifter` implementation, finish or plan around the engine
-systems that the testbed is meant to validate.
+Before serious `drifter` implementation, use the engine-world surfaces that are
+already live instead of rebuilding them locally.
 
-Preferred first:
+Available now:
 
-* finish the data-only `Archetype` surface so station systems, drones,
-  asteroids, chunks, and effects can use reusable spawn/setup declarations
-  instead of hand-rolled construction code;
-* add minimal World scheduling or rule phases before the autonomous station loop
-  depends on production rules, drone assignment, upkeep, market drift,
-  asteroid spawning, and delayed work;
-* clarify command execution ownership so rules can emit requested changes and a
-  predictable World phase applies those changes.
+* data-only `Archetype` declarations for reusable spawn/setup bundles;
+* entity, component, relation, trait, event, command, rule, and query surfaces;
+* `World.tick(...)` metadata setup, deterministic rule execution, and aggregate
+  command execution in registration order;
+* command execution ownership where rules enqueue requested changes and command
+  callbacks apply durable mutation.
 
-Useful but not blocking:
+Plan around:
 
-* retained UI polish can wait until simple overlays and controls become painful;
+* first scheduler cadence is still the active engine-world slice, so timed
+  drone travel, repeated processing cadence, upkeep cadence, market drift, and
+  asteroid spawning should either wait for that surface or stay as temporary
+  game-local tick counters until the engine scheduler lands;
 * `RuleSet` can wait until plain rules need grouping or cadence management;
+* retained UI polish can wait until simple overlays and controls become painful;
 * particles/effects, save/load, replay, and context work can wait until the
   first station loop is stable.
 
 The visual shell can start before all of this is complete. Deeper simulation
-phases should use the engine surfaces above as soon as they exist rather than
-building permanent game-local substitutes.
+phases should use the live engine surfaces above rather than building permanent
+game-local substitutes.
 
 ## 2. Baseline
 
@@ -40,7 +42,8 @@ Current baseline:
 
 * `drifter` compiles as a game target;
 * the adapter exposes the expected engine hooks and configs;
-* input supports pause, camera zoom, camera reset, and overlay toggle;
+* input supports pause, camera movement, camera zoom, camera reset, and overlay
+  toggle;
 * rendering is still a placeholder overlay;
 * no world-owned station simulation exists yet.
 
@@ -57,6 +60,8 @@ Work:
 
 * keep the station centered as a grey world-space circle;
 * add darker grey asteroid circles drifting through the background;
+* remove or disable temporary panning controls so the first shell follows the
+  station-centered design;
 * draw drones as simple world-position markers once drones exist;
 * support zoom in/out without panning;
 * add overlay ledgers for resources, station systems, drones, warnings, and
