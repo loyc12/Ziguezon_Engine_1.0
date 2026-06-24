@@ -135,10 +135,11 @@ pub const CommandQueueFactory = cque.CommandQueueFactory;
 pub const CommandManager      = cmgr.CommandManager;
 
 const rule = @import( "world/rules/rule.zig" );
+const rcnt = @import( "world/rules/ruleContext.zig" );
 const rmgr = @import( "world/rules/ruleManager.zig" );
 
 pub const Rule        = rule.Rule;
-pub const RuleContext = rule.RuleContext;
+pub const RuleContext = rcnt.RuleContext;
 pub const RuleFn      = rule.RuleFn;
 pub const RuleManager = rmgr.RuleManager;
 
@@ -170,6 +171,7 @@ test "engine world declarations"
   std.testing.refAllDecls( cque     );
   std.testing.refAllDecls( cmgr     );
   std.testing.refAllDecls( rule     );
+  std.testing.refAllDecls( rcnt     );
   std.testing.refAllDecls( rmgr     );
   std.testing.refAllDecls( uiMgr    );
 }

@@ -86,10 +86,13 @@ owners of simulation facts. `WorldQuery` should stay a stateless helper
 namespace that receives the inspected World explicitly.
 
 Rules/reactions observe facts and request changes through explicit world-owned
-phase boundaries. The default change path should be command emission followed
-by deterministic command execution; direct fact mutation from rule code should
-stay exceptional and documented when a specific phase owns it. Rules may also
-emit events or effect triggers when those are the correct fact shape.
+phase boundaries. `World` owns registered rule storage through a focused
+`RuleManager`; rules receive a short-lived rule-only context backed by
+World-owned manager pointers, not persistent `World` ownership. The default
+change path should be command emission followed by deterministic command
+execution; direct fact mutation from rule code should stay exceptional and
+documented when a specific phase owns it. Rules may also emit events or effect
+triggers when those are the correct fact shape.
 `RuleSet` is the planned name for reusable groups of rule declarations; it is
 the logic-side counterpart to data-side archetypes, not another name for
 archetypes.

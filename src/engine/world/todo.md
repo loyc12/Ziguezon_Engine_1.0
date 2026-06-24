@@ -7,78 +7,74 @@ implementation order.
 
 ## 1. Current Slice
 
-Finish the rule cleanup from the validated query / manager split, then make the
-existing compact `RuleManager` World-owned from `core/world.zig`.
+Define the first World-owned command execution boundary.
 
-The slice should let games register, inspect, and explicitly run ordered rules
-through `World` without owning `RuleManager` directly. Rules remain named,
-ordered logic declarations that read through stateless `WorldQuery` helpers and
-request changes by enqueuing commands.
+Rules can now enqueue commands through `RuleContext`, but commands remain
+queued requested-change facts. This slice should decide and implement how
+registered command payloads become deterministic World fact mutations without
+adding scheduler cadence or automatic rule execution from `World.tick(...)`.
 
 Keep the scope small enough to validate ownership:
 
-* one `RuleManager` owned by `World`;
-* World-facing rule registration and inspection helpers;
-* one explicit World-facing rule run helper;
-* existing read-only query and command emission behavior preserved;
-* focused tests and documentation refresh.
+* command handlers or executors are registered through World-owned surfaces;
+* queued commands execute in deterministic order;
+* successful commands apply exactly once;
+* failed commands remain visible through return values, logs, events, or a
+  documented failure queue;
+* queue consumption/clearing ownership is explicit;
+* rules still only request mutation by enqueueing commands.
 
 ## 2. Guardrails
 
-* Use the existing `Rule`, `RuleContext`, `RuleManager`, `WorldQuery`, and
-  command queue APIs where possible.
-* Keep rules explicit, named, and ordered.
-* Keep rule runs explicit in this slice; do not automatically run rules from
-  `World.tick(...)` yet.
-* Do not implement command execution ownership in this slice.
-* Do not implement scheduler cadence, delayed events, temporary rules, or
-  `RuleSet`.
+* Use existing `CommandManager`, command queue, `World`, and `WorldManager`
+  surfaces where possible.
+* Keep command payloads as plain requested-change facts.
+* Do not run commands automatically from `World.tick(...)` in this slice unless
+  the command execution boundary itself cannot be validated explicitly.
+* Do not add scheduler cadence, delayed events, temporary rules, or `RuleSet`.
 * Do not add particle/effect, context, save/load, replay, undo, or retained
   history behavior.
-* Do not change archetype behavior or let archetype spawning register rules.
-* Keep game-specific rules under `src/games`.
+* Do not change archetype behavior or let archetype spawning register command
+  handlers.
+* Keep game-specific command handlers under `src/games` unless a generic engine
+  test handler is needed.
 * Preserve the no-registration, minimal-runtime-cost rule from `goals.md`.
 * Do not run formatting passes such as `zig fmt`.
 
 ## 3. Implementation Tasks
 
-1. Add rule manager ownership to `World`.
-   * Import the rule surface into `core/world.zig`.
-   * Add a `RuleManager` field alongside the other fact managers.
-   * Initialize and deinitialize it with the World-owned managers.
-   * Keep an empty World rule manager dormant when no rules are registered.
-   * Keep `worldManager.zig` thin; add manager forwarding helpers only for
-     current engine/game callers that need them.
+1. Define the command execution shape.
+   * Choose the narrow command handler declaration surface.
+   * Decide whether command execution lives in a focused manager or remains a
+     narrow World-owned helper around `CommandManager`.
+   * Keep the shape concrete; do not add type erasure, factories, or broad
+     dispatch layers unless the compiler or ownership boundary requires it.
 
-2. Add World-facing rule APIs.
-   * Add `registerRule`.
-   * Add `hasRule`.
-   * Add `getRuleCount`.
-   * Add an explicit `runRules` helper that delegates to the owned manager.
-   * Reject uninitialized World use cleanly.
+2. Add World-facing execution APIs.
+   * Register handlers for command payload types.
+   * Execute one command type or all registered command types explicitly.
+   * Report handler failure visibly.
+   * Document whether successful commands are popped before, during, or after
+     execution.
 
-3. Preserve rule behavior through World.
-   * Rules must still read current facts through
-     `WorldQuery.get...( world, ... )`.
-   * Rules must still peek or iterate events without consuming them.
-   * Rules must still enqueue commands through the existing command manager.
-   * Rule failure must be visible through the World-facing run helper.
+3. Preserve rule/command separation.
+   * Rules enqueue commands only.
+   * Command handlers own the fact mutation phase.
+   * Event emission from command handlers should use normal World APIs.
 
 4. Add focused tests.
-   * World initializes and deinitializes its rule manager.
-   * Registration rejects duplicate names and uninitialized use.
-   * World-owned rules run in deterministic order.
-   * Rules can inspect facts and enqueue commands through World-owned execution.
-   * Rules can inspect events without consuming event queues.
-   * Failed rules make `runRules` return failure and stop the run.
+   * duplicate handler registration is rejected;
+   * unregistered command execution is a visible no-op or failure;
+   * queued commands execute once in order;
+   * failed command handlers are visible and do not silently drop requests;
+   * command execution can mutate components, relations, traits, or events
+     through the documented World-owned path.
 
 5. Refresh docs after implementation.
-   * Update `reference.md` with the live World-owned rule surface.
-   * Trim `roadmap.md` so completed rule-manager ownership moves into the
-     baseline.
-   * Keep `goals.md` aligned with the validated ownership model if the rule
-     boundary changes.
-   * Replace this `todo.md` with the command execution ownership slice after
+   * Update `reference.md` with the live command execution surface.
+   * Trim `roadmap.md` so completed command execution becomes baseline.
+   * Keep `goals.md` aligned with the validated command ownership model.
+   * Replace this `todo.md` with the next minimal World tick phase slice after
      validation.
 
 ## 4. Validation
@@ -88,17 +84,12 @@ Run after code changes:
 * `zig build`;
 * `zig build test`.
 
-Use targeted tests while developing, but the slice is not complete until the
-world test surface compiles and the relevant tests pass.
-
 Docs-only edits to this file do not require a build.
 
 ## 5. Deferred Work
 
 Later roadmap slices:
 
-* command handler or executor registration;
-* deterministic command execution and queue consumption;
 * automatic rule and command phases from `World.tick(...)`;
 * game-defined cadences beyond the first base-tick phase;
 * delayed events and temporary rules;
@@ -111,15 +102,3 @@ Unrelated to this slice:
 * `src/engine/world/entity.zig:22` compact lifecycle mask idea;
 * `src/engine/world/components/baseComps.zig:77` LOD/minScale note;
 * `src/engine/world/components/baseComps.zig:178` particle-system TODO.
-
-## 6. Explicit Non-Goals
-
-* no automatic `World.tick(...)` rule phase;
-* no command execution ownership;
-* no scheduler cadence;
-* no `RuleSet`;
-* no archetype behavior changes;
-* no particle/effect pools;
-* no save/load, replay, undo, or retained command/event/spawn history;
-* no retained UI state inside simulation `World`;
-* no tilemap migration work in this `engine/world` slice.

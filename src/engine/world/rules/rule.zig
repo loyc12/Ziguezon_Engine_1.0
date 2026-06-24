@@ -1,28 +1,8 @@
 const std = @import( "std" );
 
-const cmdMgr = @import( "../commands/commandManager.zig" );
-const query  = @import( "../queries/query.zig" );
-const worldCore = @import( "../core/world.zig" );
+const cntx = @import( "ruleContext.zig" );
 
-const CommandManager = cmdMgr.CommandManager;
-const World          = worldCore.World;
-const WorldQuery     = query.WorldQuery;
-
-
-/// Runtime context passed to executable simulation rules.
-/// Rules inspect current facts or queued events through stateless `WorldQuery`
-/// helpers and request future changes through commands.
-pub const RuleContext = struct
-{
-  world    : *World,
-  commands : *CommandManager,
-
-  /// Enqueues one requested-change fact through the active command surface.
-  pub inline fn enqueueCommand( self : *RuleContext, comptime CommandType : type, value : CommandType ) bool
-  {
-    return self.commands.enqueue( CommandType, value );
-  }
-};
+const RuleContext = cntx.RuleContext;
 
 /// Callback shape for compact simulation rules.
 /// Returning false signals a failed rule pass without consuming events or
@@ -62,32 +42,50 @@ test "Rule observes events and emits commands without consuming events"
   {
     fn run( context : *RuleContext ) bool
     {
-      const eventRecord = WorldQuery.peekEvent( context.world, TestEvent, 0 ) orelse return false;
+      const eventRecord = context.peekEvent( TestEvent, 0 ) orelse return false;
       return context.enqueueCommand( TestCommand, .{ .value = eventRecord.value.value + 1 });
     }
   };
 
-  var manager : CommandManager = .{};
-  manager.init( std.testing.allocator );
-  defer manager.deinit();
+  var activeEntities : std.AutoHashMap( @import( "../entity.zig" ).EntityId, void ) = .init( std.testing.allocator );
+  defer activeEntities.deinit();
 
-  try std.testing.expect( manager.register( TestCommand ));
+  var comps = @import( "../components/compManager.zig" ).CompManager{};
+  comps.init( std.testing.allocator );
+  defer comps.deinit();
 
-  var world = World{};
-  world.init( std.testing.allocator );
-  defer world.deinit();
+  var relations = @import( "../relations/relationManager.zig" ).RelationManager{};
+  relations.init( std.testing.allocator );
+  defer relations.deinit();
 
-  try std.testing.expect( world.registerEvent( TestEvent ));
-  try std.testing.expect( world.emitEvent( TestEvent, .{ .value = 41 }));
+  var traits = @import( "../traits/traitManager.zig" ).TraitManager{};
+  traits.init( std.testing.allocator );
+  defer traits.deinit();
+
+  var events = @import( "../events/eventManager.zig" ).EventManager{};
+  events.init( std.testing.allocator );
+  defer events.deinit();
+
+  var commands = @import( "../commands/commandManager.zig" ).CommandManager{};
+  commands.init( std.testing.allocator );
+  defer commands.deinit();
+
+  try std.testing.expect( events.register(   TestEvent   ));
+  try std.testing.expect( commands.register( TestCommand ));
+  try std.testing.expect( events.emit( TestEvent, .{ .value = 41 }));
 
   var context : RuleContext =
   .{
-    .world    = &world,
-    .commands = &manager,
+    .activeEntities  = &activeEntities,
+    .compManager     = &comps,
+    .relationManager = &relations,
+    .traitManager    = &traits,
+    .eventManager    = &events,
+    .commandManager  = &commands,
   };
   const rule : Rule = .{ .name = "event-to-command", .runFn = Runner.run };
 
   try std.testing.expect( rule.run( &context ));
-  try std.testing.expect( world.getEventCount( TestEvent ) == 1 );
-  try std.testing.expect( manager.pop( TestCommand ).?.value.value == 42 );
+  try std.testing.expect( events.getEventCount( TestEvent ) == 1 );
+  try std.testing.expect( commands.pop( TestCommand ).?.value.value == 42 );
 }

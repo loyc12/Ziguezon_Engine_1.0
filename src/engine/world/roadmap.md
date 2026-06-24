@@ -21,8 +21,9 @@ tasks:
 * `World.tick(...)` event tick metadata;
 * engine-owned `WorldManager` wrapping one active concrete `World`;
 * concrete `World` implementation in `core/world.zig`;
-* compact explicit rules with read-only `WorldQuery` access, deterministic
-  ordering, command emission, and event/fact reaction support;
+* World-owned compact explicit rules with manager-backed `RuleContext`
+  inspection helpers, deterministic ordering, command emission, visible
+  failure, and event/fact reaction support;
 * read-only component, relation, event, and trait inspection through
   stateless `WorldQuery` helpers;
 * data-only `Archetype` declarations, registration, World spawn helpers,
@@ -32,35 +33,7 @@ tasks:
 Those pieces are reference-baseline facts. Future slices should build on them
 instead of treating them as pending phases.
 
-## 2. Current - Rule Cleanup And World-Owned Rule Manager
-
-Goal: make the existing compact `RuleManager` a stable World-owned logic
-surface now that query helpers are stateless and the concrete World lives in
-`core/world.zig`.
-
-Required work:
-
-* add `RuleManager` ownership to `World` init/deinit with dormant cost when no
-  rules are registered;
-* expose World-facing rule registration, inspection, and run helpers so games do
-  not need to own manager internals for ordinary simulation passes;
-* preserve explicit, named, ordered rule declarations;
-* preserve read-only `WorldQuery` access inside rules;
-* preserve command emission as the main requested-change path;
-* make rule failure behavior explicit and visible from the World-facing run
-  helper;
-* keep event/fact reaction rules deterministic;
-* add focused tests for World-owned rules reading facts, reading events,
-  preserving event queues, emitting commands, and reporting failure.
-
-Exit criterion: games can register, inspect, and explicitly run ordered rules
-through `World` without owning `RuleManager` directly. Rule cadence, grouped
-registration, and command execution remain outside this slice.
-
-Do not use `RuleSet` as a prerequisite for this slice. Plain rules should be
-comfortable enough before grouped rule registration is introduced.
-
-## 3. Next - Command Execution Ownership
+## 2. Current - Command Execution Ownership
 
 Goal: define how queued commands become world fact changes.
 
@@ -84,7 +57,7 @@ This should happen before broad scheduler cadence work. A scheduler that runs
 rules but leaves requested changes permanently game-local would not validate the
 intended world pipeline.
 
-## 4. Next - Minimal World Tick Phases
+## 3. Next - Minimal World Tick Phases
 
 Goal: run the first deterministic world simulation pipeline once per game
 update inside engine-owned base ticks.
@@ -117,7 +90,7 @@ frames and input updates do not trigger additional World simulation work.
 
 Add more phases only when a concrete game or engine use case requires them.
 
-## 5. Later - Scheduler Cadence And Delayed Work
+## 4. Later - Scheduler Cadence And Delayed Work
 
 Goal: extend the minimal tick pipeline into reusable scheduling.
 
@@ -135,7 +108,7 @@ Do not use archetype spawning as a scheduler substitute. Archetypes are
 data-only initial-fact bundles; scheduler work should consume existing rules,
 events, commands, and World tick metadata directly.
 
-## 6. Later - RuleSet
+## 5. Later - RuleSet
 
 Goal: add reusable groups of executable rule declarations once plain rules and
 tick phases are proven.
@@ -149,7 +122,7 @@ Required work:
   exists;
 * include one minimal generic example once the shape is stable.
 
-## 7. Later - Particles And Effects
+## 6. Later - Particles And Effects
 
 Goal: add first-class effect infrastructure driven by world facts.
 
@@ -165,7 +138,7 @@ Required work:
 * migrate a concrete game proof only after commands, events, rules, and render
   pieces are stable.
 
-## 8. Later - Context
+## 7. Later - Context
 
 Goal: reserve the context path for save/load/replay-facing world state.
 
@@ -176,7 +149,7 @@ Do not wire `engine/world/context` into runtime code until reusable
 serialization/save-load primitives exist in `utils` and the base fact model is
 stable enough to describe.
 
-## 9. Implementation Constraints
+## 8. Implementation Constraints
 
 * Keep target design in `goals.md`.
 * Keep current facts in `reference.md`.

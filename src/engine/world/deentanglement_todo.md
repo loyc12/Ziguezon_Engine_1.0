@@ -25,6 +25,10 @@ This phase is completed. The concrete `World` implementation lives in
 
 ## 4. Rule Cleanup
 
+This phase is completed. `World` owns a focused `RuleManager`, `RuleManager`
+keeps storage and ordering only, and `World.applyRules()` builds a short-lived
+manager-backed `RuleContext`.
+
 Goal: remove persistent World ownership from rule-manager internals and make
 rule execution borrow the owning World only for one run.
 
@@ -112,6 +116,9 @@ Validation gate:
   compiler error in the follow-up report.
 
 ## 5. Documentation Refresh After Rule Cleanup Validation
+
+This phase is completed. `goals.md`, `reference.md`, `roadmap.md`, and
+`todo.md` now reflect the validated query / manager / rule boundaries.
 
 The query cleanup and World/WorldManager split have received a scoped
 documentation refresh. After the rule cleanup passes validation, update the

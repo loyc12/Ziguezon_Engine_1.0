@@ -80,7 +80,7 @@ pub fn CompView( comptime CompTypes : anytype ) type
 
       return .{
         .stores     = stores,
-        .generation = world.getCompViewGeneration(),
+        .generation = world.getCompViewGen(),
       };
     }
 
@@ -88,7 +88,7 @@ pub fn CompView( comptime CompTypes : anytype ) type
     /// Does not guarantee previously fetched component pointers are still valid.
     pub inline fn isStillValid( self : *const View, world : anytype ) bool
     {
-      return self.generation == world.getCompViewGeneration();
+      return self.generation == world.getCompViewGen();
     }
 
     /// Returns the cached store for one component type included in this view.

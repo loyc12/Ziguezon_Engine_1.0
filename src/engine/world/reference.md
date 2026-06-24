@@ -31,6 +31,7 @@ currently owns:
 * `TraitManager`;
 * `EventManager`;
 * `CommandManager`;
+* `RuleManager`;
 * `ArchetypeManager`;
 * component-view generation tracking.
 
@@ -83,7 +84,7 @@ World component APIs include:
 * `unregisterComp`;
 * `getCompStore`;
 * `getCompView`;
-* `getCompViewGeneration`;
+* `getCompViewGen`;
 * `addComp`;
 * `getComp`;
 * `getCompConst`;
@@ -337,23 +338,36 @@ live surface.
 
 Rules are live as compact explicit simulation-logic callbacks.
 
-`RuleContext` passes:
+`RuleContext` lives in `rules/ruleContext.zig`. It is built by
+`World.toRuleContext()` for one explicit rule pass and borrows:
 
-* a borrowed `*World` used with stateless `WorldQuery` helpers for
-  component/relation/trait inspection and event peeking/iteration;
-* a `CommandManager` pointer for enqueuing requested changes.
+* the World's live-entity map for liveness checks;
+* component, relation, trait, and event manager pointers for read-only
+  inspection helpers;
+* a command manager pointer for enqueuing requested changes.
+
+`RuleContext` does not store `*World`, import `core/world.zig`, or import
+`RuleManager`. Its helper methods intentionally mirror the const inspection
+behavior rules need from `WorldQuery` without recreating the
+`World -> RuleManager -> World` dependency loop.
 
 `Rule` stores a name, order value, and callback. `RuleManager` owns an ordered
-list of these declarations and runs them through explicit `runAll(world)` calls.
-Lower `order` values run first; duplicate names are rejected.
+list of these declarations and runs them through explicit
+`applyRules(context)` calls. Lower `order` values run first; duplicate names are
+rejected.
 
 Rules cover both broad current-fact passes and event/fact reactions. They may
 observe queued events or current queried facts and enqueue commands. Peeking and
 iterating events through rules does not consume event records.
 
-Rules do not mutate broad query results through the rule surface. `World` does
-not own or automatically run a rule manager yet; cadence, phases, broad rule
-graph ownership, temporary rules, and scheduler integration are future work.
+`World` owns one `RuleManager` and exposes `registerRule`, `hasRule`,
+`getRuleCount`, `toRuleContext`, and explicit `applyRules()`. `WorldManager`
+forwards registration, inspection, and explicit rule execution to the active
+World. `World.tick(...)` does not automatically run rules yet.
+
+Rules do not mutate broad query results through the rule surface. Cadence,
+automatic phases, broad rule graph ownership, temporary rules, and scheduler
+integration are future work.
 
 `RuleSet` is the planned name for reusable groups of executable rule
 declarations. A RuleSet should be a logic grouping and registration helper, not

@@ -14,6 +14,9 @@ const evtQue  = @import( "../events/eventQueue.zig" );
 const cmd     = @import( "../commands/command.zig" );
 const cmdMgr  = @import( "../commands/commandManager.zig" );
 const cmdQue  = @import( "../commands/commandQueue.zig" );
+const rule    = @import( "../rules/rule.zig" );
+const ruleCtx = @import( "../rules/ruleContext.zig" );
+const ruleMgr = @import( "../rules/ruleManager.zig" );
 const view    = @import( "../views/view.zig" );
 const arch    = @import( "../archetypes/archetype.zig" );
 const archMgr = @import( "../archetypes/archetypeManager.zig" );
@@ -32,6 +35,9 @@ const EventManager         = evtMgr.EventManager;
 const EventQueueFactory    = evtQue.EventQueueFactory;
 const CommandManager       = cmdMgr.CommandManager;
 const CommandQueueFactory  = cmdQue.CommandQueueFactory;
+const Rule                 = rule.Rule;
+const RuleContext          = ruleCtx.RuleContext;
+const RuleManager          = ruleMgr.RuleManager;
 const ArchetypeSpawnResult = arch.ArchetypeSpawnResult;
 const Duration             = utl.Duration;
 
@@ -64,6 +70,7 @@ pub const World = struct
   traitManager     : TraitManager     = .{},
   eventManager     : EventManager     = .{},
   commandManager   : CommandManager   = .{},
+  ruleManager      : RuleManager      = .{},
   archetypeManager : ArchetypeManager = .{},
   viewGeneration   : u64              = 0,
 
@@ -195,14 +202,14 @@ pub const World = struct
   }
 
   /// Builds a transient typed view over multiple registered component stores.
-  /// Views cache store pointers; check `isStillValid` after register/unregister calls.
+  /// Views cachgetCompViewGenck `isStillValid` after register/unregister calls.
   pub inline fn getCompView( self : *World, comptime CompTypes : anytype ) ?view.CompView( CompTypes )
   {
     return view.CompView( CompTypes ).init( self );
   }
 
   /// Returns the generation used to detect stale component views.
-  pub inline fn getCompViewGeneration( self : *const World ) u64
+  pub inline fn getCompViewGen( self : *const World ) u64
   {
     return self.viewGeneration;
   }
@@ -580,6 +587,57 @@ pub const World = struct
   }
 
 
+  // ================================ RULE FUNCTIONS ================================
+
+  /// Registers one named rule for explicit rule passes.
+  pub inline fn registerRule( self : *World, ruleDef : Rule ) bool
+  {
+    return self.ruleManager.register( ruleDef );
+  }
+
+  /// Returns true when a rule name is already registered.
+  pub inline fn hasRule( self : *const World, name : []const u8 ) bool
+  {
+    return self.ruleManager.hasRule( name );
+  }
+
+  /// Returns the number of registered explicit rules.
+  pub inline fn getRuleCount( self : *const World ) usize
+  {
+    return self.ruleManager.getRuleCount();
+  }
+
+  /// Packages World-owned managers into a short-lived rule-only context.
+  /// This helper avoids a `World -> RuleManager -> World` dependency loop.
+  /// Other context-like needs should use their own tailored conversion helpers
+  /// instead of broadening `RuleContext` beyond rule execution.
+  pub inline fn toRuleContext( self : *World ) RuleContext
+  {
+    return .{
+      .activeEntities  = &self.activeEntities,
+      .compManager     = &self.compManager,
+      .relationManager = &self.relationManager,
+      .traitManager    = &self.traitManager,
+      .eventManager    = &self.eventManager,
+      .commandManager  = &self.commandManager,
+    };
+  }
+
+  /// Runs registered rules once in deterministic order.
+  /// This is explicit for now; `World.tick(...)` does not run rules.
+  pub fn applyRules( self : *World ) bool
+  {
+    if( !self.isInit )
+    {
+      utl.qlog( .WARN, @src(), "Cannot apply Rules : World is uninitialized" );
+      return false;
+    }
+
+    var context = self.toRuleContext();
+    return self.ruleManager.applyRules( &context );
+  }
+
+
   // ================================ ARCHETYPE FUNCTIONS ================================
 
   /// Registers one data-only archetype declaration for name-based spawning.
@@ -721,12 +779,14 @@ pub const World = struct
     self.traitManager.init( alloc );
     self.eventManager.init( alloc );
     self.commandManager.init( alloc );
+    self.ruleManager.init( alloc );
     self.archetypeManager.init( alloc );
   }
 
   inline fn deinitFactManagers( self : *World ) void
   {
     self.archetypeManager.deinit();
+    self.ruleManager.deinit();
     self.commandManager.deinit();
     self.eventManager.deinit();
     self.traitManager.deinit();
@@ -1428,6 +1488,120 @@ test "World archetype spawning does not enqueue commands or custom events"
 
   try std.testing.expect( world.getCommandCount( TestCommand ) == 0 );
   try std.testing.expect( world.getEventCount(   TestEvent   ) == 0 );
+}
+
+test "World owns explicit rule registration and execution"
+{
+  const TestComp = struct
+  {
+    pub const compStorePolicy : comp.CompStorePolicy = .SPARSE;
+
+    value : u32 = 0,
+  };
+  const TestEvent = struct
+  {
+    value : u32 = 0,
+  };
+  const TestCommand = struct
+  {
+    entityId : EntityId = 0,
+    value    : u32     = 0,
+  };
+
+  const Runner = struct
+  {
+    var entityId : EntityId = 0;
+    var order    : [2]u8    = .{ 0, 0 };
+    var count    : usize   = 0;
+
+    fn first( context : *RuleContext ) bool
+    {
+      order[ count ] = 1;
+      count += 1;
+      return context.enqueueCommand( TestCommand, .{ .entityId = entityId, .value = 10 });
+    }
+
+    fn second( context : *RuleContext ) bool
+    {
+      order[ count ] = 2;
+      count += 1;
+
+      const compVal    = context.getComp( TestComp, entityId ) orelse return false;
+      const eventCount = context.getEventCount( TestEvent );
+      return context.enqueueCommand( TestCommand, .{ .entityId = entityId, .value = compVal.value + @as( u32, @intCast( eventCount ))});
+    }
+  };
+
+  var world : World = .{};
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.ruleManager.isInit );
+  try std.testing.expect( world.getRuleCount() == 0 );
+
+  try std.testing.expect( world.registerComp(    TestComp    ));
+  try std.testing.expect( world.registerEvent(   TestEvent   ));
+  try std.testing.expect( world.registerCommand( TestCommand ));
+
+  Runner.entityId = world.createEntity().id;
+  Runner.order    = .{ 0, 0 };
+  Runner.count    = 0;
+
+  try std.testing.expect( world.addComp( TestComp, Runner.entityId, .{ .value = 40 }));
+  try std.testing.expect( world.emitEvent( TestEvent, .{ .value = 99 }));
+
+  try std.testing.expect(  world.registerRule( .{ .name = "second", .order = 20, .runFn = Runner.second }));
+  try std.testing.expect(  world.registerRule( .{ .name = "first",  .order = 10, .runFn = Runner.first  }));
+  try std.testing.expect( !world.registerRule( .{ .name = "first",  .order = 30, .runFn = Runner.first  }));
+  try std.testing.expect(  world.hasRule( "first" ));
+  try std.testing.expect(  world.getRuleCount() == 2 );
+
+  try std.testing.expect( world.applyRules() );
+  try std.testing.expect( Runner.order[ 0 ] == 1 );
+  try std.testing.expect( Runner.order[ 1 ] == 2 );
+  try std.testing.expect( world.getEventCount( TestEvent ) == 1 );
+  try std.testing.expect( world.popCommand( TestCommand ).?.value.value == 10 );
+  try std.testing.expect( world.popCommand( TestCommand ).?.value.value == 41 );
+
+  world.deinit();
+  try std.testing.expect( !world.ruleManager.isInit );
+}
+
+test "World rule failure is visible and stops later rules"
+{
+  const TestCommand = struct
+  {
+    value : u32 = 0,
+  };
+
+  const Runner = struct
+  {
+    fn fail( context : *RuleContext ) bool
+    {
+      _ = context;
+      return false;
+    }
+
+    fn later( context : *RuleContext ) bool
+    {
+      return context.enqueueCommand( TestCommand, .{ .value = 99 });
+    }
+  };
+
+  var world : World = .{};
+
+  try std.testing.expect( !world.registerRule( .{ .name = "uninit", .runFn = Runner.fail }));
+  try std.testing.expect( !world.applyRules() );
+
+  world.init( std.testing.allocator );
+  defer world.deinit();
+
+  try std.testing.expect( world.registerCommand( TestCommand ));
+  try std.testing.expect( world.registerRule( .{ .name = "fail",  .order = 10, .runFn = Runner.fail  }));
+  try std.testing.expect( world.registerRule( .{ .name = "later", .order = 20, .runFn = Runner.later }));
+
+  try std.testing.expect( !world.applyRules() );
+  try std.testing.expect( world.getCommandCount( TestCommand ) == 0 );
 }
 
 test "World owns typed event queue API and registration lifecycle"
