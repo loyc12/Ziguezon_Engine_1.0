@@ -6,81 +6,78 @@ simulation. [roadmap.md](roadmap.md) defines the broader implementation order.
 
 ## 1. Current Slice
 
-Build the first visual shell and debug controls without adding permanent
-simulation substitutes for engine-world surfaces that already exist.
+Start the first world-owned station facts.
 
-The current scaffold compiles and exposes engine hooks, but it only renders a
-placeholder overlay. This slice should create a visible station-scale shell
-that future world-fact slices can attach to.
+The visual shell now exists: the station is drawn at center, deterministic
+visual-only asteroids drift in the background, zoom/reset/overlay controls work,
+and panning is disabled. This slice should attach the first persistent station
+state to the engine `World` without adding processing, market, drones,
+archetypes, or scheduler behavior yet.
 
 ## 2. Scope
 
 In scope:
 
-* keep the station visually centered as a grey world-space circle;
-* add a small deterministic set of darker grey asteroid circles drifting in the
-  background;
-* keep zoom in/out and camera reset controls;
-* remove or disable temporary WASD/arrow panning so the first shell matches the
-  no-panning design;
-* replace the placeholder `DRIFTER` overlay with compact debug text for pause
-  state, zoom, asteroid count, and available controls;
-* keep overlay toggling;
-* keep all state game-owned under `src/games/drifter`;
-* leave comments where shell state is intentionally temporary.
+* register game-owned station component types through public World APIs;
+* create one persistent station entity during game open/reset;
+* add starter reserve state for finite manually harvestable regolith, ice, and
+  ore;
+* add initial resource stockpile state for regolith, ice, ore, oxygen, fuel,
+  water, food, power, concrete, metals, electronics, credits, and population;
+* add basic capacity state for storage, drone slots, processing throughput,
+  power output, hangar throughput, market throughput, and construction capacity;
+* expose station resource, reserve, and capacity facts through the existing
+  overlay;
+* keep the current visual shell intact unless it must read the new station
+  facts;
+* reset the station facts cleanly without stale entities or component rows.
 
 Out of scope:
 
-* station resource stockpiles;
-* persistent station, system, drone, asteroid, or chunk entities;
-* component/relation/trait/event/command/rule registration;
+* station system child entities;
+* drones, asteroids, chunks, and jobs as world entities;
+* manual harvest behavior;
+* processing rules, upkeep rules, market rules, command callbacks, and events;
 * archetype declarations;
 * scheduler cadence or timed jobs;
 * retained UI widgets;
-* market, construction, upkeep, population, damage, repair, save/load, replay,
-  particles, or effects.
+* construction, damage, repair, save/load, replay, particles, or effects.
 
 ## 3. Tasks
 
-1. Inventory the current scaffold.
-   * Confirm `stateInjects.zig` remains lifecycle-only.
-   * Confirm shell state belongs in `stepInjects.zig` or a small local file if
-     the render/input code becomes hard to scan.
+1. Define station fact types.
+   * Add compact game-owned component declarations for station resources,
+     starter reserves, and capacities.
+   * Use explicit names that match `design.md`.
+   * Add comments for fields whose units or ownership would be unclear.
 
-2. Add shell state.
-   * Define station world position, station radius, asteroid positions, sizes,
-     and drift speeds.
-   * Keep the asteroid list fixed-size for this slice.
-   * Reset shell state from a clear helper used by startup or reset input.
+2. Register station fact stores.
+   * Register the station component stores during `OnGameOpen` or the nearest
+     reset/setup helper.
+   * Keep registration failures visible through logs.
+   * Do not register unrelated world feature families yet.
 
-3. Update input behavior.
-   * Preserve pause toggle.
-   * Preserve mouse-wheel zoom and camera reset.
-   * Preserve overlay toggle.
-   * Remove or disable WASD/arrow panning for this slice.
+3. Create and reset the station entity.
+   * Create one station entity.
+   * Attach the station resource, reserve, and capacity components.
+   * Track the station id in game-owned state only as far as this slice needs.
+   * Ensure reset removes the old station facts before creating a replacement.
 
-4. Draw the shell.
-   * Draw the station in `OnRenderWorld`.
-   * Draw asteroid circles in `OnRenderWorld`.
-   * Keep colors simple and readable against the current background.
-   * Avoid relying on world simulation facts that do not exist yet.
+4. Expose facts in the overlay.
+   * Read station resources, reserves, and capacities through public World APIs.
+   * Keep the overlay compact and debug-oriented.
+   * Show an explicit unavailable/missing state if setup failed.
 
-5. Replace the placeholder overlay.
-   * Show pause state.
-   * Show zoom or camera scale if available through the current camera API.
-   * Show asteroid count.
-   * Show concise controls.
-   * Ensure the paused-screen cover does not hide the useful debug text.
-
-6. Validate.
+5. Validate.
    * Run `zig build drifter`.
    * Manually run `drifter` if a graphics session is available.
-   * Confirm zoom works, reset recenters the shell, overlay toggle works, and
-     no panning controls move the camera.
+   * Confirm reset recreates station facts, overlay values return to defaults,
+     and no stale station entity remains visible through debug output.
 
 ## 4. Next Slice Candidate
 
-After this shell is stable, the next roadmap slice should start the first
-world-owned station facts: register the game-owned station components, create
-the persistent station entity, add starter reserve state, and expose those
-facts through the overlay.
+After station facts are stable, the next roadmap slice should implement manual
+starter-reserve harvesting: consume finite reserve amounts, move harvested raw
+resources into station storage, respect storage capacity, and emit visible
+debug output or events only if the required event surface is deliberately added
+in that slice.

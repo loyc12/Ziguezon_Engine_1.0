@@ -42,9 +42,11 @@ Current baseline:
 
 * `drifter` compiles as a game target;
 * the adapter exposes the expected engine hooks and configs;
-* input supports pause, camera movement, camera zoom, camera reset, and overlay
-  toggle;
-* rendering is still a placeholder overlay;
+* input supports pause, camera zoom, shell reset, and overlay toggle;
+* panning is disabled for the station-centered shell;
+* rendering shows a central station circle and deterministic visual-only
+  asteroid circles drifting in the background;
+* overlay text shows pause state, zoom, asteroid count, and controls;
 * no world-owned station simulation exists yet.
 
 The first implementation goal is a small playable/debuggable vertical slice:
@@ -52,30 +54,7 @@ one station, starter reserves, basic resources, simple visuals, player controls,
 and enough world facts to validate entity lifecycle, components, relations,
 traits, events, rules, and queries in combination.
 
-## 3. Phase 1 - Visual Shell And Controls
-
-Create the first visible station-scale shell.
-
-Work:
-
-* keep the station centered as a grey world-space circle;
-* add darker grey asteroid circles drifting through the background;
-* remove or disable temporary panning controls so the first shell follows the
-  station-centered design;
-* draw drones as simple world-position markers once drones exist;
-* support zoom in/out without panning;
-* add overlay ledgers for resources, station systems, drones, warnings, and
-  recent events;
-* add controls for pause/resume, reset, spawn asteroid, manual harvest, buy,
-  sell, dump, build system, and overlay toggles.
-
-Validation:
-
-* `zig build drifter`;
-* manual run confirms the shell opens, zoom works, and overlay text does not
-  depend on simulation internals that do not exist yet.
-
-## 4. Phase 2 - Station And Resource Facts
+## 3. Current - Station And Resource Facts
 
 Add the central station simulation state.
 
@@ -89,9 +68,9 @@ Work:
 * add basic capacity state for storage, drone slots, processing throughput,
   power output, hangar throughput, market throughput, and construction capacity;
 * represent built station systems as station-owned child entities where the
-  engine world surface supports it cleanly;
+  engine world surface supports it cleanly, after base station facts are stable;
 * add initial systems: hangar, depot, refinery, storage, reactor, shipyard, and
-  assembly.
+  assembly after the system-child-entity shape is chosen.
 
 Validation:
 
@@ -99,7 +78,7 @@ Validation:
 * reset recreates the station cleanly without stale entities or facts;
 * selected/debug output can inspect the station and child systems.
 
-## 5. Phase 3 - Bootstrap And Processing Loop
+## 4. Phase 2 - Bootstrap And Processing Loop
 
 Build the first resource loop before drones are required.
 
@@ -126,7 +105,7 @@ Validation:
 * processing changes stockpiles through visible rules;
 * full storage and life-support failures emit readable events.
 
-## 6. Phase 4 - Asteroids, Chunks, And Drones
+## 5. Phase 3 - Asteroids, Chunks, And Drones
 
 Add the autonomous harvest loop.
 
@@ -152,7 +131,7 @@ Validation:
 * drone shortage blocks work visibly instead of silently resolving;
 * returned resources feed the same processing/storage loop as manual harvest.
 
-## 7. Phase 5 - Construction And Growth
+## 6. Phase 4 - Construction And Growth
 
 Let the station expand using direct resources.
 
@@ -174,7 +153,7 @@ Validation:
 * drone construction is limited by shipyard and hangar capacity;
 * damaged systems create readable repair work when enabled.
 
-## 8. Phase 6 - Market And Resource Management
+## 7. Phase 5 - Market And Resource Management
 
 Add the first market loop.
 
@@ -194,7 +173,7 @@ Validation:
 * repeated buying and selling visibly affects price;
 * dumping creates resource loss and a visible event.
 
-## 9. Phase 7 - Rule Management And Player Priorities
+## 8. Phase 6 - Rule Management And Player Priorities
 
 Expose the station-management layer.
 
@@ -204,7 +183,8 @@ Work:
   selling, buying, or pausing production;
 * allow priorities for drone harvesting targets;
 * add limited drone override behavior only after the automated loop works;
-* show active rules, thresholds, and blocked rules in the overlay;
+* add overlay ledgers for active rules, thresholds, blocked rules, warnings,
+  and recent events;
 * keep rule failures explicit through events and warnings.
 
 Validation:
@@ -212,6 +192,23 @@ Validation:
 * changing a threshold changes future production or market behavior;
 * disabled or blocked rules are visible;
 * drone automation remains the default and does not require micromanagement.
+
+## 9. Later - Controls And Drones In The Visual Shell
+
+Add controls when their target systems exist instead of keeping placeholder
+buttons.
+
+Work:
+
+* draw drones as simple world-position markers once drones exist;
+* add controls for spawn asteroid, manual harvest, buy, sell, dump, build
+  system, and overlay toggles in the phase that owns each behavior;
+* keep pause/resume, reset, zoom, and overlay toggles available throughout.
+
+Validation:
+
+* controls call real game behavior;
+* overlay text does not depend on simulation internals that do not exist yet.
 
 ## 10. Deferred Work
 
