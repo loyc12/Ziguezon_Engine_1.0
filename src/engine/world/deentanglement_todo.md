@@ -36,33 +36,66 @@ Target shape:
 * `RuleManager` does not store `*World`;
 * `RuleManager` does not store a persistent world context wrapper;
 * `RuleManager` does not become a broad world orchestration layer;
-* `World` or a closely owned World execution helper constructs any short-lived
-  context needed for a rule pass;
-* rules read facts through the stateless `WorldQuery` helpers and request
-  mutations through the command queue;
+* `World` constructs a short-lived `RuleContext` for one explicit rule pass;
+* `RuleContext` stores only the manager pointers rule callbacks need for
+  inspection and command enqueueing;
+* `RuleContext` does not store `*World`, import `core/world.zig`, or import
+  `RuleManager`;
+* `RuleContext` exposes narrow rule-facing helpers instead of broad mutable
+  manager access where practical;
+* `World` owns a narrow `toRuleContext()` helper that builds a `RuleContext`
+  from the current World's manager pointers;
+* `World.applyRules()` owns the rule pass orchestration: it calls
+  `toRuleContext()` and passes the result to `RuleManager.applyRules(...)`;
+* rules read facts through `RuleContext` helpers backed by the same const
+  inspection behavior as `WorldQuery`;
+* rules request mutations through the command queue only;
 * rule execution remains explicit in this slice; do not wire automatic rule
   phases into `World.tick(...)`.
 
-Design checkpoint:
+Design decision:
 
-* decide the rule function boundary before moving declarations:
-  * whether rules can receive `*World` directly;
-  * whether rules receive a narrower short-lived context;
-  * whether that context must live in `core/world.zig` to avoid cycles;
-  * whether another direct, concrete boundary is clearer.
+* rule callbacks keep the shape `RuleFn = *const fn ( *RuleContext ) bool`;
+* `RuleContext` is a narrow, rule-only mini-world context backed by manager
+  pointers, not by `*World`;
+* put `RuleContext` in a neutral rule-side file such as
+  `rules/ruleContext.zig`, or another focused file that does not import
+  `core/world.zig` or `rules/ruleManager.zig`;
+* `World.toRuleContext()` is the only place that packages World-owned managers
+  into a `RuleContext`;
+* `World.applyRules()` calls `toRuleContext()` and then delegates to
+  `RuleManager.applyRules(...)`;
+* `RuleManager.applyRules(...)` iterates its ordered rules with the provided
+  context and does not construct or retain a context itself;
+* add a note in the `RuleContext` source file saying this structure is
+  rule-specific, is manager-pointer-backed to prevent dependency loops between
+  `World` and `RuleManager`, and future non-rule contexts may duplicate and
+  tweak this shape instead of reusing `RuleContext` for unrelated purposes;
+* add a matching note near `World.toRuleContext()` saying the helper packages
+  managers into a rule-only context to avoid a `World -> RuleManager -> World`
+  dependency loop, and other context-like needs should use their own tailored
+  conversion helpers rather than broadening `RuleContext`.
 * Do not choose type erasure, factories, dependency injection, or generic
   wrappers only to silence a compile-time loop.
-* If a concrete `RuleContext` that references `World` recreates the known
-  dependency loop, stop and report it instead of layering around it.
+* If a concrete `RuleContext` that references `World` or imports
+  `core/world.zig` recreates the known dependency loop, stop and report it
+  instead of layering around it.
 
 Required work:
 
 * keep `rules/rule.zig` focused on the smallest stable rule declaration
   surface;
+* move the concrete `RuleContext` out of `rules/rule.zig` if needed so
+  `rules/rule.zig` stays focused on `Rule` and `RuleFn`;
 * keep `rules/ruleManager.zig` focused on rule storage and ordering;
-* let World-owned code coordinate execution with the current World value;
-* update tests so rules inspect facts through
-  `WorldQuery.get...( world, ... )`;
+* add `World.toRuleContext()` as the narrow conversion helper from World-owned
+  manager state to one short-lived manager-pointer `RuleContext`;
+* document `World.toRuleContext()` with the rule-only / dependency-loop
+  rationale and the duplicate-for-other-contexts guidance;
+* add `World.applyRules()` as the explicit rule-run helper that delegates to
+  `RuleManager.applyRules(...)`;
+* update tests so rules inspect facts through `RuleContext` helpers and do not
+  receive `*World` directly;
 * preserve deterministic order, duplicate-name rejection, visible rule failure,
   event inspection without consumption, and command enqueueing;
 * do not implement command execution ownership, scheduler cadence, delayed
