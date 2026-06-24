@@ -50,37 +50,18 @@ Current baseline:
   close/reset;
 * station resources, starter reserves, and capacities are registered as
   game-owned component stores;
+* manual starter-reserve harvesting is available through `H`, consumes finite
+  regolith, ice, and ore reserves, respects storage capacity, and reports the
+  latest harvest or blocked state through overlay text and logs;
 * overlay text shows pause state, zoom, asteroid count, station resources,
-  starter reserves, capacities, and controls.
+  starter reserves, storage use, capacities, harvest status, and controls.
 
 The first implementation goal is a small playable/debuggable vertical slice:
 one station, starter reserves, basic resources, simple visuals, player controls,
 and enough world facts to validate entity lifecycle, components, relations,
 traits, events, rules, and queries in combination.
 
-## 3. Current - Manual Starter-Reserve Harvesting
-
-Consume finite starter reserves and move harvested raw resources into station
-storage.
-
-Work:
-
-* add a simple manual harvest control against the station's starter reserves;
-* consume finite regolith, ice, and ore reserve amounts;
-* move harvested raw resources into station stockpiles;
-* respect storage capacity and report full-storage blocks visibly;
-* keep output debug-oriented until an event surface is deliberately added for
-  this slice.
-
-Validation:
-
-* starter reserves decline when harvested;
-* raw resources increase by the harvested amounts;
-* storage capacity blocks excess harvest;
-* reset restores station facts to defaults and removes the previous station
-  entity.
-
-## 4. Phase 2 - Processing Loop
+## 3. Current - Processing Loop
 
 Build the first automatic resource loop before drones are required.
 
@@ -108,7 +89,7 @@ Validation:
 * processing changes stockpiles through visible rules;
 * full storage and life-support failures emit readable events.
 
-## 5. Phase 3 - Asteroids, Chunks, And Drones
+## 4. Phase 3 - Asteroids, Chunks, And Drones
 
 Add the autonomous harvest loop.
 
@@ -134,7 +115,7 @@ Validation:
 * drone shortage blocks work visibly instead of silently resolving;
 * returned resources feed the same processing/storage loop as manual harvest.
 
-## 6. Phase 4 - Construction And Growth
+## 5. Phase 4 - Construction And Growth
 
 Let the station expand using direct resources.
 
@@ -156,7 +137,7 @@ Validation:
 * drone construction is limited by shipyard and hangar capacity;
 * damaged systems create readable repair work when enabled.
 
-## 7. Phase 5 - Market And Resource Management
+## 6. Phase 5 - Market And Resource Management
 
 Add the first market loop.
 
@@ -176,7 +157,7 @@ Validation:
 * repeated buying and selling visibly affects price;
 * dumping creates resource loss and a visible event.
 
-## 8. Phase 6 - Rule Management And Player Priorities
+## 7. Phase 6 - Rule Management And Player Priorities
 
 Expose the station-management layer.
 
@@ -196,7 +177,7 @@ Validation:
 * disabled or blocked rules are visible;
 * drone automation remains the default and does not require micromanagement.
 
-## 9. Later - Controls And Drones In The Visual Shell
+## 8. Later - Controls And Drones In The Visual Shell
 
 Add controls when their target systems exist instead of keeping placeholder
 buttons.
@@ -213,7 +194,7 @@ Validation:
 * controls call real game behavior;
 * overlay text does not depend on simulation internals that do not exist yet.
 
-## 10. Deferred Work
+## 9. Deferred Work
 
 Defer until the first station loop is stable:
 
@@ -226,7 +207,7 @@ Defer until the first station loop is stable:
 * save/load, replay, or long-history inspection;
 * broad UI polish beyond the controls needed to validate the simulation.
 
-## 11. Roadmap Validation
+## 10. Roadmap Validation
 
 For code slices, use at least:
 

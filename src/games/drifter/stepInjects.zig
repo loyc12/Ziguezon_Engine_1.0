@@ -22,11 +22,15 @@ const ShellAsteroid = struct
 const ASTEROID_WRAP_HEIGHT : f64 = 1024.0;
 const ASTEROID_WRAP_WIDTH  : f64 = ASTEROID_WRAP_HEIGHT * 2.0;
 const ASTEROID_SAFE_RADIUS : f64 = STATION_RADIUS + 160.0;
+const ASTEROID_RADIUS_MIN  : f64 = 20.0;
+const ASTEROID_RADIUS_MAX  : f64 = 80.0;
+const ASTEROID_DRIFT_Y_MAX : f64 = 50.0;
 
 var SHOW_OVERLAY : bool = true;
 // TODO: Replace this visual-only asteroid state with world-owned asteroid facts once the asteroid slice lands.
-var isShellInit  : bool = false;
-var asteroids    : [ ASTEROID_COUNT ]ShellAsteroid = undefined;
+var LAST_HARVEST_RESULT : station.ManualHarvestResult = .{};
+var isShellInit         : bool = false;
+var asteroids           : [ ASTEROID_COUNT ]ShellAsteroid = undefined;
 
 
 // ================================ SHELL HELPERS ================================
@@ -41,6 +45,10 @@ fn resetDrifter( ng : *eng.Engine ) void
   {
     utl.qlog( .ERROR, @src(), "Drifter station reset failed" );
   }
+  else
+  {
+    LAST_HARVEST_RESULT = .{ .status = .reset, .stationId = station.getStationId() };
+  }
 
   utl.qlog( .INFO, @src(), "Drifter reset" );
 }
@@ -53,7 +61,6 @@ fn resetVisualShell() void
   for( &asteroids )| *asteroid |{ asteroid.* = spawnShellAsteroid(); }
 
   eng.G_ENG.camera.setCenter( STATION_POS );
-  eng.G_ENG.camera.setZoom(   1.0 );
 
   isShellInit = true;
   utl.qlog( .INFO, @src(), "Drifter visual shell reset" );
@@ -83,14 +90,37 @@ fn spawnShellAsteroid() ShellAsteroid
 
   return .{
     .pos      = pos,
-    .radius   = randF64( 23.0, 45.0 ),
-    .velocity = .new( randF64( 25.0, 125.0 ), randF64( 60.0, 0.0 )),
+    .radius   = randLowBiasedF64( ASTEROID_RADIUS_MIN, ASTEROID_RADIUS_MAX ),
+    .velocity = .new( randF64( 25.0, 125.0 ), randSignedLowBiasedF64( ASTEROID_DRIFT_Y_MAX )),
   };
 }
 
 inline fn randF64( scale : f32, offset : f32 ) f64
 {
   return @floatCast( eng.G_ENG.rng.getScaledFloat( scale, offset ));
+}
+
+/// Returns a value in [min, max) biased toward min.
+/// Squaring the uniform sample makes large visual asteroids rarer without
+/// hiding them completely.
+inline fn randLowBiasedF64( min : f64, max : f64 ) f64
+{
+  const unit = randUnitF64();
+  return min + (( max - min ) * unit * unit );
+}
+
+/// Returns a signed value whose magnitude is biased toward zero.
+/// Vertical shell drift is visual-only; this keeps fast upward/downward motion
+/// uncommon while preserving both directions.
+inline fn randSignedLowBiasedF64( maxMagnitude : f64 ) f64
+{
+  const sign : f64 = if( eng.G_ENG.rng.getBool() ) 1.0 else -1.0;
+  return sign * randLowBiasedF64( 0.0, maxMagnitude );
+}
+
+inline fn randUnitF64() f64
+{
+  return @floatCast( eng.G_ENG.rng.getFloat( f32 ));
 }
 
 /// Advances visual-only asteroid drift. This is not simulation scheduling.
@@ -151,6 +181,13 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
   {
     SHOW_OVERLAY = !SHOW_OVERLAY;
   }
+
+  // Manual starter harvesting stays as a debug/player bootstrap control until
+  // drones and asteroid jobs own the main harvest loop.
+  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.h ))
+  {
+    LAST_HARVEST_RESULT = station.tryManualHarvest( ng );
+  }
 }
 
 
@@ -204,7 +241,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
 
     utl.sDraw.textLeft(    "DRIFTER SHELL", .new( 16.0,  96.0 ), 24, utl.Colour.pGreen );
     utl.sDraw.textLeftFmt( "state: {s} | zoom: {d:.2} | asteroids: {d}", .{ status, eng.G_ENG.camera.getZoom(), asteroids.len }, .new( 16.0, 128.0 ), 18, utl.Colour.nWhite );
-    utl.sDraw.textLeft(    "Enter/Space pause | Wheel zoom | R reset | T overlay", .new( 16.0, 154.0 ), 18, utl.Colour.lGray   );
+    utl.sDraw.textLeft(    "Enter/Space pause | Wheel zoom | H harvest | R reset | T overlay", .new( 16.0, 154.0 ), 18, utl.Colour.lGray );
 
     renderStationFactsOverlay( ng );
   }
@@ -233,12 +270,64 @@ fn renderStationFactsOverlay( ng : *eng.Engine ) void
   const res = facts.resources;
   const rsv = facts.reserves;
   const cap = facts.capacities;
+  const storageUsed = station.getStoredCargoUsed( res );
 
   utl.sDraw.textLeftFmt( "station id: {d}", .{ facts.stationId }, .new( 16.0, 190.0 ), 18, utl.Colour.pGreen );
   utl.sDraw.textLeftFmt( "raw: regolith {d:.0} | ice {d:.0} | ore {d:.0}", .{ res.regolith, res.ice, res.ore }, .new( 16.0, 216.0 ), 18, utl.Colour.nWhite );
   utl.sDraw.textLeftFmt( "stock: oxygen {d:.0} | fuel {d:.0} | water {d:.0} | food {d:.0} | power {d:.0}", .{ res.oxygen, res.fuel, res.water, res.food, res.power }, .new( 16.0, 242.0 ), 18, utl.Colour.nWhite );
   utl.sDraw.textLeftFmt( "built: concrete {d:.0} | metals {d:.0} | electronics {d:.0} | credits {d:.0} | pop {d:.0}", .{ res.concrete, res.metals, res.electronics, res.credits, res.population }, .new( 16.0, 268.0 ), 18, utl.Colour.nWhite );
   utl.sDraw.textLeftFmt( "reserves: regolith {d:.0} | ice {d:.0} | ore {d:.0}", .{ rsv.regolith, rsv.ice, rsv.ore }, .new( 16.0, 294.0 ), 18, utl.Colour.lGray );
-  utl.sDraw.textLeftFmt( "capacity: storage {d:.0} | drones {d} | process {d:.0} | power {d:.0}", .{ cap.storage, cap.droneSlots, cap.processingThroughput, cap.powerOutput }, .new( 16.0, 320.0 ), 18, utl.Colour.lGray );
-  utl.sDraw.textLeftFmt( "throughput: hangar {d:.0} | market {d:.0} | construction {d:.0}", .{ cap.hangarThroughput, cap.marketThroughput, cap.constructionCapacity }, .new( 16.0, 346.0 ), 18, utl.Colour.lGray );
+  utl.sDraw.textLeftFmt( "capacity: storage {d:.0}/{d:.0} | drones {d} | process {d:.0} | power {d:.0}", .{ storageUsed, cap.storage, cap.droneSlots, cap.processingThroughput, cap.powerOutput }, .new( 16.0, 320.0 ), 18, utl.Colour.lGray );
+
+  renderHarvestStatusOverlay( LAST_HARVEST_RESULT, .new( 16.0, 346.0 ));
+
+  utl.sDraw.textLeftFmt( "throughput: hangar {d:.0} | market {d:.0} | construction {d:.0}", .{ cap.hangarThroughput, cap.marketThroughput, cap.constructionCapacity }, .new( 16.0, 372.0 ), 18, utl.Colour.lGray );
+}
+
+/// Draws the latest manual-harvest result without coupling overlay code to the
+/// mutation rules in stationFacts.zig.
+fn renderHarvestStatusOverlay( result : station.ManualHarvestResult, pos : Vec2 ) void
+{
+  switch( result.status )
+  {
+    .harvested =>
+    {
+      utl.sDraw.textLeftFmt( "harvest: +{d:.1} regolith | +{d:.1} ice | +{d:.1} ore | storage {d:.0}/{d:.0}", .{
+        result.regolith,
+        result.ice,
+        result.ore,
+        result.storageUsed,
+        result.storageCap,
+      }, pos, 18, utl.Colour.pGreen );
+    },
+
+    else =>
+    {
+      utl.sDraw.textLeftFmt( "harvest: {s}", .{ getHarvestStatusText( result.status )}, pos, 18, getHarvestStatusColour( result.status ));
+    },
+  }
+}
+
+inline fn getHarvestStatusText( status : station.ManualHarvestStatus ) [:0]const u8
+{
+  return switch( status )
+  {
+    .idle               => "idle - press H",
+    .reset              => "reset restored defaults",
+    .harvested          => "harvested",
+    .stationUnavailable => "blocked - station unavailable",
+    .missingFacts       => "blocked - station fact rows missing",
+    .reservesEmpty      => "blocked - starter reserves empty",
+    .storageFull        => "blocked - storage full",
+  };
+}
+
+inline fn getHarvestStatusColour( status : station.ManualHarvestStatus ) utl.Colour
+{
+  return switch( status )
+  {
+    .idle, .reset => utl.Colour.lGray,
+    .harvested   => utl.Colour.pGreen,
+    else         => utl.Colour.red,
+  };
 }

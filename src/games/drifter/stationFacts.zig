@@ -62,6 +62,43 @@ pub const StationFactView = struct
   capacities : *const StationCapacities,
 };
 
+/// Fixed manual-harvest bundle for the station starter reserves.
+/// Units are abstract cargo units. This stays local until drones and asteroid
+/// chunks define their own extraction rates.
+pub const ManualHarvestBundle = struct
+{
+  regolith : f64 = 18.0,
+  ice      : f64 = 8.0,
+  ore      : f64 = 6.0,
+};
+
+/// Result state for a manual harvest attempt.
+pub const ManualHarvestStatus = enum
+{
+  idle,
+  reset,
+  harvested,
+  stationUnavailable,
+  missingFacts,
+  reservesEmpty,
+  storageFull,
+};
+
+/// Summary of the latest manual harvest attempt for overlay and logs.
+pub const ManualHarvestResult = struct
+{
+  status      : ManualHarvestStatus = .idle,
+  stationId   : eng.EntityId        = 0,
+  regolith    : f64                 = 0.0,
+  ice         : f64                 = 0.0,
+  ore         : f64                 = 0.0,
+  total       : f64                 = 0.0,
+  storageUsed : f64                 = 0.0,
+  storageCap  : f64                 = 0.0,
+};
+
+const MANUAL_HARVEST : ManualHarvestBundle = .{};
+
 
 // ================================ STATION STATE ================================
 
@@ -138,6 +175,108 @@ pub fn getStationFactView( ng : *eng.Engine ) ?StationFactView
     .resources  = resources,
     .reserves   = reserves,
     .capacities = capacities,
+  };
+}
+
+/// Returns storage cargo used by tangible resources covered by station storage.
+/// Credits and population are accounting values, not cargo. Power is treated as
+/// a capacity-like energy buffer for this slice, so it does not consume storage.
+pub inline fn getStoredCargoUsed( resources : *const StationResources ) f64
+{
+  return resources.regolith
+       + resources.ice
+       + resources.ore
+       + resources.oxygen
+       + resources.fuel
+       + resources.water
+       + resources.food
+       + resources.concrete
+       + resources.metals
+       + resources.electronics;
+}
+
+/// Attempts one player/debug manual harvest against finite starter reserves.
+/// All required station rows are fetched before mutation, so missing facts
+/// reject the operation without partially changing station state.
+pub fn tryManualHarvest( ng : *eng.Engine ) ManualHarvestResult
+{
+  if( STATION_ID == 0 or !ng.world.isEntityAlive( STATION_ID ))
+  {
+    utl.log( .WARN, @src(), "Manual harvest blocked: station Entity {d} is unavailable", .{ STATION_ID });
+    return .{ .status = .stationUnavailable, .stationId = STATION_ID };
+  }
+
+  const resources = ng.world.getComp( StationResources, STATION_ID ) orelse
+  {
+    utl.log( .WARN, @src(), "Manual harvest blocked: StationResources missing for Entity {d}", .{ STATION_ID });
+    return .{ .status = .missingFacts, .stationId = STATION_ID };
+  };
+  const reserves = ng.world.getComp( StarterReserves, STATION_ID ) orelse
+  {
+    utl.log( .WARN, @src(), "Manual harvest blocked: StarterReserves missing for Entity {d}", .{ STATION_ID });
+    return .{ .status = .missingFacts, .stationId = STATION_ID };
+  };
+  const capacities = ng.world.getComp( StationCapacities, STATION_ID ) orelse
+  {
+    utl.log( .WARN, @src(), "Manual harvest blocked: StationCapacities missing for Entity {d}", .{ STATION_ID });
+    return .{ .status = .missingFacts, .stationId = STATION_ID };
+  };
+
+  const storageUsed = getStoredCargoUsed( resources );
+  const storageCap  = capacities.storage;
+  const storageOpen = @max( 0.0, storageCap - storageUsed );
+
+  if( storageOpen <= utl.EPS )
+  {
+    utl.log( .INFO, @src(), "Manual harvest blocked: storage full ({d:.1}/{d:.1})", .{ storageUsed, storageCap });
+    return .{ .status = .storageFull, .stationId = STATION_ID, .storageUsed = storageUsed, .storageCap = storageCap };
+  }
+
+  const regolithWant = @min( MANUAL_HARVEST.regolith, reserves.regolith );
+  const iceWant      = @min( MANUAL_HARVEST.ice,      reserves.ice      );
+  const oreWant      = @min( MANUAL_HARVEST.ore,      reserves.ore      );
+  const wantedTotal  = regolithWant + iceWant + oreWant;
+
+  if( wantedTotal <= utl.EPS )
+  {
+    utl.log( .INFO, @src(), "Manual harvest blocked: starter reserves empty for Entity {d}", .{ STATION_ID });
+    return .{ .status = .reservesEmpty, .stationId = STATION_ID, .storageUsed = storageUsed, .storageCap = storageCap };
+  }
+
+  // TODO: Replace proportional clamping with resource-priority rules once
+  // player-editable production and dumping priorities exist.
+  const storageRatio = @min( 1.0, storageOpen / wantedTotal );
+  const regolithAdd  = regolithWant * storageRatio;
+  const iceAdd       = iceWant      * storageRatio;
+  const oreAdd       = oreWant      * storageRatio;
+  const totalAdd     = regolithAdd + iceAdd + oreAdd;
+
+  resources.regolith += regolithAdd;
+  resources.ice      += iceAdd;
+  resources.ore      += oreAdd;
+
+  reserves.regolith -= regolithAdd;
+  reserves.ice      -= iceAdd;
+  reserves.ore      -= oreAdd;
+
+  utl.log( .INFO, @src(), "Manual harvest Entity {d}: +{d:.1} regolith, +{d:.1} ice, +{d:.1} ore ({d:.1}/{d:.1} storage)", .{
+    STATION_ID,
+    regolithAdd,
+    iceAdd,
+    oreAdd,
+    storageUsed + totalAdd,
+    storageCap,
+  });
+
+  return .{
+    .status      = .harvested,
+    .stationId   = STATION_ID,
+    .regolith    = regolithAdd,
+    .ice         = iceAdd,
+    .ore         = oreAdd,
+    .total       = totalAdd,
+    .storageUsed = storageUsed + totalAdd,
+    .storageCap  = storageCap,
   };
 }
 
