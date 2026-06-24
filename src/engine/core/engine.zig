@@ -33,7 +33,7 @@ pub const Engine = struct
   rng    : utl.Randomiser    = .{},
 
   // Engine Managers
-  world           : eng.World                  = .{},
+  world           : eng.WorldManager           = .{},
   resourceManager : eng.resMgr.ResourceManager = .{},
   uiManager       : eng.UiManager              = .{},
 

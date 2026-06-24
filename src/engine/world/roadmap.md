@@ -19,10 +19,12 @@ tasks:
   relation/trait events;
 * typed transient command queues, command metadata, and World command APIs;
 * `World.tick(...)` event tick metadata;
+* engine-owned `WorldManager` wrapping one active concrete `World`;
+* concrete `World` implementation in `core/world.zig`;
 * compact explicit rules with read-only `WorldQuery` access, deterministic
   ordering, command emission, and event/fact reaction support;
 * read-only component, relation, event, and trait inspection through
-  `WorldQuery`;
+  stateless `WorldQuery` helpers;
 * data-only `Archetype` declarations, registration, World spawn helpers,
   initial component/relation/trait fact attachment, failed-spawn cleanup, and
   the generic `PersistentLinkArchetype` example.
@@ -30,10 +32,11 @@ tasks:
 Those pieces are reference-baseline facts. Future slices should build on them
 instead of treating them as pending phases.
 
-## 2. Current - World-Owned Rule Manager
+## 2. Current - Rule Cleanup And World-Owned Rule Manager
 
 Goal: make the existing compact `RuleManager` a stable World-owned logic
-surface.
+surface now that query helpers are stateless and the concrete World lives in
+`core/world.zig`.
 
 Required work:
 

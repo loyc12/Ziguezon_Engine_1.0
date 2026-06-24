@@ -7,12 +7,13 @@ implementation order.
 
 ## 1. Current Slice
 
-Make the existing compact `RuleManager` World-owned.
+Finish the rule cleanup from the validated query / manager split, then make the
+existing compact `RuleManager` World-owned from `core/world.zig`.
 
 The slice should let games register, inspect, and explicitly run ordered rules
 through `World` without owning `RuleManager` directly. Rules remain named,
-ordered logic declarations that read through `WorldQuery` and request changes by
-enqueuing commands.
+ordered logic declarations that read through stateless `WorldQuery` helpers and
+request changes by enqueuing commands.
 
 Keep the scope small enough to validate ownership:
 
@@ -42,10 +43,12 @@ Keep the scope small enough to validate ownership:
 ## 3. Implementation Tasks
 
 1. Add rule manager ownership to `World`.
-   * Import the rule surface into `worldManager.zig`.
+   * Import the rule surface into `core/world.zig`.
    * Add a `RuleManager` field alongside the other fact managers.
    * Initialize and deinitialize it with the World-owned managers.
    * Keep an empty World rule manager dormant when no rules are registered.
+   * Keep `worldManager.zig` thin; add manager forwarding helpers only for
+     current engine/game callers that need them.
 
 2. Add World-facing rule APIs.
    * Add `registerRule`.
@@ -55,7 +58,8 @@ Keep the scope small enough to validate ownership:
    * Reject uninitialized World use cleanly.
 
 3. Preserve rule behavior through World.
-   * Rules must still read current facts through `WorldQuery`.
+   * Rules must still read current facts through
+     `WorldQuery.get...( world, ... )`.
    * Rules must still peek or iterate events without consuming them.
    * Rules must still enqueue commands through the existing command manager.
    * Rule failure must be visible through the World-facing run helper.
@@ -72,6 +76,8 @@ Keep the scope small enough to validate ownership:
    * Update `reference.md` with the live World-owned rule surface.
    * Trim `roadmap.md` so completed rule-manager ownership moves into the
      baseline.
+   * Keep `goals.md` aligned with the validated ownership model if the rule
+     boundary changes.
    * Replace this `todo.md` with the command execution ownership slice after
      validation.
 

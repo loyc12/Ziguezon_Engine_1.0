@@ -3,12 +3,12 @@ const utl = @import( "utils" );
 
 const rule     = @import( "rule.zig" );
 const query    = @import( "../queries/query.zig" );
-const worldMgr = @import( "../worldManager.zig" );
+const worldCore = @import( "../core/world.zig" );
 
 const Rule        = rule.Rule;
 const RuleContext = rule.RuleContext;
 const EntityId    = @import( "../entity.zig" ).EntityId;
-const World       = worldMgr.World;
+const World       = worldCore.World;
 const WorldQuery  = query.WorldQuery;
 
 
@@ -119,11 +119,15 @@ pub const RuleManager = struct
       return false;
     }
 
-    const worldQuery = WorldQuery.init( world ) orelse return false;
+    if( !world.isInit )
+    {
+      utl.qlog( .WARN, @src(), "Cannot run Rules : World is uninitialized" );
+      return false;
+    }
 
     var context : RuleContext =
     .{
-      .query    = worldQuery,
+      .world    = world,
       .commands = &world.commandManager,
     };
 
@@ -200,7 +204,7 @@ test "RuleManager observes events and emits commands without consuming events"
     {
       var count : usize = 0;
       var sum   : u32   = 0;
-      var iter = context.query.getEventIterator( TestEvent ) orelse return false;
+      var iter = WorldQuery.getEventIterator( context.world, TestEvent ) orelse return false;
       while( iter.next() )| record |
       {
         count += 1;
@@ -252,7 +256,7 @@ test "RuleManager reads current facts and emits commands"
 
     fn run( context : *RuleContext ) bool
     {
-      const comp = context.query.getComp( TestComp, entityId ) orelse return false;
+      const comp = WorldQuery.getComp( context.world, TestComp, entityId ) orelse return false;
       return context.enqueueCommand( TestCommand, .{ .entityId = entityId, .value = comp.value + 1 });
     }
   };

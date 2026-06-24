@@ -154,7 +154,7 @@ pub fn CompView( comptime CompTypes : anytype ) type
 
 test "CompView caches typed stores and exposes point lookup"
 {
-  const worldMgr = @import( "../worldManager.zig" );
+  const worldCore = @import( "../core/world.zig" );
 
   const TransComp = struct
   {
@@ -169,7 +169,7 @@ test "CompView caches typed stores and exposes point lookup"
     value : bool = true,
   };
 
-  var world : worldMgr.World = .{};
+  var world : worldCore.World = .{};
   world.init( std.testing.allocator );
   defer world.deinit();
 
@@ -189,7 +189,7 @@ test "CompView caches typed stores and exposes point lookup"
 
 test "CompView validity tracks world store generation"
 {
-  const worldMgr = @import( "../worldManager.zig" );
+  const worldCore = @import( "../core/world.zig" );
 
   const TransComp = struct
   {
@@ -204,7 +204,7 @@ test "CompView validity tracks world store generation"
     value : bool = true,
   };
 
-  var world : worldMgr.World = .{};
+  var world : worldCore.World = .{};
   world.init( std.testing.allocator );
   defer world.deinit();
 

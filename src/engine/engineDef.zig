@@ -38,6 +38,7 @@ pub const worldMgr   = @import( "world/worldManager.zig" );
 pub const uiMgr      = @import( "ui/uiManager.zig" );
 
 pub const World          = worldMgr.World;
+pub const WorldManager   = worldMgr.WorldManager;
 pub const TickInfo       = worldMgr.TickInfo;
 pub const UiManager      = uiMgr.UiManager;
 pub const UiPanelHandle  = uiMgr.UiPanelHandle;

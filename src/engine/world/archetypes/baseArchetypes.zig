@@ -1,19 +1,19 @@
 const std = @import( "std" );
 
-const worldMgr = @import( "../worldManager.zig" );
+const worldCore = @import( "../core/world.zig" );
 const rel      = @import( "../relations/relation.zig" );
 const trt      = @import( "../traits/trait.zig" );
 
 
 /// Minimal generic archetype example: two persistent entities linked together.
 /// Games should define domain-specific archetypes under `src/games`.
-pub const PersistentLinkArchetype : worldMgr.Archetype =
+pub const PersistentLinkArchetype : worldCore.Archetype =
 .{
   .name    = "engine.persistent_link",
   .spawnFn = spawnPersistentLinkArchetype,
 };
 
-fn spawnPersistentLinkArchetype( cntx : *worldMgr.ArchetypeSpawnContext ) bool
+fn spawnPersistentLinkArchetype( cntx : *worldCore.ArchetypeSpawnContext ) bool
 {
   const root   = cntx.createEntity();
   const linked = cntx.createEntity();
@@ -30,7 +30,7 @@ fn spawnPersistentLinkArchetype( cntx : *worldMgr.ArchetypeSpawnContext ) bool
 
 test "PersistentLinkArchetype creates a reusable minimal bundle"
 {
-  var world : worldMgr.World = .{};
+  var world : worldCore.World = .{};
   world.init( std.testing.allocator );
   defer world.deinit();
 

@@ -15,69 +15,13 @@ This phase is already completed.
 
 ## 2. Query Cleanup
 
-Goal: make `WorldQuery` a stateless helper namespace for const access to World
-facts.
-
-Required work:
-
-* remove the stored `world : *World` field from `WorldQuery`;
-* remove `WorldQuery.init(...)`;
-* pass `world` explicitly into query helpers;
-* prefer `world : *const World` for read-only helpers;
-* use `world : *World` only where an existing World API forces mutable access;
-* keep query helpers focused on read-only inspection of entities, components,
-  relations, traits, events, and view validity;
-* update tests and rule examples from `query.get...(...)` to
-  `WorldQuery.get...( world, ... )`;
-* do not move rule ownership or rule execution while doing this step.
-
-Validation gate:
-
-* run `zig build test`;
-* if this exposes unrelated failures, report them instead of expanding the
-  query slice.
+This phase is completed. `WorldQuery` is now a stateless helper namespace and
+rule examples/tests pass the inspected World explicitly.
 
 ## 3. World / WorldManager Split
 
-Goal: move concrete World implementation into `world/core/` and make
-`WorldManager` the engine-owned facade that wraps one World for now.
-
-Target shape:
-
-* `src/engine/world/core/world.zig` owns the concrete `World` type and closely
-  owned World behavior;
-* `src/engine/world/worldManager.zig` owns the `WorldManager` type, public
-  world-facing re-exports, and top-level manager/facade behavior;
-* the engine owns `WorldManager`, not `World` directly;
-* `WorldManager` holds a single `World` instance for now;
-* `WorldManager` should be shaped so it can later become a multi-world manager
-  without forcing game code to know current storage details;
-* do not implement true multi-world behavior in this slice;
-* do not add a world registry, world ids, world switching, save/load, or
-  retained world history yet.
-
-Required work:
-
-* move the current concrete `World` implementation out of `worldManager.zig`
-  and into `core/world.zig`;
-* update imports so files that need concrete World behavior import
-  `core/world.zig`;
-* keep `worldManager.zig` thin and avoid absorbing query or rule
-  implementation details;
-* expose only the WorldManager helpers needed by current engine/game callers;
-* preserve the current single-world behavior through the manager wrapper;
-* update engine ownership sites so the engine owns and steps through
-  `WorldManager`;
-* keep the public surface compact; avoid compatibility aliases unless a caller
-  transition truly needs them;
-* remove dead code made obsolete by the move.
-
-Validation gate:
-
-* run `zig build`;
-* run `zig build test`;
-* if the move exposes a dependency loop, stop and report the exact loop before
-  changing the architecture.
+This phase is completed. The concrete `World` implementation lives in
+`core/world.zig`, and `WorldManager` wraps one active World for the engine.
 
 ## 4. Rule Cleanup
 
@@ -134,10 +78,11 @@ Validation gate:
 * If a boundary move fails because of a dependency loop, preserve the exact
   compiler error in the follow-up report.
 
-## 5. Documentation Refresh After Validation
+## 5. Documentation Refresh After Rule Cleanup Validation
 
-After the code changes pass validation, update the durable docs before retrying
-the old [todo.md](todo.md) work.
+The query cleanup and World/WorldManager split have received a scoped
+documentation refresh. After the rule cleanup passes validation, update the
+durable docs again before moving on from this prerequisite sequence.
 
 Required docs:
 
@@ -148,14 +93,13 @@ Required docs:
   * concrete World implementation lives under `world/core/`;
   * `WorldQuery` is stateless;
   * rules do not store persistent World ownership.
-* update [reference.md](reference.md) with the validated current baseline and
+* update [reference.md](reference.md) with the validated rule boundary and
   public access paths;
-* update [roadmap.md](roadmap.md) so completed deentanglement work becomes
-  baseline and remaining work is sequenced from the new architecture;
+* update [roadmap.md](roadmap.md) so completed rule cleanup becomes baseline
+  and remaining work is sequenced from the new architecture;
 * rewrite [todo.md](todo.md) so the next implementation slice starts from the
-  validated query / manager / rule boundaries;
-* remove stale wording that still treats `worldManager.zig` as the concrete
-  World implementation file.
+  fully validated query / manager / rule boundaries;
+* remove stale wording that still treats pre-cleanup rule ownership as current.
 
 Docs should reflect validated code, not the intended design, unless the section
 is explicitly target-state guidance in `goals.md`.
@@ -189,7 +133,8 @@ The slice is complete only when:
 * `WorldManager` wraps the single active World;
 * concrete World implementation lives under `src/engine/world/core/`;
 * rule-manager internals no longer retain persistent World ownership;
-* goals, reference, roadmap, and todo docs have been refreshed from the
-  validated implementation.
+* rule cleanup has been validated from the new `core/world.zig` boundary;
+* goals, reference, roadmap, and todo docs have been refreshed after the rule
+  cleanup from the validated implementation.
 
 Docs-only edits to this file do not require a build.

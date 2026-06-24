@@ -17,9 +17,12 @@ When this file disagrees with code, inspect code first and refresh this file.
 
 ## 2. Current Public Shape
 
-The main runtime surface is `World` in `worldManager.zig`.
+The engine owns `WorldManager` from `worldManager.zig`. `WorldManager` wraps
+one active concrete `World` for now and forwards the current engine/game-facing
+World APIs to it.
 
-`World` currently owns:
+The concrete `World` implementation lives in `core/world.zig`. `World`
+currently owns:
 
 * active entity tracking;
 * an `EntityIdRegistry`;
@@ -31,9 +34,10 @@ The main runtime surface is `World` in `worldManager.zig`.
 * `ArchetypeManager`;
 * component-view generation tracking.
 
-`World.init()` initializes entity tracking and fact managers. `World.deinit()`
-releases registered stores, invalidates entity ids, and bumps the component
-view generation.
+`WorldManager.init()` initializes the active World. `WorldManager.deinit()`
+deinitializes it. Concrete `World.init()` initializes entity tracking and fact
+managers. `World.deinit()` releases registered stores, invalidates entity ids,
+and bumps the component view generation.
 
 ## 3. Entities
 
@@ -104,17 +108,18 @@ component rows.
 
 ## 6. Queries
 
-`WorldQuery` in `queries/query.zig` is the broad read-only inspection facade.
-It is transient and wraps an initialized `World`; it does not own facts, cache
-mutable store state, retain event history, or replace `CompView`.
+`WorldQuery` in `queries/query.zig` is the broad read-only inspection helper
+namespace. It is stateless; callers pass the inspected World explicitly into
+each helper. It does not own facts, cache mutable store state, retain event
+history, or replace `CompView`.
 
 Current query helpers cover:
 
 * entity liveness through `hasEntity`;
 * component presence and read-only point lookup through `hasComp` and
   `getComp`;
-* component view validation through `isCompViewValid`, `hasViewComp`, and
-  `getViewComp`;
+* component view validation through `isCompViewValid`, `hasCompInView`, and
+  `getCompFromView`;
 * relation presence, read-only payload lookup, and source/target traversal
   through `hasRelation`, `getRelation`, `getRelationsFrom`, and
   `getRelationsTo`;
@@ -279,7 +284,7 @@ Archetypes are live as data-only reusable bundles of initial World facts.
   whether initial fact attachment succeeded.
 
 `ArchetypeSpawnContext` lives in `archetypes/spawnContext.zig` and is wired to
-the concrete `World` type by `worldManager.zig`. It intentionally exposes only:
+the concrete `World` type by `core/world.zig`. It intentionally exposes only:
 
 * `createEntity`;
 * `setRootEntity`;
@@ -334,8 +339,8 @@ Rules are live as compact explicit simulation-logic callbacks.
 
 `RuleContext` passes:
 
-* transient read-only `WorldQuery` access, including component/relation/trait
-  inspection and event peeking/iteration;
+* a borrowed `*World` used with stateless `WorldQuery` helpers for
+  component/relation/trait inspection and event peeking/iteration;
 * a `CommandManager` pointer for enqueuing requested changes.
 
 `Rule` stores a name, order value, and callback. `RuleManager` owns an ordered

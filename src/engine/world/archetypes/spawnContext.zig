@@ -9,7 +9,7 @@ const EntityId = ent.EntityId;
 
 
 /// Builds the narrow World facade passed to data-only archetype spawn callbacks.
-/// The concrete World type is supplied by `worldManager.zig` so this file can
+/// The concrete World type is supplied by `core/world.zig` so this file can
 /// live with archetype code without importing the World module directly.
 pub fn ArchetypeSpawnContextFactory( comptime WorldType : type ) type
 {

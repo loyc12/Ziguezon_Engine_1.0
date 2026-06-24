@@ -34,8 +34,12 @@ first-class support for:
 
 ## 2. World Target
 
-`World` should become the central engine-owned simulation database. It should
-organize:
+The engine should own simulation through `WorldManager`. `WorldManager` should
+wrap one concrete `World` for now, while keeping the public shape ready for
+later multi-world ownership without making games own concrete storage details.
+
+The concrete `World` should remain the central simulation database under
+`world/core/`. It should organize:
 
 * entity identity and lifecycle;
 * component tables;
@@ -78,7 +82,8 @@ definitions are not entity rows unless explicitly stored as facts, and they do
 not register executable logic as part of spawning.
 
 Queries/views are transient inspection helpers. They should not become hidden
-owners of simulation facts.
+owners of simulation facts. `WorldQuery` should stay a stateless helper
+namespace that receives the inspected World explicitly.
 
 Rules/reactions observe facts and request changes through explicit world-owned
 phase boundaries. The default change path should be command emission followed
@@ -186,8 +191,8 @@ base-tick/frame pacing, hooks, configs, and phase order.
 
 `engine/world` owns simulation infrastructure: `World`, entities, components,
 relations, events, rules, RuleSets, traits, archetypes, particle/effects
-records and pools, logical simulation time, scheduling, queries/views, and
-future context records.
+records and pools, logical simulation time, scheduling, queries/views, future
+context records, and the `WorldManager` facade that the engine owns.
 
 `engine/render` owns world-facing render adapters and debug render systems.
 Simulation facts should not depend on rendering.

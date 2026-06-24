@@ -2,17 +2,19 @@ const std = @import( "std" );
 
 const cmdMgr = @import( "../commands/commandManager.zig" );
 const query  = @import( "../queries/query.zig" );
+const worldCore = @import( "../core/world.zig" );
 
 const CommandManager = cmdMgr.CommandManager;
+const World          = worldCore.World;
 const WorldQuery     = query.WorldQuery;
 
 
 /// Runtime context passed to executable simulation rules.
-/// Rules inspect current facts or queued events through `query` and request
-/// future changes through commands.
+/// Rules inspect current facts or queued events through stateless `WorldQuery`
+/// helpers and request future changes through commands.
 pub const RuleContext = struct
 {
-  query    : WorldQuery,
+  world    : *World,
   commands : *CommandManager,
 
   /// Enqueues one requested-change fact through the active command surface.
@@ -60,7 +62,7 @@ test "Rule observes events and emits commands without consuming events"
   {
     fn run( context : *RuleContext ) bool
     {
-      const eventRecord = context.query.peekEvent( TestEvent, 0 ) orelse return false;
+      const eventRecord = WorldQuery.peekEvent( context.world, TestEvent, 0 ) orelse return false;
       return context.enqueueCommand( TestCommand, .{ .value = eventRecord.value.value + 1 });
     }
   };
@@ -71,7 +73,7 @@ test "Rule observes events and emits commands without consuming events"
 
   try std.testing.expect( manager.register( TestCommand ));
 
-  var world = @import( "../worldManager.zig" ).World{};
+  var world = World{};
   world.init( std.testing.allocator );
   defer world.deinit();
 
@@ -80,7 +82,7 @@ test "Rule observes events and emits commands without consuming events"
 
   var context : RuleContext =
   .{
-    .query    = WorldQuery.init( &world ).?,
+    .world    = &world,
     .commands = &manager,
   };
   const rule : Rule = .{ .name = "event-to-command", .runFn = Runner.run };
