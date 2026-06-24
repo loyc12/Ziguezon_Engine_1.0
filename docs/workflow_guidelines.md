@@ -19,8 +19,8 @@ handoff notes, or the harness.
 
 ## Architecture Choices
 
-- Prefer direct concrete code until duplication, the compiler, or a clear
-  ownership problem proves a boundary must change.
+- Prefer direct concrete code until the compiler or a clear ownership problem
+  proves a boundary must change.
 - Ask before broad module reshaping, type erasure, generic factories,
   dependency-injection layers, compatibility surfaces, or ownership rewrites.
 - Avoid one-use factories, wrappers around a single concrete type, needless heap
@@ -28,9 +28,19 @@ handoff notes, or the harness.
   direct ownership.
 - Add modules, move code, or split files when it clarifies ownership or prevents
   obscure mega-files; validate the result.
-- Do not add or keep compatibility semantics around unless requested or transitional.
-  Transitional compatibility surfaces should be removed during the same work slice,
-  or reported to the user directly.
+
+## Compatibility Semantics
+
+- Do not touch compatibility semantics outside the assigned scope.
+- Avoid adding compatibility aliases, wrapper names, or duplicate behavior unless
+  they are needed for a narrow caller transition in the current slice.
+- Temporary compatibility surfaces are allowed when they smooth the work, but
+  they should be removed before the current slice is complete.
+- Remove trivial compatibility semantics that are directly touched by the slice.
+- If removing a compatibility surface would move the work out of scope, keep it
+  and report it to the user instead of expanding the task.
+- Point out complex compatibility cleanup when it is not clearly part of the
+  current slice.
 
 ## Validation
 

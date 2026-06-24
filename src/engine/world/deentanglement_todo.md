@@ -11,26 +11,7 @@ failed edits from the earlier attempt.
 
 ## 1. Preface - Agent Guardrails
 
-Before code changes, make compact instruction updates to `AGENTS.md` and the
-relevant style docs.
-
-Required direction:
-
-* stay inside the active todo slice;
-* do not make large ad-hoc architecture fixes when a slice exposes a broader
-  issue;
-* report out-of-scope issues, contradictions, and dependency loops to the user
-  with exact files and compiler errors;
-* ask before broad module reshaping, type erasure, generic factories,
-  dependency-injection layers, or compatibility surfaces;
-* avoid pointless indirection such as one-use factories, wrappers around a
-  single concrete type, needless heap allocations or type erasure, and
-  abstraction layers whose only purpose is hiding direct ownership;
-* prefer direct concrete code until the compiler or a clear ownership problem
-  proves a boundary must change;
-
-Keep these instruction edits short. Do not paste a long postmortem into
-`AGENTS.md`; detailed context belongs in this file and the handoff note.
+This phase is already completed.
 
 ## 2. Query Cleanup
 
