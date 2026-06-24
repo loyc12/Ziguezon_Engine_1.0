@@ -66,7 +66,7 @@ switch( ng.state )
   implementation modules.
 - Add files and folders, move code, and split modules when it keeps ownership
   clear and prevents obscure mega-files. Prefer a small set of focused files
-  over one file that hides unrelated responsibilities. Validate before acting.
+  over one file that hides unrelated responsibilities.
 
 ```zig
 // ================================ ENGINE IMPLEMENTATIONS ================================
@@ -93,9 +93,6 @@ switch( ng.state )
 - Separate scheduled operations from forced operations using clear names such
   as `tryTickWorld` and `forceTickWorld`.
 - Remove deprecated or dead code made obsolete by a refactor.
-- Do not keep compatibility semantics around unless they remain clearly useful;
-  prefer one clear surface over duplicate names such as `getTopSide` and
-  `getNegXSide`.
 
 ## Defensive Behavior
 
