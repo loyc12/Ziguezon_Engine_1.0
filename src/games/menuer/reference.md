@@ -9,13 +9,15 @@ belongs in [roadmap.md](roadmap.md).
 `menuer` is the visible proof surface for the utility UI primitives in
 `src/utils/ui` and the engine UI manager in `src/engine/ui`.
 
-It currently acts as a small manual sandbox for:
+It currently acts as a dual-path manual sandbox for:
 
 * direct game-owned `utl.Panel` usage;
 * engine-registered panel routing through `ng.uiManager`;
 * local and manager-forwarded UI events;
+* runtime utility-vs-engine mode selection;
 * mouse-consumption behavior around UI and camera controls;
-* debug readouts for hover, capture, event count, draw order, and panel flags.
+* debug readouts for hover, press/capture, event count, draw order, handles,
+  panel flags, and optional primitive bounds.
 
 ## 2. Files
 
@@ -25,98 +27,108 @@ title/background/debug colors.
 `stateInjects.zig` builds UI on `OnGameOpen()` and releases it on
 `OnGameClose()`.
 
-`stepInjects.zig` owns all current sandbox state, UI construction, event
-handling, debug label updates, input routing, camera controls, and overlay
-drawing.
+`stepInjects.zig` owns sandbox state, UI construction, active-mode switching,
+event handling, debug label updates, camera controls, and overlay drawing.
 
-## 3. Direct Utility Panel Coverage
+## 3. Runtime Mode Boundary
 
-The direct utility path owns `MAIN_PANEL` as a plain `utl.Panel`. It is built
-and driven without registering it with `ng.uiManager`.
+`ACTIVE_UI_USES_ENGINE_MANAGER` is the single runtime mode flag in
+`stepInjects.zig`.
 
-Current coverage:
+The `u` key toggles the active path:
 
-* panel creation and deinitialization;
-* column, row, and absolute layout;
-* labels, buttons, checkbox, spacer, and container widgets;
-* stable widget handles;
-* local `Panel.updateInput()` and `Panel.popEvent()` handling;
-* button click mutation through `setTextFmt()`;
-* checkbox changed events and `getChecked()`;
-* visual offset mutation through `setVisualOffset()`;
+* utility mode updates and draws the direct `MAIN_PANEL`;
+* engine mode updates and draws the registered manager panels;
+* the debug panel stays direct utility UI in both modes and is visible by
+  default;
+* primitive debug bounds are off by default and can be toggled independently;
+* queued utility, registered-panel, and manager events are cleared when modes
+  switch;
+* inactive manager panels are made inert through their visibility, input, and
+  draw flags.
+
+The inactive primary surface is not updated or drawn, and its events are not
+drained while inactive.
+
+## 4. Shared Primary Surface
+
+Both active modes expose the same primary demo shape:
+
+* one column panel at the same screen position;
+* labels, buttons, checkbox, spacer, row container, and absolute container;
+* clicked and changed event handling;
+* text mutation and formatted text mutation;
+* checkbox state query and programmatic checkbox mutation;
+* visual offset mutation;
+* widget visibility/enabled mutation through the `Move / style` button;
+* style mutation on the moved button;
 * absolute child hit testing and sibling-order mutation through
   `bringWidgetForward()`;
-* `updateLayout()` and text metric/debug queries;
-* hovered-widget, child-count, final-box, and text-metric readouts;
-* `Panel.wantsMouse()` gating camera wheel zoom;
-* direct `Panel.draw()` overlay rendering;
-* debug bounds and a final-box marker for the moved button.
+* hover, left-press, event-count, final-box, and text-metric readouts;
+* a final-box marker for the moved button;
+* active-path `wantsMouse()` gating camera wheel zoom.
 
-## 4. Engine Manager Coverage
+The utility path demonstrates this through direct `Panel.updateInput()`,
+`Panel.popEvent()`, `Panel.wantsMouse()`, and `Panel.draw()`.
 
-The engine path owns `BACK_PANEL` and `FRONT_PANEL` as game-owned
-`utl.Panel` values registered with `ng.uiManager`.
+The engine path demonstrates the same surface through `UiManager.updateInput()`,
+manager event forwarding, `UiManager.wantsMouse()`, and `UiManager.drawAll()`.
 
-Current coverage:
+## 5. Engine-Specific Coverage
 
-* registering panels with keys, layer, and z values;
+Engine mode also registers a smaller back panel beside the primary engine panel,
+with a small overlap left in place for manager-layer inspection. It keeps
+coverage for:
+
 * generation-checked `eng.UiPanelHandle` storage;
-* overlapping panel routing, with front panel above back panel;
-* manager-local event forwarding through `ng.uiManager.popEvent()`;
-* button click mutation on both registered panels;
-* checkbox changed events on the front registered panel;
-* a route toggle through the `u` key, implemented by changing manager input
-  enabled flags on both registered panels;
-* manager debug queries for registration metadata, visibility/input/draw flags,
-  local event counts, hovered panel/widget, captured panel/widget by mouse
-  button, pending manager events, draw order, panel count, and `wantsMouse()`;
-* back-to-front drawing through `ng.uiManager.drawAll()`;
+* registration metadata readouts;
+* layer, z, and registration-order draw routing;
+* overlapping panel routing;
+* manager-local event forwarding;
+* visibility/input/draw flag readouts;
+* hovered panel/widget and per-button captured panel/widget debug text;
+* manager event count, panel count, and draw-order readouts;
 * unregistering registered panels on close before deinitializing game-owned
   panel storage.
 
-## 5. Input And Rendering
-
-`OnInputUpdate()` updates the direct panel first, then optionally updates the
-manager when manager routing is enabled. UI mouse consumption from either path
-blocks camera wheel zoom.
+## 6. Input And Rendering
 
 Keyboard controls remain game-level controls:
 
-* `u` toggles manager input routing;
+* `u` toggles active UI mode;
+* `d` toggles the utility debug panel;
+* `b` toggles primitive debug bounds, including the gold text-metric boxes and
+  cyan widget/panel boxes;
 * `enter` or `p` toggles pause;
-* `w`/`a`/`s`/`d` and arrow keys move the camera;
+* arrow keys move the camera;
 * `r` resets the camera.
 
-`OnRenderOverlay()` draws the direct panel, then the engine manager panels, then
-the standalone manager debug panel. The debug panel itself is not registered
-with the manager.
+`OnInputUpdate()` updates only the active UI path, then refreshes the utility
+debug panel. Camera wheel zoom runs only when the active UI path does not want
+the mouse.
 
-## 6. Gaps Against A Full Dual-Implementation Testbed
+`OnRenderOverlay()` draws only the active primary UI path, then draws the
+standalone utility debug panel. In engine mode, manager drawing covers the
+registered engine panels.
 
-The sandbox is not yet a feature-equivalent comparison harness.
+## 7. Remaining Gaps
 
-Missing or thin coverage:
+The sandbox is now a runtime comparison harness, but not the full target state.
 
-* no single boolean flag selects between a utility-only implementation and an
-  engine-managed implementation of the same UI surface;
-* the direct and manager paths show different panels and controls instead of
-  mirrored feature coverage;
-* the manager route toggle only enables/disables registered-panel input; it does
-  not swap implementations;
-* the debug panel is a third direct utility panel, not part of either selected
-  implementation path;
-* visible/input/draw flag behavior is not all user-toggleable from the sandbox;
-* runtime register/unregister/re-register, manager `clear()`, and stale-handle
-  rejection are not exercised by visible controls;
-* widget removal, panel clearing, visibility toggles, enabled toggles, stack
-  layout, style mutation, and custom draw widgets are not demonstrated;
-* right and middle mouse capture are displayed in debug text but not naturally
-  exercised by current controls;
-* keyboard focus, text input, keyboard/gamepad navigation, modal blocking,
-  close policy, persistent windows, popups, tooltips, docking, hot reload, and
-  theme loading are outside the current utility and engine UI contracts.
+Remaining gaps include:
 
-## 7. Boundaries
+* no visible runtime register/unregister/re-register controls;
+* no manager `clear()` control;
+* no stale-handle rejection demonstration after unregister, slot reuse, or
+  clear;
+* no full visible/input/draw flag control coverage;
+* no widget removal demo;
+* no local event queue clear control;
+* no direct panel clear/rebuild demo;
+* no scroll, image, sprite, text-input, focus, modal, popup, tooltip, docking,
+  hot reload, theme, or global event integration demos.
+
+## 8. Boundaries
 
 `menuer` should remain a sandbox for implemented UI behavior. It should not
 invent focus, modal, window, popup, text input, or global event semantics ahead
@@ -126,7 +138,7 @@ Utility primitive facts belong in `src/utils/ui/reference.md`. Engine
 orchestration facts belong in `src/engine/ui/reference.md`. `menuer` should
 only document how the game combines and demonstrates those systems.
 
-## 8. Validation
+## 9. Validation
 
 Docs-only changes need no build.
 

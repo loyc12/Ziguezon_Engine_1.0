@@ -1,76 +1,37 @@
 # Menuer UI Testbed Roadmap
 
-This roadmap describes the implementation order from the current
-[reference.md](reference.md) baseline toward the target state in
+This roadmap describes the remaining implementation order from the current
+[reference.md](reference.md) behavior toward the target state in
 [goals.md](goals.md).
 
 ## 1. Current Baseline
 
-`menuer` already proves both UI usage paths, but not as a dual-path comparison
-harness.
+`menuer` now has a runtime utility-vs-engine mode boundary and a comparable
+primary demo surface for both paths.
 
 Current useful pieces to preserve:
 
-* a direct utility `MAIN_PANEL` with primitive widgets, local events, local
-  `wantsMouse()`, direct draw, layout, mutation, and debug readouts;
-* engine-managed `BACK_PANEL` and `FRONT_PANEL` with registration handles,
-  layer/z ordering, manager event forwarding, capture/hover debug, draw order,
-  and manager `wantsMouse()`;
-* a direct utility manager-debug panel;
-* camera wheel zoom gated by utility or manager mouse consumption;
-* open/close lifetime that unregisters manager panels before deinitializing
+* one easy-to-find boolean mode flag in `stepInjects.zig`;
+* `u` toggles the active implementation at runtime;
+* the active path receives input, drains events, updates state, and draws its
+  primary surface;
+* inactive manager panels are hidden, input-disabled, draw-disabled, and have
+  stale queued events cleared on mode switch;
+* utility and engine primary surfaces both demonstrate labels, buttons,
+  checkbox, spacer, row/absolute containers, clicked/changed events, text
+  mutation, checked-state mutation, visibility/enabled mutation, style
+  mutation, hover/press readouts, event counts, text metrics, final-box marker,
+  and active-path mouse consumption;
+* a direct utility debug panel is visible by default and toggleable with `d`;
+* primitive debug bounds are off by default and toggleable with `b`;
+* engine mode keeps a smaller back panel for manager handle, layer/z/order,
+  draw order, slight-overlap routing, capture, and flag readouts;
+* camera movement, camera reset, pause, and active-path wheel gating are
+  preserved;
+* open/close lifetime unregisters manager panels before deinitializing
   game-owned panel storage.
 
-The current `u` key toggles manager input routing only. It is not the final
-runtime implementation selector.
-
-## 2. Phase 1 - Runtime Mode Boundary
-
-Add one easy-to-find runtime boolean for the active UI path.
-
-Expected behavior:
-
-* one path is active at a time;
-* the active path builds, receives input, emits events, updates debug state, and
-  draws its primary surface;
-* the inactive path is not allowed to receive input or emit events;
-* inactive manager panels are unregistered, hidden/input-disabled, or otherwise
-  made inert through the smallest clean implementation;
-* the active path is visible in the always-active debug UI;
-* a separate debug visibility flag may be added if the debug panel needs its own
-  runtime toggle.
-
-Keep the mode boundary direct. Do not add a generic UI abstraction layer unless
-the implementation proves a real duplicated-ownership problem.
-
-## 3. Phase 2 - Shared Demonstration Shape
-
-Reshape the primary utility and engine examples so overlapping features share a
-similar form factor where practical.
-
-Shared behavior to cover:
-
-* labels;
-* buttons;
-* checkboxes;
-* spacers;
-* containers;
-* column, row, absolute, and stack layout if stack remains useful enough to
-  show;
-* clicked and changed events;
-* text and formatted text mutation;
-* checked-state query/mutation;
-* visible and enabled state mutation;
-* supported widget or panel movement;
-* style mutation;
-* hover, pressed/captured, event count, final-box, and text-metric readouts;
-* mouse-consumption gating for camera wheel zoom.
-
-Use the fewest panels and widgets that demonstrate these behaviors clearly.
-Diverge from shared form factor when engine-only or utility-only behavior would
-otherwise be hidden.
-
-## 4. Phase 3 - Engine-Specific Harness
+## 2. Phase 3 - Engine-Specific Harness
 
 Keep a focused engine-only section for manager behavior that direct utility UI
 cannot demonstrate.
@@ -90,7 +51,7 @@ Prefer visible controls only for implemented behavior. Put code-local `TODO`
 notes at obvious extension points for future manager concepts that are not yet
 implemented.
 
-## 5. Phase 4 - Utility-Specific Harness
+## 3. Phase 4 - Utility-Specific Harness
 
 Keep a focused utility-only section for primitive behavior that does not require
 engine orchestration.
@@ -99,7 +60,7 @@ Coverage to add or strengthen:
 
 * direct panel clear/rebuild behavior;
 * widget removal if the current primitive API remains stable enough to demo;
-* enabled/visible widget mutation;
+* enabled/visible widget mutation beyond the current primary-surface mutation;
 * local event queue clearing;
 * direct hit-test/readout helpers;
 * handle-based mutation and introspection that would otherwise be easy to
@@ -107,31 +68,24 @@ Coverage to add or strengthen:
 
 Do not duplicate engine-only controls unless they clarify the comparison.
 
-## 6. Phase 5 - Debug Surface
+## 4. Phase 5 - Debug Surface
 
 Keep the debug UI direct utility-owned and always active by default.
 
-The debug surface should report:
-
-* active path;
-* utility path state when utility mode is active;
-* engine path state when engine mode is active;
-* mouse position and mouse-consumption state;
-* event counts;
-* hovered and pressed/captured widgets;
-* manager handles, generations, draw order, and flags when engine mode is
-  active.
+The debug surface already reports the active path, mouse position,
+mouse-consumption state, active event counts, utility hover/press state, and
+engine hover/capture/handle/draw-order data. Strengthen it only as later
+engine-specific or utility-specific controls add real state that needs
+inspection.
 
 If a single debug panel becomes too tangled because utility and engine modes
 need different inputs, split it into separate utility-owned debug panel
 instances and draw only the relevant one.
 
-## 7. Phase 6 - Cleanup And Validation
+## 5. Phase 6 - Cleanup And Validation
 
-After the mode split and feature coverage are in place:
+After each harness slice:
 
-* remove obsolete route-toggle semantics that no longer match the runtime mode
-  boundary;
 * remove dead code made obsolete by the selected structure;
 * keep any deferred extension points as concise `TODO` notes in code;
 * update [reference.md](reference.md) to describe the new current behavior;
@@ -152,7 +106,7 @@ zig build test
 
 Do not run formatting passes such as `zig fmt`.
 
-## 8. Deferred And Future Updates
+## 6. Deferred And Future Updates
 
 Do not show unimplemented UI concepts in the visible sandbox. Keep the visual
 surface focused on behavior that exists today.

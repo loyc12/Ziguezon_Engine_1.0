@@ -6,64 +6,62 @@ authority. [reference.md](reference.md) describes the current baseline.
 
 ## 1. Active Slice
 
-Build the runtime utility-vs-engine mode boundary and reshape the primary demo
-surface enough that both paths can be compared without clutter.
+Build the engine-specific manager harness on top of the current runtime
+utility-vs-engine mode boundary.
 
-This slice should cover roadmap phases 1 and 2, plus only the minimum debug
-work needed to make the mode switch observable.
+This slice should cover roadmap phase 3 only, plus the minimum debug work
+needed to make manager behavior observable.
 
 ## 2. Tasks
 
-1. Add the runtime mode flag.
-   * Add an easy-to-find boolean near the top of `stepInjects.zig` for the
-     active UI implementation.
-   * Add a small input toggle for the flag.
-   * Make the current active mode visible in the debug panel.
-   * Replace or retire the current `MANAGER_ROUTE_ENABLED` behavior if it no
-     longer matches the active-mode model.
+1. Split mode-specific code into focused files.
+   * Move utility-specific UI state/build/update/draw helpers into a
+     `utilUi.zig` file.
+   * Move engine-manager-specific UI state/build/update/draw helpers into an
+     `engineUi.zig` file.
+   * Keep `stepInjects.zig` as the small coordinator for lifecycle, mode
+     switching, game controls, and overlay ordering.
+   * Preserve the current runtime behavior before adding new controls.
 
-2. Separate active and inactive path behavior.
-   * Ensure the active path receives input, drains events, updates state, and
-     draws its primary surface.
-   * Ensure the inactive path does not receive input or emit events.
-   * Make inactive manager panels inert through the smallest clean route, such
-     as unregistering, hiding, or input-disabling them.
-   * Clear stale queued events when switching modes.
+2. Add focused engine-only controls.
+   * Keep controls visible only in engine mode.
+   * Add visible/input/draw flag toggles for registered manager panels.
+   * Add register, unregister, and re-register controls for at least one
+     manager-registered demo panel.
+   * Add a manager `clear()` control only if it can be demonstrated without
+     corrupting the surrounding sandbox lifetime.
 
-3. Extract small build/update/draw helpers.
-   * Split the current monolithic `stepInjects.zig` flow into direct helper
-     functions for utility mode, engine mode, and debug UI.
-   * Keep helpers concrete to the sandbox; do not introduce a generic UI
-     abstraction layer.
-   * Add concise code `TODO` notes only at real extension points for future
-     utility or engine features.
+3. Demonstrate stale-handle behavior.
+   * Show stale-handle rejection after unregister.
+   * Show slot reuse or generation change after re-register.
+   * Show manager-clear invalidation if the clear control is included.
+   * Keep stale-handle readouts compact and debug-oriented.
 
-4. Reshape overlapping demonstrations.
-   * Give both active modes a comparable primary surface for labels, buttons,
-     checkboxes, containers, clicked/changed events, text mutation, checked
-     state, hover readouts, event counts, and mouse-consumption behavior.
-   * Keep divergent engine-only examples when they are needed to show manager
-     layer/z/order, draw order, capture, handles, or flags.
-   * Use as few panels and controls as practical.
+4. Strengthen manager routing readouts.
+   * Report layer, z, order, and draw order for registered panels.
+   * Report front-to-back input routing through overlapping panels.
+   * Report manager event queue counts and drained event summaries.
+   * Preserve per-button capture readouts.
 
-5. Keep debug UI always active and utility-owned.
-   * Keep the debug panel direct `utl.Panel` UI.
-   * Report active mode, mouse position, mouse-consumption state, active-path
-     event counts, hovered/pressed or captured widget state, and engine handle
-     data when engine mode is active.
-   * Split debug into separate utility-owned panels only if one panel becomes
-     tangled across incompatible state sources.
+5. Preserve the current mode boundary.
+   * The utility path must remain inactive while engine controls are used.
+   * Mode switching must still clear stale queued utility, panel, and manager
+     events.
+   * Camera wheel zoom must still be blocked only when the active UI path wants
+     the mouse.
+   * Camera movement, reset, and pause controls must remain available.
 
-6. Preserve game controls.
-   * Keep camera movement and camera reset behavior.
-   * Keep camera wheel zoom blocked while the active UI path wants the mouse.
-   * Keep pause behavior unless the mode toggle needs a key reassignment.
+6. Keep the surface focused.
+   * Do not add unsupported focus, modal, popup, tooltip, text-input, docking,
+     hot-reload, theme, or global event demos.
+   * Add code `// TODO:` notes only at concrete future extension points.
+   * Remove dead code made obsolete by the manager harness changes.
 
 7. Validate and refresh docs.
    * Run the menuer sandbox build after code changes.
    * Run broader builds/tests only if utility or engine UI implementation code
      changes.
-   * Update [reference.md](reference.md) after the new active-mode behavior is
+   * Update [reference.md](reference.md) after the engine-specific behavior is
      implemented and verified.
    * Trim this todo to the next remaining slice after completion.
 
@@ -73,12 +71,10 @@ Do not add visible placeholder controls for unsupported features.
 
 Leave these for later roadmap phases:
 
-* runtime register/unregister/re-register controls;
-* manager `clear()` controls;
-* stale-handle rejection demonstrations;
-* full visible/input/draw flag control coverage;
-* widget removal demos;
-* local event queue clear controls;
+* utility direct panel clear/rebuild controls;
+* utility widget removal demos;
+* utility local event queue clear controls;
+* broader utility-only hit-test/readout controls;
 * scroll, image, sprite, text-input, focus, modal, popup, tooltip, docking, hot
   reload, theme, or global event integration demos.
 
