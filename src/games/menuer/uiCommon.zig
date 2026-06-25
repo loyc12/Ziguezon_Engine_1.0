@@ -60,7 +60,12 @@ pub fn engineControlPanelBox() utl.Box2
 
 pub fn utilityControlPanelBox() utl.Box2
 {
-  return engineControlPanelBox();
+  return utl.uiBoxFromTopLeft( .new( 24.0, 420.0 ), .new( 460.0, 350.0 ));
+}
+
+pub fn utilityGeneratedPanelBox() utl.Box2
+{
+  return utl.uiBoxFromTopLeft( .new( 512.0, 430.0 ), .new( 292.0, 270.0 ));
 }
 
 pub fn debugPanelBox() utl.Box2
@@ -132,6 +137,20 @@ pub fn debugPanelConfig() utl.PanelConfig
     .layout  = .column,
     .padding = 10.0,
     .gap     = 8.0,
+    .style   = style,
+  };
+}
+
+pub fn generatedPanelConfig() utl.PanelConfig
+{
+  var style = utl.UiStyle{};
+  style.fillCol = utl.Colour.nBlack.setA( 218 );
+  style.edgeCol = utl.Colour.pGold;
+
+  return .{
+    .layout  = .column,
+    .padding = 10.0,
+    .gap     = 5.0,
     .style   = style,
   };
 }

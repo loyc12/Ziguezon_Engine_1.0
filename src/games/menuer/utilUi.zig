@@ -20,6 +20,7 @@ const ControlHandles = struct
   eventRow          : utl.UiHandle = .{},
   holdEventsCheck   : utl.UiHandle = .{},
   clearEventsButton : utl.UiHandle = .{},
+  generateButton    : utl.UiHandle = .{},
   mutateButton      : utl.UiHandle = .{},
 };
 
@@ -42,13 +43,52 @@ const UtilityStats = struct
   lastSummary         : []const u8   = "none",
 };
 
+const GENERATED_MIN_WIDGETS : usize = 3;
+const GENERATED_MAX_WIDGETS : usize = 7;
+
+/// Supported primitive kinds for the utility random-panel generator. This stays
+/// narrower than `utl.WidgetKind` so unsupported/future widgets cannot leak into
+/// the visible sandbox by accident.
+const GeneratedKind = enum( u8 )
+{
+  label,
+  button,
+  checkbox,
+  spacer,
+  container,
+};
+
+/// Runtime handle plus kind metadata used by generated-panel readouts and event
+/// summaries after widgets are inserted in randomized order.
+const GeneratedItem = struct
+{
+  handle : utl.UiHandle  = .{},
+  kind   : GeneratedKind = .label,
+};
+
+/// Compact generated-panel state shown through the utility control and debug
+/// readouts. The panel itself owns widget/event storage; this only stores
+/// generation metadata and last-frame observations.
+const GeneratedStats = struct
+{
+  generationCount   : u32   = 0,
+  widgetCount       : usize = 0,
+  queuedBeforeDrain : usize = 0,
+  drainedThisFrame  : usize = 0,
+  lastClearedCount  : usize = 0,
+  lastEvent         : []const u8 = "none",
+  items             : [ GENERATED_MAX_WIDGETS ]GeneratedItem = [_]GeneratedItem{ .{} } ** GENERATED_MAX_WIDGETS,
+};
+
 var MAIN_PANEL    : ?utl.Panel = null;
 var CONTROL_PANEL : ?utl.Panel = null;
+var GENERATED_PANEL : ?utl.Panel = null;
 
 var HANDLES  : common.PrimaryUiHandles = .{};
 var STATE    : common.PrimaryUiState   = .{};
 var CONTROLS : ControlHandles          = .{};
 var STATS    : UtilityStats            = .{};
+var GENERATED_STATS : GeneratedStats   = .{};
 
 
 // ================================ LIFETIME ================================
@@ -190,6 +230,15 @@ fn buildControlPanel() void
     }
   ) catch .{};
 
+  CONTROLS.generateButton = panel.addButton(
+    .{
+      .key    = utl.uiKey( "menuer.utility.controls.generate" ),
+      .parent = CONTROLS.lifecycleRow,
+      .text   = "Random panel",
+      .config = smallButtonConfig(),
+    }
+  ) catch .{};
+
   CONTROLS.eventRow = panel.addContainer(
     .{
       .key    = utl.uiKey( "menuer.utility.controls.event_row" ),
@@ -258,28 +307,33 @@ fn controlPanelConfig() utl.PanelConfig
 /// Releases utility-owned panel storage.
 pub fn close() void
 {
-  if( MAIN_PANEL    )| *panel |{ panel.deinit(); }
-  if( CONTROL_PANEL )| *panel |{ panel.deinit(); }
+  if( GENERATED_PANEL )| *panel |{ panel.deinit(); }
+  if( MAIN_PANEL      )| *panel |{ panel.deinit(); }
+  if( CONTROL_PANEL   )| *panel |{ panel.deinit(); }
 
-  MAIN_PANEL    = null;
-  CONTROL_PANEL = null;
+  GENERATED_PANEL = null;
+  MAIN_PANEL      = null;
+  CONTROL_PANEL   = null;
 
-  HANDLES  = .{};
-  STATE    = .{};
-  CONTROLS = .{};
-  STATS    = .{};
+  HANDLES         = .{};
+  STATE           = .{};
+  CONTROLS        = .{};
+  STATS           = .{};
+  GENERATED_STATS = .{};
 }
 
 pub fn clearEvents() void
 {
-  if( MAIN_PANEL    )| *panel |{ panel.clearEvents(); }
-  if( CONTROL_PANEL )| *panel |{ panel.clearEvents(); }
+  if( MAIN_PANEL      )| *panel |{ panel.clearEvents(); }
+  if( CONTROL_PANEL   )| *panel |{ panel.clearEvents(); }
+  if( GENERATED_PANEL )| *panel |{ panel.clearEvents(); }
 }
 
 pub fn applyDebugBounds( enabled : bool ) void
 {
-  if( MAIN_PANEL    )| *panel |{ panel.setDebugDrawBounds( enabled ); }
-  if( CONTROL_PANEL )| *panel |{ panel.setDebugDrawBounds( enabled ); }
+  if( MAIN_PANEL      )| *panel |{ panel.setDebugDrawBounds( enabled ); }
+  if( CONTROL_PANEL   )| *panel |{ panel.setDebugDrawBounds( enabled ); }
+  if( GENERATED_PANEL )| *panel |{ panel.setDebugDrawBounds( enabled ); }
 }
 
 
@@ -296,19 +350,30 @@ pub fn update( ng : *eng.Engine ) bool
     {
       control.setPanelBox( common.utilityControlPanelBox() );
       control.updateInput( ng.mouse );
-      drainControlEvents( control, panel );
+      drainControlEvents( ng, control, panel );
+    }
+
+    if( GENERATED_PANEL )| *generated |
+    {
+      generated.setPanelBox( common.utilityGeneratedPanelBox() );
+      generated.updateInput( ng.mouse );
     }
 
     STATS.queuedBeforeDrain = panel.getEventCount();
     STATS.drainedThisFrame  = 0;
+    GENERATED_STATS.queuedBeforeDrain = generatedEventCount();
+    GENERATED_STATS.drainedThisFrame  = 0;
 
     if( !STATS.holdMainEvents ){ drainEvents( panel ); }
+    drainGeneratedEvents();
 
     common.updatePrimaryDebugLabel( panel, &HANDLES, &STATE, "utility" );
     updateControlReadouts( ng, panel );
 
-    if( CONTROL_PANEL )| *control |{ return panel.wantsMouse() or control.wantsMouse(); }
-    return panel.wantsMouse();
+    var wantsMouse = panel.wantsMouse();
+    if( CONTROL_PANEL   )| *control   |{ wantsMouse = wantsMouse or control.wantsMouse();    }
+    if( GENERATED_PANEL )| *generated |{ wantsMouse = wantsMouse or generated.wantsMouse();  }
+    return wantsMouse;
   }
 
   return false;
@@ -324,7 +389,7 @@ fn drainEvents( panel : *utl.Panel ) void
   }
 }
 
-fn drainControlEvents( control : *utl.Panel, main : *utl.Panel ) void
+fn drainControlEvents( ng : *eng.Engine, control : *utl.Panel, main : *utl.Panel ) void
 {
   STATS.controlQueueDrained = 0;
 
@@ -348,12 +413,30 @@ fn drainControlEvents( control : *utl.Panel, main : *utl.Panel ) void
     else if( event.isClicked( CONTROLS.clearEventsButton ))
     {
       main.clearEvents();
+      if( GENERATED_PANEL )| *panel |{ panel.clearEvents(); }
       STATS.clearEventCount += 1;
       STATS.lastSummary = "events cleared";
+    }
+    else if( event.isClicked( CONTROLS.generateButton ))
+    {
+      replaceGeneratedPanel( ng );
+      STATS.lastSummary = "generated panel";
     }
     else if( event.isClicked( CONTROLS.mutateButton ))
     {
       mutatePrimaryHandles( main );
+    }
+  }
+}
+
+fn drainGeneratedEvents() void
+{
+  if( GENERATED_PANEL )| *panel |
+  {
+    while( panel.popEvent() )| event |
+    {
+      GENERATED_STATS.drainedThisFrame += 1;
+      GENERATED_STATS.lastEvent = generatedEventName( panel, event );
     }
   }
 }
@@ -433,6 +516,208 @@ fn mutatePrimaryHandles( panel : *utl.Panel ) void
   STATS.lastSummary = "handle mutation";
 }
 
+/// Replaces the current generated panel with a fresh bounded primitive mix.
+/// Old local events and handles are discarded before new storage is published.
+fn replaceGeneratedPanel( ng : *eng.Engine ) void
+{
+  const nextGeneration = GENERATED_STATS.generationCount + 1;
+  var clearedCount : usize = 0;
+
+  if( GENERATED_PANEL )| *panel |
+  {
+    clearedCount = panel.getAliveWidgetCount();
+    panel.clearEvents();
+    panel.deinit();
+  }
+
+  GENERATED_PANEL = null;
+  GENERATED_STATS = .{ .generationCount = nextGeneration, .lastClearedCount = clearedCount };
+
+  GENERATED_PANEL = utl.Panel.init(
+    utl.getDefaultAlloc(),
+    .{
+      .key    = generatedPanelKey( nextGeneration ),
+      .box    = common.utilityGeneratedPanelBox(),
+      .config = common.generatedPanelConfig(),
+    }
+  ) catch | err |
+  {
+    GENERATED_STATS.lastEvent = "create failed";
+    utl.log( .ERROR, @src(), "Failed to create menuer generated utility panel : {}", .{ err });
+    return;
+  };
+
+  populateGeneratedPanel( ng, &( GENERATED_PANEL.? ), nextGeneration );
+}
+
+fn populateGeneratedPanel( ng : *eng.Engine, panel : *utl.Panel, generation : u32 ) void
+{
+  var kinds : [ GENERATED_MAX_WIDGETS ]GeneratedKind = undefined;
+  const widgetCount = randomUsize( ng, GENERATED_MIN_WIDGETS, GENERATED_MAX_WIDGETS );
+
+  for( 0..widgetCount )| i |{ kinds[ i ] = randomGeneratedKind( ng ); }
+
+  // Shuffle the chosen kinds before insertion so child order changes while all
+  // panel and widget dimensions remain fixed.
+  for( 0..widgetCount )| i |
+  {
+    const swapIdx = randomUsize( ng, i, widgetCount - 1 );
+    const tmp = kinds[ i ];
+    kinds[ i ] = kinds[ swapIdx ];
+    kinds[ swapIdx ] = tmp;
+  }
+
+  for( 0..widgetCount )| i |
+  {
+    const kind = kinds[ i ];
+    if( addGeneratedWidget( panel, kind, generation, i ))| handle |
+    {
+      GENERATED_STATS.items[ GENERATED_STATS.widgetCount ] = .{ .handle = handle, .kind = kind };
+      GENERATED_STATS.widgetCount += 1;
+    }
+  }
+
+  panel.updateLayout();
+  GENERATED_STATS.lastEvent = "generated";
+}
+
+fn addGeneratedWidget( panel : *utl.Panel, kind : GeneratedKind, generation : u32, index : usize ) ?utl.UiHandle
+{
+  const opts : utl.WidgetInit = .{
+    .key    = generatedWidgetKey( kind, generation, index ),
+    .text   = generatedKindName( kind ),
+    .config = generatedWidgetConfig( kind ),
+  };
+
+  const handle =
+    switch( kind )
+    {
+      .label     => panel.addLabel(     opts ) catch return null,
+      .button    => panel.addButton(    opts ) catch return null,
+      .checkbox  => panel.addCheckbox(  opts ) catch return null,
+      .spacer    => panel.addSpacer(    opts ) catch return null,
+      .container => panel.addContainer( opts ) catch return null,
+    };
+
+  switch( kind )
+  {
+    .label    => panel.setTextFmt( handle, "Label {d}.{d}",  .{ generation, index } ),
+    .button   => panel.setTextFmt( handle, "Button {d}.{d}", .{ generation, index } ),
+    .checkbox => panel.setTextFmt( handle, "Check {d}.{d}",  .{ generation, index } ),
+    else      => {},
+  }
+
+  return handle;
+}
+
+fn generatedWidgetConfig( kind : GeneratedKind ) utl.WidgetConfig
+{
+  var config = utl.WidgetConfig{
+    .desiredSize = .new( 0.0, 28.0 ),
+    .textAlign   = .center,
+  };
+
+  if( kind == .container )
+  {
+    config.style = generatedContainerStyle();
+  }
+
+  return config;
+}
+
+fn generatedContainerStyle() utl.UiStyle
+{
+  var style = utl.UiStyle.forKind( .container );
+  style.fillCol   = utl.Colour.sGray.setA( 96 );
+  style.edgeCol   = utl.Colour.pGold.setA( 210 );
+  style.lineWidth = 1.0;
+  return style;
+}
+
+fn randomGeneratedKind( ng : *eng.Engine ) GeneratedKind
+{
+  return switch( randomUsize( ng, 0, 4 ))
+  {
+    0    => .label,
+    1    => .button,
+    2    => .checkbox,
+    3    => .spacer,
+    else => .container,
+  };
+}
+
+fn randomUsize( ng : *eng.Engine, min : usize, max : usize ) usize
+{
+  return @intCast( ng.rng.getClampedInt( @intCast( min ), @intCast( max ) ) );
+}
+
+fn generatedPanelKey( generation : u32 ) utl.UiKey
+{
+  return utl.uiKey( "menuer.utility.generated.panel" ) ^ @as( utl.UiKey, generation );
+}
+
+fn generatedWidgetKey( kind : GeneratedKind, generation : u32, index : usize ) utl.UiKey
+{
+  const base = utl.uiKey( "menuer.utility.generated.widget" );
+  const kindBits = @as( utl.UiKey, @intFromEnum( kind )) << 48;
+  const genBits  = @as( utl.UiKey, generation ) << 16;
+  return base ^ kindBits ^ genBits ^ @as( utl.UiKey, index );
+}
+
+fn generatedEventCount() usize
+{
+  if( GENERATED_PANEL )| *panel |{ return panel.getEventCount(); }
+  return 0;
+}
+
+fn generatedEventName( panel : *const utl.Panel, event : utl.UiEvent ) []const u8
+{
+  return switch( event.eType )
+  {
+    .clicked => switch( panel.getWidgetKind( event.widget ) orelse .label )
+    {
+      .button => "button clicked",
+      else    => "clicked",
+    },
+
+    .changed => switch( panel.getWidgetKind( event.widget ) orelse .label )
+    {
+      .checkbox => "checkbox changed",
+      else      => "changed",
+    },
+  };
+}
+
+fn generatedKindName( kind : GeneratedKind ) []const u8
+{
+  return switch( kind )
+  {
+    .label     => "label",
+    .button    => "button",
+    .checkbox  => "checkbox",
+    .spacer    => "spacer",
+    .container => "container",
+  };
+}
+
+fn generatedKindShortName( kind : GeneratedKind ) []const u8
+{
+  return switch( kind )
+  {
+    .label     => "lab",
+    .button    => "btn",
+    .checkbox  => "chk",
+    .spacer    => "spc",
+    .container => "box",
+  };
+}
+
+fn generatedOrderName( index : usize ) []const u8
+{
+  if( index >= GENERATED_STATS.widgetCount ){ return "-"; }
+  return generatedKindShortName( GENERATED_STATS.items[ index ].kind );
+}
+
 pub fn draw() void
 {
   if( MAIN_PANEL )| *panel |
@@ -441,6 +726,7 @@ pub fn draw() void
     common.drawFinalBoxMarker( panel, &HANDLES );
   }
 
+  if( GENERATED_PANEL )| *panel |{ panel.draw(); }
   if( CONTROL_PANEL )| *panel |{ panel.draw(); }
 }
 
@@ -456,25 +742,36 @@ pub fn writeDebugUi( panel : *utl.Panel, stateLabel : utl.UiHandle, hoverLabel :
     const right   = main.getPressed( .right  );
     const middle  = main.getPressed( .middle );
 
+    var genHover : []const u8 = "none";
+    var genLeft  : []const u8 = "none";
+    var genHit   : []const u8 = "none";
+
+    if( GENERATED_PANEL )| *generated |
+    {
+      genHover = common.widgetNameInPanel( generated, generated.getHovered() );
+      genLeft  = common.widgetNameInPanel( generated, generated.getPressed( .left ) );
+      genHit   = common.widgetNameInPanel( generated, generated.hitTest( generated.getPointer().screenPos ) );
+    }
+
     panel.setTextFmt(
       stateLabel,
-      "utility events:{d} pending:{d} checked:{} hold:{}",
-      .{ STATE.eventCount, main.getEventCount(), main.getChecked( HANDLES.optionCheck ) orelse false, STATS.holdMainEvents }
+      "utility events:{d} pending:{d} checked:{} hold:{} gen:{d}/{d}",
+      .{ STATE.eventCount, main.getEventCount(), main.getChecked( HANDLES.optionCheck ) orelse false, STATS.holdMainEvents, GENERATED_STATS.generationCount, GENERATED_STATS.widgetCount }
     );
     panel.setTextFmt(
       hoverLabel,
-      "hover widget:{s}",
-      .{ common.widgetNameInPanel( main, hovered ) }
+      "hover main:{s} gen:{s} hit:{s}",
+      .{ common.widgetNameInPanel( main, hovered ), genHover, genHit }
     );
     panel.setTextFmt(
       captureLabel,
-      "pressed L:{s} R:{s} M:{s}",
-      .{ common.widgetNameInPanel( main, left ), common.widgetNameInPanel( main, right ), common.widgetNameInPanel( main, middle ) }
+      "pressed main L:{s} R:{s} M:{s} | gen L:{s}",
+      .{ common.widgetNameInPanel( main, left ), common.widgetNameInPanel( main, right ), common.widgetNameInPanel( main, middle ), genLeft }
     );
     panel.setTextFmt(
       queueLabel,
-      "engine inert | q:{d} drained:{d} ctrl:{d} last:{s}",
-      .{ main.getEventCount(), STATS.drainedThisFrame, STATS.controlQueueDrained, STATS.lastSummary }
+      "q main:{d}/{d} gen:{d}/{d} ctrl:{d} last:{s}/{s}",
+      .{ main.getEventCount(), STATS.drainedThisFrame, generatedEventCount(), GENERATED_STATS.drainedThisFrame, STATS.controlQueueDrained, STATS.lastSummary, GENERATED_STATS.lastEvent }
     );
   }
 }
@@ -492,27 +789,33 @@ fn updateControlReadouts( ng : *eng.Engine, main : *utl.Panel ) void
 
     const hit = main.hitTest( ng.mouse.screenPos );
 
+    var genHitName : []const u8 = "none";
+    if( GENERATED_PANEL )| *generated |
+    {
+      genHitName = common.widgetNameInPanel( generated, generated.hitTest( ng.mouse.screenPos ) );
+    }
+
     panel.setTextFmt(
       CONTROLS.lifecycleReadout,
-      "slots:{d} alive:{d} rebuilds:{d} cleared:{s}",
-      .{ main.getWidgetSlotCount(), main.getAliveWidgetCount(), STATS.rebuildCount, handleState( main, STATS.lastClearedCount ) }
+      "slots:{d} alive:{d} rebuilds:{d} gen:{d} old:{d}",
+      .{ main.getWidgetSlotCount(), main.getAliveWidgetCount(), STATS.rebuildCount, GENERATED_STATS.generationCount, GENERATED_STATS.lastClearedCount }
     );
 
     panel.setTextFmt(
       CONTROLS.queueReadout,
-      "main q:{d} before:{d} drained:{d} clears:{d}",
-      .{ main.getEventCount(), STATS.queuedBeforeDrain, STATS.drainedThisFrame, STATS.clearEventCount }
+      "main q:{d}->{d} gen q:{d}->{d} clears:{d}",
+      .{ STATS.queuedBeforeDrain, STATS.drainedThisFrame, GENERATED_STATS.queuedBeforeDrain, GENERATED_STATS.drainedThisFrame, STATS.clearEventCount }
     );
 
     panel.setTextFmt(
       CONTROLS.hitReadout,
-      "hit:{s} {d}:{d} mouse {d:.0}:{d:.0}",
-      .{ common.widgetNameInPanel( main, hit ), handleIdx( hit ), handleGen( hit ), ng.mouse.screenPos.x, ng.mouse.screenPos.y }
+      "hit main:{s} {d}:{d} gen:{s} mouse {d:.0}:{d:.0}",
+      .{ common.widgetNameInPanel( main, hit ), handleIdx( hit ), handleGen( hit ), genHitName, ng.mouse.screenPos.x, ng.mouse.screenPos.y }
     );
 
     panel.setTextFmt(
       CONTROLS.handleReadout,
-      "abs {s} old:{s} {d}:{d} new:{s} {d}:{d}\nremove:{d} restore:{d} mutate:{d}",
+      "abs {s} old:{s} {d}:{d} new:{s} {d}:{d}\nrm:{d} rs:{d} mut:{d} order:{s},{s},{s},{s},{s},{s},{s}",
       .{
         handleState( main, HANDLES.absButton ),
         handleState( main, STATS.lastRemovedAbs ),
@@ -524,6 +827,13 @@ fn updateControlReadouts( ng : *eng.Engine, main : *utl.Panel ) void
         STATS.removeCount,
         STATS.restoreCount,
         STATS.mutateStep,
+        generatedOrderName( 0 ),
+        generatedOrderName( 1 ),
+        generatedOrderName( 2 ),
+        generatedOrderName( 3 ),
+        generatedOrderName( 4 ),
+        generatedOrderName( 5 ),
+        generatedOrderName( 6 ),
       }
     );
 
@@ -535,6 +845,7 @@ fn updateControlButtonText( panel : *utl.Panel, main : *utl.Panel ) void
 {
   panel.setTextFmt( CONTROLS.rebuildButton,     "Rebuild {d}", .{ STATS.rebuildCount } );
   panel.setText(    CONTROLS.removeButton,      if( main.isWidgetAlive( HANDLES.absButton ) ) "Remove abs" else "Restore abs" );
+  panel.setTextFmt( CONTROLS.generateButton,    "Random {d}",  .{ GENERATED_STATS.generationCount } );
   panel.setTextFmt( CONTROLS.clearEventsButton, "Clear {d}",   .{ STATS.clearEventCount } );
   panel.setTextFmt( CONTROLS.mutateButton,      "Mutate {d}",  .{ STATS.mutateStep } );
 }

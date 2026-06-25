@@ -15,9 +15,11 @@ It currently acts as a dual-path manual sandbox for:
 * engine-registered panel routing through `ng.uiManager`;
 * local and manager-forwarded UI events;
 * runtime utility-vs-engine mode selection;
+* bounded runtime randomized utility panel generation;
 * mouse-consumption behavior around UI and camera controls;
 * debug readouts for hover, press/capture, event count, draw order, handles,
-  panel flags, utility hit tests, local queues, and optional primitive bounds.
+  panel flags, utility hit tests, generated-panel state, local queues, and
+  optional primitive bounds.
 
 ## 2. Files
 
@@ -34,8 +36,9 @@ ordering.
 `uiCommon.zig` owns shared panel layout/config helpers and the primary demo
 surface used by both implementation paths.
 
-`utilUi.zig` owns the direct utility panels, local event handling, utility
-debug readouts, utility-only primitive controls, and direct drawing.
+`utilUi.zig` owns the direct utility panels, generated random utility panel,
+local event handling, utility debug readouts, utility-only primitive controls,
+and direct drawing.
 
 `engineUi.zig` owns the manager-routed front, back, and control panels, manager
 registration lifecycle, manager event handling, engine-specific debug readouts,
@@ -48,21 +51,21 @@ and manager drawing.
 
 The `u` key toggles the active path:
 
-* utility mode updates and draws the direct primary panel plus its
-  utility-only primitive control panel;
+* utility mode updates and draws the direct primary panel, its utility-only
+  primitive control panel, and any generated random utility panel;
 * engine mode updates and draws the registered manager panels;
 * the debug panel stays direct utility UI in both modes and is visible by
   default;
 * primitive debug bounds are off by default and can be toggled independently;
-* queued utility, registered-panel, and manager events are cleared when modes
-  switch;
+* queued utility, generated-panel, registered-panel, and manager events are
+  cleared when modes switch;
 * inactive manager panels are made inert through their visibility, input, and
   draw flags.
 
 The inactive primary surface is not updated or drawn, and its events are not
-drained while inactive. Utility, registered-panel, and manager queues are
-cleared on mode switch so stale events do not fire when a path becomes active
-again.
+drained while inactive. Utility, generated-panel, registered-panel, and manager
+queues are cleared on mode switch so stale events do not fire when a path
+becomes active again.
 
 ## 4. Shared Primary Surface
 
@@ -100,6 +103,14 @@ surface. It keeps coverage for:
 * direct `Panel.hitTest()` readouts at the current mouse position;
 * handle-based mutation of enabled state, desired size, row gap, and formatted
   text;
+* bounded random panel generation through the `Random panel` button;
+* replacement of the previous generated panel after clearing its local events
+  and deinitializing its storage;
+* generated panels with fixed panel size, fixed widget row height, three to
+  seven randomized primitive widgets, and randomized insertion order;
+* generated labels, buttons, checkboxes, spacers, and visible containers only;
+* generated-panel local event draining, hit/hover/press readouts, generation
+  count, widget count, widget order, queue counts, and last-event summary;
 * widget slot count, live widget count, pending queue count, drained-event
   count, and last-event summaries;
 * utility-only controls staying inactive while engine mode is selected.
@@ -148,17 +159,20 @@ Keyboard controls remain game-level controls:
 `OnInputUpdate()` updates only the active UI path, then refreshes the utility
 debug panel. Camera wheel zoom runs only when the active UI path does not want
 the mouse. In utility mode, both the primary panel and the utility control
-panel contribute to active-path mouse consumption.
+panel contribute to active-path mouse consumption. If a generated utility panel
+exists, it also contributes to active-path mouse consumption so hovering or
+pressing generated widgets blocks camera wheel zoom.
 
 `OnRenderOverlay()` draws only the active UI path, then draws the standalone
-utility debug panel. In engine mode, manager drawing covers the registered
-engine panels.
+utility debug panel. In utility mode, generated panels draw between the primary
+panel and the utility control panel. In engine mode, manager drawing covers the
+registered engine panels.
 
 ## 8. Deferred Gaps
 
-The current sandbox covers the planned direct utility and engine-manager
-comparison surface. Future expansion should start from a new utility or engine
-design slice, not from visible placeholders in `menuer`.
+The current sandbox covers the planned direct utility, generated utility, and
+engine-manager comparison surface. Future expansion should start from a new
+utility or engine design slice, not from visible placeholders in `menuer`.
 
 Deferred gaps include:
 

@@ -52,8 +52,9 @@ Target shared coverage:
 * hover, pressed/captured, event-count, final-box, and text-metric readouts;
 * mouse-consumption behavior that prevents camera wheel zoom;
 * clear teardown/rebuild behavior without stale handles or queued stale events.
-* bounded runtime randomized panel generation that randomizes widget kinds and
-  insertion order while keeping panel and widget dimensions fixed.
+* bounded runtime randomized panel generation in both utility and engine-managed
+  paths that randomizes widget kinds and insertion order while keeping panel
+  and widget dimensions fixed.
 
 ## 4. Engine-Specific Coverage
 
@@ -69,6 +70,8 @@ direct utility panel cannot prove:
 * manager-local event forwarding;
 * unregister and re-register behavior;
 * stale-handle rejection after unregister, slot reuse, and manager clear;
+* game-owned generated panels that can be deleted, rebuilt, registered,
+  unregistered, and routed through `ng.uiManager` without stale manager events;
 * manager-level `wantsMouse()` behavior.
 
 ## 5. Utility-Specific Coverage
@@ -134,7 +137,9 @@ Runtime randomization is allowed in `menuer` when it is bounded and
 inspectable. Randomized panel demos should randomize widget kinds and order, not
 layout dimensions. They should cap widget counts, use stable fixed-size layout
 slots, delete the previous generated panel before creating a replacement, and
-clear stale local or manager events during replacement.
+clear stale local or manager events during replacement. The utility path should
+prove direct `Panel` ownership; the engine path should prove the same generated
+content through registered manager panels and manager-forwarded events.
 
 When the code needs extension hooks for deferred UI behavior, prefer clear
 `TODO` notes near the relevant implementation point. Do not show unimplemented
@@ -143,9 +148,9 @@ features in the visible sandbox.
 ## 8. Success Condition
 
 `menuer` can be switched between direct utility and engine-managed UI with one
-boolean flag, both paths demonstrate the same core primitive feature set, the
-utility path can generate bounded randomized primitive panels at runtime, and
-the engine path additionally proves manager-specific routing, handles, flags,
+boolean flag, both paths demonstrate the same core primitive feature set, both
+paths can generate bounded randomized primitive panels at runtime, and the
+engine path additionally proves manager-specific routing, handles, flags,
 events, and stale-handle behavior.
 
 Future UI tweaks should be able to use the sandbox to answer whether a change

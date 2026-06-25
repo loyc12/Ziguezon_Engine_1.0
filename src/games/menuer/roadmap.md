@@ -34,6 +34,16 @@ Current useful pieces to preserve:
 * `eng.Engine` owns an initialized `utl.Randomiser`, so menuer can request
   bounded random choices during input/event handling without adding another RNG
   owner;
+* utility mode has a `Random panel` control that clears stale generated events,
+  deinitializes any previous generated panel, and creates a new generated panel
+  with fixed panel/widget dimensions;
+* generated panels use `ng.rng` to pick three to seven supported primitive
+  widgets, then shuffle their insertion order while keeping labels, buttons,
+  checkboxes, spacers, and visible containers as the only generated kinds;
+* generated-panel local events are drained while utility mode is active, with
+  generation count, previous generated count, widget count/order, queue drain
+  counts, hit/hover/press state, last generated event, and mouse-consumption
+  state visible through utility readouts;
 * a direct utility debug panel is visible by default and toggleable with `d`;
 * primitive debug bounds are off by default and toggleable with `b`;
 * engine mode keeps a smaller back panel plus a manager control panel for
@@ -43,48 +53,61 @@ Current useful pieces to preserve:
 * camera movement, camera reset, pause, and active-path wheel gating are
   preserved;
 * open/close lifetime unregisters manager panels before deinitializing
-  game-owned panel storage.
+  game-owned panel storage, and releases generated utility panel storage.
 
 ## 2. Active Implementation Slice
 
-Build a bounded randomized panel-generation harness.
+Add bounded random panel generation to the engine-managed path.
 
-The slice should add a visible control button that deletes the previous random
-panel if one exists, then creates a new game-owned generated panel with
-randomized widget kinds and insertion order.
+The slice should mirror the current utility-mode random panel behavior while
+proving the engine-specific manager surfaces: registration handles, routed
+input, manager event forwarding, draw ordering, stale handle cleanup, and
+manager-level mouse consumption.
 
 Implementation order:
 
-1. Keep ownership local to `src/games/menuer` unless implementation proves an
-   engine-only behavior needs demonstration.
-2. Add generated-panel state, teardown, and event clearing in the direct utility
-   path first.
-3. Add the generation button to the existing utility controls or a small focused
-   generated-panel control group; keep it visible only when utility mode is
-   active.
-4. Use `ng.rng` for bounded choices, with a capped widget count and fixed
-   panel/widget dimensions. Randomize widget kinds and order, not sizes.
-5. Populate only currently supported primitive widgets: labels, buttons,
-   checkboxes, spacers, and containers. Do not add scroll, image, sprite,
-   text-input, focus, modal, popup, tooltip, docking, hot-reload, theme, or
-   global event demos.
-6. Update generated-panel readouts for generation count, widget mix/order,
-   event counts, hover/press or hit-test state, and stale deletion/rebuild
-   behavior.
-7. Preserve mode isolation, camera controls, pause/reset controls, and
-   active-path mouse-consumption gating.
-8. Validate with the menuer sandbox build, plus broader build/test commands if
-   utility or engine UI implementation code changes.
+1. Preserve the existing module boundary.
+   Keep shared fixed layout helpers in `uiCommon.zig`, generated utility panel
+   behavior in `utilUi.zig`, engine-generated panel state and manager behavior
+   in `engineUi.zig`, and active-mode coordination in `stepInjects.zig`.
+2. Add engine-generated panel state, registration handle storage, replacement
+   helpers, and teardown in the engine path.
+3. Add a visible engine-mode control such as `Random panel` to the manager
+   control panel. Keep it inactive and invisible while utility mode is active
+   through the existing manager active-mode flags.
+4. Use `ng.rng` for bounded choices. Keep fixed generated panel dimensions and
+   fixed widget row heights, and randomize only widget kind plus insertion
+   order.
+5. Populate only supported primitive widgets: labels, buttons, checkboxes,
+   spacers, and containers. Reuse or factor the utility generator only when it
+   avoids meaningful duplication without hiding the manager lifecycle.
+6. Register the generated panel with `ng.uiManager`, clear stale panel-local
+   and manager-forwarded events during replacement, and unregister the old
+   generated panel before deinitializing its storage.
+7. Drain generated-panel manager events while engine mode is active and report
+   generation count, widget count, widget order/mix, manager pending/drained
+   events, hovered/captured or hit-test state, stale/replacement state, and last
+   generated event.
+8. Include the generated engine panel in manager `wantsMouse()` behavior through
+   normal registration and input routing. Camera movement, reset, pause, and
+   active-path wheel gating must remain available.
+9. Validate with the menuer sandbox build, plus broader build/test commands
+   because the slice touches engine UI implementation code.
 
 ## 3. Debug Surface
 
 The debug surface already reports the active path, mouse position,
 mouse-consumption state, active event counts, utility hover/press state,
-utility queue/control summaries, and engine hover/capture/handle/draw-order
-data. The randomized panel slice may extend utility readouts with generated
-panel count, widget mix/order, and generated-panel hit or event state. Strengthen
-it further only as later engine-specific or utility-specific controls add real
-state that needs inspection.
+utility queue/control summaries, generated-panel count/order/hit/event state,
+and engine hover/capture/handle/draw-order data. Strengthen it further only as
+later engine-specific or utility-specific controls add real state that needs
+inspection.
+
+The engine-generated panel slice should extend the engine debug/readout surface
+only with state needed to validate registered generated-panel behavior: manager
+handle state, route/capture state, pending/drained generated events, and
+generated widget order. Avoid adding placeholder rows for unsupported UI
+features.
 
 If a single debug panel becomes too tangled because utility and engine modes
 need different inputs, split it into separate utility-owned debug panel
