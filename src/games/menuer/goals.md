@@ -52,6 +52,8 @@ Target shared coverage:
 * hover, pressed/captured, event-count, final-box, and text-metric readouts;
 * mouse-consumption behavior that prevents camera wheel zoom;
 * clear teardown/rebuild behavior without stale handles or queued stale events.
+* bounded runtime randomized panel generation that randomizes widget kinds and
+  insertion order while keeping panel and widget dimensions fixed.
 
 ## 4. Engine-Specific Coverage
 
@@ -79,7 +81,10 @@ on engine orchestration:
 * direct `Panel.wantsMouse()`;
 * direct `Panel.draw()`;
 * handle-based mutation and introspection;
-* panel-local ownership and deinitialization.
+* panel-local ownership and deinitialization;
+* game-owned generated panels that can be deleted and rebuilt at runtime without
+  leaking storage, retaining stale events, or depending on engine manager
+  orchestration.
 
 ## 6. Debug Surface
 
@@ -101,6 +106,7 @@ framework. Useful readouts include:
 * selected route/input/draw flags;
 * panel handle generation data when the engine path is active;
 * draw order when the engine path is active;
+* generated panel seed/count/shape data when randomized panels are active;
 * mouse-consumption state.
 
 ## 7. Boundaries
@@ -124,6 +130,12 @@ Do not broaden the rework into ownership transfer, type erasure, generic
 factories, or a compatibility layer unless the chosen roadmap proves a concrete
 need and the user approves the boundary change.
 
+Runtime randomization is allowed in `menuer` when it is bounded and
+inspectable. Randomized panel demos should randomize widget kinds and order, not
+layout dimensions. They should cap widget counts, use stable fixed-size layout
+slots, delete the previous generated panel before creating a replacement, and
+clear stale local or manager events during replacement.
+
 When the code needs extension hooks for deferred UI behavior, prefer clear
 `TODO` notes near the relevant implementation point. Do not show unimplemented
 features in the visible sandbox.
@@ -131,7 +143,8 @@ features in the visible sandbox.
 ## 8. Success Condition
 
 `menuer` can be switched between direct utility and engine-managed UI with one
-boolean flag, both paths demonstrate the same core primitive feature set, and
+boolean flag, both paths demonstrate the same core primitive feature set, the
+utility path can generate bounded randomized primitive panels at runtime, and
 the engine path additionally proves manager-specific routing, handles, flags,
 events, and stale-handle behavior.
 

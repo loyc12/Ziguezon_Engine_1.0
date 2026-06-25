@@ -7,7 +7,8 @@ This roadmap describes the remaining implementation order from the current
 ## 1. Current Baseline
 
 `menuer` now has a runtime utility-vs-engine mode boundary, a comparable
-primary demo surface for both paths, and a focused engine-manager harness.
+primary demo surface for both paths, a focused utility primitive harness, and a
+focused engine-manager harness.
 
 Current useful pieces to preserve:
 
@@ -24,6 +25,15 @@ Current useful pieces to preserve:
   mutation, checked-state mutation, visibility/enabled mutation, style
   mutation, hover/press readouts, event counts, text metrics, final-box marker,
   and active-path mouse consumption;
+* utility mode keeps a primitive control panel for direct panel clear/rebuild,
+  widget removal/restore, local event queue holding/clearing, direct hit-test
+  readouts, handle mutation, handle state readouts, slot/live counts, and
+  drained-event summaries;
+* `Panel.clear()` invalidates old widget handles before rebuild through
+  generation-bumped slot reuse;
+* `eng.Engine` owns an initialized `utl.Randomiser`, so menuer can request
+  bounded random choices during input/event handling without adding another RNG
+  owner;
 * a direct utility debug panel is visible by default and toggleable with `d`;
 * primitive debug bounds are off by default and toggleable with `b`;
 * engine mode keeps a smaller back panel plus a manager control panel for
@@ -35,45 +45,52 @@ Current useful pieces to preserve:
 * open/close lifetime unregisters manager panels before deinitializing
   game-owned panel storage.
 
-## 2. Phase 4 - Utility-Specific Harness
+## 2. Active Implementation Slice
 
-Keep a focused utility-only section for primitive behavior that does not require
-engine orchestration.
+Build a bounded randomized panel-generation harness.
 
-Coverage to add or strengthen:
+The slice should add a visible control button that deletes the previous random
+panel if one exists, then creates a new game-owned generated panel with
+randomized widget kinds and insertion order.
 
-* direct panel clear/rebuild behavior;
-* widget removal if the current primitive API remains stable enough to demo;
-* enabled/visible widget mutation beyond the current primary-surface mutation;
-* local event queue clearing;
-* direct hit-test/readout helpers;
-* handle-based mutation and introspection that would otherwise be easy to
-  regress.
+Implementation order:
 
-Do not duplicate engine-only controls unless they clarify the comparison.
+1. Keep ownership local to `src/games/menuer` unless implementation proves an
+   engine-only behavior needs demonstration.
+2. Add generated-panel state, teardown, and event clearing in the direct utility
+   path first.
+3. Add the generation button to the existing utility controls or a small focused
+   generated-panel control group; keep it visible only when utility mode is
+   active.
+4. Use `ng.rng` for bounded choices, with a capped widget count and fixed
+   panel/widget dimensions. Randomize widget kinds and order, not sizes.
+5. Populate only currently supported primitive widgets: labels, buttons,
+   checkboxes, spacers, and containers. Do not add scroll, image, sprite,
+   text-input, focus, modal, popup, tooltip, docking, hot-reload, theme, or
+   global event demos.
+6. Update generated-panel readouts for generation count, widget mix/order,
+   event counts, hover/press or hit-test state, and stale deletion/rebuild
+   behavior.
+7. Preserve mode isolation, camera controls, pause/reset controls, and
+   active-path mouse-consumption gating.
+8. Validate with the menuer sandbox build, plus broader build/test commands if
+   utility or engine UI implementation code changes.
 
-## 3. Phase 5 - Debug Surface
-
-Keep the debug UI direct utility-owned and always active by default.
+## 3. Debug Surface
 
 The debug surface already reports the active path, mouse position,
-mouse-consumption state, active event counts, utility hover/press state, and
-engine hover/capture/handle/draw-order data. Strengthen it only as later
-engine-specific or utility-specific controls add real state that needs
-inspection.
+mouse-consumption state, active event counts, utility hover/press state,
+utility queue/control summaries, and engine hover/capture/handle/draw-order
+data. The randomized panel slice may extend utility readouts with generated
+panel count, widget mix/order, and generated-panel hit or event state. Strengthen
+it further only as later engine-specific or utility-specific controls add real
+state that needs inspection.
 
 If a single debug panel becomes too tangled because utility and engine modes
 need different inputs, split it into separate utility-owned debug panel
 instances and draw only the relevant one.
 
-## 4. Phase 6 - Cleanup And Validation
-
-After each harness slice:
-
-* remove dead code made obsolete by the selected structure;
-* keep any deferred extension points as concise `TODO` notes in code;
-* update [reference.md](reference.md) to describe the new current behavior;
-* trim this roadmap to remaining work.
+## 4. Validation
 
 Validation for visible sandbox changes:
 

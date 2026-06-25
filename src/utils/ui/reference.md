@@ -103,9 +103,11 @@ Raw mutable widget pointer access is internal so callers cannot bypass dirty
 flag maintenance. If a caller needs a new mutation path, add a narrow
 handle-based setter or query instead of exposing storage internals.
 
-`Panel.clear()` removes all widgets and queued events while retaining
-allocations. `removeWidget()` removes a single widget by handle. Both operations
-are caller-directed storage mutation and do not emit events.
+`Panel.clear()` removes all live widgets and queued events while retaining
+allocated slots. Old widget handles become stale; a later rebuild may reuse the
+same slot indexes with bumped generations. `removeWidget()` removes a single
+widget by handle. Both operations are caller-directed storage mutation and do
+not emit events.
 
 ## 5. Geometry
 

@@ -58,6 +58,11 @@ pub fn engineControlPanelBox() utl.Box2
   return utl.uiBoxFromTopLeft( .new( 24.0, 430.0 ), .new( 460.0, 270.0 ));
 }
 
+pub fn utilityControlPanelBox() utl.Box2
+{
+  return engineControlPanelBox();
+}
+
 pub fn debugPanelBox() utl.Box2
 {
   const size = utl.Vec2.new( 430.0, 410.0 );

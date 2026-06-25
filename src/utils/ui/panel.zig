@@ -423,7 +423,16 @@ pub const Panel = struct
   {
     self.events.clearRetainingCapacity();
     self.hits.clearRetainingCapacity();
-    self.widgets.clearRetainingCapacity();
+
+    // Keep slots allocated so the next rebuild reuses storage through the
+    // normal generation-bump path instead of aliasing old handles to new
+    // widgets at the same index/generation.
+    for( self.widgets.items )| *widget |
+    {
+      widget.isAlive = false;
+      widget.state.isVisible = false;
+    }
+
     self.markStructureDirty();
   }
 
@@ -1561,6 +1570,25 @@ test "Panel reuses widget slots with a new handle generation"
   try std.testing.expect(  panel.isWidgetAlive( second ));
   try std.testing.expectEqual( @as( usize, 1 ), panel.getWidgetSlotCount() );
   try std.testing.expectEqual( @as( usize, 1 ), panel.getAliveWidgetCount() );
+}
+
+test "Panel clear invalidates old handles before rebuilding"
+{
+  var panel = try testPanel( .{ .center = .new( 100.0, 100.0 ), .scale = .new( 100.0, 100.0 ) }, .absolute );
+  defer panel.deinit();
+
+  const old = try testButtonAt( &panel, "old", .{ .center = .new( 10.0, 10.0 ), .scale = .new( 5.0, 5.0 ) } );
+
+  panel.clear();
+  try std.testing.expect( !panel.isWidgetAlive( old ) );
+  try std.testing.expectEqual( @as( usize, 1 ), panel.getWidgetSlotCount() );
+  try std.testing.expectEqual( @as( usize, 0 ), panel.getAliveWidgetCount() );
+
+  const rebuilt = try testButtonAt( &panel, "rebuilt", .{ .center = .new( 20.0, 20.0 ), .scale = .new( 5.0, 5.0 ) } );
+  try std.testing.expect( old.idx == rebuilt.idx );
+  try std.testing.expect( old.gen != rebuilt.gen );
+  try std.testing.expect( !panel.isWidgetAlive( old ) );
+  try std.testing.expect(  panel.isWidgetAlive( rebuilt ));
 }
 
 test "Panel child draw order also drives front-to-back hit testing"

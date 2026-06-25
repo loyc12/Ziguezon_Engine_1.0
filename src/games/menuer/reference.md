@@ -17,7 +17,7 @@ It currently acts as a dual-path manual sandbox for:
 * runtime utility-vs-engine mode selection;
 * mouse-consumption behavior around UI and camera controls;
 * debug readouts for hover, press/capture, event count, draw order, handles,
-  panel flags, and optional primitive bounds.
+  panel flags, utility hit tests, local queues, and optional primitive bounds.
 
 ## 2. Files
 
@@ -34,8 +34,8 @@ ordering.
 `uiCommon.zig` owns shared panel layout/config helpers and the primary demo
 surface used by both implementation paths.
 
-`utilUi.zig` owns the direct utility panel, local event handling, utility debug
-readouts, and direct drawing.
+`utilUi.zig` owns the direct utility panels, local event handling, utility
+debug readouts, utility-only primitive controls, and direct drawing.
 
 `engineUi.zig` owns the manager-routed front, back, and control panels, manager
 registration lifecycle, manager event handling, engine-specific debug readouts,
@@ -48,7 +48,8 @@ and manager drawing.
 
 The `u` key toggles the active path:
 
-* utility mode updates and draws the direct `MAIN_PANEL`;
+* utility mode updates and draws the direct primary panel plus its
+  utility-only primitive control panel;
 * engine mode updates and draws the registered manager panels;
 * the debug panel stays direct utility UI in both modes and is visible by
   default;
@@ -59,7 +60,9 @@ The `u` key toggles the active path:
   draw flags.
 
 The inactive primary surface is not updated or drawn, and its events are not
-drained while inactive.
+drained while inactive. Utility, registered-panel, and manager queues are
+cleared on mode switch so stale events do not fire when a path becomes active
+again.
 
 ## 4. Shared Primary Surface
 
@@ -85,7 +88,27 @@ The utility path demonstrates this through direct `Panel.updateInput()`,
 The engine path demonstrates the same surface through `UiManager.updateInput()`,
 manager event forwarding, `UiManager.wantsMouse()`, and `UiManager.drawAll()`.
 
-## 5. Engine-Specific Coverage
+## 5. Utility-Specific Coverage
+
+Utility mode also shows a focused primitive control panel below the primary
+surface. It keeps coverage for:
+
+* direct `Panel.clear()` plus immediate primary-panel rebuild;
+* stale-handle readouts after clear/rebuild and widget removal;
+* widget removal and restore through generation-checked `utl.UiHandle` values;
+* local event queue holding and `Panel.clearEvents()` controls;
+* direct `Panel.hitTest()` readouts at the current mouse position;
+* handle-based mutation of enabled state, desired size, row gap, and formatted
+  text;
+* widget slot count, live widget count, pending queue count, drained-event
+  count, and last-event summaries;
+* utility-only controls staying inactive while engine mode is selected.
+
+`Panel.clear()` invalidates old widget handles before rebuild by leaving slots
+available for generation-bumped reuse. The harness reports the old and new
+handle states so this behavior stays visible.
+
+## 6. Engine-Specific Coverage
 
 Engine mode also registers a smaller back panel beside the primary engine panel,
 with a small overlap left in place for manager-layer inspection, plus a focused
@@ -110,7 +133,7 @@ manager control panel below the primary surface. It keeps coverage for:
 * unregistering registered panels on close before deinitializing game-owned
   panel storage.
 
-## 6. Input And Rendering
+## 7. Input And Rendering
 
 Keyboard controls remain game-level controls:
 
@@ -124,27 +147,26 @@ Keyboard controls remain game-level controls:
 
 `OnInputUpdate()` updates only the active UI path, then refreshes the utility
 debug panel. Camera wheel zoom runs only when the active UI path does not want
-the mouse.
+the mouse. In utility mode, both the primary panel and the utility control
+panel contribute to active-path mouse consumption.
 
 `OnRenderOverlay()` draws only the active UI path, then draws the standalone
 utility debug panel. In engine mode, manager drawing covers the registered
 engine panels.
 
-## 7. Remaining Gaps
+## 8. Deferred Gaps
 
-The sandbox now covers the engine-specific manager harness, but the utility path
-still lacks its focused primitive-only slice.
+The current sandbox covers the planned direct utility and engine-manager
+comparison surface. Future expansion should start from a new utility or engine
+design slice, not from visible placeholders in `menuer`.
 
-Remaining gaps include:
+Deferred gaps include:
 
-* no widget removal demo;
-* no local event queue clear control;
-* no direct panel clear/rebuild demo;
-* no broader utility-only hit-test/readout controls;
-* no scroll, image, sprite, text-input, focus, modal, popup, tooltip, docking,
-  hot reload, theme, or global event integration demos.
+* stack-layout comparison if a concrete caller needs it;
+* scroll, image, sprite, text-input, focus, modal, popup, tooltip, docking, hot
+  reload, theme, or global event integration demos.
 
-## 8. Boundaries
+## 9. Boundaries
 
 `menuer` should remain a sandbox for implemented UI behavior. It should not
 invent focus, modal, window, popup, text input, or global event semantics ahead
@@ -154,7 +176,7 @@ Utility primitive facts belong in `src/utils/ui/reference.md`. Engine
 orchestration facts belong in `src/engine/ui/reference.md`. `menuer` should
 only document how the game combines and demonstrates those systems.
 
-## 9. Validation
+## 10. Validation
 
 Docs-only changes need no build.
 
