@@ -27,8 +27,19 @@ title/background/debug colors.
 `stateInjects.zig` builds UI on `OnGameOpen()` and releases it on
 `OnGameClose()`.
 
-`stepInjects.zig` owns sandbox state, UI construction, active-mode switching,
-event handling, debug label updates, camera controls, and overlay drawing.
+`stepInjects.zig` owns the small coordinator surface: active-mode switching,
+debug-panel lifetime, game controls, mouse-consumption gating, and overlay
+ordering.
+
+`uiCommon.zig` owns shared panel layout/config helpers and the primary demo
+surface used by both implementation paths.
+
+`utilUi.zig` owns the direct utility panel, local event handling, utility debug
+readouts, and direct drawing.
+
+`engineUi.zig` owns the manager-routed front, back, and control panels, manager
+registration lifecycle, manager event handling, engine-specific debug readouts,
+and manager drawing.
 
 ## 3. Runtime Mode Boundary
 
@@ -77,17 +88,25 @@ manager event forwarding, `UiManager.wantsMouse()`, and `UiManager.drawAll()`.
 ## 5. Engine-Specific Coverage
 
 Engine mode also registers a smaller back panel beside the primary engine panel,
-with a small overlap left in place for manager-layer inspection. It keeps
-coverage for:
+with a small overlap left in place for manager-layer inspection, plus a focused
+manager control panel below the primary surface. It keeps coverage for:
 
 * generation-checked `eng.UiPanelHandle` storage;
-* registration metadata readouts;
+* registration metadata readouts, including layer, z, and order;
 * layer, z, and registration-order draw routing;
-* overlapping panel routing;
+* overlapping front/back input routing;
 * manager-local event forwarding;
-* visibility/input/draw flag readouts;
+* visibility/input/draw flag readouts and controls for the front registered
+  demo panel;
+* register, unregister, and re-register controls for the front registered demo
+  panel;
+* manager `clear()` through a recoverable control path that restores the back
+  and control panels while leaving the front demo unregistered;
+* stale-handle rejection after unregister, slot reuse after re-register, and
+  clear invalidation readouts;
 * hovered panel/widget and per-button captured panel/widget debug text;
-* manager event count, panel count, and draw-order readouts;
+* manager queue-before-drain counts, drained-event counts, last-event summaries,
+  panel count, and draw-order readouts;
 * unregistering registered panels on close before deinitializing game-owned
   panel storage.
 
@@ -107,24 +126,21 @@ Keyboard controls remain game-level controls:
 debug panel. Camera wheel zoom runs only when the active UI path does not want
 the mouse.
 
-`OnRenderOverlay()` draws only the active primary UI path, then draws the
-standalone utility debug panel. In engine mode, manager drawing covers the
-registered engine panels.
+`OnRenderOverlay()` draws only the active UI path, then draws the standalone
+utility debug panel. In engine mode, manager drawing covers the registered
+engine panels.
 
 ## 7. Remaining Gaps
 
-The sandbox is now a runtime comparison harness, but not the full target state.
+The sandbox now covers the engine-specific manager harness, but the utility path
+still lacks its focused primitive-only slice.
 
 Remaining gaps include:
 
-* no visible runtime register/unregister/re-register controls;
-* no manager `clear()` control;
-* no stale-handle rejection demonstration after unregister, slot reuse, or
-  clear;
-* no full visible/input/draw flag control coverage;
 * no widget removal demo;
 * no local event queue clear control;
 * no direct panel clear/rebuild demo;
+* no broader utility-only hit-test/readout controls;
 * no scroll, image, sprite, text-input, focus, modal, popup, tooltip, docking,
   hot reload, theme, or global event integration demos.
 

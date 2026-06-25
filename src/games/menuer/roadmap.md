@@ -6,12 +6,14 @@ This roadmap describes the remaining implementation order from the current
 
 ## 1. Current Baseline
 
-`menuer` now has a runtime utility-vs-engine mode boundary and a comparable
-primary demo surface for both paths.
+`menuer` now has a runtime utility-vs-engine mode boundary, a comparable
+primary demo surface for both paths, and a focused engine-manager harness.
 
 Current useful pieces to preserve:
 
 * one easy-to-find boolean mode flag in `stepInjects.zig`;
+* focused modules for shared UI helpers, direct utility UI, engine manager UI,
+  and lifecycle/input/render coordination;
 * `u` toggles the active implementation at runtime;
 * the active path receives input, drains events, updates state, and draws its
   primary surface;
@@ -24,34 +26,16 @@ Current useful pieces to preserve:
   and active-path mouse consumption;
 * a direct utility debug panel is visible by default and toggleable with `d`;
 * primitive debug bounds are off by default and toggleable with `b`;
-* engine mode keeps a smaller back panel for manager handle, layer/z/order,
-  draw order, slight-overlap routing, capture, and flag readouts;
+* engine mode keeps a smaller back panel plus a manager control panel for
+  manager handle, layer/z/order, draw order, slight-overlap routing, capture,
+  flag controls, lifecycle controls, stale-handle samples, clear invalidation,
+  manager queue counts, and drained-event summaries;
 * camera movement, camera reset, pause, and active-path wheel gating are
   preserved;
 * open/close lifetime unregisters manager panels before deinitializing
   game-owned panel storage.
 
-## 2. Phase 3 - Engine-Specific Harness
-
-Keep a focused engine-only section for manager behavior that direct utility UI
-cannot demonstrate.
-
-Coverage to add or strengthen:
-
-* visible/input/draw flag toggles;
-* register, unregister, and re-register controls;
-* manager `clear()` control;
-* stale-handle rejection readout after unregister, slot reuse, and clear;
-* layer/z/order draw and input routing readouts;
-* per-button capture behavior where the current controls can naturally exercise
-  it;
-* manager event queue count and drained-event summaries.
-
-Prefer visible controls only for implemented behavior. Put code-local `TODO`
-notes at obvious extension points for future manager concepts that are not yet
-implemented.
-
-## 3. Phase 4 - Utility-Specific Harness
+## 2. Phase 4 - Utility-Specific Harness
 
 Keep a focused utility-only section for primitive behavior that does not require
 engine orchestration.
@@ -68,7 +52,7 @@ Coverage to add or strengthen:
 
 Do not duplicate engine-only controls unless they clarify the comparison.
 
-## 4. Phase 5 - Debug Surface
+## 3. Phase 5 - Debug Surface
 
 Keep the debug UI direct utility-owned and always active by default.
 
@@ -82,7 +66,7 @@ If a single debug panel becomes too tangled because utility and engine modes
 need different inputs, split it into separate utility-owned debug panel
 instances and draw only the relevant one.
 
-## 5. Phase 6 - Cleanup And Validation
+## 4. Phase 6 - Cleanup And Validation
 
 After each harness slice:
 
@@ -106,7 +90,7 @@ zig build test
 
 Do not run formatting passes such as `zig fmt`.
 
-## 6. Deferred And Future Updates
+## 5. Deferred And Future Updates
 
 Do not show unimplemented UI concepts in the visible sandbox. Keep the visual
 surface focused on behavior that exists today.
