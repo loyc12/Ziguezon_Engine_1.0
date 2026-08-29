@@ -41,7 +41,7 @@ pub fn syncGridDisplay() void
   }
 }
 
-fn getCellColour( cell : game.Cell ) utl.Colour
+pub fn getCellColour( cell : game.Cell ) utl.Colour
 {
   return switch( cell )
   {
@@ -52,6 +52,10 @@ fn getCellColour( cell : game.Cell ) utl.Colour
     .Green  => .green,
     .Blue   => .blue,
     .Purple => .purple,
+    .Cyan   => .cyan,
+    .Magenta => .magenta,
+    .Lime   => .lime,
+    .Rose   => .rose,
   };
 }
 
