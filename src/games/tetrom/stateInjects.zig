@@ -45,17 +45,17 @@ pub fn getCellColour( cell : game.Cell ) utl.Colour
 {
   return switch( cell )
   {
-    .Empty  => .dGray,
-    .Red    => .red,
-    .Orange => .orange,
-    .Yellow => .yellow,
-    .Green  => .green,
-    .Blue   => .blue,
-    .Purple => .purple,
-    .Cyan   => .cyan,
+    .Empty   => .mGray,
+    .Red     => .red,
+    .Orange  => .orange,
+    .Yellow  => .yellow,
+    .Green   => .green,
+    .Blue    => .blue,
+    .Purple  => .purple,
+    .Cyan    => .cyan,
     .Magenta => .magenta,
-    .Lime   => .lime,
-    .Rose   => .rose,
+    .Lime    => .lime,
+    .Rose    => .rose,
   };
 }
 

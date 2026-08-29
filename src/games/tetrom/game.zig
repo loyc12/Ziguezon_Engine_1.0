@@ -114,6 +114,7 @@ pub const Game = struct
 {
   board       : Board       = .{},
   activePiece : ActivePiece = .{},
+  isGameOver  : bool        = false,
 
   pub fn init( self : *Game, rng : *utl.Randomiser ) void
   {
@@ -124,10 +125,19 @@ pub const Game = struct
   pub fn reset( self : *Game, rng : *utl.Randomiser ) void
   {
     self.board.reset();
+    self.isGameOver = false;
+    self.spawnRandomPiece( rng );
+  }
+
+  /// Replaces the active debug piece without changing settled board cells.
+  pub fn spawnRandomPiece( self : *Game, rng : *utl.Randomiser ) void
+  {
     self.activePiece = .{
       .kind   = rng.getVal( PieceKind ),
-      .anchor = HexCoord.fromBoardCoords( .{ .x = Board.width / 2, .y = 0 } ),
+      .anchor = HexCoord.fromBoardCoords( .{ .x = Board.width / 2, .y = 1 } ),
     };
+
+    self.isGameOver = !self.checkPieceCollision( &self.activePiece ).isClear();
   }
 
   /// Returns a floating-piece cell suitable for overlaying onto the board render.
@@ -148,6 +158,25 @@ pub const Game = struct
   pub fn changeRotationBy( self : *Game, offset : i32 ) void
   {
     self.activePiece.rotation = Rotation.fromIndex( self.activePiece.rotation.getIndex() + offset );
+  }
+
+  /// Writes every in-bounds active cell into the settled board, then spawns anew.
+  pub fn lockActivePiece( self : *Game, rng : *utl.Randomiser ) struct { locked : u8, outsideBoard : u8, gameOver : bool }
+  {
+    var locked       : u8 = 0;
+    var outsideBoard : u8 = 0;
+    const cell = getCellForPiece( self.activePiece.kind );
+
+    for( 0 .. @as( usize, self.activePiece.getLayout().cellCount ))| index |
+    {
+      const coords = self.activePiece.getCellHex( index ).toBoardCoords();
+
+      if( self.board.setCell( coords, cell )){ locked += 1; }
+      else {                                 outsideBoard += 1; }
+    }
+
+    self.spawnRandomPiece( rng );
+    return .{ .locked = locked, .outsideBoard = outsideBoard, .gameOver = self.isGameOver };
   }
 
   /// Checks a prospective piece location without mutating the board or active piece.
@@ -208,21 +237,26 @@ pub const Game = struct
 
     if( collision.wall )
     {
-      const kick = self.getWallKick( &candidate );
-      candidate.anchor = candidate.anchor.add( kick );
+      const kicks = self.getWallKicks( &candidate );
 
-      const kickedCollision = self.checkPieceCollision( &candidate );
-      if( kickedCollision.isClear() )
+      for( kicks )| kick |
       {
-        self.activePiece = candidate;
-        return .{ .collision = .{}, .kicked = true };
+        candidate.anchor = self.activePiece.anchor.add( kick );
+
+        const kickedCollision = self.checkPieceCollision( &candidate );
+        if( kickedCollision.isClear() )
+        {
+          self.activePiece = candidate;
+          return .{ .collision = .{}, .kicked = true };
+        }
+        if( !kickedCollision.wall ){ break; }
       }
     }
 
     return .{ .collision = collision, .kicked = false };
   }
 
-  fn getWallKick( self : *const Game, piece : *const ActivePiece ) HexCoord
+  fn getWallKicks( self : *const Game, piece : *const ActivePiece ) [ 3 ]HexCoord
   {
     _ = self;
 
@@ -236,9 +270,15 @@ pub const Game = struct
       hitsRightWall = hitsRightWall or coords.x >= Board.width;
     }
 
-    if( hitsLeftWall and !hitsRightWall ){ return .new(  1, -1 ); }
-    if( hitsRightWall and !hitsLeftWall ){ return .new( -1,  0 ); }
-    return .{};
+    if( hitsLeftWall and !hitsRightWall )
+    {
+      return .{ .new( 1, -1 ), .new( 2, -2 ), .new( 2, -1 ) };
+    }
+    if( hitsRightWall and !hitsLeftWall )
+    {
+      return .{ .new( -1, 0 ), .new( -2, 0 ), .new( -2, 1 ) };
+    }
+    return .{ .{}, .{}, .{} };
   }
 };
 
