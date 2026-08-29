@@ -33,8 +33,9 @@ pub const HexCoord = struct
 /// The ten one-sided tetrahexes. Mirrors are distinct, rotations are not.
 pub const PieceKind = enum( u4 )
 {
-  P01, P02, P03, P04, P05,
-  P06, P07, P08, P09, P10,
+  P00, P01, P02, P03, P04,
+  P05, P06, P07, P08, P09,
+  P10, P11, P12, P13, P14,
 
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
@@ -58,7 +59,8 @@ pub const Rotation = enum( u3 )
 /// The P08 anchor is intentionally empty: it sits in the centre of its U shape.
 pub const PieceLayout = struct
 {
-  cells : [ 4 ]HexCoord,
+  cells     : [ 4 ]HexCoord,
+  cellCount : u3 = 4,
 };
 
 pub const PieceDef = struct
@@ -66,101 +68,162 @@ pub const PieceDef = struct
   layouts : [ Rotation.count ]PieceLayout,
 };
 
-/// Returns all six explicitly-authored layouts for one tetrahex kind.
+/// Returns all six directional cell layouts for one tetrahex kind.
 pub fn getDef( kind : PieceKind ) *const PieceDef
 {
   return switch( kind )
   {
-    .P01 => &P01, .P02 => &P02, .P03 => &P03, .P04 => &P04, .P05 => &P05,
-    .P06 => &P06, .P07 => &P07, .P08 => &P08, .P09 => &P09, .P10 => &P10,
+    .P00 => &P00, .P01 => &P01, .P02 => &P02, .P03 => &P03, .P04 => &P04,
+    .P05 => &P05, .P06 => &P06, .P07 => &P07, .P08 => &P08, .P09 => &P09,
+    .P10 => &P10, .P11 => &P11, .P12 => &P12, .P13 => &P13, .P14 => &P14,
   };
 }
 
-const P01 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(   0,  -2 ), .new(   0,  -1 ), .new(   0,   0 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   2,  -2 ), .new(   1,  -1 ), .new(   0,   0 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(   1,   0 ), .new(   0,   0 ), .new(  -1,   0 ), .new(  -2,   0 ) } },
-  .{ .cells = .{ .new(   0,   1 ), .new(   0,   0 ), .new(   0,  -1 ), .new(   0,  -2 ) } },
-  .{ .cells = .{ .new(  -1,   1 ), .new(   0,   0 ), .new(   1,  -1 ), .new(   2,  -2 ) } },
-  .{ .cells = .{ .new(  -2,   0 ), .new(  -1,   0 ), .new(   0,   0 ), .new(   1,   0 ) } },
-}};
-const P02 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(   0,   0 ), .new(   0,   1 ), .new(   0,   2 ), .new(   1,  -1 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(  -1,   1 ), .new(  -2,   2 ), .new(   1,   0 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(  -1,   0 ), .new(  -2,   0 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   0,  -1 ), .new(   0,  -2 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   1,  -1 ), .new(   2,  -2 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   1,   0 ), .new(   2,   0 ), .new(   0,  -1 ) } },
+//  CENTER        TOP             TOP RIGHT       BOT RIGHT       BOTTOM          BOTTOM LEFT     TOP LEFT
+// .new( 0, 0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 )
+// .new( 0, 0 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 )
+// .new( 0, 0 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 )
+// .new( 0, 0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 )
+// .new( 0, 0 ), .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 )
+// .new( 0, 0 ), .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 )
+
+// .new( 0, 0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 )
+// .new( 0, 0 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 )
+// .new( 0, 0 ), .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 )
+
+// .new( 0, 0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 )
+// .new( 0, 0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 )
+
+
+const P00 = PieceDef{ .layouts = .{ // 1
+  .{ .cells = .{ .new( 0, 0 ), .{}, .{}, .{} }, .cellCount = 1 },
+  .{ .cells = .{ .new( 0, 0 ), .{}, .{}, .{} }, .cellCount = 1 },
+  .{ .cells = .{ .new( 0, 0 ), .{}, .{}, .{} }, .cellCount = 1 },
+  .{ .cells = .{ .new( 0, 0 ), .{}, .{}, .{} }, .cellCount = 1 },
+  .{ .cells = .{ .new( 0, 0 ), .{}, .{}, .{} }, .cellCount = 1 },
+  .{ .cells = .{ .new( 0, 0 ), .{}, .{}, .{} }, .cellCount = 1 },
 }};
 
-const P03 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(   0,  -1 ), .new(   0,   0 ), .new(   0,   1 ), .new(   1,  -1 ) } },
-  .{ .cells = .{ .new(   1,  -1 ), .new(   0,   0 ), .new(  -1,   1 ), .new(   1,   0 ) } },
-  .{ .cells = .{ .new(   1,   0 ), .new(   0,   0 ), .new(  -1,   0 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   0,   1 ), .new(   0,   0 ), .new(   0,  -1 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(  -1,   1 ), .new(   0,   0 ), .new(   1,  -1 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(  -1,   0 ), .new(   0,   0 ), .new(   1,   0 ), .new(   0,  -1 ) } },
+const P01 = PieceDef{ .layouts = .{ // 2
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .{}, .{} }, .cellCount = 2 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .{}, .{} }, .cellCount = 2 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .{}, .{} }, .cellCount = 2 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .{}, .{} }, .cellCount = 2 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .{}, .{} }, .cellCount = 2 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .{}, .{} }, .cellCount = 2 },
 }};
 
-const P04 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(   0,  -1 ), .new(   0,   0 ), .new(   0,   1 ), .new(   1,   0 ) } },
-  .{ .cells = .{ .new(   1,  -1 ), .new(   0,   0 ), .new(  -1,   1 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   1,   0 ), .new(   0,   0 ), .new(  -1,   0 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(   0,   1 ), .new(   0,   0 ), .new(   0,  -1 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(  -1,   1 ), .new(   0,   0 ), .new(   1,  -1 ), .new(   0,  -1 ) } },
-  .{ .cells = .{ .new(  -1,   0 ), .new(   0,   0 ), .new(   1,   0 ), .new(   1,  -1 ) } },
+const P02 = PieceDef{ .layouts = .{ // 3
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  0,  1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  1,  0 ), .new( -1,  0 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  0,  1 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  1 ), .new(  1, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  1,  0 ), .{} }, .cellCount = 3 },
 }};
 
-const P05 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(   0,  -2 ), .new(   0,  -1 ), .new(   0,   0 ), .new(   1,   0 ) } },
-  .{ .cells = .{ .new(   2,  -2 ), .new(   1,  -1 ), .new(   0,   0 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   2,   0 ), .new(   1,   0 ), .new(   0,   0 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(   0,   2 ), .new(   0,   1 ), .new(   0,   0 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(  -2,   2 ), .new(  -1,   1 ), .new(   0,   0 ), .new(   0,  -1 ) } },
-  .{ .cells = .{ .new(  -2,   0 ), .new(  -1,   0 ), .new(   0,   0 ), .new(   1,  -1 ) } },
+const P03 = PieceDef{ .layouts = .{ // R
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  0 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  1,  0 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  0,  1 ), .new(  1, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  1 ), .new(  1,  0 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0,  1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new( -1,  1 ), .{} }, .cellCount = 3 },
 }};
 
-const P06 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(   0,   0 ), .new(   0,   1 ), .new(   1,  -2 ), .new(   1,  -1 ) } },
-  .{ .cells = .{ .new(  -1,   0 ), .new(  -2,   1 ), .new(   1,  -1 ), .new(   0,   0 ) } },
-  .{ .cells = .{ .new(   0,  -1 ), .new(  -1,  -1 ), .new(   1,   0 ), .new(   0,   0 ) } },
-  .{ .cells = .{ .new(   1,  -1 ), .new(   1,  -2 ), .new(   0,   1 ), .new(   0,   0 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   1,  -1 ), .new(  -2,   1 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   1,   0 ), .new(  -1,  -1 ), .new(   0,  -1 ) } },
+const P04 = PieceDef{ .layouts = .{ // A
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0, -1 ), .{} }, .cellCount = 3 },
 }};
 
-const P07 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(  -1,   0 ), .new(  -1,   1 ), .new(   0,  -1 ), .new(   0,   0 ) } },
-  .{ .cells = .{ .new(   0,  -1 ), .new(  -1,   0 ), .new(   1,  -1 ), .new(   0,   0 ) } },
-  .{ .cells = .{ .new(   1,  -1 ), .new(   0,  -1 ), .new(   1,   0 ), .new(   0,   0 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   0,  -1 ), .new(  -1,   1 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   1,  -1 ), .new(  -1,   0 ), .new(   0,  -1 ) } },
-  .{ .cells = .{ .new(   0,   0 ), .new(   1,   0 ), .new(   0,  -1 ), .new(   1,  -1 ) } },
+const P05 = PieceDef{ .layouts = .{ // 4
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  0,  1 ), .new(  0, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  1 ), .new(  2, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1,  0 ), .new( -1,  0 ), .new( -2,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0,  1 ), .new(  0, -1 ), .new(  0, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  1 ), .new(  1, -1 ), .new(  2, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  1,  0 ), .new( -2,  0 )}},
 }};
 
-const P08 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(  -1,   0 ), .new(  -1,   1 ), .new(   0,  -1 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   0,  -1 ), .new(  -1,   0 ), .new(   1,  -1 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(   1,  -1 ), .new(   0,  -1 ), .new(   1,   0 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(   1,   0 ), .new(   1,  -1 ), .new(   0,   1 ), .new(   0,  -1 ) } },
-  .{ .cells = .{ .new(   0,   1 ), .new(   1,   0 ), .new(  -1,   1 ), .new(   1,  -1 ) } },
-  .{ .cells = .{ .new(  -1,   1 ), .new(   0,   1 ), .new(  -1,   0 ), .new(   1,   0 ) } },
+const P06 = PieceDef{ .layouts = .{ // L
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  1,  0 ), .new(  0, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  0,  1 ), .new(  2, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1,  0 ), .new( -1,  1 ), .new(  2,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0,  1 ), .new( -1,  0 ), .new(  0,  2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  1 ), .new(  0, -1 ), .new( -2,  2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  1, -1 ), .new( -2,  0 )}},
+}};
+const P07 = PieceDef{ .layouts = .{ // J
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new( -1,  1 ), .new(  0, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  0 ), .new(  2, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1,  0 ), .new(  0, -1 ), .new(  2,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0,  1 ), .new(  1, -1 ), .new(  0,  2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  1 ), .new(  1,  0 ), .new( -2,  2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0,  1 ), .new( -2,  0 )}},
 }};
 
-const P09 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(  -1,  -1 ), .new(  -1,   0 ), .new(   0,   0 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   1,  -2 ), .new(   0,  -1 ), .new(   0,   0 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(   2,  -1 ), .new(   1,  -1 ), .new(   0,   0 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(   0,   1 ), .new(   0,   0 ), .new(  -1,   0 ), .new(  -1,  -1 ) } },
-  .{ .cells = .{ .new(  -1,   1 ), .new(   0,   0 ), .new(   0,  -1 ), .new(   1,  -2 ) } },
-  .{ .cells = .{ .new(  -1,   0 ), .new(   0,   0 ), .new(   1,  -1 ), .new(   2,  -1 ) } },
+
+const P08 = PieceDef{ .layouts = .{ // P
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  0,  1 ), .new(  1, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  1 ), .new(  1,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1,  0 ), .new( -1,  0 ), .new(  0,  1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0,  1 ), .new(  0, -1 ), .new( -1,  1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  1 ), .new(  1, -1 ), .new( -1,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  1,  0 ), .new(  0, -1 )}},
+}};
+const P09 = PieceDef{ .layouts = .{ // B
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  0,  1 ), .new(  1,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  1 ), .new(  0,  1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1,  0 ), .new( -1,  0 ), .new( -1,  1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0,  1 ), .new(  0, -1 ), .new( -1,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  1 ), .new(  1, -1 ), .new(  0, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  1,  0 ), .new(  1, -1 )}},
 }};
 
-const P10 = PieceDef{ .layouts = .{
-  .{ .cells = .{ .new(  -1,   1 ), .new(   0,  -1 ), .new(   0,   0 ), .new(   1,   0 ) } },
-  .{ .cells = .{ .new(  -1,   0 ), .new(   1,  -1 ), .new(   0,   0 ), .new(   0,   1 ) } },
-  .{ .cells = .{ .new(   0,  -1 ), .new(   1,   0 ), .new(   0,   0 ), .new(  -1,   1 ) } },
-  .{ .cells = .{ .new(   1,  -1 ), .new(   0,   1 ), .new(   0,   0 ), .new(  -1,   0 ) } },
-  .{ .cells = .{ .new(   1,   0 ), .new(  -1,   1 ), .new(   0,   0 ), .new(   0,  -1 ) } },
-  .{ .cells = .{ .new(   0,   1 ), .new(  -1,   0 ), .new(   0,   0 ), .new(   1,  -1 ) } },
+const P10 = PieceDef{ .layouts = .{ // Z
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  1,  0 ), .new( -1, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  0,  1 ), .new(  1, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  1, -1 ), .new( -2,  1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  1,  0 ), .new( -1, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  0,  1 ), .new(  1, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  1, -1 ), .new( -2,  1 )}},
+}};
+const P11 = PieceDef{ .layouts = .{ // S
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new( -1,  1 ), .new(  1, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  0 ), .new(  2, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0,  1 ), .new( -1, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new( -1,  1 ), .new(  1, -2 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new( -1,  0 ), .new(  2, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0,  1 ), .new( -1, -1 )}},
+}};
+
+const P12 = PieceDef{ .layouts = .{ // D
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  1, -1 ), .new( -1,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0, -1 ), .new( -1,  1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  0, -1 ), .new(  1, -1 ), .new( -1,  0 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0, -1 )}},
+  .{ .cells = .{ .new( 0, 0 ), .new( -1,  0 ), .new(  0, -1 ), .new( -1,  1 )}},
+}};
+
+const P13 = PieceDef{ .layouts = .{ // Y
+  .{ .cells = .{  .new( 0, 0 ), .new(  1, -1 ), .new(  0,  1 ), .new( -1,  0 )}},
+  .{ .cells = .{  .new( 0, 0 ), .new(  1,  0 ), .new( -1,  1 ), .new(  0, -1 )}},
+  .{ .cells = .{  .new( 0, 0 ), .new(  0,  1 ), .new( -1,  0 ), .new(  1, -1 )}},
+  .{ .cells = .{  .new( 0, 0 ), .new( -1,  1 ), .new(  0, -1 ), .new(  1,  0 )}},
+  .{ .cells = .{  .new( 0, 0 ), .new( -1,  0 ), .new(  1, -1 ), .new(  0,  1 )}},
+  .{ .cells = .{  .new( 0, 0 ), .new(  0, -1 ), .new(  1,  0 ), .new( -1,  1 )}},
+}};
+
+const P14 = PieceDef{ .layouts = .{ // C
+  .{ .cells = .{ .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 )}},
+  .{ .cells = .{ .new( -1,  1 ), .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 )}},
+  .{ .cells = .{ .new( -1,  0 ), .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 )}},
+  .{ .cells = .{ .new(  0, -1 ), .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 )}},
+  .{ .cells = .{ .new(  1, -1 ), .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 )}},
+  .{ .cells = .{ .new(  1,  0 ), .new(  0,  1 ), .new( -1,  1 ), .new( -1,  0 )}},
 }};

@@ -46,7 +46,7 @@ fn renderActivePiece( grid : *const Tilemap ) void
   const gridFactor : f64 = @floatCast( grid.tileShape.getTileScaleFactor() );
   const radii = grid.tileScale.mulVal( gridFactor * 0.88 );
 
-  for( 0 .. 4 )| index |
+  for( 0 .. @as( usize, stateInj.GAME.activePiece.getLayout().cellCount ))| index |
   {
     const preview = stateInj.GAME.getPreviewCell( index );
     if( !grid.isCoordsValid( preview.coords )){ continue; }

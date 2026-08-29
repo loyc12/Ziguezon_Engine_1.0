@@ -27,7 +27,7 @@ pub const Cell = enum( u8 )
 /// Mutable preview state for one tetrahex before it becomes settled board cells.
 pub const ActivePiece = struct
 {
-  kind     : PieceKind = .P01,
+  kind     : PieceKind = .P05,
   rotation : Rotation  = .R0,
   anchor   : HexCoord  = .{},
 
@@ -113,7 +113,7 @@ pub const Game = struct
   pub fn reset( self : *Game ) void
   {
     self.board.reset();
-    self.activePiece = .{ .anchor = HexCoord.fromBoardCoords( .{ .x = Board.width / 2, .y = Board.height / 2 } ) };
+    self.activePiece = .{ .kind = .P05, .anchor = HexCoord.fromBoardCoords( .{ .x = Board.width / 2, .y = Board.height / 2 } ) };
   }
 
   /// Returns a floating-piece cell suitable for overlaying onto the board render.
@@ -141,7 +141,8 @@ fn getCellForPiece( kind : PieceKind ) Cell
 {
   return switch( kind )
   {
-    .P01 => .Red,     .P02 => .Orange, .P03 => .Yellow, .P04 => .Green,   .P05 => .Blue,
-    .P06 => .Purple,  .P07 => .Cyan,   .P08 => .Magenta,.P09 => .Lime,    .P10 => .Rose,
+    .P00 => .Purple,  .P01 => .Cyan,   .P02 => .Rose,   .P03 => .Lime,    .P04 => .Magenta,
+    .P05 => .Red,     .P06 => .Orange, .P07 => .Yellow, .P08 => .Green,   .P09 => .Blue,
+    .P10 => .Purple,  .P11 => .Cyan,   .P12 => .Magenta,.P13 => .Lime,    .P14 => .Rose,
   };
 }
