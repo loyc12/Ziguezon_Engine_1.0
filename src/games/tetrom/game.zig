@@ -57,6 +57,16 @@ pub const PreviewCell = struct
   isAnchor : bool,
 };
 
+/// Separates failed debug movement into the gameplay-relevant collision causes.
+pub const Collision = struct
+{
+  wall  : bool = false,
+  floor : bool = false,
+  cell  : bool = false,
+
+  pub inline fn isClear( self : Collision ) bool { return !self.wall and !self.floor and !self.cell; }
+};
+
 /// Fixed-size board storage. Hex geometry and drawing remain in `legacy_tilemap`.
 pub const Board = struct
 {
@@ -134,6 +144,91 @@ pub const Game = struct
   pub fn changeRotationBy( self : *Game, offset : i32 ) void
   {
     self.activePiece.rotation = Rotation.fromIndex( self.activePiece.rotation.getIndex() + offset );
+  }
+
+  /// Checks a prospective piece location without mutating the board or active piece.
+  pub fn checkPieceCollision( self : *const Game, piece : *const ActivePiece ) Collision
+  {
+    var collision : Collision = .{};
+
+    for( 0 .. @as( usize, piece.getLayout().cellCount ))| index |
+    {
+      const coords = piece.getCellHex( index ).toBoardCoords();
+
+      if( coords.y >= Board.height )
+      {
+        collision.floor = true;
+        continue;
+      }
+      if( coords.x < 0 or coords.x >= Board.width or coords.y < 0 )
+      {
+        collision.wall = true;
+        continue;
+      }
+      if( self.board.getCell( coords ).? != .Empty ){ collision.cell = true; }
+    }
+
+    return collision;
+  }
+
+  /// Moves the debug piece by one axial neighbour when the destination is clear.
+  pub fn tryMoveBy( self : *Game, offset : HexCoord ) Collision
+  {
+    var candidate = self.activePiece;
+    candidate.anchor = candidate.anchor.add( offset );
+
+    const collision = self.checkPieceCollision( &candidate );
+    if( collision.isClear() ){ self.activePiece = candidate; }
+
+    return collision;
+  }
+
+  /// Rotates the debug piece, attempting one diagonal upward wall kick if needed.
+  pub fn tryRotateBy( self : *Game, offset : i32 ) struct { collision : Collision, kicked : bool }
+  {
+    var candidate = self.activePiece;
+    candidate.rotation = Rotation.fromIndex( candidate.rotation.getIndex() + offset );
+
+    const collision = self.checkPieceCollision( &candidate );
+    if( collision.isClear() )
+    {
+      self.activePiece = candidate;
+      return .{ .collision = .{}, .kicked = false };
+    }
+
+    if( collision.wall )
+    {
+      const kick = self.getWallKick( &candidate );
+      candidate.anchor = candidate.anchor.add( kick );
+
+      const kickedCollision = self.checkPieceCollision( &candidate );
+      if( kickedCollision.isClear() )
+      {
+        self.activePiece = candidate;
+        return .{ .collision = .{}, .kicked = true };
+      }
+    }
+
+    return .{ .collision = collision, .kicked = false };
+  }
+
+  fn getWallKick( self : *const Game, piece : *const ActivePiece ) HexCoord
+  {
+    _ = self;
+
+    var hitsLeftWall  : bool = false;
+    var hitsRightWall : bool = false;
+
+    for( 0 .. @as( usize, piece.getLayout().cellCount ))| index |
+    {
+      const coords = piece.getCellHex( index ).toBoardCoords();
+      hitsLeftWall  = hitsLeftWall  or coords.x < 0;
+      hitsRightWall = hitsRightWall or coords.x >= Board.width;
+    }
+
+    if( hitsLeftWall and !hitsRightWall ){ return .new(  1, -1 ); }
+    if( hitsRightWall and !hitsLeftWall ){ return .new( -1,  0 ); }
+    return .{};
   }
 };
 
