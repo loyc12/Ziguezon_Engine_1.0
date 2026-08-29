@@ -39,16 +39,13 @@ pub const ActivePiece = struct
 
   pub inline fn getCellHex( self : *const ActivePiece, index : usize ) HexCoord
   {
-    const layout = self.getLayout();
-    const cell = layout.cells[ index ];
-    const anchorCell = layout.getAnchorCell();
-
-    return self.anchor.add( .new( cell.q - anchorCell.q, cell.r - anchorCell.r ));
+    return self.anchor.add( self.getLayout().cells[ index ] );
   }
 
   pub inline fn isAnchorCell( self : *const ActivePiece, index : usize ) bool
   {
-    return index == self.getLayout().getAnchorIndex();
+    const cell = self.getLayout().cells[ index ];
+    return cell.q == 0 and cell.r == 0;
   }
 };
 
