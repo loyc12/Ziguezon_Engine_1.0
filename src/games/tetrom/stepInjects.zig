@@ -277,7 +277,7 @@ fn renderActivePiece( grid : *const Tilemap ) void
 
     const pos = grid.getAbsTilePos( preview.coords );
     var col = stateInj.getCellColour( preview.cell );
-    if( stateInj.GAME.activePiece.isAnchorCell( index )){ col = col.subRGB( 32 ); }
+    if( stateInj.GAME.activePiece.isAnchorCell( index )){ col = col.subRGB( palette.INTERNAL_ANCHOR_DARKEN ); }
 
     eng.wDraw.hexa( pos.toVec2(), radii, pos.a, col );
   }
@@ -295,7 +295,7 @@ fn renderEmptyAnchor( grid : *const Tilemap, piece : *const game.ActivePiece, se
   if( cell != .Empty ){ return; }
 
   const pos = grid.getAbsTilePos( coords );
-  eng.wDraw.hexa( pos.toVec2(), radii, pos.a, palette.PLAYFIELD.addRGB( 32 ));
+  eng.wDraw.hexa( pos.toVec2(), radii, pos.a, palette.PLAYFIELD.addRGB( palette.EMPTY_ANCHOR_LIGHTEN ));
 }
 
 /// Renders the queued next piece beside the board without consuming its bag entry.
@@ -314,7 +314,7 @@ fn renderNextPiece( grid : *const Tilemap ) void
 
   if( nextPiece.hasEmptyAnchor() )
   {
-    eng.wDraw.hexa( previewPos, radii, anchorPos.a, palette.PLAYFIELD.addRGB( 32 ));
+    eng.wDraw.hexa( previewPos, radii, anchorPos.a, palette.PLAYFIELD.addRGB( palette.EMPTY_ANCHOR_LIGHTEN ));
   }
 
   for( 0 .. @as( usize, nextPiece.getLayout().cellCount ))| index |
@@ -324,7 +324,7 @@ fn renderNextPiece( grid : *const Tilemap ) void
     const offset     = cellPos.toVec2().sub( anchorPos.toVec2() ).mulVal( NEXT_PIECE_SCALE );
     const pos        = previewPos.add( offset );
     var col = stateInj.getCellColour( game.getCellForPiece( nextPiece.kind ));
-    if( nextPiece.isAnchorCell( index )){ col = col.subRGB( 32 ); }
+    if( nextPiece.isAnchorCell( index )){ col = col.subRGB( palette.INTERNAL_ANCHOR_DARKEN ); }
 
     eng.wDraw.hexa( pos, radii, anchorPos.a, col );
   }
@@ -360,6 +360,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   if( stateInj.GAME.isGameOver )
   {
+    utl.sDraw.coverScreenWithCol( palette.GAME_OVER_VEIL );
     utl.sDraw.textCenter(    "GAME OVER", screenCenter, 64.0, palette.RED );
     utl.sDraw.textCenterFmt( "Score : {d}", .{ stateInj.GAME.score }, .new( screenCenter.x, screenCenter.y + 64.0 ), 32.0, palette.SCORE );
     utl.sDraw.textCenter(    "Enter : restart", .new( screenCenter.x, screenCenter.y + 104.0 ), 28.0, palette.CONTROLS );

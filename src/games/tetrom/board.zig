@@ -17,6 +17,11 @@ pub const Cell = enum( u8 )
   Magenta,
   Lime,
   Rose,
+  Coral,
+  Teal,
+  Bronze,
+  Silver,
+  Brown,
 };
 
 /// Fixed-size board storage. Hex geometry and drawing remain in `legacy_tilemap`.

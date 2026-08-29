@@ -68,6 +68,11 @@ pub fn getCellColour( cell : game.Cell ) utl.Colour
     .Magenta => palette.MAGENTA,
     .Lime    => palette.LIME,
     .Rose    => palette.ROSE,
+    .Coral   => palette.CORAL,
+    .Teal    => palette.TEAL,
+    .Bronze  => palette.BRONZE,
+    .Silver  => palette.SILVER,
+    .Brown   => palette.BROWN,
   };
 }
 

@@ -318,6 +318,6 @@ pub fn getCellForPiece( kind : PieceKind ) Cell
   {
     .P00 => .Purple,  .P01 => .Cyan,   .P02 => .Rose,   .P03 => .Lime,    .P04 => .Magenta,
     .P05 => .Red,     .P06 => .Orange, .P07 => .Yellow, .P08 => .Green,   .P09 => .Blue,
-    .P10 => .Purple,  .P11 => .Cyan,   .P12 => .Magenta,.P13 => .Lime,    .P14 => .Rose,
+    .P10 => .Coral,   .P11 => .Teal,   .P12 => .Bronze, .P13 => .Silver,  .P14 => .Brown,
   };
 }
