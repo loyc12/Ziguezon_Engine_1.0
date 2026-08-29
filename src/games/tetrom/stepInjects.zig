@@ -33,7 +33,7 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
   const deltaTime = ng.time.measuredTickDelta.toRayDeltaTime();
 
-  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
+  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ))
   {
     stateInj.GAME.reset( &ng.rng );
     resetInputTimers();
@@ -122,6 +122,7 @@ fn tickGravity( rng : *utl.Randomiser, deltaTime : f32 ) void
     const result = stateInj.GAME.lockActivePiece( rng );
     resetInputTimers();
     utl.log( .DEBUG, @src(), "Gravity locked {d} cells; ignored {d} outside the board", .{ result.locked, result.outsideBoard });
+    logClearResult( result.clear );
     if( result.gameOver ){ utl.log( .INFO, @src(), "Game over: spawned piece collided with the board", .{} ); }
     return;
   }
@@ -141,7 +142,15 @@ fn lockActivePiece( rng : *utl.Randomiser ) void
 {
   const result = stateInj.GAME.lockActivePiece( rng );
   utl.log( .DEBUG, @src(), "Locked {d} piece cells; ignored {d} cells outside the board", .{ result.locked, result.outsideBoard });
+  logClearResult( result.clear );
   if( result.gameOver ){ utl.log( .INFO, @src(), "Game over: spawned piece collided with the board", .{} ); }
+}
+
+fn logClearResult( clear : game.ClearResult ) void
+{
+  if( clear.lineCount == 0 ){ return; }
+
+  utl.log( .INFO, @src(), "Cleared {d} diagonal lines, {d} crossings, +{d} score", .{ clear.lineCount, clear.crossings, clear.scoreAward });
 }
 
 fn tryMovePiece( offset : game.HexCoord, direction : []const u8, resetsFallTimer : bool ) void
@@ -221,17 +230,20 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   _ = ng;
 
   const screenCenter = utl.getHalfScreenSize();
+  const screenSize   = utl.getScreenSize();
 
   utl.sDraw.textCenter(  "Tetrom",   .new( screenCenter.x, 48.0 ), 48.0, .cyan );
-  utl.sDraw.textLeft(    "R: reset", .new( 24.0, 88.0 ), 20.0, .yellow );
+  utl.sDraw.textLeft(    "Enter: reset", .new( 24.0, 88.0 ), 20.0, .yellow );
   utl.sDraw.textLeft(    "= / - : piece    W / S: vertical    A / D : diagonal down", .new( 24.0, 116.0 ), 20.0, .yellow );
   utl.sDraw.textLeft(    "Q / E : rotate and wall kick    G : toggle gravity", .new( 24.0, 144.0 ), 20.0, .yellow );
   utl.sDraw.textLeftFmt( "Gravity : {s}   Fall : {d:.2}s   Air : {d:.2}s   Lock : {d:.2}s", .{ if( GRAVITY_MODE ) "on" else "manual", FALLING_SPEED, AIR_TIME, LOCK_DELAY }, .new( 24.0, 172.0 ), 20.0, .yellow );
   utl.sDraw.textLeftFmt( "Piece : {s}   Rotation : {s}", .{ @tagName( stateInj.GAME.activePiece.kind ), @tagName( stateInj.GAME.activePiece.rotation ) }, .new( 24.0, 228.0 ), 20.0, .white );
+  utl.sDraw.textRightFmt( "Score : {d}", .{ stateInj.GAME.score }, .new( screenSize.x - 24.0, 40.0 ), 28.0, .white );
 
   if( stateInj.GAME.isGameOver )
   {
     utl.sDraw.textCenter( "GAME OVER", screenCenter, 64.0, .red );
-    utl.sDraw.textCenter( "R : restart", .new( screenCenter.x, screenCenter.y + 64.0 ), 28.0, .yellow );
+    utl.sDraw.textCenterFmt( "Score : {d}", .{ stateInj.GAME.score }, .new( screenCenter.x, screenCenter.y + 64.0 ), 32.0, .white );
+    utl.sDraw.textCenter( "Enter : restart", .new( screenCenter.x, screenCenter.y + 104.0 ), 28.0, .yellow );
   }
 }

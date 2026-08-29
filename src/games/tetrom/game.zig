@@ -67,6 +67,14 @@ pub const Collision = struct
   pub inline fn isClear( self : Collision ) bool { return !self.wall and !self.floor and !self.cell; }
 };
 
+pub const ClearResult = struct
+{
+  lineCount  : u8  = 0,
+  crossings  : u8  = 0,
+  cleared    : u8  = 0,
+  scoreAward : u64 = 0,
+};
+
 /// Fixed-size board storage. Hex geometry and drawing remain in `legacy_tilemap`.
 pub const Board = struct
 {
@@ -115,6 +123,7 @@ pub const Game = struct
   board       : Board       = .{},
   activePiece : ActivePiece = .{},
   isGameOver  : bool        = false,
+  score       : u64         = 0,
 
   pub fn init( self : *Game, rng : *utl.Randomiser ) void
   {
@@ -126,6 +135,7 @@ pub const Game = struct
   {
     self.board.reset();
     self.isGameOver = false;
+    self.score = 0;
     self.spawnRandomPiece( rng );
   }
 
@@ -161,7 +171,7 @@ pub const Game = struct
   }
 
   /// Writes every in-bounds active cell into the settled board, then spawns anew.
-  pub fn lockActivePiece( self : *Game, rng : *utl.Randomiser ) struct { locked : u8, outsideBoard : u8, gameOver : bool }
+  pub fn lockActivePiece( self : *Game, rng : *utl.Randomiser ) struct { locked : u8, outsideBoard : u8, gameOver : bool, clear : ClearResult }
   {
     var locked       : u8 = 0;
     var outsideBoard : u8 = 0;
@@ -175,8 +185,91 @@ pub const Game = struct
       else {                                 outsideBoard += 1; }
     }
 
+    const clear = self.clearCompletedDiagonals();
+    self.score += clear.scoreAward;
+
     self.spawnRandomPiece( rng );
-    return .{ .locked = locked, .outsideBoard = outsideBoard, .gameOver = self.isGameOver };
+    return .{ .locked = locked, .outsideBoard = outsideBoard, .gameOver = self.isGameOver, .clear = clear };
+  }
+
+  /// Clears full-width lines along both axial diagonal families after locking.
+  fn clearCompletedDiagonals( self : *Game ) ClearResult
+  {
+    var marked : [ Board.cellCount ]bool = [_]bool{ false } ** Board.cellCount;
+    var result : ClearResult = .{};
+
+    var r : i32 = -Board.width;
+    while( r <= Board.height ) : ( r += 1 )
+    {
+      if( !self.isFullRLine( r )){ continue; }
+      result.lineCount += 1;
+      self.markRLine( r, &marked, &result.crossings );
+    }
+
+    var diagonal : i32 = 0;
+    while( diagonal <= Board.width + Board.height ) : ( diagonal += 1 )
+    {
+      if( !self.isFullSumLine( diagonal )){ continue; }
+      result.lineCount += 1;
+      self.markSumLine( diagonal, &marked, &result.crossings );
+    }
+
+    for( marked, 0 .. )| isMarked, index |
+    {
+      if( !isMarked ){ continue; }
+      self.board.cells[ index ] = .Empty;
+      result.cleared += 1;
+    }
+
+    if( result.lineCount == 0 ){ return result; }
+
+    const lineCount : u64 = result.lineCount;
+    const base = 100 * lineCount * ( lineCount + 1 ) / 2;
+    result.scoreAward = @intFromFloat( @round( @as( f64, @floatFromInt( base )) * getCrossingFactor( result.crossings )));
+
+    return result;
+  }
+
+  fn isFullRLine( self : *const Game, r : i32 ) bool
+  {
+    for( 0 .. @as( usize, @intCast( Board.width )))| x |
+    {
+      const coords = HexCoord.new( @intCast( x ), r ).toBoardCoords();
+      const cell = self.board.getCell( coords ) orelse return false;
+      if( cell == .Empty ){ return false; }
+    }
+    return true;
+  }
+
+  fn isFullSumLine( self : *const Game, diagonal : i32 ) bool
+  {
+    for( 0 .. @as( usize, @intCast( Board.width )))| x |
+    {
+      const q : i32 = @intCast( x );
+      const coords = HexCoord.new( q, diagonal - q ).toBoardCoords();
+      const cell = self.board.getCell( coords ) orelse return false;
+      if( cell == .Empty ){ return false; }
+    }
+    return true;
+  }
+
+  fn markRLine( self : *const Game, r : i32, marked : *[ Board.cellCount ]bool, crossings : *u8 ) void
+  {
+    for( 0 .. @as( usize, @intCast( Board.width )))| x |
+    {
+      const index = self.board.getIndex( HexCoord.new( @intCast( x ), r ).toBoardCoords() ).?;
+      markForClear( marked, index, crossings );
+    }
+  }
+
+  fn markSumLine( self : *const Game, diagonal : i32, marked : *[ Board.cellCount ]bool, crossings : *u8 ) void
+  {
+    for( 0 .. @as( usize, @intCast( Board.width )))| x |
+    {
+      const q : i32 = @intCast( x );
+      const index = self.board.getIndex( HexCoord.new( q, diagonal - q ).toBoardCoords() ).?;
+      markForClear( marked, index, crossings );
+    }
   }
 
   /// Checks a prospective piece location without mutating the board or active piece.
@@ -281,6 +374,22 @@ pub const Game = struct
     return .{ .{}, .{}, .{} };
   }
 };
+
+fn markForClear( marked : *[ Board.cellCount ]bool, index : usize, crossings : *u8 ) void
+{
+  if( marked[ index ]){ crossings.* += 1; }
+  else {                marked[ index ] = true; }
+}
+
+/// Normalized sigmoid bonus: zero crossings yields 1x and high counts approach 2x.
+fn getCrossingFactor( crossings : u8 ) f64
+{
+  const crossingCount : f64 = @floatFromInt( crossings );
+  const baseline = utl.sigmoid( -1.0, 0.5 );
+  const response = utl.sigmoid( crossingCount - 1.0, 0.5 );
+
+  return 1.0 + ( response - baseline ) / ( 1.0 - baseline );
+}
 
 fn getCellForPiece( kind : PieceKind ) Cell
 {
