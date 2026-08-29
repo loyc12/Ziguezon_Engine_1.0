@@ -343,7 +343,7 @@ pub fn OnLoopStart( ng : *eng.Engine ) void
 }
 
 
-pub fn OnInputUpdate( ng : *eng.Engine ) void
+pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
   var grid = stateInj.getGrid() orelse return;
 
@@ -422,7 +422,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 
 }
 
-pub fn OnTickUpdate( ng : *eng.Engine ) void
+pub fn OnTickWorld( ng : *eng.Engine ) void
 {
   _ = ng;
 

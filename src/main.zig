@@ -49,7 +49,7 @@ pub fn main() !void
   if( eng.G_CNFGS.AutoApply_State_Playing ){ eng.G_ENG.changeState( .PLAYING ); }
 
   // NOTE : this loop should eventually be multithreaded / forked out
-  eng.G_ENG.stepEngineLoop();
+  eng.G_ENG.runGameLoop();
 
   eng.G_ENG.changeState( .OFF );
 }

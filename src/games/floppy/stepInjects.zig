@@ -25,7 +25,7 @@ const DISK_ID = &stateInj.DISK_ID;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnInputUpdate( ng : *eng.Engine ) void
+pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
 
   // Toggle pause if the P key is pressed
@@ -67,7 +67,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
 }
 
 
-pub fn OnTickUpdate( ng : *eng.Engine ) void
+pub fn OnTickWorld( ng : *eng.Engine ) void
 {
   var diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
   {
@@ -135,7 +135,7 @@ pub fn OnTickUpdate( ng : *eng.Engine ) void
 
 }
 
-pub fn OffTickUpdate( ng : *eng.Engine ) void
+pub fn OffTickWorld( ng : *eng.Engine ) void
 {
   _ = ng;
 }

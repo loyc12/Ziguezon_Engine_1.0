@@ -31,7 +31,7 @@ pub fn OnLoopUpdate( ng : *eng.Engine ) void // Called by engine.loopLogic() ( e
 
 
 // NOTE : This is where you should capture inputs to update global flags
-pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.space )){ ng.togglePause(); }
 
@@ -80,7 +80,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 
 
 // NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
+pub fn OnTickWorld( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
   const orbitView = views.getOrbitTick( ng ) orelse return;
   const bodyView  = views.getBodyTrans( ng ) orelse return;

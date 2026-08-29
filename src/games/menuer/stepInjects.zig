@@ -249,7 +249,7 @@ pub fn OnLoopUpdate( ng : *eng.Engine ) void
   _ = ng;
 }
 
-pub fn OnInputUpdate( ng : *eng.Engine ) void
+pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.u )){ toggleActiveMode( ng ); }
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.b )){ toggleDebugBounds();   }
@@ -279,7 +279,7 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void
   }
 }
 
-pub fn OnTickUpdate( ng : *eng.Engine ) void
+pub fn OnTickWorld( ng : *eng.Engine ) void
 {
   _ = ng;
 }

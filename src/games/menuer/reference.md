@@ -156,7 +156,7 @@ Keyboard controls remain game-level controls:
 * arrow keys move the camera;
 * `r` resets the camera.
 
-`OnInputUpdate()` updates only the active UI path, then refreshes the utility
+`OnUpdateInputs()` updates only the active UI path, then refreshes the utility
 debug panel. Camera wheel zoom runs only when the active UI path does not want
 the mouse. In utility mode, both the primary panel and the utility control
 panel contribute to active-path mouse consumption. If a generated utility panel

@@ -25,8 +25,8 @@ const gameState = @import( "stateInjects.zig" );
 
 const gameStep  = @import( "stepInjects.zig" );
 
-  pub const OnInputUpdate  = gameStep.OnInputUpdate;
+  pub const OnUpdateInputs  = gameStep.OnUpdateInputs;
 
-  pub const OnTickUpdate     = gameStep.OnTickUpdate;
+  pub const OnTickWorld     = gameStep.OnTickWorld;
 
   pub const OnRenderOverlay = gameStep.OnRenderOverlay;

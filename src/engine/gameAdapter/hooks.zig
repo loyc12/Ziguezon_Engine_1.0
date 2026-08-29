@@ -10,7 +10,6 @@ pub const HookTag = enum( u8 )
 {
   pub const count = @typeInfo( @This() ).@"enum".fields.len;
 
-
   // Engine State Hooks
 
   OnGameStart  = 0, // Called when the engine starts
@@ -22,26 +21,21 @@ pub const HookTag = enum( u8 )
   OnGameResume = 4, // Called when the engine starts playing
   OnGamePause  = 5, // Called when the engine is paused
 
-
   // Engine Step Hooks
 
   OnLoopStart  = 10, // Called at the start of the game loop
   OnLoopEnd    = 11, // Called at the end of the game loop
-  OnLoopUpdate = 12, // Called for each iteration of the game loop ( at the start )
+  OnLoopUpdate = 12, // Called for each iteration of the game loop
 
+  OnUpdateInputs  = 20, // Called every frame for updates ( at the start )
+//OffUpdateInputs = 21, // Called every frame for updates ( at the end )
 
-  OnInputUpdate  = 20, // Called every frame for updates ( at the start )
-//OffInputUpdate = 21, // Called every frame for updates ( at the end )
+  OnTickWorld     = 22, // Called every tick for logic updates ( at the start )
+  OffTickWorld    = 23, // Called every tick for logic updates ( at the end )
 
-  OnTickUpdate   = 22, // Called every tick for logic updates ( at the start )
-  OffTickUpdate  = 23, // Called every tick for logic updates ( at the end )
-
-
-  OnRenderBckgrnd = 30, // Called to render the background ( at the start )
-  OnRenderWorld   = 32, // Called to render the world ( at the start )
-  OnRenderOverlay = 34, // Called to render overlays ( at the start )
-
-
+  OnRenderBckgrnd = 30, // Called to render the background
+  OnRenderWorld   = 32, // Called to render the world
+  OnRenderOverlay = 34, // Called to render overlays
 };
 
 
@@ -72,11 +66,11 @@ pub const GameHooks = struct
   OnLoopEnd    : ?HookFunc = null,
   OnLoopUpdate : ?HookFunc = null,
 
-  OnInputUpdate   : ?HookFunc = null,
-//OffInputUpdate  : ?HookFunc = null,
+  OnUpdateInputs  : ?HookFunc = null,
+//OffUpdateInputs : ?HookFunc = null,
 
-  OnTickUpdate    : ?HookFunc = null,
-  OffTickUpdate   : ?HookFunc = null,
+  OnTickWorld     : ?HookFunc = null,
+  OffTickWorld    : ?HookFunc = null,
 
   OnRenderBckgrnd : ?HookFunc = null,
   OnRenderWorld   : ?HookFunc = null,
@@ -97,30 +91,31 @@ pub const GameHooks = struct
     }
 
     // Engine State hooks
-    if( @hasDecl( module, "OnGameStart"  )) self.OnGameStart  = @field( module, "OnGameStart"  );
-    if( @hasDecl( module, "OnGameStop"   )) self.OnGameStop   = @field( module, "OnGameStop"   );
 
-    if( @hasDecl( module, "OnGameOpen"   )) self.OnGameOpen   = @field( module, "OnGameOpen"   );
-    if( @hasDecl( module, "OnGameClose"  )) self.OnGameClose  = @field( module, "OnGameClose"  );
+    if( @hasDecl( module, "OnGameStart"  )) self.OnGameStart  = @field( module, "OnGameStart"  ); // Called in engineState.zig->start()
+    if( @hasDecl( module, "OnGameStop"   )) self.OnGameStop   = @field( module, "OnGameStop"   ); // Called in engineState.zig->stop()
 
-    if( @hasDecl( module, "OnGameResume" )) self.OnGameResume = @field( module, "OnGameResume" );
-    if( @hasDecl( module, "OnGamePause"  )) self.OnGamePause  = @field( module, "OnGamePause"  );
+    if( @hasDecl( module, "OnGameOpen"   )) self.OnGameOpen   = @field( module, "OnGameOpen"   ); // Called in engineState.zig->open()
+    if( @hasDecl( module, "OnGameClose"  )) self.OnGameClose  = @field( module, "OnGameClose"  ); // Called in engineState.zig->close()
+
+    if( @hasDecl( module, "OnGameResume" )) self.OnGameResume = @field( module, "OnGameResume" ); // Called in engineState.zig->resume()
+    if( @hasDecl( module, "OnGamePause"  )) self.OnGamePause  = @field( module, "OnGamePause"  ); // Called in engineState.zig->pause()
 
     // Engine Step Hooks
-    if( @hasDecl( module, "OnLoopStart"  )) self.OnLoopStart  = @field( module, "OnLoopStart"  );
-    if( @hasDecl( module, "OnLoopEnd"    )) self.OnLoopEnd    = @field( module, "OnLoopEnd"    );
-    if( @hasDecl( module, "OnLoopUpdate" )) self.OnLoopUpdate = @field( module, "OnLoopUpdate" );
 
-    // Update and Tick Hooks
-    if( @hasDecl( module, "OnInputUpdate"  )) self.OnInputUpdate  = @field( module, "OnInputUpdate"  );
-  //if( @hasDecl( module, "OffInputUpdate" )) self.OffInputUpdate = @field( module, "OffInputUpdate" );
-    if( @hasDecl( module, "OnTickUpdate"   )) self.OnTickUpdate   = @field( module, "OnTickUpdate"   );
-    if( @hasDecl( module, "OffTickUpdate"  )) self.OffTickUpdate  = @field( module, "OffTickUpdate"  );
+    if( @hasDecl( module, "OnLoopStart"  )) self.OnLoopStart  = @field( module, "OnLoopStart"  ); // Called in engineStep.zig->runGameLoop()
+    if( @hasDecl( module, "OnLoopEnd"    )) self.OnLoopEnd    = @field( module, "OnLoopEnd"    ); // Called in engineStep.zig->runGameLoop()
+    if( @hasDecl( module, "OnLoopUpdate" )) self.OnLoopUpdate = @field( module, "OnLoopUpdate" ); // Called in engineStep.zig->stepGameLoop()
 
-    // Rendering Hooks
-    if( @hasDecl( module, "OnRenderBckgrnd" )) self.OnRenderBckgrnd = @field( module, "OnRenderBckgrnd" );
-    if( @hasDecl( module, "OnRenderWorld"   )) self.OnRenderWorld   = @field( module, "OnRenderWorld"   );
-    if( @hasDecl( module, "OnRenderOverlay" )) self.OnRenderOverlay = @field( module, "OnRenderOverlay" );
+    if( @hasDecl( module, "OnUpdateInputs"  )) self.OnUpdateInputs  = @field( module, "OnUpdateInputs"  ); // Called in engineStep.zig->updateInputs()
+  //if( @hasDecl( module, "OffUpdateInputs" )) self.OffUpdateInputs = @field( module, "OffUpdateInputs" );
+
+    if( @hasDecl( module, "OnTickWorld"     )) self.OnTickWorld     = @field( module, "OnTickWorld"     ); // Called in engineStep.zig->tickWorld()
+    if( @hasDecl( module, "OffTickWorld"    )) self.OffTickWorld    = @field( module, "OffTickWorld"    ); // Called in engineStep.zig->tickWorld()
+
+    if( @hasDecl( module, "OnRenderBckgrnd" )) self.OnRenderBckgrnd = @field( module, "OnRenderBckgrnd" ); // Called in engineStep.zig->renderFrame()
+    if( @hasDecl( module, "OnRenderWorld"   )) self.OnRenderWorld   = @field( module, "OnRenderWorld"   ); // Called in engineStep.zig->renderFrame()
+    if( @hasDecl( module, "OnRenderOverlay" )) self.OnRenderOverlay = @field( module, "OnRenderOverlay" ); // Called in engineStep.zig->renderFrame()
 
 
     self.checkHookValidities();
@@ -155,6 +150,7 @@ pub const GameHooks = struct
     const hookFunct = switch( tag )
     {
     // Engine State Hooks
+
       .OnGameStart  => self.OnGameStart,
       .OnGameStop   => self.OnGameStop,
 
@@ -165,15 +161,16 @@ pub const GameHooks = struct
       .OnGamePause  => self.OnGamePause,
 
     // Engine Step Hooks
+
       .OnLoopStart  => self.OnLoopStart,
       .OnLoopEnd    => self.OnLoopEnd,
       .OnLoopUpdate => self.OnLoopUpdate,
 
-      .OnInputUpdate  => self.OnInputUpdate,
-    //.OffInputUpdate => self.OffInputUpdate,
+      .OnUpdateInputs  => self.OnUpdateInputs,
+    //.OffUpdateInputs => self.OffUpdateInputs,
 
-      .OnTickUpdate   => self.OnTickUpdate,
-      .OffTickUpdate  => self.OffTickUpdate,
+      .OnTickWorld     => self.OnTickWorld,
+      .OffTickWorld    => self.OffTickWorld,
 
       .OnRenderBckgrnd => self.OnRenderBckgrnd,
       .OnRenderWorld   => self.OnRenderWorld,

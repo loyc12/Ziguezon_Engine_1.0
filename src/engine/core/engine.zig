@@ -73,7 +73,7 @@ pub const Engine = struct
 
   const ngnStep = @import( "engineStep.zig" );
 
-  pub inline fn stepEngineLoop(    self : *Engine ) void { ngnStep.stepEngineLoop(    self ); }
+  pub inline fn runGameLoop(      self : *Engine ) void { ngnStep.runGameLoop(      self ); }
   pub inline fn forceUpdateInputs( self : *Engine ) void { ngnStep.forceUpdateInputs( self ); }
   pub inline fn forceTickWorld(    self : *Engine ) void { ngnStep.forceTickWorld(    self ); }
   pub inline fn forceRenderFrame(  self : *Engine ) void { ngnStep.forceRenderFrame(  self ); }

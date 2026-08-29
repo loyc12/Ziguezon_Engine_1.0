@@ -9,26 +9,26 @@ var DRAW_TEST : bool = true; // Example input-toggled flag
 
 
 // ================================ STEP INJECTION FUNCTIONS ================================
-// These functions are called by the engine at various points in the game loop ( see loopLogic() in engine.zig ).
+// These hooks will be called by the engine at various points in the game loop ( see src/engine/gameAdapter/hooks.zig )
 
-pub fn OnLoopStart( ng : *eng.Engine ) void // Called by engine.loopLogic()
+pub fn OnLoopStart( ng : *eng.Engine ) void // Called by engine.runGameLoop()
 {
-  _ = ng; // Prevent unused variable warning
+  _ = ng;
 }
 
-pub fn OnLoopEnd( ng : *eng.Engine ) void // Called by engine.loopLogic()
+pub fn OnLoopEnd( ng : *eng.Engine ) void // Called by engine.runGameLoop()
 {
-  _ = ng; // Prevent unused variable warning
+  _ = ng;
 }
 
-pub fn OnLoopUpdate( ng : *eng.Engine ) void // Called by engine.loopLogic() ( every frame, no exception )
+pub fn OnLoopUpdate( ng : *eng.Engine ) void // Called by engine.runGameLoop() ( every frame, no exception )
 {
-  _ = ng; // Prevent unused variable warning
+  _ = ng;
 }
 
 
-// NOTE : This is where you should capture inputs to update global flags
-pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+// /NOTE : This is where you should capture inputs to update global flags
+pub fn OnUpdateInputs( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every render frame, no exception )
 {
   // Toggle pause if the P key is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.p )){ ng.togglePause(); }
@@ -61,32 +61,35 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 }
 
 
-// NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
-pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
+/// NOTE : This is where you should write gameplay logic ( AI, physics, etc. )
+pub fn OnTickWorld( ng : *eng.Engine ) void // Called by engineStep.tickWorld() ( every game frame, when not paused )
 {
-  _ = ng; // Prevent unused variable warning
+  _ = ng;
+}
+
+pub fn OffTickWorld( ng : *eng.Engine ) void // Called by engineStep.tickWorld() ( every game frame, when not paused )
+{
+  _ = ng;
 }
 
 
-
-// NOTE : This is where you should render all background effects besides the background reset ( done via )
-pub fn OnRenderBckgrnd( ng : *eng.Engine ) void // Called by engine.renderGraphics()
+/// This is where you should render all background effects besides the background reset ( done via )
+pub fn OnRenderBckgrnd( ng : *eng.Engine ) void // Called by engineStep.renderFrame() ( every render frame, no exception )
 {
-  _ = ng; // Prevent unused variable warning
+  _ = ng;
 }
 
 
-// NOTE : This is where you should render all world-position relative effects
-pub fn OnRenderWorld( ng : *eng.Engine ) void // Called by engine.renderGraphics()
+/// This is where you should render all world-position relative effects
+pub fn OnRenderWorld( ng : *eng.Engine ) void // Called by engineStep.renderFrame() ( every render frame, no exception )
 {
-  // NOTE : Active engine-owned renderables are rendered after the function is called, so no need to render them here.
 
-  _ = ng; // Prevent unused variable warning
+  _ = ng;
 }
 
 
-// NOTE : This is where you should render all screen-position relative effects ( UI, HUD, etc. )
-pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphics()
+/// This is where you should render all screen-position relative effects ( UI, HUD, etc )
+pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engineStep.renderFrame() ( every render frame, no exception )
 {
   if( DRAW_TEST ) // Example of a flag toggled feature
   {
@@ -95,6 +98,6 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void // Called by engine.renderGraphi
 
   if( ng.isPaused() )
   {
-    utl.sDraw.coverScreenWithCol( utl.Colour.new( 0, 0, 0, 128 )); // grays out the screen
+    utl.sDraw.coverScreenWithCol( utl.Colour.new( 0, 0, 0, 128 )); // Grays out the screen when paused
   }
 }

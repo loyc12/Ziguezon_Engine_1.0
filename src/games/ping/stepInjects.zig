@@ -446,7 +446,7 @@ fn ensureBallMinSpeeds( ball : BodyComps ) void
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-pub fn OnInputUpdate( ng : *Engine ) void
+pub fn OnUpdateInputs( ng : *Engine ) void
 {
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.p ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ))
   {
@@ -488,7 +488,7 @@ pub fn OnInputUpdate( ng : *Engine ) void
   }
 }
 
-pub fn OnTickUpdate( ng : *Engine ) void
+pub fn OnTickWorld( ng : *Engine ) void
 {
   var bodyView   = stateInj.getBodyView(   ng ) orelse return;
   const ball = getBodyComps( &bodyView, stateInj.BALL_ID, "Ball" ) orelse return;
@@ -523,7 +523,7 @@ pub fn OnTickUpdate( ng : *Engine ) void
   stateInj.updateMobileEntities( &bodyView, ng.getTargetTickDelta() );
 }
 
-pub fn OffTickUpdate( ng : *Engine ) void
+pub fn OffTickWorld( ng : *Engine ) void
 {
   const hWidth  : f64 = utl.getScreenWidth()  / 2.0;
   const hHeight : f64 = utl.getScreenHeight() / 2.0;

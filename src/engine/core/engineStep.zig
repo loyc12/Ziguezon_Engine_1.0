@@ -6,7 +6,7 @@ const Engine = eng.Engine;
 
 // ================ LOOP EVENTS ================
 
-pub fn stepEngineLoop( ng : *Engine ) void
+pub fn runGameLoop( ng : *Engine ) void
 {
   if( !ng.isOpened() )
   {
@@ -19,24 +19,34 @@ pub fn stepEngineLoop( ng : *Engine ) void
   utl.qlog( .INFO, @src(), "& Game loop started\n" );
 
 
-  while( !utl.ray.windowShouldClose() )
+  while( true ) // Loops until window closes
   {
     ng.time.updateLoopTiming( ng.isPlaying() );
 
-    eng.tryHook( .OnLoopUpdate, ng );
-
-    if( ng.isOpened() )
-    {
-      _ = tryUpdateInputs( ng ); // Inputs and Global Flags
-      _ = tryTickWorld(    ng ); // Logic and Physics
-      _ = tryRenderFrame(  ng ); // Visuals and UI
-
-    }
+    if( !stepGameLoop( ng )){ break; }
   }
 
   utl.qlog( .TRACE, @src(), "Stopping the game loop..." );
   eng.tryHook( .OnLoopEnd, ng );
   utl.qlog( .INFO, @src(), "& Game loop stopped\n" );
+}
+
+inline fn stepGameLoop( ng : *Engine ) bool
+{
+  if( utl.ray.windowShouldClose() ){ return false; }
+
+  if( ng.isOpened() )
+  {
+    utl.qlog( .TRACE, @src(), "stepping the game loop once" );
+
+    eng.tryHook( .OnLoopUpdate, ng );
+
+    _ = tryUpdateInputs( ng ); // Inputs and Global Flags
+    _ = tryTickWorld(    ng ); // Logic and Physics
+    _ = tryRenderFrame(  ng ); // Visuals and UI
+  }
+
+  return true;
 }
 
 
@@ -73,7 +83,7 @@ inline fn updateInputs( ng : *Engine ) void
   ng.mouse.updateRaylib( mouseDelta );
   ng.mouse.worldPos = ng.camera.screenToWorld( ng.mouse.screenPos );
 
-  eng.tryHook( .OnInputUpdate, ng );
+  eng.tryHook( .OnUpdateInputs, ng );
 }
 
 pub inline fn forceUpdateInputs( ng : *Engine ) void
@@ -131,11 +141,11 @@ inline fn tickWorld( ng : *Engine, isForced : bool ) void
     .isForced      = isForced,
   };
 
-  eng.tryHook( .OnTickUpdate, ng );
+  eng.tryHook( .OnTickWorld, ng );
   {
     ng.world.tick( tickContext );
   }
-  eng.tryHook( .OffTickUpdate, ng );
+  eng.tryHook( .OffTickWorld, ng );
 }
 
 // ======== VISUAL RENDERING ========

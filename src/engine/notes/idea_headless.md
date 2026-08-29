@@ -19,7 +19,7 @@ a broader platform/render/audio abstraction pass.
 
 * `build.zig` links raylib unconditionally in `addGameExecutable()`.
 * `src/main.zig` always transitions to `.OPENED`, then optionally `.PLAYING`,
-  then enters `stepEngineLoop()`.
+  then enters `runGameLoop()`.
 * `src/engine/core/engineState.zig` owns audio initialization, window creation,
   default font setup, audio shutdown, and window shutdown.
 * `src/engine/core/engineStep.zig` owns the loop condition, input update, tick
@@ -32,7 +32,7 @@ a broader platform/render/audio abstraction pass.
 * The loop currently exits through `utl.ray.windowShouldClose()`. Headless mode
   needs an explicit stop condition such as max ticks, max seconds, or an engine
   quit flag.
-* `OnInputUpdate` hooks in games often call `utl.ray` directly. Headless should
+* `OnUpdateInputs` hooks in games often call `utl.ray` directly. Headless should
   skip input hooks by default unless synthetic input is added later.
 * Render hooks can be skipped centrally, but game code and components still
   contain direct `utl.sDraw`, `eng.wDraw`, and sprite draw calls. Those are safe
@@ -52,8 +52,8 @@ a broader platform/render/audio abstraction pass.
 4. Replace the loop condition with a headless runtime condition:
    max ticks, max elapsed time, or explicit quit flag.
 5. Skip `tryUpdateInputs()` and `tryRenderFrame()` in headless mode by default.
-6. Keep running `OnLoopStart`, `OnLoopUpdate`, `OnTickUpdate`,
-   `OffTickUpdate`, `OnLoopEnd`, and `world.tick()`.
+6. Keep running `OnLoopStart`, `OnLoopUpdate`, `OnTickWorld`,
+   `OffTickWorld`, `OnLoopEnd`, and `world.tick()`.
 7. Log startup mode, tick count, elapsed time, and shutdown reason.
 
 ## Later Work

@@ -9,7 +9,7 @@ pub const EngineConfigs = struct
 {
   // Debug Flags
 
-  DebugDraw_FPS     : bool = false,
+  DebugDraw_FPS             : bool = false,
 
   // Feature Flag
 
@@ -41,7 +41,6 @@ pub const EngineConfigs = struct
 
   Engine_Limit_QueuedTicks  : u8 = 3,
   Engine_Limit_QueuedFrames : u8 = 1,
-
 
 
 

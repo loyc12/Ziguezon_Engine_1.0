@@ -78,7 +78,7 @@ pub fn OnLoopUpdate( ng : *eng.Engine ) void // Called by engine.loopLogic() ( e
 }
 
 
-pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
+pub fn OnUpdateInputs( ng : *eng.Engine ) void // Called by engine.updateInputs() ( every frame, no exception )
 {
   // Toggle pause if the Space key is pressed
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.space )){ ng.togglePause(); }
@@ -108,13 +108,13 @@ pub fn OnInputUpdate( ng : *eng.Engine ) void // Called by engine.updateInputs()
 }
 
 
-pub fn OnTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
+pub fn OnTickWorld( ng : *eng.Engine ) void // Called by engine.tryTick() ( every game frame, when not paused )
 {
   LAST_DRONE_RESULT = harvest.tickHarvestLoop( ng, @floatCast( ng.time.getTargetTickDeltaFlt() ));
   tickStationProcessing( ng );
 }
 
-pub fn OffTickUpdate( ng : *eng.Engine ) void // Called by engine.tryTick() after OnTickUpdate
+pub fn OffTickWorld( ng : *eng.Engine ) void // Called by engine.tryTick() after OnTickWorld
 {
   _ = ng;
 }
