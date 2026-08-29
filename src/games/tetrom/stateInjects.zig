@@ -96,11 +96,9 @@ pub fn updateGridScale() void
 
 pub fn OnGameOpen( ng : *eng.Engine ) void
 {
-  _ = ng;
-
   if( GRID.isInit() ){ GRID.deinit( utl.getDefaultAlloc() ); }
 
-  GAME.init();
+  GAME.init( &ng.rng );
   GRID_SCALE = getGridScaleForScreen();
 
   GRID = Tilemap.createTilemapFromParams(

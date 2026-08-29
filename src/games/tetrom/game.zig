@@ -115,15 +115,19 @@ pub const Game = struct
   board       : Board       = .{},
   activePiece : ActivePiece = .{},
 
-  pub fn init( self : *Game ) void
+  pub fn init( self : *Game, rng : *utl.Randomiser ) void
   {
-    self.reset();
+    self.reset( rng );
   }
 
-  pub fn reset( self : *Game ) void
+  /// Clears the settled board and spawns a random debug piece at top centre.
+  pub fn reset( self : *Game, rng : *utl.Randomiser ) void
   {
     self.board.reset();
-    self.activePiece = .{ .kind = .P05, .anchor = HexCoord.fromBoardCoords( .{ .x = Board.width / 2, .y = Board.height / 2 } ) };
+    self.activePiece = .{
+      .kind   = rng.getVal( PieceKind ),
+      .anchor = HexCoord.fromBoardCoords( .{ .x = Board.width / 2, .y = 0 } ),
+    };
   }
 
   /// Returns a floating-piece cell suitable for overlaying onto the board render.
@@ -151,6 +155,11 @@ pub const Game = struct
   {
     var collision : Collision = .{};
 
+    // Cells may rise above the grid, but the placement anchor itself cannot.
+    const anchorCoords = piece.anchor.toBoardCoords();
+    if( anchorCoords.y < 0 or anchorCoords.x < 0 or anchorCoords.x >= Board.width ){ collision.wall = true; }
+    if( anchorCoords.y >= Board.height ){ collision.floor = true; }
+
     for( 0 .. @as( usize, piece.getLayout().cellCount ))| index |
     {
       const coords = piece.getCellHex( index ).toBoardCoords();
@@ -160,11 +169,12 @@ pub const Game = struct
         collision.floor = true;
         continue;
       }
-      if( coords.x < 0 or coords.x >= Board.width or coords.y < 0 )
+      if( coords.x < 0 or coords.x >= Board.width )
       {
         collision.wall = true;
         continue;
       }
+      if( coords.y < 0 ){ continue; }
       if( self.board.getCell( coords ).? != .Empty ){ collision.cell = true; }
     }
 

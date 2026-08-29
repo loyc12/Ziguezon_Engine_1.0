@@ -13,11 +13,9 @@ const Tilemap = tlmp.Tilemap;
 /// Handles shell controls and manual preview selection during piece development.
 pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
-  _ = ng;
-
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.r ))
   {
-    stateInj.GAME.reset();
+    stateInj.GAME.reset( &ng.rng );
     stateInj.syncGridDisplay();
   }
 

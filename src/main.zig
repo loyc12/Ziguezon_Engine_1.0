@@ -7,7 +7,7 @@ const utl = @import( "utils" );
 
 const adp = @import( "adapter" );
 
-pub fn initCriticals() void
+pub fn initCriticals( randomSeed : ?i128 ) void
 {
 //const alloc = utl.getDefaultAlloc();
 //
@@ -17,7 +17,12 @@ pub fn initCriticals() void
   utl.qlog( .TRACE, @src(), "# Initializing all subsystems..." );
 
   utl.G_EPOCH = utl.getNow();
-  eng.G_ENG.rng.randInit();
+  if( randomSeed )| seed |
+  {
+    eng.G_ENG.rng.seedInit( seed );
+    utl.log( .INFO, @src(), "Using command-line random seed {d}", .{ seed });
+  }
+  else { eng.G_ENG.rng.randInit(); }
 
   utl.initAllUtils();
 
@@ -41,7 +46,9 @@ pub fn deinitCriticals() void
 
 pub fn main() !void
 {
-  initCriticals();
+  const randomSeed = try getRandomSeedArg();
+
+  initCriticals( randomSeed );
   defer deinitCriticals();
 
   eng.G_ENG.changeState( .OPENED );
@@ -52,4 +59,40 @@ pub fn main() !void
   eng.G_ENG.runGameLoop();
 
   eng.G_ENG.changeState( .OFF );
+}
+
+/// Accepts either `tetrom <seed>` or `tetrom --seed <seed>`.
+fn getRandomSeedArg() !?i128
+{
+  const allocator = std.heap.page_allocator;
+  const args = try std.process.argsAlloc( allocator );
+  defer std.process.argsFree( allocator, args );
+
+  if( args.len <= 1 ){ return null; }
+
+  const rawSeed : []const u8 = blk:
+  {
+    if( std.mem.eql( u8, args[ 1 ], "--seed" ))
+    {
+      if( args.len != 3 )
+      {
+        std.debug.print( "Usage: tetrom [seed | --seed seed]\\n", .{} );
+        return error.InvalidRandomSeed;
+      }
+      break :blk args[ 2 ];
+    }
+
+    if( args.len != 2 )
+    {
+      std.debug.print( "Usage: tetrom [seed | --seed seed]\\n", .{} );
+      return error.InvalidRandomSeed;
+    }
+    break :blk args[ 1 ];
+  };
+
+  return std.fmt.parseInt( i128, rawSeed, 10 ) catch
+  {
+    std.debug.print( "Invalid random seed: {s}\\n", .{ rawSeed });
+    return error.InvalidRandomSeed;
+  };
 }
