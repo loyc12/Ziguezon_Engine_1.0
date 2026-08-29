@@ -176,7 +176,7 @@ fn addGameExecutable(
   loggerConfig.addOption( []const u8, "file_name",                 loggerOptions.fileName               );
   loggerConfig.addOption( bool,       "show_timestamp",            loggerOptions.showTimestamp          );
   loggerConfig.addOption( bool,       "show_source",               loggerOptions.showSource             );
-  loggerConfig.addOption( bool,       "show_colour",                loggerOptions.showColour              );
+  loggerConfig.addOption( bool,       "show_colour",               loggerOptions.showColour             );
   loggerConfig.addOption( bool,       "expect_file_setup_failure", loggerOptions.expectFileSetupFailure );
 
   const engine = b.createModule(
@@ -332,10 +332,11 @@ pub fn build( b : *std.Build ) void
   .{
     .{ "debug",       "src/games/debug/engineAdapter.zig"       }, // Default
 
-    .{ "menuer",      "src/games/menuer/engineAdapter.zig"      },
-    .{ "drifter",     "src/games/drifter/engineAdapter.zig"     },
     .{ "ping",        "src/games/ping/engineAdapter.zig"        },
+    .{ "menuer",      "src/games/menuer/engineAdapter.zig"      },
     .{ "floppy",      "src/games/floppy/engineAdapter.zig"      },
+    .{ "tetrom",      "src/games/tetrom/engineAdapter.zig"      },
+    .{ "drifter",     "src/games/drifter/engineAdapter.zig"     },
     .{ "dehexer",     "src/games/dehexer/engineAdapter.zig"     },
     .{ "isofloor",    "src/games/isofloor/engineAdapter.zig"    },
     .{ "politator",   "src/games/politator/engineAdapter.zig"   },

@@ -8,6 +8,7 @@ LanguageRef.txt
 # Zig
 zig-cache*
 zig-out*
+zig-pkg*
 .zig*
 
 

@@ -287,7 +287,7 @@ pub const Tilemap = struct
   {
     if( self.tileShape == shape )
     {
-      utl.log( .DEBUG, @src(), "Tilemap already has tile shape {s}, no change needed", .{ @tagName( shape )});
+      utl.log( .TRACE, @src(), "Tilemap already has tile shape {s}, no change needed", .{ @tagName( shape )});
       return;
     }
 
@@ -299,7 +299,7 @@ pub const Tilemap = struct
 
   pub inline fn resetCachedTilePos( self : *Tilemap ) void
   {
-    utl.qlog( .INFO, @src(), "@ Resetting cached tile positions for tilemap" );
+    utl.qlog( .TRACE, @src(), "@ Resetting cached tile positions for tilemap" );
 
     for( 0 .. self.getTileCount() )| index |{ self.tileArray[ index ].relPos = null; }
   }
@@ -308,7 +308,7 @@ pub const Tilemap = struct
 
   pub fn fillWithTileFlagVal( self : *Tilemap, flag : TileFlags, val : bool ) void
   {
-    utl.qlog( .DEBUG, @src(), "@ Mass changing tile flags for tilemap" );
+    utl.qlog( .TRACE, @src(), "@ Mass changing tile flags for tilemap" );
 
     if( !self.isInit() )
     {
