@@ -243,10 +243,10 @@ pub const OrbiterViews = struct
   {
     if( viewSlot.* )|* view |
     {
-      if( view.isStillValid( &ng.world )){ return view; }
+      if( view.isStillValid( &ng.worldManager )){ return view; }
     }
 
-    viewSlot.* = ng.world.getCompView( CompTypes ) orelse return null;
+    viewSlot.* = ng.worldManager.getCompView( CompTypes ) orelse return null;
     if( viewSlot.* )|* view |{ return view; }
 
     return null;
@@ -318,7 +318,7 @@ pub fn refreshOrbitParentCacheEntry( ng : *eng.Engine, bodyName : gdf.BodyName )
     return false;
   }
 
-  const store = ng.world.getRelationStore( gdf.Orbits ) orelse
+  const store = ng.worldManager.getRelationStore( gdf.Orbits ) orelse
   {
     utl.qlog( .ERROR, @src(), "Cannot refresh orbit-parent cache : Orbits relation is not registered" );
     return false;
@@ -351,7 +351,7 @@ pub fn refreshOrbitParentCacheEntry( ng : *eng.Engine, bodyName : gdf.BodyName )
   }
 
   const parentId = first.?.key.targetId;
-  if( !ng.world.isEntityAlive( parentId ))
+  if( !ng.worldManager.isEntityAlive( parentId ))
   {
     utl.log( .ERROR, @src(), "Cannot refresh orbit-parent cache for {s} : parent Entity {d} is not alive", .{ @tagName( bodyName ), parentId });
     return false;
@@ -392,52 +392,52 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
   G_DATA.bodyRegistry.clear();
   clearOrbitParentCache();
 
-  if( !ng.world.registerComp( eng.TransComp ))
+  if( !ng.worldManager.registerComp( eng.TransComp ))
   {
     utl.qlog( .ERROR, @src(), "Failed to register TransComp" );
     return false;
   }
-  if( !ng.world.registerComp( eng.ShapeComp ))
+  if( !ng.worldManager.registerComp( eng.ShapeComp ))
   {
-    _ = ng.world.unregisterComp( eng.TransComp );
+    _ = ng.worldManager.unregisterComp( eng.TransComp );
 
     utl.qlog( .ERROR, @src(), "Failed to register ShapeComp" );
     return false;
   }
-  if( !ng.world.registerComp( eng.SpriteComp ))
+  if( !ng.worldManager.registerComp( eng.SpriteComp ))
   {
-    _ = ng.world.unregisterComp( eng.ShapeComp );
-    _ = ng.world.unregisterComp( eng.TransComp );
+    _ = ng.worldManager.unregisterComp( eng.ShapeComp );
+    _ = ng.worldManager.unregisterComp( eng.TransComp );
 
     utl.qlog( .ERROR, @src(), "Failed to register SpriteComp" );
     return false;
   }
-  if( !ng.world.registerComp( gdf.orb.OrbitComp ))
+  if( !ng.worldManager.registerComp( gdf.orb.OrbitComp ))
   {
-    _ = ng.world.unregisterComp( eng.SpriteComp );
-    _ = ng.world.unregisterComp( eng.ShapeComp  );
-    _ = ng.world.unregisterComp( eng.TransComp  );
+    _ = ng.worldManager.unregisterComp( eng.SpriteComp );
+    _ = ng.worldManager.unregisterComp( eng.ShapeComp  );
+    _ = ng.worldManager.unregisterComp( eng.TransComp  );
 
     utl.qlog( .ERROR, @src(), "Failed to register OrbitComp" );
     return false;
   }
-  if( !ng.world.registerComp( gdf.bdy.BodyComp ))
+  if( !ng.worldManager.registerComp( gdf.bdy.BodyComp ))
   {
-    _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
-    _ = ng.world.unregisterComp( eng.SpriteComp    );
-    _ = ng.world.unregisterComp( eng.ShapeComp     );
-    _ = ng.world.unregisterComp( eng.TransComp     );
+    _ = ng.worldManager.unregisterComp( gdf.orb.OrbitComp );
+    _ = ng.worldManager.unregisterComp( eng.SpriteComp    );
+    _ = ng.worldManager.unregisterComp( eng.ShapeComp     );
+    _ = ng.worldManager.unregisterComp( eng.TransComp     );
 
     utl.qlog( .ERROR, @src(), "Failed to register BodyComp" );
     return false;
   }
-  if( !ng.world.registerRelation( gdf.Orbits ))
+  if( !ng.worldManager.registerRelation( gdf.Orbits ))
   {
-    _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
-    _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
-    _ = ng.world.unregisterComp( eng.SpriteComp    );
-    _ = ng.world.unregisterComp( eng.ShapeComp     );
-    _ = ng.world.unregisterComp( eng.TransComp     );
+    _ = ng.worldManager.unregisterComp( gdf.bdy.BodyComp  );
+    _ = ng.worldManager.unregisterComp( gdf.orb.OrbitComp );
+    _ = ng.worldManager.unregisterComp( eng.SpriteComp    );
+    _ = ng.worldManager.unregisterComp( eng.ShapeComp     );
+    _ = ng.worldManager.unregisterComp( eng.TransComp     );
 
     utl.qlog( .ERROR, @src(), "Failed to register Orbits relation" );
     return false;
@@ -445,12 +445,12 @@ pub fn registerOrbiterStores( ng : *eng.Engine ) bool
 
   if( !G_DATA.economies.init( utl.getDefaultAlloc() ))
   {
-    _ = ng.world.unregisterRelation( gdf.Orbits    );
-    _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
-    _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
-    _ = ng.world.unregisterComp( eng.SpriteComp    );
-    _ = ng.world.unregisterComp( eng.ShapeComp     );
-    _ = ng.world.unregisterComp( eng.TransComp     );
+    _ = ng.worldManager.unregisterRelation( gdf.Orbits    );
+    _ = ng.worldManager.unregisterComp( gdf.bdy.BodyComp  );
+    _ = ng.worldManager.unregisterComp( gdf.orb.OrbitComp );
+    _ = ng.worldManager.unregisterComp( eng.SpriteComp    );
+    _ = ng.worldManager.unregisterComp( eng.ShapeComp     );
+    _ = ng.worldManager.unregisterComp( eng.TransComp     );
 
     utl.qlog( .ERROR, @src(), "Failed to initialize EconomyStore" );
     return false;
@@ -468,20 +468,20 @@ pub fn unregisterOrbiterStores( ng : *eng.Engine ) void
   {
     const id = G_DATA.bodyRegistry.idOf( bodyName );
 
-    if( ng.world.isEntityAlive( id ))
+    if( ng.worldManager.isEntityAlive( id ))
     {
-      _ = ng.world.destroyEntity( id );
+      _ = ng.worldManager.destroyEntity( id );
     }
 
     G_DATA.bodyRegistry.clearId( bodyName );
   }
 
-  _ = ng.world.unregisterRelation( gdf.Orbits    );
-  _ = ng.world.unregisterComp( gdf.bdy.BodyComp  );
-  _ = ng.world.unregisterComp( gdf.orb.OrbitComp );
-  _ = ng.world.unregisterComp( eng.SpriteComp    );
-  _ = ng.world.unregisterComp( eng.ShapeComp     );
-  _ = ng.world.unregisterComp( eng.TransComp     );
+  _ = ng.worldManager.unregisterRelation( gdf.Orbits    );
+  _ = ng.worldManager.unregisterComp( gdf.bdy.BodyComp  );
+  _ = ng.worldManager.unregisterComp( gdf.orb.OrbitComp );
+  _ = ng.worldManager.unregisterComp( eng.SpriteComp    );
+  _ = ng.worldManager.unregisterComp( eng.ShapeComp     );
+  _ = ng.worldManager.unregisterComp( eng.TransComp     );
 
   clearOrbitParentCache();
   G_DATA.economies.deinit();

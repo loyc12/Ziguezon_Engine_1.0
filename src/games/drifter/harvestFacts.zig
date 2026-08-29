@@ -137,22 +137,22 @@ var DRONE_IDS    : [ DRONE_COUNT    ]eng.EntityId = .{ 0 } ** DRONE_COUNT;
 /// Registers Drifter's asteroid, chunk, and drone component stores.
 pub fn registerHarvestStores( ng : *eng.Engine ) bool
 {
-  if( !ng.world.registerComp( AsteroidFact ))
+  if( !ng.worldManager.registerComp( AsteroidFact ))
   {
     utl.qlog( .ERROR, @src(), "Failed to register AsteroidFact" );
     return false;
   }
-  if( !ng.world.registerComp( ChunkFact ))
+  if( !ng.worldManager.registerComp( ChunkFact ))
   {
-    _ = ng.world.unregisterComp( AsteroidFact );
+    _ = ng.worldManager.unregisterComp( AsteroidFact );
 
     utl.qlog( .ERROR, @src(), "Failed to register ChunkFact" );
     return false;
   }
-  if( !ng.world.registerComp( DroneFact ))
+  if( !ng.worldManager.registerComp( DroneFact ))
   {
-    _ = ng.world.unregisterComp( ChunkFact    );
-    _ = ng.world.unregisterComp( AsteroidFact );
+    _ = ng.worldManager.unregisterComp( ChunkFact    );
+    _ = ng.worldManager.unregisterComp( AsteroidFact );
 
     utl.qlog( .ERROR, @src(), "Failed to register DroneFact" );
     return false;
@@ -166,9 +166,9 @@ pub fn unregisterHarvestStores( ng : *eng.Engine ) void
 {
   destroyHarvestFacts( ng );
 
-  _ = ng.world.unregisterComp( DroneFact    );
-  _ = ng.world.unregisterComp( ChunkFact    );
-  _ = ng.world.unregisterComp( AsteroidFact );
+  _ = ng.worldManager.unregisterComp( DroneFact    );
+  _ = ng.worldManager.unregisterComp( ChunkFact    );
+  _ = ng.worldManager.unregisterComp( AsteroidFact );
 }
 
 
@@ -209,9 +209,9 @@ fn destroyEntitySlots( ng : *eng.Engine, slots : []eng.EntityId ) void
     const id = slot.*;
     slot.* = 0;
 
-    if( ng.world.isEntityAlive( id ))
+    if( ng.worldManager.isEntityAlive( id ))
     {
-      if( !ng.world.destroyEntity( id ))
+      if( !ng.worldManager.destroyEntity( id ))
       {
         utl.log( .ERROR, @src(), "Failed to destroy Drifter harvest Entity {d}", .{ id });
       }
@@ -221,7 +221,7 @@ fn destroyEntitySlots( ng : *eng.Engine, slots : []eng.EntityId ) void
 
 fn createAsteroid( ng : *eng.Engine, index : usize ) ?eng.EntityId
 {
-  const id = ng.world.createEntity().id;
+  const id = ng.worldManager.createEntity().id;
   if( id == 0 )
   {
     utl.qlog( .ERROR, @src(), "Failed to create Drifter asteroid entity" );
@@ -229,7 +229,7 @@ fn createAsteroid( ng : *eng.Engine, index : usize ) ?eng.EntityId
   }
 
   const fact = makeAsteroidFact( index );
-  if( !ng.world.addComp( AsteroidFact, id, fact ))
+  if( !ng.worldManager.addComp( AsteroidFact, id, fact ))
   {
     cleanupFailedHarvestEntity( ng, id, "AsteroidFact" );
     return null;
@@ -240,7 +240,7 @@ fn createAsteroid( ng : *eng.Engine, index : usize ) ?eng.EntityId
 
 fn createDrone( ng : *eng.Engine, index : usize ) ?eng.EntityId
 {
-  const id = ng.world.createEntity().id;
+  const id = ng.worldManager.createEntity().id;
   if( id == 0 )
   {
     utl.qlog( .ERROR, @src(), "Failed to create Drifter drone entity" );
@@ -248,7 +248,7 @@ fn createDrone( ng : *eng.Engine, index : usize ) ?eng.EntityId
   }
 
   const homeOffset = Vec2.new( -18.0 + ( @as( f64, @floatFromInt( index )) * 36.0 ), -( STATION_RADIUS + 24.0 ));
-  if( !ng.world.addComp( DroneFact, id, .{ .pos = STATION_POS.add( homeOffset ), .fromPos = STATION_POS.add( homeOffset )}))
+  if( !ng.worldManager.addComp( DroneFact, id, .{ .pos = STATION_POS.add( homeOffset ), .fromPos = STATION_POS.add( homeOffset )}))
   {
     cleanupFailedHarvestEntity( ng, id, "DroneFact" );
     return null;
@@ -260,10 +260,10 @@ fn createDrone( ng : *eng.Engine, index : usize ) ?eng.EntityId
 fn createChunkFromAsteroid( ng : *eng.Engine, asteroidId : eng.EntityId, result : *HarvestLoopResult ) ?eng.EntityId
 {
   const slot = findFreeChunkSlot() orelse return null;
-  const asteroid = ng.world.getComp( AsteroidFact, asteroidId ) orelse return null;
+  const asteroid = ng.worldManager.getComp( AsteroidFact, asteroidId ) orelse return null;
   if( asteroid.chunksRemaining == 0 ){ return null; }
 
-  const id = ng.world.createEntity().id;
+  const id = ng.worldManager.createEntity().id;
   if( id == 0 )
   {
     utl.qlog( .ERROR, @src(), "Failed to create Drifter chunk entity" );
@@ -275,7 +275,7 @@ fn createChunkFromAsteroid( ng : *eng.Engine, asteroidId : eng.EntityId, result 
   asteroid.chunksReleased  += 1;
   asteroid.depleted = asteroid.chunksRemaining == 0;
 
-  if( !ng.world.addComp( ChunkFact, id, makeChunkFact( asteroidId, asteroid.*, chunkOrdinal )))
+  if( !ng.worldManager.addComp( ChunkFact, id, makeChunkFact( asteroidId, asteroid.*, chunkOrdinal )))
   {
     cleanupFailedHarvestEntity( ng, id, "ChunkFact" );
     return null;
@@ -299,9 +299,9 @@ fn cleanupFailedHarvestEntity( ng : *eng.Engine, entityId : eng.EntityId, compti
 {
   utl.log( .ERROR, @src(), "Failed to add {s} to Drifter harvest Entity {d}", .{ failedFact, entityId });
 
-  if( ng.world.isEntityAlive( entityId ))
+  if( ng.worldManager.isEntityAlive( entityId ))
   {
-    if( !ng.world.destroyEntity( entityId ))
+    if( !ng.worldManager.destroyEntity( entityId ))
     {
       utl.log( .ERROR, @src(), "Failed to clean up partial Drifter harvest Entity {d}", .{ entityId });
     }
@@ -323,7 +323,7 @@ pub fn tickHarvestLoop( ng : *eng.Engine, deltaTime : f64 ) HarvestLoopResult
   {
     if( droneId == 0 ){ continue; }
 
-    const drone = ng.world.getComp( DroneFact, droneId ) orelse
+    const drone = ng.worldManager.getComp( DroneFact, droneId ) orelse
     {
       result.status = .missingFacts;
       continue;
@@ -337,7 +337,7 @@ pub fn tickHarvestLoop( ng : *eng.Engine, deltaTime : f64 ) HarvestLoopResult
   {
     if( droneId == 0 ){ continue; }
 
-    const drone = ng.world.getComp( DroneFact, droneId ) orelse continue;
+    const drone = ng.worldManager.getComp( DroneFact, droneId ) orelse continue;
     if( drone.state != .idle ){ continue; }
 
     sawIdle = true;
@@ -365,7 +365,7 @@ fn tickAsteroidDrift( ng : *eng.Engine, deltaTime : f64 ) void
   {
     if( asteroidId == 0 ){ continue; }
 
-    const asteroid = ng.world.getComp( AsteroidFact, asteroidId ) orelse continue;
+    const asteroid = ng.worldManager.getComp( AsteroidFact, asteroidId ) orelse continue;
     asteroid.pos = asteroid.pos.add( asteroid.velocity.mulVal( deltaTime ));
     wrapFieldPos( &asteroid.pos );
   }
@@ -377,7 +377,7 @@ fn tickChunkDrift( ng : *eng.Engine, deltaTime : f64 ) void
   {
     if( chunkId == 0 ){ continue; }
 
-    const chunk = ng.world.getComp( ChunkFact, chunkId ) orelse continue;
+    const chunk = ng.worldManager.getComp( ChunkFact, chunkId ) orelse continue;
     chunk.pos = chunk.pos.add( chunk.velocity.mulVal( deltaTime ));
     wrapFieldPos( &chunk.pos );
   }
@@ -391,7 +391,7 @@ fn tickDroneState( ng : *eng.Engine, droneId : eng.EntityId, drone : *DroneFact,
 
     .outbound =>
     {
-      if( ng.world.getCompConst( ChunkFact, drone.targetChunkId ))| chunk |
+      if( ng.worldManager.getCompConst( ChunkFact, drone.targetChunkId ))| chunk |
       {
         drone.targetPos = chunk.pos;
       }
@@ -405,7 +405,7 @@ fn tickDroneState( ng : *eng.Engine, droneId : eng.EntityId, drone : *DroneFact,
 
     .harvesting =>
     {
-      if( ng.world.getCompConst( ChunkFact, drone.targetChunkId ))| chunk |
+      if( ng.worldManager.getCompConst( ChunkFact, drone.targetChunkId ))| chunk |
       {
         drone.pos = chunk.pos;
       }
@@ -450,7 +450,7 @@ fn tryAssignDrone( ng : *eng.Engine, droneId : eng.EntityId, drone : *DroneFact,
   }
   if( chunkId == null ){ return false; }
 
-  const chunk = ng.world.getComp( ChunkFact, chunkId.? ) orelse return false;
+  const chunk = ng.worldManager.getComp( ChunkFact, chunkId.? ) orelse return false;
   chunk.reservedBy = droneId;
 
   drone.targetChunkId = chunkId.?;
@@ -466,7 +466,7 @@ fn tryAssignDrone( ng : *eng.Engine, droneId : eng.EntityId, drone : *DroneFact,
 
 fn finishDroneHarvest( ng : *eng.Engine, droneId : eng.EntityId, drone : *DroneFact, result : *HarvestLoopResult ) void
 {
-  const chunk = ng.world.getComp( ChunkFact, drone.targetChunkId ) orelse
+  const chunk = ng.worldManager.getComp( ChunkFact, drone.targetChunkId ) orelse
   {
     drone.targetChunkId = 0;
     beginDroneState( drone, .idle, drone.pos, drone.pos, 1 );
@@ -576,7 +576,7 @@ fn renderAsteroids( ng : *eng.Engine ) void
   {
     if( asteroidId == 0 ){ continue; }
 
-    const asteroid = ng.world.getCompConst( AsteroidFact, asteroidId ) orelse continue;
+    const asteroid = ng.worldManager.getCompConst( AsteroidFact, asteroidId ) orelse continue;
     if( asteroid.depleted )
     {
       eng.wDraw.basicCirclePerim( asteroid.pos, asteroid.radius + 2.0, utl.Colour.sGray );
@@ -595,7 +595,7 @@ fn renderChunks( ng : *eng.Engine ) void
   {
     if( chunkId == 0 ){ continue; }
 
-    const chunk = ng.world.getCompConst( ChunkFact, chunkId ) orelse continue;
+    const chunk = ng.worldManager.getCompConst( ChunkFact, chunkId ) orelse continue;
     const col = if( chunk.reservedBy == 0 ) utl.Colour.yellow else utl.Colour.orange;
 
     eng.wDraw.basicCircle(      chunk.pos, chunk.radius,       col );
@@ -609,7 +609,7 @@ fn renderDrones( ng : *eng.Engine ) void
   {
     if( droneId == 0 ){ continue; }
 
-    const drone = ng.world.getCompConst( DroneFact, droneId ) orelse continue;
+    const drone = ng.worldManager.getCompConst( DroneFact, droneId ) orelse continue;
     const col = getDroneColour( drone.state );
 
     if( drone.targetChunkId != 0 )
@@ -745,7 +745,7 @@ fn findAvailableChunk( ng : *eng.Engine ) ?eng.EntityId
   {
     if( chunkId == 0 ){ continue; }
 
-    const chunk = ng.world.getCompConst( ChunkFact, chunkId ) orelse continue;
+    const chunk = ng.worldManager.getCompConst( ChunkFact, chunkId ) orelse continue;
     if( chunk.reservedBy != 0 ){ continue; }
     if( station.getRawCargoTotal( chunk.cargo ) <= utl.EPS ){ continue; }
 
@@ -761,7 +761,7 @@ fn findAsteroidWithChunks( ng : *eng.Engine ) ?eng.EntityId
   {
     if( asteroidId == 0 ){ continue; }
 
-    const asteroid = ng.world.getCompConst( AsteroidFact, asteroidId ) orelse continue;
+    const asteroid = ng.worldManager.getCompConst( AsteroidFact, asteroidId ) orelse continue;
     if( asteroid.chunksRemaining > 0 ){ return asteroidId; }
   }
 
@@ -778,9 +778,9 @@ fn deleteChunk( ng : *eng.Engine, chunkId : eng.EntityId ) void
     break;
   }
 
-  if( ng.world.isEntityAlive( chunkId ))
+  if( ng.worldManager.isEntityAlive( chunkId ))
   {
-    if( !ng.world.destroyEntity( chunkId ))
+    if( !ng.worldManager.destroyEntity( chunkId ))
     {
       utl.log( .ERROR, @src(), "Failed to destroy depleted Chunk Entity {d}", .{ chunkId });
     }
@@ -799,17 +799,17 @@ fn fillHarvestCounts( ng : *eng.Engine, result : *HarvestLoopResult ) void
 
   for( ASTEROID_IDS )| asteroidId |
   {
-    if( asteroidId != 0 and ng.world.hasComp( AsteroidFact, asteroidId )){ result.asteroidCount += 1; }
+    if( asteroidId != 0 and ng.worldManager.hasComp( AsteroidFact, asteroidId )){ result.asteroidCount += 1; }
   }
   for( CHUNK_IDS )| chunkId |
   {
-    if( chunkId != 0 and ng.world.hasComp( ChunkFact, chunkId )){ result.chunkCount += 1; }
+    if( chunkId != 0 and ng.worldManager.hasComp( ChunkFact, chunkId )){ result.chunkCount += 1; }
   }
   for( DRONE_IDS )| droneId |
   {
     if( droneId == 0 ){ continue; }
 
-    const drone = ng.world.getCompConst( DroneFact, droneId ) orelse continue;
+    const drone = ng.worldManager.getCompConst( DroneFact, droneId ) orelse continue;
     result.droneCount += 1;
 
     switch( drone.state )

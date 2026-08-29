@@ -143,7 +143,7 @@ inline fn tickWorld( ng : *Engine, isForced : bool ) void
 
   eng.tryHook( .OnTickWorld, ng );
   {
-    ng.world.tick( tickContext );
+    ng.worldManager.tick( tickContext );
   }
   eng.tryHook( .OffTickWorld, ng );
 }

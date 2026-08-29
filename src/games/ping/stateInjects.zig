@@ -29,21 +29,21 @@ pub var BALL_ID            : eng.EntityId = 0;
 
 pub fn registerPingComps( ng : *eng.Engine ) bool
 {
-  if( !ng.world.registerComp( eng.TransComp ))
+  if( !ng.worldManager.registerComp( eng.TransComp ))
   {
     utl.qlog( .ERROR, @src(), "Failed to register TransComp" );
     return false;
   }
-  if( !ng.world.registerComp( eng.ShapeComp ))
+  if( !ng.worldManager.registerComp( eng.ShapeComp ))
   {
-    _ = ng.world.unregisterComp( eng.TransComp );
+    _ = ng.worldManager.unregisterComp( eng.TransComp );
     utl.qlog( .ERROR, @src(), "Failed to register ShapeComp" );
     return false;
   }
-  if( !ng.world.registerComp( eng.HitboxComp ))
+  if( !ng.worldManager.registerComp( eng.HitboxComp ))
   {
-    _ = ng.world.unregisterComp( eng.ShapeComp );
-    _ = ng.world.unregisterComp( eng.TransComp );
+    _ = ng.worldManager.unregisterComp( eng.ShapeComp );
+    _ = ng.worldManager.unregisterComp( eng.TransComp );
     utl.qlog( .ERROR, @src(), "Failed to register HitboxComp" );
     return false;
   }
@@ -52,14 +52,14 @@ pub fn registerPingComps( ng : *eng.Engine ) bool
 
 pub fn unregisterPingComps( ng : *eng.Engine ) void
 {
-  _ = ng.world.unregisterComp( eng.HitboxComp );
-  _ = ng.world.unregisterComp( eng.ShapeComp  );
-  _ = ng.world.unregisterComp( eng.TransComp  );
+  _ = ng.worldManager.unregisterComp( eng.HitboxComp );
+  _ = ng.worldManager.unregisterComp( eng.ShapeComp  );
+  _ = ng.worldManager.unregisterComp( eng.TransComp  );
 }
 
 pub inline fn getBodyView( ng : *eng.Engine ) ?BodyView
 {
-  return ng.world.getCompView( .{ eng.TransComp, eng.ShapeComp, eng.HitboxComp });
+  return ng.worldManager.getCompView( .{ eng.TransComp, eng.ShapeComp, eng.HitboxComp });
 }
 
 pub fn syncHitbox( view : anytype, id : eng.EntityId ) void
@@ -93,16 +93,16 @@ pub fn updateMobileEntities( view : *BodyView, sdt : f32 ) void
 
 pub fn createEntity( ng : *eng.Engine, view : anytype, params : EntityParams ) ?eng.EntityId
 {
-  const id = ng.world.createEntity().id;
+  const id = ng.worldManager.createEntity().id;
 
-  if( !ng.world.addComp( eng.TransComp, id,
+  if( !ng.worldManager.addComp( eng.TransComp, id,
   .{
     .pos = params.pos,
     .vel = params.vel,
     .acc = params.acc,
   })){ return null; }
 
-  if( !ng.world.addComp( eng.ShapeComp, id,
+  if( !ng.worldManager.addComp( eng.ShapeComp, id,
   .{
     .scale  = params.scale,
     .shape  = params.shape,
@@ -113,7 +113,7 @@ pub fn createEntity( ng : *eng.Engine, view : anytype, params : EntityParams ) ?
     return null;
   }
 
-  if( !ng.world.addComp( eng.HitboxComp, id, .{} ))
+  if( !ng.worldManager.addComp( eng.HitboxComp, id, .{} ))
   {
     removePingEntity( ng, id );
     return null;
@@ -168,7 +168,7 @@ pub fn removePingEntity( ng : *eng.Engine, id : eng.EntityId ) void
   removeIdFromList( &mobileIds,   id );
   removeIdFromList( &particleIds, id );
 
-  _ = ng.world.destroyEntity( id );
+  _ = ng.worldManager.destroyEntity( id );
 }
 
 pub fn removeParticleAt( ng : *eng.Engine, index : usize ) void

@@ -85,7 +85,7 @@ fn initStellarBody( view : *gdf.BodyTransView, orbitComp : *orb.OrbitComp, bodyC
 
 fn abortStellarBodySetup( ng : *eng.Engine, bodyName : BodyName, bodyId : eng.EntityId ) void
 {
-  if( ng.world.isEntityAlive( bodyId )){ _ = ng.world.destroyEntity( bodyId ); }
+  if( ng.worldManager.isEntityAlive( bodyId )){ _ = ng.worldManager.destroyEntity( bodyId ); }
   gbl.G_DATA.bodyRegistry.clearId( bodyName );
 }
 
@@ -103,7 +103,7 @@ fn addOrbitRelationAndRefreshCache( ng : *eng.Engine, bodyName : BodyName, bodyI
     return false;
   }
 
-  if( !ng.world.addRelation( gdf.Orbits, bodyId, parentId, .{} ))
+  if( !ng.worldManager.addRelation( gdf.Orbits, bodyId, parentId, .{} ))
   {
     utl.log( .ERROR, @src(), "Failed to add Orbits relation {s} -> {s}", .{ @tagName( bodyName ), @tagName( parentName )});
     return false;
@@ -123,7 +123,7 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
   // Setting up relevant components
   for( gdf.bodyOrder, 0.. )| bodyName, idx |
   {
-    const id = ng.world.createEntity().id;
+    const id = ng.worldManager.createEntity().id;
     if( id == 0 )
     {
       utl.log( .ERROR, @src(), "Failed to create entity for {s}", .{ @tagName( bodyName )});
@@ -176,12 +176,12 @@ pub fn initStellarSystem( ng : *eng.Engine ) void
         utl.log( .ERROR, @src(), "Failed to find parent TransComp for id {d} : using relative start position", .{ orbitedId });
       }
 
-      _ = ng.world.addComp( orb.OrbitComp, id, orbitComp ); // SOL does not have an orbit comp
+      _ = ng.worldManager.addComp( orb.OrbitComp, id, orbitComp ); // SOL does not have an orbit comp
     }
 
-    _ = ng.world.addComp( eng.TransComp, id, .{ .pos = startPos.toVecA( .{} )});
-    _ = ng.world.addComp( bdy.BodyComp,  id, bodyComp  );
-    _ = ng.world.addComp( eng.ShapeComp, id,
+    _ = ng.worldManager.addComp( eng.TransComp, id, .{ .pos = startPos.toVecA( .{} )});
+    _ = ng.worldManager.addComp( bdy.BodyComp,  id, bodyComp  );
+    _ = ng.worldManager.addComp( eng.ShapeComp, id,
     .{
       .colour  = bodyComp.bodyType.getDisplayColour(),
       .minSize = bodyComp.bodyType.getMinDisplaySize(),

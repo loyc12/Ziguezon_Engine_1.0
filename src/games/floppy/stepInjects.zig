@@ -39,7 +39,7 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
       IS_GAME_OVER  = false;
       IS_JUMPING    = false;
 
-      var diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
+      var diskTransform = ng.worldManager.getComp( eng.TransComp, DISK_ID.* ) orelse
       {
         utl.log( .WARN, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
         return;
@@ -69,14 +69,14 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
 
 pub fn OnTickWorld( ng : *eng.Engine ) void
 {
-  var diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
+  var diskTransform = ng.worldManager.getComp( eng.TransComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
 
-  var diskShape = ng.world.getComp( eng.ShapeComp, DISK_ID.* ) orelse
+  var diskShape = ng.worldManager.getComp( eng.ShapeComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;
@@ -143,13 +143,13 @@ pub fn OffTickWorld( ng : *eng.Engine ) void
 
 pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
-  const diskTransform = ng.world.getComp( eng.TransComp, DISK_ID.* ) orelse
+  const diskTransform = ng.worldManager.getComp( eng.TransComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, @src(), "Failed to find Transform component for Entity {}", .{ DISK_ID.* });
     return;
   };
 
-  const diskShape = ng.world.getComp( eng.ShapeComp, DISK_ID.* ) orelse
+  const diskShape = ng.worldManager.getComp( eng.ShapeComp, DISK_ID.* ) orelse
   {
     utl.log( .WARN, @src(), "Failed to find Shape component for Entity {}", .{ DISK_ID.* });
     return;

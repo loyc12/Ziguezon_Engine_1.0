@@ -216,22 +216,22 @@ var STATION_ID : eng.EntityId = 0;
 /// Registers only the Drifter station fact stores needed by the current slice.
 pub fn registerStationStores( ng : *eng.Engine ) bool
 {
-  if( !ng.world.registerComp( StationResources ))
+  if( !ng.worldManager.registerComp( StationResources ))
   {
     utl.qlog( .ERROR, @src(), "Failed to register StationResources" );
     return false;
   }
-  if( !ng.world.registerComp( StarterReserves ))
+  if( !ng.worldManager.registerComp( StarterReserves ))
   {
-    _ = ng.world.unregisterComp( StationResources );
+    _ = ng.worldManager.unregisterComp( StationResources );
 
     utl.qlog( .ERROR, @src(), "Failed to register StarterReserves" );
     return false;
   }
-  if( !ng.world.registerComp( StationCapacities ))
+  if( !ng.worldManager.registerComp( StationCapacities ))
   {
-    _ = ng.world.unregisterComp( StarterReserves  );
-    _ = ng.world.unregisterComp( StationResources );
+    _ = ng.worldManager.unregisterComp( StarterReserves  );
+    _ = ng.worldManager.unregisterComp( StationResources );
 
     utl.qlog( .ERROR, @src(), "Failed to register StationCapacities" );
     return false;
@@ -245,9 +245,9 @@ pub fn unregisterStationStores( ng : *eng.Engine ) void
 {
   destroyStation( ng );
 
-  _ = ng.world.unregisterComp( StationCapacities );
-  _ = ng.world.unregisterComp( StarterReserves  );
-  _ = ng.world.unregisterComp( StationResources );
+  _ = ng.worldManager.unregisterComp( StationCapacities );
+  _ = ng.worldManager.unregisterComp( StarterReserves  );
+  _ = ng.worldManager.unregisterComp( StationResources );
 }
 
 
@@ -270,11 +270,11 @@ pub inline fn getStationId() eng.EntityId
 pub fn getStationFactView( ng : *eng.Engine ) ?StationFactView
 {
   if( STATION_ID == 0 ){ return null; }
-  if( !ng.world.isEntityAlive( STATION_ID )){ return null; }
+  if( !ng.worldManager.isEntityAlive( STATION_ID )){ return null; }
 
-  const resources  = ng.world.getCompConst( StationResources,  STATION_ID ) orelse return null;
-  const reserves   = ng.world.getCompConst( StarterReserves,   STATION_ID ) orelse return null;
-  const capacities = ng.world.getCompConst( StationCapacities, STATION_ID ) orelse return null;
+  const resources  = ng.worldManager.getCompConst( StationResources,  STATION_ID ) orelse return null;
+  const reserves   = ng.worldManager.getCompConst( StarterReserves,   STATION_ID ) orelse return null;
+  const capacities = ng.worldManager.getCompConst( StationCapacities, STATION_ID ) orelse return null;
 
   return .{
     .stationId  = STATION_ID,
@@ -312,13 +312,13 @@ pub inline fn getRawCargoTotal( cargo : RawCargo ) f64
 /// reject the operation without partially changing station state.
 pub fn tryManualHarvest( ng : *eng.Engine ) ManualHarvestResult
 {
-  if( STATION_ID == 0 or !ng.world.isEntityAlive( STATION_ID ))
+  if( STATION_ID == 0 or !ng.worldManager.isEntityAlive( STATION_ID ))
   {
     utl.log( .WARN, @src(), "Manual harvest blocked: station Entity {d} is unavailable", .{ STATION_ID });
     return .{ .status = .stationUnavailable, .stationId = STATION_ID };
   }
 
-  const reserves = ng.world.getComp( StarterReserves, STATION_ID ) orelse
+  const reserves = ng.worldManager.getComp( StarterReserves, STATION_ID ) orelse
   {
     utl.log( .WARN, @src(), "Manual harvest blocked: StarterReserves missing for Entity {d}", .{ STATION_ID });
     return .{ .status = .missingFacts, .stationId = STATION_ID };
@@ -388,16 +388,16 @@ pub fn tryStoreRawCargo( ng : *eng.Engine, cargo : RawCargo ) RawStoreResult
     return .{ .status = .emptyCargo, .stationId = STATION_ID, .requested = cargo };
   }
 
-  if( STATION_ID == 0 or !ng.world.isEntityAlive( STATION_ID ))
+  if( STATION_ID == 0 or !ng.worldManager.isEntityAlive( STATION_ID ))
   {
     return .{ .status = .stationUnavailable, .stationId = STATION_ID, .requested = cargo };
   }
 
-  const resources = ng.world.getComp( StationResources, STATION_ID ) orelse
+  const resources = ng.worldManager.getComp( StationResources, STATION_ID ) orelse
   {
     return .{ .status = .missingFacts, .stationId = STATION_ID, .requested = cargo };
   };
-  const capacities = ng.world.getComp( StationCapacities, STATION_ID ) orelse
+  const capacities = ng.worldManager.getComp( StationCapacities, STATION_ID ) orelse
   {
     return .{ .status = .missingFacts, .stationId = STATION_ID, .requested = cargo };
   };
@@ -448,18 +448,18 @@ pub fn tryStoreRawCargo( ng : *eng.Engine, cargo : RawCargo ) RawStoreResult
 /// missing world facts cannot leave a half-applied recipe.
 pub fn tryProcessStation( ng : *eng.Engine ) ProcessingResult
 {
-  if( STATION_ID == 0 or !ng.world.isEntityAlive( STATION_ID ))
+  if( STATION_ID == 0 or !ng.worldManager.isEntityAlive( STATION_ID ))
   {
     utl.log( .WARN, @src(), "Processing blocked: station Entity {d} is unavailable", .{ STATION_ID });
     return .{ .status = .stationUnavailable, .stationId = STATION_ID };
   }
 
-  const resources = ng.world.getComp( StationResources, STATION_ID ) orelse
+  const resources = ng.worldManager.getComp( StationResources, STATION_ID ) orelse
   {
     utl.log( .WARN, @src(), "Processing blocked: StationResources missing for Entity {d}", .{ STATION_ID });
     return .{ .status = .missingFacts, .stationId = STATION_ID };
   };
-  const capacities = ng.world.getComp( StationCapacities, STATION_ID ) orelse
+  const capacities = ng.worldManager.getComp( StationCapacities, STATION_ID ) orelse
   {
     utl.log( .WARN, @src(), "Processing blocked: StationCapacities missing for Entity {d}", .{ STATION_ID });
     return .{ .status = .missingFacts, .stationId = STATION_ID };
@@ -550,24 +550,24 @@ pub fn tryProcessStation( ng : *eng.Engine ) ProcessingResult
 
 fn createStation( ng : *eng.Engine ) bool
 {
-  const id = ng.world.createEntity().id;
+  const id = ng.worldManager.createEntity().id;
   if( id == 0 )
   {
     utl.qlog( .ERROR, @src(), "Failed to create Drifter station entity" );
     return false;
   }
 
-  if( !ng.world.addComp( StationResources, id, .{} ))
+  if( !ng.worldManager.addComp( StationResources, id, .{} ))
   {
     cleanupFailedStation( ng, id, "StationResources" );
     return false;
   }
-  if( !ng.world.addComp( StarterReserves, id, .{} ))
+  if( !ng.worldManager.addComp( StarterReserves, id, .{} ))
   {
     cleanupFailedStation( ng, id, "StarterReserves" );
     return false;
   }
-  if( !ng.world.addComp( StationCapacities, id, .{} ))
+  if( !ng.worldManager.addComp( StationCapacities, id, .{} ))
   {
     cleanupFailedStation( ng, id, "StationCapacities" );
     return false;
@@ -585,9 +585,9 @@ fn destroyStation( ng : *eng.Engine ) void
   const oldId = STATION_ID;
   STATION_ID = 0;
 
-  if( ng.world.isEntityAlive( oldId ))
+  if( ng.worldManager.isEntityAlive( oldId ))
   {
-    if( !ng.world.destroyEntity( oldId ))
+    if( !ng.worldManager.destroyEntity( oldId ))
     {
       utl.log( .ERROR, @src(), "Failed to destroy Drifter station Entity {d}", .{ oldId });
       return;
@@ -601,9 +601,9 @@ fn cleanupFailedStation( ng : *eng.Engine, entityId : eng.EntityId, comptime fai
 {
   utl.log( .ERROR, @src(), "Failed to add {s} to Drifter station Entity {d}", .{ failedFact, entityId });
 
-  if( ng.world.isEntityAlive( entityId ))
+  if( ng.worldManager.isEntityAlive( entityId ))
   {
-    if( !ng.world.destroyEntity( entityId ))
+    if( !ng.worldManager.destroyEntity( entityId ))
     {
       utl.log( .ERROR, @src(), "Failed to clean up partial Drifter station Entity {d}", .{ entityId });
     }

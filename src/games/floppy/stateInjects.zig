@@ -11,23 +11,23 @@ pub const diskStartVel = utl.VecA.new(    0, -4000, .{} );
 
 pub fn OnGameOpen( ng : *eng.Engine ) void
 {
-  if( !ng.world.registerComp( eng.TransComp ))
+  if( !ng.worldManager.registerComp( eng.TransComp ))
   {
     utl.qlog( .ERROR, @src(), "Failed to register TransComp" );
     return;
   }
-  if( !ng.world.registerComp( eng.ShapeComp ))
+  if( !ng.worldManager.registerComp( eng.ShapeComp ))
   {
-    _ = ng.world.unregisterComp( eng.TransComp );
+    _ = ng.worldManager.unregisterComp( eng.TransComp );
     utl.qlog( .ERROR, @src(), "Failed to register ShapeComp" );
     return;
   }
 
 
-  DISK_ID = ng.world.createEntity().id;
+  DISK_ID = ng.worldManager.createEntity().id;
 
 
-  if( ng.world.addComp( eng.TransComp, DISK_ID,
+  if( ng.worldManager.addComp( eng.TransComp, DISK_ID,
     .{
       .pos   = diskStartPos,
       .vel   = diskStartVel,
@@ -41,7 +41,7 @@ pub fn OnGameOpen( ng : *eng.Engine ) void
     utl.qlog( .ERROR, @src(), "Failed to add disk entity to TransComp store" );
   }
 
-  if( ng.world.addComp( eng.ShapeComp, DISK_ID,
+  if( ng.worldManager.addComp( eng.ShapeComp, DISK_ID,
     .{
       .scale  = .{ .x = 32, .y = 32 },
       .shape  = .RECT,
@@ -62,10 +62,10 @@ pub fn OnGameClose( ng : *eng.Engine ) void
 {
   if( DISK_ID != 0 )
   {
-    _ = ng.world.destroyEntity( DISK_ID );
+    _ = ng.worldManager.destroyEntity( DISK_ID );
     DISK_ID = 0;
   }
 
-  _ = ng.world.unregisterComp( eng.ShapeComp );
-  _ = ng.world.unregisterComp( eng.TransComp );
+  _ = ng.worldManager.unregisterComp( eng.ShapeComp );
+  _ = ng.worldManager.unregisterComp( eng.TransComp );
 }
