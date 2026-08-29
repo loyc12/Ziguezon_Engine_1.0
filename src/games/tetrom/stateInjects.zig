@@ -2,6 +2,7 @@ const eng = @import( "engine" );
 const utl = @import( "utils" );
 
 const game = @import( "game.zig" );
+const palette = @import( "palette.zig" );
 const tlmp = utl.legacy_tilemap;
 
 const Tilemap = tlmp.Tilemap;
@@ -37,7 +38,18 @@ pub fn syncGridDisplay() void
   for( 0 .. grid.getTileCount() )| index |
   {
     const cell = GAME.board.cells[ index ];
-    grid.tileArray[ index ].colour = getCellColour( cell );
+    var col = getCellColour( cell );
+
+    if( GAME.getClearDisplayOverride( index ))| clearOverride |
+    {
+      col = switch( clearOverride )
+      {
+        .FlashToWhite => | progress | lerpColour( col, palette.WHITE, progress ),
+        .FadeToField  => | progress | lerpColour( palette.WHITE, palette.PLAYFIELD, progress ),
+      };
+    }
+
+    grid.tileArray[ index ].colour = col;
   }
 }
 
@@ -45,18 +57,37 @@ pub fn getCellColour( cell : game.Cell ) utl.Colour
 {
   return switch( cell )
   {
-    .Empty   => .mGray,
-    .Red     => .red,
-    .Orange  => .orange,
-    .Yellow  => .yellow,
-    .Green   => .green,
-    .Blue    => .blue,
-    .Purple  => .purple,
-    .Cyan    => .cyan,
-    .Magenta => .magenta,
-    .Lime    => .lime,
-    .Rose    => .rose,
+    .Empty   => palette.PLAYFIELD,
+    .Red     => palette.RED,
+    .Orange  => palette.ORANGE,
+    .Yellow  => palette.YELLOW,
+    .Green   => palette.GREEN,
+    .Blue    => palette.BLUE,
+    .Purple  => palette.PURPLE,
+    .Cyan    => palette.CYAN,
+    .Magenta => palette.MAGENTA,
+    .Lime    => palette.LIME,
+    .Rose    => palette.ROSE,
   };
+}
+
+fn lerpColour( from : utl.Colour, to : utl.Colour, progress : f32 ) utl.Colour
+{
+  const p : f64 = progress;
+
+  return .{
+    .r = lerpChannel( from.r, to.r, p ),
+    .g = lerpChannel( from.g, to.g, p ),
+    .b = lerpChannel( from.b, to.b, p ),
+    .a = lerpChannel( from.a, to.a, p ),
+  };
+}
+
+fn lerpChannel( from : u8, to : u8, progress : f64 ) u8
+{
+  const fromFloat : f64 = @floatFromInt( from );
+  const toFloat   : f64 = @floatFromInt( to );
+  return @intFromFloat( @round( utl.lerp( fromFloat, toFloat, progress )));
 }
 
 /// Returns the largest uniform `.HEX2` tile scale that stays inside the viewport.

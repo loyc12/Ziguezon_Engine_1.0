@@ -1,4 +1,5 @@
 const utl = @import( "utils" );
+const palette = @import( "palette.zig" );
 
 // ================================ ENGINE CONFIGS ================================
 
@@ -9,8 +10,8 @@ pub const Startup_Window_Height     : u16 = 1200;
 
 pub const Startup_Window_Title      : [ :0 ] const u8 = "Ziguezon Engine - Tetrom";
 
-pub const Graphic_Bckgrd_Colour     : ?utl.Colour = utl.Colour.dGray;
-pub const Graphic_Metrics_Colour    : ?utl.Colour = utl.Colour.green;
+pub const Graphic_Bckgrd_Colour     : ?utl.Colour = palette.BACKGROUND;
+pub const Graphic_Metrics_Colour    : ?utl.Colour = palette.CYAN;
 
 
 // ================================ GAME HOOKS ================================

@@ -42,6 +42,17 @@ pub const PieceKind = enum( u4 )
   pub inline fn getIndex( self : PieceKind ) i32 { return @intFromEnum( self ); }
 
   pub inline fn fromIndex( index : i32 ) PieceKind { return @enumFromInt( @mod( index, @as( i32, @intCast( count )))); }
+
+  /// Returns the short human-facing name used by Tetrom's piece catalogue.
+  pub fn getName( self : PieceKind ) []const u8
+  {
+    return switch( self )
+    {
+      .P00 => "1", .P01 => "2", .P02 => "3", .P03 => "R", .P04 => "A",
+      .P05 => "4", .P06 => "L", .P07 => "J", .P08 => "P", .P09 => "B",
+      .P10 => "Z", .P11 => "S", .P12 => "D", .P13 => "Y", .P14 => "C",
+    };
+  }
 };
 
 pub const Rotation = enum( u3 )
@@ -53,10 +64,20 @@ pub const Rotation = enum( u3 )
   pub inline fn getIndex( self : Rotation ) i32 { return @intFromEnum( self ); }
 
   pub inline fn fromIndex( index : i32 ) Rotation { return @enumFromInt( @mod( index, @as( i32, @intCast( count )))); }
+
+  /// Returns this layout's clockwise angle in the six-direction hex rotation cycle.
+  pub fn getName( self : Rotation ) []const u8
+  {
+    return switch( self )
+    {
+      .R0 => "0 degrees",   .R1 => "60 degrees",  .R2 => "120 degrees",
+      .R3 => "180 degrees", .R4 => "240 degrees", .R5 => "300 degrees",
+    };
+  }
 };
 
 /// Four axial offsets relative to the layout placement anchor at `.new( 0, 0 )`.
-/// The P08 anchor is intentionally empty: it sits in the centre of its U shape.
+/// The P14 / C anchor is intentionally empty: it sits in the centre of its shape.
 pub const PieceLayout = struct
 {
   cells     : [ 4 ]HexCoord,

@@ -1,28 +1,16 @@
-const utl = @import( "utils" );
-const pcs = @import( "pieces.zig" );
+const utl   = @import( "utils" );
+const pcs   = @import( "pieces.zig" );
+const board = @import( "board.zig" );
+const clear = @import( "clearEvent.zig" );
+const bag   = @import( "pieceBag.zig" );
 
 const Coords2 = utl.Coords2;
 
 pub const HexCoord  = pcs.HexCoord;
 pub const PieceKind = pcs.PieceKind;
 pub const Rotation  = pcs.Rotation;
-
-/// Render-independent settled-cell values for Tetrom's fixed board.
-pub const Cell = enum( u8 )
-{
-  Empty,
-
-  Red,
-  Orange,
-  Yellow,
-  Green,
-  Blue,
-  Purple,
-  Cyan,
-  Magenta,
-  Lime,
-  Rose,
-};
+pub const Cell      = board.Cell;
+pub const Board     = board.Board;
 
 /// Mutable preview state for one tetrahex before it becomes settled board cells.
 pub const ActivePiece = struct
@@ -42,6 +30,18 @@ pub const ActivePiece = struct
     return self.anchor.add( self.getLayout().cells[ index ] );
   }
 
+  /// True when the anchor is intentionally between the piece's cells, as for C.
+  pub fn hasEmptyAnchor( self : *const ActivePiece ) bool
+  {
+    for( 0 .. @as( usize, self.getLayout().cellCount ))| index |
+    {
+      const cell = self.getLayout().cells[ index ];
+      if( cell.q == 0 and cell.r == 0 ){ return false; }
+    }
+    return true;
+  }
+
+  /// Returns whether this indexed cell occupies the layout's placement anchor.
   pub inline fn isAnchorCell( self : *const ActivePiece, index : usize ) bool
   {
     const cell = self.getLayout().cells[ index ];
@@ -52,9 +52,8 @@ pub const ActivePiece = struct
 /// A render-ready cell from the active piece; it never mutates the settled board.
 pub const PreviewCell = struct
 {
-  coords   : Coords2,
-  cell     : Cell,
-  isAnchor : bool,
+  coords : Coords2,
+  cell   : Cell,
 };
 
 /// Separates failed debug movement into the gameplay-relevant collision causes.
@@ -67,63 +66,32 @@ pub const Collision = struct
   pub inline fn isClear( self : Collision ) bool { return !self.wall and !self.floor and !self.cell; }
 };
 
-pub const ClearResult = struct
+/// Result of locking a piece. Clear events defer replacement-piece spawning.
+pub const LockResult = struct
 {
-  lineCount  : u8  = 0,
-  crossings  : u8  = 0,
-  cleared    : u8  = 0,
-  scoreAward : u64 = 0,
+  locked       : u8 = 0,
+  outsideBoard : u8 = 0,
+  gameOver     : bool = false,
+  clearStarted : ?clear.WaveSummary = null,
 };
 
-/// Fixed-size board storage. Hex geometry and drawing remain in `legacy_tilemap`.
-pub const Board = struct
+/// Result of one clear-event timer update.
+pub const ClearTickResult = struct
 {
-  pub const width     : i32   = 9;
-  pub const height    : i32   = 23;
-  pub const cellCount : usize = width * height;
-
-  cells : [ cellCount ]Cell = [_]Cell{ .Empty } ** cellCount,
-
-  /// Clears all settled cells while retaining the board allocation and geometry.
-  pub fn reset( self : *Board ) void
-  {
-    self.* = .{};
-  }
-
-  /// Returns null when `coords` is outside the fixed Tetrom board.
-  pub fn getIndex( self : *const Board, coords : Coords2 ) ?usize
-  {
-    _ = self;
-
-    if( coords.x < 0 or coords.y < 0 ){ return null; }
-    if( coords.x >= width or coords.y >= height ){ return null; }
-
-    return @intCast(( coords.y * width ) + coords.x );
-  }
-
-  pub fn getCell( self : *const Board, coords : Coords2 ) ?Cell
-  {
-    const index = self.getIndex( coords ) orelse return null;
-    return self.cells[ index ];
-  }
-
-  /// Returns false when `coords` lies outside the board.
-  pub fn setCell( self : *Board, coords : Coords2, cell : Cell ) bool
-  {
-    const index = self.getIndex( coords ) orelse return false;
-
-    self.cells[ index ] = cell;
-    return true;
-  }
+  newWave        : ?clear.WaveSummary = null,
+  completedScore : ?u64 = null,
+  gameOver       : bool = false,
 };
 
-/// Owns the future falling-piece state independently of engine and render state.
+/// Owns active-piece state, settled board state, and staged clear-event lifecycle.
 pub const Game = struct
 {
-  board       : Board       = .{},
-  activePiece : ActivePiece = .{},
-  isGameOver  : bool        = false,
-  score       : u64         = 0,
+  board       : Board            = .{},
+  activePiece : ActivePiece      = .{},
+  clearEvent  : clear.ClearEvent = .{},
+  pieceBag    : bag.PieceBag     = .{},
+  isGameOver  : bool             = false,
+  score       : u64              = 0,
 
   pub fn init( self : *Game, rng : *utl.Randomiser ) void
   {
@@ -134,16 +102,26 @@ pub const Game = struct
   pub fn reset( self : *Game, rng : *utl.Randomiser ) void
   {
     self.board.reset();
+    self.clearEvent.reset();
+    self.pieceBag.reset();
     self.isGameOver = false;
     self.score = 0;
     self.spawnRandomPiece( rng );
+  }
+
+  pub inline fn isClearEventActive( self : *const Game ) bool { return self.clearEvent.isActive(); }
+
+  /// Returns the bag's already queued next piece without consuming it.
+  pub fn getNextPiece( self : *const Game ) PieceKind
+  {
+    return self.pieceBag.peek();
   }
 
   /// Replaces the active debug piece without changing settled board cells.
   pub fn spawnRandomPiece( self : *Game, rng : *utl.Randomiser ) void
   {
     self.activePiece = .{
-      .kind   = rng.getVal( PieceKind ),
+      .kind   = self.pieceBag.draw( rng ),
       .anchor = HexCoord.fromBoardCoords( .{ .x = Board.width / 2, .y = 1 } ),
     };
 
@@ -154,10 +132,14 @@ pub const Game = struct
   pub fn getPreviewCell( self : *const Game, index : usize ) PreviewCell
   {
     return .{
-      .coords   = self.activePiece.getCellHex( index ).toBoardCoords(),
-      .cell     = getCellForPiece( self.activePiece.kind ),
-      .isAnchor = self.activePiece.isAnchorCell( index ),
-    };
+    .coords   = self.activePiece.getCellHex( index ).toBoardCoords(),
+    .cell     = getCellForPiece( self.activePiece.kind ),
+  };
+}
+
+  pub fn getClearDisplayOverride( self : *const Game, index : usize ) ?clear.DisplayOverride
+  {
+    return self.clearEvent.getDisplayOverride( index );
   }
 
   pub fn changePieceBy( self : *Game, offset : i32 ) void
@@ -170,106 +152,47 @@ pub const Game = struct
     self.activePiece.rotation = Rotation.fromIndex( self.activePiece.rotation.getIndex() + offset );
   }
 
-  /// Writes every in-bounds active cell into the settled board, then spawns anew.
-  pub fn lockActivePiece( self : *Game, rng : *utl.Randomiser ) struct { locked : u8, outsideBoard : u8, gameOver : bool, clear : ClearResult }
+  /// Writes active cells and either starts a staged clear or spawns immediately.
+  pub fn lockActivePiece( self : *Game, rng : *utl.Randomiser ) LockResult
   {
-    var locked       : u8 = 0;
-    var outsideBoard : u8 = 0;
+    if( self.isClearEventActive() ){ return .{}; }
+
+    var result : LockResult = .{};
     const cell = getCellForPiece( self.activePiece.kind );
 
     for( 0 .. @as( usize, self.activePiece.getLayout().cellCount ))| index |
     {
       const coords = self.activePiece.getCellHex( index ).toBoardCoords();
 
-      if( self.board.setCell( coords, cell )){ locked += 1; }
-      else {                                 outsideBoard += 1; }
+      if( self.board.setCell( coords, cell )){ result.locked += 1; }
+      else {                                 result.outsideBoard += 1; }
     }
 
-    const clear = self.clearCompletedDiagonals();
-    self.score += clear.scoreAward;
-
-    self.spawnRandomPiece( rng );
-    return .{ .locked = locked, .outsideBoard = outsideBoard, .gameOver = self.isGameOver, .clear = clear };
-  }
-
-  /// Clears full-width lines along both axial diagonal families after locking.
-  fn clearCompletedDiagonals( self : *Game ) ClearResult
-  {
-    var marked : [ Board.cellCount ]bool = [_]bool{ false } ** Board.cellCount;
-    var result : ClearResult = .{};
-
-    var r : i32 = -Board.width;
-    while( r <= Board.height ) : ( r += 1 )
+    result.clearStarted = self.clearEvent.tryStart( &self.board );
+    if( result.clearStarted == null )
     {
-      if( !self.isFullRLine( r )){ continue; }
-      result.lineCount += 1;
-      self.markRLine( r, &marked, &result.crossings );
+      self.spawnRandomPiece( rng );
+      result.gameOver = self.isGameOver;
     }
-
-    var diagonal : i32 = 0;
-    while( diagonal <= Board.width + Board.height ) : ( diagonal += 1 )
-    {
-      if( !self.isFullSumLine( diagonal )){ continue; }
-      result.lineCount += 1;
-      self.markSumLine( diagonal, &marked, &result.crossings );
-    }
-
-    for( marked, 0 .. )| isMarked, index |
-    {
-      if( !isMarked ){ continue; }
-      self.board.cells[ index ] = .Empty;
-      result.cleared += 1;
-    }
-
-    if( result.lineCount == 0 ){ return result; }
-
-    const lineCount : u64 = result.lineCount;
-    const base = 100 * lineCount * ( lineCount + 1 ) / 2;
-    result.scoreAward = @intFromFloat( @round( @as( f64, @floatFromInt( base )) * getCrossingFactor( result.crossings )));
 
     return result;
   }
 
-  fn isFullRLine( self : *const Game, r : i32 ) bool
+  /// Advances a staged clear. Only a completed event may spawn and trigger game over.
+  pub fn tickClearEvent( self : *Game, rng : *utl.Randomiser, deltaTime : f32 ) ClearTickResult
   {
-    for( 0 .. @as( usize, @intCast( Board.width )))| x |
-    {
-      const coords = HexCoord.new( @intCast( x ), r ).toBoardCoords();
-      const cell = self.board.getCell( coords ) orelse return false;
-      if( cell == .Empty ){ return false; }
-    }
-    return true;
-  }
+    const eventResult = self.clearEvent.advance( &self.board, deltaTime );
+    var result : ClearTickResult = .{ .newWave = eventResult.newWave };
 
-  fn isFullSumLine( self : *const Game, diagonal : i32 ) bool
-  {
-    for( 0 .. @as( usize, @intCast( Board.width )))| x |
+    if( eventResult.completedScore )| completedScore |
     {
-      const q : i32 = @intCast( x );
-      const coords = HexCoord.new( q, diagonal - q ).toBoardCoords();
-      const cell = self.board.getCell( coords ) orelse return false;
-      if( cell == .Empty ){ return false; }
+      self.score += completedScore;
+      result.completedScore = completedScore;
+      self.spawnRandomPiece( rng );
+      result.gameOver = self.isGameOver;
     }
-    return true;
-  }
 
-  fn markRLine( self : *const Game, r : i32, marked : *[ Board.cellCount ]bool, crossings : *u8 ) void
-  {
-    for( 0 .. @as( usize, @intCast( Board.width )))| x |
-    {
-      const index = self.board.getIndex( HexCoord.new( @intCast( x ), r ).toBoardCoords() ).?;
-      markForClear( marked, index, crossings );
-    }
-  }
-
-  fn markSumLine( self : *const Game, diagonal : i32, marked : *[ Board.cellCount ]bool, crossings : *u8 ) void
-  {
-    for( 0 .. @as( usize, @intCast( Board.width )))| x |
-    {
-      const q : i32 = @intCast( x );
-      const index = self.board.getIndex( HexCoord.new( q, diagonal - q ).toBoardCoords() ).?;
-      markForClear( marked, index, crossings );
-    }
+    return result;
   }
 
   /// Checks a prospective piece location without mutating the board or active piece.
@@ -307,7 +230,7 @@ pub const Game = struct
   pub fn tryMoveBy( self : *Game, offset : HexCoord ) Collision
   {
     var candidate = self.activePiece;
-    candidate.anchor = candidate.anchor.add( offset );
+        candidate.anchor = candidate.anchor.add( offset );
 
     const collision = self.checkPieceCollision( &candidate );
     if( collision.isClear() ){ self.activePiece = candidate; }
@@ -315,7 +238,7 @@ pub const Game = struct
     return collision;
   }
 
-  /// Rotates the debug piece, attempting one diagonal upward wall kick if needed.
+  /// Rotates the debug piece, attempting upward/sideward wall kicks if needed.
   pub fn tryRotateBy( self : *Game, offset : i32 ) struct { collision : Collision, kicked : bool }
   {
     var candidate = self.activePiece;
@@ -326,6 +249,19 @@ pub const Game = struct
     {
       self.activePiece = candidate;
       return .{ .collision = .{}, .kicked = false };
+    }
+
+    if( collision.cell and !collision.wall and !collision.floor )
+    {
+      // Future block kicks may also try `.new( -1, 1 )` and `.new( 1, 0 )`.
+      candidate.anchor = self.activePiece.anchor.add( .new( 0, 1 ));
+
+      const kickedCollision = self.checkPieceCollision( &candidate );
+      if( kickedCollision.isClear() )
+      {
+        self.activePiece = candidate;
+        return .{ .collision = .{}, .kicked = true };
+      }
     }
 
     if( collision.wall )
@@ -375,23 +311,8 @@ pub const Game = struct
   }
 };
 
-fn markForClear( marked : *[ Board.cellCount ]bool, index : usize, crossings : *u8 ) void
-{
-  if( marked[ index ]){ crossings.* += 1; }
-  else {                marked[ index ] = true; }
-}
-
-/// Normalized sigmoid bonus: zero crossings yields 1x and high counts approach 2x.
-fn getCrossingFactor( crossings : u8 ) f64
-{
-  const crossingCount : f64 = @floatFromInt( crossings );
-  const baseline = utl.sigmoid( -1.0, 0.5 );
-  const response = utl.sigmoid( crossingCount - 1.0, 0.5 );
-
-  return 1.0 + ( response - baseline ) / ( 1.0 - baseline );
-}
-
-fn getCellForPiece( kind : PieceKind ) Cell
+/// Returns the settled/render colour category associated with a piece kind.
+pub fn getCellForPiece( kind : PieceKind ) Cell
 {
   return switch( kind )
   {
