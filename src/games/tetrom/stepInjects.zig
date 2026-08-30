@@ -1,4 +1,5 @@
 const eng = @import( "engine" );
+const std = @import( "std" );
 const utl = @import( "utils" );
 
 const stateInj = @import( "stateInjects.zig" );
@@ -10,25 +11,34 @@ const tlmp = utl.legacy_tilemap;
 
 const Tilemap = tlmp.Tilemap;
 
-/// Seconds between automatic falling steps. Tune freely while debugging.
-pub var FALLING_SPEED : f32 = 0.75;
+/// Base seconds between automatic falling steps before any lines are cleared.
+pub var MIN_FALLING_SPEED : f32 = 0.80;
+
+/// Lowest tick interval, representing Tetrom's maximum automatic falling speed.
+pub var MAX_FALLING_SPEED : f32 = 0.20;
+
+/// Cumulative cleared-line total at which automatic falling reaches its maximum.
+pub var SPEED_LINE_CAP : u32 = 128;
 
 /// Seconds after spawning before gravity may begin falling the new piece.
-pub var AIR_TIME : f32 = 0.5;
+pub var AIR_TIME : f32 = 0.4;
 
 /// Seconds a grounded piece remains movable before gravity locks it.
-pub var LOCK_DELAY : f32 = 0.75;
+pub var LOCK_DELAY : f32 = 0.6;
 
 /// Enables automatic falling while preserving the manual movement controls.
-pub var GRAVITY_MODE : bool = false;
+pub var GRAVITY_MODE : bool = true;
 
-const INPUT_REPEAT_DELAY : f32 = 0.20;
-const NEXT_PIECE_SCALE        : f64 = 1.25;
+/// How fast do held movement inputs repeat, in seconds
+const INPUT_REPEAT_DELAY      : f32 = 0.20;
+
+const NEXT_PIECE_SCALE        : f64 = 1.0;
 const NEXT_PIECE_RIGHT_OFFSET : f64 = 3.0;
 
 var fallingElapsed : f32 = 0.0;
 var airElapsed     : f32 = 0.0;
 var lockElapsed    : f32 = 0.0;
+
 var moveHeldTimes  : [ 4 ]f32 = [_]f32{ 0.0 } ** 4;
 var CLEAR_FEEDBACK : feedback.ClearFeedback = .{};
 var cameraBase     : ?utl.VecA = null;
@@ -48,6 +58,35 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
     stateInj.syncGridDisplay();
   }
 
+  if( stateInj.GAME.isGameOver )
+  {
+    if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
+    return;
+  }
+
+  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.p ))
+  {
+    if( stateInj.GAME.isPaused )
+    {
+      stateInj.GAME.resumePausedGame( &ng.rng );
+      resetInputTimers();
+      utl.log( .DEBUG, @src(), "Game resumed", .{} );
+    }
+    else
+    {
+      stateInj.GAME.togglePauseQueue();
+      utl.log( .DEBUG, @src(), "Pause queue {s}", .{ if( stateInj.GAME.isPauseQueued ) "enabled" else "cancelled" });
+    }
+  }
+
+  if( stateInj.GAME.isPaused )
+  {
+    if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
+    return;
+  }
+
+  stateInj.GAME.tickTime( deltaTime );
+
   const clearTick = stateInj.GAME.tickClearEvent( &ng.rng, deltaTime );
   if( clearTick.newWave )| wave |{ startClearFeedback( wave ); }
   if( clearTick.completedScore )| completedScore |
@@ -61,13 +100,7 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
   CLEAR_FEEDBACK.tick( deltaTime );
   applyCameraShake( ng );
 
-  if( stateInj.GAME.isClearEventActive() )
-  {
-    if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
-    return;
-  }
-
-  if( stateInj.GAME.isGameOver )
+  if( stateInj.GAME.isClearEventActive() or stateInj.GAME.isPaused or stateInj.GAME.isGameOver )
   {
     if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
     return;
@@ -94,7 +127,7 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.e     )){ tryRotatePiece(  1 ); }
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.space )){ lockActivePiece( &ng.rng ); resetInputTimers(); }
 
-  if( GRAVITY_MODE and !stateInj.GAME.isClearEventActive() ){ tickGravity( &ng.rng, deltaTime ); }
+  if( GRAVITY_MODE and !stateInj.GAME.isClearEventActive() and !stateInj.GAME.isPaused ){ tickGravity( &ng.rng, deltaTime ); }
 
   // The engine refreshes the camera before calling this hook.
   if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
@@ -156,7 +189,7 @@ fn tickGravity( rng : *utl.Randomiser, deltaTime : f32 ) void
 
   lockElapsed = 0.0;
   fallingElapsed += deltaTime;
-  if( fallingElapsed < FALLING_SPEED ){ return; }
+  if( fallingElapsed < getCurrentFallingSpeed() ){ return; }
 
   fallingElapsed = 0.0;
   const collision = stateInj.GAME.tryMoveBy( .new( 0, 1 ));
@@ -177,6 +210,25 @@ fn startClearFeedback( wave : clear.WaveSummary ) void
 {
   CLEAR_FEEDBACK.startWave( wave );
   utl.log( .INFO, @src(), "Cleared {d} diagonal lines, {d} crossings, wave +{d}, combo +{d}", .{ wave.lineCount, wave.crossings, wave.latestWaveScore, wave.comboBonus });
+}
+
+/// Returns the current automatic fall interval from the game's cumulative lines.
+fn getCurrentFallingSpeed() f32
+{
+  return getFallingSpeedForLines( stateInj.GAME.clearedLines, MIN_FALLING_SPEED, MAX_FALLING_SPEED, SPEED_LINE_CAP );
+}
+
+/// Quadratic ease-out reaches the speed cap smoothly without exceeding it.
+fn getFallingSpeedForLines( clearedLines : u32, baseSpeed : f32, maxSpeed : f32, lineCap : u32 ) f32
+{
+  const safeBase = @max( baseSpeed, 0.001 );
+  const safeMax  = utl.clmp( maxSpeed, 0.001, safeBase );
+  const safeCap  = @max( lineCap, 1 );
+  const lines : f32 = @floatFromInt( @min( clearedLines, safeCap ));
+  const progress = lines / @as( f32, @floatFromInt( safeCap ));
+  const plateauProgress = 1.0 - (( 1.0 - progress ) * ( 1.0 - progress ));
+
+  return utl.lerp( safeBase, safeMax, plateauProgress );
 }
 
 fn resetClearFeedback( ng : *eng.Engine ) void
@@ -259,8 +311,8 @@ pub fn OnRenderWorld( ng : *eng.Engine ) void
   stateInj.syncGridDisplay();
   grid.drawSelf( ng.camera.toViewBox(), eng.wDraw );
 
-  if( !stateInj.GAME.isClearEventActive() ){ renderActivePiece( grid ); }
-  renderNextPiece( grid );
+  if( !stateInj.GAME.isClearEventActive() and !stateInj.GAME.isPaused ){ renderActivePiece( grid ); }
+  if( !stateInj.GAME.isPaused ){ renderNextPiece( grid ); }
 }
 
 fn renderActivePiece( grid : *const Tilemap ) void
@@ -335,19 +387,39 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 {
   _ = ng;
 
-  const screenCenter = utl.getHalfScreenSize();
-  const screenSize   = utl.getScreenSize();
-  const leftX        : f64 = 24.0;
-  const rightX       : f64 = screenSize.x - 24.0;
-  const bottomY      : f64 = screenSize.y - 32.0;
+  const screenCenter         = utl.getHalfScreenSize();
+  const screenSize           = utl.getScreenSize();
+  const leftX          : f64 = 24.0;
+  const rightX         : f64 = screenSize.x - 20.0;
+  const bottomY        : f64 = screenSize.y - 30.0;
+  const elapsedSeconds : u64 = @intFromFloat( stateInj.GAME.elapsedTime );
+  const elapsedMinutes       = @divFloor( elapsedSeconds, 60 );
+  const elapsedRemainder     = @mod(      elapsedSeconds, 60 );
 
   renderTitle( screenCenter.x );
-  utl.sDraw.textLeft(     "Enter: reset", .new( leftX, bottomY - 84.0 ), 20.0, palette.CONTROLS );
-  utl.sDraw.textLeft(     "= / - : piece    W / S: vertical    A / D : diagonal down", .new( leftX, bottomY - 56.0 ), 20.0, palette.CONTROLS );
-  utl.sDraw.textLeft(     "Q / E : rotate and wall kick    G : toggle gravity", .new( leftX, bottomY - 28.0 ), 20.0, palette.CONTROLS );
-  utl.sDraw.textRightFmt( "Gravity : {s}   Fall : {d:.2}s   Air : {d:.2}s   Lock : {d:.2}s", .{ if( GRAVITY_MODE ) "on" else "manual", FALLING_SPEED, AIR_TIME, LOCK_DELAY }, .new( rightX, bottomY - 56.0 ), 20.0, palette.TEXT_MUTED );
-  utl.sDraw.textRightFmt( "Piece : {s} Piece   Rotation : {s}", .{ stateInj.GAME.activePiece.kind.getName(), stateInj.GAME.activePiece.rotation.getName() }, .new( rightX, bottomY - 28.0 ), 20.0, palette.TEXT );
-  utl.sDraw.textRightFmt( "Score : {d}", .{ stateInj.GAME.score }, .new( rightX, bottomY - 84.0 ), 28.0, palette.SCORE );
+
+  // TODO : Show these tooltips only in debug mode
+
+  utl.sDraw.textLeft( "G  : toggle gravity", .new( leftX, bottomY - 200.0 ), 20.0, palette.CONTROLS );
+  utl.sDraw.textLeft( "= / - : change spee", .new( leftX, bottomY - 170.0 ), 20.0, palette.CONTROLS );
+  utl.sDraw.textLeft( "Space : Lock piece",  .new( leftX, bottomY - 140.0 ), 20.0, palette.CONTROLS );
+  utl.sDraw.textLeft( "Enter : reset game",  .new( leftX, bottomY - 110.0 ), 20.0, palette.CONTROLS );
+  utl.sDraw.textRightFmt( "Gravity : {s}   Air : {d:.2}s   Lock : {d:.2}s", .{ if( GRAVITY_MODE ) "on" else "manual", AIR_TIME, LOCK_DELAY }, .new( rightX, bottomY - 40.0 ), 20.0, palette.TEXT_MUTED );
+
+  utl.sDraw.textLeft( "P : queue pause",  .new( leftX, bottomY - 60.0 ), 20.0, palette.CONTROLS );
+  utl.sDraw.textLeft( "A / S / D : move", .new( leftX, bottomY - 30.0 ), 20.0, palette.CONTROLS );
+  utl.sDraw.textLeft( "Q / E : rotate",   .new( leftX, bottomY -  0.0 ), 20.0, palette.CONTROLS );
+
+  utl.sDraw.textRightFmt( "Score : {d}", .{ stateInj.GAME.score        }, .new( rightX, 30.0  ), 30.0, palette.SCORE );
+  utl.sDraw.textRightFmt( "Lines : {d}", .{ stateInj.GAME.clearedLines }, .new( rightX, 70.0  ), 20.0, getLineCountColour() );
+  utl.sDraw.textRightFmt( "Tiles : {d}", .{ stateInj.GAME.clearedTiles }, .new( rightX, 100.0 ), 20.0, palette.TEXT );
+  utl.sDraw.textRightFmt( "Time : {d}:{d:0>2}", .{ elapsedMinutes, elapsedRemainder }, .new( rightX, 130.0 ), 20.0, palette.TEXT );
+  utl.sDraw.textRightFmt( "Piece : {s} Piece   Rotation : {s}   Speed : {d:.2}", .{ stateInj.GAME.activePiece.kind.getName(), stateInj.GAME.activePiece.rotation.getName(), getCurrentFallingSpeed() }, .new( rightX, bottomY - 0.0 ), 20.0, palette.TEXT );
+
+  if( stateInj.GAME.isPauseQueued )
+  {
+    utl.sDraw.textRight( "Pause : queued", .new( rightX, bottomY - 84.0 ), 20.0, palette.CONTROLS );
+  }
 
   if( CLEAR_FEEDBACK.isVisible )
   {
@@ -358,13 +430,49 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
     utl.sDraw.textCenterFmt( "Wave +{d}    Combo +{d}", .{ CLEAR_FEEDBACK.latestWaveScore, CLEAR_FEEDBACK.comboBonus }, detailPos, 22.0, palette.CONTROLS );
   }
 
-  if( stateInj.GAME.isGameOver )
+  if( stateInj.GAME.isPaused )
+  {
+    utl.sDraw.coverScreenWithCol( palette.GAME_OVER_VEIL );
+    utl.sDraw.textCenter(    "GAME PAUSED", screenCenter, 64.0, palette.TEXT );
+  }
+  else if( stateInj.GAME.isGameOver )
   {
     utl.sDraw.coverScreenWithCol( palette.GAME_OVER_VEIL );
     utl.sDraw.textCenter(    "GAME OVER", screenCenter, 64.0, palette.RED );
     utl.sDraw.textCenterFmt( "Score : {d}", .{ stateInj.GAME.score }, .new( screenCenter.x, screenCenter.y + 64.0 ), 32.0, palette.SCORE );
     utl.sDraw.textCenter(    "Enter : restart", .new( screenCenter.x, screenCenter.y + 104.0 ), 28.0, palette.CONTROLS );
   }
+}
+
+/// Tints the line counter from HUD white to red across the configured speed cap.
+fn getLineCountColour() utl.Colour
+{
+  const safeCap = @max( SPEED_LINE_CAP, 1 );
+  const lines : f64 = @floatFromInt( @min( stateInj.GAME.clearedLines, safeCap ));
+  const cap : f64 = @floatFromInt( safeCap );
+  const progress = lines / cap;
+
+  return .{
+    .r = @intFromFloat( @round( utl.lerp( @as( f64, @floatFromInt( palette.TEXT.r )), @as( f64, @floatFromInt( palette.RED.r )), progress ))),
+    .g = @intFromFloat( @round( utl.lerp( @as( f64, @floatFromInt( palette.TEXT.g )), @as( f64, @floatFromInt( palette.RED.g )), progress ))),
+    .b = @intFromFloat( @round( utl.lerp( @as( f64, @floatFromInt( palette.TEXT.b )), @as( f64, @floatFromInt( palette.RED.b )), progress ))),
+    .a = palette.TEXT.a,
+  };
+}
+
+test "falling speed plateaus at the configured line cap"
+{
+  const base : f32 = 0.75;
+  const max  : f32 = 0.20;
+
+  const half = getFallingSpeedForLines( 50, base, max, 100 );
+  const capped = getFallingSpeedForLines( 100, base, max, 100 );
+  const beyond = getFallingSpeedForLines( 200, base, max, 100 );
+
+  try std.testing.expectApproxEqAbs( base, getFallingSpeedForLines( 0, base, max, 100 ), 0.0001 );
+  try std.testing.expect( half < base and half > max );
+  try std.testing.expectApproxEqAbs( max, capped, 0.0001 );
+  try std.testing.expectApproxEqAbs( capped, beyond, 0.0001 );
 }
 
 /// Draws the title in tile-palette rainbow order, from red through purple.

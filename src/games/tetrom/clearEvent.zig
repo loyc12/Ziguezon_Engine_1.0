@@ -24,16 +24,18 @@ pub const ClearPhase = enum { None, FlashToWhite, FadeToField, Collapse, PostCol
 /// A detected line union, retained until its visual clear phase completes.
 pub const PendingClear = struct
 {
-  cells      : [ Board.cellCount ]bool = [_]bool{ false } ** Board.cellCount,
-  lineCount  : u8 = 0,
-  crossings  : u8 = 0,
-  waveScore  : score.WaveScore = .{ .lineCount = 0, .crossings = 0, .award = 0 },
+  cells        : [ Board.cellCount ]bool = [_]bool{ false } ** Board.cellCount,
+  lineCount    : u8 = 0,
+  clearedTiles : u8 = 0,
+  crossings    : u8 = 0,
+  waveScore    : score.WaveScore = .{ .lineCount = 0, .crossings = 0, .award = 0 },
 };
 
 /// The score data needed by clear feedback without exposing board ownership.
 pub const WaveSummary = struct
 {
   lineCount        : u8,
+  clearedTiles     : u8,
   crossings        : u8,
   latestWaveScore  : u64,
   comboBonus       : u64,
@@ -190,6 +192,7 @@ pub const ClearEvent = struct
   {
     return .{
       .lineCount       = self.pending.lineCount,
+      .clearedTiles    = self.pending.clearedTiles,
       .crossings       = self.pending.crossings,
       .latestWaveScore = self.latestWaveScore,
       .comboBonus      = self.comboBonus,
@@ -336,7 +339,11 @@ fn markSumLine( gameBoard : *const Board, diagonal : i32, pending : *PendingClea
 fn markCell( pending : *PendingClear, index : usize ) void
 {
   if( pending.cells[ index ]){ pending.crossings += 1; }
-  else {                       pending.cells[ index ] = true; }
+  else
+  {
+    pending.cells[ index ] = true;
+    pending.clearedTiles += 1;
+  }
 }
 
 /// Moves every displaced cell in one selected column one row as a single pulse.
@@ -382,6 +389,7 @@ test "one full axial line is detected without mutating the board"
 
   const pending = detectClear( &gameBoard ).?;
   try std.testing.expectEqual( @as( u8, 1 ), pending.lineCount );
+  try std.testing.expectEqual( @as( u8, @intCast( Board.width )), pending.clearedTiles );
   try std.testing.expectEqual( @as( u8, 0 ), pending.crossings );
 }
 
@@ -398,6 +406,7 @@ test "crossing diagonal lines count their shared cell once"
 
   const pending = detectClear( &gameBoard ).?;
   try std.testing.expectEqual( @as( u8, 2 ), pending.lineCount );
+  try std.testing.expectEqual( @as( u8, @intCast(( Board.width * 2 ) - 1 )), pending.clearedTiles );
   try std.testing.expectEqual( @as( u8, 1 ), pending.crossings );
 }
 

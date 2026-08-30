@@ -86,12 +86,17 @@ pub const ClearTickResult = struct
 /// Owns active-piece state, settled board state, and staged clear-event lifecycle.
 pub const Game = struct
 {
-  board       : Board            = .{},
-  activePiece : ActivePiece      = .{},
-  clearEvent  : clear.ClearEvent = .{},
-  pieceBag    : bag.PieceBag     = .{},
-  isGameOver  : bool             = false,
-  score       : u64              = 0,
+  board         : Board            = .{},
+  activePiece   : ActivePiece      = .{},
+  clearEvent    : clear.ClearEvent = .{},
+  pieceBag      : bag.PieceBag     = .{},
+  isGameOver    : bool             = false,
+  isPauseQueued : bool             = false,
+  isPaused      : bool             = false,
+  score         : u64              = 0,
+  clearedLines  : u32              = 0,
+  clearedTiles  : u32              = 0,
+  elapsedTime   : f64              = 0.0,
 
   pub fn init( self : *Game, rng : *utl.Randomiser ) void
   {
@@ -105,11 +110,37 @@ pub const Game = struct
     self.clearEvent.reset();
     self.pieceBag.reset();
     self.isGameOver = false;
-    self.score = 0;
+    self.isPauseQueued = false;
+    self.isPaused     = false;
+    self.score        = 0;
+    self.clearedLines = 0;
+    self.clearedTiles = 0;
+    self.elapsedTime  = 0.0;
     self.spawnRandomPiece( rng );
   }
 
   pub inline fn isClearEventActive( self : *const Game ) bool { return self.clearEvent.isActive(); }
+
+  /// Advances the displayed game timer while the game is actively progressing.
+  pub inline fn tickTime( self : *Game, deltaTime : f32 ) void
+  {
+    if( !self.isPaused and !self.isGameOver ){ self.elapsedTime += @as( f64, deltaTime ); }
+  }
+
+  /// Queues or cancels a pause request; the request resolves only at a spawn boundary.
+  pub fn togglePauseQueue( self : *Game ) void
+  {
+    if( !self.isPaused ){ self.isPauseQueued = !self.isPauseQueued; }
+  }
+
+  /// Leaves the spawn-boundary pause by spawning the already-determined next piece.
+  pub fn resumePausedGame( self : *Game, rng : *utl.Randomiser ) void
+  {
+    if( !self.isPaused ){ return; }
+
+    self.isPaused = false;
+    self.spawnRandomPiece( rng );
+  }
 
   /// Returns the bag's already queued next piece without consuming it.
   pub fn getNextPiece( self : *const Game ) PieceKind
@@ -132,10 +163,10 @@ pub const Game = struct
   pub fn getPreviewCell( self : *const Game, index : usize ) PreviewCell
   {
     return .{
-    .coords   = self.activePiece.getCellHex( index ).toBoardCoords(),
-    .cell     = getCellForPiece( self.activePiece.kind ),
-  };
-}
+      .coords = self.activePiece.getCellHex( index ).toBoardCoords(),
+      .cell   = getCellForPiece( self.activePiece.kind ),
+    };
+  }
 
   pub fn getClearDisplayOverride( self : *const Game, index : usize ) ?clear.DisplayOverride
   {
@@ -169,9 +200,10 @@ pub const Game = struct
     }
 
     result.clearStarted = self.clearEvent.tryStart( &self.board );
+    if( result.clearStarted )| wave |{ self.addClearTotals( wave ); }
     if( result.clearStarted == null )
     {
-      self.spawnRandomPiece( rng );
+      self.pauseOrSpawn( rng );
       result.gameOver = self.isGameOver;
     }
 
@@ -184,15 +216,37 @@ pub const Game = struct
     const eventResult = self.clearEvent.advance( &self.board, deltaTime );
     var result : ClearTickResult = .{ .newWave = eventResult.newWave };
 
+    if( eventResult.newWave )| wave |{ self.addClearTotals( wave ); }
+
     if( eventResult.completedScore )| completedScore |
     {
       self.score += completedScore;
       result.completedScore = completedScore;
-      self.spawnRandomPiece( rng );
+      self.pauseOrSpawn( rng );
       result.gameOver = self.isGameOver;
     }
 
     return result;
+  }
+
+  /// Applies one clear wave's unique line and tile totals to game statistics.
+  fn addClearTotals( self : *Game, wave : clear.WaveSummary ) void
+  {
+    self.clearedLines += @as( u32, wave.lineCount );
+    self.clearedTiles += @as( u32, wave.clearedTiles );
+  }
+
+  /// Resolves a queued pause after all clear waves, otherwise spawns normally.
+  fn pauseOrSpawn( self : *Game, rng : *utl.Randomiser ) void
+  {
+    if( self.isPauseQueued )
+    {
+      self.isPauseQueued = false;
+      self.isPaused = true;
+      return;
+    }
+
+    self.spawnRandomPiece( rng );
   }
 
   /// Checks a prospective piece location without mutating the board or active piece.
