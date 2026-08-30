@@ -29,6 +29,9 @@ pub var LOCK_DELAY : f32 = 0.6;
 /// Enables automatic falling while preserving the manual movement controls.
 pub var GRAVITY_MODE : bool = true;
 
+/// Enables development-only commands, controls, and diagnostics.
+pub var DEBUG_MODE : bool = false;
+
 /// How fast do held movement inputs repeat, in seconds
 const INPUT_REPEAT_DELAY      : f32 = 0.20;
 
@@ -50,12 +53,15 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
   const deltaTime = ng.time.measuredTickDelta.toRayDeltaTime();
 
-  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ))
+  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) and ( !stateInj.GAME.isInitialized or stateInj.GAME.isGameOver or DEBUG_MODE ))
   {
-    resetClearFeedback( ng );
-    stateInj.GAME.reset( &ng.rng );
-    resetInputTimers();
-    stateInj.syncGridDisplay();
+    resetGame( ng, stateInj.GAME.isInitialized );
+  }
+
+  if( !stateInj.GAME.isInitialized )
+  {
+    if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
+    return;
   }
 
   if( stateInj.GAME.isGameOver )
@@ -70,12 +76,12 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
     {
       stateInj.GAME.resumePausedGame( &ng.rng );
       resetInputTimers();
-      utl.log( .DEBUG, @src(), "Game resumed", .{} );
+      if( DEBUG_MODE ){ utl.log( .DEBUG, @src(), "Game resumed", .{} ); }
     }
     else
     {
       stateInj.GAME.togglePauseQueue();
-      utl.log( .DEBUG, @src(), "Pause queue {s}", .{ if( stateInj.GAME.isPauseQueued ) "enabled" else "cancelled" });
+      if( DEBUG_MODE ){ utl.log( .DEBUG, @src(), "Pause queue {s}", .{ if( stateInj.GAME.isPauseQueued ) "enabled" else "cancelled" }); }
     }
   }
 
@@ -106,15 +112,15 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
     return;
   }
 
-  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.g ))
+  if( DEBUG_MODE and utl.ray.isKeyPressed( utl.ray.KeyboardKey.g ))
   {
     GRAVITY_MODE = !GRAVITY_MODE;
     resetInputTimers();
     utl.log( .DEBUG, @src(), "Gravity mode {s}", .{ if( GRAVITY_MODE ) "enabled" else "disabled" });
   }
 
-  if( !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.equal ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_add      ))){ stateInj.GAME.changePieceBy(  1 ); }
-  if( !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.minus ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_subtract ))){ stateInj.GAME.changePieceBy( -1 ); }
+  if( DEBUG_MODE and !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.equal ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_add      ))){ stateInj.GAME.changePieceBy(  1 ); }
+  if( DEBUG_MODE and !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.minus ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_subtract ))){ stateInj.GAME.changePieceBy( -1 ); }
 
   if( !GRAVITY_MODE ){ tryRepeatMove( 0, .w, .new(  0, -1 ), "up",         false, deltaTime ); }
   else { moveHeldTimes[ 0 ] = 0.0; }
@@ -125,12 +131,22 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.q     )){ tryRotatePiece( -1 ); }
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.e     )){ tryRotatePiece(  1 ); }
-  if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.space )){ lockActivePiece( &ng.rng ); resetInputTimers(); }
+  if( DEBUG_MODE and utl.ray.isKeyPressed( utl.ray.KeyboardKey.space )){ lockActivePiece( &ng.rng ); resetInputTimers(); }
 
   if( GRAVITY_MODE and !stateInj.GAME.isClearEventActive() and !stateInj.GAME.isPaused ){ tickGravity( &ng.rng, deltaTime ); }
 
   // The engine refreshes the camera before calling this hook.
   if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
+}
+
+/// Resets a game from its current fixed seed or a newly generated automatic seed.
+fn resetGame( ng : *eng.Engine, refreshAutomaticSeed : bool ) void
+{
+  resetClearFeedback( ng );
+  ng.resetRandomiser( refreshAutomaticSeed );
+  stateInj.GAME.reset( &ng.rng );
+  resetInputTimers();
+  stateInj.syncGridDisplay();
 }
 
 fn resetInputTimers() void
@@ -181,7 +197,7 @@ fn tickGravity( rng : *utl.Randomiser, deltaTime : f32 ) void
 
     const result = stateInj.GAME.lockActivePiece( rng );
     resetInputTimers();
-    utl.log( .DEBUG, @src(), "Gravity locked {d} cells; ignored {d} outside the board", .{ result.locked, result.outsideBoard });
+    if( DEBUG_MODE ){ utl.log( .DEBUG, @src(), "Gravity locked {d} cells; ignored {d} outside the board", .{ result.locked, result.outsideBoard }); }
     if( result.clearStarted )| wave |{ startClearFeedback( wave ); }
     if( result.gameOver ){ utl.log( .INFO, @src(), "Game over: spawned piece collided with the board", .{} ); }
     return;
@@ -201,7 +217,7 @@ fn tickGravity( rng : *utl.Randomiser, deltaTime : f32 ) void
 fn lockActivePiece( rng : *utl.Randomiser ) void
 {
   const result = stateInj.GAME.lockActivePiece( rng );
-  utl.log( .DEBUG, @src(), "Locked {d} piece cells; ignored {d} cells outside the board", .{ result.locked, result.outsideBoard });
+  if( DEBUG_MODE ){ utl.log( .DEBUG, @src(), "Locked {d} piece cells; ignored {d} cells outside the board", .{ result.locked, result.outsideBoard }); }
   if( result.clearStarted )| wave |{ startClearFeedback( wave ); }
   if( result.gameOver ){ utl.log( .INFO, @src(), "Game over: spawned piece collided with the board", .{} ); }
 }
@@ -269,7 +285,7 @@ fn tryMovePiece( offset : game.HexCoord, direction : []const u8, resetsFallTimer
   {
     if( resetsFallTimer ){ fallingElapsed = 0.0; }
     lockElapsed = 0.0;
-    utl.log( .DEBUG, @src(), "Debug piece moved {s}", .{ direction });
+    if( DEBUG_MODE ){ utl.log( .DEBUG, @src(), "Debug piece moved {s}", .{ direction }); }
     return;
   }
 
@@ -282,13 +298,13 @@ fn tryRotatePiece( offset : i32 ) void
   if( result.kicked )
   {
     lockElapsed = 0.0;
-    utl.log( .DEBUG, @src(), "Debug rotation succeeded with kick", .{} );
+    if( DEBUG_MODE ){ utl.log( .DEBUG, @src(), "Debug rotation succeeded with kick", .{} ); }
     return;
   }
   if( result.collision.isClear() )
   {
     lockElapsed = 0.0;
-    utl.log( .DEBUG, @src(), "Debug piece rotated", .{} );
+    if( DEBUG_MODE ){ utl.log( .DEBUG, @src(), "Debug piece rotated", .{} ); }
     return;
   }
 
@@ -297,6 +313,8 @@ fn tryRotatePiece( offset : i32 ) void
 
 fn logIllegalMove( action : []const u8, collision : game.Collision ) void
 {
+  if( !DEBUG_MODE ){ return; }
+
   if( collision.wall  ){ utl.log( .DEBUG, @src(), "Illegal {s}: wall collision",  .{ action }); }
   if( collision.floor ){ utl.log( .DEBUG, @src(), "Illegal {s}: floor collision", .{ action }); }
   if( collision.cell  ){ utl.log( .DEBUG, @src(), "Illegal {s}: cell collision",  .{ action }); }
@@ -305,6 +323,8 @@ fn logIllegalMove( action : []const u8, collision : game.Collision ) void
 /// Renders the fixed board through the engine's world draw pass.
 pub fn OnRenderWorld( ng : *eng.Engine ) void
 {
+  if( !stateInj.GAME.isInitialized ){ return; }
+
   const grid = stateInj.getGrid() orelse return;
 
   // The grid is a display cache; keep it derived from the game-owned board.
@@ -385,9 +405,16 @@ fn renderNextPiece( grid : *const Tilemap ) void
 /// Renders the small shell HUD without taking on a general UI dependency.
 pub fn OnRenderOverlay( ng : *eng.Engine ) void
 {
-  _ = ng;
-
   const screenCenter         = utl.getHalfScreenSize();
+
+  if( !stateInj.GAME.isInitialized )
+  {
+    renderTitle( screenCenter.x, screenCenter.y - 56.0, 96.0 );
+    utl.sDraw.textCenterFmt( "Seed : {d}", .{ ng.randomSeed }, .new( screenCenter.x, screenCenter.y + 20.0 ), 22.0, palette.TEXT_MUTED );
+    utl.sDraw.textCenter( "Press ENTER to start the game", .new( screenCenter.x, screenCenter.y + 60.0 ), 28.0, palette.TEXT );
+    return;
+  }
+
   const screenSize           = utl.getScreenSize();
   const leftX          : f64 = 24.0;
   const rightX         : f64 = screenSize.x - 20.0;
@@ -396,16 +423,18 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   const elapsedMinutes       = @divFloor( elapsedSeconds, 60 );
   const elapsedRemainder     = @mod(      elapsedSeconds, 60 );
 
-  renderTitle( screenCenter.x );
+  renderTitle( screenCenter.x, 48.0, 48.0 );
 
-  // TODO : Show these tooltips only in debug mode
+  if( DEBUG_MODE )
+  {
+    utl.sDraw.textLeft( "G  : toggle gravity", .new( leftX, bottomY - 200.0 ), 20.0, palette.CONTROLS );
+    utl.sDraw.textLeft( "= / - : change piece", .new( leftX, bottomY - 170.0 ), 20.0, palette.CONTROLS );
+    utl.sDraw.textLeft( "Space : lock piece",  .new( leftX, bottomY - 140.0 ), 20.0, palette.CONTROLS );
+    utl.sDraw.textLeft( "Enter : reset game",  .new( leftX, bottomY - 110.0 ), 20.0, palette.CONTROLS );
+    utl.sDraw.textRightFmt( "Gravity : {s}   Air : {d:.2}s   Lock : {d:.2}s", .{ if( GRAVITY_MODE ) "on" else "manual", AIR_TIME, LOCK_DELAY }, .new( rightX, bottomY - 40.0 ), 20.0, palette.TEXT_MUTED );
+  }
 
-  utl.sDraw.textLeft( "G  : toggle gravity", .new( leftX, bottomY - 200.0 ), 20.0, palette.CONTROLS );
-  utl.sDraw.textLeft( "= / - : change spee", .new( leftX, bottomY - 170.0 ), 20.0, palette.CONTROLS );
-  utl.sDraw.textLeft( "Space : Lock piece",  .new( leftX, bottomY - 140.0 ), 20.0, palette.CONTROLS );
-  utl.sDraw.textLeft( "Enter : reset game",  .new( leftX, bottomY - 110.0 ), 20.0, palette.CONTROLS );
-  utl.sDraw.textRightFmt( "Gravity : {s}   Air : {d:.2}s   Lock : {d:.2}s", .{ if( GRAVITY_MODE ) "on" else "manual", AIR_TIME, LOCK_DELAY }, .new( rightX, bottomY - 40.0 ), 20.0, palette.TEXT_MUTED );
-
+  // NOTES : Always show these controls.
   utl.sDraw.textLeft( "P : queue pause",  .new( leftX, bottomY - 60.0 ), 20.0, palette.CONTROLS );
   utl.sDraw.textLeft( "A / S / D : move", .new( leftX, bottomY - 30.0 ), 20.0, palette.CONTROLS );
   utl.sDraw.textLeft( "Q / E : rotate",   .new( leftX, bottomY -  0.0 ), 20.0, palette.CONTROLS );
@@ -414,7 +443,8 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   utl.sDraw.textRightFmt( "Lines : {d}", .{ stateInj.GAME.clearedLines }, .new( rightX, 70.0  ), 20.0, getLineCountColour() );
   utl.sDraw.textRightFmt( "Tiles : {d}", .{ stateInj.GAME.clearedTiles }, .new( rightX, 100.0 ), 20.0, palette.TEXT );
   utl.sDraw.textRightFmt( "Time : {d}:{d:0>2}", .{ elapsedMinutes, elapsedRemainder }, .new( rightX, 130.0 ), 20.0, palette.TEXT );
-  utl.sDraw.textRightFmt( "Piece : {s} Piece   Rotation : {s}   Speed : {d:.2}", .{ stateInj.GAME.activePiece.kind.getName(), stateInj.GAME.activePiece.rotation.getName(), getCurrentFallingSpeed() }, .new( rightX, bottomY - 0.0 ), 20.0, palette.TEXT );
+
+  utl.sDraw.textRightFmt( "Piece : {s}   Angle : {s}   Fall Speed : {d:.2}", .{ stateInj.GAME.activePiece.kind.getName(), stateInj.GAME.activePiece.rotation.getName(), getCurrentFallingSpeed() }, .new( rightX, bottomY - 0.0 ), 20.0, palette.TEXT );
 
   if( stateInj.GAME.isPauseQueued )
   {
@@ -440,7 +470,8 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
     utl.sDraw.coverScreenWithCol( palette.GAME_OVER_VEIL );
     utl.sDraw.textCenter(    "GAME OVER", screenCenter, 64.0, palette.RED );
     utl.sDraw.textCenterFmt( "Score : {d}", .{ stateInj.GAME.score }, .new( screenCenter.x, screenCenter.y + 64.0 ), 32.0, palette.SCORE );
-    utl.sDraw.textCenter(    "Enter : restart", .new( screenCenter.x, screenCenter.y + 104.0 ), 28.0, palette.CONTROLS );
+    utl.sDraw.textCenterFmt( "Seed : {d}", .{ ng.randomSeed }, .new( screenCenter.x, screenCenter.y + 102.0 ), 24.0, palette.TEXT );
+    utl.sDraw.textCenter(    "Press ENTER to restart the game", .new( screenCenter.x, screenCenter.y + 142.0 ), 28.0, palette.CONTROLS );
   }
 }
 
@@ -476,16 +507,16 @@ test "falling speed plateaus at the configured line cap"
 }
 
 /// Draws the title in tile-palette rainbow order, from red through purple.
-fn renderTitle( centerX : f64 ) void
+fn renderTitle( centerX : f64, y : f64, fontSize : f64 ) void
 {
   const letters = [ _ ][ :0 ]const u8{ "T", "E", "T", "R", "O", "M" };
   const colours = [ _ ]utl.Colour{ palette.RED, palette.ORANGE, palette.YELLOW, palette.CYAN, palette.BLUE, palette.PURPLE };
-  const spacing : f64 = 36.0;
+  const spacing = fontSize * 0.75;
   const firstX = centerX - (( @as( f64, @floatFromInt( letters.len - 1 )) * spacing ) / 2.0 );
 
   for( letters, colours, 0 .. )| letter, col, index |
   {
     const x = firstX + ( @as( f64, @floatFromInt( index )) * spacing );
-    utl.sDraw.textCenter( letter, .new( x, 48.0 ), 48.0, col );
+    utl.sDraw.textCenter( letter, .new( x, y ), fontSize, col );
   }
 }

@@ -30,7 +30,9 @@ pub const Engine = struct
   time   : tmng.EngineTiming = .{},
   camera : eng.WorldCam      = .{},
   mouse  : utl.Mouse         = .{},
-  rng    : utl.Randomiser    = .{},
+  rng         : utl.Randomiser = .{},
+  randomSeed  : i128           = 0,
+  isSeedFixed : bool           = false,
 
   // Engine Managers
   worldManager    : eng.WorldManager           = .{},
@@ -60,6 +62,18 @@ pub const Engine = struct
   pub inline fn getTargetFrameDelta( self : *Engine ) f32 { return( self.time.getTargetFrameDeltaFlt()   ); }
   pub inline fn getRealTickDelta(    self : *Engine ) f32 { return( self.time.getMeasuredTickDeltaFlt()  ); }
   pub inline fn getRealFrameDelta(   self : *Engine ) f32 { return( self.time.getMeasuredFrameDeltaFlt() ); }
+
+  /// Reinitializes the engine RNG, replacing an automatic seed only when requested.
+  pub fn resetRandomiser( self : *Engine, refreshAutomaticSeed : bool ) void
+  {
+    if( refreshAutomaticSeed and !self.isSeedFixed )
+    {
+      const nextSeed = utl.getNow().value;
+      self.randomSeed = if( nextSeed == self.randomSeed ) nextSeed +| 1 else nextSeed;
+    }
+
+    self.rng.seedInit( self.randomSeed );
+  }
 
   // ================================ ENGINE STATE FUNCTIONS ================================
 

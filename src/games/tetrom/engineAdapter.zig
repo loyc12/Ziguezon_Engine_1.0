@@ -3,15 +3,15 @@ const palette = @import( "palette.zig" );
 
 // ================================ ENGINE CONFIGS ================================
 
-pub const DebugDraw_FPS             : bool = true;
+pub const DebugDraw_FPS          : bool = false;
 
-pub const Startup_Window_Width      : u16 = 1200;
-pub const Startup_Window_Height     : u16 = 1200;
+pub const Startup_Window_Width   : u16 = 1200;
+pub const Startup_Window_Height  : u16 = 1200;
 
-pub const Startup_Window_Title      : [ :0 ] const u8 = "Ziguezon Engine - Tetrom";
+pub const Startup_Window_Title   : [ :0 ] const u8 = "Ziguezon Engine - Tetrom";
 
-pub const Graphic_Bckgrd_Colour     : ?utl.Colour = palette.BACKGROUND;
-pub const Graphic_Metrics_Colour    : ?utl.Colour = palette.CYAN;
+pub const Graphic_Bckgrd_Colour  : ?utl.Colour = palette.BACKGROUND;
+pub const Graphic_Metrics_Colour : ?utl.Colour = palette.CYAN;
 
 
 // ================================ GAME HOOKS ================================

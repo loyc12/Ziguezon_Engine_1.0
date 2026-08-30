@@ -1,8 +1,10 @@
+const std   = @import( "std" );
 const utl   = @import( "utils" );
 const pcs   = @import( "pieces.zig" );
 const board = @import( "board.zig" );
 const clear = @import( "clearEvent.zig" );
 const bag   = @import( "pieceBag.zig" );
+const score = @import( "score.zig" );
 
 const Coords2 = utl.Coords2;
 
@@ -90,6 +92,7 @@ pub const Game = struct
   activePiece   : ActivePiece      = .{},
   clearEvent    : clear.ClearEvent = .{},
   pieceBag      : bag.PieceBag     = .{},
+  isInitialized : bool             = false,
   isGameOver    : bool             = false,
   isPauseQueued : bool             = false,
   isPaused      : bool             = false,
@@ -98,17 +101,19 @@ pub const Game = struct
   clearedTiles  : u32              = 0,
   elapsedTime   : f64              = 0.0,
 
-  pub fn init( self : *Game, rng : *utl.Randomiser ) void
+  /// Enters Tetrom's title state without creating a piece or consuming randomness.
+  pub fn init( self : *Game ) void
   {
-    self.reset( rng );
+    self.* = .{ .isPaused = true };
   }
 
-  /// Clears the settled board and spawns a random debug piece at top centre.
+  /// Starts or restarts a seeded game with a random piece at top centre.
   pub fn reset( self : *Game, rng : *utl.Randomiser ) void
   {
     self.board.reset();
     self.clearEvent.reset();
     self.pieceBag.reset();
+    self.isInitialized = true;
     self.isGameOver = false;
     self.isPauseQueued = false;
     self.isPaused     = false;
@@ -186,7 +191,8 @@ pub const Game = struct
   /// Writes active cells and either starts a staged clear or spawns immediately.
   pub fn lockActivePiece( self : *Game, rng : *utl.Randomiser ) LockResult
   {
-    if( self.isClearEventActive() ){ return .{}; }
+    // A spawn-obstructed piece is never placed and must not award tile score.
+    if( !self.isInitialized or self.isGameOver or self.isClearEventActive() ){ return .{}; }
 
     var result : LockResult = .{};
     const cell = getCellForPiece( self.activePiece.kind );
@@ -198,6 +204,8 @@ pub const Game = struct
       if( self.board.setCell( coords, cell )){ result.locked += 1; }
       else {                                 result.outsideBoard += 1; }
     }
+
+    self.score += @as( u64, result.locked ) * score.LOCKED_TILE_SCORE;
 
     result.clearStarted = self.clearEvent.tryStart( &self.board );
     if( result.clearStarted )| wave |{ self.addClearTotals( wave ); }
@@ -374,4 +382,37 @@ pub fn getCellForPiece( kind : PieceKind ) Cell
     .P05 => .Red,     .P06 => .Orange, .P07 => .Yellow, .P08 => .Green,   .P09 => .Blue,
     .P10 => .Coral,   .P11 => .Teal,   .P12 => .Bronze, .P13 => .Silver,  .P14 => .Brown,
   };
+}
+
+test "spawn-obstructed pieces cannot award tile score"
+{
+  var rng : utl.Randomiser = .{};
+  rng.seedInit( 1 );
+
+  var gameState : Game = .{};
+  gameState.reset( &rng );
+  gameState.board.cells = [_]Cell{ .Red } ** Board.cellCount;
+  gameState.score = 0;
+  gameState.spawnRandomPiece( &rng );
+
+  try std.testing.expect( gameState.isGameOver );
+  const result = gameState.lockActivePiece( &rng );
+  try std.testing.expectEqual( @as( u8, 0 ), result.locked );
+  try std.testing.expectEqual( @as( u64, 0 ), gameState.score );
+}
+
+test "resetting with the same seed repeats the opening piece sequence"
+{
+  var firstRng : utl.Randomiser = .{};
+  firstRng.seedInit( 42 );
+  var firstGame : Game = .{};
+  firstGame.reset( &firstRng );
+
+  var secondRng : utl.Randomiser = .{};
+  secondRng.seedInit( 42 );
+  var secondGame : Game = .{};
+  secondGame.reset( &secondRng );
+
+  try std.testing.expectEqual( firstGame.activePiece.kind, secondGame.activePiece.kind );
+  try std.testing.expectEqual( firstGame.getNextPiece(), secondGame.getNextPiece() );
 }

@@ -17,12 +17,11 @@ pub fn initCriticals( randomSeed : ?i128 ) void
   utl.qlog( .TRACE, @src(), "# Initializing all subsystems..." );
 
   utl.G_EPOCH = utl.getNow();
-  if( randomSeed )| seed |
-  {
-    eng.G_ENG.rng.seedInit( seed );
-    utl.log( .INFO, @src(), "Using command-line random seed {d}", .{ seed });
-  }
-  else { eng.G_ENG.rng.randInit(); }
+  const resolvedSeed = randomSeed orelse utl.G_EPOCH.?.value; // Assumes GLOBAL EPOCH is initialized
+  eng.G_ENG.randomSeed = resolvedSeed;
+  eng.G_ENG.isSeedFixed = randomSeed != null;
+  eng.G_ENG.resetRandomiser( false );
+  utl.log( .INFO, @src(), "Using random seed {d}", .{ resolvedSeed });
 
   utl.initAllUtils();
 
@@ -46,7 +45,11 @@ pub fn deinitCriticals() void
 
 pub fn main() !void
 {
-  const randomSeed = try getRandomSeedArg();
+  const randomSeed = getRandomSeedArg() catch | err |
+  {
+    if( err == error.InvalidRandomSeed ){ std.process.exit( 2 ); }
+    return err;
+  };
 
   initCriticals( randomSeed );
   defer deinitCriticals();
@@ -61,7 +64,7 @@ pub fn main() !void
   eng.G_ENG.changeState( .OFF );
 }
 
-/// Accepts either `tetrom <seed>` or `tetrom --seed <seed>`.
+/// Accepts `tetrom <seed>`, `tetrom --seed <seed>`, or `tetrom -- <seed>`.
 fn getRandomSeedArg() !?i128
 {
   const allocator = std.heap.page_allocator;
@@ -72,11 +75,11 @@ fn getRandomSeedArg() !?i128
 
   const rawSeed : []const u8 = blk:
   {
-    if( std.mem.eql( u8, args[ 1 ], "--seed" ))
+    if( std.mem.eql( u8, args[ 1 ], "--seed" ) or std.mem.eql( u8, args[ 1 ], "--" ))
     {
       if( args.len != 3 )
       {
-        std.debug.print( "Usage: tetrom [seed | --seed seed]\\n", .{} );
+        printSeedUsage();
         return error.InvalidRandomSeed;
       }
       break :blk args[ 2 ];
@@ -84,7 +87,7 @@ fn getRandomSeedArg() !?i128
 
     if( args.len != 2 )
     {
-      std.debug.print( "Usage: tetrom [seed | --seed seed]\\n", .{} );
+      printSeedUsage();
       return error.InvalidRandomSeed;
     }
     break :blk args[ 1 ];
@@ -92,7 +95,13 @@ fn getRandomSeedArg() !?i128
 
   return std.fmt.parseInt( i128, rawSeed, 10 ) catch
   {
-    std.debug.print( "Invalid random seed: {s}\\n", .{ rawSeed });
+    std.debug.print( "Invalid random seed: {s}\n", .{ rawSeed });
+    printSeedUsage();
     return error.InvalidRandomSeed;
   };
+}
+
+fn printSeedUsage() void
+{
+  std.debug.print( "Usage: tetrom [seed | --seed seed]\n", .{} );
 }

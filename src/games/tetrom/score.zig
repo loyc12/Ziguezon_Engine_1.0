@@ -1,6 +1,9 @@
 const std = @import( "std" );
 const utl = @import( "utils" );
 
+/// Minor score awarded for every piece cell that successfully locks into the board.
+pub var LOCKED_TILE_SCORE : u64 = 5;
+
 /// The score contributed by one resolved diagonal-clear wave.
 pub const WaveScore = struct
 {
