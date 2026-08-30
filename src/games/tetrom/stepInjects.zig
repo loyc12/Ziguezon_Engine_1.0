@@ -14,31 +14,31 @@ const Tilemap = tlmp.Tilemap;
 // ================================ GAME TUNING ================================
 
 /// Base seconds between automatic falling steps before any lines are cleared.
-pub var MIN_FALLING_SPEED : f32 = 0.50;
+pub var MIN_FALLING_SPEED : f32 = 0.40;
 
 /// Lowest tick interval, representing Tetrom's maximum automatic falling speed.
-pub var MAX_FALLING_SPEED : f32 = 0.06125;
+pub var MAX_FALLING_SPEED : f32 = 0.025;
 
 /// Cumulative cleared-line total at which automatic falling reaches its maximum.
-pub var SPEED_LINE_CAP : u32 = 64;
+pub var SPEED_LINE_CAP : u32 = 100;
 
 /// Seconds after spawning before gravity may begin falling the new piece.
-pub var AIR_TIME : f32 = 0.25;
+pub var AIR_TIME : f32 = 0.40;
 
 /// Seconds a grounded piece remains movable before gravity locks it.
-pub var LOCK_DELAY : f32 = 0.375;
+pub var LOCK_DELAY : f32 = 0.40;
+
+/// How fast do held movement inputs repeat, in seconds
+const INPUT_REPEAT_DELAY : f32 = 0.10;
+
+/// Multiplier for direct vertical repeat delay while either Shift key is held.
+const SHIFT_REPEAT_FACTOR : f32 = 0.5;
 
 /// Enables automatic falling while preserving the manual movement controls.
 pub var GRAVITY_MODE : bool = true;
 
 /// Enables development-only commands, controls, and diagnostics.
 pub var DEBUG_MODE : bool = false;
-
-/// How fast do held movement inputs repeat, in seconds
-const INPUT_REPEAT_DELAY      : f32 = 0.125;
-
-/// Multiplier for direct downward repeat delay while either Shift key is held.
-const SHIFT_DOWN_REPEAT_FACTOR : f32 = 0.5;
 
 const NEXT_PIECE_SCALE        : f64 = 1.0;
 const NEXT_PIECE_RIGHT_OFFSET : f64 = 3.0;
@@ -58,7 +58,7 @@ var cameraBase     : ?utl.VecA = null;
 /// Handles frame-driven input, clear progression, and active-piece movement.
 pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
-  // `OnUpdateInputs` runs once per rendered frame, before `consumeFrame()`.
+  // OnUpdateInputs() runs once per rendered frame, before `consumeFrame()`.
   // The previous measured frame duration therefore matches this hook's cadence.
   const deltaTime = ng.time.getMeasuredFrameDeltaFlt();
 
@@ -103,7 +103,9 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
   stateInj.GAME.tickTime( deltaTime );
 
   const clearTick = stateInj.GAME.tickClearEvent( &ng.rng, deltaTime );
+
   if( clearTick.newWave )| wave |{ startClearFeedback( wave ); }
+
   if( clearTick.completedScore )| completedScore |
   {
     CLEAR_FEEDBACK.finishEvent();
@@ -131,12 +133,15 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
   if( DEBUG_MODE and !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.equal ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_add      ))){ stateInj.GAME.changePieceBy(  1 ); }
   if( DEBUG_MODE and !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.minus ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_subtract ))){ stateInj.GAME.changePieceBy( -1 ); }
 
-  if( !GRAVITY_MODE ){ tryRepeatMove( 0, .w, .new(  0, -1 ), "up",         false, INPUT_REPEAT_DELAY, deltaTime ); }
+  if( !GRAVITY_MODE )
+  {
+    tryRepeatMove( 0, .w, .new(  0, -1 ), "up",  false, getVerticalRepeatDelay(), deltaTime );
+  }
   else { moveHeldTimes[ 0 ] = 0.0; }
 
-  tryRepeatMove( 1, .s, .new(  0,  1 ), "down",       true,  getDownRepeatDelay(), deltaTime );
-  tryRepeatMove( 2, .a, .new( -1,  1 ), "down-left",  false, INPUT_REPEAT_DELAY,  deltaTime );
-  tryRepeatMove( 3, .d, .new(  1,  0 ), "down-right", false, INPUT_REPEAT_DELAY,  deltaTime );
+  tryRepeatMove( 1, .s, .new(  0,  1 ), "down",  true,  getVerticalRepeatDelay(), deltaTime );
+  tryRepeatMove( 2, .a, .new( -1,  1 ), "left",  false, INPUT_REPEAT_DELAY,       deltaTime );
+  tryRepeatMove( 3, .d, .new(  1,  0 ), "right", false, INPUT_REPEAT_DELAY,       deltaTime );
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.q     )){ tryRotatePiece( -1 ); }
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.e     )){ tryRotatePiece(  1 ); }
@@ -192,13 +197,13 @@ fn tryRepeatMove( index : usize, key : utl.ray.KeyboardKey, offset : game.HexCoo
 }
 
 /// Accelerates only forced vertical descent; diagonal and lateral movement stay stable.
-fn getDownRepeatDelay() f32
+fn getVerticalRepeatDelay() f32
 {
   const isShiftHeld =
     utl.ray.isKeyDown( utl.ray.KeyboardKey.left_shift ) or
     utl.ray.isKeyDown( utl.ray.KeyboardKey.right_shift );
 
-  return if( isShiftHeld ) INPUT_REPEAT_DELAY * SHIFT_DOWN_REPEAT_FACTOR else INPUT_REPEAT_DELAY;
+  return if( isShiftHeld ) INPUT_REPEAT_DELAY * SHIFT_REPEAT_FACTOR else INPUT_REPEAT_DELAY;
 }
 
 // ================================ GRAVITY AND LOCKING ================================
