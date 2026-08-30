@@ -1,4 +1,4 @@
-const utl = @import( "utils" );
+const utl     = @import( "utils" );
 const palette = @import( "palette.zig" );
 
 // ================================ ENGINE CONFIGS ================================

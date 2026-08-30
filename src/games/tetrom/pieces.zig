@@ -30,7 +30,7 @@ pub const HexCoord = struct
   }
 };
 
-/// The ten one-sided tetrahexes. Mirrors are distinct, rotations are not.
+/// Tetrom's one-sided pieces. Mirrors are distinct, rotations are not.
 pub const PieceKind = enum( u4 )
 {
   P00, P01, P02, P03, P04,
@@ -76,7 +76,7 @@ pub const Rotation = enum( u3 )
   }
 };
 
-/// Four axial offsets relative to the layout placement anchor at `.new( 0, 0 )`.
+/// Up to four axial offsets relative to the layout placement anchor at `.new( 0, 0 )`.
 /// The P14 / C anchor is intentionally empty: it sits in the centre of its shape.
 pub const PieceLayout = struct
 {
@@ -89,7 +89,7 @@ pub const PieceDef = struct
   layouts : [ Rotation.count ]PieceLayout,
 };
 
-/// Returns all six directional cell layouts for one tetrahex kind.
+/// Returns all six directional cell layouts for one piece kind.
 pub fn getDef( kind : PieceKind ) *const PieceDef
 {
   return switch( kind )

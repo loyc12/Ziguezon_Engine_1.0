@@ -1,9 +1,9 @@
 const eng = @import( "engine" );
 const utl = @import( "utils" );
 
-const game = @import( "game.zig" );
+const game    = @import( "game.zig" );
 const palette = @import( "palette.zig" );
-const tlmp = utl.legacy_tilemap;
+const tlmp    = utl.legacy_tilemap;
 
 const Tilemap = tlmp.Tilemap;
 

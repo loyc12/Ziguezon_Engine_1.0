@@ -11,20 +11,22 @@ const tlmp = utl.legacy_tilemap;
 
 const Tilemap = tlmp.Tilemap;
 
+// ================================ GAME TUNING ================================
+
 /// Base seconds between automatic falling steps before any lines are cleared.
-pub var MIN_FALLING_SPEED : f32 = 0.80;
+pub var MIN_FALLING_SPEED : f32 = 0.50;
 
 /// Lowest tick interval, representing Tetrom's maximum automatic falling speed.
-pub var MAX_FALLING_SPEED : f32 = 0.20;
+pub var MAX_FALLING_SPEED : f32 = 0.06125;
 
 /// Cumulative cleared-line total at which automatic falling reaches its maximum.
-pub var SPEED_LINE_CAP : u32 = 128;
+pub var SPEED_LINE_CAP : u32 = 64;
 
 /// Seconds after spawning before gravity may begin falling the new piece.
-pub var AIR_TIME : f32 = 0.4;
+pub var AIR_TIME : f32 = 0.25;
 
 /// Seconds a grounded piece remains movable before gravity locks it.
-pub var LOCK_DELAY : f32 = 0.6;
+pub var LOCK_DELAY : f32 = 0.375;
 
 /// Enables automatic falling while preserving the manual movement controls.
 pub var GRAVITY_MODE : bool = true;
@@ -33,10 +35,15 @@ pub var GRAVITY_MODE : bool = true;
 pub var DEBUG_MODE : bool = false;
 
 /// How fast do held movement inputs repeat, in seconds
-const INPUT_REPEAT_DELAY      : f32 = 0.20;
+const INPUT_REPEAT_DELAY      : f32 = 0.125;
+
+/// Multiplier for direct downward repeat delay while either Shift key is held.
+const SHIFT_DOWN_REPEAT_FACTOR : f32 = 0.5;
 
 const NEXT_PIECE_SCALE        : f64 = 1.0;
 const NEXT_PIECE_RIGHT_OFFSET : f64 = 3.0;
+
+// ================================ RUNTIME STATE ================================
 
 var fallingElapsed : f32 = 0.0;
 var airElapsed     : f32 = 0.0;
@@ -48,10 +55,12 @@ var cameraBase     : ?utl.VecA = null;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
-/// Handles shell controls and manual preview selection during piece development.
+/// Handles frame-driven input, clear progression, and active-piece movement.
 pub fn OnUpdateInputs( ng : *eng.Engine ) void
 {
-  const deltaTime = ng.time.measuredTickDelta.toRayDeltaTime();
+  // `OnUpdateInputs` runs once per rendered frame, before `consumeFrame()`.
+  // The previous measured frame duration therefore matches this hook's cadence.
+  const deltaTime = ng.time.getMeasuredFrameDeltaFlt();
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) and ( !stateInj.GAME.isInitialized or stateInj.GAME.isGameOver or DEBUG_MODE ))
   {
@@ -122,12 +131,12 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
   if( DEBUG_MODE and !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.equal ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_add      ))){ stateInj.GAME.changePieceBy(  1 ); }
   if( DEBUG_MODE and !GRAVITY_MODE and ( utl.ray.isKeyPressed( utl.ray.KeyboardKey.minus ) or utl.ray.isKeyPressed( utl.ray.KeyboardKey.kp_subtract ))){ stateInj.GAME.changePieceBy( -1 ); }
 
-  if( !GRAVITY_MODE ){ tryRepeatMove( 0, .w, .new(  0, -1 ), "up",         false, deltaTime ); }
+  if( !GRAVITY_MODE ){ tryRepeatMove( 0, .w, .new(  0, -1 ), "up",         false, INPUT_REPEAT_DELAY, deltaTime ); }
   else { moveHeldTimes[ 0 ] = 0.0; }
 
-  tryRepeatMove( 1, .s, .new(  0,  1 ), "down",       true,  deltaTime );
-  tryRepeatMove( 2, .a, .new( -1,  1 ), "down-left",  false, deltaTime );
-  tryRepeatMove( 3, .d, .new(  1,  0 ), "down-right", false, deltaTime );
+  tryRepeatMove( 1, .s, .new(  0,  1 ), "down",       true,  getDownRepeatDelay(), deltaTime );
+  tryRepeatMove( 2, .a, .new( -1,  1 ), "down-left",  false, INPUT_REPEAT_DELAY,  deltaTime );
+  tryRepeatMove( 3, .d, .new(  1,  0 ), "down-right", false, INPUT_REPEAT_DELAY,  deltaTime );
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.q     )){ tryRotatePiece( -1 ); }
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.e     )){ tryRotatePiece(  1 ); }
@@ -138,6 +147,8 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
   // The engine refreshes the camera before calling this hook.
   if( utl.ray.isWindowResized() ){ stateInj.updateGridScale(); }
 }
+
+// ================================ GAME LIFECYCLE ================================
 
 /// Resets a game from its current fixed seed or a newly generated automatic seed.
 fn resetGame( ng : *eng.Engine, refreshAutomaticSeed : bool ) void
@@ -157,7 +168,9 @@ fn resetInputTimers() void
   moveHeldTimes  = [_]f32{ 0.0 } ** 4;
 }
 
-fn tryRepeatMove( index : usize, key : utl.ray.KeyboardKey, offset : game.HexCoord, direction : []const u8, resetsFallTimer : bool, deltaTime : f32 ) void
+// ================================ INPUT MOVEMENT ================================
+
+fn tryRepeatMove( index : usize, key : utl.ray.KeyboardKey, offset : game.HexCoord, direction : []const u8, resetsFallTimer : bool, repeatDelay : f32, deltaTime : f32 ) void
 {
   if( utl.ray.isKeyPressed( key ))
   {
@@ -172,11 +185,23 @@ fn tryRepeatMove( index : usize, key : utl.ray.KeyboardKey, offset : game.HexCoo
   }
 
   moveHeldTimes[ index ] += deltaTime;
-  if( moveHeldTimes[ index ] < INPUT_REPEAT_DELAY ){ return; }
+  if( moveHeldTimes[ index ] < repeatDelay ){ return; }
 
   moveHeldTimes[ index ] = 0.0;
   tryMovePiece( offset, direction, resetsFallTimer );
 }
+
+/// Accelerates only forced vertical descent; diagonal and lateral movement stay stable.
+fn getDownRepeatDelay() f32
+{
+  const isShiftHeld =
+    utl.ray.isKeyDown( utl.ray.KeyboardKey.left_shift ) or
+    utl.ray.isKeyDown( utl.ray.KeyboardKey.right_shift );
+
+  return if( isShiftHeld ) INPUT_REPEAT_DELAY * SHIFT_DOWN_REPEAT_FACTOR else INPUT_REPEAT_DELAY;
+}
+
+// ================================ GRAVITY AND LOCKING ================================
 
 fn tickGravity( rng : *utl.Randomiser, deltaTime : f32 ) void
 {
@@ -247,6 +272,8 @@ fn getFallingSpeedForLines( clearedLines : u32, baseSpeed : f32, maxSpeed : f32,
   return utl.lerp( safeBase, safeMax, plateauProgress );
 }
 
+// ================================ CLEAR FEEDBACK AND CAMERA ================================
+
 fn resetClearFeedback( ng : *eng.Engine ) void
 {
   restoreCamera( ng );
@@ -277,6 +304,8 @@ fn restoreCamera( ng : *eng.Engine ) void
   if( cameraBase )| base |{ ng.camera.cam.pos = base; }
   cameraBase = null;
 }
+
+// ================================ PIECE TRANSFORMS ================================
 
 fn tryMovePiece( offset : game.HexCoord, direction : []const u8, resetsFallTimer : bool ) void
 {
@@ -319,6 +348,8 @@ fn logIllegalMove( action : []const u8, collision : game.Collision ) void
   if( collision.floor ){ utl.log( .DEBUG, @src(), "Illegal {s}: floor collision", .{ action }); }
   if( collision.cell  ){ utl.log( .DEBUG, @src(), "Illegal {s}: cell collision",  .{ action }); }
 }
+
+// ================================ WORLD RENDERING ================================
 
 /// Renders the fixed board through the engine's world draw pass.
 pub fn OnRenderWorld( ng : *eng.Engine ) void
@@ -402,10 +433,13 @@ fn renderNextPiece( grid : *const Tilemap ) void
   }
 }
 
+// ================================ OVERLAY RENDERING ================================
+
 /// Renders the small shell HUD without taking on a general UI dependency.
 pub fn OnRenderOverlay( ng : *eng.Engine ) void
 {
-  const screenCenter         = utl.getHalfScreenSize();
+  const screenSize   = utl.getScreenSize();
+  const screenCenter = screenSize.mulVal( 0.5 );
 
   if( !stateInj.GAME.isInitialized )
   {
@@ -415,7 +449,6 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
     return;
   }
 
-  const screenSize           = utl.getScreenSize();
   const leftX          : f64 = 24.0;
   const rightX         : f64 = screenSize.x - 20.0;
   const bottomY        : f64 = screenSize.y - 30.0;
@@ -427,10 +460,10 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   if( DEBUG_MODE )
   {
-    utl.sDraw.textLeft( "G  : toggle gravity", .new( leftX, bottomY - 200.0 ), 20.0, palette.CONTROLS );
+    utl.sDraw.textLeft( "G  : toggle gravity",  .new( leftX, bottomY - 200.0 ), 20.0, palette.CONTROLS );
     utl.sDraw.textLeft( "= / - : change piece", .new( leftX, bottomY - 170.0 ), 20.0, palette.CONTROLS );
-    utl.sDraw.textLeft( "Space : lock piece",  .new( leftX, bottomY - 140.0 ), 20.0, palette.CONTROLS );
-    utl.sDraw.textLeft( "Enter : reset game",  .new( leftX, bottomY - 110.0 ), 20.0, palette.CONTROLS );
+    utl.sDraw.textLeft( "Space : lock piece",   .new( leftX, bottomY - 140.0 ), 20.0, palette.CONTROLS );
+    utl.sDraw.textLeft( "Enter : reset game",   .new( leftX, bottomY - 110.0 ), 20.0, palette.CONTROLS );
     utl.sDraw.textRightFmt( "Gravity : {s}   Air : {d:.2}s   Lock : {d:.2}s", .{ if( GRAVITY_MODE ) "on" else "manual", AIR_TIME, LOCK_DELAY }, .new( rightX, bottomY - 40.0 ), 20.0, palette.TEXT_MUTED );
   }
 
@@ -475,6 +508,21 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   }
 }
 
+/// Draws the title in tile-palette rainbow order, from red through purple.
+fn renderTitle( centerX : f64, y : f64, fontSize : f64 ) void
+{
+  const letters = [ _ ][ :0 ]const u8{ "T", "E", "T", "R", "O", "M" };
+  const colours = [ _ ]utl.Colour{ palette.RED, palette.ORANGE, palette.YELLOW, palette.CYAN, palette.BLUE, palette.PURPLE };
+  const spacing = fontSize * 0.75;
+  const firstX = centerX - (( @as( f64, @floatFromInt( letters.len - 1 )) * spacing ) / 2.0 );
+
+  for( letters, colours, 0 .. )| letter, col, index |
+  {
+    const x = firstX + ( @as( f64, @floatFromInt( index )) * spacing );
+    utl.sDraw.textCenter( letter, .new( x, y ), fontSize, col );
+  }
+}
+
 /// Tints the line counter from HUD white to red across the configured speed cap.
 fn getLineCountColour() utl.Colour
 {
@@ -491,12 +539,14 @@ fn getLineCountColour() utl.Colour
   };
 }
 
+// ================================ TESTS ================================
+
 test "falling speed plateaus at the configured line cap"
 {
   const base : f32 = 0.75;
   const max  : f32 = 0.20;
 
-  const half = getFallingSpeedForLines( 50, base, max, 100 );
+  const half   = getFallingSpeedForLines( 50, base, max, 100 );
   const capped = getFallingSpeedForLines( 100, base, max, 100 );
   const beyond = getFallingSpeedForLines( 200, base, max, 100 );
 
@@ -504,19 +554,4 @@ test "falling speed plateaus at the configured line cap"
   try std.testing.expect( half < base and half > max );
   try std.testing.expectApproxEqAbs( max, capped, 0.0001 );
   try std.testing.expectApproxEqAbs( capped, beyond, 0.0001 );
-}
-
-/// Draws the title in tile-palette rainbow order, from red through purple.
-fn renderTitle( centerX : f64, y : f64, fontSize : f64 ) void
-{
-  const letters = [ _ ][ :0 ]const u8{ "T", "E", "T", "R", "O", "M" };
-  const colours = [ _ ]utl.Colour{ palette.RED, palette.ORANGE, palette.YELLOW, palette.CYAN, palette.BLUE, palette.PURPLE };
-  const spacing = fontSize * 0.75;
-  const firstX = centerX - (( @as( f64, @floatFromInt( letters.len - 1 )) * spacing ) / 2.0 );
-
-  for( letters, colours, 0 .. )| letter, col, index |
-  {
-    const x = firstX + ( @as( f64, @floatFromInt( index )) * spacing );
-    utl.sDraw.textCenter( letter, .new( x, y ), fontSize, col );
-  }
 }

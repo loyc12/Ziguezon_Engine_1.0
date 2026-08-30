@@ -68,7 +68,7 @@ pub const Engine = struct
   {
     if( refreshAutomaticSeed and !self.isSeedFixed )
     {
-      const nextSeed = utl.getNow().value;
+      const nextSeed  = utl.getNow().value;
       self.randomSeed = if( nextSeed == self.randomSeed ) nextSeed +| 1 else nextSeed;
     }
 

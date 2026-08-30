@@ -17,10 +17,12 @@ pub fn initCriticals( randomSeed : ?i128 ) void
   utl.qlog( .TRACE, @src(), "# Initializing all subsystems..." );
 
   utl.G_EPOCH = utl.getNow();
-  const resolvedSeed = randomSeed orelse utl.G_EPOCH.?.value; // Assumes GLOBAL EPOCH is initialized
-  eng.G_ENG.randomSeed = resolvedSeed;
+  const resolvedSeed    = randomSeed orelse utl.G_EPOCH.?.value;
+  eng.G_ENG.randomSeed  = resolvedSeed;
   eng.G_ENG.isSeedFixed = randomSeed != null;
+
   eng.G_ENG.resetRandomiser( false );
+
   utl.log( .INFO, @src(), "Using random seed {d}", .{ resolvedSeed });
 
   utl.initAllUtils();

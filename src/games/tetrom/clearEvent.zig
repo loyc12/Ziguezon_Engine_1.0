@@ -7,17 +7,17 @@ const Board    = board.Board;
 const Cell     = board.Cell;
 const HexCoord = pcs.HexCoord;
 
-/// Seconds for marked cells to reach white. Tune freely during development.
-pub var CLEAR_FLASH_DURATION  : f32 = 0.2;
+/// Seconds for marked cells to reach white.
+pub var CLEAR_FLASH_DURATION  : f32 = 0.1;
 
 /// Seconds for white marked cells to fade into the playfield colour.
-pub var CLEAR_FADE_DURATION   : f32 = 0.4;
+pub var CLEAR_FADE_DURATION   : f32 = 0.2;
 
 /// Seconds between each visible centre-out one-cell collapse pulse.
-pub var COLLAPSE_PULSE_DELAY  : f32 = 0.2;
+pub var COLLAPSE_PULSE_DELAY  : f32 = 0.1;
 
 /// Seconds to display a completed collapse before testing its cascade result.
-pub var POST_COLLAPSE_DELAY   : f32 = 1.0;
+pub var POST_COLLAPSE_DELAY   : f32 = 0.6;
 
 pub const ClearPhase = enum { None, FlashToWhite, FadeToField, Collapse, PostCollapse };
 

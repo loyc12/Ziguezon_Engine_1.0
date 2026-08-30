@@ -14,7 +14,7 @@ pub const Rotation  = pcs.Rotation;
 pub const Cell      = board.Cell;
 pub const Board     = board.Board;
 
-/// Mutable preview state for one tetrahex before it becomes settled board cells.
+/// Mutable preview state for one piece before it becomes settled board cells.
 pub const ActivePiece = struct
 {
   kind     : PieceKind = .P05,
@@ -153,7 +153,7 @@ pub const Game = struct
     return self.pieceBag.peek();
   }
 
-  /// Replaces the active debug piece without changing settled board cells.
+  /// Replaces the active piece without changing settled board cells.
   pub fn spawnRandomPiece( self : *Game, rng : *utl.Randomiser ) void
   {
     self.activePiece = .{
@@ -181,11 +181,6 @@ pub const Game = struct
   pub fn changePieceBy( self : *Game, offset : i32 ) void
   {
     self.activePiece.kind = PieceKind.fromIndex( self.activePiece.kind.getIndex() + offset );
-  }
-
-  pub fn changeRotationBy( self : *Game, offset : i32 ) void
-  {
-    self.activePiece.rotation = Rotation.fromIndex( self.activePiece.rotation.getIndex() + offset );
   }
 
   /// Writes active cells and either starts a staged clear or spawns immediately.
@@ -288,7 +283,7 @@ pub const Game = struct
     return collision;
   }
 
-  /// Moves the debug piece by one axial neighbour when the destination is clear.
+  /// Moves the active piece by one axial neighbour when the destination is clear.
   pub fn tryMoveBy( self : *Game, offset : HexCoord ) Collision
   {
     var candidate = self.activePiece;
@@ -300,7 +295,7 @@ pub const Game = struct
     return collision;
   }
 
-  /// Rotates the debug piece, attempting upward/sideward wall kicks if needed.
+  /// Rotates the active piece, attempting upward/sideward wall kicks if needed.
   pub fn tryRotateBy( self : *Game, offset : i32 ) struct { collision : Collision, kicked : bool }
   {
     var candidate = self.activePiece;

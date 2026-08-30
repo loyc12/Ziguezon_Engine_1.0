@@ -14,7 +14,7 @@ pub var SHAKE_LINE_FACTOR       : f64 = 0.10;
 pub var SHAKE_CROSSING_FACTOR   : f64 = 0.05;
 
 /// Upper bound for clear-event shake force.
-pub var SHAKE_MAX_FORCE         : f64 = 1.75;
+pub var SHAKE_MAX_FORCE         : f64 = 2.00;
 
 /// Minimum screen font size for the centre clear-event award.
 pub var SCORE_TEXT_MIN_SIZE     : f64 = 32.0;

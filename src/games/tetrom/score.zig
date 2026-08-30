@@ -2,7 +2,8 @@ const std = @import( "std" );
 const utl = @import( "utils" );
 
 /// Minor score awarded for every piece cell that successfully locks into the board.
-pub var LOCKED_TILE_SCORE : u64 = 5;
+pub var LOCKED_TILE_SCORE  : u64 = 5;
+pub var CLEARED_LINE_SCORE : u64 = 100;
 
 /// The score contributed by one resolved diagonal-clear wave.
 pub const WaveScore = struct
@@ -16,7 +17,7 @@ pub const WaveScore = struct
 pub fn getWaveScore( lineCount : u8, crossings : u8 ) WaveScore
 {
   const lines : u64 = lineCount;
-  const base = 100 * lines * ( lines + 1 ) / 2;
+  const base = CLEARED_LINE_SCORE * ( lines * ( lines + 1 )) / 2;
   const award : u64 = @intFromFloat( @round( @as( f64, @floatFromInt( base )) * getCrossingFactor( crossings )));
 
   return .{ .lineCount = lineCount, .crossings = crossings, .award = award };
@@ -25,7 +26,7 @@ pub fn getWaveScore( lineCount : u8, crossings : u8 ) WaveScore
 /// Returns the extra score carried from a preceding wave in the same event.
 pub fn getComboBonus( eventScore : u64 ) u64
 {
-  const multiplied : u64 = @intFromFloat( @floor( @as( f64, @floatFromInt( eventScore )) * 1.5 ));
+  const  multiplied : u64 = @intFromFloat( @floor( @as( f64, @floatFromInt( eventScore )) * 1.5 ));
   return multiplied - eventScore;
 }
 
