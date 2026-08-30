@@ -17,13 +17,9 @@ pub fn initCriticals( randomSeed : ?i128 ) void
   utl.qlog( .TRACE, @src(), "# Initializing all subsystems..." );
 
   utl.G_EPOCH = utl.getNow();
-  const resolvedSeed    = randomSeed orelse utl.G_EPOCH.?.value;
-  eng.G_ENG.randomSeed  = resolvedSeed;
-  eng.G_ENG.isSeedFixed = randomSeed != null;
+  eng.G_ENG.initRandomiser( randomSeed );
 
-  eng.G_ENG.resetRandomiser( false );
-
-  utl.log( .INFO, @src(), "Using random seed {d}", .{ resolvedSeed });
+  utl.log( .INFO, @src(), "Using random seed {d}", .{ eng.G_ENG.randomSeed });
 
   utl.initAllUtils();
 
@@ -66,7 +62,7 @@ pub fn main() !void
   eng.G_ENG.changeState( .OFF );
 }
 
-/// Accepts `tetrom <seed>`, `tetrom --seed <seed>`, or `tetrom -- <seed>`.
+/// Accepts `<executable> <seed>`, `<executable> --seed <seed>`, or `<executable> -- <seed>`.
 fn getRandomSeedArg() !?i128
 {
   const allocator = std.heap.page_allocator;
@@ -81,7 +77,7 @@ fn getRandomSeedArg() !?i128
     {
       if( args.len != 3 )
       {
-        printSeedUsage();
+        printSeedUsage( args[ 0 ] );
         return error.InvalidRandomSeed;
       }
       break :blk args[ 2 ];
@@ -89,7 +85,7 @@ fn getRandomSeedArg() !?i128
 
     if( args.len != 2 )
     {
-      printSeedUsage();
+      printSeedUsage( args[ 0 ] );
       return error.InvalidRandomSeed;
     }
     break :blk args[ 1 ];
@@ -98,12 +94,12 @@ fn getRandomSeedArg() !?i128
   return std.fmt.parseInt( i128, rawSeed, 10 ) catch
   {
     std.debug.print( "Invalid random seed: {s}\n", .{ rawSeed });
-    printSeedUsage();
+    printSeedUsage( args[ 0 ] );
     return error.InvalidRandomSeed;
   };
 }
 
-fn printSeedUsage() void
+fn printSeedUsage( executablePath : []const u8 ) void
 {
-  std.debug.print( "Usage: tetrom [seed | --seed seed]\n", .{} );
+  std.debug.print( "Usage: {s} [seed | --seed seed]\n", .{ std.fs.path.basename( executablePath ) });
 }

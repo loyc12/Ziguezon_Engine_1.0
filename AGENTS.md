@@ -12,6 +12,8 @@ Prefer succinct, direct answers and short progress updates; avoid textual noise 
   dependency-injection layers, compatibility surfaces, or ownership rewrites.
 - Prefer direct concrete code until the compiler or a clear ownership problem
   proves a boundary must change.
+- When working on a specific game, be explicit about any intented or applied changes
+  to the engine or utils code, and make sure the user consents to these changes.
 
 ## Code Work
 
