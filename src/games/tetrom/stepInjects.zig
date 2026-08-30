@@ -43,6 +43,12 @@ pub var DEBUG_MODE : bool = false;
 const NEXT_PIECE_SCALE        : f64 = 1.0;
 const NEXT_PIECE_RIGHT_OFFSET : f64 = 3.0;
 
+// A small title-screen-only flourish; deliberately fixed rather than configurable.
+const TITLE_FALL_DURATION  : f32 = 2.4;
+const TITLE_FALL_STEPS     : u8  = 8;
+const TITLE_FALL_HEIGHT    : f64 = 1.25;
+const SECOND_TITLE_T_INDEX : usize = 2;
+
 // ================================ RUNTIME STATE ================================
 
 var fallingElapsed : f32 = 0.0;
@@ -52,6 +58,7 @@ var lockElapsed    : f32 = 0.0;
 var moveHeldTimes  : [ 4 ]f32 = [_]f32{ 0.0 } ** 4;
 var CLEAR_FEEDBACK : feedback.ClearFeedback = .{};
 var cameraBase     : ?utl.VecA = null;
+var titleElapsed   : f32 = 0.0;
 
 // ================================ STEP INJECTION FUNCTIONS ================================
 
@@ -61,6 +68,7 @@ pub fn OnUpdateInputs( ng : *eng.Engine ) void
   // OnUpdateInputs() runs once per rendered frame, before `consumeFrame()`.
   // The previous measured frame duration therefore matches this hook's cadence.
   const deltaTime = ng.time.getMeasuredFrameDeltaFlt();
+  tickTitleAnimation( deltaTime );
 
   if( utl.ray.isKeyPressed( utl.ray.KeyboardKey.enter ) and ( !stateInj.GAME.isInitialized or stateInj.GAME.isGameOver or DEBUG_MODE ))
   {
@@ -448,7 +456,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
 
   if( !stateInj.GAME.isInitialized )
   {
-    renderTitle( screenCenter.x, screenCenter.y - 56.0, 96.0 );
+    renderTitle( screenCenter.x, screenCenter.y - 56.0, 96.0, true );
     utl.sDraw.textCenterFmt( "Seed : {d}", .{ ng.randomSeed }, .new( screenCenter.x, screenCenter.y + 20.0 ), 22.0, palette.TEXT_MUTED );
     utl.sDraw.textCenter( "Press ENTER to start the game", .new( screenCenter.x, screenCenter.y + 60.0 ), 28.0, palette.TEXT );
     return;
@@ -461,7 +469,7 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   const elapsedMinutes       = @divFloor( elapsedSeconds, 60 );
   const elapsedRemainder     = @mod(      elapsedSeconds, 60 );
 
-  renderTitle( screenCenter.x, 48.0, 48.0 );
+  renderTitle( screenCenter.x, 48.0, 48.0, false );
 
   if( DEBUG_MODE )
   {
@@ -513,8 +521,15 @@ pub fn OnRenderOverlay( ng : *eng.Engine ) void
   }
 }
 
-/// Draws the title in tile-palette rainbow order, from red through purple.
-fn renderTitle( centerX : f64, y : f64, fontSize : f64 ) void
+/// Advances the single-run title animation while Tetrom receives frame input.
+fn tickTitleAnimation( deltaTime : f32 ) void
+{
+  const totalDuration = TITLE_FALL_DURATION + clear.CLEAR_FLASH_DURATION + clear.CLEAR_FADE_DURATION;
+  if( titleElapsed < totalDuration ){ titleElapsed += deltaTime; }
+}
+
+/// Draws the title in tile-palette rainbow order, with an optional title-screen flourish.
+fn renderTitle( centerX : f64, y : f64, fontSize : f64, isAnimated : bool ) void
 {
   const letters = [ _ ][ :0 ]const u8{ "T", "E", "T", "R", "O", "M" };
   const colours = [ _ ]utl.Colour{ palette.RED, palette.ORANGE, palette.YELLOW, palette.CYAN, palette.BLUE, palette.PURPLE };
@@ -524,8 +539,52 @@ fn renderTitle( centerX : f64, y : f64, fontSize : f64 ) void
   for( letters, colours, 0 .. )| letter, col, index |
   {
     const x = firstX + ( @as( f64, @floatFromInt( index )) * spacing );
-    utl.sDraw.textCenter( letter, .new( x, y ), fontSize, col );
+    const letterY = if( isAnimated and index == SECOND_TITLE_T_INDEX ) y + getSecondTitleTOffset( fontSize ) else y;
+    const letterCol = if( isAnimated ) getTitleColour( col ) else col;
+    utl.sDraw.textCenter( letter, .new( x, letterY ), fontSize, letterCol );
   }
+}
+
+/// Returns the stepped downward offset for TETROM's second T until it lodges in place.
+fn getSecondTitleTOffset( fontSize : f64 ) f64
+{
+  const elapsed = @min( titleElapsed, TITLE_FALL_DURATION );
+  const stepCount : f32 = @floatFromInt( TITLE_FALL_STEPS );
+  const completedSteps = @floor(( elapsed / TITLE_FALL_DURATION ) * stepCount );
+  const progress : f64 = @floatCast( completedSteps / stepCount );
+
+  return -fontSize * TITLE_FALL_HEIGHT * ( 1.0 - progress );
+}
+
+/// Recreates a clear-style white flash before restoring each title letter's colour.
+fn getTitleColour( base : utl.Colour ) utl.Colour
+{
+  if( titleElapsed < TITLE_FALL_DURATION ){ return base; }
+
+  const flashElapsed = titleElapsed - TITLE_FALL_DURATION;
+  if( flashElapsed < clear.CLEAR_FLASH_DURATION )
+  {
+    return lerpTitleColour( base, palette.WHITE, flashElapsed / clear.CLEAR_FLASH_DURATION );
+  }
+  if( flashElapsed < clear.CLEAR_FLASH_DURATION + clear.CLEAR_FADE_DURATION )
+  {
+    const fadeElapsed = flashElapsed - clear.CLEAR_FLASH_DURATION;
+    return lerpTitleColour( palette.WHITE, base, fadeElapsed / clear.CLEAR_FADE_DURATION );
+  }
+
+  return base;
+}
+
+fn lerpTitleColour( from : utl.Colour, to : utl.Colour, progress : f32 ) utl.Colour
+{
+  const p : f64 = progress;
+
+  return .{
+    .r = @intFromFloat( @round( utl.lerp( @as( f64, @floatFromInt( from.r )), @as( f64, @floatFromInt( to.r )), p ))),
+    .g = @intFromFloat( @round( utl.lerp( @as( f64, @floatFromInt( from.g )), @as( f64, @floatFromInt( to.g )), p ))),
+    .b = @intFromFloat( @round( utl.lerp( @as( f64, @floatFromInt( from.b )), @as( f64, @floatFromInt( to.b )), p ))),
+    .a = @intFromFloat( @round( utl.lerp( @as( f64, @floatFromInt( from.a )), @as( f64, @floatFromInt( to.a )), p ))),
+  };
 }
 
 /// Tints the line counter from HUD white to red across the configured speed cap.
@@ -548,15 +607,15 @@ fn getLineCountColour() utl.Colour
 
 test "falling speed plateaus at the configured line cap"
 {
-  const base : f32 = 0.75;
-  const max  : f32 = 0.20;
+  const base : f32 = 0.40;
+  const max  : f32 = 0.025;
 
-  const half   = getFallingSpeedForLines( 50, base, max, 100 );
+  const half   = getFallingSpeedForLines( 50,  base, max, 100 );
   const capped = getFallingSpeedForLines( 100, base, max, 100 );
   const beyond = getFallingSpeedForLines( 200, base, max, 100 );
 
   try std.testing.expectApproxEqAbs( base, getFallingSpeedForLines( 0, base, max, 100 ), 0.0001 );
   try std.testing.expect( half < base and half > max );
-  try std.testing.expectApproxEqAbs( max, capped, 0.0001 );
+  try std.testing.expectApproxEqAbs( max,   capped,  0.0001 );
   try std.testing.expectApproxEqAbs( capped, beyond, 0.0001 );
 }
